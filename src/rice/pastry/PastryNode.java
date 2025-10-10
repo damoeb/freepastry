@@ -163,7 +163,7 @@ public class PastryNode extends Observable implements
     
     readyStrategy = getDefaultReadyStrategy();
     
-    apps = new Vector();
+    apps = new Vector<Object>();
     logger = e.getLogManager().getLogger(getClass(), null);
     e.addDestructable(this);
   }

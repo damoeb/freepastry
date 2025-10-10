@@ -365,7 +365,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
      */
     public ReplicationManagerHelper() {
       set = factory.buildIdSet();
-      hints = new HashMap();
+      hints = new HashMap<Id, NodeHandle>();
       state = STATE_NOTHING;
     }
     

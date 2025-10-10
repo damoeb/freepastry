@@ -404,7 +404,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
       } else if (msg instanceof GCRefreshMessage) {
         final GCRefreshMessage rmsg = (GCRefreshMessage) msg;        
         final Iterator i = Arrays.asList(rmsg.getKeys()).iterator();
-        final Vector result = new Vector();
+        final Vector<Object> result = new Vector<Object>();
         other += rmsg.getKeys().length;
         
         StandardContinuation process = new StandardContinuation(getResponseContinuation(msg)) {
@@ -684,7 +684,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   }
   
   protected class ReplicaMap {
-    protected HashMap map = new HashMap();
+    protected HashMap<NodeHandle, IdSet> map = new HashMap<NodeHandle, IdSet>();
     public void addReplica(NodeHandle handle, GCId id) {
       IdSet set = (IdSet) map.get(handle);
       

@@ -65,7 +65,6 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.util.Date;
-import java.util.Random;
 
 import javax.security.auth.x500.X500Principal;
 

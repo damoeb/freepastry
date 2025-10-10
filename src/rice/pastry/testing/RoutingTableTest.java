@@ -71,7 +71,7 @@ public class RoutingTableTest {
   // this will keep track of our nodes
   Vector<PastryNode> nodes = new Vector<PastryNode>();
   
-  HashMap apps = new HashMap();
+  HashMap<PastryNode, Object> apps = new HashMap<PastryNode, Object>();
   
   int timeToFindFaulty = 30000; // millis
   

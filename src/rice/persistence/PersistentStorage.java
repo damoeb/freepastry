@@ -211,11 +211,11 @@ public class PersistentStorage implements Storage {
     this.rootDir = rootDir;
     this.storageSize = size; 
     this.index = index;
-    this.directories = new HashMap();
-    this.prefixes = new HashMap();
+    this.directories = new HashMap<String, File>();
+    this.prefixes = new HashMap<String, String>();
     statsLastWritten = environment.getTimeSource().currentTimeMillis();
     if (index) {
-      this.dirty = new HashSet();
+      this.dirty = new HashSet<String>();
       this.metadata = new ReverseTreeMap();
     }
       
@@ -1057,7 +1057,7 @@ public class PersistentStorage implements Storage {
    * @return The sublist
    */
   private String[] getMatchingDirectories(String prefix, String[] dirNames) {
-    Vector result = new Vector();
+    Vector<String> result = new Vector<String>();
     
     for (int i=0; i<dirNames.length; i++) 
       if (dirNames[i].startsWith(prefix))
@@ -1560,7 +1560,7 @@ public class PersistentStorage implements Storage {
     File[] files = (File[]) dirty.toArray(new File[0]);
     
     for (int i=0; i<files.length; i++) {
-      HashMap map = new HashMap();
+      HashMap<Id, Serializable> map = new HashMap<Id, Serializable>();
       IdRange range = getRangeForDirectory(files[i]);
       Iterator keys = null;
       
@@ -1571,7 +1571,7 @@ public class PersistentStorage implements Storage {
       
       while (keys.hasNext()) {
         Id next = (Id) keys.next();
-        map.put(next, metadata.get(next));
+        map.put(next, (Serializable) metadata.get(next));
       }
       
       try {
@@ -1655,7 +1655,7 @@ public class PersistentStorage implements Storage {
    * @param file The directory to write the file to
    * @param map The data to write
    */
-  private static void writeMetadataFile(File file, HashMap map) throws IOException {    
+  private static void writeMetadataFile(File file, HashMap<Id, Serializable> map) throws IOException {    
     FileOutputStream fout = null;
     
     try {

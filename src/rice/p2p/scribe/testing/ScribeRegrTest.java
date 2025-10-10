@@ -1045,8 +1045,8 @@ public class ScribeRegrTest extends CommonAPITest {
       this.scribe = scribe;
       this.i = i;
       this.topics = topics;
-      this.publishMessages = new Vector();
-      this.anycastMessages = new Vector();
+      this.publishMessages = new Vector<Object>();
+      this.anycastMessages = new Vector<Object>();
       this.acceptAnycast = false;
       this.subscribeFailed = false;
     }

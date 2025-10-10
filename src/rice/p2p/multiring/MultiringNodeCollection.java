@@ -73,7 +73,7 @@ public class MultiringNodeCollection {
    * @param node The node to base this node off of
    */
   public MultiringNodeCollection(MultiringNode node, int BASE) {
-    this.nodes = new Vector();
+    this.nodes = new Vector<MultiringNode>();
     this.nodes.add(node);
     this.BASE = BASE;
   }

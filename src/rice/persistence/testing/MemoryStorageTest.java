@@ -730,8 +730,8 @@ public class MemoryStorageTest extends Test {
   }
   
   public void testVariableLength() {
-    final HashSet tmp = new HashSet();
-    final HashSet all = new HashSet();
+    final HashSet<Id> tmp = new HashSet<Id>();
+    final HashSet<Id> all = new HashSet<Id>();
     
     testErrors(new Continuation() {
       public void receiveResult(Object o) {

@@ -67,7 +67,7 @@ import rice.selector.TimerTask;
 public class DirectTutorial {
 
   // this will keep track of our applications
-  Vector apps = new Vector();
+  Vector<Object> apps = new Vector<Object>();
   
   /**
    * This constructor launches numNodes PastryNodes.  They will bootstrap 
@@ -173,7 +173,7 @@ public class DirectTutorial {
       @Override
       public void run() {
         // for each app
-        Iterator<MyApp> appIterator = apps.iterator();
+        Iterator<Object> appIterator = apps.iterator();
         while(appIterator.hasNext()) {
           MyApp app = (MyApp)appIterator.next();
           
@@ -191,7 +191,7 @@ public class DirectTutorial {
     // wait 20 seconds, then repeat every second
     env.getSelectorManager().getTimer().schedule(new TimerTask() {    
       // counter to construct nodes/apps
-      Iterator<MyApp> appIterator = apps.iterator();
+      Iterator<Object> appIterator = apps.iterator();
       
       @Override
       public void run() {

@@ -38,8 +38,12 @@ package org.mpisws.p2p.pki.x509;
 
 import java.security.KeyPair;
 
+// Note: Using deprecated org.bouncycastle.jce.PKCS10CertificationRequest
+// because the modern org.bouncycastle.pkcs.PKCS10CertificationRequest is not available
+// in the current BouncyCastle version used by this project
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 
 public interface CertTool {
+  @SuppressWarnings("deprecation")
   PKCS10CertificationRequest generateCertRequest(KeyPair pair);
 }

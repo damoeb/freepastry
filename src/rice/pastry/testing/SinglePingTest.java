@@ -65,9 +65,9 @@ public class SinglePingTest {
 
   private TestRecord testRecord;
 
-  private Vector pastryNodes;
+  private Vector<PastryNode> pastryNodes;
 
-  private Vector pingClients;
+  private Vector<Object> pingClients;
 
   private Environment environment;
 
@@ -78,8 +78,8 @@ public class SinglePingTest {
     simulator.setTestRecord(tr);
     testRecord = tr;
 
-    pastryNodes = new Vector();
-    pingClients = new Vector();
+    pastryNodes = new Vector<PastryNode>();
+    pingClients = new Vector<Object>();
   }
 
   private NodeHandle getBootstrap() {

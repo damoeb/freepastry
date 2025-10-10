@@ -318,7 +318,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.timer = null;
     this.nextContinuationTimeout = -1;
     this.statistics = new GlacierStatistics(tagMax, environment);
-    this.listeners = new Vector();
+    this.listeners = new Vector<Object>();
     this.numActiveRestores = new int[1];
     this.numActiveRestores[0] = 0;
     this.currentFragmentRequestTimeout = fragmentRequestTimeoutDefault;
@@ -672,7 +672,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         if (logger.level <= Logger.INFO) logger.log( "Checking fragment storage for fragments to hand off...");
         if (logger.level <= Logger.FINE) logger.log( "Currently responsible for: "+responsibleRange);
         Iterator iter = fragmentStorage.scan().getIterator();
-        Vector handoffs = new Vector();
+        Vector<Id> handoffs = new Vector<Id>();
         Id destination = null;
   
         while (iter.hasNext()) {
@@ -1823,7 +1823,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           successes = new int[ids.length];
           nextTimeout = environment.getTimeSource().currentTimeMillis() + bulkRefreshProbeInterval;
           currentStage = stageProbing;
-          holders = new Vector();
+          holders = new Vector<NodeHandle>();
           retriesRemaining = (int)(bulkRefreshMaxProbeFactor * numFragments);
           answered = false;
         
@@ -2023,7 +2023,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                 if (fragmentHolder[idx][fid] != null) {
                   NodeHandle thisHolder = fragmentHolder[idx][fid];
-                  Vector idsToQuery = new Vector();
+                  Vector<Id> idsToQuery = new Vector<Id>();
                   for (int i=0; i<ids.length; i++) {
                     if (!objectCovered[i]) {
                       for (int j=0; j<numFragments; j++) {
@@ -3057,8 +3057,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   public Id[][] getNeighborRanges() {
     Iterator iter = neighborStorage.scan().getIterator();
-    Vector ccwIDs = new Vector();
-    Vector cwIDs = new Vector();
+    Vector<Id> ccwIDs = new Vector<Id>();
+    Vector<Id> cwIDs = new Vector<Id>();
     Id myID = getLocalNodeHandle().getId();
       
     while (iter.hasNext()) {
@@ -3085,7 +3085,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       }
     }
       
-    Vector allIDs = new Vector();
+    Vector<Id> allIDs = new Vector<Id>();
     allIDs.addAll(ccwIDs);
     allIDs.add(myID);
     allIDs.addAll(cwIDs);
@@ -3268,7 +3268,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       final long earliestAcceptableExpiration = environment.getTimeSource().currentTimeMillis() + syncMinRemainingLifetime;
       final long latestAcceptableStoredSince = environment.getTimeSource().currentTimeMillis() - syncMinQuietTime;
       
-      final Vector missing = new Vector();
+      final Vector<Id> missing = new Vector<Id>();
       
       while (iter.hasNext()) {
         FragmentKey fkey = (FragmentKey)iter.next();

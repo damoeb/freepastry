@@ -61,9 +61,9 @@ public class HelloWorld {
 
   private NetworkSimulator simulator;
 
-  private Vector pastryNodes;
+  private Vector<PastryNode> pastryNodes;
 
-  private Vector helloClients;
+  private Vector<Object> helloClients;
 
   private static int numnodes = 3;
 
@@ -82,8 +82,8 @@ public class HelloWorld {
     simulator = new EuclideanNetwork(env);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, environment);
 
-    pastryNodes = new Vector();
-    helloClients = new Vector();
+    pastryNodes = new Vector<PastryNode>();
+    helloClients = new Vector<Object>();
   }
 
   /**

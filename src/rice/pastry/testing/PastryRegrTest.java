@@ -74,7 +74,7 @@ public abstract class PastryRegrTest {
 
   public boolean inConcJoin;
 
-  private Vector rtApps;
+  private Vector<Object> rtApps;
 
   public Message lastMsg;
 
@@ -122,12 +122,12 @@ public abstract class PastryRegrTest {
    */
   protected PastryRegrTest(Environment env) {
     this.environment = env;
-    pastryNodes = new Vector();
-    pastryNodesSorted = new TreeMap();
-    pastryNodesSortedReady = new TreeMap();
-    pastryNodesLastAdded = new Vector();
+    pastryNodes = new Vector<PastryNode>();
+    pastryNodesSorted = new TreeMap<Id, PastryNode>();
+    pastryNodesSortedReady = new TreeMap<Id, PastryNode>();
+    pastryNodesLastAdded = new Vector<PastryNode>();
     inConcJoin = false;
-    rtApps = new Vector();
+    rtApps = new Vector<Object>();
   }
 
   /**

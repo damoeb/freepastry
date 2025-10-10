@@ -239,8 +239,8 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
 
       /* First add children which match prefix with the stripe, then those which dont.
          Introduce some randomness so that load is balanced among children. */
-      Vector good = new Vector();
-      Vector bad = new Vector();
+      Vector<NodeHandle> good = new Vector<NodeHandle>();
+      Vector<NodeHandle> bad = new Vector<NodeHandle>();
 
       for (NodeHandle child : children) {
         if (SplitStreamScribePolicy.getPrefixMatch(message.getTopic().getId(), child.getId(), splitStream.getStripeBaseBitLength()) > 0)
@@ -356,7 +356,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     // a) non-primary
     // b) i am not root for them
     // c) have at least one child
-    Vector candidateStripes = new Vector();
+    Vector<Id> candidateStripes = new Vector<Id>();
     Id victimStripeId = null;
     Topic tp;
 
@@ -390,7 +390,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       children = this.scribe.getChildren(new Topic(victimStripeId));
 
       NodeHandle child = children[scribe.getEnvironment().getRandomSource().nextInt(children.length)];
-      Vector result = new Vector();
+      Vector<Object> result = new Vector<Object>();
 
       result.addElement(child);
       result.addElement(victimStripeId);
@@ -421,7 +421,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     int minPrefixMatch = getPrefixMatch(stripeId, newChild.getId(), channel.getStripeBase());
 
     /* find all potential victims */
-    Vector victims = new Vector();
+    Vector<NodeHandle> victims = new Vector<NodeHandle>();
     for(int j = 0; j < children.length; j++){
       NodeHandle c = (NodeHandle)children[j];
       int match = getPrefixMatch(stripeId, c.getId(), channel.getStripeBase());

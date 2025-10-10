@@ -38,38 +38,56 @@ package rice.p2p.aggregation;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.Vector;
-import java.util.Arrays;
 
 import rice.Continuation;
 import rice.Executable;
 import rice.environment.Environment;
 import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
-import rice.p2p.aggregation.messaging.*;
-import rice.p2p.aggregation.raw.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.aggregation.messaging.AggregationMessage;
+import rice.p2p.aggregation.messaging.AggregationTimeoutMessage;
+import rice.p2p.aggregation.messaging.NonAggregate;
+import rice.p2p.aggregation.raw.RawAggregate;
+import rice.p2p.aggregation.raw.RawAggregateFactory;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.CancellableTask;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.glacier.VersioningPast;
 import rice.p2p.glacier.v2.DebugContent;
+import rice.p2p.glacier.v2.GlacierContentHandle;
 import rice.p2p.past.Past;
-import rice.p2p.past.PastImpl;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
+import rice.p2p.past.PastImpl;
 import rice.p2p.past.gc.GCPast;
 import rice.p2p.past.gc.GCPastContent;
 import rice.p2p.past.gc.GCPastContentHandle;
 import rice.p2p.past.gc.rawserialization.RawGCPastContent;
-import rice.p2p.past.rawserialization.*;
+import rice.p2p.past.rawserialization.JavaPastContentDeserializer;
+import rice.p2p.past.rawserialization.JavaPastContentHandleDeserializer;
+import rice.p2p.past.rawserialization.JavaSerializedPastContent;
+import rice.p2p.past.rawserialization.PastContentDeserializer;
+import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
+import rice.p2p.past.rawserialization.RawPastContent;
 import rice.p2p.util.DebugCommandHandler;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.persistence.StorageManager;
-import rice.p2p.glacier.v2.GlacierContentHandle;
 
 @SuppressWarnings("unchecked")
 public class AggregationImpl implements GCPast, VersioningPast, Aggregation, Application, DebugCommandHandler {
@@ -266,7 +284,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.factory = factory;
     this.flushWait = null;
     this.rebuildInProgress = false;
-    this.monitorIDs = new Vector();
+    this.monitorIDs = new Vector<Id>();
 
     if (!aggregateList.readOK())
       if (logger.level <= Logger.WARNING) logger.log("Failed to read configuration file; aggregate list must be rebuilt!");
@@ -548,7 +566,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       
     if (cmd.startsWith("refresh all")) {
       long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(cmd.substring(12));
-      TreeSet ids = new TreeSet();
+      TreeSet<Id> ids = new TreeSet<Id>();
       String result;
       
       aggregateList.resetMarkers();
@@ -835,7 +853,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   private void removeDeadAggregates() {
-    Vector toRemove = new Vector();
+    Vector<Object> toRemove = new Vector<Object>();
     Enumeration enumeration = aggregateList.elements();
     long now = environment.getTimeSource().currentTimeMillis();
   
@@ -957,9 +975,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   
     if (logger.level <= Logger.INFO) logger.log( "BIN PACKING STARTED");
 
-    Vector currentAggregate = new Vector();
-    Vector aggregates = new Vector();
-    Vector deletionVector = new Vector();
+    Vector<Object> currentAggregate = new Vector<Object>();
+    Vector<Object> aggregates = new Vector<Object>();
+    Vector<Object> deletionVector = new Vector<Object>();
     Iterator iter = waitingKeys.getIterator();
     long currentAggregateSize = 0;
     int currentObjectsInAggregate = 0;
@@ -1109,9 +1127,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private void refreshAggregates() {
     Enumeration enumeration = aggregateList.elements();
     long now = environment.getTimeSource().currentTimeMillis();
-    Vector removeList = new Vector();
-    final Vector refreshAggregateList = new Vector();
-    final Vector refreshLifetimeList = new Vector();
+    Vector<Object> removeList = new Vector<Object>();
+    final Vector<Object> refreshAggregateList = new Vector<Object>();
+    final Vector<Long> refreshLifetimeList = new Vector<Long>();
 
     if (logger.level <= Logger.INFO) logger.log( "Checking aggregate lifetimes");
 
@@ -1203,7 +1221,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private void consolidateAggregates() {
     final long now = environment.getTimeSource().currentTimeMillis();
     Enumeration enumeration = aggregateList.elements();
-    Vector candidateList = new Vector();
+    Vector<Object> candidateList = new Vector<Object>();
 
     if (logger.level <= Logger.INFO) logger.log( "Looking for aggregates to consolidate");
     
@@ -1240,7 +1258,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     
     if (logger.level <= Logger.FINE) logger.log( candidateList.size() + " candidate(s) for consolidation");
     
-    final Vector componentList = new Vector();
+    final Vector<Object> componentList = new Vector<Object>();
     int objectsSoFar = 0;
     int bytesSoFar = 0;
     
@@ -1815,7 +1833,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     rebuildAggregateList(command);
   }
 
-  private void rebuildRecursive(final Id fromKey, final Vector keysInProgress, final Vector keysPostponed, final Vector keysDone, final Continuation command) {
+  private void rebuildRecursive(final Id fromKey, final Vector<Id> keysInProgress, final Vector<Id> keysPostponed, final Vector<Id> keysDone, final Continuation command) {
     keysInProgress.add(fromKey);
     
     if (logger.level <= Logger.INFO) logger.log( "Rebuild: Fetching handles for aggregate " + fromKey.toStringFull());
@@ -1975,9 +1993,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   private void rebuildAggregateList(final Continuation command) {
-    Vector keysInProgress = new Vector();
-    Vector keysPostponed = new Vector();
-    Vector keysDone = new Vector();
+    Vector<Id> keysInProgress = new Vector<Id>();
+    Vector<Id> keysPostponed = new Vector<Id>();
+    Vector<Id> keysDone = new Vector<Id>();
 
     if (logger.level <= Logger.INFO) logger.log( "rebuildAggregateList("+aggregateList.getRoot()+")");
     if (aggregateList.getRoot() == null) {

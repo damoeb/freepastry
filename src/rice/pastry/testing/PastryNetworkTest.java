@@ -59,11 +59,11 @@ public class PastryNetworkTest {
   
   protected InetSocketAddress bootstrap;
   
-  protected HashSet nodes;
+  protected HashSet<NodeHandle> nodes;
   
-  protected HashSet dead;
+  protected HashSet<NodeHandle> dead;
   
-  protected HashSet unknown;
+  protected HashSet<NodeHandle> unknown;
   
   protected final int MAX_THREADS = 100;
   
@@ -73,16 +73,16 @@ public class PastryNetworkTest {
     this.environment = env;
     this.factory = factory;
     this.bootstrap = bootstrap;
-    this.nodes = new HashSet();
-    this.dead = new HashSet();
-    this.unknown = new HashSet();
+    this.nodes = new HashSet<NodeHandle>();
+    this.dead = new HashSet<NodeHandle>();
+    this.unknown = new HashSet<NodeHandle>();
   }
   
   int numThreads = 0;
   
-  protected HashMap fetchLeafSets() throws Exception {
-    final HashMap leafsets = new HashMap();
-    final HashSet unseen = new HashSet();
+  protected HashMap<NodeHandle, LeafSet> fetchLeafSets() throws Exception {
+    final HashMap<NodeHandle, LeafSet> leafsets = new HashMap<NodeHandle, LeafSet>();
+    final HashSet<NodeHandle> unseen = new HashSet<NodeHandle>();
     
     final PrintStream ps = new PrintStream(new FileOutputStream("response.txt"));
     
@@ -191,9 +191,9 @@ public class PastryNetworkTest {
     System.out.println("Done testing...");
   }  
   
-  protected HashMap fetchRouteRow(int row) throws IOException {
-    HashMap routerows = new HashMap();
-    Iterator i = nodes.iterator();
+  protected HashMap<NodeHandle, Object> fetchRouteRow(int row) throws IOException {
+    HashMap<NodeHandle, Object> routerows = new HashMap<NodeHandle, Object>();
+    Iterator<NodeHandle> i = nodes.iterator();
     
     while (i.hasNext()) {
       NodeHandle handle = (NodeHandle) i.next(); 

@@ -137,10 +137,10 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     int hash = 0;
     if (writer != null) hash = writer.hashCode();
     this.debugstr += "writer after try: "+writer+" "+hash+"\n";
-    this.references = new Hashtable();
-    this.currentObjects = new Stack();
-    this.currentClasses = new Stack();
-    this.currentPutFields = new Stack();
+    this.references = new Hashtable<Object, Integer>();
+    this.currentObjects = new Stack<Object>();
+    this.currentClasses = new Stack<Class<?>>();
+    this.currentPutFields = new Stack<PutField>();
     hash = 0;
     if (writer != null) hash = writer.hashCode();
     this.debugstr += "writer before writeStreamHeader: "+writer+" "+hash+"\n";
@@ -644,7 +644,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * @return The heierarchy of the provided class
    */
   protected Class[] getSuperClasses(Class c) {
-    Vector v = new Vector();
+    Vector<Class<?>> v = new Vector<Class<?>>();
     
     while (true) {
       if (c.getSuperclass().equals((new Object()).getClass())) 
@@ -1264,9 +1264,9 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */  
   public class PutField extends ObjectOutputStream.PutField {
 
-    protected Hashtable primitives = new Hashtable();
+    protected Hashtable<String, Object> primitives = new Hashtable<String, Object>();
     
-    protected Hashtable objects = new Hashtable();
+    protected Hashtable<String, Object> objects = new Hashtable<String, Object>();
     
     protected String[] getPrimitives() {
       return (String[]) primitives.keySet().toArray(new String[0]);

@@ -68,7 +68,7 @@ public class AggregateList {
   public AggregateList(String configFileName, String label, IdFactory factory, boolean loggingEnabled, String instance, Environment env) throws IOException {
     this.instance = instance;
     this.configFileName = configFileName;
-    this.aggregateList = new Hashtable();
+    this.aggregateList = new Hashtable<Id, AggregateDescriptor>();
     this.factory = factory;
     this.label = label;
     this.rootKey = null;
@@ -556,7 +556,7 @@ public class AggregateList {
     if (excludes != null)
       recalculateReferenceCounts(excludes);
   
-    Vector pointers = new Vector();
+    Vector<Id> pointers = new Vector<Id>();
     Enumeration enumeration = elements();
 
     resetMarkers();

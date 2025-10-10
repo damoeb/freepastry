@@ -292,7 +292,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         boolean hashed = nextEvent.readBoolean();
         
         int msgLen = nextEvent.bytesRemaining();
-        int relevantLen = hashed ? (msgLen-transport.getHashSizeBytes()) : msgLen;
 
 //        unsigned char *msgbuf = (unsigned char*) malloc(msglen);
 //        memcpy(msgbuf, &nextEvent[headerSize], msglen);

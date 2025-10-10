@@ -87,7 +87,7 @@ public class Stripe implements ScribeClient {
   /**
    * The list of SplitStreamClients interested in data from this client
    */
-  protected Vector<SplitStreamClient> clients;
+  protected Vector clients;
 
   /**
    * This stripe's channel
@@ -121,7 +121,7 @@ public class Stripe implements ScribeClient {
     if(SplitStreamScribePolicy.getPrefixMatch(this.channel.getLocalId(), stripeId.getId(), channel.getStripeBase()) > 0)
       this.isPrimary = true;
     
-    this.clients = new Vector();
+    this.clients = new Vector<Object>();
     this.topic = new Topic(stripeId.getId());
   }
 

@@ -85,7 +85,7 @@ public class MemoryTest {
     int ringSize = 10;
     int numNodes = 100;
     
-    LinkedList nodes = new LinkedList();
+    LinkedList<PastryNode> nodes = new LinkedList<PastryNode>();
     Runtime run = Runtime.getRuntime();
     long memUsed = run.totalMemory()-run.freeMemory();
     System.out.println("Memory:"+memUsed);

@@ -67,9 +67,9 @@ import java.net.*;
 public class DistHelloWorld {
   private PastryNodeFactory factory;
 
-  private Vector pastryNodes;
+  private Vector<PastryNode> pastryNodes;
 
-  private Vector helloClients;
+  private Vector<Object> helloClients;
 
   private static int port = 5009;
 
@@ -92,8 +92,8 @@ public class DistHelloWorld {
     environment = env;
     factory = DistPastryNodeFactory.getFactory(new IPNodeIdFactory(InetAddress.getLocalHost(), port, env),
         protocol, port, env);
-    pastryNodes = new Vector();
-    helloClients = new Vector();    
+    pastryNodes = new Vector<PastryNode>();
+    helloClients = new Vector<Object>();    
   }
 
   /**

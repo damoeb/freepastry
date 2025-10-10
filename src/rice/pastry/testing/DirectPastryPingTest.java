@@ -78,7 +78,7 @@ public class DirectPastryPingTest {
     if (token.startsWith("q")) { //quit
       return true;
     } else if (token.startsWith("s")) { //standalone
-      Vector trlist = new Vector();
+      Vector<TestRecord> trlist = new Vector<TestRecord>();
 
       //      k = 200000;
 

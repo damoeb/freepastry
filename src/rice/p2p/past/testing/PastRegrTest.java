@@ -775,7 +775,7 @@ public class PastRegrTest extends CommonAPITest {
 //    System.setOut(new PrintStream(new FileOutputStream("pastrtest.txt")));
 //    System.setErr(System.out);
 //    while(true) {
-      LinkedList delme = new LinkedList();
+      LinkedList<File> delme = new LinkedList<File>();
       delme.add(new File("FreePastry-Storage-Root"));
       while(!delme.isEmpty()) {
         File f = (File)delme.removeFirst();

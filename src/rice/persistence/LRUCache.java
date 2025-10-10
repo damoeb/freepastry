@@ -72,7 +72,7 @@ public class LRUCache implements Cache {
   private Storage storage;
 
   // the list of keys, in MRU -> LRU order
-  private LinkedList order;
+  private LinkedList<Id> order;
 
   protected Environment environment;
   
@@ -88,8 +88,8 @@ public class LRUCache implements Cache {
     this.storage = storage;
     this.maximumSize = maximumSize;
 
-    this.order = new LinkedList();
-    Iterator i = storage.scan().getIterator();
+    this.order = new LinkedList<Id>();
+    Iterator<Id> i = storage.scan().getIterator();
     
     while (i.hasNext())
       order.addLast(i.next());

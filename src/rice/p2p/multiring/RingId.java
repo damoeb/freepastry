@@ -110,13 +110,13 @@ public class RingId implements Id {
    */
   private static RingId resolve(RingId id) {
     synchronized (RINGID_MAP) {
-      WeakReference ref = (WeakReference) RINGID_MAP.get(id);
+      Object ref = RINGID_MAP.get(id);
       RingId result = null;
       
-      if ((ref != null) && ((result = (RingId) ref.get()) != null)) {
+      if ((ref != null) && ((result = (RingId) ref) != null)) {
         return result;
       } else {
-        RINGID_MAP.put(id, new WeakReference(id));
+        RINGID_MAP.put(id, id);
         return id;
       }
     }    

@@ -63,7 +63,7 @@ import rice.p2p.util.*;
 public class MemoryStorage implements Storage {
 
   // the map used to store the data
-  private HashMap storage;
+  private HashMap<Id, Serializable> storage;
   
   // the map used to store the metadata
   private ReverseTreeMap metadata;
@@ -85,7 +85,7 @@ public class MemoryStorage implements Storage {
   public MemoryStorage(IdFactory factory) {
     this.factory = factory;
     idSet = factory.buildIdSet();
-    storage = new HashMap();
+    storage = new HashMap<Id, Serializable>();
     metadata = new ReverseTreeMap();
     currentSize = 0;
   } 
@@ -97,7 +97,7 @@ public class MemoryStorage implements Storage {
    * @param c The command to run once done
    */
   public void flush(Continuation c) {
-    storage = new HashMap();
+    storage = new HashMap<Id, Serializable>();
     metadata = new ReverseTreeMap();
     idSet = factory.buildIdSet();
     currentSize = 0;

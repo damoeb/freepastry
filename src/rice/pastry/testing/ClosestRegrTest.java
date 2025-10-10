@@ -65,7 +65,7 @@ public class ClosestRegrTest {
 
   private PastryNodeFactory factory;
   private NetworkSimulator simulator;
-  private Vector pastryNodes;
+  private Vector<PastryNode> pastryNodes;
   
   int incorrect = 0;
   double sum = 0;
@@ -78,7 +78,7 @@ public class ClosestRegrTest {
     environment = Environment.directEnvironment();
     simulator = new SphereNetwork(environment);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, environment);
-    pastryNodes = new Vector();
+    pastryNodes = new Vector<PastryNode>();
   }
 
   /**
