@@ -373,7 +373,7 @@ public class PastryNode extends Observable implements
     } else {
       nodeIsReady(false);
       setChanged();
-      notifyObservers(new Boolean(false));
+      notifyObservers(Boolean.valueOf(false));
 
       //        Vector tmpApps = new Vector(apps);
       //        Iterator it = tmpApps.iterator();

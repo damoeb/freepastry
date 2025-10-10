@@ -49,7 +49,9 @@
            includes="**/*.java"
            deprecation="yes"
            debuglevel="lines,vars,source"
-           debug="true">           
+           debug="true"
+           source="17"
+           target="17">           
     </javac>
   </target>
 
@@ -89,7 +91,9 @@
        debuglevel="lines,vars,source"
        fork="yes"
        executable="${jsr308.javac}"
-       debug="true">
+       debug="true"
+       source="17"
+       target="17">
       <compilerarg value="-version"/>
       <compilerarg value="-processor"/>
       <compilerarg value="${jsr308.processor}"/>
@@ -112,7 +116,9 @@
            destdir="."
            deprecation="yes"
            debuglevel="lines,vars,source"
-           debug="true">
+           debug="true"
+           source="17"
+           target="17">
     </javac>
   </target> 
 

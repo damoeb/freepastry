@@ -376,9 +376,9 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       for (int i = 0; i < keys.length; i++) {
         String keyclass = keys[i].getClass().getName();
         if (histo.containsKey(keyclass)) {
-          histo.put(keyclass, new Integer(((Integer)histo.get(keyclass)).intValue() + 1));
+          histo.put(keyclass, Integer.valueOf(((Integer)histo.get(keyclass)).intValue() + 1));
         } else {
-          histo.put(keyclass, new Integer(1));
+          histo.put(keyclass, Integer.valueOf(1));
         }
       }
       logger.log("begin selection keys by class");

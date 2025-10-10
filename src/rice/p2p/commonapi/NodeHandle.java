@@ -59,9 +59,9 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 public abstract class NodeHandle extends Observable implements Serializable  {
 
   // constants defining types of observable events
-  public static final Integer PROXIMITY_CHANGED = new Integer(1);
-  public static final Integer DECLARED_DEAD = new Integer(2);
-  public static final Integer DECLARED_LIVE = new Integer(3);
+  public static final Integer PROXIMITY_CHANGED = Integer.valueOf(1);
+  public static final Integer DECLARED_DEAD = Integer.valueOf(2);
+  public static final Integer DECLARED_LIVE = Integer.valueOf(3);
   
   // serialver
   private static final long serialVersionUID = 4761193998848368227L;

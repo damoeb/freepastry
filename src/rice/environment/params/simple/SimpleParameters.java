@@ -249,7 +249,7 @@ public class SimpleParameters implements Parameters {
   }
 
   public boolean getBoolean(String name) {
-    return (new Boolean(getProperty(name))).booleanValue();
+    return Boolean.valueOf(getProperty(name)).booleanValue();
   }
 
   public InetAddress getInetAddress(String name) throws UnknownHostException {
