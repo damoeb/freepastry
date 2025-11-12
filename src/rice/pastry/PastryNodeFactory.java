@@ -88,6 +88,7 @@ public abstract class PastryNodeFactory {
    * @deprecated use newNode() then call PastryNode.boot(address);
    * @param bootstrap The node handle to bootstrap off of
    */
+  @Deprecated
   public abstract PastryNode newNode(NodeHandle bootstrap);
   public abstract PastryNode newNode() throws IOException;
 
@@ -99,6 +100,7 @@ public abstract class PastryNodeFactory {
    * @param bootstrap The node handle to bootstrap off of
    * @param nodeId The nodeId of the new node
    */
+  @Deprecated
   public abstract PastryNode newNode(NodeHandle bootstrap, Id nodeId);  
   public abstract PastryNode newNode(Id nodeId) throws IOException;  
   

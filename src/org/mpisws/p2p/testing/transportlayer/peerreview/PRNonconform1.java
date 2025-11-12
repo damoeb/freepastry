@@ -38,14 +38,8 @@ package org.mpisws.p2p.testing.transportlayer.peerreview;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
-import org.mpisws.p2p.testing.transportlayer.peerreview.PRRegressionTest.BogusApp;
-import org.mpisws.p2p.testing.transportlayer.peerreview.PRRegressionTest.HandleImpl;
-import org.mpisws.p2p.testing.transportlayer.peerreview.PRRegressionTest.IdImpl;
-import org.mpisws.p2p.testing.transportlayer.peerreview.PRRegressionTest.Player;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;

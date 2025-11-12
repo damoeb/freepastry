@@ -48,7 +48,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -56,7 +55,6 @@ import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
-import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
@@ -66,9 +64,7 @@ import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.exception.StalledSocketException;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 
-import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 public class MagicNumberTest extends WireTest {
   static TransportLayer<InetSocketAddress, ByteBuffer> carol, dave;

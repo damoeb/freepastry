@@ -59,6 +59,7 @@ public interface BaseScribe extends Destructable {
    * @param topic The topic to subscribe to
    * @param client The client to give messages to
    */
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client);
 
   /**
@@ -68,6 +69,7 @@ public interface BaseScribe extends Destructable {
    * @param topic The topic to unsubscribe from
    * @param client The client to unsubscribe
    */
+  @Deprecated
   public void unsubscribe(Topic topic, ScribeClient client);
   public void unsubscribe(Topic topic, ScribeMultiClient client);
   public void unsubscribe(Collection<Topic> topicsToUnsubscribe, ScribeMultiClient client);
@@ -112,6 +114,7 @@ public interface BaseScribe extends Destructable {
    * @param topic The topic to return the children of
    * @return The children of the topic
    */
+  @Deprecated
   public NodeHandle[] getChildren(Topic topic);
   public Collection<NodeHandle> getChildrenOfTopic(Topic topic);
 
@@ -131,6 +134,7 @@ public interface BaseScribe extends Destructable {
    * @param client The client in question
    * @return The list of topics
    */
+  @Deprecated
   public Topic[] getTopics(ScribeClient client);
   public Collection<Topic> getTopicsByClient(ScribeClient client);
   public Collection<Topic> getTopicsByClient(ScribeMultiClient client);

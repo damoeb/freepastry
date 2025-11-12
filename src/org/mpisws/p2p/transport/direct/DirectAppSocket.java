@@ -42,7 +42,6 @@ package org.mpisws.p2p.transport.direct;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;

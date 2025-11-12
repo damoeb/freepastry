@@ -74,6 +74,7 @@ public interface RouteMessage extends Serializable {
    * @return The enclosed message
    * @deprecated use getMesage(MessageDeserializer)
    */
+  @Deprecated
   public Message getMessage();
   
   public Message getMessage(MessageDeserializer md) throws IOException;

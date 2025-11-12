@@ -52,12 +52,14 @@ public interface AppSocket {
    * Reads a sequence of bytes from this channel into a subsequence of the given buffers.
    * @deprecated use read(ByteBuffer)
    */
+  @Deprecated
   long read(ByteBuffer[] dsts, int offset, int length) throws IOException; 
   /**
    * Writes a sequence of bytes to this channel from a subsequence of the given buffers.
    * @throws IOException 
    * @deprecated use write(ByteBuffer)
    */  
+  @Deprecated
   long write(ByteBuffer[] srcs, int offset, int length) throws IOException; 
   
   /**

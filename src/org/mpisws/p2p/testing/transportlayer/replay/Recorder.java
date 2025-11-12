@@ -38,51 +38,42 @@ package org.mpisws.p2p.testing.transportlayer.replay;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.direct.EventSimulator;
-import org.mpisws.p2p.transport.liveness.LivenessProvider;
-import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import org.mpisws.p2p.transport.peerreview.history.HashProvider;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
-import org.mpisws.p2p.transport.peerreview.history.stub.NullHashProvider;
 import org.mpisws.p2p.transport.peerreview.replay.BasicEntryDeserializer;
-import org.mpisws.p2p.transport.peerreview.replay.playback.ReplayLayer;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordLayer;
-import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
-import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
-import org.mpisws.p2p.transport.util.Serializer;
 
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
-import rice.environment.processing.Processor;
-import rice.environment.processing.sim.SimProcessor;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
-import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.*;
+import rice.pastry.Id;
+import rice.pastry.NodeHandleFactory;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
 import rice.pastry.boot.Bootstrapper;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.ProximityNeighborSelector;
 import rice.pastry.standard.RandomNodeIdFactory;
 import rice.pastry.transport.NodeHandleAdapter;
-import rice.pastry.transport.TransportPastryNodeFactory;
-import rice.selector.SelectorManager;
 
 /**
  * This tutorial shows how to use Scribe.

@@ -46,7 +46,6 @@ import org.mpisws.p2p.transport.bandwidthmeasure.BandwidthMeasuringTransportLaye
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
-import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;

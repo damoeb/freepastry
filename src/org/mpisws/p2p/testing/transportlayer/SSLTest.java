@@ -47,7 +47,6 @@ import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
-import java.util.Date;
 import java.util.Map;
 
 import org.mpisws.p2p.pki.x509.CATool;

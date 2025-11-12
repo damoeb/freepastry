@@ -51,6 +51,7 @@ import rice.p2p.commonapi.*;
  * @version $Id: ScribeClient.java 3673 2007-04-12 10:46:28Z jeffh $
  * @author Alan Mislove
  */
+@Deprecated
 public interface ScribeClient {
 
   /**

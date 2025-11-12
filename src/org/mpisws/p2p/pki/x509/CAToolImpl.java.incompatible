@@ -65,6 +65,7 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.util.Date;
+import java.util.Calendar;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -141,7 +142,10 @@ public class CAToolImpl implements CATool {
     } else {
       // make a self-signed cert
       Date exp = new Date();
-      exp.setYear(exp.getYear()+10);
+      Calendar cal = Calendar.getInstance();
+      cal.setTime(exp);
+      cal.add(Calendar.YEAR, 10);
+      exp = cal.getTime();
       Tuple<X509Certificate, KeyPair> t = generateNewCA(CN, exp);
       caCert = t.a();
       caPair = t.b();
@@ -212,7 +216,10 @@ public class CAToolImpl implements CATool {
   
   public X509Certificate sign(String CN, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     Date exp = new Date();
-    exp.setYear(exp.getYear()+1);
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(exp);
+    cal.add(Calendar.YEAR, 1);
+    exp = cal.getTime();
     return sign(CN,key,exp,System.currentTimeMillis());
   }
   

@@ -131,6 +131,7 @@ public abstract class Logger {
    * @param message the message to print
    * @deprecated use if (logger.level <= priority) log(String);
    */
+  @Deprecated
   public void log(int priority, String message) {
     if (level <= priority) log(message); 
   }
@@ -147,6 +148,7 @@ public abstract class Logger {
    * @param exception the exception to print
    * @deprecated use if (logger.level <= priority) logException(String, Throwable);
    */
+  @Deprecated
   public void logException(int priority, String message, Throwable exception) {
     if (level <= priority) logException(message, exception);     
   }
