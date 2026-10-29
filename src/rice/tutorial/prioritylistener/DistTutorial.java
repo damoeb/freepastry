@@ -41,7 +41,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.mpisws.p2p.transport.TransportLayerListener;
 import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayerImpl;
@@ -67,7 +68,7 @@ import rice.pastry.standard.RandomNodeIdFactory;
 public class DistTutorial {
 
   // this will keep track of our applications
-  Vector<MyApp> apps = new Vector<MyApp>();
+  List<MyApp> apps = new ArrayList<MyApp>();
   
   /**
    * This constructor launches numNodes PastryNodes.  They will bootstrap 

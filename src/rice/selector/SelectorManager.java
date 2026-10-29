@@ -89,7 +89,14 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   
   protected String instance;
 
-  protected boolean running = true;
+  // written by destroy() on any thread, read by the selector thread
+  protected volatile boolean running = true;
+
+  /**
+   * Maximum number of rounds of invocations that are run after destroy(): invocations scheduled while draining
+   * run in the next round. (An invocation that reschedules itself, such as a simulator loop, runs only once.)
+   */
+  protected static final int MAX_SHUTDOWN_ROUNDS = 64;
   
   /**
    * Can be disabled for the simulator to improve performance, only do this
@@ -160,7 +167,14 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     if (key == null)
       throw new NullPointerException();
 
-    cancelledKeys.add(key);
+    synchronized (this) {
+      if (invocations != null) {
+        cancelledKeys.add(key);
+        return;
+      }
+    }
+    // already shut down, there is no next select() to cancel it in
+    key.cancel();
   }
 
   /**
@@ -206,7 +220,10 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   public synchronized void invoke(Runnable d) {
     if (d == null)
       throw new NullPointerException();
-    if (invocations == null) return;
+    if (invocations == null) {
+      if (logger.level <= Logger.FINE) logger.log("Dropping invocation "+d+", the selector was destroyed.");
+      return;
+    }
     invocations.add(d);
     wakeup();
   }
@@ -216,8 +233,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * 
    * @return The number of pending invocations
    */
-  public int getNumInvocations() {
-    return invocations.size();
+  public synchronized int getNumInvocations() {
+    return (invocations == null) ? 0 : invocations.size();
   }
 
   /**
@@ -293,25 +310,90 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 //        System.exit(-1);
       }
     } // while(running)
-    invocations.clear();
-    loopObservers.clear();
-    cancelledKeys.clear();
-    timerQueue.clear();
-    invocations = null;
-    loopObservers = null;
-    cancelledKeys = null;
-    timerQueue = null;
-    try {
-      if (selector != null) {
-        selector.close();
-      }
-    } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("Error cancelling selector:",ioe);
-    }
+    shutdown();
     if (logger.level <= Logger.INFO) logger.log("Selector "+instance+" shutting down.");
   }
   
-  @SuppressWarnings("deprecation")
+  /**
+   * Called on the selector thread once the loop has stopped. Runs the invocations that are still pending, 
+   * because they typically release resources (such as Destructables queued by Environment.destroy(), or 
+   * transport layers closing their sockets), then drops the timer tasks, closes the channels of all keys 
+   * that are still registered (so that no bound port outlives the selector) and finally the selector itself.
+   */
+  protected void shutdown() {
+    // 1. run the pending invocations, including those they schedule, in bounded rounds
+    Set<Runnable> ran = Collections.newSetFromMap(new IdentityHashMap<Runnable, Boolean>());
+    int skipped = 0;
+    for (int round = 0; round < MAX_SHUTDOWN_ROUNDS; round++) {
+      ArrayList<Runnable> pending;
+      synchronized (this) {
+        if (invocations.isEmpty()) break;
+        pending = new ArrayList<Runnable>(invocations);
+        invocations.clear();
+      }
+      for (Runnable r : pending) {
+        if (!ran.add(r)) {
+          // it rescheduled itself (e.g. the simulator's event loop), don't keep it going
+          skipped++;
+          continue;
+        }
+        try {
+          r.run();
+        } catch (Throwable t) {
+          // keep going: the rest must still run, and there is no loop left to report to
+          if (logger.level <= Logger.WARNING) logger.logException("Error running "+r+" while destroying the selector", t);
+        }
+      }
+    }
+    
+    int droppedInvocations;
+    int droppedTasks;
+    synchronized (this) {
+      droppedInvocations = invocations.size();
+      // from now on invoke() drops, and cancel() cancels immediately
+      invocations = null;
+      droppedTasks = timerQueue.size();
+      timerQueue.clear();
+      modifyKeys.clear();
+      cancelledKeys.clear();
+    }
+    if (droppedInvocations > 0 && logger.level <= Logger.WARNING) 
+      logger.log("Dropped "+droppedInvocations+" invocations that were still being scheduled after "+MAX_SHUTDOWN_ROUNDS+" rounds during shutdown.");
+    if ((skipped > 0 || droppedTasks > 0) && logger.level <= Logger.FINE) 
+      logger.log("Dropped "+skipped+" rescheduled invocations and "+droppedTasks+" timer tasks during shutdown.");
+    synchronized (loopObservers) {
+      loopObservers.clear();
+    }
+
+    // 2. close the channels of the keys that are still registered (sockets, server sockets, datagram channels)
+    if (selector != null) {
+      try {
+        for (SelectionKey key : new ArrayList<SelectionKey>(selector.keys())) {
+          try {
+            key.channel().close();
+          } catch (IOException ioe) {
+            if (logger.level <= Logger.WARNING) logger.logException("Error closing "+key.channel()+" while destroying the selector", ioe);
+          }
+          key.cancel();
+        }
+      } catch (ClosedSelectorException cse) {
+        // already closed
+      }
+
+      // 3. the selector itself
+      try {
+        selector.close();
+      } catch (IOException ioe) {
+        if (logger.level <= Logger.WARNING) logger.logException("Error cancelling selector:",ioe);
+      }
+    }
+  }
+  
+  /**
+   * Stops the selector. This may be called on any thread, also by an invocation on the selector thread.
+   * The selector thread finishes its current loop, runs the invocations that are still pending, and closes
+   * all channels that are still registered, see {@link #shutdown()}. Join this thread to wait for that.
+   */
   public void destroy() {
     if (logger.level <= Logger.FINE) {
       logger.logException("destroying SelectorManager", new Exception("Stack Trace"));
@@ -319,6 +401,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       logger.log("destroying SelectorManager");
     }
     running = false; 
+    // don't wait for the select() timeout; Selector.wakeup() is thread safe, and sticky if not selecting yet
+    if (selector != null) selector.wakeup();
   }
   
   /**
@@ -626,6 +710,11 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   protected Object seqLock = new Object();
   protected int seqCtr = Integer.MIN_VALUE;
   protected synchronized void addTask(TimerTask task) {
+    if (invocations == null) {
+      // destroyed, it would never run
+      if (logger.level <= Logger.FINE) logger.log("Dropping task "+task+", the selector was destroyed.");
+      return;
+    }
     synchronized(seqLock) {
       task.seq = seqCtr++;
     }

@@ -46,7 +46,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -115,7 +114,12 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   
   protected Map<Identifier, EntityManager> entityManagers;
 
-  private TransportLayerCallback<Identifier, ByteBuffer> callback;
+  /**
+   * Never null: until the layer above calls {@link #setCallback}, (or after it passes null) this is
+   * a {@link MissingCallback} that logs and drops what arrives instead of throwing a NullPointerException
+   * on the selector thread.
+   */
+  private TransportLayerCallback<Identifier, ByteBuffer> callback = new MissingCallback();
 
   private ErrorHandler<Identifier> errorHandler;
   
@@ -304,7 +308,22 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
-    this.callback = callback;
+    this.callback = (callback == null) ? new MissingCallback() : callback;
+  }
+
+  /**
+   * Stands in for the layer above while no callback is set: messages are logged and dropped,
+   * passthrough sockets are logged and closed (so they don't leak).
+   */
+  class MissingCallback implements TransportLayerCallback<Identifier, ByteBuffer> {
+    public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+      if (logger.level <= Logger.WARNING) logger.log("No TransportLayerCallback set, dropping message of size "+m.remaining()+" from "+i);
+    }
+
+    public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
+      if (logger.level <= Logger.WARNING) logger.log("No TransportLayerCallback set, closing incoming socket "+s);
+      s.close();
+    }
   }
 
   public void setErrorHandler(ErrorHandler<Identifier> handler) {

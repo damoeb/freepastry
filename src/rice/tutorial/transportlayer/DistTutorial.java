@@ -40,7 +40,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import rice.environment.Environment;
 import rice.environment.logging.Logger;
@@ -62,7 +63,7 @@ import rice.tutorial.transportdirect.MyApp;
 public class DistTutorial {
 
   // this will keep track of our applications
-  Vector<MyApp> apps = new Vector<MyApp>();
+  List<MyApp> apps = new ArrayList<MyApp>();
   
   /**
    * This constructor launches numNodes PastryNodes.  They will bootstrap 

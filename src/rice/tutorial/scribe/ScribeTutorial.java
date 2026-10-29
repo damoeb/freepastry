@@ -57,7 +57,7 @@ public class ScribeTutorial {
   /**
    * this will keep track of our Scribe applications
    */
-  Vector<MyScribeClient> apps = new Vector<MyScribeClient>();
+  List<MyScribeClient> apps = new ArrayList<MyScribeClient>();
 
   /**
    * Based on the rice.tutorial.lesson4.DistTutorial
@@ -127,11 +127,11 @@ public class ScribeTutorial {
    * Note that this function only works because we have global knowledge. Doing
    * this in an actual distributed environment will take some more work.
    * 
-   * @param apps Vector of the applicatoins.
+   * @param apps List of the applications.
    */
-  public static void printTree(Vector<MyScribeClient> apps) {
+  public static void printTree(List<MyScribeClient> apps) {
     // build a hashtable of the apps, keyed by nodehandle
-    Hashtable<NodeHandle, MyScribeClient> appTable = new Hashtable<NodeHandle, MyScribeClient>();
+    Map<NodeHandle, MyScribeClient> appTable = new HashMap<NodeHandle, MyScribeClient>();
     Iterator<MyScribeClient> i = apps.iterator();
     while (i.hasNext()) {
       MyScribeClient app = (MyScribeClient) i.next();
@@ -150,7 +150,7 @@ public class ScribeTutorial {
   /**
    * Recursively crawl up the tree to find the root.
    */
-  public static NodeHandle getRoot(NodeHandle seed, Hashtable<NodeHandle, MyScribeClient> appTable) {
+  public static NodeHandle getRoot(NodeHandle seed, Map<NodeHandle, MyScribeClient> appTable) {
     MyScribeClient app = (MyScribeClient) appTable.get(seed);
     if (app.isRoot())
       return seed;
@@ -162,7 +162,7 @@ public class ScribeTutorial {
    * Print's self, then children.
    */
   public static void recursivelyPrintChildren(NodeHandle curNode,
-      int recursionDepth, Hashtable<NodeHandle, MyScribeClient> appTable) {
+      int recursionDepth, Map<NodeHandle, MyScribeClient> appTable) {
     // print self at appropriate tab level
     String s = "";
     for (int numTabs = 0; numTabs < recursionDepth; numTabs++) {

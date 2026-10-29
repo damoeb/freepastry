@@ -39,6 +39,7 @@ package rice.p2p.glacier.v2;
 import java.io.*;
 import java.security.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import rice.Continuation;
 import rice.Executable;
@@ -672,7 +673,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         if (logger.level <= Logger.INFO) logger.log( "Checking fragment storage for fragments to hand off...");
         if (logger.level <= Logger.FINE) logger.log( "Currently responsible for: "+responsibleRange);
         Iterator<Id> iter = fragmentStorage.scan().getIterator();
-        Vector<Id> handoffs = new Vector<Id>();
+        List<Id> handoffs = new ArrayList<Id>();
         Id destination = null;
   
         while (iter.hasNext()) {
@@ -701,7 +702,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         if (logger.level <= Logger.INFO) logger.log( "Handing off "+numHandoffs+" fragments (out of "+handoffs.size()+")");
         FragmentKey[] keys = new FragmentKey[numHandoffs];
         for (int i=0; i<numHandoffs; i++)
-          keys[i] = (FragmentKey) handoffs.elementAt(i);
+          keys[i] = (FragmentKey) handoffs.get(i);
 
         sendMessage(
           destination,
@@ -1021,9 +1022,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           if (logStatistics)
             statistics.dump(environment.getLogManager().getLogger(GlacierStatistics.class, instance));
           
-          Enumeration<GlacierStatisticsListener> enumeration = listeners.elements();
-          while (enumeration.hasMoreElements()) {
-            GlacierStatisticsListener gsl = (GlacierStatisticsListener) enumeration.nextElement();
+          // listeners are added and removed by other threads; copying the Vector is atomic, enumerating it is not
+          for (GlacierStatisticsListener gsl : new ArrayList<GlacierStatisticsListener>(listeners)) {
             gsl.receiveStatistics(statistics);
           }
         }
@@ -1284,6 +1284,15 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     throw new Error("Panic");
   }
 
+  /**
+   * How long a debug command waits for its asynchronous result.
+   */
+  private static final long DEBUG_COMMAND_TIMEOUT = 2 * 60 * 1000;
+
+  private String awaitDebugResult(CompletableFuture<String> result, long timeoutMillis) {
+    return DebugCommandHandler.await(result, environment.getSelectorManager(), timeoutMillis);
+  }
+
   public String handleDebugCommand(String command)
   {
     if (command.indexOf(" ") < 0)
@@ -1381,27 +1390,24 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       Id id = factory.buildIdFromToString(keyArg);
       long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(expirationArg);
 
-      final String[] ret = new String[] { null };
+      final CompletableFuture<String> ret = new CompletableFuture<String>();
       refresh(new Id[] { id }, expiration, new Continuation<Object, Exception>() {
         public void receiveResult(Object o) {
-          ret[0] = "result("+o+")";
+          ret.complete("result("+o+")");
         }
         public void receiveException(Exception e) {
-          ret[0] = "exception("+e+")";
+          ret.complete("exception("+e+")");
         }
       });
       
-      while (ret[0] == null)
-        Thread.yield();
-      
-      return "refresh("+id+", "+expiration+")="+ret[0];
+      return "refresh("+id+", "+expiration+")="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
     }
 
     if (cmd.startsWith("neighbors")) {
       final Iterator<Id> iter = neighborStorage.scan().getIterator();
       final StringBuffer result = new StringBuffer();
       final long now = (cmd.indexOf("-r") < 0) ? 0 : environment.getTimeSource().currentTimeMillis();
-      final String[] ret = new String[] { null };
+      final CompletableFuture<String> ret = new CompletableFuture<String>();
 
       result.append(neighborStorage.scan().numElements()+ " neighbor(s)\n");
 
@@ -1415,19 +1421,18 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             currentLookup = (Id) iter.next();
             neighborStorage.getObject(currentLookup, this);
           } else {
-            ret[0] = "OK";
+            ret.complete("OK");
           }
         }
         public void receiveException(Exception e) {
-          ret[0] = "Exception: "+e;
+          ret.complete("Exception: "+e);
         }
       };
       
       c.receiveResult(null);
-      while (ret[0] == null)
-        Thread.yield();
-
-      result.append(ret[0]+"\n");              
+      String outcome = awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
+      // the StringBuffer is synchronized, and complete() happens-after the last append
+      result.append(outcome+"\n");              
       return result.toString();
     }
     
@@ -1482,20 +1487,17 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       VersionKey vkey = new VersionKey(key, version);
       FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
 
-      final String[] ret = new String[] { null };
+      final CompletableFuture<String> ret = new CompletableFuture<String>();
       fragmentStorage.unstore(id, new Continuation<Object, Exception>() {
         public void receiveResult(Object o) {
-          ret[0] = "result("+o+")";
+          ret.complete("result("+o+")");
         }
         public void receiveException(Exception e) {
-          ret[0] = "exception("+e+")";
+          ret.complete("exception("+e+")");
         }
       });
       
-      while (ret[0] == null)
-        Thread.yield();
-      
-      return "delete("+id+")="+ret[0];
+      return "delete("+id+")="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
     }
 
     if (cmd.startsWith("burst") && faultInjectionEnabled) {
@@ -1506,8 +1508,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
       final Id fragmentLoc = getFragmentLocation(id);
 
-      final String[] ret = new String[] { "" };
-      final Boolean[] done = new Boolean[] { null };
+      final String[] ret = new String[] { "" }; // only touched by the selector thread, until done completes
+      final CompletableFuture<String> done = new CompletableFuture<String>();
       final long now = environment.getTimeSource().currentTimeMillis();
       addContinuation(new GlacierContinuation() {
         int receivedSoFar = 0;
@@ -1534,7 +1536,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         public void receiveException(Exception e) {
         }
         public void timeoutExpired() {        
-          done[0] = Boolean.valueOf(true);
+          done.complete(ret[0]);
           terminate();
         }
         public long getTimeout() {
@@ -1542,10 +1544,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         }
       });
         
-      while (done[0] == null)
-        Thread.yield();
-      
-      return "burst("+id+")="+ret[0];
+      return "burst("+id+")="+awaitDebugResult(done, 130 * SECONDS);
     }
 
     if (cmd.startsWith("manifest")) {
@@ -1554,23 +1553,20 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       long version = Long.parseLong(vkeyS[1]);
       VersionKey vkey = new VersionKey(key, version);
 
-      final String[] ret = new String[] { null };
+      final CompletableFuture<String> ret = new CompletableFuture<String>();
       retrieveManifest(vkey, tagDebug, new Continuation<Object, Exception>() {
         public void receiveResult(Object o) {
           if (o instanceof Manifest)
-            ret[0] = ((Manifest)o).toStringFull();
+            ret.complete(((Manifest)o).toStringFull());
           else 
-            ret[0] = "result("+o+")";
+            ret.complete("result("+o+")");
         }
         public void receiveException(Exception e) {
-          ret[0] = "exception("+e+")";
+          ret.complete("exception("+e+")");
         }
       });
       
-      while (ret[0] == null)
-        Thread.yield();
-      
-      return "manifest("+vkey+")="+ret[0];
+      return "manifest("+vkey+")="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
     }
 
     if (cmd.startsWith("retrieve")) {
@@ -1581,7 +1577,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
       final FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(id);
 
-      final String[] ret = new String[] { null };
+      final CompletableFuture<String> ret = new CompletableFuture<String>();
       fragmentStorage.getObject(id, new Continuation<Object, Exception>() {
         public void receiveResult(Object o) {
           FragmentAndManifest fam = (FragmentAndManifest) o;
@@ -1594,20 +1590,17 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           md.reset();
           md.update(fam.fragment.getPayload());
 
-          ret[0] = "OK\n\nFragment: "+fam.fragment.getPayload().length+" bytes, Hash=["+dump(md.digest(), false)+"], ID="+id.getFragmentID()+"\n\nValidation: " +
+          ret.complete("OK\n\nFragment: "+fam.fragment.getPayload().length+" bytes, Hash=["+dump(md.digest(), false)+"], ID="+id.getFragmentID()+"\n\nValidation: " +
                    (fam.manifest.validatesFragment(fam.fragment, id.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" + 
                    fam.manifest.toStringFull()+"\n\nMetadata:\n - Stored since: "+metadata.getStoredSince()+
-                   "\n - Current expiration: "+metadata.getCurrentExpiration()+"\n - Previous expiration: "+metadata.getPreviousExpiration()+"\n";
+                   "\n - Current expiration: "+metadata.getCurrentExpiration()+"\n - Previous expiration: "+metadata.getPreviousExpiration()+"\n");
         }
         public void receiveException(Exception e) {
-          ret[0] = "exception("+e+")";
+          ret.complete("exception("+e+")");
         }
       });
       
-      while (ret[0] == null)
-        Thread.yield();
-      
-      return "retrieve("+id+")="+ret[0];
+      return "retrieve("+id+")="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
     }
 
     if (cmd.startsWith("validate")) {
@@ -1617,7 +1610,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   
       result.append(keyset.numElements()+ " fragment(s)\n");
 
-      final String[] ret = new String[] { null };
+      final CompletableFuture<String> ret = new CompletableFuture<String>();
       if (iter.hasNext()) {
         final FragmentKey thisKey = (FragmentKey) iter.next();
         fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
@@ -1643,17 +1636,14 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
               fragmentStorage.getObject(currentKey, this);
             } else {
               if (totalFailures == 0)
-                ret[0] = "OK ("+totalChecks+" fragments checked)";
+                ret.complete("OK ("+totalChecks+" fragments checked)");
               else
-                ret[0] = "FAIL, "+totalFailures+"/"+totalChecks+" fragments damaged"; 
+                ret.complete("FAIL, "+totalFailures+"/"+totalChecks+" fragments damaged"); 
             }
           }
         });
         
-        while (ret[0] == null)
-          Thread.yield();
-      
-        return "validate="+ret[0]+"\n\n"+result.toString();
+        return "validate="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT)+"\n\n"+result.toString();
       }
 
       return "validate: no objects\n\n" + result.toString();
@@ -1668,7 +1658,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       final long now = environment.getTimeSource().currentTimeMillis();
       final Id fragmentLoc = getFragmentLocation(id);
 
-      final String[] ret = new String[] { null };
+      final CompletableFuture<String> ret = new CompletableFuture<String>();
       addContinuation(new GlacierContinuation() {
         public String toString() {
           return "DebugFetch continuation";
@@ -1692,23 +1682,23 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             md.reset();
             md.update(gdm.getFragment(0).getPayload());
 
-            ret[0] = "\n\nResponse: "+gdm.getKey(0).toStringFull()+" ("+gdm.numKeys()+" keys)\n" +  "Holder: "+gdm.getSource()+"\n" +
+            ret.complete("\n\nResponse: "+gdm.getKey(0).toStringFull()+" ("+gdm.numKeys()+" keys)\n" +  "Holder: "+gdm.getSource()+"\n" +
                      "Fragment: "+gdm.getFragment(0).getPayload().length+" bytes, Hash=["+dump(md.digest(), false)+"]\n\nValidation: " +
                      (gdm.getManifest(0).validatesFragment(gdm.getFragment(0), gdm.getKey(0).getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" + 
-                     gdm.getManifest(0).toStringFull();
+                     gdm.getManifest(0).toStringFull());
                      
             terminate();
           } else {
-            ret[0] = "Received "+o;
+            ret.complete("Received "+o);
             terminate();
           }
         }
         public void receiveException(Exception e) {
-          ret[0] = "Exception="+e;
+          ret.complete("Exception="+e);
           terminate();
         }
         public void timeoutExpired() {        
-          ret[0] = "Timeout";
+          ret.complete("Timeout");
           terminate();
         }
         public long getTimeout() {
@@ -1716,13 +1706,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         }
       });
         
-      while ((ret[0] == null) && (environment.getTimeSource().currentTimeMillis() < (now + 5*SECONDS)))
-        Thread.yield();
+      String fetched = awaitDebugResult(ret, 5 * SECONDS);
+      if (fetched.startsWith("timeout"))
+        fetched = "Timeout";
       
-      if (ret[0] == null)
-        ret[0] = "Timeout";
-      
-      return "fetch("+id+"@"+fragmentLoc+")="+ret[0];
+      return "fetch("+id+"@"+fragmentLoc+")="+fetched;
     }
 
     return null;
@@ -1797,7 +1785,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         Id[][] fragmentLocation;
         NodeHandle[][] fragmentHolder;
         boolean[][] fragmentChecked;
-        Vector<NodeHandle> holders;
+        List<NodeHandle> holders;
         Manifest manifests[];
         int successes[];
         boolean answered;
@@ -1823,7 +1811,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           successes = new int[ids.length];
           nextTimeout = environment.getTimeSource().currentTimeMillis() + bulkRefreshProbeInterval;
           currentStage = stageProbing;
-          holders = new Vector<NodeHandle>();
+          holders = new ArrayList<NodeHandle>();
           retriesRemaining = (int)(bulkRefreshMaxProbeFactor * numFragments);
           answered = false;
         
@@ -2023,7 +2011,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                 if (fragmentHolder[idx][fid] != null) {
                   NodeHandle thisHolder = fragmentHolder[idx][fid];
-                  Vector<Id> idsToQuery = new Vector<Id>();
+                  List<Id> idsToQuery = new ArrayList<Id>();
                   for (int i=0; i<ids.length; i++) {
                     if (!objectCovered[i]) {
                       for (int j=0; j<numFragments; j++) {
@@ -2041,7 +2029,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                     int idsHere = Math.min(idsToQuery.size() - i, bulkRefreshManifestAggregationFactor);
                     FragmentKey[] keys = new FragmentKey[idsHere];
                     for (int j=0; j<idsHere; j++)
-                      keys[j] = (FragmentKey) idsToQuery.elementAt(i+j);
+                      keys[j] = (FragmentKey) idsToQuery.get(i+j);
 
                     if (logger.level <= Logger.FINE) logger.log( "AR Sending a manifest fetch with "+idsHere+" IDs, starting at "+keys[0]);                    
                     sendMessage(
@@ -2082,7 +2070,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
               int totalPatchesSent = 0;
               for (int h=0; h<holders.size(); h++) {
-                NodeHandle thisHolder = (NodeHandle) holders.elementAt(h);
+                NodeHandle thisHolder = holders.get(h);
                 
                 /* Find out which patches this holder should get */
                 
@@ -3063,8 +3051,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   public Id[][] getNeighborRanges() {
     Iterator<Id> iter = neighborStorage.scan().getIterator();
-    Vector<Id> ccwIDs = new Vector<Id>();
-    Vector<Id> cwIDs = new Vector<Id>();
+    List<Id> ccwIDs = new ArrayList<Id>();
+    List<Id> cwIDs = new ArrayList<Id>();
     Id myID = getLocalNodeHandle().getId();
       
     while (iter.hasNext()) {
@@ -3076,40 +3064,40 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     }
 
     for (int j=0; j<2; j++) {
-      Vector<Id> v = (j==0) ? cwIDs : ccwIDs;
+      List<Id> v = (j==0) ? cwIDs : ccwIDs;
       boolean madeProgress = true;
       while (madeProgress) {
         madeProgress = false;
         for (int i=0; i<(v.size()-1); i++) {
-          if (((Id)v.elementAt(i+1)).clockwise((Id)v.elementAt(i))) {
-            Id h = v.elementAt(i);
-            v.setElementAt(v.elementAt(i+1), i);
-            v.setElementAt(h, i+1);
+          if (v.get(i+1).clockwise(v.get(i))) {
+            Id h = v.get(i);
+            v.set(i, v.get(i+1));
+            v.set(i+1, h);
             madeProgress = true;
           }
         }
       }
     }
       
-    Vector<Id> allIDs = new Vector<Id>();
+    List<Id> allIDs = new ArrayList<Id>();
     allIDs.addAll(ccwIDs);
     allIDs.add(myID);
     allIDs.addAll(cwIDs);
 
     Id[][] result = new Id[allIDs.size()][3];
     for (int i=0; i<allIDs.size(); i++) {
-      Id currentElement = (Id) allIDs.elementAt(i);
+      Id currentElement = allIDs.get(i);
       Id cwId, ccwId;
 
       if (i>0) {
-        Id previousElement = (Id) allIDs.elementAt(i-1);
+        Id previousElement = allIDs.get(i-1);
         ccwId = previousElement.addToId(previousElement.distanceFromId(currentElement).shiftDistance(1,0));
       } else {
         ccwId = currentElement;
       }
 
       if (i<(allIDs.size()-1)) {
-        Id nextElement = (Id) allIDs.elementAt(i+1);
+        Id nextElement = allIDs.get(i+1);
         cwId = currentElement.addToId(currentElement.distanceFromId(nextElement).shiftDistance(1,0));
       } else {
         cwId = currentElement;
@@ -3274,7 +3262,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       final long earliestAcceptableExpiration = environment.getTimeSource().currentTimeMillis() + syncMinRemainingLifetime;
       final long latestAcceptableStoredSince = environment.getTimeSource().currentTimeMillis() - syncMinQuietTime;
       
-      final Vector<Id> missing = new Vector<Id>();
+      final List<Id> missing = new ArrayList<Id>();
       
       while (iter.hasNext()) {
         FragmentKey fkey = (FragmentKey)iter.next();
@@ -3313,7 +3301,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       
       if (logger.level <= Logger.INFO) logger.log( "Sending "+missing.size()+" fragments to "+gsm.getSource().getId());
       
-      fragmentStorage.getObject((FragmentKey) missing.elementAt(0), new Continuation<Object, Exception>() {
+      fragmentStorage.getObject(missing.get(0), new Continuation<Object, Exception>() {
         int currentLookup = 0;
         int manifestIndex = 0;
         final int numLookups = missing.size();
@@ -3322,7 +3310,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         FragmentKey[] keys = new FragmentKey[Math.min(numLookups, manifestAggregationFactor)];
         
         public void receiveResult(Object o) {
-          final FragmentKey thisKey = (FragmentKey) missing.elementAt(currentLookup);
+          final FragmentKey thisKey = (FragmentKey) missing.get(currentLookup);
 
           if (o == null) {
             if (logger.level <= Logger.WARNING) logger.log("SYN2: Fragment "+thisKey+" not found -- canceled SYN");
@@ -3363,10 +3351,10 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           }
           
           if (currentLookup < numLookups)
-            fragmentStorage.getObject((FragmentKey) missing.elementAt(currentLookup), this);
+            fragmentStorage.getObject(missing.get(currentLookup), this);
         }
         public void receiveException(Exception e) {
-          if (logger.level <= Logger.WARNING) logger.log("SYN2: Exception while retrieving fragment "+missing.elementAt(currentLookup)+", e="+e+" -- canceled SYN");
+          if (logger.level <= Logger.WARNING) logger.log("SYN2: Exception while retrieving fragment "+missing.get(currentLookup)+", e="+e+" -- canceled SYN");
         }
       });
           

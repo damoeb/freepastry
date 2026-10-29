@@ -36,8 +36,42 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.util;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import rice.selector.SelectorManager;
+
 public interface DebugCommandHandler {
   
   public String handleDebugCommand(String command);
 
+  /**
+   * Waits (blocking, with a timeout) for the text a debug command produces asynchronously.
+   * <p>
+   * Debug commands are run by a console thread, while their results are delivered by the selector thread. 
+   * If the command is (unexpectedly) run on the selector thread and the result is not available yet, waiting
+   * would deadlock, so this returns an error text instead.
+   *
+   * @param result completed with the command's output
+   * @param selector the selector that delivers the result
+   * @param timeoutMillis how long to wait, in milliseconds of wall-clock time
+   * @return the command's output, or a description of why there is none
+   */
+  public static String await(CompletableFuture<String> result, SelectorManager selector, long timeoutMillis) {
+    if (!result.isDone() && selector != null && selector.isSelectorThread()) {
+      return "error: result not available, and can't wait for it on the selector thread";
+    }
+    try {
+      return result.get(timeoutMillis, TimeUnit.MILLISECONDS);
+    } catch (TimeoutException te) {
+      return "timeout: no result after "+timeoutMillis+" ms";
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      return "interrupted while waiting for the result";
+    } catch (ExecutionException ee) {
+      return "exception("+ee.getCause()+")";
+    }
+  }
 }

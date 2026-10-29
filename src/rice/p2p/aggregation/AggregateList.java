@@ -38,8 +38,9 @@ package rice.p2p.aggregation;
 
 import java.util.Hashtable;
 import java.util.Enumeration;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.Vector;
+import java.util.List;
 import java.io.*;
 
 import rice.environment.Environment;
@@ -556,7 +557,7 @@ public class AggregateList {
     if (excludes != null)
       recalculateReferenceCounts(excludes);
   
-    Vector<Id> pointers = new Vector<Id>();
+    List<Id> pointers = new ArrayList<Id>();
     Enumeration<AggregateDescriptor> enumeration = elements();
 
     resetMarkers();

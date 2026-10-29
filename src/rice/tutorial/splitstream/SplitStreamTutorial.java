@@ -60,7 +60,7 @@ public class SplitStreamTutorial {
   /**
    * this will keep track of our Scribe applications
    */
-  Vector<MySplitStreamClient> apps = new Vector<MySplitStreamClient>();
+  List<MySplitStreamClient> apps = new ArrayList<MySplitStreamClient>();
 
   /**
    * Based on the rice.tutorial.lesson4.DistTutorial

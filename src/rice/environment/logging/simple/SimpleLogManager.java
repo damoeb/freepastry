@@ -40,7 +40,6 @@ advised of the possibility of such damage.
 package rice.environment.logging.simple;
 
 import java.io.PrintStream;
-import java.util.Hashtable;
 
 import rice.environment.logging.*;
 import rice.environment.logging.LogManager;

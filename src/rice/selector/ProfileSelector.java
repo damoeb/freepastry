@@ -49,9 +49,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 
 import rice.environment.logging.*;
 import rice.environment.random.RandomSource;
@@ -130,7 +129,7 @@ public class ProfileSelector extends SelectorManager {
 //    if (!(d instanceof ConnectionManager.SenderInvokee)) {
 //      //Thread.dumpStack();
 //    }
-    int numInvokes = invocations.size();
+    int numInvokes = getNumInvocations(); // null-safe after destroy()
     if (numInvokes > maxInvokes) {
       maxInvokes = numInvokes;
     }
@@ -139,33 +138,20 @@ public class ProfileSelector extends SelectorManager {
   // *********************** debugging statistics ****************
   /**
    * Records how long it takes to receive each type of message.
+   * Written by the selector thread, but printStats() may be called from any thread, so it must be concurrent.
    */
-  private Hashtable<String, Stat> stats = new Hashtable<String, Stat>();
+  private final ConcurrentHashMap<String, Stat> stats = new ConcurrentHashMap<String, Stat>();
   
   public void addStat(String s, long time) {
     if (!recordStats) return;
-    Stat st = (Stat)stats.get(s);
-    if (st == null) { 
-      st = new Stat(s);
-      stats.put(s,st);
-    }
-    st.addTime(time);
+    stats.computeIfAbsent(s, Stat::new).addTime(time);
   }
 
   public void printStats() {
     if (!recordStats) return;
 
-    ArrayList<Stat> list = new ArrayList<Stat>(stats.size());
-    if (stats != null) {
-      synchronized(stats) {
-        Iterator<Stat> e = stats.values().iterator();
-        while(e.hasNext()) {
-          Stat s = (Stat)e.next(); 
-          list.add(s);
-//          System.out.println("  "+s);
-        }
-      }
-    }
+    // a weakly consistent snapshot, no lock needed
+    ArrayList<Stat> list = new ArrayList<Stat>(stats.values());
     
     Collections.sort(list,new Comparator<Stat>() {
       public boolean equals(Object arg0) {

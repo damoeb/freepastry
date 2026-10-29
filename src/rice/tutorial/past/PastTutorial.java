@@ -41,7 +41,8 @@ package rice.tutorial.past;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import rice.Continuation;
 import rice.environment.Environment;
@@ -63,7 +64,7 @@ public class PastTutorial {
   /**
    * this will keep track of our Past applications
    */
-  Vector<Past> apps = new Vector<Past>();
+  List<Past> apps = new ArrayList<Past>();
 
   /**
    * Based on the rice.tutorial.scribe.ScribeTutorial

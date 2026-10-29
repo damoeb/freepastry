@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 package rice.pastry.direct;
 
 
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.SocketRequestHandle;
@@ -73,7 +73,8 @@ public class DirectPastryNode {
    * Used for proximity calculation of DirectNodeHandle. This will probably go
    * away when we switch to a byte-level protocol.
    */
-  static private Hashtable<Thread, PastryNode> currentNode = new Hashtable<Thread, PastryNode>();
+  // only accessed in the static synchronized methods below
+  static private final Map<Thread, PastryNode> currentNode = new HashMap<Thread, PastryNode>();
   
   /**
    * Returns the previous one.

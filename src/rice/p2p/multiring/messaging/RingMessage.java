@@ -38,7 +38,7 @@ advised of the possibility of such damage.
 package rice.p2p.multiring.messaging;
 
 import java.io.IOException;
-import java.util.Hashtable;
+import java.util.Map;
 
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
@@ -171,7 +171,7 @@ public class RingMessage implements RawScribeContent {
    * @param priority
    * @throws IOException
    */
-  public RingMessage(InputBuffer buf, Endpoint ringEndpoint, Hashtable<String, Endpoint> endpoints) throws IOException {
+  public RingMessage(InputBuffer buf, Endpoint ringEndpoint, Map<String, Endpoint> endpoints) throws IOException {
     id = new RingId(buf, ringEndpoint);
     application = buf.readUTF();
 

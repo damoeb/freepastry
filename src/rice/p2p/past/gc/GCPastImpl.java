@@ -404,13 +404,14 @@ public class GCPastImpl extends PastImpl implements GCPast {
       } else if (msg instanceof GCRefreshMessage) {
         final GCRefreshMessage rmsg = (GCRefreshMessage) msg;        
         final Iterator<GCId> i = Arrays.asList(rmsg.getKeys()).iterator();
-        final Vector<Object> result = new Vector<Object>();
+        // filled by one step of the (sequential) continuation chain after the other
+        final List<Object> result = new ArrayList<Object>();
         other += rmsg.getKeys().length;
         
         StandardContinuation<Object, Object, Exception> process = new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
           public void receiveResult(Object o) {
             if (o != null)
-              result.addElement(o);
+              result.add(o);
             
             if (i.hasNext()) {
               final GCId id = i.next();

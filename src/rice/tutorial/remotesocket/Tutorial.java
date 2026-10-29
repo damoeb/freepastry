@@ -41,7 +41,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import rice.Continuation;
 import rice.environment.Environment;
@@ -70,7 +71,7 @@ import rice.pastry.standard.StandardAddress;
 public class Tutorial {
   
   // this will keep track of our applications
-  Vector<MyApp> apps = new Vector<MyApp>();
+  List<MyApp> apps = new ArrayList<MyApp>();
   
   /**
    * This constructor launches numNodes PastryNodes.  They will bootstrap 

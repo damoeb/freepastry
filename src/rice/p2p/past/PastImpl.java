@@ -40,6 +40,7 @@ package rice.p2p.past;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.*;
 
 import rice.*;
@@ -110,10 +111,11 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   private int id;
 
   // the hashtable of outstanding messages
-  private Hashtable<Integer, Continuation<?, Exception>> outstanding;
+  // (requests may be sent from application threads while the selector thread delivers responses and timeouts)
+  private final Map<Integer, Continuation<?, Exception>> outstanding;
   
   // the hashtable of outstanding timer tasks
-  private Hashtable<Integer, CancellableTask> timers;
+  private final Map<Integer, CancellableTask> timers;
 
   // the factory for manipulating ids
   protected IdFactory factory;
@@ -231,8 +233,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     this.trash = trash;
     
     this.id = Integer.MIN_VALUE;
-    this.outstanding = new Hashtable<Integer, Continuation<?, Exception>>();
-    this.timers = new Hashtable<Integer, CancellableTask>();
+    // concurrent, and like the Hashtables they replace they reject null keys and values
+    this.outstanding = new ConcurrentHashMap<Integer, Continuation<?, Exception>>();
+    this.timers = new ConcurrentHashMap<Integer, CancellableTask>();
     this.replicationFactor = replicas;
     
     //   log.addHandler(new ConsoleHandler());

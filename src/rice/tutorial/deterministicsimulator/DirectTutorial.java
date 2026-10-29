@@ -41,7 +41,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
@@ -66,7 +67,7 @@ import rice.selector.TimerTask;
 public class DirectTutorial {
 
   // this will keep track of our applications
-  Vector<Object> apps = new Vector<Object>();
+  List<Object> apps = new ArrayList<Object>();
   
   /**
    * This constructor launches numNodes PastryNodes.  They will bootstrap 

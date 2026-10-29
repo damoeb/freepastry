@@ -40,7 +40,8 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import rice.environment.Environment;
 import rice.environment.params.simple.SimpleParameters;
@@ -64,7 +65,7 @@ import rice.pastry.standard.RandomNodeIdFactory;
 public class Tutorial {
   
   // this will keep track of our applications
-  Vector<MyApp> apps = new Vector<MyApp>();
+  List<MyApp> apps = new ArrayList<MyApp>();
   
   /**
    * This constructor launches numNodes PastryNodes.  They will bootstrap 
