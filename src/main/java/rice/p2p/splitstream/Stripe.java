@@ -266,11 +266,14 @@ public class Stripe implements ScribeMultiClient {
   }
 
   /**
-   * Informs this client that subscriptions succeeded; nothing to do.
+   * Informs this client that subscriptions succeeded, which resets their failure counts.
    *
    * @param topics The topics that succeeded
    */
   public void subscribeSuccess(Collection<Topic> topics) {
+    for (Topic topic : topics) {
+      failed.remove(topic);
+    }
   }
 
   /**
@@ -304,7 +307,7 @@ public class Stripe implements ScribeMultiClient {
 
       failed.put(topic, count);
     } else {
-      // TODO: retry with a random exponential backoff instead of a fixed delay, and reset the failure count
+      // TODO: retry with a random exponential backoff instead of a fixed delay
       TimerTask resubscribeTask = new TimerTask() {
         public void run() {
           if (getParent() == null) {
