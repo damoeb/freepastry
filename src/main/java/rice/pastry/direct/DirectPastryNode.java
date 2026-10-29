@@ -37,9 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.direct;
 
 
-import java.util.HashMap;
-import java.util.Map;
-
 import rice.pastry.PastryNode;
 
 /**
@@ -54,9 +51,11 @@ public class DirectPastryNode {
   /**
    * Used for proximity calculation of DirectNodeHandle. This will probably go
    * away when we switch to a byte-level protocol.
+   *
+   * A ThreadLocal, so a thread that never clears its entry does not keep itself
+   * and its node reachable after it ends.
    */
-  // only accessed in the static synchronized methods below
-  static private final Map<Thread, PastryNode> currentNode = new HashMap<Thread, PastryNode>();
+  static private final ThreadLocal<PastryNode> currentNode = new ThreadLocal<PastryNode>();
 
   /**
    * Returns the previous one.
@@ -64,20 +63,17 @@ public class DirectPastryNode {
    * @param dpn the node to make current for this thread, null to clear it
    * @return the previous current node
    */
-  public static synchronized PastryNode setCurrentNode(PastryNode dpn) {
-    Thread current = Thread.currentThread();
-    PastryNode ret = currentNode.get(current);
+  public static PastryNode setCurrentNode(PastryNode dpn) {
+    PastryNode ret = currentNode.get();
     if (dpn == null) {
-      currentNode.remove(current);
+      currentNode.remove();
     } else {
-      currentNode.put(current, dpn);
+      currentNode.set(dpn);
     }
     return ret;
   }
 
-  public static synchronized PastryNode getCurrentNode() {
-    Thread current = Thread.currentThread();
-    PastryNode ret = currentNode.get(current);
-    return ret;
+  public static PastryNode getCurrentNode() {
+    return currentNode.get();
   }
 }
