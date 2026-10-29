@@ -83,7 +83,7 @@ public class ProfileSelector extends SelectorManager {
   }
 
   public ProfileSelector(String instance, TimeSource timeSource, LogManager log, RandomSource rand) {
-    this(instance, timeSource,log, null, 60000);
+    this(instance, timeSource,log, rand, 60000);
   }
 
   /**

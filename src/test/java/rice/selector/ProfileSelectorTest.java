@@ -45,9 +45,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import rice.environment.logging.LogManager;
 import rice.environment.logging.Slf4jLogManager;
+import rice.environment.random.RandomSource;
+import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.simple.SimpleTimeSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Tests {@link ProfileSelector} without starting its selector thread; the selector loop methods are called directly.
@@ -69,6 +72,13 @@ public class ProfileSelectorTest {
     if (selector != null) selector.destroy(); // never started: closes the selector
     pipe.source().close();
     pipe.sink().close();
+  }
+
+  @Test
+  public void keepsTheGivenRandomSource() {
+    RandomSource rand = new SimpleRandomSource(1, logManager);
+    selector = new ProfileSelector("test", new SimpleTimeSource(), logManager, rand);
+    assertSame(rand, selector.random);
   }
 
   @Test
