@@ -354,6 +354,7 @@ public class LeafSetTest {
     /**
      * @deprecated
      */
+    @Deprecated
     public int proximity() {
       return 1;
     }
@@ -377,6 +378,7 @@ public class LeafSetTest {
     /**
      * @deprecated
      */
+    @Deprecated
     public void receiveMessage(Message m) {
     };
 

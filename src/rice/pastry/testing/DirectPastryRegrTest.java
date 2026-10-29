@@ -38,6 +38,7 @@ package rice.pastry.testing;
 
 import rice.environment.Environment;
 import rice.pastry.*;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.direct.*;
 import rice.pastry.standard.*;
 
@@ -57,14 +58,14 @@ import java.util.*;
  */
 
 public class DirectPastryRegrTest extends PastryRegrTest {
-  private NetworkSimulator simulator;
+  private NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   /**
    * constructor
    */
   private DirectPastryRegrTest() throws IOException {
     super(Environment.directEnvironment());
-    simulator = new SphereNetwork(environment);
+    simulator = new SphereNetwork<DirectNodeHandle, RawMessage>(environment);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), 
         simulator,
         environment);

@@ -54,6 +54,7 @@ public interface NodeHandleFactory<NH extends NodeHandle> {
    */
   public NH coalesce(NH handle);
   
-  public void addNodeHandleFactoryListener(NodeHandleFactoryListener<NH> listener);
-  public void removeNodeHandleFactoryListener(NodeHandleFactoryListener<NH> listener);
+  public void addNodeHandleFactoryListener(NodeHandleFactoryListener<? super NH> listener);
+  public void removeNodeHandleFactoryListener(NodeHandleFactoryListener<? super NH> listener);
+
 }

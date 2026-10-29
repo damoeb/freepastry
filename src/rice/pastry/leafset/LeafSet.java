@@ -54,7 +54,7 @@ import java.io.*;
  * @author Andrew Ladd
  * @author Peter Druschel
  */
-public class LeafSet extends Observable implements Serializable, Iterable<NodeHandle> {
+public class LeafSet implements Serializable, Iterable<NodeHandle> {
   static private final long serialVersionUID = 3960030608598552977L;
 
   private Id baseId;
@@ -733,7 +733,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
       if (i == 0) nh = from;
       else nh = remotels.get(i);
 
-      if (nh.isAlive() == false) continue;
+      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
       //if (member(nh.getNodeId())) continue;
 
       if (testOnly) {
@@ -760,7 +760,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
       if (i == 0) nh = from;
       else nh = remotels.get(i);
 
-      if (nh.isAlive() == false) continue;
+      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
       //if (member(nh.getNodeId())) continue;
 
       if (testOnly) {
@@ -789,7 +789,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
         if (i == 0) nh = from;
         else nh = remotels.get(i);
 
-        if (nh.isAlive() == false) continue;
+        if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
 
         if (testOnly) {
           // merge into our leaf set
@@ -823,6 +823,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
    * @deprecated use addNodeSetListener
    * @param o the observer to add.
    */
+  @Deprecated
   public void addObserver(Observer o) {
     cwSet.addObserver(o);
     ccwSet.addObserver(o);
@@ -834,6 +835,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
    * @deprecated use deleteNodeSetListener
    * @param o the observer to delete.
    */
+  @Deprecated
   public void deleteObserver(Observer o) {
     cwSet.deleteObserver(o);
     ccwSet.deleteObserver(o);
@@ -936,7 +938,7 @@ public class LeafSet extends Observable implements Serializable, Iterable<NodeHa
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   
    */
-  public static LeafSet build(InputBuffer buf, NodeHandleFactory nhf) throws IOException {
+  public static LeafSet build(InputBuffer buf, NodeHandleFactory<?> nhf) throws IOException {
     byte theSize = buf.readByte();
     byte numUniqueHandles = buf.readByte();
     byte cwSize = buf.readByte();

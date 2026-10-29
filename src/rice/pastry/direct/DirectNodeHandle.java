@@ -43,6 +43,7 @@ import java.util.*;
 
 import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.commonapi.rawserialization.SizeCheckOutputBuffer;
 import rice.pastry.*;
 import rice.pastry.messaging.*;
@@ -56,9 +57,9 @@ import rice.pastry.socket.TransportLayerNodeHandle;
  * @author Rongmei Zhang/Y. Charlie Hu
  */
 
-public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> implements Observer {
+public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> implements PastryNodeListener {
 //  private transient PastryNode remoteNode;
-  public transient NetworkSimulator simulator;
+  public transient NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   /**
    * Constructor for DirectNodeHandle.
@@ -66,13 +67,13 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    * @param ln The local pastry node
    * @param sim The current network simulator
    */
-  protected DirectNodeHandle(PastryNode ln, NetworkSimulator sim) {
+  protected DirectNodeHandle(PastryNode ln, NetworkSimulator<DirectNodeHandle, RawMessage> sim) {
     localnode = ln;
     logger = ln.getEnvironment().getLogManager().getLogger(getClass(), null);
 //    if (rn == null) throw new IllegalArgumentException("rn must be non-null");
     simulator = sim;
     
-    ln.addObserver(this);
+    ln.addPastryNodeListener(this);
   }
 
   /**
@@ -110,7 +111,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    *
    * @return The Simulator value
    */
-  public NetworkSimulator getSimulator() {
+  public NetworkSimulator<DirectNodeHandle, RawMessage> getSimulator() {
     return simulator;
   }
 
@@ -130,7 +131,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    * @return DESCRIBE THE RETURN VALUE
    */
   public boolean ping() {
-    return isAlive();
+    return getLiveness() < LIVENESS_DEAD;
   }
   
   public final void assertLocalNode() {
@@ -146,6 +147,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    * @deprecated
    * @return DESCRIBE THE RETURN VALUE
    */
+  @Deprecated
   public int proximity() {
     assertLocalNode();
     return getLocalNode().proximity(this);
@@ -157,6 +159,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    * @deprecated use PastryNode.send()
    * @param msg DESCRIBE THE PARAMETER
    */
+  @Deprecated
   public void receiveMessage(Message msg) {
     DirectPastryNode.getCurrentNode().send(this, msg,null, null);
   }
@@ -208,7 +211,23 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    * the simulator.  If we leave in the first arg, the node notifies DECLARED_LIVE 
    * way too often.
    */
+  public void pastryNodeReady(PastryNode node, boolean ready) {
+    localNodeUpdate();
+  }
+
+  public void pastryNodeJoinFailed(PastryNode node, JoinFailedException reason) {
+    localNodeUpdate();
+  }
+
+  /**
+   * @deprecated this class is no longer an Observer, see {@link PastryNodeListener}
+   */
+  @Deprecated
   public void update(Observable arg0, Object arg1) {
+    localNodeUpdate();
+  }
+
+  private void localNodeUpdate() {
     if (simulator.isAlive(this)) {
 //      notifyObservers(NodeHandle.DECLARED_LIVE);      
     } else {

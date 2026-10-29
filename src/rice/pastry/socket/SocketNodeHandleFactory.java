@@ -58,7 +58,7 @@ import rice.pastry.PastryNode;
 public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHandle>, Serializer<SocketNodeHandle> {
   protected PastryNode pn;
   protected Map<SocketNodeHandle, SocketNodeHandle> handleSet;
-  protected Collection<NodeHandleFactoryListener<SocketNodeHandle>> listeners = new ArrayList<NodeHandleFactoryListener<SocketNodeHandle>>();
+  protected Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> listeners = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>();
   Logger logger;
   
   public SocketNodeHandleFactory(PastryNode pn) {
@@ -104,18 +104,18 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
    * Notify the listeners that this new handle has come along.
    */
   protected void notifyListeners(SocketNodeHandle nh) {
-    Collection<NodeHandleFactoryListener<SocketNodeHandle>> temp = listeners;
+    Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> temp = listeners;
     synchronized (listeners) {      
-      temp = new ArrayList<NodeHandleFactoryListener<SocketNodeHandle>>(listeners);      
+      temp = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>(listeners);      
     }
-    for (NodeHandleFactoryListener<SocketNodeHandle> foo:temp) {
+    for (NodeHandleFactoryListener<? super SocketNodeHandle> foo:temp) {
       foo.nodeHandleFound(nh);
     }
   }
 
 
   public void addNodeHandleFactoryListener(
-      NodeHandleFactoryListener<SocketNodeHandle> listener) {
+      NodeHandleFactoryListener<? super SocketNodeHandle> listener) {
     synchronized(listeners) {
       listeners.add(listener);
     }
@@ -123,7 +123,7 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
 
 
   public void removeNodeHandleFactoryListener(
-      NodeHandleFactoryListener<SocketNodeHandle> listener) {
+      NodeHandleFactoryListener<? super SocketNodeHandle> listener) {
     synchronized(listeners) {
       listeners.remove(listener);
     }

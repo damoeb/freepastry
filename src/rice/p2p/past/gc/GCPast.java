@@ -87,7 +87,7 @@ public interface GCPast extends Past {
    * @param obj the object to be inserted
    * @param command Command to be performed when the result is received
    */
-  public void insert(PastContent obj, Continuation command);
+  public void insert(PastContent obj, Continuation<? super Boolean[], Exception> command);
   
   /**
    * Inserts an object with the given ID into this instance of Past.
@@ -105,7 +105,7 @@ public interface GCPast extends Past {
    * @param expiration the time until which the object must be stored
    * @param command Command to be performed when the result is received
    */
-  public void insert(PastContent obj, long expiration, Continuation command);
+  public void insert(PastContent obj, long expiration, Continuation<? super Boolean[], Exception> command);
 
   /**
    * Updates the objects stored under the provided keys id to expire no
@@ -126,7 +126,7 @@ public interface GCPast extends Past {
    * @param expiration The time to extend the lifetime to
    * @param command Command to be performed when the result is received
    */
-  public void refresh(Id[] ids, long[] expiration, Continuation command);
+  public void refresh(Id[] ids, long[] expiration, Continuation<? super Object[], Exception> command);
 
   /**
    * Updates the objects stored under the provided keys id to expire no
@@ -147,7 +147,7 @@ public interface GCPast extends Past {
    * @param expiration The time to extend the lifetime to (applies to all keys)
    * @param command Command to be performed when the result is received
    */
-  public void refresh(Id[] ids, long expiration, Continuation command);
+  public void refresh(Id[] ids, long expiration, Continuation<? super Object[], Exception> command);
 
 }
 

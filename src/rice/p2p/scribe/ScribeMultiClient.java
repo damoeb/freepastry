@@ -47,6 +47,9 @@ import rice.p2p.commonapi.NodeHandle;
  * @author Jeff Hoye
  *
  */
+// Must keep extending the deprecated ScribeClient: ScribeMultiClient instances are still accepted
+// by (and returned from) the deprecated ScribeClient-based Scribe API, so there is no replacement.
+@SuppressWarnings("deprecation")
 public interface ScribeMultiClient extends ScribeClient {
   /**
    * This method is invoked when an anycast is received for a topic
@@ -94,6 +97,7 @@ public interface ScribeMultiClient extends ScribeClient {
    * @deprecated use subscribeFailed(Collection<Topic> topics)
    * @param topic The topic which the subscribe failed on
    */
+  @Deprecated
   public void subscribeFailed(Topic topic);
 
   /**

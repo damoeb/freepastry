@@ -59,7 +59,7 @@ import rice.p2p.scribe.rawserialization.*;
  * @version $Id: ScribeImpl.java 4495 2008-09-26 14:48:02Z jeffh $
  * @author Alan Mislove
  */
-public class ScribeImpl implements Scribe, MaintainableScribe, Application, Observer {
+public class ScribeImpl implements Scribe, MaintainableScribe, Application, NodeHandleListener {
   // Special Log Levels
   public static final int INFO_2 = 850;
   
@@ -291,6 +291,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
 //    return (ScribeClient[]) getClientsByTopic(topic).toArray(new ScribeClient[0]);
 //  }
   
+  /**
+   * @deprecated use getClientsByTopic(Topic)
+   */
+  @Deprecated
   public Collection<ScribeClient> getClients(Topic topic) { 
     TopicManager manager = topicManagers.get(topic);
     if (manager != null) {
@@ -312,7 +316,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
    * Adapts an old ScribeClient to a new ScribeMultiClient
    * 
    * This is for reverse compatibility.
+   * 
+   * @deprecated only needed to support the deprecated ScribeClient API; use ScribeMultiClient
    */
+  @Deprecated
   public static class ScribeClientConverter implements ScribeMultiClient {
     WeakReference<ScribeClient> client;
     
@@ -357,6 +364,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
       theClient.deliver(topic, content);
     }
 
+    @Deprecated
     public void subscribeFailed(Topic topic) {
       ScribeClient theClient = client.get();
       if (theClient == null) return;      
@@ -364,6 +372,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
     }    
   }  
   
+  /**
+   * @deprecated only needed to support the deprecated ScribeClient API
+   */
+  @Deprecated
   protected Collection<ScribeClient> getSimpleClients(Collection<ScribeMultiClient> multi) {
     ArrayList<ScribeClient> ret = new ArrayList<ScribeClient>(multi.size());
     for(ScribeMultiClient client : multi) {
@@ -380,8 +392,16 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
   }
   
   
+  /**
+   * @deprecated only needed to support the deprecated ScribeClient API
+   */
+  @Deprecated
   private Map<ScribeClient,ScribeClientConverter> clientConverters = new WeakHashMap<ScribeClient,ScribeClientConverter>();
   
+  /**
+   * @deprecated only needed to support the deprecated ScribeClient API
+   */
+  @Deprecated
   protected ScribeMultiClient getMultiClient(ScribeClient client) {
     if (client instanceof ScribeMultiClient) {
       return (ScribeMultiClient)client;
@@ -404,8 +424,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
    * Returns the list of children for a given topic
    *
    * @param topic The topic to return the children of
+   * @deprecated use getChildrenOfTopic(Topic)
    * @return The children of the topic
    */
+  @Deprecated
   public NodeHandle[] getChildren(Topic topic) {
     if (topicManagers.get(topic) != null) {
       return ((TopicManager) topicManagers.get(topic)).getChildren().toArray(new NodeHandle[0]);
@@ -703,24 +725,31 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
    * @param client The client to give messages to
    */
   // ************* deprecate this ***********
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client) {
     doSubscribe(Collections.singletonList(topic), getMultiClient(client), null, null);
   }
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client, ScribeContent content) {
     doSubscribe(Collections.singletonList(topic), getMultiClient(client), toRawScribeContent(content), null);
   }
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client, ScribeContent content, NodeHandle hint) {
     doSubscribe(Collections.singletonList(topic), getMultiClient(client), toRawScribeContent(content), hint);
   }
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client, RawScribeContent content) {
     doSubscribe(Collections.singletonList(topic), getMultiClient(client), content, null);    
   }
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client, RawScribeContent content, NodeHandle hint) {
     doSubscribe(Collections.singletonList(topic), getMultiClient(client), content, hint);
   }  
+  @Deprecated
   public void subscribe(Collection<Topic> theTopics, ScribeClient client, RawScribeContent content, NodeHandle hint) {
     doSubscribe(theTopics, getMultiClient(client), content, hint);       
   }  
+  @Deprecated
   public void subscribe(Collection<Topic> theTopics, ScribeClient client, ScribeContent content, NodeHandle hint) {
     doSubscribe(theTopics, getMultiClient(client), toRawScribeContent(content), hint);       
   }  
@@ -797,6 +826,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
    * @param topic The topic to unsubscribe from
    * @param client The client to unsubscribe
    */
+  @Deprecated
   public void unsubscribe(Topic topic, ScribeClient client) {
     unsubscribe(Collections.singletonList(topic), getMultiClient(client));
   }
@@ -824,7 +854,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
           
           // if this is the last client and there are no children,
           // then we unsubscribe from the topic
-          if (manager.removeClient(getMultiClient(client))) {
+          if (manager.removeClient(client)) {
             if(logger.level <= Logger.INFO) logger.log("Removing TopicManager for topic: " + topic);
             
             topicManagers.remove(topic);
@@ -1059,7 +1089,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
         }
       }
 
-      if ((sendDrop) && (child.isAlive())) {
+      if ((sendDrop) && (endpoint.isAlive(child))) {
         if (logger.level <= Logger.FINE) logger.log("Informing child " + child + " that he has been dropped from topic " + topic);
         
         // now, we tell the child that he has been dropped
@@ -1086,8 +1116,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
    * to.
    *
    * @param client The client in question
+   * @deprecated use getTopicsByClient(ScribeMultiClient)
    * @return The list of topics
    */
+  @Deprecated
   public Collection<Topic> getTopicsByClient(ScribeClient client) {    
     ArrayList<Topic> result = new ArrayList<Topic>();
     
@@ -1110,8 +1142,9 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
     return result;
   }
   
+  @Deprecated
   public Topic[] getTopics(ScribeClient client) {
-    return (Topic[])getTopicsByClient(client).toArray();
+    return getTopicsByClient(client).toArray(new Topic[0]);
   }
   
   protected void recvAnycastFail(Topic topic, NodeHandle failedAtNode,
@@ -1139,8 +1172,8 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
     Collection<Topic> topics = allChildren.get(child);
     
     if (topics == null) {
-      if (child.isAlive()) {
-        if (!allParents.containsKey(child)) child.addObserver(this);
+      if (endpoint.isAlive(child)) {
+        if (!allParents.containsKey(child)) child.addNodeHandleListener(this);
       } else {    
         if (logger.level <= Logger.WARNING) logger.logException("addToAllChildren("+t+","+child+") child.isAlive() == false", new Exception("Stack Trace"));         
       }
@@ -1171,7 +1204,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
     
     if (topics.isEmpty()) {
       allChildren.remove(child); 
-      if (!allParents.containsKey(child)) child.deleteObserver(this);
+      if (!allParents.containsKey(child)) child.removeNodeHandleListener(this);
 
     }
   }
@@ -1194,8 +1227,8 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
     // Parent added
     Collection<Topic> topics = allParents.get(parent);
     if (topics == null) {
-      if (parent.isAlive()) {
-        if (!allChildren.containsKey(parent)) parent.addObserver(this);
+      if (endpoint.isAlive(parent)) {
+        if (!allChildren.containsKey(parent)) parent.addNodeHandleListener(this);
       } else {
         if (logger.level <= Logger.WARNING) logger.logException("addToAllParents("+t+","+parent+") parent.isAlive() == false", new Exception("Stack Trace"));         
       }
@@ -1230,7 +1263,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
     
     if (topics.isEmpty()) {
       allParents.remove(parent); 
-      if (!allChildren.containsKey(parent)) parent.deleteObserver(this);
+      if (!allChildren.containsKey(parent)) parent.removeNodeHandleListener(this);
     }
   }
 
@@ -1239,7 +1272,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
       return false;
     }
     if (allParents.containsKey(parent)) {
-      Vector topics = (Vector) allParents.get(parent);
+      Collection<Topic> topics = allParents.get(parent);
       if (topics.contains(t)) {
         return true;
       } else {
@@ -1422,7 +1455,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
       NodeHandle handle = aMessage.getNext();
 
       // make sure that the next node is alive
-      while ((handle != null) && (!handle.isAlive())) {
+      while ((handle != null) && (!endpoint.isAlive(handle))) {
         handle = aMessage.getNext();
       }
 
@@ -1569,7 +1602,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
       // we don't want anycasts to bounce all over the ring until they hit every node,
       // thus, if we were going to accept the node, then we drop that topic here, and forward the rest
       List<Topic> newTopics = new ArrayList<Topic>();
-      if (sMessage.getSubscriber().isAlive()) {
+      if (endpoint.isAlive(sMessage.getSubscriber())) {
         for (Topic topic : accepted) {
         
         // the ones that are returned: 
@@ -1621,7 +1654,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
  
     // NOTE: We need the isAlive() check, otherwise the tmanager (below) may be null, if we
     // were to create teh tmanager just for this node.
-    if (!toReturn.isEmpty() && sMessage.getSubscriber().isAlive()) {
+    if (!toReturn.isEmpty() && endpoint.isAlive(sMessage.getSubscriber())) {
       // we send a confirmation back to the child
       
       // build all of the pathToRoot[]
@@ -1682,11 +1715,11 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
         NodeHandle handle = aMessage.getNext();
 
         // make sure that the next node is alive
-        while ((handle != null) && (!handle.isAlive())) {
+        while ((handle != null) && (!endpoint.isAlive(handle))) {
           handle = aMessage.getNext();
         }
 
-        if (handle == null || !handle.isAlive()) handle = null;
+        if (handle == null || !endpoint.isAlive(handle)) handle = null;
         
         if (logger.level <= Logger.FINER) logger.log("Forwarding anycast message for topic " + aMessage.getTopic() + "on to " + handle);
 
@@ -1826,7 +1859,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
       HashMap<NodeHandle, List<Topic>> needToUnsubscribe = new HashMap<NodeHandle, List<Topic>>();
       SubscribeAckMessage saMessage = (SubscribeAckMessage) message;
 
-      if (! saMessage.getSource().isAlive()) {
+      if (! endpoint.isAlive(saMessage.getSource())) {
         if (logger.level <= Logger.WARNING) logger.log("Dropping subscribe ack message from dead node:" + saMessage.getSource() + " for topics " + saMessage.getTopics());
         return;
       }
@@ -2019,15 +2052,23 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
   /**
    * Called when a Node's liveness changes
    *
+   * @deprecated ScribeImpl is no longer a java.util.Observer; use nodeHandleUpdate(NodeHandle, Object)
    */
+  @Deprecated
   public void update(Observable o, Object arg) {
+    nodeHandleUpdate((NodeHandle)o, arg);
+  }
+
+  /**
+   * Called when a Node's liveness changes
+   *
+   */
+  public void nodeHandleUpdate(NodeHandle handle, Object arg) {
     if (arg.equals(NodeHandle.DECLARED_DEAD)) {
-      NodeHandle handle = (NodeHandle)o;      
-      
       ArrayList<Topic> wasChildOfTopics = new ArrayList<Topic>(getTopicsByChild(handle));
       for (Topic topic : wasChildOfTopics) {
         removeChild(topic,handle); // TODO: see what messages this dispatches
-        if (logger.level <= Logger.FINE) logger.log("Child " + o + " for topic " + topic + " has died - removing.");
+        if (logger.level <= Logger.FINE) logger.log("Child " + handle + " for topic " + topic + " has died - removing.");
       }
       ArrayList<Topic> wasParentOfTopics = new ArrayList<Topic>(getTopicsByParent(handle));
       for (Topic topic : wasParentOfTopics) {
@@ -2279,7 +2320,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
     public void setParent(NodeHandle handle, List<Id> pathToRoot) {
       if (logger.level <= Logger.INFO) logger.log(this+"setParent("+handle+","+pathToRoot+") prev:"+parent);        
       
-      if ((handle != null) && !handle.isAlive()) {
+      if ((handle != null) && !endpoint.isAlive(handle)) {
         if (logger.level <= Logger.WARNING) logger.log("Setting dead parent "+handle+" for " + topic);
       }
       
@@ -2410,7 +2451,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
         logger.log("addChild( " + topic + ", " + child + ")");
 
       if (!children.contains(child)) {
-        if (child.isAlive()) {
+        if (endpoint.isAlive(child)) {
           children.add(child);
 //          child.addObserver(this);
           // We update this information to the global data structure of children
@@ -2469,10 +2510,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Obse
       topicManagers.clear();
       
       for (NodeHandle handle : allChildren.keySet()) {
-        handle.deleteObserver(this); 
+        handle.removeNodeHandleListener(this); 
       }
       for (NodeHandle handle : allParents.keySet()) {
-        handle.deleteObserver(this); 
+        handle.removeNodeHandleListener(this); 
       }
     } else {
       environment.getSelectorManager().invoke(new Runnable() {      

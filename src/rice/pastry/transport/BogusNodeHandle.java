@@ -91,11 +91,13 @@ public class BogusNodeHandle extends TransportLayerNodeHandle<Collection<InetSoc
     throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
   }
 
+  @Deprecated
   @Override
   public int proximity() {
     throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
   }
 
+  @Deprecated
   @Override
   public void receiveMessage(Message msg) {
     throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");

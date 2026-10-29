@@ -51,13 +51,13 @@ import rice.selector.SelectorManager;
  * @author Jeff Hoye
  */
 public abstract class WorkRequest<R> implements Runnable, Cancellable {
-  private Continuation<R, Exception> c;
+  private Continuation<? super R, Exception> c;
   private SelectorManager selectorManager;
   
   protected boolean cancelled = false;
   protected boolean running = false;
 
-  public WorkRequest(Continuation<R, Exception> c, SelectorManager sm){
+  public WorkRequest(Continuation<? super R, Exception> c, SelectorManager sm){
     this.c = c;
     this.selectorManager = sm;
   }

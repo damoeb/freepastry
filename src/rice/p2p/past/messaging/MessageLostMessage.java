@@ -99,8 +99,7 @@ public class MessageLostMessage extends PastMessage {
    *
    * @param c The continuation to return the reponse to.
    */
-  @SuppressWarnings("unchecked")
-  public void returnResponse(Continuation c, Environment env, String instance) {
+  public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
     Logger logger = env.getLogManager().getLogger(getClass(), instance);
     Exception e = new PastException("Outgoing message '" + messageString + "' to " + id + "/" + hint + " was lost - please try again.");
     if (logger.level <= Logger.WARNING) logger.logException("ERROR: Outgoing PAST message " + messageString + " with UID " + getUID() + " was lost", e);

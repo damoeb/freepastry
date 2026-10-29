@@ -38,6 +38,7 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import rice.environment.logging.Logger;
+import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.pastry.messaging.*;
@@ -85,6 +86,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    * 
    * @deprecated use PastryNode.isAlive(NodeHandle) 
    */
+  @Deprecated
   public final boolean isAlive() {
     return getLiveness() < LIVENESS_DEAD; 
   }
@@ -118,6 +120,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    * @deprecated use PastryNode.proximity() or Endpoint.proximity()
    * @return the proximity metric value
    */
+  @Deprecated
   public abstract int proximity();
 
   /**
@@ -185,53 +188,18 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    * @deprecated use PastryNode.send() or Endpoint.send()
    * @param msg
    */
+  @Deprecated
   public abstract void receiveMessage(Message msg);
 
   public abstract void serialize(OutputBuffer buf) throws IOException;
   
-  /****************** Overriding of the Observer pattern to include priority **********/
+  /****************** Observer pattern with priority, see rice.p2p.commonapi.NodeHandleListener **********/
   
   /**
-   * Class which holds an observer and a priority.  For sorting.
-   * @author Jeff Hoye
+   * @deprecated use addNodeHandleListener(NodeHandleListener)
    */
-  static class ObsPri implements Comparable<ObsPri> {
-    Observer obs;
-    int pri;
-    
-    public ObsPri(Observer o, int priority) {
-      obs = o;
-      pri = priority;
-    }
-
-    public int compareTo(ObsPri o) {
-      ObsPri that = (ObsPri)o;
-      int ret = that.pri - pri;
-      if (ret == 0) {
-        if (that.equals(o)) {
-          return 0;
-        } else {
-          return System.identityHashCode(that)-System.identityHashCode(this);
-        }
-      }
-//      System.out.println(this+".compareTo("+that+"):"+ret);
-      return ret;
-    }
-    
-    public String toString() {
-      return obs+":"+pri;      
-    }
-  }
-
-  transient List<ObsPri> obs = new ArrayList<ObsPri>();
-  /**
-   * Need to construct obs in deserialization.
-   */
-  private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    obs = new ArrayList<ObsPri>();
-  }
-  
+  @Deprecated
+  @Override
   public void addObserver(Observer o) {
     addObserver(o, 0);  
   }
@@ -240,74 +208,53 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    * 
    * @param o
    * @param priority higher priority observers will be called first
+   * @deprecated use addNodeHandleListener(NodeHandleListener, int)
    */
+  @Deprecated
   public void addObserver(Observer o, int priority) {
-    if (logger.level <= Logger.FINER) logger.log(this+".addObserver("+o+")");
-    synchronized (obs) {
-      // this pass makes sure it's not already an observer, and also finds 
-      // the right spot for it
-      for (int i = 0; i < obs.size(); i++) {
-        ObsPri op = obs.get(i);
-        if (op.obs.equals(o)) {
-          if (op.pri != priority) {
-            // change the priority, resort, return
-            // Should we warn?  Hopefully this won't happen very often...
-            if (logger.level <= Logger.WARNING) logger.log(this+".addObserver("+o+","+priority+") changed priority, was:"+op);      
-            op.pri = priority;
-            Collections.sort(obs);
-            return;
-          }
-          // TODO: can optimize this if need be, make this look for the insertPoint.  For now, we're just going to add then sort.
-//        } else {
-//          if (op.pri <= priority) {
-//            insertPoint = i; 
-//          }
-        }
-      }
-      obs.add(new ObsPri(o,priority));
-//      logger.log(this+"addObserver("+o+")list1:"+obs);
-      Collections.sort(obs);
-//      logger.log(this+"addObserver("+o+")list2:"+obs);
-    }
-//    super.addObserver(o); 
+    addNodeHandleListener(observerListener(o), priority);
   }
   
+  /**
+   * @deprecated use removeNodeHandleListener(NodeHandleListener)
+   */
+  @Deprecated
+  @Override
   public void deleteObserver(Observer o) {
-    if (logger.level <= Logger.FINER) logger.log(this+".deleteObserver("+o+")");
-//    super.deleteObserver(o); 
-    synchronized (obs) {
-      for (int i = 0; i < obs.size(); i++) {
-        ObsPri op = obs.get(i);
-        if (op.obs.equals(o)) {
-          if (logger.level <= Logger.FINEST) logger.log(this+".deleteObserver("+o+"):success");
-          obs.remove(i);
-          return;
-        }
-      }
-      if (logger.level <= Logger.INFO) logger.log(this+".deleteObserver("+o+"):failure "+o+" was not an observer.");      
-    }
+    removeNodeHandleListener(observerListener(o));
   }
   
-  public void notifyObservers(Object arg) {
-    List<ObsPri> l;
-    synchronized(obs) {
-      l = new ArrayList<ObsPri>(obs);    
-//      logger.log(this+"notifyObservers("+arg+")list1:"+obs);
-//      logger.log(this+"notifyObservers("+arg+")list2:"+l);
+  @Override
+  public void addNodeHandleListener(NodeHandleListener listener, int priority) {
+    if (logger.level <= Logger.FINER) logger.log(this+".addNodeHandleListener("+listener+")");
+    super.addNodeHandleListener(listener, priority);
+  }
+  
+  @Override
+  protected void nodeHandleListenerPriorityChanged(NodeHandleListener listener, int oldPriority, int newPriority) {
+    // Should we warn?  Hopefully this won't happen very often...
+    if (logger.level <= Logger.WARNING) logger.log(this+".addNodeHandleListener("+listener+","+newPriority+") changed priority, was:"+listener+":"+oldPriority);      
+  }
+  
+  @Override
+  public boolean removeNodeHandleListener(NodeHandleListener listener) {
+    if (logger.level <= Logger.FINER) logger.log(this+".removeNodeHandleListener("+listener+")");
+    boolean ret = super.removeNodeHandleListener(listener);
+    if (ret) {
+      if (logger.level <= Logger.FINEST) logger.log(this+".removeNodeHandleListener("+listener+"):success");
+    } else {
+      if (logger.level <= Logger.INFO) logger.log(this+".removeNodeHandleListener("+listener+"):failure "+listener+" was not a listener.");      
     }
-    for(ObsPri op : l) {
-//      logger.log(this+".notifyObservers("+arg+"):notifying "+op);            
-      if (logger.level <= Logger.FINEST) logger.log(this+".notifyObservers("+arg+"):notifying "+op);            
-      op.obs.update(this, arg); 
-    }    
+    return ret;
   }
-
-  public synchronized int countObservers() {
-    return obs.size();
-  }
-
-  public synchronized void deleteObservers() {
-    obs.clear();
+  
+  /**
+   * Notifies all listeners, regardless of setChanged().
+   */
+  @Override
+  public void notifyObservers(Object arg) {
+    if (logger.level <= Logger.FINEST) logger.log(this+".notifyObservers("+arg+"):notifying "+countObservers()+" listeners");            
+    notifyNodeHandleListeners(arg); 
   }
 
   

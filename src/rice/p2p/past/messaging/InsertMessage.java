@@ -170,7 +170,7 @@ public class InsertMessage extends ContinuationMessage {
     super(buf, endpoint);
     
     if (serType == S_SUB) {
-      response = new Boolean(buf.readBoolean());
+      response = Boolean.valueOf(buf.readBoolean());
     }
         
     // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer

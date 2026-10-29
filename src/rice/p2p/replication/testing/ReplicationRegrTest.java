@@ -270,11 +270,11 @@ public class ReplicationRegrTest extends CommonAPITest {
      * @param keySet set containing the keys that needs to be fetched
      */
     public void fetch(IdSet keySet, NodeHandle hint) {
-      Iterator i = keySet.getIterator();
+      Iterator<Id> i = keySet.getIterator();
       
       while (i.hasNext()) {
         Id next = (Id) i.next();
-        storage.store(next, null, next, new ListenerContinuation("Insertion of " + next, environment));
+        storage.store(next, null, next, new ListenerContinuation<Object, Exception>("Insertion of " + next, environment));
       }
     }
     
@@ -292,11 +292,11 @@ public class ReplicationRegrTest extends CommonAPITest {
       IdRange notRange = range.getComplementRange();
       IdSet set = storage.scan(notRange);
       
-      Iterator i = set.getIterator();
+      Iterator<Id> i = set.getIterator();
       
       while (i.hasNext()) {
         Id next = (Id) i.next();
-        storage.unstore(next, new ListenerContinuation("Removal of " + next, environment));
+        storage.unstore(next, new ListenerContinuation<Object, Exception>("Removal of " + next, environment));
       }
     }
     
@@ -312,7 +312,7 @@ public class ReplicationRegrTest extends CommonAPITest {
     }
     
     public void insert(Id id) {
-      storage.store(id, null, id, new ListenerContinuation("Insertion of id " + id, environment));
+      storage.store(id, null, id, new ListenerContinuation<Object, Exception>("Insertion of id " + id, environment));
     }
     
     public String toString() {

@@ -168,7 +168,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    */
   protected IdSet clone(IdSet keySet) {
     IdSet result = factory.buildIdSet();
-    Iterator i = keySet.getIterator();
+    Iterator<Id> i = keySet.getIterator();
     
     while (i.hasNext()) {
       result.addId((Id) i.next());
@@ -188,9 +188,9 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
   
     final CancellableTask timer = endpoint.scheduleMessage(new TimeoutMessage(id), TIMEOUT_DELAY);
     
-    client.fetch(id, hint, new Continuation() {
+    client.fetch(id, hint, new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
-        if (! (new Boolean(true)).equals(o)) {
+        if (! Boolean.TRUE.equals(o)) {
           if (o instanceof Throwable) {
             if (logger.level <= Logger.WARNING) logger.logException( "Fetching of id " + id + " failed with ", (Throwable)o);
           } else {
@@ -358,7 +358,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
     /**
      * A cache of hints, mapping Id -> NodeHandle
      */
-    protected HashMap hints;
+    protected HashMap<Id, NodeHandle> hints;
     
     /**
      * Constructor 
@@ -375,7 +375,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
      * @param keySet The keys to add
      */
     public synchronized void fetch(IdSet keySet, NodeHandle hint) {
-      Iterator i = keySet.getIterator();
+      Iterator<Id> i = keySet.getIterator();
 
       while (i.hasNext()) {
         Id id = (Id) i.next();
@@ -403,7 +403,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
       IdRange notRange = range.getComplementRange();
       
       /* first, we remove any non-relevant keys from the list of pending keys */
-      Iterator i = set.subSet(notRange).getIterator();
+      Iterator<Id> i = set.subSet(notRange).getIterator();
       
       /* now look for any matching ids */
       while (i.hasNext()) {
@@ -483,7 +483,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
   /**
    * Inner class which keeps track of the keys which we are currently deleting
    */
-  protected class ReplicationManagerDeleter implements Continuation {
+  protected class ReplicationManagerDeleter implements Continuation<Boolean, Exception> {
     
     /**
      * The set of ids we are responsible for deleting
@@ -511,7 +511,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
       IdRange notRange = range.getComplementRange();    
 
       // first, we add all of the clients stuff in the not-range 
-      Iterator i = client.scan(notRange).getIterator();
+      Iterator<Id> i = client.scan(notRange).getIterator();
       int count = 0;
       
       while (i.hasNext() && (count < NUM_DELETE_AT_ONCE)) {
@@ -523,7 +523,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
       }
       
       // next, we remove and ids from the to-delete list which are not in the range
-      Iterator j = set.subSet(range).getIterator();
+      Iterator<Id> j = set.subSet(range).getIterator();
       
       while (j.hasNext()) 
         set.removeId((Id) j.next());
@@ -541,23 +541,24 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
         
         if (logger.level <= Logger.FINER) logger.log("Deciding whether to remove "+id);
         
-        client.existsInOverlay(id, new StandardContinuation(this) {
-          public void receiveResult(Object result) {
+        client.existsInOverlay(id, new StandardContinuation<Boolean, Boolean, Exception>(this) {
+          public void receiveResult(Boolean result) {
             if (Boolean.TRUE.equals(result)) {
               if (logger.level <= Logger.FINER) logger.log( "Telling client to delete id " + id);
               if (logger.level <= Logger.FINER) logger.log( "RMImpl.go " + instance + ": removing id " + id);
               client.remove(id, parent);
             } else {
               if (logger.level <= Logger.FINER) logger.log("Object to remove "+id+" not found.  Reinserting.");
-              client.reInsert(id, new StandardContinuation(parent) {
-                public void receiveResult(Object result) {
+              client.reInsert(id, new StandardContinuation<Boolean, Boolean, Exception>(parent) {
+                public void receiveResult(Boolean result) {
                   if (Boolean.TRUE.equals(result)) {
                     if (logger.level <= Logger.FINER) logger.log( "Telling client to delete id " + id);
                     if (logger.level <= Logger.FINER) logger.log( "RMImpl.go " + instance + ": removing id " + id);
                     client.remove(id, parent);
                   } else {
                     if (logger.level <= Logger.FINER) logger.log("Object to remove "+id+" Could not be reinserted.  Ignoring remove.");
-                    receiveResult(Boolean.FALSE);
+                    // hand the failure to the deleter (our parent), which clears id and moves on
+                    parent.receiveResult(Boolean.FALSE);
                   }
                 }
               });
@@ -572,7 +573,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
      *
      * @param o The result
      */
-    public synchronized void receiveResult(Object o) {
+    public synchronized void receiveResult(Boolean o) {
       if (id == null) 
         if (logger.level <= Logger.SEVERE) logger.log( "ERROR: RMImpl.deleter Received result " + o + " unexpectedly!");
       

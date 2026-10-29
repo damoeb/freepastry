@@ -115,7 +115,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
    */
   protected int routingQuality(NodeHandle nh) {
     RendezvousSocketNodeHandle rnh = (RendezvousSocketNodeHandle)nh;
-    if (!nh.isAlive()) {
+    if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
       return 10;
     }
     int connectionStatus = priority.connectionStatus(rnh.eaddress);

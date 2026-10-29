@@ -58,17 +58,23 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 
+import rice.Destructable;
 import rice.environment.Environment;
 import rice.environment.logging.Logger;
+import rice.selector.SelectorManager;
 
 public abstract class TLTest<Identifier> {
   
   static Environment env;
   static Logger logger;
   static Map<String, Object> options = new HashMap<String, Object>();
-  static TransportLayer alice, bob;
+  static TransportLayer<?, ByteBuffer> alice, bob;
   static final byte[] sentBytes = {0,1,2,3,4,5,6,7};
   static final int START_PORT = 5009;
+  /**
+   * Additional transport layers built by a subclass (besides alice and bob), destroyed in tearDownAfterClass().
+   */
+  static List<Destructable> otherTLs = new ArrayList<Destructable>();
 
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
@@ -77,7 +83,53 @@ public abstract class TLTest<Identifier> {
   
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
-    env.destroy();
+    // Destroy the transport layers so that their ports are released: Environment.destroy() alone only stops the 
+    // selector (dropping pending invocations), leaving the server sockets bound for the next test class in this JVM.
+    final List<Destructable> tls = new ArrayList<Destructable>();
+    if (alice != null) tls.add(alice);
+    if (bob != null) tls.add(bob);
+    tls.addAll(otherTLs);
+    otherTLs.clear();
+    alice = null;
+    bob = null;
+    SelectorManager selector = env.getSelectorManager();
+    Runnable destroyTLs = new Runnable() {
+      public void run() {
+        for (Destructable d : tls) {
+          try {
+            d.destroy();
+          } catch (RuntimeException re) {
+            // may already have been destroyed by a test
+            if (logger != null && logger.level <= Logger.FINE) logger.logException("destroying "+d, re);
+          }
+        }
+      }
+    };
+    if (selector.isAlive()) {
+      selector.invoke(destroyTLs);
+      env.destroy(); // runs after the invocation above, on the selector
+      selector.join(10000);
+    } else {
+      // the selector died (e.g. due to an exception in a test), clean up on this thread
+      destroyTLs.run();
+      env.destroy();
+    }
+  }
+
+  /**
+   * The subclass assigns a TransportLayer&lt;Identifier, ByteBuffer&gt; to the static alice field.
+   */
+  @SuppressWarnings("unchecked")
+  protected TransportLayer<Identifier, ByteBuffer> alice() {
+    return (TransportLayer<Identifier, ByteBuffer>)alice;
+  }
+
+  /**
+   * The subclass assigns a TransportLayer&lt;Identifier, ByteBuffer&gt; to the static bob field.
+   */
+  @SuppressWarnings("unchecked")
+  protected TransportLayer<Identifier, ByteBuffer> bob() {
+    return (TransportLayer<Identifier, ByteBuffer>)bob;
   }
 
   /**
@@ -118,7 +170,7 @@ public abstract class TLTest<Identifier> {
     final Object lock = new Object();
     
     // Part I opening a connection
-    bob.setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
+    bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
     
       public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options)
           throws IOException {
@@ -136,7 +188,7 @@ public abstract class TLTest<Identifier> {
     
     });
     
-    alice.openSocket(getIdentifier(alice, bob), new SocketCallback<Identifier>(){    
+    alice().openSocket(getIdentifier(alice(), bob()), new SocketCallback<Identifier>(){    
       public void receiveResult(SocketRequestHandle<Identifier> s, P2PSocket<Identifier> result) {
         synchronized(lock) {
           aliceSockets.add(result);
@@ -209,7 +261,7 @@ public abstract class TLTest<Identifier> {
         }
       }
     
-      public void receiveException(P2PSocket socket, Exception e) {
+      public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
           lock.notify(); 
@@ -231,7 +283,7 @@ public abstract class TLTest<Identifier> {
     assertTrue(exceptionList.isEmpty());
 
     // Part III test shutdown/close()
-    final List<P2PSocket> closed = new ArrayList<P2PSocket>();
+    final List<P2PSocket<Identifier>> closed = new ArrayList<P2PSocket<Identifier>>();
     
     aliceSockets.get(0).shutdownOutput();
     
@@ -300,7 +352,7 @@ public abstract class TLTest<Identifier> {
       }
     }
 
-    bob.setCallback(null);
+    bob().setCallback(null);
 
     assertTrue(exceptionList.isEmpty());
     assertTrue("receivedList.size():"+receivedList.size(), receivedList.size() == 1);
@@ -334,36 +386,36 @@ public abstract class TLTest<Identifier> {
     }
     
     // added to every time bob receives something
-    final List<Tupel> receivedList = new ArrayList<Tupel>(1);
+    final List<Tupel<Identifier>> receivedList = new ArrayList<Tupel<Identifier>>(1);
     final List<Exception> exceptionList = new ArrayList<Exception>(1);
-    final List<MessageRequestHandle> sentList = new ArrayList<MessageRequestHandle>(1);
+    final List<MessageRequestHandle<Identifier, ByteBuffer>> sentList = new ArrayList<MessageRequestHandle<Identifier, ByteBuffer>>(1);
     final Object lock = new Object();
 //    TestEnv<Identifier> tenv = getTestEnv();
 
     // make a way for bob to receive the callback
-    bob.setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {    
+    bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {    
       public void messageReceived(Identifier i, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
-          receivedList.add(new Tupel(i, buf));
+          receivedList.add(new Tupel<Identifier>(i, buf));
           lock.notify();
         }
       }    
-      public void incomingSocket(P2PSocket s) {}    
+      public void incomingSocket(P2PSocket<Identifier> s) {}    
     });
     
-    MessageRequestHandle handle = alice.sendMessage(
-        getIdentifier(alice, bob), 
+    MessageRequestHandle<Identifier, ByteBuffer> handle = alice().sendMessage(
+        getIdentifier(alice(), bob()), 
         sentBuffer, 
         new MessageCallback<Identifier, ByteBuffer>() {
     
-          public void ack(MessageRequestHandle msg) {
+          public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             synchronized(lock) {
               sentList.add(msg);
               lock.notify();
             }        
           }    
           
-          public void sendFailed(MessageRequestHandle msg, Exception ex) {
+          public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             synchronized(lock) {
               ex.printStackTrace();
               exceptionList.add(ex);
@@ -387,11 +439,11 @@ public abstract class TLTest<Identifier> {
     byte[] rec = new byte[receivedList.get(0).buf.remaining()];
     receivedList.get(0).buf.get(rec);
     assertTrue(Arrays.equals(rec, sentBuffer.array())); // it is equal
-    assertTrue("i:"+receivedList.get(0).i+" getI():"+getIdentifier(bob, alice), receivedList.get(0).i.equals(getIdentifier(bob, alice)));
+    assertTrue("i:"+receivedList.get(0).i+" getI():"+getIdentifier(bob(), alice()), receivedList.get(0).i.equals(getIdentifier(bob(), alice())));
     assertTrue("sentList.size():"+sentList.size(),sentList.size() == 1); // we got one notification
     assertTrue(sentList.get(0) == handle); // it is the buffer we sent        
     assertTrue("handle.getMessage():"+handle.getMessage()+" sentBuffer:"+sentBuffer,handle.getMessage() == sentBuffer); // it is the buffer we sent        
-    bob.setCallback(null);
+    bob().setCallback(null);
   }
   
   /**
@@ -403,24 +455,24 @@ public abstract class TLTest<Identifier> {
     final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes); 
    
     // added to every time bob receives something
-    final List<MessageRequestHandle> failedList = new ArrayList<MessageRequestHandle>(1);
-    final List<MessageRequestHandle> sentList = new ArrayList<MessageRequestHandle>(1);
+    final List<MessageRequestHandle<Identifier, ByteBuffer>> failedList = new ArrayList<MessageRequestHandle<Identifier, ByteBuffer>>(1);
+    final List<MessageRequestHandle<Identifier, ByteBuffer>> sentList = new ArrayList<MessageRequestHandle<Identifier, ByteBuffer>>(1);
     final List<Exception> exceptionList = new ArrayList<Exception>(1);
     final Object lock = new Object();
 //    TestEnv<Identifier> tenv = getTestEnv();
 
-    MessageRequestHandle cancellable = alice.sendMessage(
-        getIdentifier(alice, bob), 
+    MessageRequestHandle<Identifier, ByteBuffer> cancellable = alice().sendMessage(
+        getIdentifier(alice(), bob()), 
         sentBuffer, 
         new MessageCallback<Identifier, ByteBuffer>() {
     
-          public void ack(MessageRequestHandle msg) {
+          public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             synchronized(lock) {
               sentList.add(msg);
               lock.notify();
             }        
           }    
-          public void sendFailed(MessageRequestHandle msg, Exception exception) {
+          public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception exception) {
             synchronized(lock) {
               failedList.add(msg);
 //              logger.logException("foo", exception);
@@ -463,24 +515,24 @@ public abstract class TLTest<Identifier> {
     }
     
     // added to every time bob receives something
-    final List<Tupel> receivedList = new ArrayList<Tupel>(1);
+    final List<Tupel<Identifier>> receivedList = new ArrayList<Tupel<Identifier>>(1);
     final List<Exception> exceptionList = new ArrayList<Exception>(1);
     final Object lock = new Object();
 //    TestEnv<Identifier> tenv = getTestEnv();
 
     // make a way for bob to receive the callback
-    bob.setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {    
+    bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {    
       public void messageReceived(Identifier i, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
-          receivedList.add(new Tupel(i, buf));
+          receivedList.add(new Tupel<Identifier>(i, buf));
           lock.notify();
         }
       }    
-      public void incomingSocket(P2PSocket s) {}    
+      public void incomingSocket(P2PSocket<Identifier> s) {}    
     });
     
-    alice.sendMessage(
-        getIdentifier(alice, bob), 
+    alice().sendMessage(
+        getIdentifier(alice(), bob()), 
         sentBuffer, 
         null, 
         null);
@@ -499,10 +551,10 @@ public abstract class TLTest<Identifier> {
     byte[] rec = new byte[receivedList.get(0).buf.remaining()];
     receivedList.get(0).buf.get(rec);
     assertTrue(Arrays.equals(rec, sentBuffer.array())); // it is equal
-    assertTrue(receivedList.get(0).i.equals(getIdentifier(bob, alice)));
-    bob.setCallback(null); 
+    assertTrue(receivedList.get(0).i.equals(getIdentifier(bob(), alice())));
+    bob().setCallback(null); 
     
-    alice.openSocket(getIdentifier(alice, bob), null, options);
+    alice().openSocket(getIdentifier(alice(), bob()), null, options);
   }
 
 }

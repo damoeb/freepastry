@@ -91,7 +91,7 @@ public class ConsistentJoinMsg extends PRawMessage {
     }
   }
   
-  public ConsistentJoinMsg(InputBuffer buf, NodeHandleFactory nhf, NodeHandle sender) throws IOException {
+  public ConsistentJoinMsg(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender) throws IOException {
     super(JoinAddress.getCode());    
     byte version = buf.readByte();
     switch(version) {

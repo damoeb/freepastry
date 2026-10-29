@@ -43,6 +43,7 @@ import java.util.*;
 import rice.environment.logging.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.scribe.*;
+import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.selector.TimerTask;
 
 /**
@@ -57,7 +58,7 @@ import rice.selector.TimerTask;
  * @author Alan Mislove
  * @author Atul Singh
  */
-public class Stripe implements ScribeClient {
+public class Stripe implements ScribeMultiClient {
 
   /**
    * The maximum number of failed subscriptions
@@ -87,7 +88,7 @@ public class Stripe implements ScribeClient {
   /**
    * The list of SplitStreamClients interested in data from this client
    */
-  protected Vector clients;
+  protected Vector<SplitStreamClient> clients;
 
   /**
    * This stripe's channel
@@ -121,7 +122,7 @@ public class Stripe implements ScribeClient {
     if(SplitStreamScribePolicy.getPrefixMatch(this.channel.getLocalId(), stripeId.getId(), channel.getStripeBase()) > 0)
       this.isPrimary = true;
     
-    this.clients = new Vector<Object>();
+    this.clients = new Vector<SplitStreamClient>();
     this.topic = new Topic(stripeId.getId());
   }
 
@@ -160,7 +161,7 @@ public class Stripe implements ScribeClient {
   public void subscribe(SplitStreamClient client) {
     if (! clients.contains(client)) {
       if (clients.size() == 0) {
-        scribe.subscribe(topic, this);
+        scribe.subscribe(topic, this, (RawScribeContent) null, null);
       }
 
       clients.add(client);
@@ -249,23 +250,53 @@ public class Stripe implements ScribeClient {
 
 
   /**
+   * Informs this client that subscriptions failed
+   *
+   * @param topics The topics that failed
+   */
+  public void subscribeFailed(Collection<Topic> topics) {
+    for (Topic topic : topics) {
+      retrySubscribe(topic);
+    }
+  }
+
+  /**
+   * Informs this client that subscriptions succeeded; nothing to do.
+   *
+   * @param topics The topics that succeeded
+   */
+  public void subscribeSuccess(Collection<Topic> topics) {
+  }
+
+  /**
    * Informs this client that a subscription failed
+   *
+   * @deprecated use subscribeFailed(Collection)
+   * @param topic The topic that failed
+   */
+  @Deprecated
+  public void subscribeFailed(final Topic topic) {
+    retrySubscribe(topic);
+  }
+
+  /**
+   * Retries the subscription after a failure
    *
    * @param topic The topic that failed
    */
-  public void subscribeFailed(final Topic topic) {
+  private void retrySubscribe(final Topic topic) {
     Integer count = (Integer) failed.get(topic);
 
     if (count == null) {
-      count = new Integer(0);
+      count = Integer.valueOf(0);
     }
 
     if (count.intValue() < MAX_FAILED_SUBSCRIPTION) {
-      count = new Integer(count.intValue() + 1);
+      count = Integer.valueOf(count.intValue() + 1);
 
       if (logger.level <= Logger.WARNING) logger.log( 
           "DEBUG :: Subscription failed at " + channel.getLocalId() + " for topic " + topic + " - retrying.");
-      scribe.subscribe(topic, this);
+      scribe.subscribe(topic, this, (RawScribeContent) null, null);
 
       failed.put(topic, count);
     } else {
@@ -277,7 +308,7 @@ public class Stripe implements ScribeClient {
       TimerTask resubscribeTask = new TimerTask() {
         public void run() {
           if (getParent() == null) {
-            scribe.subscribe(topic, Stripe.this);         
+            scribe.subscribe(topic, Stripe.this, (RawScribeContent) null, null);         
           }
         }
       };
@@ -300,7 +331,7 @@ public class Stripe implements ScribeClient {
    * @return A array of children.
    */
   public NodeHandle[] getChildren(){
-    return this.scribe.getChildren(new Topic(this.getStripeId().getId()));
+    return this.scribe.getChildrenOfTopic(new Topic(this.getStripeId().getId())).toArray(new NodeHandle[0]);
   }
 
   /**

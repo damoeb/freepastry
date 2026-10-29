@@ -44,9 +44,9 @@ import rice.selector.TimerTask;
 
 public class DirectTimerTask extends TimerTask {
 
-  MessageDelivery md;
+  MessageDelivery<?, ?> md;
   
-  DirectTimerTask(MessageDelivery md, long nextExecutionTime, int period, boolean fixed) {
+  DirectTimerTask(MessageDelivery<?, ?> md, long nextExecutionTime, int period, boolean fixed) {
 //    super(md.node,md.msg);
     this.md = md; 
     setNextExecutionTime(nextExecutionTime);
@@ -54,11 +54,11 @@ public class DirectTimerTask extends TimerTask {
     this.fixedRate = fixed;
   }
   
-  DirectTimerTask(MessageDelivery md, long nextExecutionTime, int period) {
+  DirectTimerTask(MessageDelivery<?, ?> md, long nextExecutionTime, int period) {
     this(md,nextExecutionTime,period,false);
   }
   
-  DirectTimerTask(MessageDelivery md, long nextExecutionTime) {
+  DirectTimerTask(MessageDelivery<?, ?> md, long nextExecutionTime) {
     this(md,nextExecutionTime,-1,false);
   }
   

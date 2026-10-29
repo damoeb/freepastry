@@ -65,7 +65,7 @@ public class MultiringNodeCollection {
   /**
    * The list of nodes in the collection
    */
-  protected Vector nodes;
+  protected Vector<MultiringNode> nodes;
   
   /**
    * Constructor

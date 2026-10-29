@@ -55,7 +55,7 @@ import java.util.Queue;
  */
 public class SimpleProcessor implements Processor {
   // the queue used for processing requests
-  protected PriorityBlockingQueue<ProcessingRequest> QUEUE;
+  protected PriorityBlockingQueue<ProcessingRequest<?, ?>> QUEUE;
   protected ProcessingThread THREAD;
 
   // for blocking IO WorkRequests
@@ -65,7 +65,7 @@ public class SimpleProcessor implements Processor {
   long seq = Long.MIN_VALUE;
 
   public SimpleProcessor(String name) {
-    QUEUE = new PriorityBlockingQueue<ProcessingRequest>();
+    QUEUE = new PriorityBlockingQueue<ProcessingRequest<?, ?>>();
     THREAD = new ProcessingThread(name + ".ProcessingThread", QUEUE);
     THREAD.start();
     THREAD.setPriority(Thread.MIN_PRIORITY);
@@ -96,17 +96,17 @@ public class SimpleProcessor implements Processor {
     synchronized(SimpleProcessor.this) {
       nextSeq = seq++;
     }
-    ProcessingRequest ret = new ProcessingRequest(task, command, priority, nextSeq, log, ts, selector);
+    ProcessingRequest<R, E> ret = new ProcessingRequest<R, E>(task, command, priority, nextSeq, log, ts, selector);
     QUEUE.offer(ret);
     return ret;
   }
 
-  public Cancellable processBlockingIO(WorkRequest workRequest) {
+  public Cancellable processBlockingIO(WorkRequest<?> workRequest) {
     workQueue.enqueue(workRequest);
     return workRequest;
   }
 
-  public Queue<ProcessingRequest> getQueue() {
+  public Queue<ProcessingRequest<?, ?>> getQueue() {
     return QUEUE;
   }
 
@@ -124,18 +124,17 @@ public class SimpleProcessor implements Processor {
   /**
    * This is a test to make sure the order is correct.
    */
-  @SuppressWarnings("unchecked")
   public static void main(String[] args) throws Exception {
     Environment env = new Environment();
     Processor p = env.getProcessor();
     // block the processor for 1 second while we schedule some more stuff
-    p.process(new Executable() {    
+    p.process(new Executable<Object, Exception>() {    
       public Object execute() {
         try { Thread.sleep(1000); } catch (InterruptedException ie) {}
         return null;
       }
     
-    }, new Continuation() {
+    }, new Continuation<Object, Exception>() {
     
       public void receiveResult(Object result) {
         System.out.println("Done blocking.");
@@ -149,13 +148,13 @@ public class SimpleProcessor implements Processor {
     
     for (int seq = 0; seq < 10; seq++) {
       final int mySeq = seq;
-      p.process(new Executable() {    
+      p.process(new Executable<Object, Exception>() {    
         public Object execute() {
           System.out.println("Executed Seq: "+mySeq);
           return null;
         }
       
-      }, new Continuation() {      
+      }, new Continuation<Object, Exception>() {      
         public void receiveResult(Object result) {
           System.out.println("Received Seq: "+mySeq);
         }

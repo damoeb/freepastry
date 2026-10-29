@@ -233,8 +233,7 @@ public interface Endpoint extends NodeHandleReader {
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    */
-  @SuppressWarnings("unchecked")
-  void process(Executable task, Continuation command);
+  <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command);
   
   /**
    * Returns a unique instance name of this endpoint, sort of a mailbox name for this

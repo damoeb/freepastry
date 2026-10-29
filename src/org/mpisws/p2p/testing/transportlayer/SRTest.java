@@ -65,16 +65,16 @@ import rice.environment.logging.CloneableLogManager;
 
 public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
   static SourceRouteTransportLayer<MultiInetSocketAddress> carol_tap; // going to be the middle hop for alice/bob
-  static TransportLayer carol;
+  static TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> carol;
   static SourceRouteFactory<MultiInetSocketAddress> srFactory;
 
   @Override
-  public SourceRoute getIdentifier(
+  public SourceRoute<MultiInetSocketAddress> getIdentifier(
       TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> a, 
       TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> b) {
     
     SourceRoute<MultiInetSocketAddress> src = a.getLocalIdentifier();
-    SourceRoute<MultiInetSocketAddress> intermediate = (SourceRoute)carol.getLocalIdentifier();
+    SourceRoute<MultiInetSocketAddress> intermediate = carol.getLocalIdentifier();
     SourceRoute<MultiInetSocketAddress> dest = b.getLocalIdentifier();
     
     List<MultiInetSocketAddress> retArr = new ArrayList<MultiInetSocketAddress>(3);
@@ -101,11 +101,12 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     
     alice = buildTL("alice", addr, startPort, env);
     bob = buildTL("bob", addr, startPort+1, env);
-    carol_tap = (SourceRouteTransportLayer)buildTL("carol", addr, startPort+2, env);
+    carol_tap = buildTL("carol", addr, startPort+2, env);
     carol = carol_tap;
+    otherTLs.add(carol);
   }
 
-  private static TransportLayer buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static SourceRouteTransportLayer<MultiInetSocketAddress> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(), 
         env.getProcessor(), 
@@ -117,9 +118,9 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     env.addDestructable(env_a);    
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
     return
-      new SourceRouteTransportLayerImpl(srFactory,
+      new SourceRouteTransportLayerImpl<MultiInetSocketAddress>(srFactory,
         new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr_a),
-          new MagicNumberTransportLayer(
+          new MagicNumberTransportLayer<InetSocketAddress>(
             new WireTransportLayerImpl(addr_a,env_a, null),
           env_a, null,GOOD_HDR, 2000),
         env_a, null, null),
@@ -127,11 +128,11 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
   }
   
   static class Triplet {
-    SourceRoute path;
-    P2PSocket a,b;
+    SourceRoute<MultiInetSocketAddress> path;
+    P2PSocket<MultiInetSocketAddress> a,b;
     ByteBuffer m;
     
-    public Triplet(SourceRoute path, P2PSocket a, P2PSocket b) {
+    public Triplet(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
       this.path = path;
       this.a = a;
       this.b = b;
@@ -147,8 +148,8 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     final List<Triplet> received = new ArrayList<Triplet>(1);
     final List<Triplet> bad = new ArrayList<Triplet>(1);
     
-    SourceRouteTap tap = new SourceRouteTap(){    
-      public void socketOpened(SourceRoute path, P2PSocket a, P2PSocket b) {
+    SourceRouteTap<MultiInetSocketAddress> tap = new SourceRouteTap<MultiInetSocketAddress>(){    
+      public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
 //          System.out.println("socketOpened("+path+","+a+","+b+")");
           opened.add(new Triplet(path, a, b));
@@ -156,18 +157,18 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
         }
       }
     
-      public void receivedMessage(ByteBuffer m, SourceRoute path) {
+      public void receivedMessage(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path) {
         bad.add(new Triplet(path, null, null));
       }
       
-      public void socketClosed(SourceRoute path, P2PSocket a, P2PSocket b) {
+      public void socketClosed(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
           closed.add(new Triplet(path, a, b));        
           lock.notify();
         }
       }
         
-      public void receivedBytes(ByteBuffer m, SourceRoute path, P2PSocket a, P2PSocket b) {
+      public void receivedBytes(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
           Triplet t = new Triplet(path, a, b);
           t.m = m;
@@ -182,14 +183,25 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
-      while((env.getTimeSource().currentTimeMillis()<timeout) && bad.isEmpty() && (received.isEmpty() || opened.isEmpty() || opened.isEmpty())) {
+      while((env.getTimeSource().currentTimeMillis()<timeout) && bad.isEmpty() && (received.isEmpty() || opened.isEmpty() || closed.isEmpty())) {
         lock.wait(1000); 
       }
     }
 
     carol_tap.removeSourceRouteTap(tap);
     
-    
+    // verify that carol's tap saw the forwarded socket open, carry bytes and close
+    assertTrue("bad:"+bad.size(), bad.isEmpty());
+    assertTrue("opened:"+opened.size(), opened.size() == 1);
+    assertTrue("received:"+received.size(), !received.isEmpty());
+    assertTrue("closed:"+closed.size(), closed.size() == 1);
+    int numBytes = 0;
+    synchronized(lock) {
+      for (Triplet t : received) {
+        numBytes += t.m.remaining();
+      }
+    }
+    assertTrue("numBytes:"+numBytes, numBytes == sentBytes.length);
   }
 
   @Test
@@ -197,8 +209,8 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
   public void sendUDP() throws Exception {
     class TapTupel {
       ByteBuffer m;
-      SourceRoute path;
-      public TapTupel(ByteBuffer m, SourceRoute path) {
+      SourceRoute<MultiInetSocketAddress> path;
+      public TapTupel(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path) {
         this.m = m;
         this.path = path;
       }
@@ -206,19 +218,19 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     final Object lock = new Object();    
     final List<TapTupel> taptupels = new ArrayList<TapTupel>(1);
     
-    SourceRouteTap tap = new SourceRouteTap(){    
-      public void socketOpened(SourceRoute path, P2PSocket a, P2PSocket b) {
+    SourceRouteTap<MultiInetSocketAddress> tap = new SourceRouteTap<MultiInetSocketAddress>(){    
+      public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
       }
     
-      public void receivedBytes(ByteBuffer m, SourceRoute path, P2PSocket a, P2PSocket b) {
+      public void receivedBytes(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         
       }    
       
-      public void socketClosed(SourceRoute path, P2PSocket a, P2PSocket b) {
+      public void socketClosed(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         
       }
     
-      public void receivedMessage(ByteBuffer m, SourceRoute path) {
+      public void receivedMessage(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path) {
 //        System.out.println("receivedMessage("+m+","+path+"):"+m.remaining());        
         synchronized(lock) {
           taptupels.add(new TapTupel(m,path));
@@ -247,7 +259,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
 //    byte[] result = new byte[m.remaining()];
 //    m.get(result);
 //    assertTrue(Arrays.equals(result, sentBytes));
-    assertTrue(taptupels.get(0).path.equals(getIdentifier(alice, bob)));
+    assertTrue(taptupels.get(0).path.equals(getIdentifier(alice(), bob())));
   }
 
   @Override

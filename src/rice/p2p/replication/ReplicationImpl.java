@@ -193,7 +193,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
    */
   public static IdSet merge(IdFactory factory, IdSet a, IdSet b) {
     IdSet result = factory.buildIdSet();
-    Iterator i = a.getIterator();
+    Iterator<Id> i = a.getIterator();
     
     while (i.hasNext()) {
       result.addId((Id) i.next());
@@ -243,10 +243,10 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     final NodeHandleSet handles = endpoint.neighborSet(Integer.MAX_VALUE);
     final IdRange ourRange = endpoint.range(handle, 0, handle.getId());  
     
-    endpoint.process(new BloomFilterExecutable(ourRange), new ListenerContinuation("Creation of our bloom filter", environment) {
+    endpoint.process(new BloomFilterExecutable(ourRange), new ListenerContinuation<IdBloomFilter, Exception>("Creation of our bloom filter", environment) {
       int total = 0;
 
-      public void receiveResult(Object o) {
+      public void receiveResult(IdBloomFilter o) {
         if (destroyed) return;
         final IdBloomFilter ourFilter = (IdBloomFilter) o;
 
@@ -257,8 +257,8 @@ public class ReplicationImpl implements Replication, Application, Destructable {
             final IdRange range = handleRange.intersectRange(getTotalRange());
   
             if ((range != null) && (! range.intersectRange(getTotalRange()).isEmpty())) {
-              endpoint.process(new BloomFilterExecutable(range), new StandardContinuation(this) {
-                public void receiveResult(Object o) {
+              endpoint.process(new BloomFilterExecutable(range), new StandardContinuation<IdBloomFilter, IdBloomFilter, Exception>(this) {
+                public void receiveResult(IdBloomFilter o) {
                   IdBloomFilter filter = (IdBloomFilter) o;
   
                   if (ReplicationImpl.this.logger.level <= Logger.FINE) ReplicationImpl.this.logger.log( "COUNT: Sending request to " + handle + " for range " + range + ", " + ourRange + " in instance " + instance);
@@ -310,8 +310,8 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     if (message instanceof RequestMessage) {
       final RequestMessage rm = (RequestMessage) message;
       
-      MultiContinuation continuation = new MultiContinuation(new ListenerContinuation("Processing of RequestMessage", environment) {
-        public void receiveResult(Object o) {
+      MultiContinuation<Object[]> continuation = new MultiContinuation<Object[]>(new ListenerContinuation<Object[], Exception>("Processing of RequestMessage", environment) {
+        public void receiveResult(Object[] o) {
           Object[] array = (Object[]) o;
           IdSet[] result = new IdSet[array.length];
           if ((array.length > 0) && (array[0] instanceof Throwable)) {
@@ -333,7 +333,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
       
       for (int i=0; i<rm.getRanges().length; i++) {
         final int j = i;
-        endpoint.process(new Executable() {
+        endpoint.process(new Executable<Object, Exception>() {
           public String toString() { return "process " + j + " of " + rm.getRanges().length + " namespace " + instance; }
           public Object execute() {
             IdSet set = factory.buildIdSet();
@@ -388,7 +388,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
   /**
    * Internal class which is an executable for creating a bloom filter
    */
-  protected class BloomFilterExecutable implements Executable {
+  protected class BloomFilterExecutable implements Executable<IdBloomFilter, Exception> {
     protected IdRange range;
     
     public BloomFilterExecutable(IdRange range) {
@@ -399,7 +399,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
       return "bloomfilter range " + range + " namespace " + instance; 
     }
     
-    public Object execute() {
+    public IdBloomFilter execute() {
       return new IdBloomFilter(client.scan(range));
     }
   }  

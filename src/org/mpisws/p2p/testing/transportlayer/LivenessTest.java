@@ -61,7 +61,6 @@ import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
-import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
@@ -75,9 +74,9 @@ import rice.selector.Timer;
 import rice.selector.TimerTask;
 
 public class LivenessTest extends SRTest {
-  static TransportLayer dave; // going to be the middle hop for alice/bob
-  static ProximityProvider<SourceRoute> bob_prox; // going to be the middle hop for alice/bob
-  static SourceRouteFactory<MultiInetSocketAddress> srFactory;
+  static TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> dave; // going to be the middle hop for alice/bob
+  static ProximityProvider<SourceRoute<MultiInetSocketAddress>> bob_prox; // going to be the middle hop for alice/bob
+  // srFactory is inherited from SRTest (redeclaring it here would hide the field used by SRTest.getBogusIdentifier())
   
   @Override
   public SourceRoute<MultiInetSocketAddress> getIdentifier(
@@ -134,10 +133,12 @@ public class LivenessTest extends SRTest {
     bob = buildTL("bob", addr, startPort+1, env);
     carol = buildTL("carol", addr, startPort+2, env);
     dave = buildTL("dave", addr, startPort+3, env);
-    bob_prox = new MinRTTProximityProvider<SourceRoute>((LivenessTransportLayerImpl<SourceRoute>)bob, env);
+    otherTLs.add(carol);
+    otherTLs.add(dave);
+    bob_prox = new MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>>((TestLivenessTransportLayerImpl)bob, env);
   }
 
-  private static TransportLayer buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(), 
         env.getProcessor(), 
@@ -148,10 +149,10 @@ public class LivenessTest extends SRTest {
         env.getExceptionStrategy());    
     env.addDestructable(env_a);    
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
-    SourceRouteTransportLayer srtl = 
-        new SourceRouteTransportLayerImpl(srFactory,
+    SourceRouteTransportLayer<MultiInetSocketAddress> srtl = 
+        new SourceRouteTransportLayerImpl<MultiInetSocketAddress>(srFactory,
           new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr_a),
-            new MagicNumberTransportLayer(
+            new MagicNumberTransportLayer<InetSocketAddress>(
               new WireTransportLayerImpl(addr_a,env_a, null),
             env_a, null,GOOD_HDR, 2000),
           env_a, null, null),
@@ -160,13 +161,13 @@ public class LivenessTest extends SRTest {
     return new TestLivenessTransportLayerImpl(srtl,env_a, null);
   }
   
-  static class TestLivenessTransportLayerImpl extends LivenessTransportLayerImpl<SourceRoute> {    
-    public TestLivenessTransportLayerImpl(TransportLayer<SourceRoute, ByteBuffer> tl, Environment env, ErrorHandler<SourceRoute> errorHandler) {
+  static class TestLivenessTransportLayerImpl extends LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>> {    
+    public TestLivenessTransportLayerImpl(TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl, Environment env, ErrorHandler<SourceRoute<MultiInetSocketAddress>> errorHandler) {
       super(tl, env, errorHandler, 5000);
     }
     
     @Override
-    public void pong(final SourceRoute i, final long senderTime, final Map<String, Object> options) {
+    public void pong(final SourceRoute<MultiInetSocketAddress> i, final long senderTime, final Map<String, Object> options) {
       timer.schedule(new TimerTask() {      
         @Override
         public void run() {
@@ -176,9 +177,9 @@ public class LivenessTest extends SRTest {
     }
   }
   
-  public static int getDelay(SourceRoute a, SourceRoute b) {
+  public static int getDelay(SourceRoute<MultiInetSocketAddress> a, SourceRoute<MultiInetSocketAddress> b) {
 //    System.out.println("getDelay("+a+","+b+")");
-    TransportLayer<SourceRoute, ByteBuffer> bob = LivenessTest.bob;
+    TestLivenessTransportLayerImpl bob = (TestLivenessTransportLayerImpl)LivenessTest.bob;
     if (b.getLastHop().equals(bob.getLocalIdentifier().getLastHop()) &&
         a.equals(alice.getLocalIdentifier())) {
 //       System.out.println("here");
@@ -213,20 +214,20 @@ public class LivenessTest extends SRTest {
     
     ((Pinger<SourceRoute<MultiInetSocketAddress>>)LivenessTest.bob).addPingListener(pl);
 
-    bob_prox.proximity(getIdentifier(bob, alice), options); // initial check, causes ping if no data
-    bob_prox.proximity(getIdentifier(bob, carol), options); // initial check, causes ping if no data
+    bob_prox.proximity(getIdentifier(bob(), alice()), options); // initial check, causes ping if no data
+    bob_prox.proximity(getIdentifier(bob(), carol), options); // initial check, causes ping if no data
 
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
       while( (env.getTimeSource().currentTimeMillis()<timeout) && 
-         (!pingResponse.containsKey(((SourceRoute)alice.getLocalIdentifier()).getLastHop()) ||
-          !pingResponse.containsKey(((SourceRoute)carol.getLocalIdentifier()).getLastHop()))) {
+         (!pingResponse.containsKey(alice().getLocalIdentifier().getLastHop()) ||
+          !pingResponse.containsKey(carol.getLocalIdentifier().getLastHop()))) {
         lock.wait(1000); 
       }
     }
     
-    int aliceProx = bob_prox.proximity(getIdentifier(bob, alice), options);
-    int carolProx = bob_prox.proximity(getIdentifier(bob, carol), options);
+    int aliceProx = bob_prox.proximity(getIdentifier(bob(), alice()), options);
+    int carolProx = bob_prox.proximity(getIdentifier(bob(), carol), options);
 
     assertTrue("aliceProx:"+aliceProx+" carolProx:"+carolProx,aliceProx > carolProx+100);
 //    System.out.println("aliceProx"+aliceProx);
@@ -234,10 +235,10 @@ public class LivenessTest extends SRTest {
   }
   
   class Tupel {
-    SourceRoute sr;
+    SourceRoute<MultiInetSocketAddress> sr;
     int val;
     
-    public Tupel(SourceRoute i, int val) {
+    public Tupel(SourceRoute<MultiInetSocketAddress> i, int val) {
       this.sr = i;
       this.val = val;
     }
@@ -247,7 +248,7 @@ public class LivenessTest extends SRTest {
   public void testLiveness() throws Exception {    
     LivenessProvider<SourceRoute<MultiInetSocketAddress>> alice = (LivenessProvider<SourceRoute<MultiInetSocketAddress>>)LivenessTest.alice;
     SourceRoute<MultiInetSocketAddress> aliceToDave = getIdentifier(
-        (TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer>)LivenessTest.alice, dave);
+        alice(), dave);
     final List<Tupel> tupels = new ArrayList<Tupel>(3);
     final Object lock = new Object();
     

@@ -44,6 +44,7 @@ import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.TimeSource;
+import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.TimerWeakHashMap;
 import rice.pastry.*;
@@ -65,7 +66,7 @@ import rice.selector.TimerTask;
  * 
  * @author Alan Mislove
  */
-public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy, NodeSetListener, Observer, LeafSetProtocol {
+public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy, NodeSetListener, NodeHandleListener, PastryNodeListener, LeafSetProtocol {
 
   protected NodeHandle localHandle;
 
@@ -123,7 +124,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       LeafSet ls, RoutingTable rt) {
     super(ln, null, LeafSetProtocolAddress.getCode(), new PLSPMessageDeserializer(ln));    
     this.localNode = ln;
-    ln.addObserver(this); // to call start() if we are the seed node
+    ln.addPastryNodeListener(this); // to call start() if we are the seed node
     
     Parameters params = ln.getEnvironment().getParameters();
     if (params.contains("pastry_periodic_leafset_protocol_use_own_random")
@@ -149,7 +150,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     Iterator<NodeHandle> i = this.leafSet.asList().iterator();
     while(i.hasNext()) {
       NodeHandle nh = (NodeHandle)i.next(); 
-      nh.addObserver(this, 50);
+      nh.addNodeHandleListener(this, 50);
     }
 
     this.routeTable = rt;
@@ -172,7 +173,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     if (time == 0) return;
     Long oldTime = (Long) lastTimeReceivedBLS.get(from);
     if ((oldTime == null) || (oldTime.longValue() < time)) {
-      lastTimeReceivedBLS.put(from, new Long(time));      
+      lastTimeReceivedBLS.put(from, Long.valueOf(time));      
       long leaseTime = time+LEASE_PERIOD-timeSource.currentTimeMillis();
       if (logger.level <= Logger.FINE) {
         logger.log("PLSP.updateRecBLS("+from+","+time+"):"+leaseTime);
@@ -222,7 +223,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
         // if we find any missing entries, check their liveness
         for (int i = 0; i < set.size(); i++)
-          if (!set.get(i).isAlive())
+          if (set.get(i).getLiveness() >= NodeHandle.LIVENESS_DEAD)
             set.get(i).checkLiveness();
 
         // merge the received leaf set into our own
@@ -241,7 +242,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
       if (rls.getTimeStamp() > 0) { // without a timestamp, this is just a normal request, not a lease request
         // remember that we gave out a lease, and go unReady() if the node goes faulty
-        lastTimeRenewedLease.put(rls.returnHandle(),new Long(timeSource.currentTimeMillis()));
+        lastTimeRenewedLease.put(rls.returnHandle(),Long.valueOf(timeSource.currentTimeMillis()));
 
         // it's important to put the node in the leafset so that we don't accept messages for a node that
         // we issued a lease to
@@ -250,7 +251,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         leafSet.put(rls.returnHandle());
                 
         // nodes were never coming back alive when we called them faulty incorrectly
-        if (!rls.returnHandle().isAlive()) {
+        if (rls.returnHandle().getLiveness() >= NodeHandle.LIVENESS_DEAD) {
           if (logger.level <= Logger.INFO) logger.log("Issued lease to dead node:"+rls.returnHandle()+" initiating checkLiveness()");
           rls.returnHandle().checkLiveness();
           
@@ -466,7 +467,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         || (time.longValue() < (currentTime - BLS_THROTTLE))) {
       if (logger.level <= Logger.FINE) // only log if not throttled
         logger.log("PeriodicLeafSetProtocol: Checking liveness on neighbor:"+ sendTo+" "+time+" cl:"+checkLiveness);
-      lastTimeSentBLS.put(sendTo, new Long(currentTime));
+      lastTimeSentBLS.put(sendTo, Long.valueOf(currentTime));
 
       thePastryNode.send(sendTo, new BroadcastLeafSet(localHandle, leafSet, BroadcastLeafSet.Update, 0), null, options);
       thePastryNode.send(sendTo, new RequestLeafSet(localHandle, currentTime), null, options);
@@ -543,44 +544,55 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     super.leafSetChange(nh, wasAdded);
 //    logger.log("leafSetChange("+nh+","+wasAdded+")");
     if (wasAdded) {
-      nh.addObserver(this, 50); 
-      if (!nh.isAlive()) {
+      nh.addNodeHandleListener(this, 50); 
+      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
         // nh.checkLiveness(); // this is done in all of the calling code (in this Protocol)
         removeFromLeafsetIfPossible(nh); 
       }
     } else {
       if (logger.level <= Logger.FINE) logger.log("Removed "+nh+" from the LeafSet.");
-      nh.deleteObserver(this); 
+      nh.removeNodeHandleListener(this); 
     }
   }
 
   /**
    * Only remove the item if you did not give a lease.
    */
-  public void update(final Observable o, final Object arg) {
+  public void nodeHandleUpdate(final rice.p2p.commonapi.NodeHandle o, final Object arg) {
     if (destroyed) return;
 //    logger.log("update("+o+","+arg+")");
     if (o instanceof NodeHandle) {      
       if (arg == NodeHandle.DECLARED_DEAD) {
         removeFromLeafsetIfPossible((NodeHandle)o);
       }
-      return;
     }    
+  }
     
-    // this is if we are the "seed" node
-    if (o instanceof PastryNode) {
-      if (arg instanceof Boolean) { // could also be a JoinFailedException
-        Boolean rdy = (Boolean)arg;
-        if (rdy.equals(Boolean.TRUE)) {
-          localNode.deleteObserver(this);
-          start();
-        }
-      }
+  /**
+   * this is if we are the "seed" node
+   */
+  public void pastryNodeReady(PastryNode node, boolean ready) {
+    if (destroyed) return;
+    if (ready) {
+      localNode.removePastryNodeListener(this);
+      start();
+    }
+  }
+
+  /**
+   * @deprecated this class is no longer an Observer, see {@link #nodeHandleUpdate} and {@link #pastryNodeReady}
+   */
+  @Deprecated
+  public void update(final Observable o, final Object arg) {
+    if (o instanceof rice.p2p.commonapi.NodeHandle) {
+      nodeHandleUpdate((rice.p2p.commonapi.NodeHandle)o, arg);
+    } else if ((o instanceof PastryNode) && (arg instanceof Boolean)) {
+      pastryNodeReady((PastryNode)o, ((Boolean)arg).booleanValue());
     }
   }
 
   public void removeFromLeafsetIfPossible(final NodeHandle nh) {
-    if (nh.isAlive()) return;
+    if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD) return;
     Long l_time = (Long)lastTimeRenewedLease.get(nh);
     if (l_time == null) {
       // there is no lease on record

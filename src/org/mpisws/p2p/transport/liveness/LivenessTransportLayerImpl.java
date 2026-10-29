@@ -279,6 +279,7 @@ public class LivenessTransportLayerImpl<Identifier> implements
     // should be moved to the source route manager, but there needs to be a way to cancel the liveness
     // checks, or maybe the higher layer can ignore them.
     if (logger.level <= Logger.INFO-50) logger.log("openSocket("+i+","+deliverSocketToMe+","+options+")");
+    if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
     return tl.openSocket(i, new SocketCallback<Identifier>(){
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
         deliverSocketToMe.receiveResult(cancellable, getLSocket(sock,getManager(i)));
@@ -488,6 +489,7 @@ public class LivenessTransportLayerImpl<Identifier> implements
 
   boolean destroyed = false;
   public void destroy() {
+    if (destroyed) return; // the listener lists are already gone
     if (logger.level <= Logger.INFO) logger.log("destroy()");
     destroyed = true;
     tl.destroy();    
@@ -541,18 +543,22 @@ public class LivenessTransportLayerImpl<Identifier> implements
   
   List<PingListener<Identifier>> pingListeners;
   public void addPingListener(PingListener<Identifier> name) {
+    if (destroyed) return;
     synchronized(pingListeners) {
       pingListeners.add(name);
     }
   }
 
   public boolean removePingListener(PingListener<Identifier> name) {
+    if (destroyed) return true;
     synchronized(pingListeners) {
       return pingListeners.remove(name);
     }
   }
   
   private void notifyPingListenersPing(Identifier i) {
+    // the lower layer may still deliver a message (e.g. a queued datagram) after we were destroyed
+    if (destroyed) return;
     List<PingListener<Identifier>> temp;
     synchronized(pingListeners) {
       temp = new ArrayList<PingListener<Identifier>>(pingListeners);
@@ -563,6 +569,7 @@ public class LivenessTransportLayerImpl<Identifier> implements
   }
   
   private void notifyPingListenersPong(Identifier i, int rtt, Map<String, Object> options) {
+    if (destroyed) return;
     List<PingListener<Identifier>> temp;
     synchronized(pingListeners) {
       temp = new ArrayList<PingListener<Identifier>>(pingListeners);

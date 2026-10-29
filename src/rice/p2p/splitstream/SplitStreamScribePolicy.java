@@ -41,6 +41,7 @@ import java.util.*;
 import rice.p2p.commonapi.*;
 import rice.p2p.scribe.*;
 import rice.p2p.scribe.ScribePolicy.DefaultScribePolicy;
+import rice.p2p.scribe.maintenance.MaintainableScribe;
 import rice.p2p.scribe.messaging.*;
 
 import rice.pastry.routing.RoutingTable;
@@ -113,7 +114,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @param children The new maximum bandwidth for this channel
    */
   public void setMaxChildren(ChannelId id, int children) {
-    policy.put(id, new Integer(children));
+    policy.put(id, Integer.valueOf(children));
   }
 
   /**
@@ -143,41 +144,73 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    *    the new subscriber (STAGE_3), then we drop the child and return true to accept the subscriber.    
    *
    *
+   * @param scribe the Scribe that is making the request
+   * @param source the subscriber
+   * @param topics the topics that are requested
+   * @param content the content that came with the message
+   * @return the topics to accept
+   */
+  public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
+    Iterator<Topic> i = topics.iterator();
+    while(i.hasNext()) {
+      Topic topic = i.next();
+      // the subscriber is also the source of the request here
+      if (!allowSubscribe(topic, source, source, content, 
+          new ArrayList<NodeHandle>(scribe.getChildrenOfTopic(topic)))) {
+        i.remove();
+      }
+    }
+    return topics;
+  }
+
+  /**
+   * @deprecated use allowSubscribe(Scribe, NodeHandle, List, ScribeContent)
    * @param message The subscribe message in question
    * @param children The list of children who are currently subscribed to this topic
    * @param clients The list of clients are are currently subscribed to this topic
    * @return Whether or not this child should be allowed add.
    */
-//  public boolean allowSubscribe(Scribe scribe, NodeHandle subscriber, Collection<ScribeClient> clients, Collection<NodeHandle> children) {
+  @Deprecated
   public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
+    return allowSubscribe(message.getTopic(), message.getSubscriber(), message.getSource(), 
+        message.getContent(), Arrays.asList(children));
+  }
 
-    Channel channel = getChannel(message.getTopic());
-    NodeHandle newChild = (NodeHandle)message.getSubscriber();
+  /**
+   * The per-topic "locating parent" algorithm described above.
+   *
+   * @param topic The topic the subscriber wants to join
+   * @param newChild The subscriber
+   * @param source The node that sent the subscribe request
+   * @param content The content of the subscribe request
+   * @param children The children who are currently subscribed to this topic
+   * @return Whether or not this child should be allowed add.
+   */
+  private boolean allowSubscribe(Topic topic, NodeHandle newChild, NodeHandle source, 
+      ScribeContent content, Collection<NodeHandle> children) {
+
+    Channel channel = getChannel(topic);
 
     if (channel == null) {
       // If the channel is null, return false *unless you are root*, in which case you 
       // return true.  This is a weird case.  We have to accept here if we are the root, even 
       // if we are not attached to the channel (it's a bootstrapping issue)
-      return scribe.isRoot(message.getTopic());
+      return scribe.isRoot(topic);
     }
     
     /* do not accept self - wierd case, should not happen */
-    if(message.getSubscriber().getId().equals(channel.getLocalId()))
+    if(newChild.getId().equals(channel.getLocalId()))
       return false;
 
     /* first see if we are in the 3rd stage of algorithm for locating parent. */
-    ScribeContent content = message.getContent();
-
     /* this occurs if we are in the third stage of locating a parent */
     if (content != null && (content instanceof SplitStreamSubscribeContent)) {
       int stage = ((SplitStreamSubscribeContent) content).getStage();
       if (stage == SplitStreamSubscribeContent.STAGE_FINAL) {
-        List list = Arrays.asList(children);
-        
-        if (!list.contains(message.getSource())) {
+        if (!children.contains(source)) {
           return false;
         } else {
-          this.scribe.removeChild(message.getTopic(), message.getSource());
+          this.scribe.removeChild(topic, source);
           return true;
         }
       }
@@ -188,24 +221,24 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       return true;
     } else {
       /* check if non-primary stripe */
-      if ((! message.getTopic().getId().equals(channel.getPrimaryStripe().getStripeId().getId())) &&
-          (! scribe.isRoot(message.getTopic()))) {
+      if ((! topic.getId().equals(channel.getPrimaryStripe().getStripeId().getId())) &&
+          (! scribe.isRoot(topic))) {
         return false;
       } else {
         /* find a victim child */
-        if (children.length > 0) {
-          NodeHandle victimChild = freeBandwidth(channel, newChild, message.getTopic().getId());
+        if (!children.isEmpty()) {
+          NodeHandle victimChild = freeBandwidth(channel, newChild, topic.getId());
 
           /* make sure victim is not subscriber */
           if (victimChild.getId().equals(newChild.getId())) {
             return false;
           } else {
-            scribe.removeChild(new Topic(message.getTopic().getId()), victimChild);
+            scribe.removeChild(new Topic(topic.getId()), victimChild);
             return true;
           }
         } else {
           /* we must accept, because this is primary stripe */
-          Vector res = freeBandwidthUltimate(message.getTopic().getId());
+          Vector<Object> res = freeBandwidthUltimate(topic.getId());
           if (res != null) {
             scribe.removeChild(new Topic((Id)res.elementAt(1)), (NodeHandle)res.elementAt(0));
             return true;
@@ -267,7 +300,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       NodeHandle nextHop = message.getNext();
 
       /* make sure that the next node is alive */
-      while ((nextHop != null) && (!nextHop.isAlive())) {
+      while ((nextHop != null) && (!isAlive(nextHop))) {
         nextHop = message.getNext();
       }
 
@@ -279,7 +312,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
            b. local node is root for non-prefix match topic,
               drop a child from non-primary, non-root stripe and accept the new subscriber */
         if (this.scribe.isRoot(message.getTopic())) {
-          Vector res = freeBandwidthUltimate(message.getTopic().getId());
+          Vector<Object> res = freeBandwidthUltimate(message.getTopic().getId());
 
           if (res != null) {
             scribe.removeChild(new Topic((Id)res.elementAt(1)), (NodeHandle)res.elementAt(0));
@@ -298,6 +331,13 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     }
   }
     
+  /**
+   * Liveness check via the scribe's endpoint (replaces the deprecated NodeHandle.isAlive()).
+   */
+  private boolean isAlive(NodeHandle handle) {
+    return ((MaintainableScribe) scribe).getEndpoint().isAlive(handle);
+  }
+
   /**
    * Returns the Channel which contains the stripe cooresponding to the
    * provided topic.
@@ -335,7 +375,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     Stripe[] stripes = channel.getStripes();
 
     for (int j=0; j<stripes.length; j++) {
-      total += scribe.getChildren(new Topic(stripes[j].getStripeId().getId())).length;
+      total += scribe.getChildrenOfTopic(new Topic(stripes[j].getStripeId().getId())).size();
     }
 
     return total;
@@ -348,7 +388,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @return A vector containing the child to be dropped and
    *         the corresponding stripeId
    */
-  public Vector freeBandwidthUltimate(Id stripeId){
+  public Vector<Object> freeBandwidthUltimate(Id stripeId){
     Channel channel = getChannel(new Topic(stripeId));
     Stripe[] stripes = channel.getStripes();
 
@@ -365,7 +405,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       tp = new Topic(stripes[i].getStripeId().getId());
       if (!channel.getPrimaryStripe().getStripeId().getId().equals(stripes[i].getStripeId().getId()) &&
           !this.scribe.isRoot(tp) &&
-          (scribe.getChildren(tp).length > 0)) {
+          (!scribe.getChildrenOfTopic(tp).isEmpty())) {
         candidateStripes.add(stripes[i].getStripeId().getId());
       }
     }
@@ -375,7 +415,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       for(int i = 0; i < stripes.length; i++){
         tp = new Topic(stripes[i].getStripeId().getId());
         if ((! channel.getPrimaryStripe().getStripeId().getId().equals(stripes[i].getStripeId().getId())) &&
-            (scribe.getChildren(tp).length > 0) &&
+            (!scribe.getChildrenOfTopic(tp).isEmpty()) &&
             (! stripes[i].getStripeId().getId().equals(stripeId))) {
           candidateStripes.add(stripes[i].getStripeId().getId());
         }
@@ -386,10 +426,9 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     if(candidateStripes.size() > 0){
       victimStripeId = (Id)candidateStripes.elementAt(scribe.getEnvironment().getRandomSource().nextInt(candidateStripes.size()));
 
-      NodeHandle[] children;
-      children = this.scribe.getChildren(new Topic(victimStripeId));
+      List<NodeHandle> children = new ArrayList<NodeHandle>(this.scribe.getChildrenOfTopic(new Topic(victimStripeId)));
 
-      NodeHandle child = children[scribe.getEnvironment().getRandomSource().nextInt(children.length)];
+      NodeHandle child = children.get(scribe.getEnvironment().getRandomSource().nextInt(children.size()));
       Vector<Object> result = new Vector<Object>();
 
       result.addElement(child);
@@ -415,15 +454,14 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     Id localId = channel.getLocalId();
 
     /* We have to drop one of child of the primary stripe */
-    NodeHandle[] children = scribe.getChildren(new Topic(primaryStripe.getStripeId().getId()));
+    Collection<NodeHandle> children = new ArrayList<NodeHandle>(scribe.getChildrenOfTopic(new Topic(primaryStripe.getStripeId().getId())));
 
     /* Now, select that child which doesnt share least prefix with local node */
     int minPrefixMatch = getPrefixMatch(stripeId, newChild.getId(), channel.getStripeBase());
 
     /* find all potential victims */
     Vector<NodeHandle> victims = new Vector<NodeHandle>();
-    for(int j = 0; j < children.length; j++){
-      NodeHandle c = (NodeHandle)children[j];
+    for(NodeHandle c : children){
       int match = getPrefixMatch(stripeId, c.getId(), channel.getStripeBase());
       if(match < minPrefixMatch){
         victims.addElement(c);

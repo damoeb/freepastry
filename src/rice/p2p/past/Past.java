@@ -71,7 +71,7 @@ public interface Past {
    * @param obj the object to be inserted
    * @param command Command to be performed when the result is received
    */
-  public void insert(PastContent obj, Continuation<Boolean[], Exception> command);
+  public void insert(PastContent obj, Continuation<? super Boolean[], Exception> command);
  
   /**
    * Retrieves the object stored in this instance of Past with the
@@ -98,7 +98,7 @@ public interface Past {
    * @param id the key to be queried
    * @param command Command to be performed when the result is received
    */
-  public void lookup(Id id, Continuation<PastContent, Exception> command);
+  public void lookup(Id id, Continuation<? super PastContent, Exception> command);
   
   /**
    * Retrieves the object stored in this instance of Past with the
@@ -125,7 +125,7 @@ public interface Past {
    * @param cache Whether or not the result should be cached
    * @param command Command to be performed when the result is received
    */
-  public void lookup(Id id, boolean cache, Continuation command);
+  public void lookup(Id id, boolean cache, Continuation<? super PastContent, Exception> command);
 
   /**
    * Retrieves the handles of up to max replicas of the object stored
@@ -144,7 +144,7 @@ public interface Past {
    * @param max the maximal number of replicas requested
    * @param command Command to be performed when the result is received 
    */
-  public void lookupHandles(Id id, int max, Continuation command);
+  public void lookupHandles(Id id, int max, Continuation<? super PastContentHandle[], Exception> command);
   
   /**
    * Retrieves the handle for the given object stored on the requested 
@@ -155,7 +155,7 @@ public interface Past {
    * @param handle The node on which the handle is requested
    * @param command Command to be performed when the result is received 
    */
-  public void lookupHandle(Id id, NodeHandle handle, Continuation command);
+  public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command);
   
   /**
    * Retrieves the object associated with a given content handle.
@@ -169,7 +169,7 @@ public interface Past {
    * @param handle the key to be queried
    * @param command Command to be performed when the result is received 
    */
-  public void fetch(PastContentHandle handle, Continuation command);
+  public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command);
   
   /**
    * get the nodeHandle of the local Past node

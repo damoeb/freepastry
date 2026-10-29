@@ -668,7 +668,7 @@ public class PastRegrTest extends CommonAPITest {
     local.getStorageManager().getCache().cache(id1, null, file1, new TestCommand() {
       public void receive(Object result) throws Exception {
         assertTrue("Object should not be null", result != null);
-        assertTrue("Object should be True", result.equals(new Boolean(true)));
+        assertTrue("Object should be True", result.equals(Boolean.valueOf(true)));
 
         stepDone();
 
@@ -814,7 +814,7 @@ public class PastRegrTest extends CommonAPITest {
   /**
    * Common superclass for test commands.
    */
-  protected class TestCommand implements Continuation {
+  protected class TestCommand implements Continuation<Object, Exception> {
     public void receiveResult(Object result) {
       try {
         receive(result);
@@ -832,7 +832,7 @@ public class PastRegrTest extends CommonAPITest {
   /**
     * Common superclass for test commands which should throw an exception
    */
-  protected class TestExceptionCommand implements Continuation {
+  protected class TestExceptionCommand implements Continuation<Object, Exception> {
     public void receiveResult(Object result) {
       stepDone(FAILURE, "Command should throw an exception - got " + result);
     }
@@ -988,6 +988,7 @@ public class PastRegrTest extends CommonAPITest {
     /**
      * @deprecated
      */
+    @Deprecated
     public Message getMessage() {
       return message;
     }

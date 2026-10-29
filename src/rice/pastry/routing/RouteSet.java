@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.routing;
 
+import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.pastry.*;
 
@@ -54,7 +55,7 @@ import java.io.*;
  */
 
 public class RouteSet implements NodeSetI, Serializable,
-    Observer, Iterable<NodeHandle> {
+    NodeHandleListener, Iterable<NodeHandle> {
   public static final short TYPE = 2;
 
   private static final long serialVersionUID = 8156336294555109590L;
@@ -114,7 +115,7 @@ public class RouteSet implements NodeSetI, Serializable,
    * @return true if the put succeeded, false otherwise.
    */
   public boolean put(NodeHandle handle) {
-    if (!handle.isAlive()) return false;
+    if (handle.getLiveness() >= NodeHandle.LIVENESS_DEAD) return false;
     int worstIndex = -1;
     int worstProximity = Integer.MIN_VALUE;
 
@@ -125,18 +126,18 @@ public class RouteSet implements NodeSetI, Serializable,
       if (nodes[i].equals(handle))
         return false;
 
-      if (!nodes[i].isAlive()) {
+      if (nodes[i].getLiveness() >= NodeHandle.LIVENESS_DEAD) {
         // node is dead, replace immeadiately
         notifyTable(nodes[i], false);
 
         // in case we observe this handle, stop doing so
-        nodes[i].deleteObserver(this);
+        nodes[i].removeNodeHandleListener(this);
 
         // insert new handle
         nodes[i] = handle;
 
         notifyTable(handle, true);
-        handle.addObserver(this);
+        handle.addNodeHandleListener(this);
         return true;
       }
       
@@ -156,7 +157,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
       // ping handles while the set is not full
       handle.ping();
-      handle.addObserver(this);
+      handle.addNodeHandleListener(this);
 
       return true;
     } else {
@@ -165,7 +166,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
         handle.ping(); // XXX - eventually, should only ping handles pinged from
                        // the deserializer
-        handle.addObserver(this);
+        handle.addNodeHandleListener(this);
 
         return false;
       } else if (localNode.proximity(handle) < worstProximity) {
@@ -174,14 +175,14 @@ public class RouteSet implements NodeSetI, Serializable,
         notifyTable(nodes[worstIndex], false);
 
         // in case we observe this handle, stop doing so
-        nodes[worstIndex].deleteObserver(this);
+        nodes[worstIndex].removeNodeHandleListener(this);
 
         // insert new handle
         nodes[worstIndex] = handle;
 
 //        setChanged();
         notifyTable(handle, true);
-        handle.addObserver(this);
+        handle.addNodeHandleListener(this);
 
         return true;
       } else {
@@ -191,13 +192,13 @@ public class RouteSet implements NodeSetI, Serializable,
   }
 
   /**
-   * Is called by the Observer pattern whenever the liveness or proximity of a
+   * Is called whenever the liveness or proximity of a
    * registered node handle is changed.
    * 
    * @param o The node handle
    * @param arg the event type (PROXIMITY_CHANGE, DECLARED_LIVE, DECLARED_DEAD)
    */
-  public void update(Observable o, Object arg) {
+  public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle o, Object arg) {
     // if the proximity is initialized for the time, insert the handle
     if (((Integer) arg) == NodeHandle.PROXIMITY_CHANGED) {
       put((NodeHandle) o);
@@ -205,6 +206,14 @@ public class RouteSet implements NodeSetI, Serializable,
       // changed to remove dead handles - AM
       remove((NodeHandle) o);
     }
+  }
+
+  /**
+   * @deprecated RouteSet is no longer an Observer, see {@link #nodeHandleUpdate}
+   */
+  @Deprecated
+  public void update(Observable o, Object arg) {
+    nodeHandleUpdate((NodeHandle) o, arg);
   }
 
   /**
@@ -224,7 +233,7 @@ public class RouteSet implements NodeSetI, Serializable,
         notifyTable(handle, false);
 
         // in case we observe this handle, stop doing so
-        handle.deleteObserver(this);
+        handle.removeNodeHandleListener(this);
 
         return handle;
       }
@@ -250,7 +259,7 @@ public class RouteSet implements NodeSetI, Serializable,
         notifyTable(handle, false);
 
         // in case we observe this handle, stop doing so
-        handle.deleteObserver(this);
+        handle.removeNodeHandleListener(this);
 
         return handle;
       }
@@ -442,7 +451,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
     int j = 0;
     for (int i = 0; i < tmp.length; i++) {
-      if ((nodes[i] != null) && (nodes[i].isAlive())) {
+      if ((nodes[i] != null) && (nodes[i].getLiveness() < NodeHandle.LIVENESS_DEAD)) {
         tmp[j] = nodes[i];
         j++;
       }
@@ -557,7 +566,7 @@ public class RouteSet implements NodeSetI, Serializable,
     }       
   }
   
-  public RouteSet(InputBuffer buf, NodeHandleFactory nhf, PastryNode local) throws IOException {
+  public RouteSet(InputBuffer buf, NodeHandleFactory<?> nhf, PastryNode local) throws IOException {
     this.localNode = local;
     byte maxSize = buf.readByte();
     theSize = buf.readByte();
@@ -573,7 +582,7 @@ public class RouteSet implements NodeSetI, Serializable,
   public void destroy() {
     for (int i = 0; i < nodes.length; i++) {
       if (nodes[i] != null) {
-        nodes[i].deleteObserver(this);
+        nodes[i].removeNodeHandleListener(this);
         nodes[i] = null;
       }
     }

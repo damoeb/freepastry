@@ -65,7 +65,7 @@ public interface ReplicationManagerClient {
    *           heard about the key.
    * @param command The command to return the result to
    */
-  public void fetch(Id id, NodeHandle hint, Continuation command);
+  public void fetch(Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command);
   
   /**
    * This upcall is to notify the client that the given id can be safely removed
@@ -74,7 +74,7 @@ public interface ReplicationManagerClient {
    *
    * @param id The id to remove
    */
-  public void remove(Id id, Continuation command);
+  public void remove(Id id, Continuation<? super Boolean, Exception> command);
   
   /**
    * This upcall should return the set of keys that the application
@@ -101,7 +101,7 @@ public interface ReplicationManagerClient {
    * @param id The id in question
    * @return Whether or not the id exists somewhere in the overlay
    */
-  public void existsInOverlay(Id id, Continuation command);
+  public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command);
   
   /**
    * Asks a client to reinsert an object it already holds into the overlay
@@ -109,6 +109,6 @@ public interface ReplicationManagerClient {
    * @param id The id in question
    * @return 
    */
-  public void reInsert(Id id, Continuation command);
+  public void reInsert(Id id, Continuation<? super Boolean, Exception> command);
 }
 

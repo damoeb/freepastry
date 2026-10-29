@@ -144,7 +144,7 @@ public class BroadcastLeafSet extends PRawMessage {
     buf.writeLong(requestTimeStamp);
   }
   
-  public BroadcastLeafSet(InputBuffer buf, NodeHandleFactory nhf) throws IOException {
+  public BroadcastLeafSet(InputBuffer buf, NodeHandleFactory<?> nhf) throws IOException {
     super(LeafSetProtocolAddress.getCode());
     
     byte version = buf.readByte();

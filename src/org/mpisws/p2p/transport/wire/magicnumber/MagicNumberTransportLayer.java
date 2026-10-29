@@ -142,7 +142,7 @@ public class MagicNumberTransportLayer<Identifier> implements
     return wire.getLocalIdentifier();
   }
 
-  public SocketRequestHandle openSocket(final Identifier i, 
+  public SocketRequestHandle<Identifier> openSocket(final Identifier i, 
       final SocketCallback<Identifier> deliverSocketToMe, 
       Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
@@ -271,12 +271,19 @@ public class MagicNumberTransportLayer<Identifier> implements
     ByteBuffer buf = ByteBuffer.allocate(HEADER.length);
     
     P2PSocket<Identifier> socket;
+    
+    /**
+     * Set once the header timeout fired; the socket close it triggers must not be reported again
+     */
+    boolean stalled = false;
+    
     public VerifyHeaderReceiver(P2PSocket<Identifier> s) {
       this.socket = s;
       environment.getSelectorManager().getTimer().schedule(this,SOCKET_TIMEOUT);      
     }
     
     public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
+      if (stalled) return; // already reported as a StalledSocketException
       errorHandler.receivedException(socket.getIdentifier(), ioe);
       // TODO Auto-generated method stub      
     }
@@ -308,6 +315,7 @@ public class MagicNumberTransportLayer<Identifier> implements
 
     @Override
     public void run() {
+      stalled = true;
       socket.close();
       errorHandler.receivedException(socket.getIdentifier(), new StalledSocketException(socket.getIdentifier(), "Timeout on incoming socket expired."));
     }  

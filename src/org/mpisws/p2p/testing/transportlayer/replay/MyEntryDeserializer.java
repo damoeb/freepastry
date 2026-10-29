@@ -49,9 +49,9 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 
 public class MyEntryDeserializer extends BasicEntryDeserializer implements MyEvents {
-  Serializer serializer;
+  Serializer<?> serializer;
 
-  public MyEntryDeserializer(Serializer serializer) {
+  public MyEntryDeserializer(Serializer<?> serializer) {
     this.serializer = serializer;
   }
   

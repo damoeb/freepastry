@@ -39,6 +39,7 @@ package org.mpisws.p2p.testing.transportlayer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,7 +62,7 @@ public class WireTest extends TLTest<InetSocketAddress> {
     bob = buildTL("bob", addr, startPort+1, env);
   }
   
-  private static TransportLayer buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static TransportLayer<InetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(), 
         env.getProcessor(), 

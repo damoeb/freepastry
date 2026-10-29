@@ -48,7 +48,7 @@ import java.util.*;
  *
  * @author Alan Mislove
  */
-public class MultiringNodeHandle extends NodeHandle implements Observer  {
+public class MultiringNodeHandle extends NodeHandle implements NodeHandleListener  {
   
   // serailver
   static final long serialVersionUID = -2972303779251779984L;
@@ -73,7 +73,7 @@ public class MultiringNodeHandle extends NodeHandle implements Observer  {
     this.handle = handle;
     this.ringId = ringId;
     
-    handle.addObserver(this);
+    handle.addNodeHandleListener(this);
   }
   
   /**
@@ -106,8 +106,10 @@ public class MultiringNodeHandle extends NodeHandle implements Observer  {
   /**
    * Returns whether or not this node is currently alive
    *
+   * @deprecated use Endpoint.isAlive(NodeHandle)
    * @return Whether or not this node is currently alive
    */
+  @Deprecated
   public boolean isAlive() {
     return handle.isAlive();
   }
@@ -118,6 +120,7 @@ public class MultiringNodeHandle extends NodeHandle implements Observer  {
    * @return The current proximity value of this node
    */
   @SuppressWarnings("deprecation")
+  @Deprecated
   public int proximity() {
     return handle.proximity();
   }
@@ -125,12 +128,23 @@ public class MultiringNodeHandle extends NodeHandle implements Observer  {
   /**
    * Observable callback.  Simply rebroadcasts
    *
+   * @deprecated MultiringNodeHandle is no longer a java.util.Observer; use nodeHandleUpdate(NodeHandle, Object)
    * @param o the updated object
    * @param obj The paramter
    */
+  @Deprecated
   public void update(Observable o, Object obj) {
-    setChanged();
-    notifyObservers(obj);
+    nodeHandleUpdate((NodeHandle) o, obj);
+  }
+
+  /**
+   * Listener callback on the wrapped handle.  Simply rebroadcasts
+   *
+   * @param h the updated handle
+   * @param obj The paramter
+   */
+  public void nodeHandleUpdate(NodeHandle h, Object obj) {
+    notifyNodeHandleListeners(obj);
   }
   
   /**
@@ -172,7 +186,7 @@ public class MultiringNodeHandle extends NodeHandle implements Observer  {
   private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
     ois.defaultReadObject();
     
-    handle.addObserver(this);
+    handle.addNodeHandleListener(this);
   }
 
   /**
@@ -191,7 +205,7 @@ public class MultiringNodeHandle extends NodeHandle implements Observer  {
   public MultiringNodeHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
     ringId = endpoint.readId(buf, buf.readShort());
     handle = endpoint.readNodeHandle(buf);
-    handle.addObserver(this);
+    handle.addNodeHandleListener(this);
   }
   
   public void serialize(OutputBuffer buf) throws IOException {

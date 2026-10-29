@@ -39,6 +39,7 @@ package rice.pastry.testing;
 
 import rice.environment.Environment;
 import rice.pastry.*;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.direct.*;
 import rice.pastry.standard.*;
 
@@ -64,7 +65,7 @@ public class ClosestRegrTest {
   public static int NUM_NODES = 1000;
 
   private PastryNodeFactory factory;
-  private NetworkSimulator simulator;
+  private NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
   private Vector<PastryNode> pastryNodes;
   
   int incorrect = 0;
@@ -76,7 +77,7 @@ public class ClosestRegrTest {
    */
   private ClosestRegrTest() throws IOException {
     environment = Environment.directEnvironment();
-    simulator = new SphereNetwork(environment);
+    simulator = new SphereNetwork<DirectNodeHandle, RawMessage>(environment);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, environment);
     pastryNodes = new Vector<PastryNode>();
   }
@@ -101,7 +102,14 @@ public class ClosestRegrTest {
    */
   protected void run() {
     for (int i=0; i<NUM_NODES; i++) {
-      PastryNode node = factory.newNode(getBootstrap());
+      NodeHandle bootHandle = getBootstrap();
+      PastryNode node;
+      try {
+        node = factory.newNode();
+      } catch (java.io.IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
+      node.boot(bootHandle);
       synchronized(node) {
         while(!node.isReady()) {
           try {

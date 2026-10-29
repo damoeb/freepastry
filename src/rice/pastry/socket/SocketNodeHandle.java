@@ -145,7 +145,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 //    if (spn != null)
 //      spn.getSocketSourceRouteManager().checkLiveness(eaddress);
 //    
-    return isAlive();
+    return getLiveness() < LIVENESS_DEAD;
   }
 
   /**
@@ -165,6 +165,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
    * @deprecated use PastryNode.send(msg, nh)
    * @param msg Message to be delivered, may or may not be routeMessage.
    */
+  @Deprecated
   public void receiveMessage(Message msg) {
     assertLocalNode();
     Map<String, Object> options = new HashMap<String, Object>(1);
@@ -250,6 +251,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
    * @deprecated use PastryNode.proximity(nh)
    * @return the proximity metric value
    */
+  @Deprecated
   public int proximity() {
     return ((PastryNode)localnode).getProxProvider().proximity(this, null);
   }
@@ -280,7 +282,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 ////      sm.invoke(runnable);
 ////    }
 //    
-    return isAlive();
+    return getLiveness() < LIVENESS_DEAD;
   }  
 
   /**
@@ -288,7 +290,9 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
    *
    * @param o DESCRIBE THE PARAMETER
    * @param obj DESCRIBE THE PARAMETER
+   * @deprecated does nothing; SocketNodeHandle is no longer an Observer
    */
+  @Deprecated
   public void update(Observable o, Object obj) {
   }
 

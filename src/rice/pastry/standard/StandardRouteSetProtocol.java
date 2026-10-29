@@ -115,7 +115,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
       RouteSet[] row = brr.getRow();
 
       NodeHandle nh = brr.from();
-      if (nh.isAlive())
+      if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
         routeTable.put(nh);
 
       for (int i = 0; i < row.length; i++) {
@@ -123,7 +123,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
         for (int j = 0; rs != null && j < rs.size(); j++) {
           nh = rs.get(j);
-          if (nh.isAlive() == false)
+          if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
             continue;
           routeTable.put(nh);
         }
@@ -199,7 +199,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
           // thus the correct behavior is to break, not continue.  In other words, we waste this cycle
           // finding the node faulty and removing it rather than doing an actual swap
           // - Jeff Hoye,  Aug 9, 2006
-          if (!nh.isAlive()) {
+          if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
             if (logger.level <= Logger.FINE) logger.log("found dead node in table:"+nh);            
             rs.remove(nh);
             break;

@@ -84,6 +84,7 @@ import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.tuples.MutableTuple;
 import rice.p2p.util.tuples.Tuple;
@@ -92,6 +93,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeListener;
 import rice.pastry.ReadyStrategy;
 import rice.pastry.boot.Bootstrapper;
 import rice.pastry.join.JoinProtocol;
@@ -378,7 +380,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
 
   @Override
-  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory handleFactory) {
+  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
     super.registerApps(pn, leafSet, routeTable, nha, handleFactory);
     RendezvousStrategy<RendezvousSocketNodeHandle> app = (RendezvousStrategy<RendezvousSocketNodeHandle>)pn.getVars().get(RENDEZVOUS_STRATEGY);
     if (app instanceof RendezvousApp) {
@@ -387,7 +389,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
   
   @Override
-  public NodeHandleFactory getNodeHandleFactory(PastryNode pn) {
+  public NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) {
     return new RendezvousSNHFactory(pn);
   }
   
@@ -397,7 +399,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   boolean firstNode = true;
   
   @Override
-  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory nhf) {
+  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
     byte contactState = localContactState;    
     
     if (pn.getVars().containsKey(CONTACT_STATE)) {
@@ -471,9 +473,9 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
    */
   @Override
   @SuppressWarnings("unchecked")
-  protected Bootstrapper getBootstrapper(final PastryNode pn, 
+  protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn, 
       NodeHandleAdapter tl, 
-      NodeHandleFactory handleFactory,
+      NodeHandleFactory<?> handleFactory,
       ProximityNeighborSelector pns) {
     final PilotManager<RendezvousSocketNodeHandle> manager = (PilotManager<RendezvousSocketNodeHandle>)pn.getVars().get(RENDEZVOUS_TL);
     
@@ -484,27 +486,25 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     final boolean[] booted = new boolean[1];
     booted[0] = false;
     final ArrayList<RendezvousSocketNodeHandle> closeMeWhenReady = new ArrayList<RendezvousSocketNodeHandle>();    
-    Observer obs = new Observer() {    
-      public void update(Observable o, Object arg) {
-        if (arg instanceof Boolean) {
-          if (((Boolean)arg).booleanValue()) {
-            // node is ready
-            List<RendezvousSocketNodeHandle> temp;
-            synchronized(closeMeWhenReady) {
-              booted[0] = true;
-            }
-            for (RendezvousSocketNodeHandle nh : closeMeWhenReady) {
-              manager.closePilot(nh);
-            }
-            closeMeWhenReady.clear();
-            o.deleteObserver(this);
+    PastryNodeListener obs = new PastryNodeListener() {    
+      public void pastryNodeReady(PastryNode o, boolean ready) {
+        if (ready) {
+          // node is ready
+          List<RendezvousSocketNodeHandle> temp;
+          synchronized(closeMeWhenReady) {
+            booted[0] = true;
           }
+          for (RendezvousSocketNodeHandle nh : closeMeWhenReady) {
+            manager.closePilot(nh);
+          }
+          closeMeWhenReady.clear();
+          o.removePastryNodeListener(this);
         }
       }    
     };
-    pn.addObserver(obs);
+    pn.addPastryNodeListener(obs);
     
-    TLBootstrapper bootstrapper = new TLBootstrapper(pn, tl.getTL(), (SocketNodeHandleFactory)handleFactory, pns) {
+    TLBootstrapper bootstrapper = new TLBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTL(), (SocketNodeHandleFactory)handleFactory, pns) {
 
       /**
        * Used as a helper to TLBootstrapper.boot() to generate a temporary node handle

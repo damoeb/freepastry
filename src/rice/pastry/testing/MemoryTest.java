@@ -110,8 +110,8 @@ public class MemoryTest {
     int curNode = 0; 
     // make initial ring of 10 nodes
     for (;curNode < numNodes; curNode++) {
-      NodeHandle bootHandle = ((SocketPastryNodeFactory) factory).getNodeHandle(bootaddress);
-      PastryNode node = factory.newNode((rice.pastry.NodeHandle) bootHandle);
+      PastryNode node = factory.newNode();
+      node.boot(bootaddress);
       
       long waitTime = env.getTimeSource().currentTimeMillis();
       

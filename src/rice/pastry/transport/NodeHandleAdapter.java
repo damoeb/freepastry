@@ -60,15 +60,19 @@ public class NodeHandleAdapter implements
     LivenessProvider<NodeHandle>, 
     ProximityProvider<NodeHandle> {
   
-  TransportLayer tl;
-  LivenessProvider livenessProvider;
-  ProximityProvider proxProvider;
-  Bootstrapper boot;
+  TransportLayer<NodeHandle, RawMessage> tl;
+  LivenessProvider<NodeHandle> livenessProvider;
+  ProximityProvider<NodeHandle> proxProvider;
+  Bootstrapper<?> boot;
   
-  public NodeHandleAdapter(TransportLayer tl, LivenessProvider livenessProvider, ProximityProvider proxProvider) {
-    this.tl = tl;
-    this.livenessProvider = livenessProvider;
-    this.proxProvider = proxProvider;
+  /**
+   * The layers may be typed by a NodeHandle subclass; the adapter only ever hands them back
+   * handles that they produced, so they are viewed as NodeHandle layers here.
+   */
+  public NodeHandleAdapter(TransportLayer<? extends NodeHandle, RawMessage> tl, LivenessProvider<? extends NodeHandle> livenessProvider, ProximityProvider<? extends NodeHandle> proxProvider) {
+    this.tl = (TransportLayer<NodeHandle, RawMessage>)tl;
+    this.livenessProvider = (LivenessProvider<NodeHandle>)livenessProvider;
+    this.proxProvider = (ProximityProvider<NodeHandle>)proxProvider;
   }
 
   public void acceptMessages(boolean b) {
@@ -119,7 +123,8 @@ public class NodeHandleAdapter implements
     return proxProvider.removeProximityListener(listener);
   }
 
-  public TransportLayer getTL() {
+  public TransportLayer<? extends NodeHandle, RawMessage> getTL() {
+
     return tl;
   }
 

@@ -182,13 +182,7 @@ public class MergeTest {
       }
     
       @Override
-      public void nodeIsReady() {
-        // TODO Auto-generated method stub
-        
-      }
-    
-      @Override
-      public SocketRequestHandle connect(NodeHandle handle, AppSocketReceiver receiver, PastryAppl appl, int timeout) {
+      public SocketRequestHandle<NodeHandle> connect(NodeHandle handle, AppSocketReceiver receiver, PastryAppl appl, int timeout) {
         // TODO Auto-generated method stub
         return null;        
       }
@@ -200,8 +194,8 @@ public class MergeTest {
       }
 
       @Override
-      @SuppressWarnings("unchecked")
-      public Bootstrapper getBootstrapper() {
+      public <Identifier> Bootstrapper<Identifier> getBootstrapper() {
+
         // TODO Auto-generated method stub
         return null;
       }
@@ -282,6 +276,7 @@ public class MergeTest {
     /**
      * @deprecated
      */
+    @Deprecated
     public int proximity() {
       return 1;
     }
@@ -305,6 +300,7 @@ public class MergeTest {
     /**
      * @deprecated
      */
+    @Deprecated
     public void receiveMessage(Message m) {
     };
 

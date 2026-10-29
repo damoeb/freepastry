@@ -55,7 +55,6 @@ import rice.selector.SelectorManager;
  * @author Alan Mislove
  * @author Andreas Haeberlen
  */
-@SuppressWarnings("unchecked")
 public interface Continuation<R, E extends Exception> {
 
   /**
@@ -78,13 +77,17 @@ public interface Continuation<R, E extends Exception> {
    * passes any errors up to the parent Continuation which it
    * is constructed with.  Subclasses should implement the
    * receiveResult() method with the appropriate behavior.
+   *
+   * @param <R> The type of result this continuation receives
+   * @param <P> The type of result the parent continuation receives
+   * @param <E> The type of exception passed through to the parent
    */
-  public static abstract class StandardContinuation<R, E extends Exception> implements Continuation<R, E> {
+  public static abstract class StandardContinuation<R, P, E extends Exception> implements Continuation<R, E> {
 
     /**
      * The parent continuation
      */
-    protected Continuation<R,E> parent;
+    protected Continuation<? super P, E> parent;
     
     /**
      * Constructor which takes in the parent continuation
@@ -92,7 +95,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param continuation The parent of this continuation
      */
-    public StandardContinuation(Continuation<R, E> continuation) {
+    public StandardContinuation(Continuation<? super P, E> continuation) {
       parent = continuation;
     }
 
@@ -119,7 +122,7 @@ public interface Continuation<R, E extends Exception> {
     /**
     * The parent continuation
      */
-    protected Continuation<R, E> parent;
+    protected Continuation<? super R, E> parent;
     
     /**
      * Constructor which takes in the parent continuation
@@ -127,7 +130,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param continuation The parent of this continuation
      */
-    public ErrorContinuation(Continuation<R, E> continuation) {
+    public ErrorContinuation(Continuation<? super R, E> continuation) {
       parent = continuation;
     }
     
@@ -174,7 +177,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The result
      */
-    public void receiveResult(Object result) {
+    public void receiveResult(R result) {
     }
 
     /**
@@ -183,7 +186,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The exception which was caused.
      */
-    public void receiveException(Exception result) {
+    public void receiveException(E result) {
       if (logger.level <= Logger.WARNING) logger.logException(
           "ERROR - Received exception " + result + " during task " + name, result);
     }
@@ -193,7 +196,7 @@ public interface Continuation<R, E extends Exception> {
    * This class is a Continuation provided for simplicity which
    * passes both results and exceptions to the receiveResult() method.
    */
-  public abstract static class SimpleContinuation implements Continuation {
+  public abstract static class SimpleContinuation implements Continuation<Object, Exception> {
     
     /**
      * Called when an exception occurred as a result of the
@@ -216,22 +219,27 @@ public interface Continuation<R, E extends Exception> {
   public static class ExternalContinuation<R, E extends Exception> implements Continuation<R, E> {
 
     protected Exception exception;
-    protected Object result;
+    protected R result;
     protected boolean done = false;
 
-    public synchronized void receiveResult(Object o) {
+    public synchronized void receiveResult(R o) {
       result = o;
       done = true;
       notify();
     }
 
-    public synchronized void receiveException(Exception e) {
+    public void receiveException(E e) {
+      fail(e);
+    }
+
+    // also used by ExternalContinuationRunnable for exceptions of any type
+    private synchronized void fail(Exception e) {
       exception = e;
       done = true;
       notify();
     }
 
-    public Object getResult() {
+    public R getResult() {
       if (exception != null) {
         throw new IllegalArgumentException("Exception was thrown in ExternalContinuation, but getResult() called!");
       }
@@ -281,13 +289,13 @@ public interface Continuation<R, E extends Exception> {
       try {
         execute(e);
       } catch (Exception exc) {
-        e.receiveException(exc);
+        e.fail(exc);
       }
     }
     
-    protected abstract void execute(Continuation c) throws Exception;
+    protected abstract void execute(Continuation<R, E> c) throws Exception;
     
-    public Object invoke(SelectorManager sm) throws Exception {
+    public R invoke(SelectorManager sm) throws Exception {
       sm.invoke(this);
       e.sleep();
       if (e.exceptionThrown())
@@ -295,7 +303,7 @@ public interface Continuation<R, E extends Exception> {
       return e.getResult();
     }
  
-    public Object invoke(Environment env) throws Exception {
+    public R invoke(Environment env) throws Exception {
       return invoke(env.getSelectorManager());
     }
   }
@@ -309,10 +317,10 @@ public interface Continuation<R, E extends Exception> {
    * @author jstewart
    *
    */
-  public abstract class ExternalRunnable extends ExternalContinuationRunnable {
-    protected abstract Object execute() throws Exception;
+  public abstract class ExternalRunnable<R> extends ExternalContinuationRunnable<R, Exception> {
+    protected abstract R execute() throws Exception;
     
-    protected void execute(Continuation c) throws Exception {
+    protected void execute(Continuation<R, Exception> c) throws Exception {
       c.receiveResult(execute());
     }
   }
@@ -328,12 +336,15 @@ public interface Continuation<R, E extends Exception> {
    * is called each time an intermediate result comes in.  This allows
    * applications like Past to declare an insert successful after a 
    * certain number of results have come back successful.
+   *
+   * @param <R> The type of result delivered to the parent continuation.  This
+   *   is Object[] unless getResult() is overridden.
    */
-  public static class MultiContinuation {
+  public static class MultiContinuation<R> {
   
     protected Object result[];
     protected boolean haveResult[];
-    protected Continuation parent;
+    protected Continuation<? super R, Exception> parent;
     protected boolean done;
     
     /**
@@ -343,7 +354,7 @@ public interface Continuation<R, E extends Exception> {
      * @param parent The parent continuation
      * @param num The number of results expected to come in
      */
-    public MultiContinuation(Continuation parent, int num) {
+    public MultiContinuation(Continuation<? super R, Exception> parent, int num) {
       this.parent = parent;
       this.result = new Object[num];
       this.haveResult = new boolean[num];
@@ -357,8 +368,8 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param The index of this continuation
      */
-    public Continuation getSubContinuation(final int index) {
-      return new Continuation() {
+    public Continuation<Object, Exception> getSubContinuation(final int index) {
+      return new Continuation<Object, Exception>() {
         public void receiveResult(Object o) { receive(index, o); }
         public void receiveException(Exception e) { receive(index, e); }
       };
@@ -410,12 +421,14 @@ public interface Continuation<R, E extends Exception> {
     /**
      * Method which can also be overridden to change what result should be 
      * returned to the parent continuation.  This defaults to the Object[]
-     * containing results or exceptions.
+     * containing results or exceptions; subclasses which use a different
+     * result type R must override this method.
      *
      * @return The result which should be returned to the application
      */
-    public Object getResult() {
-      return result; 
+    @SuppressWarnings("unchecked")
+    public R getResult() {
+      return (R) result; 
     }
   }
   
@@ -423,10 +436,10 @@ public interface Continuation<R, E extends Exception> {
    * Continuation class which takes a provided string as it's name, and
    * returns that String when toString() is called.
    */
-  public static class NamedContinuation implements Continuation {
+  public static class NamedContinuation<R, E extends Exception> implements Continuation<R, E> {
     
     // the internal continuation
-    protected Continuation parent;
+    protected Continuation<? super R, E> parent;
     
     // the name of this continuation
     protected String name;
@@ -438,7 +451,7 @@ public interface Continuation<R, E extends Exception> {
      * @param name The name
      * @param command The parent continuation
      */
-    public NamedContinuation(String name, Continuation command) {
+    public NamedContinuation(String name, Continuation<? super R, E> command) {
       this.name = name;
       this.parent = command;
     }
@@ -449,7 +462,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The result
      */
-    public void receiveResult(Object result) {
+    public void receiveResult(R result) {
       parent.receiveResult(result);
     }
     
@@ -460,7 +473,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The exception which was caused.
      */
-    public void receiveException(Exception result) {
+    public void receiveException(E result) {
       parent.receiveException(result);
     }
     

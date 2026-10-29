@@ -38,6 +38,7 @@ package rice.pastry.testing;
 
 import rice.environment.Environment;
 import rice.pastry.*;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.direct.*;
 import rice.pastry.standard.*;
 import rice.pastry.join.*;
@@ -61,7 +62,7 @@ import java.lang.*;
 public class SinglePingTest {
   private DirectPastryNodeFactory factory;
 
-  private NetworkSimulator simulator;
+  private NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   private TestRecord testRecord;
 
@@ -73,7 +74,7 @@ public class SinglePingTest {
 
   public SinglePingTest(TestRecord tr, Environment env) {
     environment = env;
-    simulator = new EuclideanNetwork(env); //SphereNetwork();
+    simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env); //SphereNetwork();
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, env);
     simulator.setTestRecord(tr);
     testRecord = tr;
@@ -93,7 +94,14 @@ public class SinglePingTest {
   }
 
   public PastryNode makePastryNode() {
-    PastryNode pn = factory.newNode(getBootstrap());
+    NodeHandle bootHandle = getBootstrap();
+    PastryNode pn;
+    try {
+      pn = factory.newNode();
+    } catch (java.io.IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    pn.boot(bootHandle);
     pastryNodes.addElement(pn);
 
     Ping pc = new Ping(pn);

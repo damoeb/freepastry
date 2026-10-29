@@ -182,7 +182,7 @@ public class VersionKeyFactory implements IdFactory {
    * @Param map The map which to take the keys from to create the IdSet's elements
    * @return an empty IdSet
    */
-  public IdSet buildIdSet(SortedMap map) {
+  public IdSet buildIdSet(SortedMap<rice.p2p.commonapi.Id, ?> map) {
     return new VersionKeySet(map);
   }
 

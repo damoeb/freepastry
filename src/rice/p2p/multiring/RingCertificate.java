@@ -180,11 +180,11 @@ public class RingCertificate implements Serializable {
     this.name = name;
     this.id = id;
     this.bootstraps = bootstraps;
-    this.port = new Integer(port);
+    this.port = Integer.valueOf(port);
     this.key = key;
     this.logServer = logServer;
-    this.version = new Long(System.currentTimeMillis());
-    this.protocol = new Integer(protocol);
+    this.version = Long.valueOf(System.currentTimeMillis());
+    this.protocol = Integer.valueOf(protocol);
   }
   
   /**

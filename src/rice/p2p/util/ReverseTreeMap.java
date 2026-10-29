@@ -52,22 +52,22 @@ import java.util.*;
  * @author Alan Mislove
  */
 @SuppressWarnings("unchecked")
-public class ReverseTreeMap implements Serializable {
+public class ReverseTreeMap<K,V> implements Serializable {
   
   /**
    * The internal normal map
    */
-  protected SortedMap normal = new RedBlackMap();
+  protected SortedMap<K,V> normal = new RedBlackMap<K,V>();
   
   /**
    * The internal value -> list of keys map
    */
-  protected SortedMap reverse = new RedBlackMap();
+  protected SortedMap<V,RedBlackMap<K,V>> reverse = new RedBlackMap<V,RedBlackMap<K,V>>();
   
   /**
    * The internal list of keys with null as a mapping
    */
-  protected SortedMap nulls = new RedBlackMap();
+  protected SortedMap<K,V> nulls = new RedBlackMap<K,V>();
 
   /**
    * Constructor
@@ -80,7 +80,7 @@ public class ReverseTreeMap implements Serializable {
    * Constructor
    *
    */
-  protected ReverseTreeMap(SortedMap normal, SortedMap reverse, SortedMap nulls) {
+  protected ReverseTreeMap(SortedMap<K,V> normal, SortedMap<V,RedBlackMap<K,V>> reverse, SortedMap<K,V> nulls) {
     this.normal = normal;
     this.reverse = reverse;
     this.nulls = nulls;
@@ -111,7 +111,7 @@ public class ReverseTreeMap implements Serializable {
    * @param key The key
    * @return The value
    */
-  public synchronized Object get(Object key) {
+  public synchronized V get(Object key) {
     return normal.get(key);
   }
   
@@ -120,7 +120,7 @@ public class ReverseTreeMap implements Serializable {
    *
    * @return The set of keys
    */
-  public Set keySet() {
+  public Set<K> keySet() {
     return normal.keySet();
   }
   
@@ -130,10 +130,10 @@ public class ReverseTreeMap implements Serializable {
    * @param key The key
    */
   public void remove(Object key) {
-    Object value = normal.remove(key);
+    V value = normal.remove(key);
     
     if (value != null) {
-      RedBlackMap o = (RedBlackMap) reverse.get(value);
+      RedBlackMap<K,V> o = reverse.get(value);
       o.remove(key);
       
       if (o.size() == 0) {
@@ -152,15 +152,15 @@ public class ReverseTreeMap implements Serializable {
    * @param key The key 
    * @param value The value
    */
-  public void put(Object key, Object value) {
+  public void put(K key, V value) {
  //   if (reverse instanceof RedBlackMap)
  //     value = (((RedBlackMap) reverse).getKey(value) == null ? value : ((RedBlackMap) reverse).getKey(value));
     
-    Object old = normal.put(key, value);
+    V old = normal.put(key, value);
     
     // remove any old reverse mapping
     if (old != null) {
-      RedBlackMap o = (RedBlackMap) reverse.get(old);        
+      RedBlackMap<K,V> o = reverse.get(old);        
       o.remove(key);
       
       if (o.size() == 0) {
@@ -172,11 +172,11 @@ public class ReverseTreeMap implements Serializable {
     
     // and add the new reverse mapping
     if (value != null) {
-      RedBlackMap v = (RedBlackMap) reverse.get(value);
+      RedBlackMap<K,V> v = reverse.get(value);
     
       // creating a treeset if necessary
       if (v == null) {
-        v = new RedBlackMap();
+        v = new RedBlackMap<K,V>();
         reverse.put(value, v);
       }
     
@@ -191,7 +191,7 @@ public class ReverseTreeMap implements Serializable {
    *
    * @retun The key Map
    */
-  public SortedMap keyMap() {
+  public SortedMap<K,V> keyMap() {
     return normal; 
   }
   
@@ -202,7 +202,7 @@ public class ReverseTreeMap implements Serializable {
    * @param value The start value
    * @return a head map
    */
-  public SortedMap keyHeadMap(Object value) {
+  public SortedMap<K,V> keyHeadMap(K value) {
     return normal.headMap(value);
   }
   
@@ -213,7 +213,7 @@ public class ReverseTreeMap implements Serializable {
    * @param value The start value
    * @return a head map
    */
-  public SortedMap keyTailMap(Object value) {
+  public SortedMap<K,V> keyTailMap(K value) {
     return normal.tailMap(value);
   }
   
@@ -225,7 +225,7 @@ public class ReverseTreeMap implements Serializable {
    * @param end The end value
    * @return a head map
    */
-  public SortedMap keySubMap(Object start, Object end) {
+  public SortedMap<K,V> keySubMap(K start, K end) {
     return normal.subMap(start, end);
   }
 
@@ -247,7 +247,7 @@ public class ReverseTreeMap implements Serializable {
    *
    * @param value The maximal value
    */
-  public SortedMap valueHeadMap(Object value) {
+  public SortedMap<K,V> valueHeadMap(V value) {
     return convert(reverse.headMap(value));
   }
   
@@ -257,7 +257,7 @@ public class ReverseTreeMap implements Serializable {
    *
    * @param value The minimal value
    */
-  public SortedMap valueTailMap(Object value) {
+  public SortedMap<K,V> valueTailMap(V value) {
     return convert(reverse.tailMap(value));
   }
 
@@ -267,7 +267,7 @@ public class ReverseTreeMap implements Serializable {
    *
    * @param value The maximal value
    */
-  public SortedMap valueSubMap(Object start, Object end) {
+  public SortedMap<K,V> valueSubMap(V start, V end) {
     return convert(reverse.subMap(start, end));
   }   
   
@@ -275,7 +275,7 @@ public class ReverseTreeMap implements Serializable {
    * Method which returns all of the keys which have null values
    *
    */
-  public SortedMap valueNullMap() {
+  public SortedMap<K,V> valueNullMap() {
     return nulls;
   }   
   
@@ -285,12 +285,12 @@ public class ReverseTreeMap implements Serializable {
    * @param map THe map to convert
    * @return The converted map
    */
-  protected SortedMap convert(SortedMap map) {
-    SortedMap result = new RedBlackMap();
-    Iterator i = map.keySet().iterator();
+  protected SortedMap<K,V> convert(SortedMap<V,RedBlackMap<K,V>> map) {
+    SortedMap<K,V> result = new RedBlackMap<K,V>();
+    Iterator<V> i = map.keySet().iterator();
     
     while (i.hasNext()) 
-      result.putAll((SortedMap) map.get(i.next()));
+      result.putAll(map.get(i.next()));
       
     return result;
   }

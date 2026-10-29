@@ -41,6 +41,7 @@ import rice.environment.logging.Logger;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.pastry.*;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.direct.*;
 import rice.pastry.standard.*;
 import rice.pastry.join.*;
@@ -59,7 +60,7 @@ import java.util.*;
 public class HelloWorld {
   private PastryNodeFactory factory;
 
-  private NetworkSimulator simulator;
+  private NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   private Vector<PastryNode> pastryNodes;
 
@@ -79,7 +80,7 @@ public class HelloWorld {
    */
   public HelloWorld(Environment env) {
     environment = env;
-    simulator = new EuclideanNetwork(env);
+    simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, environment);
 
     pastryNodes = new Vector<PastryNode>();
@@ -107,7 +108,14 @@ public class HelloWorld {
    * application for this node.
    */
   public void makePastryNode(int num) {
-    PastryNode pn = factory.newNode(getBootstrap());
+    NodeHandle bootHandle = getBootstrap();
+    PastryNode pn;
+    try {
+      pn = factory.newNode();
+    } catch (java.io.IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    pn.boot(bootHandle);
     pastryNodes.addElement(pn);
 
     HelloWorldApp app = new HelloWorldApp(pn);

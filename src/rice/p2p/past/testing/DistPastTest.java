@@ -51,7 +51,6 @@ import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
-import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.past.ContentHashPastContent;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
@@ -93,11 +92,9 @@ public class DistPastTest {
 
       // loop to construct the nodes/apps
       for (int curNode = 0; curNode < numNodes; curNode++) {
-        // This will return null if we there is no node at that location
-        NodeHandle bootHandle = ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
-    
-        // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
-        PastryNode node = factory.newNode((rice.pastry.NodeHandle)bootHandle);
+        // construct a node and boot it; if there is no node at bootaddress (first loop), it starts its own ring
+        PastryNode node = factory.newNode();
+        node.boot(bootaddress);
           
         // the node may require sending several messages to fully boot into the ring
         while(!node.isReady()) {
@@ -116,9 +113,9 @@ public class DistPastTest {
       String s = "test" + env.getRandomSource().nextInt();
       PastContent dptc = new DistPastTestContent(env,idf,s);
       System.out.println("Inserting "+dptc);
-      p.insert(dptc, new Continuation() {
-        public void receiveResult(Object result) {
-          Boolean[] results = ((Boolean[])result);
+      p.insert(dptc, new Continuation<Boolean[], Exception>() {
+        public void receiveResult(Boolean[] result) {
+          Boolean[] results = result;
           for(int ctr = 0; ctr < results.length;ctr++) {
             System.out.println("got "+results[ctr].booleanValue());
           }
@@ -134,8 +131,8 @@ public class DistPastTest {
 
       Thread.sleep(5000);
       
-      p.lookup(dptc.getId(), new Continuation() {
-        public void receiveResult(Object result) {
+      p.lookup(dptc.getId(), new Continuation<PastContent, Exception>() {
+        public void receiveResult(PastContent result) {
           System.out.println("Got a "+result);
         }
 

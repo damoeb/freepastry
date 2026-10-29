@@ -65,6 +65,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     internal.close();
   }
   
+  @Deprecated
   public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
     long ret = 0;
     for (int i = offset; i < offset+length; i++) {
@@ -146,6 +147,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     internal.shutdownOutput();    
   }
 
+  @Deprecated
   public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
     long ret = 0;
     for (int i = offset; i < offset+length; i++) {

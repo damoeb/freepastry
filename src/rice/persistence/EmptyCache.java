@@ -80,7 +80,7 @@ public class EmptyCache implements Cache {
    * @param newId The new id of the object in question.
    * @param c The command to run once the operation is complete
    */
-  public void rename(final Id oldId, final Id newId, Continuation c) {
+  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
     c.receiveException(new IllegalArgumentException("EmptyCache has no objects!"));
   }
   
@@ -100,8 +100,8 @@ public class EmptyCache implements Cache {
    * @param obj The object to cache.
    * @param c The command to run once the operation is complete
    */
-  public void cache(Id id, Serializable metadata, Serializable obj, Continuation c) {
-    c.receiveResult(new Boolean(true));
+  public void cache(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
+    c.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -115,8 +115,8 @@ public class EmptyCache implements Cache {
    * @param pid The object's id
    * @param c The command to run once the operation is complete
    */
-  public void uncache(Id id, Continuation c) {
-    c.receiveResult(new Boolean(true));
+  public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
+    c.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -137,7 +137,7 @@ public class EmptyCache implements Cache {
    * @return The object, or <code>null</code> if there is no cooresponding
    * object (through receiveResult on c).
    */
-  public void getObject(Id id, Continuation c) {
+  public void getObject(Id id, Continuation<? super Serializable, Exception> c) {
     c.receiveResult(null);
   }
   
@@ -162,8 +162,8 @@ public class EmptyCache implements Cache {
    * @param metadata The metadata to store
    * @param c The command to run once the operation is complete
    */
-  public void setMetadata(Id id, Serializable metadata, Continuation c) {
-    c.receiveResult(new Boolean(true));
+  public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> c) {
+    c.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -202,8 +202,8 @@ public class EmptyCache implements Cache {
    * @param range The range to query  
    * @return The map containg the keys 
    */
-  public SortedMap scanMetadata(IdRange range) {
-    return new RedBlackMap();
+  public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
+    return new RedBlackMap<Id, Serializable>();
   }
   
   /**
@@ -212,8 +212,8 @@ public class EmptyCache implements Cache {
    *
    * @return The treemap mapping ids to metadata 
    */
-  public SortedMap scanMetadata() {
-    return new RedBlackMap();
+  public SortedMap<Id, Serializable> scanMetadata() {
+    return new RedBlackMap<Id, Serializable>();
   }
   
   /**
@@ -223,8 +223,8 @@ public class EmptyCache implements Cache {
    * @param value The maximal metadata value 
    * @return The submapping
    */
-  public SortedMap scanMetadataValuesHead(Object value) {
-    return new RedBlackMap();
+  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
+    return new RedBlackMap<Id, Serializable>();
   }
   
   /**
@@ -232,8 +232,8 @@ public class EmptyCache implements Cache {
    *
    * @return The submapping
    */
-  public SortedMap scanMetadataValuesNull() {
-    return new RedBlackMap();
+  public SortedMap<Id, Serializable> scanMetadataValuesNull() {
+    return new RedBlackMap<Id, Serializable>();
   }
 
   /**
@@ -278,7 +278,7 @@ public class EmptyCache implements Cache {
    * @return The success or failure of the setSize operation
    * (through receiveResult on c).
    */
-  public void setMaximumSize(final int size, final Continuation c) {
+  public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.TRUE);
   }
   
@@ -288,7 +288,7 @@ public class EmptyCache implements Cache {
    *
    * @param c The command to run once done
    */
-  public void flush(Continuation c) {
+  public void flush(Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.TRUE);
   }
 }

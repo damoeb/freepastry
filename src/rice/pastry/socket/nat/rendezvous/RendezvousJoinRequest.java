@@ -85,7 +85,7 @@ public class RendezvousJoinRequest extends JoinRequest {
     pilot.serialize(buf);
   }
   
-  public RendezvousJoinRequest(InputBuffer buf, NodeHandleFactory nhf, NodeHandle sender, PastryNode localNode) throws IOException {
+  public RendezvousJoinRequest(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender, PastryNode localNode) throws IOException {
     super(buf, nhf, sender, localNode);
     pilot = nhf.readNodeHandle(buf);
   }

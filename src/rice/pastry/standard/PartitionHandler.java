@@ -201,7 +201,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
       }
     }
 
-    List rtHandles = getRoutingTableAsList();
+    List<NodeHandle> rtHandles = getRoutingTableAsList();
     
     if (rtHandles.isEmpty()) {
       if (logger.level <= Logger.INFO) logger.log("getGone returning null; routing table is empty!");
@@ -212,7 +212,8 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
 
     if (logger.level <= Logger.FINEST) logger.log("getGone choosing node "+which+" from routing table");
 
-    return (NodeHandle)rtHandles.get(which);
+    return rtHandles.get(which);
+
   }
   
   // possibly make this abstract

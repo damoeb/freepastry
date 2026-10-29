@@ -48,6 +48,7 @@ import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.scribe.*;
 import rice.pastry.*;
 import rice.pastry.NodeHandle;
@@ -144,7 +145,7 @@ public class RoutingTableTest {
 //    }  
     // construct the PastryNodeFactory, this is how we use rice.pastry.direct, with a Euclidean Network
 //    factory = new DirectPastryNodeFactory(nidFactory, new GenericNetwork(env), env);
-    factory = new DirectPastryNodeFactory(nidFactory, new EuclideanNetwork(env), env);
+    factory = new DirectPastryNodeFactory(nidFactory, new EuclideanNetwork<DirectNodeHandle, RawMessage>(env), env);
     
     // loop to construct the nodes/apps
     createNodes();    
@@ -217,7 +218,7 @@ public class RoutingTableTest {
   
   public void sendSomeMessages() {        
     // for each app
-    Iterator appIterator = apps.values().iterator();
+    Iterator<Object> appIterator = apps.values().iterator();
     while(appIterator.hasNext()) {
       MyApp app = (MyApp)appIterator.next();
       
@@ -231,7 +232,7 @@ public class RoutingTableTest {
   
   public void sendSomeScribeMessages() {        
     // for each app
-    Iterator appIterator = apps.values().iterator();
+    Iterator<Object> appIterator = apps.values().iterator();
     while(appIterator.hasNext()) {
       Scribe app = (Scribe)appIterator.next();
       app.publish(topic, new TestScribeContent(topic, 0));
@@ -305,10 +306,14 @@ public class RoutingTableTest {
     // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
     final PastryNode node = factory.newNode();
 
-    node.addObserver(new Observer() {
+    node.addPastryNodeListener(new PastryNodeListener() {
     
-      public void update(Observable o, Object arg) {
-        System.out.println("Observing "+o+" "+arg);
+      public void pastryNodeReady(PastryNode o, boolean ready) {
+        System.out.println("Observing "+o+" "+ready);
+      }    
+
+      public void pastryNodeJoinFailed(PastryNode o, JoinFailedException reason) {
+        System.out.println("Observing "+o+" "+reason);
       }    
     });
         
@@ -345,22 +350,22 @@ public class RoutingTableTest {
         finishNode(node);
       } else {
 //        System.out.println("Adding observer to "+node);
-      node.addObserver(new Observer() {
+      node.addPastryNodeListener(new PastryNodeListener() {
 
-      public void update(Observable o, Object arg) {
-//        System.out.println("observer.update("+arg+")");
-        if (arg instanceof Boolean) {
-          if (!((Boolean) arg).booleanValue()) return;
+      public void pastryNodeReady(PastryNode o, boolean ready) {
+//        System.out.println("observer.update("+ready+")");
+        if (!ready) return;
           
-          node.deleteObserver(this);
-          finishNode(node);
-        } else if (arg instanceof JoinFailedException) {
+        node.removePastryNodeListener(this);
+        finishNode(node);
+      }
+
+      public void pastryNodeJoinFailed(PastryNode o, JoinFailedException arg) {
 //          System.out.println("Got JoinFailedException:"+arg);
           node.destroy(); 
-        }
-      }// update
+      }
 
-    });//addObserver
+    });//addPastryNodeListener
     //    System.out.println("Adding "+node);
     //      nodes.add(node);
       }//if
@@ -388,7 +393,7 @@ public class RoutingTableTest {
               System.out.println("Destroying " + node);
             // if (!nodes.remove(node)) {
             // String s = "Couldn't remove "+node+" from ";
-            // Iterator i = nodes.iterator();
+            // Iterator<PastryNode> i = nodes.iterator();
             // while(i.hasNext()) {
             // s+="\t"+i.next()+"\n";
             // }
@@ -404,8 +409,8 @@ public class RoutingTableTest {
     if (msgSendRate > 0) {
       if (useScribe) {
         Scribe app = new ScribeImpl(node,"test");
-        ScribeClient client = new TestScribeClient(app, topic);
-        app.subscribe(topic, client);
+        ScribeMultiClient client = new TestScribeClient(app, topic);
+        app.subscribe(topic, client, (rice.p2p.scribe.rawserialization.RawScribeContent) null, null);
         apps.put(node,app);
       } else {
         // construct a new MyApp
@@ -446,7 +451,7 @@ public class RoutingTableTest {
     
     });
     
-    Iterator i = nds.iterator();
+    Iterator<PastryNode> i = nds.iterator();
     while(i.hasNext()) {
       PastryNode n = (PastryNode)i.next(); 
       System.out.println(n.isReady()+" "+n.getLeafSet());
@@ -488,14 +493,14 @@ public class RoutingTableTest {
   private double testRoutingTables1() {
     
     // for each node
-    Iterator nodeIterator = nodes.iterator();
+    Iterator<PastryNode> nodeIterator = nodes.iterator();
     int ctr = 0;
     double acc = 0;
     
     while(nodeIterator.hasNext()) {
       PastryNode node = (PastryNode)nodeIterator.next();
       RoutingTable rt = node.getRoutingTable();
-      Iterator i2 = nodes.iterator();
+      Iterator<PastryNode> i2 = nodes.iterator();
       while(i2.hasNext()) {
         PastryNode that = (PastryNode)i2.next();
         if ((that != node) && that.isReady() && node.isReady()) {
@@ -553,7 +558,7 @@ public class RoutingTableTest {
 
   private int testRoutingTables2() {    
     // for each node
-    Iterator nodeIterator = nodes.iterator();
+    Iterator<PastryNode> nodeIterator = nodes.iterator();
     int curNodeIndex = 0;
     int ctr = 0;
     int[] ctrs = new int[5];
@@ -562,7 +567,7 @@ public class RoutingTableTest {
       if (!node.isReady()) continue;
       PastryNode temp = DirectPastryNode.setCurrentNode(node);
       RoutingTable rt = node.getRoutingTable();
-      Iterator i2 = nodes.iterator();
+      Iterator<PastryNode> i2 = nodes.iterator();
       while(i2.hasNext()) {
         PastryNode that = (PastryNode)i2.next();
         if (!that.isReady()) continue;
@@ -584,7 +589,7 @@ public class RoutingTableTest {
 
   private int testRoutingTables2a() {    
     // for each node
-    Iterator nodeIterator = nodes.iterator();
+    Iterator<PastryNode> nodeIterator = nodes.iterator();
     int curNodeIndex = 0;
     int ctr = 0;
     int[] ctrs = new int[5];
@@ -594,7 +599,7 @@ public class RoutingTableTest {
       if (!node.isReady()) continue;
       PastryNode temp = DirectPastryNode.setCurrentNode(node);
       RoutingTable rt = node.getRoutingTable();
-      Iterator i2 = nodes.iterator();
+      Iterator<PastryNode> i2 = nodes.iterator();
       PastryNode that = (PastryNode)nodes.get(rand.nextInt(nodes.size()));
       
         if (!that.isReady()) continue;
@@ -648,7 +653,7 @@ public class RoutingTableTest {
     // the target is within range of the leafset, deliver it directly    
       NodeHandle handle = ls.get(lsPos);
 
-      if (handle.isAlive() == false) {
+      if (handle.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
         // node is dead - get rid of it and try again
         thePenalty += timeToFindFaulty; // rtt*2
         LeafSet ls2 = ls.copy();
@@ -666,7 +671,7 @@ public class RoutingTableTest {
       NodeHandle notAlive = null;
       if (rs != null
           && ((notAlive = rs.closestNode(10)) != null)) {
-        if ((notAlive != null) && !notAlive.isAlive()) thePenalty+=localNode.proximity(notAlive)*4;
+        if ((notAlive != null) && notAlive.getLiveness() >= NodeHandle.LIVENESS_DEAD) thePenalty+=localNode.proximity(notAlive)*4;
       }
       
       if (rs == null
@@ -679,7 +684,7 @@ public class RoutingTableTest {
         if (notAlive2 == notAlive) {
           // don't doublePenalize 
         } else {
-          if ((notAlive2 != null) && !notAlive2.isAlive()) thePenalty+=localNode.proximity(notAlive2)*4;
+          if ((notAlive2 != null) && notAlive2.getLiveness() >= NodeHandle.LIVENESS_DEAD) thePenalty+=localNode.proximity(notAlive2)*4;
         }
         
         // no live routing table entry matching the next digit
@@ -691,7 +696,7 @@ public class RoutingTableTest {
           // no alternate in RT, take leaf set extent
           handle = ls.get(lsPos);
 
-          if (handle.isAlive() == false) {
+          if (handle.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
             thePenalty += timeToFindFaulty;
             LeafSet ls2 = ls.copy();
             ls2.remove(handle);
@@ -706,7 +711,7 @@ public class RoutingTableTest {
             // closest leaf set member is closer
             handle = ls.get(lsPos);
 
-            if (handle.isAlive() == false) {
+            if (handle.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
               thePenalty += timeToFindFaulty;
               LeafSet ls2 = ls.copy();
               ls2.remove(handle);
@@ -805,7 +810,7 @@ public class RoutingTableTest {
   }
 
   
-  class TestScribeClient implements ScribeClient {
+  class TestScribeClient implements ScribeMultiClient {
 
     /**
      * DESCRIBE THE FIELD
@@ -885,8 +890,16 @@ public class RoutingTableTest {
      // System.out.println("CHILD REMOVED AT " + scribe.getId());
     }
 
+    @Deprecated
     public void subscribeFailed(Topic topic) {
       subscribeFailed = true;
+    }
+
+    public void subscribeFailed(Collection<Topic> topics) {
+      if (!topics.isEmpty()) subscribeFailed = true;
+    }
+
+    public void subscribeSuccess(Collection<Topic> topics) {
     }
 
     public boolean getSubscribeFailed() {

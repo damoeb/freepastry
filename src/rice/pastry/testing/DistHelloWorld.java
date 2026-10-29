@@ -232,7 +232,13 @@ public class DistHelloWorld {
    */
   public PastryNode makePastryNode(boolean firstNode) {
     NodeHandle bootstrap = getBootstrap(firstNode);
-    PastryNode pn = factory.newNode(bootstrap); // internally initiateJoins
+    PastryNode pn;
+    try {
+      pn = factory.newNode();
+    } catch (java.io.IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    pn.boot(((rice.pastry.transport.BogusNodeHandle) bootstrap).addresses); // internally initiateJoins
     pastryNodes.addElement(pn);
 
     HelloWorldApp app = new HelloWorldApp(pn);

@@ -79,7 +79,7 @@ public class NodeSet implements NodeSetI, Serializable {
    * Copy constructor.
    */
   public NodeSet(NodeSet o) {
-    set = new Vector(o.set);
+    set = new Vector<NodeHandle>(o.set);
   }
 
   /*
@@ -304,7 +304,7 @@ public class NodeSet implements NodeSetI, Serializable {
     NodeSet res;
 
     try {
-      res = new NodeSet(new Vector(set.subList(from, to)));
+      res = new NodeSet(new Vector<NodeHandle>(set.subList(from, to)));
     } catch (Exception e) {
       return null;
     }
@@ -410,9 +410,10 @@ public class NodeSet implements NodeSetI, Serializable {
     return set.iterator(); 
   }
 
-  public NodeSet(InputBuffer buf, NodeHandleFactory nhf) throws IOException {
+  public NodeSet(InputBuffer buf, NodeHandleFactory<? extends NodeHandle> nhf) throws IOException {
     short numNodes = buf.readShort();
-    set = new Vector(numNodes);
+    set = new Vector<NodeHandle>(numNodes);
+
     for (int i = 0; i < numNodes; i++) {
       set.add(nhf.readNodeHandle(buf)); 
     }

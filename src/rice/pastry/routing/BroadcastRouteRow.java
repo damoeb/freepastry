@@ -139,7 +139,7 @@ public class BroadcastRouteRow extends PRawMessage implements Serializable {
     }
   }
 
-  public BroadcastRouteRow(InputBuffer buf, NodeHandleFactory nhf, PastryNode localNode) throws IOException {
+  public BroadcastRouteRow(InputBuffer buf, NodeHandleFactory<?> nhf, PastryNode localNode) throws IOException {
     super(RouteProtocolAddress.getCode(), null);    
     
     byte version = buf.readByte();

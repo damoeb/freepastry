@@ -165,12 +165,12 @@ public class PastryNetworkTest {
   }
   
   protected void testLeafSets() throws Exception {
-    HashMap leafsets = fetchLeafSets();
+    HashMap<NodeHandle, LeafSet> leafsets = fetchLeafSets();
 
-    Iterator sets = leafsets.values().iterator();
+    Iterator<LeafSet> sets = leafsets.values().iterator();
     
     while (sets.hasNext()) {
-      Iterator nodes = leafsets.keySet().iterator();
+      Iterator<NodeHandle> nodes = leafsets.keySet().iterator();
       LeafSet set = (LeafSet) sets.next();
       
       if (set != null) {
@@ -212,15 +212,15 @@ public class PastryNetworkTest {
   }
   
   protected void testRouteRow(int row) throws IOException {
-    HashMap routerows = fetchRouteRow(row);
+    HashMap<NodeHandle, Object> routerows = fetchRouteRow(row);
     
-    Iterator i = nodes.iterator();
+    Iterator<NodeHandle> i = nodes.iterator();
     
     while (i.hasNext()) {
       NodeHandle node = (NodeHandle) i.next();
       RoutingTable rt = new RoutingTable(node, 1, (byte)environment.getParameters().getInt("pastry_rtBaseBitLength"), ((SocketNodeHandle)node).getLocalNode());
       
-      Iterator j = nodes.iterator();
+      Iterator<NodeHandle> j = nodes.iterator();
 
       while (j.hasNext())
         rt.put((NodeHandle) j.next());

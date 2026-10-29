@@ -48,7 +48,7 @@ import rice.environment.processing.WorkRequest;
  */
 @SuppressWarnings("unchecked")
 public class WorkQueue {
-  List<WorkRequest> q = new LinkedList<WorkRequest>();
+  List<WorkRequest<?>> q = new LinkedList<WorkRequest<?>>();
   /* A negative capacity, is equivalent to infinted capacity */
   int capacity = -1;
 
@@ -66,7 +66,7 @@ public class WorkQueue {
      this.capacity = capacity;
   }
   
-  public synchronized void enqueue(WorkRequest request) {
+  public synchronized void enqueue(WorkRequest<?> request) {
     if (capacity < 0 || q.size() < capacity) {
       q.add(request);
       notifyAll();
@@ -75,7 +75,7 @@ public class WorkQueue {
     }
   }
   
-  public synchronized WorkRequest dequeue() {
+  public synchronized WorkRequest<?> dequeue() {
     while (q.isEmpty() && running) {
       try {
         wait();
@@ -85,7 +85,7 @@ public class WorkQueue {
     }
     
     if (!running) return null;
-    return (WorkRequest) q.remove(0);
+    return q.remove(0);
   }
   
   public void destroy() {

@@ -52,7 +52,7 @@ import rice.p2p.glacier.*;
 @SuppressWarnings("unchecked")
 public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
 
-  private SortedMap idSet;
+  private SortedMap<Id, ?> idSet;
 
   // a cache of the fingerprint hash
   private FragmentKey cachedHash;
@@ -62,7 +62,7 @@ public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
    * Constructor.
    */
   public FragmentKeySet() {
-    idSet = new RedBlackMap();
+    idSet = new RedBlackMap<Id, Object>();
     validHash = false;
   }
 
@@ -72,7 +72,7 @@ public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
    * @param o the IdSet to copy
    */
   public FragmentKeySet(FragmentKeySet o) {
-    idSet = new RedBlackMap(o.idSet);
+    idSet = new RedBlackMap<Id, Object>(o.idSet);
     cachedHash = o.cachedHash;
     validHash = o.validHash;
   }
@@ -82,7 +82,7 @@ public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
    *
    * @param s the TreeSet based on which we construct a new IdSet
    */
-  protected FragmentKeySet(SortedMap s) {
+  protected FragmentKeySet(SortedMap<Id, ?> s) {
     idSet = s;
     validHash = false;
   }
@@ -230,11 +230,11 @@ public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
    */
 
   public String toString() {
-    Iterator it = getIterator();
+    Iterator<Id> it = getIterator();
     Id key;
     String s = "[ IdSet: ";
     while (it.hasNext()) {
-      key = (Id) it.next();
+      key = it.next();
       s = s + key + ",";
 
     }

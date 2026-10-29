@@ -47,6 +47,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
+import javax.security.auth.x500.X500Principal;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.P2PSocket;
@@ -304,7 +305,8 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
       if (!server || useClientAuth) {
         try {
           peerCert = ((X509Certificate) engine.getSession().getPeerCertificates()[0]);
-          name = peerCert.getSubjectDN().getName();
+          // RFC 1779 is the format the deprecated getSubjectDN().getName() produced (", " separated RDNs)
+          name = peerCert.getSubjectX500Principal().getName(X500Principal.RFC1779);
           if (name.startsWith("CN=")) {
             name = name.substring(3);
             options = OptionsFactory.addOption(socket.getOptions(), SSLTransportLayer.OPTION_CERT_SUBJECT, name);

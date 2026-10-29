@@ -51,7 +51,7 @@ import rice.p2p.glacier.VersionKey;
 @SuppressWarnings("unchecked")
 public class AggregateList {
 
-  protected final Hashtable aggregateList;
+  protected final Hashtable<Id, AggregateDescriptor> aggregateList;
   protected final String configFileName;
   protected final String logFileName;
   protected final String label;
@@ -91,7 +91,7 @@ public class AggregateList {
     return wasReadOK;
   }
 
-  public Enumeration elements() {
+  public Enumeration<AggregateDescriptor> elements() {
     return aggregateList.elements();
   }
   
@@ -292,7 +292,7 @@ public class AggregateList {
   }
   
   public void resetMarkers() {
-    Enumeration enumerationeration = aggregateList.elements();
+    Enumeration<AggregateDescriptor> enumerationeration = aggregateList.elements();
     while (enumerationeration.hasMoreElements()) {
       AggregateDescriptor aggr = (AggregateDescriptor) enumerationeration.nextElement();
       aggr.marker = false;
@@ -361,7 +361,7 @@ public class AggregateList {
   }
   
   public void recalculateReferenceCounts(Id[] excludes) {
-    Enumeration enumeration = aggregateList.elements();
+    Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
     while (enumeration.hasMoreElements()) {
       AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
       aggr.referenceCount = 0;
@@ -520,7 +520,7 @@ public class AggregateList {
   
     try {
       PrintStream configFile = new PrintStream(new FileOutputStream(configFileName + ".new"));
-      Enumeration enumeration = aggregateList.elements();
+      Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
 
       resetMarkers();
       configFile.println("# Aggregate list at " + label + " (" + (new Date()) + ")");
@@ -557,7 +557,7 @@ public class AggregateList {
       recalculateReferenceCounts(excludes);
   
     Vector<Id> pointers = new Vector<Id>();
-    Enumeration enumeration = elements();
+    Enumeration<AggregateDescriptor> enumeration = elements();
 
     resetMarkers();
     while (enumeration.hasMoreElements()) {
@@ -583,7 +583,7 @@ public class AggregateList {
     final int maxHistoIndex = (int)(range/granularity);
     final long now = environment.getTimeSource().currentTimeMillis();
     AggregationStatistics stats = new AggregationStatistics(1+maxHistoIndex, granularity, environment);
-    Enumeration enumeration = elements();
+    Enumeration<AggregateDescriptor> enumeration = elements();
     
     recalculateReferenceCounts(null);
     resetMarkers();

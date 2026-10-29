@@ -402,14 +402,14 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
       this.node = node;
     }
     
-    public void fetch(Id id, NodeHandle hint, Continuation command) {
+    public void fetch(Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
       set.addId(id);
-      command.receiveResult(new Boolean(true));
+      command.receiveResult(Boolean.valueOf(true));
     }
     
-    public void remove(Id id, Continuation command) {
+    public void remove(Id id, Continuation<? super Boolean, Exception> command) {
       set.removeId(id);
-      command.receiveResult(new Boolean(true));
+      command.receiveResult(Boolean.valueOf(true));
     }
     
     public IdSet scan(IdRange range) {
@@ -424,12 +424,12 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
       return set.isMemberId(id);
     }
 
-    public void existsInOverlay(Id id, Continuation command) {
+    public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command) {
       // XXX we don't test this new functionality yet
       command.receiveResult(Boolean.TRUE);
     }
 
-    public void reInsert(Id id, Continuation command) {
+    public void reInsert(Id id, Continuation<? super Boolean, Exception> command) {
       // XXX we don't test this new functionality yet
       command.receiveResult(Boolean.TRUE);
     }

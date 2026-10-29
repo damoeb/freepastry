@@ -51,6 +51,7 @@ package rice.p2p.aggregation;
 import java.io.Serializable;
 import rice.Continuation;
 import rice.p2p.commonapi.Id;
+import rice.p2p.past.PastContent;
 
 @SuppressWarnings("unchecked")
 public interface Aggregation {
@@ -79,7 +80,7 @@ public interface Aggregation {
    * @param handle the handle object
    * @param command Command to be performed when the method completes.
    */
-  public void setHandle(Serializable handle, Continuation command);
+  public void setHandle(Serializable handle, Continuation<? super Boolean, Exception> command);
 
   /**
    * Creates an aggregate that includes the most current object
@@ -89,7 +90,7 @@ public interface Aggregation {
    * @param id the key of the object to be made persistent.
    * @param command Command to be performed when the method completes.
    */
-  public void flush(Id id, Continuation command);
+  public void flush(Id id, Continuation<? super Boolean, Exception> command);
 
   /**
    * Creates aggregates from all objects in the local object cache.
@@ -99,7 +100,7 @@ public interface Aggregation {
    *
    * @param command Command to be performed when the method completes.
    */
-  public void flush(Continuation command);
+  public void flush(Continuation<? super Boolean, Exception> command);
 
   /**
    * Attempts to retrieve the most recent object that has been inserted 
@@ -112,7 +113,7 @@ public interface Aggregation {
    * @param id the key of the object to be retrieved
    * @param command Command to be performed when the method completes.
    */
-  public void rollback(Id id, Continuation command);
+  public void rollback(Id id, Continuation<? super PastContent, Exception> command);
 
   /**
    * Deletes all local state, including the aggregate list and all
@@ -124,7 +125,7 @@ public interface Aggregation {
    *
    * @param command Command to be performed when the method completes.
    */
-  public void reset(Continuation command);
+  public void reset(Continuation<? super Boolean, Exception> command);
   
 }
 

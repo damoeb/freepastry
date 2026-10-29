@@ -187,7 +187,7 @@ public class RegrTestApp extends CommonAPIAppl {
      * System.out.println("added"); else System.out.println("removed");
      */
 
-    if (!prg.pastryNodesSorted.containsKey(nid) && nh.isAlive())
+    if (!prg.pastryNodesSorted.containsKey(nid) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
       System.out.println("at... " + getNodeId()
           + "leafSetChange failure 1 with " + nid);
 
@@ -243,7 +243,7 @@ public class RegrTestApp extends CommonAPIAppl {
      */
 
     if (!prg.pastryNodesSorted.containsKey(nid)) {
-      if (nh.isAlive() || wasAdded)
+      if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD || wasAdded)
         System.out.println("at... " + getNodeId()
             + "routeSetChange failure 1 with " + nid + " wasAdded=" + wasAdded);
     }

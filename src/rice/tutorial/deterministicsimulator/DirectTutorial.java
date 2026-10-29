@@ -41,8 +41,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.Vector;
 
 import rice.environment.Environment;
@@ -54,6 +52,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
+import rice.pastry.PastryNodeListener;
 import rice.pastry.direct.*;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.standard.RandomNodeIdFactory;
@@ -124,25 +123,29 @@ public class DirectTutorial {
           final int myCurNode = curNode;
           
           // track when the node is finished booting
-          node.addObserver(new Observer() {          
-            public void update(Observable o, Object arg) {
+          node.addPastryNodeListener(new PastryNodeListener() {          
+            public void pastryNodeReady(PastryNode o, boolean ready) {
               try {
-                if (arg instanceof Boolean) {
-                  System.out.println("Finished creating new node "+node+" at "+env.getTimeSource().currentTimeMillis());
+                System.out.println("Finished creating new node "+node+" at "+env.getTimeSource().currentTimeMillis());
                   
-                  // see if we're done booting nodes
-                  if (myCurNode == numNodes) {
-                    // start the delivery task
-                    scheduleDeliveryTask(nidFactory, env);
-                  }
-                } else if (arg instanceof JoinFailedException) {
-                  JoinFailedException jfe = (JoinFailedException)arg;
-                  jfe.printStackTrace();
-                  throw new RuntimeException(jfe); // kill selector
+                // see if we're done booting nodes
+                if (myCurNode == numNodes) {
+                  // start the delivery task
+                  scheduleDeliveryTask(nidFactory, env);
                 }
               } finally {
                 // stop observing after initial try
-                o.deleteObserver(this);
+                o.removePastryNodeListener(this);
+              }
+            }          
+
+            public void pastryNodeJoinFailed(PastryNode o, JoinFailedException jfe) {
+              try {
+                jfe.printStackTrace();
+                throw new RuntimeException(jfe); // kill selector
+              } finally {
+                // stop observing after initial try
+                o.removePastryNodeListener(this);
               }
             }          
           });

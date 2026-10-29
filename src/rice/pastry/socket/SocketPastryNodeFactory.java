@@ -280,7 +280,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   @Override
-  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory handleFactory) {
+  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
     super.registerApps(pn, leafSet, routeTable, nha, handleFactory);
     
     ProbeStrategy probeStrategy = getProbeStrategy(pn);
@@ -298,7 +298,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   
   // ********************** abstract methods **********************
   @Override
-  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory nhf) {
+  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
     SocketNodeHandleFactory pnhf = (SocketNodeHandleFactory)nhf;
     MultiInetSocketAddress proxyAddress = (MultiInetSocketAddress)pn.getVars().get(PROXY_ADDRESS);
     return pnhf.getNodeHandle(proxyAddress, pn.getEnvironment().getTimeSource().currentTimeMillis(), pn.getNodeId());
@@ -306,11 +306,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
  
   
   public static final String NODE_HANDLE_FACTORY = "SocketPastryNodeFactory.NODE_HANDLE_FACTORY";
-  public NodeHandleFactory getNodeHandleFactory(PastryNode pn) {
+  public NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) {
     if (pn.getVars().containsKey(NODE_HANDLE_FACTORY)) {
-      return (NodeHandleFactory) pn.getVars().get(NODE_HANDLE_FACTORY);
+      return (NodeHandleFactory<?>) pn.getVars().get(NODE_HANDLE_FACTORY);
     }
-    NodeHandleFactory ret = new SocketNodeHandleFactory(pn);
+    NodeHandleFactory<?> ret = new SocketNodeHandleFactory(pn);
     pn.getVars().put(NODE_HANDLE_FACTORY, ret);
     return ret;
   }
@@ -337,7 +337,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   
   public NodeHandleAdapter getNodeHandleAdapter(
       final PastryNode pn, 
-      NodeHandleFactory handleFactory2, 
+      NodeHandleFactory<?> handleFactory2, 
       TLDeserializer deserializer) throws IOException {
 
     Environment environment = pn.getEnvironment();
@@ -803,7 +803,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
               if (error instanceof NodeIsFaultyException) {                  
                 NodeIsFaultyException nife = (NodeIsFaultyException)error;
                 logger.log("Dropping message "+nife.getAttemptedMessage()+" to "+nife.getIdentifier()+" because it is faulty.");
-                if (i.isAlive()) {
+                if (i.getLiveness() < NodeHandle.LIVENESS_DEAD) {
                   TransportLayerNodeHandle<MultiInetSocketAddress> nh = (TransportLayerNodeHandle<MultiInetSocketAddress>)i;
                   logger.logException("NodeIsFaultyException thrown for non-dead node. "+i+" "+nh.getLiveness(),nife);
                 }
@@ -851,12 +851,12 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   
   @Override
   @SuppressWarnings("unchecked")
-  protected Bootstrapper getBootstrapper(PastryNode pn, 
+  protected Bootstrapper<InetSocketAddress> getBootstrapper(PastryNode pn, 
       NodeHandleAdapter tl, 
-      NodeHandleFactory handleFactory,
+      NodeHandleFactory<?> handleFactory,
       ProximityNeighborSelector pns) {
 
-    TLBootstrapper bootstrapper = new TLBootstrapper(pn, tl.getTL(), (SocketNodeHandleFactory)handleFactory, pns);
+    TLBootstrapper bootstrapper = new TLBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTL(), (SocketNodeHandleFactory)handleFactory, pns);
     return bootstrapper;
   }
 
@@ -1111,7 +1111,9 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
    * 
    * @param bootstrap Node handle to bootstrap from.
    * @return A node with a random ID and next port number.
+   * @deprecated use newNode() then call PastryNode.boot(bootaddress)
    */
+  @Deprecated
   public PastryNode newNode(NodeHandle bootstrap) {
     return newNode(bootstrap, nidFactory.generateNodeId());
   }
@@ -1134,7 +1136,9 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
    * @param bootstrap Node handle to bootstrap from.
    * @param nodeId if non-null, will use this nodeId for the node, rather than using the NodeIdFactory
    * @return A node with a random ID and next port number.
+   * @deprecated use newNode(nodeId) then call PastryNode.boot(bootaddress)
    */
+  @Deprecated
   public PastryNode newNode(final NodeHandle bootstrap, Id nodeId) {
     return newNode(bootstrap, nodeId, null);
   }
@@ -1168,10 +1172,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   public PastryNode newNode(NodeHandle nodeHandle, Id id, InetSocketAddress proxyAddress) {
     PastryNode n = newNode(id, proxyAddress);
     if (nodeHandle == null) {
-      n.getBootstrapper().boot(null); 
+      n.<InetSocketAddress>getBootstrapper().boot(null); 
+
     } else {
       BogusNodeHandle bnh = (BogusNodeHandle)nodeHandle;
-      n.getBootstrapper().boot(bnh.addresses);
+      n.<InetSocketAddress>getBootstrapper().boot(bnh.addresses);
       
       // delme
 //      InetSocketAddressLookup inetLookupService = (InetSocketAddressLookup)((PastryNode)n).getVars().get(SocketPastryNodeFactory.IP_ADDR_SERVICE);

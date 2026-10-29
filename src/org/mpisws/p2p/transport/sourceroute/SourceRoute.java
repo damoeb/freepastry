@@ -157,7 +157,8 @@ public abstract class SourceRoute<Identifier> {
     if (!(o instanceof SourceRoute))
       return false;
     
-    SourceRoute that = (SourceRoute)o;
+    SourceRoute<?> that = (SourceRoute<?>)o;
+
     return this.path.equals(that.path);
   }
   

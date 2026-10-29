@@ -41,7 +41,6 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.security.*;
 import java.util.*;
-import sun.reflect.*;
 
 /**
  * XMLObjectInputStreamm is an extension of ObjectInputStreamm which provides
@@ -70,17 +69,17 @@ public class XMLObjectInputStream extends ObjectInputStream {
   /**
    * The hashmap of readResolve methods, mapping Class->Method
    */
-  protected static SoftHashMap READ_RESOLVES = new SoftHashMap();
+  protected static SoftHashMap<Class<?>, Method> READ_RESOLVES = new SoftHashMap<Class<?>, Method>();
   
   /**
    * The hashmap of readObject methods, mapping Class->Method
    */
-  protected static SoftHashMap READ_OBJECTS = new SoftHashMap();
+  protected static SoftHashMap<Class<?>, Method> READ_OBJECTS = new SoftHashMap<Class<?>, Method>();
   
   /**
    * A cache of constructors, mapping classes to serialization constructors
    */
-  protected static SoftHashMap CONSTRUCTORS = new SoftHashMap();
+  protected static SoftHashMap<Class<?>, Constructor<?>> CONSTRUCTORS = new SoftHashMap<Class<?>, Constructor<?>>();
   
   /**
    * The underlying reader, which parses the XML
@@ -91,23 +90,35 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * The hashtable of references, which is updated each time a new object is 
    * read off of the stream.
    */
-  protected Hashtable references;
+  protected Hashtable<String, Object> references;
    
   /**
    * The stack of objects which are currently being read off of the stream
    */
-  protected Stack currentObjects;
+  protected Stack<Object> currentObjects;
   
   /**
    * The stack of class types which are being read off of the stream
    */
-  protected Stack currentClasses;
+  protected Stack<Class<?>> currentClasses;
   
   /**
-   * The ReflectionFactory, which allows for prividged construction of
-   * objects
+   * The ReflectionFactory (jdk.unsupported), which allows for prividged construction of
+   * objects.  Looked up reflectively so the build does not depend on internal API at
+   * compile time.
    */
-  protected ReflectionFactory reflFactory = ReflectionFactory.getReflectionFactory();
+  private static final Object REFL_FACTORY;
+  private static final Method NEW_CONSTRUCTOR_FOR_SERIALIZATION;
+
+  static {
+    try {
+      Class<?> factoryClass = Class.forName("sun.reflect.ReflectionFactory");
+      REFL_FACTORY = factoryClass.getMethod("getReflectionFactory").invoke(null);
+      NEW_CONSTRUCTOR_FOR_SERIALIZATION = factoryClass.getMethod("newConstructorForSerialization", Class.class, Constructor.class);
+    } catch (ReflectiveOperationException e) {
+      throw new ExceptionInInitializerError(e);
+    }
+  }
 
   /**
    * The list of validation objects waiting for the entire object graph to be read in
@@ -131,9 +142,9 @@ public class XMLObjectInputStream extends ObjectInputStream {
     super();
     
     this.reader = new XMLReader(new InputStreamReader(in));
-    this.currentObjects = new Stack();
-    this.currentClasses = new Stack();
-    this.references = new Hashtable();
+    this.currentObjects = new Stack<Object>();
+    this.currentClasses = new Stack<Class<?>>();
+    this.references = new Hashtable<String, Object>();
     this.vlist = new ValidationList();
     this.depth = 0;
         
@@ -170,7 +181,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public void reset() throws IOException {
-    references = new Hashtable(); 
+    references = new Hashtable<String, Object>(); 
     vlist.clear();
   }
   
@@ -400,7 +411,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   public void defaultReadObject() throws IOException, ClassNotFoundException {
     if (currentObjects.peek() != null)
-      readFields(currentObjects.peek(), (Class) currentClasses.peek());
+      readFields(currentObjects.peek(), currentClasses.peek());
     else
       throw new NotActiveException("defaultReadObject called with empty stack!");
   }
@@ -458,16 +469,16 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @param cl The class to find the readResolve() of
    * @return The method, or null if none was found
    */
-  private static Method getReadResolve(Class cl) {
+  private static Method getReadResolve(Class<?> cl) {
     synchronized (READ_RESOLVES) {
       if (READ_RESOLVES.containsKey(cl)) 
         return (Method) READ_RESOLVES.get(cl);
             
       Method meth = null;
-      Class defCl = cl;
+      Class<?> defCl = cl;
       while (defCl != null) {
         try {
-          meth = defCl.getDeclaredMethod("readResolve", new Class[0]);
+          meth = defCl.getDeclaredMethod("readResolve", new Class<?>[0]);
           break;
         } catch (NoSuchMethodException ex) {
           defCl = defCl.getSuperclass();
@@ -510,13 +521,13 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @param cl The class to find the readResolve() of
    * @return The method, or null if none was found
    */
-  private static Method getReadObject(Class cl) {
+  private static Method getReadObject(Class<?> cl) {
     synchronized (READ_OBJECTS) {
       if (READ_OBJECTS.containsKey(cl)) 
         return (Method) READ_OBJECTS.get(cl);
       
       try {
-        Method method = cl.getDeclaredMethod("readObject", new Class[] {ObjectInputStream.class});
+        Method method = cl.getDeclaredMethod("readObject", new Class<?>[] {ObjectInputStream.class});
         method.setAccessible(true);
       
         READ_OBJECTS.put(cl, method);
@@ -540,14 +551,18 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws NoSuchMethodException If the first non-Serializable class does not have a no-arg 
    *   Constructor
    */
-  protected Constructor getSerializableConstructor(Class c) throws IOException, NoSuchMethodException {
-    Class initCl = c;
+  protected Constructor<?> getSerializableConstructor(Class<?> c) throws IOException, NoSuchMethodException {
+    Class<?> initCl = c;
     
     while (Serializable.class.isAssignableFrom(initCl))
       initCl = initCl.getSuperclass();
 
-    Constructor cons = initCl.getDeclaredConstructor(new Class[0]);
-    cons = reflFactory.newConstructorForSerialization(c, cons);
+    Constructor<?> cons = initCl.getDeclaredConstructor(new Class<?>[0]);
+    try {
+      cons = (Constructor<?>) NEW_CONSTRUCTOR_FOR_SERIALIZATION.invoke(REFL_FACTORY, c, cons);
+    } catch (IllegalAccessException | InvocationTargetException e) {
+      throw new IOException("Could not create serialization constructor for " + c, e);
+    }
     cons.setAccessible(true);
     return cons;
   }
@@ -561,13 +576,13 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @param c The class to create a new instance of
    * @throws IOException If an error occurs
    */
-  protected Object newInstance(Class c) throws IOException {
+  protected Object newInstance(Class<?> c) throws IOException {
     try {
-      Constructor cons = (Constructor) CONSTRUCTORS.get(c);
+      Constructor<?> cons = CONSTRUCTORS.get(c);
     
       if (cons == null) {
         if (Externalizable.class.isAssignableFrom(c)) {
-          cons = c.getDeclaredConstructor(new Class[0]);
+          cons = c.getDeclaredConstructor(new Class<?>[0]);
         } else {
           cons = getSerializableConstructor(c);
         }
@@ -596,7 +611,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @param name The name of the class to return
    * @throws ClassNotFoundException If the class cannot be found
    */
-  protected Class getClass(String name) throws ClassNotFoundException {
+  protected Class<?> getClass(String name) throws ClassNotFoundException {
     if (name.equals("int"))
       return Integer.TYPE;
     else if (name.equals("boolean"))
@@ -817,6 +832,8 @@ public class XMLObjectInputStream extends ObjectInputStream {
       return readArray(shared);
     } else if (reader.getStartTag().equals("object")) {
       return readOrdinaryObject(shared);
+    } else if (reader.getStartTag().equals("jserial")) {
+      return readJavaSerialized(shared);
     } else {
       throw new IOException("Unknown element name " + reader.getStartTag());
     }
@@ -900,11 +917,14 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected Object readOrdinaryObject(boolean shared) throws IOException, ClassNotFoundException {
     reader.assertStartTag("object");
     
-    Class c = Class.forName(reader.getAttribute("class"));
+    Class<?> c = Class.forName(reader.getAttribute("class"));
     String id = reader.getAttribute("id");
 
     if (! Serializable.class.isAssignableFrom(c))
       throw new NotSerializableException(c.getName());
+    
+    if (XMLObjectOutputStream.BOXED_VALUE_TYPES.containsKey(c))
+      return readBoxedValue(c, id, shared);
         
     Object o = newInstance(c);
 
@@ -944,6 +964,147 @@ public class XMLObjectInputStream extends ObjectInputStream {
   } 
   
   /**
+   * Method which reads a boxed primitive (Integer, Long, ...) which was written in
+   * default field format, i.e. as an object with a single "value" field.  The value
+   * is created via the public valueOf() API, as the value field of the JDK classes is
+   * not reflectively accessible.  This method assumes that the XML reader is currently
+   * on the start object tag, and does consume the corresponding end tag.
+   *
+   * @param c The boxed class
+   * @param id The reference id of the object, or null
+   * @param shared Whether or not to record a reference to this object
+   * @return The boxed value
+   * @throws IOException If an error occurs
+   * @throws ClassNotFoundException If the class cannot be found
+   */
+  protected Object readBoxedValue(Class<?> c, String id, boolean shared) throws IOException, ClassNotFoundException {
+    Object result = null;
+    reader.step();
+    
+    while (! reader.isEndTag()) {
+      reader.assertStartTag("declaredClass");
+      reader.readStartTag("default");
+      reader.step();
+      
+      while (! reader.isEndTag()) {
+        if (reader.getStartTag().equals("primitive") && "value".equals(reader.getAttribute("field"))) {
+          result = readBoxedPrimitive(c);
+        } else if (reader.getStartTag().equals("primitive")) {
+          reader.readEndTag("primitive");
+        } else {
+          readObjectHelper();
+        }
+        
+        reader.step();
+      }
+      
+      reader.assertEndTag("default");
+      readUnreadOptionalData();
+      reader.assertEndTag("declaredClass");
+      reader.step();
+    }
+    
+    reader.assertEndTag("object");
+    
+    if (result == null)
+      throw new IOException("No value found for " + c.getName());
+    
+    if (shared && (id != null)) 
+      putReference(id, result);
+    
+    return result;
+  }
+  
+  /**
+   * Method which reads the primitive value of the given boxed class from the stream. This 
+   * method assumes that the XML reader is currently on a primitive tag, and does consume 
+   * the end primitive tag.
+   *
+   * @param c The boxed class
+   * @return The boxed value
+   * @throws IOException If an error occurs
+   */
+  protected Object readBoxedPrimitive(Class<?> c) throws IOException {
+    if (c.equals(Integer.class)) {
+      return Integer.valueOf(readIntHelper());
+    } else if (c.equals(Boolean.class)) {
+      return Boolean.valueOf(readBooleanHelper());
+    } else if (c.equals(Byte.class)) {
+      return Byte.valueOf(readByteHelper());
+    } else if (c.equals(Character.class)) {
+      return Character.valueOf(readCharHelper());
+    } else if (c.equals(Double.class)) {
+      return Double.valueOf(readDoubleHelper());
+    } else if (c.equals(Float.class)) {
+      return Float.valueOf(readFloatHelper());
+    } else if (c.equals(Long.class)) {
+      return Long.valueOf(readLongHelper());
+    } else if (c.equals(Short.class)) {
+      return Short.valueOf(readShortHelper());
+    } else {
+      throw new IllegalArgumentException("Class " + c + " is not a boxed primitive!");
+    }
+  }
+  
+  /**
+   * Method which reads an object written by XMLObjectOutputStream.writeJavaSerialized(), 
+   * i.e. an object whose class is not open to deep reflection.  This method assumes that
+   * the XML reader is currently on the start jserial tag, and does consume the corresponding 
+   * end tag.  It first reads the Java serialization data and the child objects, and then 
+   * deserializes the data with a standard ObjectInputStream, substituting the children for 
+   * their placeholders.
+   *
+   * @param shared Whether or not to record a reference to this object
+   * @return The object read from the stream
+   * @throws IOException If an error occurs
+   * @throws ClassNotFoundException If the class cannot be found
+   */
+  protected Object readJavaSerialized(boolean shared) throws IOException, ClassNotFoundException {
+    reader.assertStartTag("jserial");
+    String id = reader.getAttribute("id");
+    
+    reader.readStartTag("base64");
+    byte[] data = reader.readBase64();
+    
+    final ArrayList<Object> children = new ArrayList<Object>();
+    reader.step();
+    
+    while (! reader.isEndTag()) {
+      children.add(readObjectHelper());
+      reader.step();
+    }
+    
+    reader.assertEndTag("jserial");
+    
+    ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data)) {
+      {
+        enableResolveObject(true);
+      }
+      
+      protected Object resolveObject(Object obj) throws IOException {
+        if (obj instanceof XMLObjectOutputStream.JavaSerializedChild) {
+          int index = ((XMLObjectOutputStream.JavaSerializedChild) obj).index;
+          
+          if ((index < 0) || (index >= children.size()))
+            throw new StreamCorruptedException("Invalid child reference " + index);
+          
+          return children.get(index);
+        }
+        
+        return obj;
+      }
+    };
+    
+    Object result = ois.readObject();
+    ois.close();
+    
+    if (shared && (id != null)) 
+      putReference(id, result);
+    
+    return result;
+  }
+  
+  /**
    * Method which reads the information for one class for a given object from the 
    * stream. This method assumes that the XML reader is currently on a start declaredClass tag, 
    * and does consume the corresponding end declaredClass tag.  This method first reads the class type, 
@@ -959,7 +1120,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected Object readClass(Object o) throws IOException, ClassNotFoundException {
     reader.assertStartTag("declaredClass");
 
-    Class c = Class.forName(reader.getAttribute("class"));
+    Class<?> c = Class.forName(reader.getAttribute("class"));
     
     Method method = getReadObject(c);
     
@@ -1082,7 +1243,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     if (name == null)
       throw new IOException("Could not read primitive field " + reader.getAttribute("type") + ", as field attribute was null!");
     
-    Class c = getClass(reader.getAttribute("type"));
+    Class<?> c = getClass(reader.getAttribute("type"));
     
     if (c.equals(Integer.TYPE)) {
       g.put(name, readIntHelper());
@@ -1116,7 +1277,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    * @throws ClassNotFoundException If the class cannot be found
    */
-  protected void readFields(Object o, Class c) throws IOException, ClassNotFoundException {
+  protected void readFields(Object o, Class<?> c) throws IOException, ClassNotFoundException {
     reader.readStartTag("default");
     reader.step();
     
@@ -1139,7 +1300,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    * @throws ClassNotFoundException If the class cannot be found
    */
-  protected void readField(Object o, Class c) throws IOException, ClassNotFoundException {
+  protected void readField(Object o, Class<?> c) throws IOException, ClassNotFoundException {
     reader.assertStartTag();
     String field = reader.getAttribute("field");
         
@@ -1198,7 +1359,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     } else if (f.getType().equals(Long.TYPE)) {
       f.setLong(o, readLongHelper());
     } else if (f.getType().equals(Short.TYPE)) {
-      f.setInt(o, readShortHelper());
+      f.setShort(o, readShortHelper());
     } else {
       throw new IllegalArgumentException("Field " + f + " is not primitive!");
     }
@@ -1217,7 +1378,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected Object readArray(boolean shared) throws IOException, ClassNotFoundException {
     reader.assertStartTag("array");
     
-    Class c = getClass(reader.getAttribute("base"));
+    Class<?> c = getClass(reader.getAttribute("base"));
     
     int length = Integer.valueOf(reader.getAttribute("length")).intValue();
     int dim = Integer.valueOf(reader.getAttribute("dim")).intValue();
@@ -1334,35 +1495,35 @@ public class XMLObjectInputStream extends ObjectInputStream {
     }
     
     protected void put(String name, boolean value) {
-      primitives.put(name, new Boolean(value));
+      primitives.put(name, Boolean.valueOf(value));
     }
     
     protected void put(String name, byte value) {
-      primitives.put(name, new Byte(value));
+      primitives.put(name, Byte.valueOf(value));
     }
     
     protected void put(String name, char value) {
-      primitives.put(name, new Character(value));
+      primitives.put(name, Character.valueOf(value));
     }
     
     protected void put(String name, double value) {
-      primitives.put(name, new Double(value));
+      primitives.put(name, Double.valueOf(value));
     }
     
     protected void put(String name, float value) {
-      primitives.put(name, new Float(value));
+      primitives.put(name, Float.valueOf(value));
     }
     
     protected void put(String name, int value) {
-      primitives.put(name, new Integer(value));
+      primitives.put(name, Integer.valueOf(value));
     }
     
     protected void put(String name, long value) {
-      primitives.put(name, new Long(value));
+      primitives.put(name, Long.valueOf(value));
     }
     
     protected void put(String name, short value) {
-      primitives.put(name, new Short(value));
+      primitives.put(name, Short.valueOf(value));
     }
     
     protected void put(String name, Object value) {

@@ -63,10 +63,10 @@ public class PartitionHandlerTest {
     SocketPastryNodeFactory factoryA = new SocketPastryNodeFactory(new RandomNodeIdFactory(env), PORT_A, env);
     SocketPastryNodeFactory factoryB = new SocketPastryNodeFactory(new RandomNodeIdFactory(env), PORT_B, env);
     
-    NodeHandle bootstrapA = factoryA.getNodeHandle(new InetSocketAddress("localhost", PORT_A));
-    PastryNode a = factoryA.newNode(bootstrapA);
-    NodeHandle bootstrapB = factoryB.getNodeHandle(new InetSocketAddress("localhost", PORT_B));
-    PastryNode b = factoryB.newNode(bootstrapB);
+    PastryNode a = factoryA.newNode();
+    a.boot(new InetSocketAddress("localhost", PORT_A));
+    PastryNode b = factoryB.newNode();
+    b.boot(new InetSocketAddress("localhost", PORT_B));
     
     PartitionHandler handlerA = new PartitionHandler(a, factoryA, null);
     PartitionHandler handlerB = new PartitionHandler(b, factoryB, null);

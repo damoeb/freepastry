@@ -107,7 +107,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
 //    final ArrayList<IOException> retException = new ArrayList<IOException>();
 //    Object nhaPart1 = getnodeHandleAdapterPart1(pn);
     
-    NodeHandleFactory handleFactory = getNodeHandleFactory(pn);
+    NodeHandleFactory<?> handleFactory = getNodeHandleFactory(pn);
     NodeHandle localhandle = getLocalHandle(pn, handleFactory);    
     
     TLDeserializer deserializer = getTLDeserializer(handleFactory,pn);
@@ -137,10 +137,10 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     return null; // use the default one
   }
   
-  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory handleFactory) {
+  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
     ProximityNeighborSelector pns = getProximityNeighborSelector(pn);
     
-    Bootstrapper bootstrapper = getBootstrapper(pn, nha, handleFactory, pns);          
+    Bootstrapper<?> bootstrapper = getBootstrapper(pn, nha, handleFactory, pns);          
 
     RouteSetProtocol rsProtocol = getRouteSetProtocol(pn, leafSet, routeTable);
       
@@ -181,7 +181,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     return jProtocol;    
   }
   
-  protected TLDeserializer getTLDeserializer(NodeHandleFactory handleFactory, PastryNode pn) {
+  protected TLDeserializer getTLDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
     TLDeserializer deserializer = new TLDeserializer(handleFactory, pn.getEnvironment());
     return deserializer;
   }
@@ -208,12 +208,12 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
   }
     
   protected abstract NodeHandle getLocalHandle(PastryNode pn, 
-      NodeHandleFactory handleFactory) throws IOException;
+      NodeHandleFactory<?> handleFactory) throws IOException;
   protected abstract NodeHandleAdapter getNodeHandleAdapter(PastryNode pn, 
-      NodeHandleFactory handleFactory, TLDeserializer deserializer) throws IOException;
-  protected abstract NodeHandleFactory getNodeHandleFactory(PastryNode pn) throws IOException;
-  protected abstract Bootstrapper getBootstrapper(PastryNode pn, 
+      NodeHandleFactory<?> handleFactory, TLDeserializer deserializer) throws IOException;
+  protected abstract NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) throws IOException;
+  protected abstract Bootstrapper<?> getBootstrapper(PastryNode pn, 
       NodeHandleAdapter tl, 
-      NodeHandleFactory handleFactory,
+      NodeHandleFactory<?> handleFactory,
       ProximityNeighborSelector pns);  
 }

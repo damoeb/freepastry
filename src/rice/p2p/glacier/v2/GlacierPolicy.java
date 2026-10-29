@@ -55,6 +55,6 @@ public interface GlacierPolicy {
   public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer pcd);
  
   @SuppressWarnings("unchecked")
-  public void prefetchLocalObject(VersionKey key, Continuation command);
+  public void prefetchLocalObject(VersionKey key, Continuation<? super PastContent, Exception> command);
  
 }

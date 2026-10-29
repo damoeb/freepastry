@@ -201,7 +201,7 @@ public class GCIdFactory implements IdFactory {
    *
    * @return an empty IdSet
    */
-  public IdSet buildIdSet(SortedMap map) {
+  public IdSet buildIdSet(SortedMap<Id, ?> map) {
     //return new GCIdSet(factory.buildIdSet(new GCSortedMap(map)), factory);
     throw new UnsupportedOperationException("GCIdFactory.buildIDSet()");
   }
@@ -215,80 +215,77 @@ public class GCIdFactory implements IdFactory {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build NodeHandleSets!");
   }
   
-  @SuppressWarnings("unchecked")
-  protected class GCSortedMap implements SortedMap {
-    protected SortedMap map;
+  protected class GCSortedMap<V> implements SortedMap<Id, V> {
+    protected SortedMap<Id, V> map;
     
-    public GCSortedMap(SortedMap map) {
+    public GCSortedMap(SortedMap<Id, V> map) {
       this.map = map;
     }
     
-    public Comparator comparator() { return null; }
-    public Object firstKey() { throw new UnsupportedOperationException("firstKey not supported!"); }
-    public SortedMap headMap(Object toKey) { throw new UnsupportedOperationException("headMap not supported!"); }
-    public Object lastKey() { throw new UnsupportedOperationException("lastKey not supported!"); }
-    public SortedMap subMap(Object fromKey, Object toKey) { throw new UnsupportedOperationException("subMap not supported!"); }
-    public SortedMap tailMap(Object fromKey) { throw new UnsupportedOperationException("tailMap not supported!");}
+    public Comparator<? super Id> comparator() { return null; }
+    public Id firstKey() { throw new UnsupportedOperationException("firstKey not supported!"); }
+    public SortedMap<Id, V> headMap(Id toKey) { throw new UnsupportedOperationException("headMap not supported!"); }
+    public Id lastKey() { throw new UnsupportedOperationException("lastKey not supported!"); }
+    public SortedMap<Id, V> subMap(Id fromKey, Id toKey) { throw new UnsupportedOperationException("subMap not supported!"); }
+    public SortedMap<Id, V> tailMap(Id fromKey) { throw new UnsupportedOperationException("tailMap not supported!");}
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
     public boolean containsKey(Object key) { throw new UnsupportedOperationException("containsKey not supported!"); }
     public boolean containsValue(Object value) { throw new UnsupportedOperationException("containsValue not supported!"); }
-    public Set entrySet() { return new GCEntrySet(map.entrySet()); }
+    public Set<Map.Entry<Id, V>> entrySet() { return new GCEntrySet<V>(map.entrySet()); }
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
-    public Object get(Object key) { throw new UnsupportedOperationException("get not supported!"); }
+    public V get(Object key) { throw new UnsupportedOperationException("get not supported!"); }
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!");  }
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!");  }
-    public Set keySet() { throw new UnsupportedOperationException("keyset not supported!"); }
-    public Object put(Object key, Object value) { throw new UnsupportedOperationException("put not supported!"); }
-    public void putAll(Map t) { throw new UnsupportedOperationException("putAll not supported!"); }
-    public Object remove(Object key) { throw new UnsupportedOperationException("remove not supported!"); }
+    public Set<Id> keySet() { throw new UnsupportedOperationException("keyset not supported!"); }
+    public V put(Id key, V value) { throw new UnsupportedOperationException("put not supported!"); }
+    public void putAll(Map<? extends Id, ? extends V> t) { throw new UnsupportedOperationException("putAll not supported!"); }
+    public V remove(Object key) { throw new UnsupportedOperationException("remove not supported!"); }
     public int size() { return map.size(); }
-    public Collection values() { throw new UnsupportedOperationException("values not supported!"); }
+    public Collection<V> values() { throw new UnsupportedOperationException("values not supported!"); }
   }
   
-  @SuppressWarnings("unchecked")
-  protected class GCEntrySet implements Set {
-    protected Set set;
+  protected class GCEntrySet<V> implements Set<Map.Entry<Id, V>> {
+    protected Set<Map.Entry<Id, V>> set;
     
-    public GCEntrySet(Set set) {
+    public GCEntrySet(Set<Map.Entry<Id, V>> set) {
       this.set = set;
     }
     
-    public boolean add(Object o) { throw new UnsupportedOperationException("add not supported!"); }
-    public boolean addAll(Collection c) { throw new UnsupportedOperationException("addAll not supported!"); }
+    public boolean add(Map.Entry<Id, V> o) { throw new UnsupportedOperationException("add not supported!"); }
+    public boolean addAll(Collection<? extends Map.Entry<Id, V>> c) { throw new UnsupportedOperationException("addAll not supported!"); }
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
     public boolean contains(Object o) { throw new UnsupportedOperationException("contains not supported!"); }
-    public boolean containsAll(Collection c) { throw new UnsupportedOperationException("containsAll not supported!"); }
+    public boolean containsAll(Collection<?> c) { throw new UnsupportedOperationException("containsAll not supported!"); }
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
-    public Iterator iterator() { return new Iterator() {
-      protected Iterator i = set.iterator();
+    public Iterator<Map.Entry<Id, V>> iterator() { return new Iterator<Map.Entry<Id, V>>() {
+      protected Iterator<Map.Entry<Id, V>> i = set.iterator();
       public boolean hasNext() { return i.hasNext(); }
-      public Object next() { return new GCMapEntry((Map.Entry) i.next()); }
+      public Map.Entry<Id, V> next() { return new GCMapEntry<V>(i.next()); }
       public void remove() { i.remove(); }
     };
     }
     public boolean remove(Object o) { throw new UnsupportedOperationException("remove not supported!"); }
-    public boolean removeAll(Collection c) { throw new UnsupportedOperationException("removeAll not supported!"); }
-    public boolean retainAll(Collection c) { throw new UnsupportedOperationException("retainAll not supported!"); }
+    public boolean removeAll(Collection<?> c) { throw new UnsupportedOperationException("removeAll not supported!"); }
+    public boolean retainAll(Collection<?> c) { throw new UnsupportedOperationException("retainAll not supported!"); }
     public int size() { throw new UnsupportedOperationException("size not supported!"); }
     public Object[] toArray() { throw new UnsupportedOperationException("toArray not supported!"); }
-    public Object[] toArray(Object[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
+    public <T> T[] toArray(T[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
   }
   
-  @SuppressWarnings("unchecked")
-  protected class GCMapEntry implements Map.Entry {
-    protected Map.Entry entry;
+  protected class GCMapEntry<V> implements Map.Entry<Id, V> {
+    protected Map.Entry<Id, V> entry;
     
-    public GCMapEntry(Map.Entry entry) {
+    public GCMapEntry(Map.Entry<Id, V> entry) {
       this.entry = entry;
     }
     
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
-    public Object getKey() { return ((GCId) entry.getKey()).getId(); }
-    public Object getValue() { return entry.getValue(); }
+    public Id getKey() { return ((GCId) entry.getKey()).getId(); }
+    public V getValue() { return entry.getValue(); }
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
-    public Object setValue(Object value) { throw new UnsupportedOperationException("setValue not supported!"); }
+    public V setValue(V value) { throw new UnsupportedOperationException("setValue not supported!"); }
   }
 }
 

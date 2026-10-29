@@ -661,7 +661,7 @@ public class StandardRouter extends PastryAppl implements Router {
       RouteSet[] row = thePastryNode.getRoutingTable().getRow(diffDigit);
       BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
 
-      if (prevNode.isAlive()) {
+      if (prevNode.getLiveness() < NodeHandle.LIVENESS_DEAD) {
         if (logger.level <= Logger.FINE) {
           logger.log("Found hole in "+prevNode+"'s routing table. Sending "+brr.toStringFull());  
         }

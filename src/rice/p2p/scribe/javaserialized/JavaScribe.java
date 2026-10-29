@@ -63,6 +63,7 @@ public interface JavaScribe extends BaseScribe {
    * @param content The content to include in the subscribe
    * @deprecated use subscribe(Topic, ScribeMultiClient, ScribeContent, NodeHandle)
    */
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client, ScribeContent content);
 
   /**
@@ -75,6 +76,7 @@ public interface JavaScribe extends BaseScribe {
    * @param hint The first hop of the message ( Helpful to implement a centralized solution)
    * @deprecated use the version with the MultiClient
    */
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client, ScribeContent content, NodeHandle hint);
   public void subscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint);
 
@@ -87,6 +89,7 @@ public interface JavaScribe extends BaseScribe {
    * @param hint
    * @deprecated use the version with the MultiClient
    */
+  @Deprecated
   public void subscribe(Collection<Topic> topics, ScribeClient client, ScribeContent content, NodeHandle hint);
   public void subscribe(Collection<Topic> topics, ScribeMultiClient client, ScribeContent content, NodeHandle hint);
 

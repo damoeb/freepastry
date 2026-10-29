@@ -77,10 +77,10 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   protected NodeIdFactory nidFactory;
 //  protected RandomSource random;
 
-  protected NetworkSimulator simulator;
+  protected NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
   
-  protected Collection<NodeHandleFactoryListener<NodeHandle>> listeners = 
-    new ArrayList<NodeHandleFactoryListener<NodeHandle>>();
+  protected Collection<NodeHandleFactoryListener<? super NodeHandle>> listeners = 
+    new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>();
 
   
   /**
@@ -121,7 +121,9 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
    * Manufacture a new Pastry node.
    *
    * @return a new PastryNode
+   * @deprecated use newNode() then call PastryNode.boot(bootstrap)
    */
+  @Deprecated
   public PastryNode newNode(NodeHandle bootstrap) {
     return newNode(bootstrap, nidFactory.generateNodeId());
   }
@@ -131,6 +133,10 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   HashMap<Id, NodeRecord> recordTable = new HashMap<Id, NodeRecord>();
 
+  /**
+   * @deprecated use newNode(nodeId) then call PastryNode.boot(bootstrap)
+   */
+  @Deprecated
   public PastryNode newNode(NodeHandle bootstrap, Id nodeId) {
     try {
       if (bootstrap == null)
@@ -250,13 +256,13 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   @Override
-  protected NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory handleFactory) throws IOException {
+  protected NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> handleFactory) throws IOException {
     DirectNodeHandle localhandle = new DirectNodeHandle(pn, simulator);
     return localhandle;
   }
 
   @Override
-  protected NodeHandleFactory getNodeHandleFactory(PastryNode pn) throws IOException {
+  protected NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) throws IOException {
     // TODO: Make this work
     return new NodeHandleFactory<NodeHandle>(){
     
@@ -275,17 +281,17 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
        * Notify the listeners that this new handle has come along.
        */
       protected void notifyListeners(NodeHandle nh) {
-        Collection<NodeHandleFactoryListener<NodeHandle>> temp = listeners;
+        Collection<NodeHandleFactoryListener<? super NodeHandle>> temp = listeners;
         synchronized (listeners) {      
-          temp = new ArrayList<NodeHandleFactoryListener<NodeHandle>>(listeners);      
+          temp = new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>(listeners);      
         }
-        for (NodeHandleFactoryListener<NodeHandle> foo:temp) {
+        for (NodeHandleFactoryListener<? super NodeHandle> foo:temp) {
           foo.nodeHandleFound(nh);
         }
       }
 
       public void addNodeHandleFactoryListener(
-          NodeHandleFactoryListener<NodeHandle> listener) {
+          NodeHandleFactoryListener<? super NodeHandle> listener) {
         synchronized(listeners) {
           listeners.add(listener);
         }
@@ -293,7 +299,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
 
       public void removeNodeHandleFactoryListener(
-          NodeHandleFactoryListener<NodeHandle> listener) {
+          NodeHandleFactoryListener<? super NodeHandle> listener) {
         synchronized(listeners) {
           listeners.remove(listener);
         }
@@ -302,13 +308,13 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   @Override
-  protected NodeHandleAdapter getNodeHandleAdapter(final PastryNode pn, NodeHandleFactory handleFactory, TLDeserializer deserializer) throws IOException {
+  protected NodeHandleAdapter getNodeHandleAdapter(final PastryNode pn, NodeHandleFactory<?> handleFactory, TLDeserializer deserializer) throws IOException {
     NodeRecord nr = (NodeRecord)recordTable.get(pn.getId());
     if (nr == null) {
       nr = simulator.generateNodeRecord();
       recordTable.put(pn.getNodeId(),nr);
     }
-    TransportLayer<NodeHandle, RawMessage> tl = getDirectTransportLayer(pn, nr);
+    TransportLayer<? extends NodeHandle, RawMessage> tl = getDirectTransportLayer(pn, nr);
     // new DirectTransportLayer<NodeHandle, RawMessage>(pn.getLocalHandle(), simulator, nr, pn.getEnvironment());
         
     NodeHandleAdapter nha = new NodeHandleAdapter(tl,simulator.getLivenessProvider(),new ProximityProvider<NodeHandle>(){          
@@ -340,13 +346,14 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
    * @param nr
    * @return
    */
-  protected TransportLayer<NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, NodeRecord nr) {
-    DirectTransportLayer<NodeHandle, RawMessage> tl = new DirectTransportLayer<NodeHandle, RawMessage>(pn.getLocalHandle(), simulator, nr, pn.getEnvironment());    
+  protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, NodeRecord nr) {
+    DirectTransportLayer<DirectNodeHandle, RawMessage> tl = new DirectTransportLayer<DirectNodeHandle, RawMessage>((DirectNodeHandle)pn.getLocalHandle(), simulator, nr, pn.getEnvironment());    
+
     return tl;
   }
   
   @Override
-  protected Bootstrapper getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory handleFactory, final ProximityNeighborSelector pns) {
+  protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector pns) {
     return new Bootstrapper<NodeHandle>() {
     
       public void boot(Collection<NodeHandle> bootaddresses) {

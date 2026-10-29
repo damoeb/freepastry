@@ -75,7 +75,7 @@ public interface Storage extends Catalog {
    * @param obj The object to store.
    * @param c The command to run once the operation is complete
    */
-  public void store(Id id, Serializable metadata, Serializable obj, Continuation c);
+  public void store(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c);
 
   /**
    * Removes the object from the list of stored objects. This method is
@@ -88,5 +88,5 @@ public interface Storage extends Catalog {
    * @param pid The object's persistence id
    * @param c The command to run once the operation is complete
    */
-  public void unstore(Id id, Continuation c);
+  public void unstore(Id id, Continuation<? super Boolean, Exception> c);
 }

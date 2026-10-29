@@ -275,8 +275,8 @@ public class MultiringIdFactory implements IdFactory {
    *
    * @return an empty IdSet
    */
-  public IdSet buildIdSet(SortedMap map) {
-    return new MultiringIdSet(getRingId(), factory.buildIdSet(new MultiringSortedMap(map)));
+  public IdSet buildIdSet(SortedMap<Id, ?> map) {
+    return new MultiringIdSet(getRingId(), factory.buildIdSet(new MultiringSortedMap<>(map)));
   }
   
   /**
@@ -289,96 +289,96 @@ public class MultiringIdFactory implements IdFactory {
   }
   
   @SuppressWarnings("unchecked")
-  protected class MultiringSortedMap implements SortedMap {
-    protected SortedMap map;
+  protected class MultiringSortedMap<V> implements SortedMap<Id, V> {
+    protected SortedMap<Id, V> map;
     
-    public MultiringSortedMap(SortedMap map) {
+    public MultiringSortedMap(SortedMap<Id, V> map) {
       this.map = map;
     }
     
-    public Comparator comparator() { return null; }
-    public Object firstKey() { return (map.firstKey() == null ? null : ((RingId) map.firstKey()).getId()); }
-    public SortedMap headMap(Object toKey) { return map.headMap(RingId.build(ringId, (Id) toKey)); }
-    public Object lastKey() { return (map.lastKey() == null ? null : ((RingId) map.lastKey()).getId()); }
-    public SortedMap subMap(Object fromKey, Object toKey) { return map.subMap(RingId.build(ringId, (Id) fromKey), RingId.build(ringId, (Id) toKey)); }
-    public SortedMap tailMap(Object fromKey) { return map.tailMap(RingId.build(ringId, (Id) fromKey)); }
+    public Comparator<? super Id> comparator() { return null; }
+    public Id firstKey() { return (map.firstKey() == null ? null : ((RingId) map.firstKey()).getId()); }
+    public SortedMap<Id, V> headMap(Id toKey) { return map.headMap(RingId.build(ringId, toKey)); }
+    public Id lastKey() { return (map.lastKey() == null ? null : ((RingId) map.lastKey()).getId()); }
+    public SortedMap<Id, V> subMap(Id fromKey, Id toKey) { return map.subMap(RingId.build(ringId, fromKey), RingId.build(ringId, toKey)); }
+    public SortedMap<Id, V> tailMap(Id fromKey) { return map.tailMap(RingId.build(ringId, fromKey)); }
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
     public boolean containsKey(Object key) { return map.containsKey(RingId.build(ringId, (Id) key)); }
     public boolean containsValue(Object value) { throw new UnsupportedOperationException("containsValue not supported!"); }
-    public Set entrySet() { return new MultiringEntrySet(map.entrySet()); }
+    public Set<Map.Entry<Id, V>> entrySet() { return new MultiringEntrySet<V>(map.entrySet()); }
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
-    public Object get(Object key) { throw new UnsupportedOperationException("get not supported!"); }
+    public V get(Object key) { throw new UnsupportedOperationException("get not supported!"); }
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!");  }
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!");  }
-    public Set keySet() { return new MultiringKeySet(map.keySet()); }
-    public Object put(Object key, Object value) { return map.put(RingId.build(ringId, (Id) key), value); }
-    public void putAll(Map t) { throw new UnsupportedOperationException("putAll not supported!"); }
-    public Object remove(Object key) { return map.remove(RingId.build(ringId, (Id) key)); }
+    public Set<Id> keySet() { return new MultiringKeySet(map.keySet()); }
+    public V put(Id key, V value) { return map.put(RingId.build(ringId, key), value); }
+    public void putAll(Map<? extends Id, ? extends V> t) { throw new UnsupportedOperationException("putAll not supported!"); }
+    public V remove(Object key) { return map.remove(RingId.build(ringId, (Id) key)); }
     public int size() { return map.size(); }
-    public Collection values() { throw new UnsupportedOperationException("values not supported!"); }
+    public Collection<V> values() { throw new UnsupportedOperationException("values not supported!"); }
   }
 
   @SuppressWarnings("unchecked")
-  protected class MultiringEntrySet implements Set {
-    protected Set set;
+  protected class MultiringEntrySet<V> implements Set<Map.Entry<Id, V>> {
+    protected Set<Map.Entry<Id, V>> set;
     
-    public MultiringEntrySet(Set set) {
+    public MultiringEntrySet(Set<Map.Entry<Id, V>> set) {
       this.set = set;
     }
     
-    public boolean add(Object o) { throw new UnsupportedOperationException("add not supported!"); }
-    public boolean addAll(Collection c) { throw new UnsupportedOperationException("addAll not supported!"); }
+    public boolean add(Map.Entry<Id, V> o) { throw new UnsupportedOperationException("add not supported!"); }
+    public boolean addAll(Collection<? extends Map.Entry<Id, V>> c) { throw new UnsupportedOperationException("addAll not supported!"); }
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
     public boolean contains(Object o) { throw new UnsupportedOperationException("contains not supported!"); }
-    public boolean containsAll(Collection c) { throw new UnsupportedOperationException("containsAll not supported!"); }
+    public boolean containsAll(Collection<?> c) { throw new UnsupportedOperationException("containsAll not supported!"); }
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
-    public Iterator iterator() { return new Iterator() {
-      protected Iterator i = set.iterator();
+    public Iterator<Map.Entry<Id, V>> iterator() { return new Iterator<Map.Entry<Id, V>>() {
+      protected Iterator<Map.Entry<Id, V>> i = set.iterator();
       public boolean hasNext() { return i.hasNext(); }
-      public Object next() { return new MultiringMapEntry((Map.Entry) i.next()); }
+      public Map.Entry<Id, V> next() { return new MultiringMapEntry<V>(i.next()); }
       public void remove() { i.remove(); }
     };
     }
     public boolean remove(Object o) { throw new UnsupportedOperationException("remove not supported!"); }
-    public boolean removeAll(Collection c) { throw new UnsupportedOperationException("removeAll not supported!"); }
-    public boolean retainAll(Collection c) { throw new UnsupportedOperationException("retainAll not supported!"); }
+    public boolean removeAll(Collection<?> c) { throw new UnsupportedOperationException("removeAll not supported!"); }
+    public boolean retainAll(Collection<?> c) { throw new UnsupportedOperationException("retainAll not supported!"); }
     public int size() { throw new UnsupportedOperationException("size not supported!"); }
     public Object[] toArray() { throw new UnsupportedOperationException("toArray not supported!"); }
-    public Object[] toArray(Object[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
+    public <T> T[] toArray(T[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
   }
   
   @SuppressWarnings("unchecked")
-  protected class MultiringKeySet implements Set {
-    protected Set set;
+  protected class MultiringKeySet implements Set<Id> {
+    protected Set<Id> set;
     
-    public MultiringKeySet(Set set) {
+    public MultiringKeySet(Set<Id> set) {
       this.set = set;
     }
     
-    public boolean add(Object o) { throw new UnsupportedOperationException("add not supported!"); }
-    public boolean addAll(Collection c) { throw new UnsupportedOperationException("addAll not supported!"); }
+    public boolean add(Id o) { throw new UnsupportedOperationException("add not supported!"); }
+    public boolean addAll(Collection<? extends Id> c) { throw new UnsupportedOperationException("addAll not supported!"); }
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
     public boolean contains(Object o) { throw new UnsupportedOperationException("contains not supported!"); }
-    public boolean containsAll(Collection c) { throw new UnsupportedOperationException("containsAll not supported!"); }
+    public boolean containsAll(Collection<?> c) { throw new UnsupportedOperationException("containsAll not supported!"); }
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
-    public Iterator iterator() { return new Iterator() {
-      protected Iterator i = set.iterator();
+    public Iterator<Id> iterator() { return new Iterator<Id>() {
+      protected Iterator<Id> i = set.iterator();
       public boolean hasNext() { return i.hasNext(); }
-      public Object next() { return ((RingId) i.next()).getId(); }
+      public Id next() { return ((RingId) i.next()).getId(); }
       public void remove() { i.remove(); }
     };
     }
     public boolean remove(Object o) { throw new UnsupportedOperationException("remove not supported!"); }
-    public boolean removeAll(Collection c) { throw new UnsupportedOperationException("removeAll not supported!"); }
-    public boolean retainAll(Collection c) { throw new UnsupportedOperationException("retainAll not supported!"); }
+    public boolean removeAll(Collection<?> c) { throw new UnsupportedOperationException("removeAll not supported!"); }
+    public boolean retainAll(Collection<?> c) { throw new UnsupportedOperationException("retainAll not supported!"); }
     public int size() { throw new UnsupportedOperationException("size not supported!"); }
     public Object[] toArray() { 
       Object[] result = new Object[set.size()];
-      Iterator i = set.iterator();
+      Iterator<Id> i = set.iterator();
       int j = 0;
       
       while (i.hasNext()) 
@@ -386,30 +386,30 @@ public class MultiringIdFactory implements IdFactory {
       
       return result;
     }
-    public Object[] toArray(Object[] a) { 
-      Object[] result = (Object[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), set.size());
-      Iterator i = set.iterator();
+    public <T> T[] toArray(T[] a) { 
+      T[] result = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), set.size());
+      Iterator<Id> i = set.iterator();
       int j = 0;
       
       while (i.hasNext()) 
-        result[j++] = ((RingId) i.next()).getId();
+        result[j++] = (T) ((RingId) i.next()).getId();
       
       return result;
     }
   }
     
-  protected class MultiringMapEntry implements Map.Entry {
-    protected Map.Entry entry;
+  protected class MultiringMapEntry<V> implements Map.Entry<Id, V> {
+    protected Map.Entry<Id, V> entry;
     
-    public MultiringMapEntry(Map.Entry entry) {
+    public MultiringMapEntry(Map.Entry<Id, V> entry) {
       this.entry = entry;
     }
     
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
-    public Object getKey() { return ((RingId) entry.getKey()).getId(); }
-    public Object getValue() { return entry.getValue(); }
+    public Id getKey() { return ((RingId) entry.getKey()).getId(); }
+    public V getValue() { return entry.getValue(); }
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
-    public Object setValue(Object value) { throw new UnsupportedOperationException("setValue not supported!"); }
+    public V setValue(V value) { throw new UnsupportedOperationException("setValue not supported!"); }
   }
 }
 

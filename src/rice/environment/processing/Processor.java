@@ -81,7 +81,7 @@ public interface Processor extends Destructable {
    * 
    * @param request
    */
-  public Cancellable processBlockingIO(WorkRequest request);
+  public Cancellable processBlockingIO(WorkRequest<?> request);
   
   /**
    * Shuts down the processing thread.

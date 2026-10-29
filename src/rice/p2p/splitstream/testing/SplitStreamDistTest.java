@@ -49,6 +49,7 @@ import rice.p2p.splitstream.ChannelId;
 import rice.pastry.*;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
+import rice.pastry.transport.BogusNodeHandle;
 
 /**
  * @author Jeff Hoye
@@ -190,7 +191,8 @@ public class SplitStreamDistTest {
     }
     
     // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
-    final PastryNode node = factory.newNode(bootHandle);
+    final PastryNode node = factory.newNode();
+    node.boot(bootHandle == null ? null : ((BogusNodeHandle) bootHandle).addresses);
     System.out.println("Node "+node+" created.");
     
     Runtime.getRuntime().addShutdownHook(new Thread() {

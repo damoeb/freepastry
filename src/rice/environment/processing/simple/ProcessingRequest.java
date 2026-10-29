@@ -51,10 +51,10 @@ import rice.selector.SelectorManager;
  * @author Jeff Hoye
  */
 @SuppressWarnings("unchecked")
-public class ProcessingRequest implements Runnable,
-    Comparable<ProcessingRequest>, Cancellable {
-  Continuation c;
-  Executable r;
+public class ProcessingRequest<R, E extends Exception> implements Runnable,
+    Comparable<ProcessingRequest<?, ?>>, Cancellable {
+  Continuation<R, E> c;
+  Executable<R, E> r;
   private boolean cancelled = false;
   private boolean running = false;
   
@@ -64,7 +64,7 @@ public class ProcessingRequest implements Runnable,
   int priority = 0;
   long seq;
 
-  public ProcessingRequest(Executable r, Continuation c, int priority, long seq,
+  public ProcessingRequest(Executable<R, E> r, Continuation<R, E> c, int priority, long seq,
       LogManager logging, TimeSource timeSource, SelectorManager selectorManager) {
     this.r = r;
     this.c = c;
@@ -76,19 +76,20 @@ public class ProcessingRequest implements Runnable,
     this.seq = seq;
   }
 
-  public void returnResult(Object o) {
+  public void returnResult(R o) {
     c.receiveResult(o);
   }
 
   public void returnError(Exception e) {
-    c.receiveException(e);
+    // unchecked exceptions thrown by the task are delivered here as well
+    c.receiveException((E) e);
   }
 
   public int getPriority() {
     return priority;
   }
 
-  public int compareTo(ProcessingRequest request) {
+  public int compareTo(ProcessingRequest<?, ?> request) {
     if (priority == request.getPriority()) {
       if (seq > request.seq) return 1;
       return -1;
@@ -104,7 +105,7 @@ public class ProcessingRequest implements Runnable,
       logger.log("COUNT: Starting execution of " + this);
     try {
       long start = timeSource.currentTimeMillis();
-      final Object result = r.execute();
+      final R result = r.execute();
       if (logger.level <= Logger.FINEST)
         logger.log("QT: " + (timeSource.currentTimeMillis() - start) + " "
             + r.toString());

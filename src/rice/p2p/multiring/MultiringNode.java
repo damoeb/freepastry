@@ -49,6 +49,7 @@ import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.multiring.messaging.*;
 import rice.p2p.scribe.*;
+import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
@@ -68,7 +69,7 @@ import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
  *
  * @author Alan Mislove
  */
-public class MultiringNode implements Node, ScribeClient {
+public class MultiringNode implements Node, ScribeMultiClient {
   
   /**
    * The node which this multiring node is wrapping
@@ -165,6 +166,7 @@ public class MultiringNode implements Node, ScribeClient {
    * @return The endpoint specific to this applicationk, which can be used
    * for message sending/receiving.
    */
+  @Deprecated
   public Endpoint registerApplication(Application application, String instance) {
     Endpoint endpoint = new MultiringEndpoint(this, node.buildEndpoint(new MultiringApplication(getRingId(), application), application.getClass() + "-" + instance), application);
     endpoints.put(endpoint.getInstance(), endpoint);
@@ -267,7 +269,7 @@ public class MultiringNode implements Node, ScribeClient {
    */
   protected void nodeAdded(Id otherRingId) {
     //System.outt.println("JOINING SCRIBE GROUP " + otherRingId + " AT NODE " + getId());
-    scribe.subscribe(new Topic(RingId.build(ringId, otherRingId)), this);
+    scribe.subscribe(new Topic(RingId.build(ringId, otherRingId)), this, (RawScribeContent) null, null);
   }
   
   /**
@@ -409,9 +411,41 @@ public class MultiringNode implements Node, ScribeClient {
    * - the client should retry the subscribe or take appropriate
    * action.
    *
+   * @param topics The topics which the subscribe failed on
+   */
+  public void subscribeFailed(Collection<Topic> topics) {
+    for (Topic topic : topics) {
+      retrySubscribe(topic);
+    }
+  }
+
+  /**
+   * Informs the client that a subscribe on the given topics succeeded; nothing to do.
+   *
+   * @param topics The topics which the subscribe succeeded on
+   */
+  public void subscribeSuccess(Collection<Topic> topics) {
+  }
+
+  /**
+   * Informs the client that a subscribe on the given topic failed
+   * - the client should retry the subscribe or take appropriate
+   * action.
+   *
+   * @deprecated use subscribeFailed(Collection)
    * @param topic The topic which the subscribe failed on
    */
+  @Deprecated
   public void subscribeFailed(Topic topic) {
+    retrySubscribe(topic);
+  }
+
+  /**
+   * Re-joins the ringId topic after a failed subscribe
+   *
+   * @param topic The topic which the subscribe failed on
+   */
+  private void retrySubscribe(Topic topic) {
     if (logger.level <= Logger.WARNING) logger.log(
         getId() + ": Received error joining ringId topic " + topic + " - trying again.");
     nodeAdded(((RingId) topic.getId()).getId());

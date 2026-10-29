@@ -59,7 +59,7 @@ import rice.p2p.util.rawserialization.*;
  * @author Peter Druschel
  */
 @SuppressWarnings("unchecked")
-public abstract class ContinuationMessage extends PastMessage implements Continuation {
+public abstract class ContinuationMessage extends PastMessage implements Continuation<Object, Exception> {
 
   static final long serialVersionUID = 1321112527034107161L; 
   
@@ -110,7 +110,7 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
    *
    * @param c The continuation to return the reponse to.
    */
-  public void returnResponse(Continuation c, Environment env, String instance) {
+  public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
     if (exception == null)
       c.receiveResult(response);
     else

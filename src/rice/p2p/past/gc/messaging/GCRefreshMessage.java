@@ -141,7 +141,7 @@ public class GCRefreshMessage extends ContinuationMessage {
       int arrayLength = buf.readInt();      
       Boolean[] array = new Boolean[arrayLength];
       for (int i = 0; i < arrayLength; i++) {
-        array[i] = new Boolean(buf.readBoolean()); 
+        array[i] = Boolean.valueOf(buf.readBoolean()); 
       }
     }
     

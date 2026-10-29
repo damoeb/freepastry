@@ -57,12 +57,13 @@ import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl;
 import org.mpisws.p2p.transport.priority.QueueOverflowException;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 
 import rice.environment.Environment;
 import rice.environment.logging.CloneableLogManager;
 
-public class PriorityTest extends TLTest<InetSocketAddress> {
+public class PriorityTest extends TLTest<MultiInetSocketAddress> {
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
     TLTest.setUpBeforeClass();
@@ -75,7 +76,7 @@ public class PriorityTest extends TLTest<InetSocketAddress> {
     bob = buildTL("bob", addr, startPort+1, env);
   }
   
-  private static TransportLayer buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(), 
         env.getProcessor(), 
@@ -103,14 +104,44 @@ public class PriorityTest extends TLTest<InetSocketAddress> {
   @Test
   public void bogus() {} 
   
+  /**
+   * The priority layer sends messages over TCP (and accepts big messages on a dedicated socket) unless the 
+   * datagram transport is requested, so request it for the UDP tests.
+   */
+  @Test
+  @Override
+  public void sendUDP() throws Exception {
+    options.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_DATAGRAM);
+    try {
+      super.sendUDP();
+    } finally {
+      options.remove(WireTransportLayer.OPTION_TRANSPORT_TYPE);
+    }
+  }
+  
+  /**
+   * @see #sendUDP()
+   */
+  @Test
+  @Override
+  public void messageTooBigUDP() throws Exception {
+    options.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_DATAGRAM);
+    try {
+      super.messageTooBigUDP();
+    } finally {
+      options.remove(WireTransportLayer.OPTION_TRANSPORT_TYPE);
+    }
+  }
+  
   @Test
   public void queueOverflow() throws IOException {
-    MultiInetSocketAddress bogus = new MultiInetSocketAddress(getBogusIdentifier(null));
+    MultiInetSocketAddress bogus = getBogusIdentifier(null);
+    TransportLayer<MultiInetSocketAddress, ByteBuffer> alice = alice();
     
-    final ArrayList<MessageRequestHandle> dropped = new ArrayList<MessageRequestHandle>(10);
+    final ArrayList<MessageRequestHandle<MultiInetSocketAddress, ByteBuffer>> dropped = new ArrayList<MessageRequestHandle<MultiInetSocketAddress, ByteBuffer>>(10);
     
     for (int ctr = 0; ctr < 40; ctr++) {
-      HashMap<String, Integer> options = new HashMap<String, Integer>();
+      HashMap<String, Object> options = new HashMap<String, Object>();
       options.put(PriorityTransportLayer.OPTION_PRIORITY, -ctr); // keep adding higher priority messages, to verify 
       // the early, low priority messages are dropped
       
@@ -147,8 +178,8 @@ public class PriorityTest extends TLTest<InetSocketAddress> {
   } 
   
   @Override
-  public InetSocketAddress getBogusIdentifier(InetSocketAddress local) throws IOException {
-    return new InetSocketAddress(InetAddress.getLocalHost(), START_PORT-2);
+  public MultiInetSocketAddress getBogusIdentifier(MultiInetSocketAddress local) throws IOException {
+    return new MultiInetSocketAddress(new InetSocketAddress(InetAddress.getLocalHost(), START_PORT-2));
   }
 
 }

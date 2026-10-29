@@ -66,7 +66,7 @@ public class MemoryStorage implements Storage {
   private HashMap<Id, Serializable> storage;
   
   // the map used to store the metadata
-  private ReverseTreeMap metadata;
+  private ReverseTreeMap<Id, Serializable> metadata;
 
   // the current list of Ids
   private IdSet idSet;
@@ -86,7 +86,7 @@ public class MemoryStorage implements Storage {
     this.factory = factory;
     idSet = factory.buildIdSet();
     storage = new HashMap<Id, Serializable>();
-    metadata = new ReverseTreeMap();
+    metadata = new ReverseTreeMap<Id, Serializable>();
     currentSize = 0;
   } 
   
@@ -96,9 +96,9 @@ public class MemoryStorage implements Storage {
    *
    * @param c The command to run once done
    */
-  public void flush(Continuation c) {
+  public void flush(Continuation<? super Boolean, Exception> c) {
     storage = new HashMap<Id, Serializable>();
-    metadata = new ReverseTreeMap();
+    metadata = new ReverseTreeMap<Id, Serializable>();
     idSet = factory.buildIdSet();
     currentSize = 0;
     
@@ -113,9 +113,9 @@ public class MemoryStorage implements Storage {
    * @param newId The new id of the object in question.
    * @param c The command to run once the operation is complete
    */
-  public void rename(Id oldId, Id newId, Continuation c) {
+  public void rename(Id oldId, Id newId, Continuation<? super Boolean, Exception> c) {
     if (! idSet.isMemberId(oldId)) {
-      c.receiveResult(new Boolean(false));
+      c.receiveResult(Boolean.valueOf(false));
       return;
     }
     
@@ -128,7 +128,7 @@ public class MemoryStorage implements Storage {
     metadata.put(newId, metadata.get(oldId));
     metadata.remove(oldId);
     
-    c.receiveResult(new Boolean(true));
+    c.receiveResult(Boolean.valueOf(true));
   }
     
   /**
@@ -145,9 +145,9 @@ public class MemoryStorage implements Storage {
    * @return <code>true</code> if the action succeeds, else
    * <code>false</code>.
    */
-  public void store(Id id, Serializable metadata, Serializable obj, Continuation c) {
+  public void store(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
     if (id == null || obj == null) {
-      c.receiveResult(new Boolean(false));
+      c.receiveResult(Boolean.valueOf(false));
       return;
     }
     
@@ -156,7 +156,7 @@ public class MemoryStorage implements Storage {
     this.storage.put(id, obj);
     this.metadata.put(id, metadata);
     idSet.addId(id);
-    c.receiveResult(new Boolean(true));
+    c.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -172,16 +172,16 @@ public class MemoryStorage implements Storage {
    * @return <code>true</code> if the action succeeds, else
    * <code>false</code>.
    */
-  public void unstore(Id id, Continuation c) {
+  public void unstore(Id id, Continuation<? super Boolean, Exception> c) {
     Object stored = storage.remove(id);
     metadata.remove(id);
     idSet.removeId(id);
 
     if (stored != null) {
       currentSize -= getSize(stored);
-      c.receiveResult(new Boolean(true));
+      c.receiveResult(Boolean.valueOf(true));
     } else {
-      c.receiveResult(new Boolean(false));
+      c.receiveResult(Boolean.valueOf(false));
     }
   }
 
@@ -216,11 +216,11 @@ public class MemoryStorage implements Storage {
    * @param metadata The metadata to store
    * @param c The command to run once the operation is complete
    */
-  public void setMetadata(Id id, Serializable metadata, Continuation command) {
+  public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> command) {
     if (exists(id)) 
       this.metadata.put(id, metadata);
 
-    command.receiveResult(new Boolean(exists(id)));
+    command.receiveResult(Boolean.valueOf(exists(id)));
   }
 
   /**
@@ -230,7 +230,7 @@ public class MemoryStorage implements Storage {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete
    */
-  public void getObject(Id id, Continuation c) {
+  public void getObject(Id id, Continuation<? super Serializable, Exception> c) {
     c.receiveResult(storage.get(id));
   }
 
@@ -270,13 +270,13 @@ public class MemoryStorage implements Storage {
    * @param range The range to query  
    * @return The map containg the keys 
    */
-  public SortedMap scanMetadata(IdRange range) {    
+  public SortedMap<Id, Serializable> scanMetadata(IdRange range) {    
     if (range.isEmpty()) 
-      return new RedBlackMap();
+      return new RedBlackMap<Id, Serializable>();
     else if (range.getCCWId().equals(range.getCWId())) 
       return scanMetadata();
     else 
-      return new ImmutableSortedMap(metadata.keySubMap(range.getCCWId(), range.getCWId()));
+      return new ImmutableSortedMap<Id, Serializable>(metadata.keySubMap(range.getCCWId(), range.getCWId()));
   }
   
   /**
@@ -285,8 +285,8 @@ public class MemoryStorage implements Storage {
    *
    * @return The treemap mapping ids to metadata 
    */
-  public SortedMap scanMetadata() {
-    return new ImmutableSortedMap(metadata.keyMap());
+  public SortedMap<Id, Serializable> scanMetadata() {
+    return new ImmutableSortedMap<Id, Serializable>(metadata.keyMap());
   }
   
   /**
@@ -296,8 +296,8 @@ public class MemoryStorage implements Storage {
    * @param value The maximal metadata value 
    * @return The submapping
    */
-  public SortedMap scanMetadataValuesHead(Object value) {
-    return new ImmutableSortedMap(metadata.valueHeadMap(value));
+  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
+    return new ImmutableSortedMap<Id, Serializable>(metadata.valueHeadMap((Serializable)value));
   }
   
   /**
@@ -305,8 +305,8 @@ public class MemoryStorage implements Storage {
    *
    * @return The submapping
    */
-  public SortedMap scanMetadataValuesNull() {
-    return new ImmutableSortedMap(metadata.valueNullMap());
+  public SortedMap<Id, Serializable> scanMetadataValuesNull() {
+    return new ImmutableSortedMap<Id, Serializable>(metadata.valueNullMap());
   }
 
   /**

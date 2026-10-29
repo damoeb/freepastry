@@ -83,7 +83,8 @@ public class DistTutorialStall {
     NodeHandle bootHandle = ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
 
     // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
-    PastryNode node = factory.newNode(bootHandle);
+    PastryNode node = factory.newNode();
+    node.boot(bootaddress);
       
     // the node may require sending several messages to fully boot into the ring
     synchronized(node) {

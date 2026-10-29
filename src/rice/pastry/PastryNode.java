@@ -60,6 +60,7 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import rice.*;
 import rice.environment.Environment;
 import rice.environment.logging.Logger;
+import rice.p2p.commonapi.LegacyObservable;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.exception.AppNotRegisteredException;
 import rice.p2p.commonapi.exception.AppSocketException;
@@ -88,8 +89,8 @@ import rice.pastry.transport.SocketAdapter;
  * @author Andrew Ladd
  */
 
-public class PastryNode extends Observable implements 
-    rice.p2p.commonapi.Node, Destructable, NodeHandleFactory, 
+public class PastryNode extends LegacyObservable implements 
+    rice.p2p.commonapi.Node, Destructable, NodeHandleFactory<NodeHandle>, 
     LivenessProvider<NodeHandle>, ProximityProvider<NodeHandle>, 
     ProximityListener<NodeHandle>,
     TransportLayerCallback<NodeHandle, RawMessage>, 
@@ -117,7 +118,7 @@ public class PastryNode extends Observable implements
 
   protected NodeHandle localhandle;
 
-  protected Vector apps;
+  protected Vector<PastryAppl> apps;
 
   protected Logger logger;
   
@@ -132,8 +133,7 @@ public class PastryNode extends Observable implements
   /**
    * Used to deserialize NodeHandles
    */
-  @SuppressWarnings("unchecked")
-  protected NodeHandleFactory handleFactory;
+  protected NodeHandleFactory<? extends NodeHandle> handleFactory;
 
   /**
    * Call initiateJoin on this class.
@@ -143,8 +143,7 @@ public class PastryNode extends Observable implements
   /**
    * Call boot on this class.
    */
-  @SuppressWarnings("unchecked")
-  protected Bootstrapper bootstrapper;
+  protected Bootstrapper<?> bootstrapper;
   
   /**
    * The top level transport layer.
@@ -163,26 +162,25 @@ public class PastryNode extends Observable implements
     
     readyStrategy = getDefaultReadyStrategy();
     
-    apps = new Vector<Object>();
+    apps = new Vector<PastryAppl>();
     logger = e.getLogManager().getLogger(getClass(), null);
     e.addDestructable(this);
   }
 
   public void boot(Object o) {
     if (o == null) {
-      getBootstrapper().boot(Collections.EMPTY_LIST);      
+      getBootstrapper().boot(Collections.emptyList());      
     } else {
       if (o instanceof Collection) {
-        boot((Collection)o);
+        boot((Collection<?>)o);
       } else {
         getBootstrapper().boot(Collections.singleton(o));
       }
     }
   }
   
-  @SuppressWarnings("unchecked")
-  public void boot(Collection o2) {
-    ArrayList o = new ArrayList(o2);
+  public void boot(Collection<?> o2) {
+    ArrayList<Object> o = new ArrayList<Object>(o2);
     while (o.remove(null)); // remove all null
     getBootstrapper().boot(o);
   }
@@ -252,8 +250,7 @@ public class PastryNode extends Observable implements
     this.router = router;
   }
 
-  @SuppressWarnings("unchecked")
-  public void setJoinProtocols(Bootstrapper boot, JoinProtocol joinP, LeafSetProtocol leafsetP, RouteSetProtocol routeP) {
+  public void setJoinProtocols(Bootstrapper<?> boot, JoinProtocol joinP, LeafSetProtocol leafsetP, RouteSetProtocol routeP) {
     this.bootstrapper = boot;
     this.joiner = joinP;
   }
@@ -330,7 +327,15 @@ public class PastryNode extends Observable implements
 
   public NodeHandle coalesce(NodeHandle newHandle) {
     if (logger.level <= Logger.FINER) logger.log("coalesce("+newHandle+")");
-    return handleFactory.coalesce(newHandle);
+    return coalesce(handleFactory, newHandle);
+  }
+
+  /**
+   * The factory only accepts its own handle type; this cast is what the raw call used to do.
+   */
+  @SuppressWarnings("unchecked")
+  private static <NH extends NodeHandle> NH coalesce(NodeHandleFactory<NH> factory, NodeHandle newHandle) {
+    return factory.coalesce((NH)newHandle);
   }
   
   /**
@@ -351,14 +356,13 @@ public class PastryNode extends Observable implements
       nodeIsReady(); // deprecate this
       nodeIsReady(true);
 
-      setChanged();
-      notifyObservers(Boolean.valueOf(true));
+      notifyPastryNodeListeners(Boolean.valueOf(true));
 
       if (neverBeenReady) {
         // notify applications
         // we iterate over private copy to allow addition of new apps in the
         // context of notifyReady()
-        Vector<PastryAppl> tmpApps = new Vector(apps);
+        Vector<PastryAppl> tmpApps = new Vector<PastryAppl>(apps);
         Iterator<PastryAppl> it = tmpApps.iterator();
         while (it.hasNext())
           ((PastryAppl) (it.next())).notifyReady();
@@ -372,8 +376,7 @@ public class PastryNode extends Observable implements
       }
     } else {
       nodeIsReady(false);
-      setChanged();
-      notifyObservers(Boolean.valueOf(false));
+      notifyPastryNodeListeners(Boolean.valueOf(false));
 
       //        Vector tmpApps = new Vector(apps);
       //        Iterator it = tmpApps.iterator();
@@ -413,6 +416,7 @@ public class PastryNode extends Observable implements
    * @deprecated use addLeafSetListener
    * @param o the observer.
    */
+  @Deprecated
   public void addLeafSetObserver(Observer o) {
     leafSet.addObserver(o);
   }
@@ -423,6 +427,7 @@ public class PastryNode extends Observable implements
    * @deprecated use deleteLeafSetListener
    * @param o the observer.
    */
+  @Deprecated
   public void deleteLeafSetObserver(Observer o) {
     leafSet.deleteObserver(o);
   }
@@ -439,6 +444,7 @@ public class PastryNode extends Observable implements
    * @deprecated use addRouteSetListener
    * @param o the observer.
    */
+  @Deprecated
   public void addRouteSetObserver(Observer o) {
     routeSet.addObserver(o);
   }
@@ -449,6 +455,7 @@ public class PastryNode extends Observable implements
    * @deprecated use deleteRouteSetListener
    * @param o the observer.
    */
+  @Deprecated
   public void deleteRouteSetObserver(Observer o) {
     routeSet.deleteObserver(o);
   }
@@ -459,6 +466,138 @@ public class PastryNode extends Observable implements
 
   public void removeRouteSetListener(NodeSetListener listener) {
     routeSet.removeNodeSetListener(listener);
+  }
+
+  /****************** PastryNodeListener (replacement for java.util.Observer) **********/
+
+  /**
+   * Registered listeners, including adapted Observers.  Notified in reverse order 
+   * of registration, like java.util.Observable.
+   */
+  private final ArrayList<PastryNodeListener> pastryNodeListeners = new ArrayList<PastryNodeListener>();
+
+  /**
+   * Register to be notified when the node becomes ready (or not) or fails to join.
+   * Has no effect if the listener is already registered.
+   * 
+   * @param listener the listener
+   */
+  public void addPastryNodeListener(PastryNodeListener listener) {
+    if (listener == null) throw new NullPointerException();
+    synchronized (pastryNodeListeners) {
+      if (!pastryNodeListeners.contains(listener)) pastryNodeListeners.add(listener);
+    }
+  }
+
+  /**
+   * It is safe to call this from within a listener callback.
+   * 
+   * @param listener the listener
+   */
+  public void removePastryNodeListener(PastryNodeListener listener) {
+    synchronized (pastryNodeListeners) {
+      pastryNodeListeners.remove(listener);
+    }
+  }
+
+  /**
+   * @param event Boolean (ready), JoinFailedException, or (for Observers only) anything
+   *   passed to notifyObservers() by a subclass
+   */
+  private void notifyPastryNodeListeners(Object event) {
+    PastryNodeListener[] l;
+    synchronized (pastryNodeListeners) {
+      l = pastryNodeListeners.toArray(new PastryNodeListener[pastryNodeListeners.size()]);
+    }
+    for (int i = l.length-1; i >= 0; i--) {
+      if (l[i] instanceof ObserverListener) {
+        ((ObserverListener)l[i]).observer.update(this, event);
+      } else if (event instanceof Boolean) {
+        l[i].pastryNodeReady(this, ((Boolean)event).booleanValue());
+      } else if (event instanceof JoinFailedException) {
+        l[i].pastryNodeJoinFailed(this, (JoinFailedException)event);
+      }
+    }
+  }
+
+  /**
+   * Adapts a java.util.Observer.  Equal iff the observers are equal.
+   */
+  @Deprecated
+  private static final class ObserverListener implements PastryNodeListener {
+    final Observer observer;
+
+    ObserverListener(Observer observer) {
+      this.observer = observer;
+    }
+
+    public boolean equals(Object o) {
+      return (o instanceof ObserverListener) && observer.equals(((ObserverListener)o).observer);
+    }
+
+    public int hashCode() {
+      return observer.hashCode();
+    }
+
+    public String toString() {
+      return observer.toString();
+    }
+  }
+
+  /**
+   * @deprecated use addPastryNodeListener
+   */
+  @Deprecated
+  @Override
+  public void addObserver(Observer o) {
+    if (o == null) throw new NullPointerException();
+    addPastryNodeListener(new ObserverListener(o));
+  }
+
+  /**
+   * @deprecated use removePastryNodeListener
+   */
+  @Deprecated
+  @Override
+  public void deleteObserver(Observer o) {
+    removePastryNodeListener(new ObserverListener(o));
+  }
+
+  /**
+   * Same semantics as Observable: only notifies if setChanged() was called.
+   */
+  @Override
+  public void notifyObservers(Object arg) {
+    synchronized (this) {
+      if (!hasChanged()) return;
+      clearChanged();
+    }
+    notifyPastryNodeListeners(arg);
+  }
+
+  @Override
+  public void notifyObservers() {
+    notifyObservers(null);
+  }
+
+  /**
+   * @return the number of registered PastryNodeListeners (including Observers)
+   */
+  @Override
+  public int countObservers() {
+    synchronized (pastryNodeListeners) {
+      return pastryNodeListeners.size();
+    }
+  }
+
+  /**
+   * Removes all PastryNodeListeners (including Observers).
+   */
+  @Override
+  public void deleteObservers() {
+    synchronized (pastryNodeListeners) {
+      pastryNodeListeners.clear();
+    }
   }
 
   /**
@@ -526,6 +665,7 @@ public class PastryNode extends Observable implements
    * @return The endpoint specific to this applicationk, which can be used for
    *         message sending/receiving.
    */
+  @Deprecated
   public rice.p2p.commonapi.Endpoint registerApplication(
       rice.p2p.commonapi.Application application, String instance) {
     return new rice.pastry.commonapi.PastryEndpoint(this, application, instance, true);
@@ -585,8 +725,7 @@ public class PastryNode extends Observable implements
    * @param command
    *          The command to return the result to once it's done
    */
-  @SuppressWarnings("unchecked")
-  public void process(Executable task, Continuation command) {
+  public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
     try {
       myEnvironment.getProcessor().process(task, 
           command, 
@@ -596,9 +735,13 @@ public class PastryNode extends Observable implements
       
 //      command.receiveResult(task.execute());
     } catch (final Exception e) {
-      command.receiveException(e);
+      // scheduling failures are handed to the continuation as-is, whatever E is
+      @SuppressWarnings("unchecked")
+      E error = (E)e;
+      command.receiveException(error);
     }
   }
+
 
   HashSet<Destructable> destructables = new HashSet<Destructable>();
   
@@ -637,8 +780,7 @@ public class PastryNode extends Observable implements
    * @param receiver
    * @param appl
    */
-  @SuppressWarnings("unchecked")
-  public SocketRequestHandle connect(final NodeHandle i, final AppSocketReceiver deliverSocketToMe,
+  public SocketRequestHandle<NodeHandle> connect(final NodeHandle i, final AppSocketReceiver deliverSocketToMe,
       final PastryAppl appl, int timeout) {
     
 //    final SocketNodeHandle i = (SocketNodeHandle)i2;
@@ -669,7 +811,7 @@ public class PastryNode extends Observable implements
                   
                   // write the appId
                   if (socket.write(b) == -1) {
-                    deliverSocketToMe.receiveException(new SocketAdapter(socket, getEnvironment()), new ClosedChannelException("Remote node closed socket while opening.  Try again."));
+                    deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new ClosedChannelException("Remote node closed socket while opening.  Try again."));
                     return;
                   }
                   
@@ -685,7 +827,7 @@ public class PastryNode extends Observable implements
                       public void receiveSelectResult(P2PSocket<NodeHandle> socket, boolean canRead, boolean canWrite) throws IOException {
                         
                         if (socket.read(answer) == -1) {
-                          deliverSocketToMe.receiveException(new SocketAdapter(socket, getEnvironment()), new ClosedChannelException("Remote node closed socket while opening.  Try again."));
+                          deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new ClosedChannelException("Remote node closed socket while opening.  Try again."));
                           return;
                         };
                         
@@ -699,23 +841,23 @@ public class PastryNode extends Observable implements
                           switch(connectResult) {
                             case CONNECTION_OK:
                               // on connector side
-                              deliverSocketToMe.receiveSocket(new SocketAdapter(socket, getEnvironment()));                     
+                              deliverSocketToMe.receiveSocket(new SocketAdapter<NodeHandle>(socket, getEnvironment()));                     
                               return;
                             case CONNECTION_NO_APP:
-                              deliverSocketToMe.receiveException(new SocketAdapter(socket, getEnvironment()), new AppNotRegisteredException(appl.getAddress()));
+                              deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new AppNotRegisteredException(appl.getAddress()));
                               return;
                             case CONNECTION_NO_ACCEPTOR:
-                              deliverSocketToMe.receiveException(new SocketAdapter(socket, getEnvironment()), new NoReceiverAvailableException());            
+                              deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new NoReceiverAvailableException());            
                               return;
                             default:
-                              deliverSocketToMe.receiveException(new SocketAdapter(socket, getEnvironment()), new AppSocketException("Unknown error "+connectResult));
+                              deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new AppSocketException("Unknown error "+connectResult));
                               return;
                           }
                         }                    
                       }
                     
                       public void receiveException(P2PSocket<NodeHandle> socket, Exception ioe) {
-                        deliverSocketToMe.receiveException(new SocketAdapter(socket, getEnvironment()), ioe);
+                        deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), ioe);
                       }                
                     });
                   }
@@ -723,7 +865,7 @@ public class PastryNode extends Observable implements
               
                 public void receiveException(P2PSocket<NodeHandle> socket,
                     Exception e) {
-                  deliverSocketToMe.receiveException(new SocketAdapter(socket, getEnvironment()), e);
+                  deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), e);
                 }        
               }); 
             }    
@@ -756,8 +898,7 @@ public class PastryNode extends Observable implements
       joinFailed = true;
       this.notifyAll();
     }
-    setChanged();
-    this.notifyObservers(cje); 
+    notifyPastryNodeListeners(cje); 
   }
 
   /**
@@ -799,7 +940,7 @@ public class PastryNode extends Observable implements
       TransportLayer<NodeHandle, RawMessage> tl,
       LivenessProvider<NodeHandle> livenessProvider,
       ProximityProvider<NodeHandle> proxProvider,
-      NodeHandleFactory handleFactory) {
+      NodeHandleFactory<? extends NodeHandle> handleFactory) {
     this.localhandle = localhandle;
     this.leafSetMaintFreq = lsmf;
     this.routeSetMaintFreq = rsmf;
@@ -885,7 +1026,7 @@ public class PastryNode extends Observable implements
                   
                   if (success) {
 //                    logger.log("rSR(): delivering socket to receiver:"+toWrite);
-                    acceptorAppl.finishReceiveSocket(new SocketAdapter(socket, getEnvironment()));
+                    acceptorAppl.finishReceiveSocket(new SocketAdapter<NodeHandle>(socket, getEnvironment()));
                   }
                 } // sync
               } // if (acceptorAppl!=null)              
@@ -1089,9 +1230,14 @@ public class PastryNode extends Observable implements
 //    this.bootstrapper = bootstrapper;
 //  }
   
+  /**
+   * The identifier type depends on the transport the node was built with
+   * (e.g. InetSocketAddress for sockets, NodeHandle for the direct simulator);
+   * the caller states which one it expects.
+   */
   @SuppressWarnings("unchecked")
-  public Bootstrapper getBootstrapper() {
-    return bootstrapper;
+  public <Identifier> Bootstrapper<Identifier> getBootstrapper() {
+    return (Bootstrapper<Identifier>)bootstrapper;
   }
 
 
@@ -1219,6 +1365,7 @@ public class PastryNode extends Observable implements
    * @deprecated use nodeIsReady(boolean)
    * 
    */
+  @Deprecated
   public void nodeIsReady() {
     
     // nothing, used to cancel the joinEvent
@@ -1226,7 +1373,7 @@ public class PastryNode extends Observable implements
   
 //  protected NodeHandleFactory handleFactory;
 
-  public NodeHandleFactory getHandleFactroy() {
+  public NodeHandleFactory<? extends NodeHandle> getHandleFactroy() {
     return handleFactory;
   }
 
@@ -1273,11 +1420,12 @@ public class PastryNode extends Observable implements
       listener.dataReceived(address, msgType, from, size, wireType);
   }
 
-  public void addNodeHandleFactoryListener(NodeHandleFactoryListener listener) {
+  public void addNodeHandleFactoryListener(NodeHandleFactoryListener<? super NodeHandle> listener) {
     handleFactory.addNodeHandleFactoryListener(listener);
   }
 
-  public void removeNodeHandleFactoryListener(NodeHandleFactoryListener listener) {
+  public void removeNodeHandleFactoryListener(NodeHandleFactoryListener<? super NodeHandle> listener) {
+
     handleFactory.removeNodeHandleFactoryListener(listener);
   }
 

@@ -66,7 +66,7 @@ public class LeafSetResponse extends PRawMessage {
     leafset.serialize(buf);
   }
 
-  public static rice.p2p.commonapi.Message build(InputBuffer buf, NodeHandleFactory nhf, int dest) throws IOException {
+  public static rice.p2p.commonapi.Message build(InputBuffer buf, NodeHandleFactory<?> nhf, int dest) throws IOException {
     byte version = buf.readByte();
     switch(version) {
     case 0:

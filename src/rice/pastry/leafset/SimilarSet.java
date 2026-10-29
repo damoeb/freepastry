@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.leafset;
 
+import rice.p2p.commonapi.LegacyObservable;
 import rice.pastry.*;
 import rice.pastry.routing.*;
 
@@ -52,7 +53,7 @@ import java.io.*;
  * @author Peter Druschel
  */
 
-public class SimilarSet extends Observable implements NodeSetEventSource, Serializable /*, Observer*/ {
+public class SimilarSet extends LegacyObservable implements NodeSetEventSource, Serializable /*, Observer*/ {
 
   private static final long serialVersionUID = 2289610430696506873L;
   
@@ -218,6 +219,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
    * Generates too many objects to use this interface
    * @deprecated use addNodeSetListener
    */
+  @Deprecated
   public void addObserver(Observer o) {
 //    if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
     super.addObserver(o); 
@@ -227,6 +229,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
    * Generates too many objects to use this interface
    * @deprecated use removeNodeSetListener
    */
+  @Deprecated
   public void deleteObserver(Observer o) {
 //    if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
     super.deleteObserver(o); 
@@ -441,7 +444,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
     // the fast case
     if (rs.size() == 1) {
       NodeHandle nh = rs.get(0);
-      if (nh.isAlive()) {        
+      if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {        
         if (put(nh)) { 
 //          System.out.println("SimilarSet.addNextEntry()1:"+nh+" "+leafSet);
         }
@@ -453,7 +456,7 @@ public class SimilarSet extends Observable implements NodeSetEventSource, Serial
     ArrayList<NodeHandle> toUse = new ArrayList<NodeHandle>();
     for (int index = 0; index < rs.size(); index++) {
       NodeHandle nh = rs.get(index);
-      if (nh.isAlive())
+      if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
         toUse.add(nh);
     }
     

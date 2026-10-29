@@ -59,7 +59,7 @@ public class DefaultCallback<Identifier, MessageType> implements
     this.logger = logger;
   }
 
-  public void incomingSocket(P2PSocket s)
+  public void incomingSocket(P2PSocket<Identifier> s)
       throws IOException {
     logger.log("incomingSocket("+s+")");
   }

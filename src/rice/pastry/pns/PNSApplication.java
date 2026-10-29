@@ -419,7 +419,11 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     synchronized (waitingForRouteRow) {
       Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] waiters = waitingForRouteRow.get(handle);
       if (waiters == null) {
-        waiters = new Collection[depth];
+        @SuppressWarnings("unchecked")
+        Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] newWaiters = 
+          (Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[])new Collection<?>[depth];
+        waiters = newWaiters;
+
         waitingForRouteRow.put(handle, waiters);
       }
       if (waiters[row] == null) {
@@ -877,7 +881,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
           if (logger.level <= Logger.FINEST) logger.log("closestToMe got prox("+result.intValue()+") on "+tempNode+"("+handle+","+handles+")");      
           remaining.remove(tempNode);
           int prox = result.intValue();
-          if ((prox >= 0) && (prox < nearestdist[0]) && tempNode.isAlive()) {
+          if ((prox >= 0) && (prox < nearestdist[0]) && tempNode.getLiveness() < NodeHandle.LIVENESS_DEAD) {
             nearestdist[0] = prox;
             closestNode[0] = tempNode;
           }

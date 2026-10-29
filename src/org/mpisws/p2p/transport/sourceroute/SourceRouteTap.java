@@ -45,14 +45,14 @@ import org.mpisws.p2p.transport.P2PSocket;
  * 
  * @author Jeff Hoye
  */
-public interface SourceRouteTap {
+public interface SourceRouteTap<Identifier> {
   /**
    * We are the intermediate node for a message.
    * 
    * @param m
    * @param path
    */
-  public void receivedMessage(ByteBuffer m, SourceRoute path);
+  public void receivedMessage(ByteBuffer m, SourceRoute<Identifier> path);
   
   /**
    * 
@@ -60,7 +60,7 @@ public interface SourceRouteTap {
    * @param a
    * @param b
    */
-  public void socketOpened(SourceRoute path, P2PSocket a, P2PSocket b);
+  public void socketOpened(SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
   
   /**
    * 
@@ -68,7 +68,7 @@ public interface SourceRouteTap {
    * @param a
    * @param b
    */
-  public void socketClosed(SourceRoute path, P2PSocket a, P2PSocket b);
+  public void socketClosed(SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
 
   /**
    * We are the intermediate node for some bytes from Socket a to Socket b
@@ -77,6 +77,6 @@ public interface SourceRouteTap {
    * @param a
    * @param b
    */
-  public void receivedBytes(ByteBuffer m, SourceRoute path, P2PSocket a, P2PSocket b);
+  public void receivedBytes(ByteBuffer m, SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
   
 }

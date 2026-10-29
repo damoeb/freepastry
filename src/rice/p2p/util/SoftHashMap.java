@@ -47,8 +47,30 @@ import java.util.*;
  *
  * @author Alan Mislove
  */
-@SuppressWarnings("unchecked")
-public class SoftHashMap extends HashMap {
+public class SoftHashMap<K, V> extends HashMap<K, V> {
+  
+  /**
+   * Returns the soft reference stored in the underlying map under the given key.
+   * The underlying map stores SoftReference objects in place of the values.
+   *
+   * @param key The key
+   * @return The reference, or null
+   */
+  @SuppressWarnings("unchecked")
+  private SoftReference<V> getReference(Object key) {
+    return (SoftReference<V>) super.get(key);
+  }
+  
+  /**
+   * Stores a soft reference to the given value in the underlying map.
+   *
+   * @param key The key
+   * @param value The value to reference
+   */
+  @SuppressWarnings("unchecked")
+  private void putReference(K key, V value) {
+    super.put(key, (V) new SoftReference<V>(value));
+  }
   
   /**
    * Returns whether or not the key is contained in this map.  Only returns true if
@@ -64,7 +86,7 @@ public class SoftHashMap extends HashMap {
     if (super.get(key) == null) {
       return true;
     } else {
-      return (((SoftReference) super.get(key)).get() != null);
+      return (getReference(key).get() != null);
     }
   }
   
@@ -79,7 +101,7 @@ public class SoftHashMap extends HashMap {
     if (value == null) {
       return super.containsValue(null);
     } else {
-      return super.containsValue(new SoftReference(value));
+      return super.containsValue(new SoftReference<Object>(value));
     }
   }
   
@@ -90,13 +112,13 @@ public class SoftHashMap extends HashMap {
    * @param key The key
    * @return The value
    */
-  public Object get(Object key) {
-    SoftReference value = (SoftReference) super.get(key);
+  public V get(Object key) {
+    SoftReference<V> value = getReference(key);
     
     if (value == null) {
       return null;
     } else {
-      Object result = value.get();
+      V result = value.get();
       
       if (result != null) {
         return result;
@@ -114,11 +136,11 @@ public class SoftHashMap extends HashMap {
    * @param value The value
    * @return The previous value of the key
    */
-  public Object put(Object key, Object value) {
-    Object result = get(key);
+  public V put(K key, V value) {
+    V result = get(key);
     
     if (value != null) {
-      super.put(key, new SoftReference(value)); 
+      putReference(key, value); 
     } else {
       super.put(key, null);
     }

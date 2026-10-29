@@ -76,7 +76,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
  *
  */
 public class SocketInputBuffer implements InputBuffer {
-  P2PSocket socket;
+  P2PSocket<?> socket;
   /**
    * readPtr/writePtr are essentially pointers to the byte[] cache.  
    * 
@@ -92,11 +92,11 @@ public class SocketInputBuffer implements InputBuffer {
   int initialSize;
   
   DataInputStream dis;
-  public SocketInputBuffer(P2PSocket socket) {
+  public SocketInputBuffer(P2PSocket<?> socket) {
     this(socket,1024);
   }
   
-  public SocketInputBuffer(P2PSocket socket, int size) {
+  public SocketInputBuffer(P2PSocket<?> socket, int size) {
     this.socket = socket;
     initialSize = size;
     cache = new byte[size];

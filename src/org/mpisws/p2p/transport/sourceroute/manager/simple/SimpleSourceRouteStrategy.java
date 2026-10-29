@@ -71,11 +71,11 @@ public class SimpleSourceRouteStrategy<Identifier> implements SourceRouteStrateg
    * The order of the list is from here to the end.  The last hop is always the destination.
    * The local node is implied and is not included.  Direct routes are also stored here.
    */
-  TimerWeakHashMap<Identifier, SourceRoute>routes;
+  TimerWeakHashMap<Identifier, SourceRoute<Identifier>>routes;
   NextHopStrategy<Identifier> strategy;
   Environment environment;
   Logger logger;
-  LivenessProvider<SourceRoute> livenessManager;
+  LivenessProvider<SourceRoute<Identifier>> livenessManager;
   SourceRouteFactory<Identifier> srFactory;
   Identifier localAddress;
   
@@ -89,7 +89,7 @@ public class SimpleSourceRouteStrategy<Identifier> implements SourceRouteStrateg
     this.strategy = strategy;
     this.environment = env;
     this.logger = environment.getLogManager().getLogger(SimpleSourceRouteStrategy.class, null);
-    routes = new TimerWeakHashMap<Identifier, SourceRoute>(environment.getSelectorManager(),300000);
+    routes = new TimerWeakHashMap<Identifier, SourceRoute<Identifier>>(environment.getSelectorManager(),300000);
   }
 
   /**
@@ -122,7 +122,7 @@ public class SimpleSourceRouteStrategy<Identifier> implements SourceRouteStrateg
    * @param dest
    */
   private SourceRoute<Identifier> getRoute(Identifier intermediate, Identifier dest) {
-    SourceRoute route = routes.get(dest);
+    SourceRoute<Identifier> route = routes.get(dest);
     if (route == null) {
       route = srFactory.getSourceRoute(localAddress,dest);
       routes.put(dest, route);

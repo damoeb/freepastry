@@ -39,6 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.scribe;
 
+import java.util.Collection;
+
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
@@ -48,19 +50,20 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.scribe.Scribe;
-import rice.p2p.scribe.ScribeClient;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
+import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
+import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.pastry.commonapi.PastryIdFactory;
 
 /**
  * We implement the Application interface to receive regular timed messages (see lesson5).
- * We implement the ScribeClient interface to receive scribe messages (called ScribeContent).
+ * We implement the ScribeMultiClient interface to receive scribe messages (called ScribeContent).
  * 
  * @author Jeff Hoye
  */
-public class MyScribeClient implements ScribeClient, Application {
+public class MyScribeClient implements ScribeMultiClient, Application {
 
   /**
    * The message sequence number.  Will be incremented after each send.
@@ -114,7 +117,8 @@ public class MyScribeClient implements ScribeClient, Application {
    * Subscribes to myTopic.
    */
   public void subscribe() {
-    myScribe.subscribe(myTopic, this); 
+    // no subscribe content, no hint
+    myScribe.subscribe(myTopic, this, (RawScribeContent)null, null); 
   }
   
   /**
@@ -184,8 +188,20 @@ public class MyScribeClient implements ScribeClient, Application {
 //    System.out.println("MyScribeClient.childRemoved("+topic+","+child+")");
   }
 
+  public void subscribeFailed(Collection<Topic> topics) {
+//    System.out.println("MyScribeClient.childFailed("+topics+")");
+  }
+
+  /**
+   * @deprecated use subscribeFailed(Collection)
+   */
+  @Deprecated
   public void subscribeFailed(Topic topic) {
 //    System.out.println("MyScribeClient.childFailed("+topic+")");
+  }
+
+  public void subscribeSuccess(Collection<Topic> topics) {
+//    System.out.println("MyScribeClient.subscribeSuccess("+topics+")");
   }
 
   public boolean forward(RouteMessage message) {
@@ -217,7 +233,7 @@ public class MyScribeClient implements ScribeClient, Application {
   }
   
   public NodeHandle[] getChildren() {
-    return myScribe.getChildren(myTopic); 
+    return myScribe.getChildrenOfTopic(myTopic).toArray(new NodeHandle[0]); 
   }
   
 }

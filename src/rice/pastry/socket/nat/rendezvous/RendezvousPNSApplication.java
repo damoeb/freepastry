@@ -86,8 +86,8 @@ public class RendezvousPNSApplication extends PNSApplication {
    * @param c
    * @return
    */
-  @SuppressWarnings("unchecked")
-  protected boolean ignore(NodeHandle handle, Continuation c) {
+  protected boolean ignore(NodeHandle handle, Continuation<?, Exception> c) {
+
     if (useHandle(handle)) return false;
     if (logger.level <= Logger.FINE) logger.log("PNS not using firewalled node "+handle);
     c.receiveException(new NodeIsFirewalledException(handle));

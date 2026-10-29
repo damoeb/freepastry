@@ -199,7 +199,7 @@ public abstract class AbstractLogManager implements LogManager {
    * 
    */
   @SuppressWarnings("unchecked")
-  public Logger getLogger(Class clazz, String instance) {
+  public Logger getLogger(Class<?> clazz, String instance) {
     // first we want to get the logger name
     String loggerName;
     String className = clazz.getName();

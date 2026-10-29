@@ -93,10 +93,10 @@ public class MagicNumberTest extends WireTest {
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();    
 //    InetAddress addr = InetAddress.getByName("10.0.0.10");
-    alice = new MagicNumberTransportLayer(
+    alice = new MagicNumberTransportLayer<InetSocketAddress>(
         new WireTransportLayerImpl(new InetSocketAddress(addr,startPort),env, null)
         ,env, null,GOOD_HDR, 2000);
-    bob = new MagicNumberTransportLayer(
+    bob = new MagicNumberTransportLayer<InetSocketAddress>(
       new WireTransportLayerImpl(new InetSocketAddress(addr,startPort+1),env, null)
       ,env, null, GOOD_HDR, 2000);
     carol = new MagicNumberTransportLayer<InetSocketAddress>(
@@ -105,6 +105,8 @@ public class MagicNumberTest extends WireTest {
     dave = new MagicNumberTransportLayer<InetSocketAddress>(
         new WireTransportLayerImpl(new InetSocketAddress(addr,startPort+3),env, null)
         ,env, null,NO_HDR, 2000);
+    otherTLs.add(carol);
+    otherTLs.add(dave);
   }
 
   /*********************** TCP *************************/  
@@ -120,8 +122,8 @@ public class MagicNumberTest extends WireTest {
     Map<String, Object> options = new HashMap<String, Object>();
     options.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_GUARANTEED);
     
-    final List<P2PSocket> aliceSockets = new ArrayList<P2PSocket>();
-    final List<P2PSocket> carolSockets = new ArrayList<P2PSocket>();
+    final List<P2PSocket<InetSocketAddress>> aliceSockets = new ArrayList<P2PSocket<InetSocketAddress>>();
+    final List<P2PSocket<InetSocketAddress>> carolSockets = new ArrayList<P2PSocket<InetSocketAddress>>();
     final List<Throwable> exceptionList = new ArrayList<Throwable>(1);
     final List<byte[]> unexpectedData = new ArrayList<byte[]>(1);
     final Object lock = new Object();
@@ -135,7 +137,7 @@ public class MagicNumberTest extends WireTest {
     
       }
     
-      public void incomingSocket(P2PSocket s)
+      public void incomingSocket(P2PSocket<InetSocketAddress> s)
           throws IOException {
         synchronized(lock) {
           carolSockets.add(s);
@@ -161,7 +163,7 @@ public class MagicNumberTest extends WireTest {
     });
 
     
-    alice.openSocket(carol.getLocalIdentifier(), new SocketCallback<InetSocketAddress>(){    
+    alice().openSocket(carol.getLocalIdentifier(), new SocketCallback<InetSocketAddress>(){    
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> result) {
         synchronized(lock) {
           aliceSockets.add(result);
@@ -214,21 +216,21 @@ public class MagicNumberTest extends WireTest {
     Map<String, Object> options = new HashMap<String, Object>();
     options.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_GUARANTEED);
     
-    final List<P2PSocket> aliceSockets = new ArrayList<P2PSocket>();
-    final List<P2PSocket> daveSockets = new ArrayList<P2PSocket>();
+    final List<P2PSocket<InetSocketAddress>> aliceSockets = new ArrayList<P2PSocket<InetSocketAddress>>();
+    final List<P2PSocket<InetSocketAddress>> daveSockets = new ArrayList<P2PSocket<InetSocketAddress>>();
     final List<Throwable> exceptionList = new ArrayList<Throwable>(1);
     final List<ByteBuffer> receivedList = new ArrayList<ByteBuffer>(1);
     final List<ByteBuffer> sentList = new ArrayList<ByteBuffer>(1);
     final Object lock = new Object();
     
     // Part I opening a connection
-    alice.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {    
+    alice().setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {    
       public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options)
           throws IOException {
         // TODO Auto-generated method stub    
       }
     
-      public void incomingSocket(P2PSocket s)
+      public void incomingSocket(P2PSocket<InetSocketAddress> s)
           throws IOException {
         synchronized(lock) {
           aliceSockets.add(s);
@@ -237,7 +239,7 @@ public class MagicNumberTest extends WireTest {
       }    
     });
     
-    alice.setErrorHandler(new ErrorHandler<InetSocketAddress>(){
+    alice().setErrorHandler(new ErrorHandler<InetSocketAddress>(){
     
       public void receivedUnexpectedData(InetSocketAddress i, byte[] bytes, int pos, Map<String, Object> options) {        
       }
@@ -250,7 +252,7 @@ public class MagicNumberTest extends WireTest {
       }    
     });
     
-    dave.openSocket((InetSocketAddress)alice.getLocalIdentifier(), new SocketCallback<InetSocketAddress>(){    
+    dave.openSocket(alice().getLocalIdentifier(), new SocketCallback<InetSocketAddress>(){    
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> result) {
         synchronized(lock) {
           daveSockets.add(result);
@@ -275,8 +277,8 @@ public class MagicNumberTest extends WireTest {
       }
     }
     
-    alice.setCallback(null);
-    alice.setErrorHandler(null);
+    alice().setCallback(null);
+    alice().setErrorHandler(null);
 
     assertTrue(aliceSockets.size() == 0);
     assertTrue(daveSockets.size() == 1);
@@ -306,7 +308,7 @@ public class MagicNumberTest extends WireTest {
     // added to every time bob receives something
     final List<ByteBuffer> receivedList = new ArrayList<ByteBuffer>(1);
     final List<Throwable> exceptionList = new ArrayList<Throwable>(1);
-    final List<MessageRequestHandle> sentList = new ArrayList<MessageRequestHandle>(1);
+    final List<MessageRequestHandle<InetSocketAddress, ByteBuffer>> sentList = new ArrayList<MessageRequestHandle<InetSocketAddress, ByteBuffer>>(1);
     final List<byte[]> unexpectedData = new ArrayList<byte[]>(1);
     final Object lock = new Object();
     
@@ -358,7 +360,7 @@ public class MagicNumberTest extends WireTest {
       }
     };
     
-    MessageRequestHandle handle = alice.sendMessage(
+    MessageRequestHandle<InetSocketAddress, ByteBuffer> handle = alice().sendMessage(
           carol.getLocalIdentifier(), 
           sentBuffer, 
           ret, 

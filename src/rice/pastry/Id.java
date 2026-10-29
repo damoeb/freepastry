@@ -62,7 +62,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Support for coalesced Ids - ensures only one copy of each Id is in memory
    */
-  private static WeakHashMap<Id, Id> ID_MAP = new WeakHashMap<Id, Id>();
+  private static WeakHashMap<Id, WeakReference<Id>> ID_MAP = new WeakHashMap<Id, WeakReference<Id>>();
   
   /**
    * The static translation array
@@ -273,15 +273,16 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @param id The Id to coalesce
    * @return The Id to use
    */
-  protected static Id resolve(WeakHashMap map, Id id) {
+  protected static Id resolve(WeakHashMap<Id, WeakReference<Id>> map, Id id) {
     synchronized (map) {
-      WeakReference ref = (WeakReference) map.get(id);
+      WeakReference<Id> ref = map.get(id);
       Id result = null;
       
-      if ((ref != null) && ((result = (Id) ref.get()) != null)) {
+      if ((ref != null) && ((result = ref.get()) != null)) {
         return result;
       } else {
-        map.put(id, new WeakReference(id));
+        map.put(id, new WeakReference<Id>(id));
+
         return id;
       }
     }

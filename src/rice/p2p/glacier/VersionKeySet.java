@@ -51,7 +51,7 @@ import rice.p2p.util.*;
  */
 public class VersionKeySet implements rice.p2p.commonapi.IdSet {
 
-  private SortedMap idSet;
+  private SortedMap<Id, ?> idSet;
 
   // a cache of the fingerprint hash
   private VersionKey cachedHash;
@@ -61,7 +61,7 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
    * Constructor.
    */
   public VersionKeySet() {
-    idSet = new RedBlackMap();
+    idSet = new RedBlackMap<Id, Object>();
     validHash = false;
   }
 
@@ -71,7 +71,7 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
    * @param o the IdSet to copy
    */
   public VersionKeySet(VersionKeySet o) {
-    idSet = new RedBlackMap(o.idSet);
+    idSet = new RedBlackMap<Id, Object>(o.idSet);
     cachedHash = o.cachedHash;
     validHash = o.validHash;
   }
@@ -81,7 +81,7 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
    *
    * @param s the TreeSet based on which we construct a new IdSet
    */
-  protected VersionKeySet(SortedMap s) {
+  protected VersionKeySet(SortedMap<Id, ?> s) {
     idSet = s;
     validHash = false;
   }

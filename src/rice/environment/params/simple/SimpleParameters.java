@@ -131,13 +131,11 @@ public class SimpleParameters implements Parameters {
     }
   }
 
-  @SuppressWarnings("unchecked")
-  public Enumeration enumerateDefaults() {
+  public Enumeration<Object> enumerateDefaults() {
     return defaults.keys();
   }
 
-  @SuppressWarnings("unchecked")
-  public Enumeration enumerateNonDefaults() {
+  public Enumeration<Object> enumerateNonDefaults() {
     return properties.keys();
   }
 
@@ -387,12 +385,11 @@ public class SimpleParameters implements Parameters {
   }
 
   protected class MyProperties extends Properties {
-    @SuppressWarnings("unchecked")
-    public Enumeration keys() {
+    public Enumeration<Object> keys() {
       final String[] keys = (String[]) keySet().toArray(new String[0]);
       Arrays.sort(keys);
 
-      return new Enumeration() {
+      return new Enumeration<Object>() {
         int pos = 0;
 
         public boolean hasMoreElements() {

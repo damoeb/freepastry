@@ -85,10 +85,14 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
    */
   public static final byte[] GOOD_HDR = {(byte)0xDE,(byte)0xAD,(byte)0xBE,(byte)0xEF};
 
-  static TransportLayer dave; // going to be the middle hop for alice/bob
+  static TransportLayer<MultiInetSocketAddress, ByteBuffer> dave; // going to be the middle hop for alice/bob
   static ProximityProvider<SourceRoute<MultiInetSocketAddress>> bob_prox; // going to be the middle hop for alice/bob
-  static SourceRouteTransportLayer carol_tap; // going to be the middle hop for alice/bob
-  static TransportLayer carol;
+  /**
+   * bob's liveness layer (the SourceRouteManager doesn't implement Pinger, the layer below it does)
+   */
+  static Pinger<SourceRoute<MultiInetSocketAddress>> bob_pinger;
+  static SourceRouteTransportLayer<MultiInetSocketAddress> carol_tap; // going to be the middle hop for alice/bob
+  static TransportLayer<MultiInetSocketAddress, ByteBuffer> carol;
   static SourceRouteFactory<MultiInetSocketAddress> srFactory;
 
   static Timer timer;
@@ -123,9 +127,51 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     bob = buildTL("bob", addr, startPort+1, env);
     carol = buildTL("carol", addr, startPort+2, env);
     dave = buildTL("dave", addr, startPort+3, env);
+    otherTLs.add(carol);
+    otherTLs.add(dave);
+    
+    waitForAliceBobRoute();
+  }
+  
+  /**
+   * The direct link between alice and bob is blackholed (see connectionAllowed()), which can only be detected 
+   * by liveness checks.  Until the SourceRouteManagers have detected that and switched to the route through carol,
+   * sockets/messages between alice and bob would silently go nowhere.  So do the liveness checks up front instead 
+   * of depending on another test (e.g. testProximity) to have run first.
+   */
+  @SuppressWarnings("unchecked")
+  static void waitForAliceBobRoute() throws InterruptedException {
+    final LivenessProvider<MultiInetSocketAddress> aliceLP = (LivenessProvider<MultiInetSocketAddress>)alice;
+    final LivenessProvider<MultiInetSocketAddress> bobLP = (LivenessProvider<MultiInetSocketAddress>)bob;
+    final MultiInetSocketAddress aliceId = (MultiInetSocketAddress)alice.getLocalIdentifier();
+    final MultiInetSocketAddress bobId = (MultiInetSocketAddress)bob.getLocalIdentifier();
+    final Object lock = new Object();
+    LivenessListener<MultiInetSocketAddress> ll = new LivenessListener<MultiInetSocketAddress>() {
+      public void livenessChanged(MultiInetSocketAddress i, int val, Map<String, Object> options) {
+        synchronized(lock) {
+          lock.notify();
+        }
+      }
+    };
+    aliceLP.addLivenessListener(ll);
+    bobLP.addLivenessListener(ll);
+    aliceLP.checkLiveness(bobId, null);
+    bobLP.checkLiveness(aliceId, null);
+    long timeout = env.getTimeSource().currentTimeMillis()+10000;
+    synchronized(lock) {
+      while((env.getTimeSource().currentTimeMillis()<timeout) && 
+          (aliceLP.getLiveness(bobId, null) != LivenessListener.LIVENESS_ALIVE || 
+           bobLP.getLiveness(aliceId, null) != LivenessListener.LIVENESS_ALIVE)) {
+        lock.wait(500); 
+      }
+    }
+    aliceLP.removeLivenessListener(ll);
+    bobLP.removeLivenessListener(ll);
+    assertTrue("alice->bob:"+aliceLP.getLiveness(bobId, null), aliceLP.getLiveness(bobId, null) == LivenessListener.LIVENESS_ALIVE);
+    assertTrue("bob->alice:"+bobLP.getLiveness(aliceId, null), bobLP.getLiveness(aliceId, null) == LivenessListener.LIVENESS_ALIVE);
   }
 
-  private static TransportLayer buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(), 
         env.getProcessor(), 
@@ -137,7 +183,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     env.addDestructable(env_a);    
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
     MultiInetAddressTransportLayer myEpochLayer = new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr_a),
-        new MagicNumberTransportLayer(
+        new MagicNumberTransportLayer<InetSocketAddress>(
           new WireTransportLayerImpl(addr_a,env_a, null),
         env_a, null, GOOD_HDR, 2000),
       env_a, null, null);
@@ -172,7 +218,10 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     TestLivenessTransportLayerImpl temp = new TestLivenessTransportLayerImpl(srtl,env_a, null);
     MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>> prox = 
       new MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>>(temp, env_a);
-    if (name.equals("bob")) bob_prox = prox;
+    if (name.equals("bob")) {
+      bob_prox = prox;
+      bob_pinger = temp;
+    }
     
     return new SourceRouteManagerImpl<MultiInetSocketAddress>(srFactory, temp, temp, prox, env_a, 
         new TestSRS(temp.getLocalIdentifier().getLastHop()));
@@ -245,7 +294,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     }
   }
   
-  public static int getDelay(SourceRoute a, SourceRoute b) {
+  public static int getDelay(SourceRoute<MultiInetSocketAddress> a, SourceRoute<MultiInetSocketAddress> b) {
 //    System.out.println("getDelay("+a+","+b+")");
 //    TransportLayer<SourceRoute, ByteBuffer> bob = SRManagerTest.bob;
     if (b.getLastHop().equals(bob.getLocalIdentifier()) &&
@@ -266,24 +315,24 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     final Map<MultiInetSocketAddress, Tupel> pingResponse = new HashMap<MultiInetSocketAddress, Tupel>();
     final Object lock = new Object();
     
-    PingListener<MultiInetSocketAddress> pl = new PingListener<MultiInetSocketAddress>() {    
-      public void pingResponse(MultiInetSocketAddress i, int rtt, Map<String, Object> options) {
+    PingListener<SourceRoute<MultiInetSocketAddress>> pl = new PingListener<SourceRoute<MultiInetSocketAddress>>() {    
+      public void pingResponse(SourceRoute<MultiInetSocketAddress> i, int rtt, Map<String, Object> options) {
         synchronized(lock) {
 //          System.out.println("i"+i.getLastHop());
-          pingResponse.put(i, new Tupel(i, rtt));
+          pingResponse.put(i.getLastHop(), new Tupel(i.getLastHop(), rtt));
           lock.notify();
         }
       }
       
-      public void pingReceived(MultiInetSocketAddress i, Map<String, Object> options) {
+      public void pingReceived(SourceRoute<MultiInetSocketAddress> i, Map<String, Object> options) {
 
       }
     };
     
-    ((Pinger<MultiInetSocketAddress>)SRManagerTest.bob).addPingListener(pl);
+    bob_pinger.addPingListener(pl);
 
-    ((ProximityProvider)bob).proximity(alice.getLocalIdentifier(), options); // initial check, causes ping if no data
-    ((ProximityProvider)bob).proximity(carol.getLocalIdentifier(), options); // initial check, causes ping if no data
+    ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(alice().getLocalIdentifier(), options); // initial check, causes ping if no data
+    ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(carol.getLocalIdentifier(), options); // initial check, causes ping if no data
 
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
@@ -293,9 +342,10 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         lock.wait(1000); 
       }
     }
+    bob_pinger.removePingListener(pl);
     
-    int aliceProx = ((ProximityProvider)bob).proximity(alice.getLocalIdentifier(), options);
-    int carolProx = ((ProximityProvider)bob).proximity(carol.getLocalIdentifier(), options);
+    int aliceProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(alice().getLocalIdentifier(), options);
+    int carolProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(carol.getLocalIdentifier(), options);
 
     assertTrue("aliceProx:"+aliceProx+" carolProx:"+carolProx,aliceProx > carolProx+100);
 //    System.out.println("aliceProx"+aliceProx);

@@ -67,7 +67,7 @@ public class FetchLeafsetResponse extends PRawMessage {
     leafSet.serialize(buf);
   }
   
-  public FetchLeafsetResponse(InputBuffer buf, NodeHandleFactory nhf, NodeHandle sender) throws IOException {
+  public FetchLeafsetResponse(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender) throws IOException {
     super(FetchLeafsetApp.APP_ID);
     subject = Id.build(buf);
     leafSet = LeafSet.build(buf, nhf);

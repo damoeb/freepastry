@@ -246,6 +246,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
    * @return the wrapped message.
    * @deprecated use unwrap(MessageDeserializer)
    */
+  @Deprecated
   public Message unwrap() {
     if (internalMsg != null) {
       return internalMsg;
@@ -294,6 +295,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
    * @deprecated use getMessage(MessageDeserializer)
    */
   @SuppressWarnings("deprecation")
+  @Deprecated
   public rice.p2p.commonapi.Message getMessage() {
     return ((PastryEndpointMessage) unwrap()).getMessage();
   }

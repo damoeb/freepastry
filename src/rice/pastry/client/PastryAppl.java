@@ -311,7 +311,7 @@ public abstract class PastryAppl /*implements Observer*/
   public boolean routeMsgDirect(NodeHandle dest, Message msg, SendOptions opt) {
     if (logger.level <= Logger.FINER) logger.log(
         "[" + thePastryNode + "] routemsgdirect " + msg + " to " + dest);
-    if (!dest.isAlive()) return false;
+    if (dest.getLiveness() >= NodeHandle.LIVENESS_DEAD) return false;
     //RouteMessage rm = new RouteMessage(dest, msg, cred, opt, getAddress());
     //thePastryNode.receiveMessage(rm);
 
@@ -322,7 +322,7 @@ public abstract class PastryAppl /*implements Observer*/
     // go back to using options to differentiate from routeMsg?
 
     thePastryNode.send(dest,msg,null, options);
-    return dest.isAlive();
+    return dest.getLiveness() < NodeHandle.LIVENESS_DEAD;
   }
 
   /**

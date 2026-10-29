@@ -269,8 +269,10 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     notifyListenersRead(m.remaining(), i, options);
   }  
 
-  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, final Map<String, Object> options) {
-    if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+options+")");
+  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier i, ByteBuffer m, final MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> opts) {
+    if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+opts+")");
+    // callers may pass null options, but queued messages need non-null options (e.g. EntityManager.startLivenessChecker())
+    final Map<String, Object> options = (opts == null) ? new HashMap<String, Object>() : opts;
     
 //    if (options == null) throw new IllegalArgumentException("options is null"); // delme, only for debugging something else
     // if it is to be sent UDP, just pass it through
@@ -284,12 +286,14 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
 
             public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
               notifyListenersWrote(originalSize, i, options);
+              if (deliverAckToMe != null) deliverAckToMe.ack(msg);
             }
 
             public void sendFailed(
                 MessageRequestHandle<Identifier, ByteBuffer> msg,
                 Exception reason) {
               notifyListenersDropped(originalSize, i, options);
+              if (deliverAckToMe != null) deliverAckToMe.sendFailed(msg, reason);
             }
             
           }, options);
@@ -435,7 +439,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
             String s = "";
             Map<String, Object> options = null; 
             if (temp != null) {
-              MessageWrapper peek = em.peek();
+              EntityManager.MessageWrapper peek = em.peek();
               if (peek != null) {
                 options = peek.options;
               }
@@ -499,7 +503,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         return;
       }
       
-      for (P2PSocket socket : sockets) {
+      for (P2PSocket<Identifier> socket : sockets) {
 //        try {
           socket.close();
 //        } catch (IOException ioe) {
@@ -904,14 +908,14 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         if (messageThatIsBeingWritten != null) {
           messageThatIsBeingWritten.reset();
           if (messageThatIsBeingWritten.deliverAckToMe != null) {
-            callSendFailed.add(new Tuple(messageThatIsBeingWritten.deliverAckToMe, messageThatIsBeingWritten));
+            callSendFailed.add(new Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper>(messageThatIsBeingWritten.deliverAckToMe, messageThatIsBeingWritten));
 //            messageThatIsBeingWritten.deliverAckToMe.sendFailed(messageThatIsBeingWritten, ioe);           
           }
           messageThatIsBeingWritten = null;
         }
         for (MessageWrapper msg : queue) {
           if (msg.deliverAckToMe != null) {
-            callSendFailed.add(new Tuple(msg.deliverAckToMe, msg));
+            callSendFailed.add(new Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper>(msg.deliverAckToMe, msg));
 //            msg.deliverAckToMe.sendFailed(msg, ioe); 
           }
         }
@@ -1325,7 +1329,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       int seq;
       Identifier myIdentifier;
       
-      P2PSocket socket; // null if we aren't registered, aka, we aren't pending/writing
+      P2PSocket<Identifier> socket; // null if we aren't registered, aka, we aren't pending/writing
       
       ByteBuffer originalMessage;
       ByteBuffer message;

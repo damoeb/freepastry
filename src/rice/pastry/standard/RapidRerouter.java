@@ -237,7 +237,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       }
       
       if (reason instanceof NodeIsFaultyException) {
-        if (msg.getIdentifier().isAlive()) {
+        if (msg.getIdentifier().getLiveness() < NodeHandle.LIVENESS_DEAD) {
           if (logger.level <= Logger.WARNING) {
             logger.logException("Threw NodeIsFaultyException, and node is alive.  Node:"+msg.getIdentifier()+" Liveness:"+msg.getIdentifier().getLiveness(), reason);
             logger.logException("RRTrace", new Exception("Stack Trace"));

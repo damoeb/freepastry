@@ -151,7 +151,7 @@ public interface IdFactory {
    * @Param map The map which to take the keys from to create the IdSet's elements
    * @return an empty IdSet
    */
-  public IdSet buildIdSet(SortedMap map);
+  public IdSet buildIdSet(SortedMap<Id, ?> map);
   
   /**
    * Creates an empty NodeHandleSet.

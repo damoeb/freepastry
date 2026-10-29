@@ -77,6 +77,7 @@ public class GCNode implements Node {
    * @return The endpoint specific to this applicationk, which can be used
    * for message sending/receiving.
    */
+  @Deprecated
   public Endpoint registerApplication(Application application, String instance) {
     
     GCEndpoint gce = new GCEndpoint(node.buildEndpoint(application, instance));

@@ -38,6 +38,7 @@ package rice.pastry.socket.nat.rendezvous;
 
 import java.util.Collection;
 
+import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
 
 /**
@@ -46,10 +47,10 @@ import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
  * @author Jeff Hoye
  *
  */
-@SuppressWarnings("unchecked")
-public class RendezvousSourceRouteStrategy implements SourceRouteStrategy {
+public class RendezvousSourceRouteStrategy<Identifier> implements SourceRouteStrategy<Identifier> {
 
-  public Collection getSourceRoutes(Object destination) {
+  public Collection<SourceRoute<Identifier>> getSourceRoutes(Identifier destination) {
+
     // TODO Auto-generated method stub
     return null;
   }

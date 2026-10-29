@@ -83,8 +83,7 @@ public class XMLObjectStreamUnit {
       if (i != j)
         throw new IOException("int " + j + " was not equal to " + i);
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -99,8 +98,7 @@ public class XMLObjectStreamUnit {
       if (b != c)
         throw new IOException("boolean " + c + " was not equal to " + b + ". XML: " + xml);
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -114,8 +112,7 @@ public class XMLObjectStreamUnit {
       if (i != j)
         throw new IOException("byte " + j + " was not equal to " + i);
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -129,8 +126,7 @@ public class XMLObjectStreamUnit {
       if (i != j)
         throw new IOException("char " + j + " was not equal to " + i);
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -144,8 +140,7 @@ public class XMLObjectStreamUnit {
       if (i != j)
         throw new IOException("double " + j + " was not equal to " + i);
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -159,8 +154,7 @@ public class XMLObjectStreamUnit {
       if (i != j)
         throw new IOException("float " + j + " was not equal to " + i);
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -174,8 +168,7 @@ public class XMLObjectStreamUnit {
       if (i != j)
         throw new IOException("long " + j + " was not equal to " + i);
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -189,8 +182,7 @@ public class XMLObjectStreamUnit {
       if (i != j)
         throw new IOException("short " + j + " was not equal to " + i);
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -209,8 +201,7 @@ public class XMLObjectStreamUnit {
       
       reset();      
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
 
@@ -225,7 +216,7 @@ public class XMLObjectStreamUnit {
       if (Array.getLength(o1) != Array.getLength(o2))
         return false;
       if (o2.getClass().getComponentType().isPrimitive()) {
-        Class c = o2.getClass().getComponentType();
+        Class<?> c = o2.getClass().getComponentType();
         if (c.equals(Integer.TYPE)) {
           return Arrays.equals((int[])o1,(int[])o2);
         } else if (c.equals(Boolean.TYPE)) {
@@ -258,16 +249,12 @@ public class XMLObjectStreamUnit {
   
   protected void test(Object o) {
     try {
-      long start = System.currentTimeMillis();
       xoos.writeObject(o);
       flip();
-      long mid = System.currentTimeMillis();
       Object o2 = xois.readObject();
-      long end = System.currentTimeMillis();
-
-      System.out.println("WRITE: " + (mid - start) + " READ: " + (end - mid));
       
-      if (o == o2)
+      // boxed primitives are value-based: valueOf() may legitimately return a cached instance
+      if ((o == o2) && ! ((o instanceof Number) || (o instanceof Boolean) || (o instanceof Character)))
         throw new IOException("Returned object is identicial to first!");
       
       if (!compare(o,o2)) {
@@ -277,25 +264,23 @@ public class XMLObjectStreamUnit {
 
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
   protected void testHashtable() {
     try {
-      Hashtable table = new Hashtable();
-      Integer i = new Integer(1020);
+      Hashtable<Object, Integer> table = new Hashtable<Object, Integer>();
+      Integer i = Integer.valueOf(1020);
       table.put("monkey", i);
       table.put("cat", i);
       table.put(i, i);
       
       xoos.writeObject(table);
       flip();
-      Hashtable table2 = (Hashtable) xois.readObject();
+      Hashtable<?, ?> table2 = (Hashtable<?, ?>) xois.readObject();
       
       if (table == table2)
         throw new IOException("Returned table is identicial to first!");
@@ -308,30 +293,26 @@ public class XMLObjectStreamUnit {
 
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
   protected void testMultipleObjects() {
     try {
-      xoos.writeObject(new Integer(28));
-      xoos.writeObject(new Vector());
+      xoos.writeObject(Integer.valueOf(28));
+      xoos.writeObject(new Vector<Object>());
       flip();
       
-      if (! (xois.readObject().equals(new Integer(28)) || xois.readObject().equals(new Vector())))
+      if (! (xois.readObject().equals(Integer.valueOf(28)) || xois.readObject().equals(new Vector<Object>())))
         throw new IOException("Objects are not equal!");
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -344,8 +325,7 @@ public class XMLObjectStreamUnit {
         return;
       }
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
@@ -354,7 +334,6 @@ public class XMLObjectStreamUnit {
       TestByteSerialization object = new TestByteSerialization();
       xoos.writeObject(object);
       flip();
-      System.out.println("XML IS: " + (new String(baos.toByteArray())));
       
       TestByteSerialization object2 = (TestByteSerialization) xois.readObject();
 
@@ -373,11 +352,9 @@ public class XMLObjectStreamUnit {
 
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -407,11 +384,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -431,18 +406,17 @@ public class XMLObjectStreamUnit {
         
         return;
       } catch (ClassNotFoundException e) {
-        System.out.println("test produced exception " + e);
-        e.printStackTrace();
+        throw new AssertionError("test produced exception " + e, e);
       }
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } 
   }
   
   protected void testUnshared() {
     try {
-      Object object = new Integer(3);
+      // not a boxed primitive: those are value-based and may be canonicalized when read
+      Object object = new Vector<Object>();
       
       xoos.writeObject(object);
       xoos.writeUnshared(object);
@@ -459,11 +433,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -480,11 +452,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -501,11 +471,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -522,11 +490,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -543,11 +509,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -564,11 +528,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -585,11 +547,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -606,11 +566,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -627,11 +585,9 @@ public class XMLObjectStreamUnit {
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -643,16 +599,14 @@ public class XMLObjectStreamUnit {
       flip();
       TestSerialPersistentFields object2 = (TestSerialPersistentFields) xois.readObject();
       
-      if (! (object2.getNum1().equals(new Integer(1)) && (object2.getNum2() == null)))
+      if (! (object2.getNum1().equals(Integer.valueOf(1)) && (object2.getNum2() == null)))
         throw new IOException("Object did not have correct nums " + object2.getNum1() + " " + object2.getNum2());
       
       reset();
     } catch (IOException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     } catch (ClassNotFoundException e) {
-      System.out.println("test produced exception " + e);
-      e.printStackTrace();
+      throw new AssertionError("test produced exception " + e, e);
     }
   }
   
@@ -694,9 +648,9 @@ public class XMLObjectStreamUnit {
     testShort((short) 0);
     testMultiplePrimitives();
 
-    test(new Integer(5)); 
-    test(new Long(2837L));
-    test(new Vector());
+    test(Integer.valueOf(5)); 
+    test(Long.valueOf(2837L));
+    test(new Vector<Object>());
     test("monkey");
     test("");
     test("blah blah balh\n blah blah ablh");
@@ -804,7 +758,7 @@ public class XMLObjectStreamUnit {
     private void writeObject(ObjectOutputStream oos) throws IOException {
       ObjectOutputStream.PutField pf = oos.putFields();
       pf.put("num", 10001);
-      pf.put("num2", new Integer(99));
+      pf.put("num2", Integer.valueOf(99));
       pf.put("blah", 100);
       oos.writeFields();
     }
@@ -812,7 +766,7 @@ public class XMLObjectStreamUnit {
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
       ObjectInputStream.GetField gf = ois.readFields();
       num = gf.get("num", 0);
-      num2 = (Integer) gf.get("num2", new Integer(0));
+      num2 = (Integer) gf.get("num2", Integer.valueOf(0));
       gf.get("blah", 0);
       if (! gf.defaulted("monkey"))
         throw new IOException("Field monkey was not defaulted!");
@@ -840,7 +794,7 @@ public class XMLObjectStreamUnit {
       oos.defaultWriteObject();
       oos.writeInt(10);
       oos.writeObject("niondco");
-      oos.writeObject(new Vector());
+      oos.writeObject(new Vector<Object>());
     }
     
     public int getNum() {
@@ -877,9 +831,9 @@ public class XMLObjectStreamUnit {
   
   public static class TestSerialPersistentFields implements Serializable {
     
-    private Integer num1 = new Integer(1);
+    private Integer num1 = Integer.valueOf(1);
     
-    private Integer num2 = new Integer(2);
+    private Integer num2 = Integer.valueOf(2);
     
     private static final ObjectStreamField[] serialPersistentFields = {new ObjectStreamField("num1", Integer.class)};
     

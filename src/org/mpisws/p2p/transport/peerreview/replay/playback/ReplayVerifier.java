@@ -165,7 +165,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 
   protected abstract void socketException(int socketId, IOException ioe) throws IOException;
 
-  public void setApplication(PeerReviewCallback app) {
+  public void setApplication(PeerReviewCallback<Identifier, ?> app) {
     this.app = app;
   }
   
@@ -927,17 +927,17 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     case EX_TYPE_Unknown:
       String className = nextEvent.readUTF();
       String message = nextEvent.readUTF();     
-      Class c;
+      Class<?> c;
       try {
         c = Class.forName(className);
       } catch (ClassNotFoundException cnfe) {
         throw new RuntimeException("Couldn't find class"+className+" "+message);                  
       }
       
-      Class[] parameterTypes = new Class[1];
+      Class<?>[] parameterTypes = new Class<?>[1];
       parameterTypes[0] = String.class;      
       try {
-        Constructor ctor = c.getConstructor(parameterTypes);
+        Constructor<?> ctor = c.getConstructor(parameterTypes);
         IOException ioe = (IOException)ctor.newInstance(message);
         return ioe;
 //      } catch (NoSuchMethodException nsme) {
@@ -945,8 +945,9 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 //      } catch (InvocationTargetException ite) {
       } catch (Exception e) {
         try {
-          Constructor ctor = c.getConstructor(new Class[0]);
-          IOException ioe = (IOException)ctor.newInstance(message);
+          // no String constructor, fall back to the no-arg constructor (the message is lost)
+          Constructor<?> ctor = c.getConstructor();
+          IOException ioe = (IOException)ctor.newInstance();
           return ioe;
         } catch (Exception e2) {
           throw new RuntimeException("Couldn't find constructor for"+className+" "+message);          

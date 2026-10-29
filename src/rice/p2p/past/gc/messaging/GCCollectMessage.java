@@ -78,7 +78,7 @@ public class GCCollectMessage extends PastMessage {
    *
    * @param c The continuation to return the reponse to.
    */
-  public void returnResponse(Continuation c, Environment env, String instance) {
+  public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
     c.receiveException(new PastException("Should not be called!"));
   }
   

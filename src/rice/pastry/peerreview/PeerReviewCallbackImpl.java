@@ -126,7 +126,7 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
     Environment environment = ((Verifier<TransportLayerNodeHandle<MultiInetSocketAddress>>)tl).getEnvironment();
     Id nodeId = Id.build(buffer);
     pn = new PastryNode(nodeId, environment);
-    NodeHandleFactory nodeHandleFactory = nodeFactory.getNodeHandleFactory(pn);
+    NodeHandleFactory<?> nodeHandleFactory = nodeFactory.getNodeHandleFactory(pn);
     NodeHandle handle = nodeHandleFactory.readNodeHandle(buffer);
     // put this in the localHandleTable, where it will be read/removed in the hacked PastryNodeFactory
     nodeFactory.localHandleTable.put(pn,handle); 

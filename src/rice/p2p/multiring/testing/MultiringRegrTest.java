@@ -48,6 +48,7 @@ import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.multiring.MultiringNode;
 import rice.pastry.*;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -55,6 +56,7 @@ import rice.pastry.direct.*;
 import rice.pastry.dist.*;
 import rice.pastry.socket.*;
 import rice.pastry.standard.RandomNodeIdFactory;
+import rice.pastry.transport.BogusNodeHandle;
 
 /**
  * Provides regression testing setup for applications written on top of the
@@ -97,7 +99,7 @@ public class MultiringRegrTest {
   protected IdFactory idFactory;
 
   // the simulator, in case of direct
-  protected NetworkSimulator simulator;
+  protected NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
   
 
   // ----- STATIC FIELDS -----
@@ -178,9 +180,9 @@ public class MultiringRegrTest {
     
     if (PROTOCOL == PROTOCOL_DIRECT) {
       if (SIMULATOR == SIMULATOR_SPHERE) {
-        simulator = new SphereNetwork(env);
+        simulator = new SphereNetwork<DirectNodeHandle, RawMessage>(env);
       } else {
-        simulator = new EuclideanNetwork(env);
+        simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
       }
       factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, env);
     } else {
@@ -280,9 +282,9 @@ public class MultiringRegrTest {
     MultiringNode mn;
     
     if (bootstrap == null) {
-      mn = new MultiringNode(ringId, factory.newNode((rice.pastry.NodeHandle)null));
+      mn = new MultiringNode(ringId, newBootedNode(null, null));
     } else {
-      mn = new MultiringNode(ringId, factory.newNode(getBootstrap(bootstrap.getNode())));
+      mn = new MultiringNode(ringId, newBootedNode(getBootstrap(bootstrap.getNode()), null));
     }
     
     PastryNode pn = (PastryNode)mn.getNode();
@@ -313,10 +315,30 @@ public class MultiringRegrTest {
       throw new IllegalArgumentException("EXISTING WAS NULL! " + ringId + " " + bootstrap);
     
     if (bootstrap == null) {
-      return new MultiringNode(ringId, factory.newNode(null, (rice.pastry.Id)existing.getNodeId()), existing);
+      return new MultiringNode(ringId, newBootedNode(null, (rice.pastry.Id)existing.getNodeId()), existing);
     } else {
-      return new MultiringNode(ringId, factory.newNode(getBootstrap(bootstrap.getNode()), (rice.pastry.Id)existing.getNodeId()), existing);
+      return new MultiringNode(ringId, newBootedNode(getBootstrap(bootstrap.getNode()), (rice.pastry.Id)existing.getNodeId()), existing);
     }
+  }
+
+  /**
+   * Creates a new node (with the given nodeId, or a random one if null) and boots it
+   * off of the given bootstrap handle (or starts a new ring if null).
+   */
+  protected PastryNode newBootedNode(rice.pastry.NodeHandle bootstrap, rice.pastry.Id nodeId) {
+    PastryNode pn;
+    try {
+      pn = (nodeId == null) ? factory.newNode() : factory.newNode(nodeId);
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    if (bootstrap instanceof BogusNodeHandle) {
+      // socket: the bootstrapper expects the addresses
+      pn.boot(((BogusNodeHandle) bootstrap).addresses);
+    } else {
+      pn.boot(bootstrap);
+    }
+    return pn;
   }
 
   /**

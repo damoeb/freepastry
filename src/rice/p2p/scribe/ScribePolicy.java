@@ -82,8 +82,8 @@ public interface ScribePolicy {
    *
    * Some calls that are likely useful are: 
    * <ul> 
-   *   <li>scribe.getChildren(topic)</li>
-   *   <li>scribe.getClients(topic)</li>
+   *   <li>scribe.getChildrenOfTopic(topic)</li>
+   *   <li>scribe.getClientsByTopic(topic)</li>
    * </ul>
    *
    * If only some of the topics are accepted, the content may need to be modified.  
@@ -171,6 +171,10 @@ public interface ScribePolicy {
      * @param clients The list of clients are are currently subscribed
      * @return the topics to accept
      */
+    // Bridges to the deprecated allowSubscribe(SubscribeMessage, ScribeClient[], NodeHandle[]) hook so that
+    // existing subclasses which only override that one keep working; it needs the deprecated ScribeClient
+    // view of the clients, so there is no non-deprecated replacement here.
+    @SuppressWarnings("deprecation")
     public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
       Iterator<Topic> i = topics.iterator();
       while(i.hasNext()) {
@@ -204,11 +208,13 @@ public interface ScribePolicy {
      * allowSubscribe() method, but classes that extend DefaultScribePolicy object could make a mistake
      * and not override the new one.
      * 
+     * @deprecated override allowSubscribe(Scribe, NodeHandle, List, ScribeContent) instead
      * @param message
      * @param clients
      * @param children
      * @return
      */
+    @Deprecated
     public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
       return true;
     }
@@ -298,6 +304,7 @@ public interface ScribePolicy {
      * @param clients The list of clients are are currently subscribed
      * @return True.
      */
+    @Deprecated
     public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
       return (children.length < (maxChildren - 1));
     }

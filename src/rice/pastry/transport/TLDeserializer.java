@@ -57,12 +57,12 @@ import rice.pastry.messaging.PRawMessage;
 
 public class TLDeserializer implements RawMessageDeserializer, Deserializer {
   Map<Integer, MessageDeserializer> deserializers;
-  NodeHandleFactory nodeHandleFactory;
+  NodeHandleFactory<?> nodeHandleFactory;
   
   protected Environment environment;
   protected Logger logger;
   
-  public TLDeserializer(NodeHandleFactory nodeHandleFactory, Environment env) {
+  public TLDeserializer(NodeHandleFactory<?> nodeHandleFactory, Environment env) {
     this.environment = env;
     this.nodeHandleFactory = nodeHandleFactory;
     this.deserializers = new HashMap<Integer, MessageDeserializer>();

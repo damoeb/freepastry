@@ -136,12 +136,20 @@ public interface BaseScribe extends Destructable {
    */
   @Deprecated
   public Topic[] getTopics(ScribeClient client);
+  /**
+   * @deprecated use getTopicsByClient(ScribeMultiClient)
+   */
+  @Deprecated
   public Collection<Topic> getTopicsByClient(ScribeClient client);
   public Collection<Topic> getTopicsByClient(ScribeMultiClient client);
 
   public int numChildren(Topic topic);
 
 
+  /**
+   * @deprecated use getClientsByTopic(Topic)
+   */
+  @Deprecated
   Collection<ScribeClient> getClients(Topic topic);
   Collection<ScribeMultiClient> getClientsByTopic(Topic topic);
 

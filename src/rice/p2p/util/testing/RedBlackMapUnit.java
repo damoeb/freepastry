@@ -63,7 +63,7 @@ public class RedBlackMapUnit {
     
     Id[] array = new Id[n];
     Long[] values = new Long[n];
-    RedBlackMap map = new RedBlackMap();
+    RedBlackMap<Id, Long> map = new RedBlackMap<Id, Long>();
     
     for (int i=0; i<array.length; i++) {
       array[i] = factory.buildRandomId(random);
@@ -80,7 +80,7 @@ public class RedBlackMapUnit {
     testSortedMap(t, map, factory, random, 2);
   }
   
-  protected static void testRemove(SortedMap map) {
+  protected static void testRemove(SortedMap<Id, Long> map) {
     Id[] sorted = (Id[]) map.keySet().toArray(new Id[0]);
     Arrays.sort(sorted);
     
@@ -88,10 +88,10 @@ public class RedBlackMapUnit {
       testRemove(map, sorted, sorted[i]);
   }
   
-  protected static void testRemove(SortedMap map, Id[] sorted, Id remove) {
+  protected static void testRemove(SortedMap<Id, Long> map, Id[] sorted, Id remove) {
     System.out.println("REMOVING " + remove);
     map.remove(remove);
-    Iterator i = map.keySet().iterator();
+    Iterator<Id> i = map.keySet().iterator();
     int count = 0;
     
     while (i.hasNext()) {
@@ -120,8 +120,8 @@ public class RedBlackMapUnit {
     System.out.println();
   }
   
-  protected static void printMap(SortedMap map) {
-    Iterator i = map.keySet().iterator();
+  protected static void printMap(SortedMap<Id, Long> map) {
+    Iterator<Id> i = map.keySet().iterator();
     
     while (i.hasNext())
       System.out.print(" " + i.next() + ",");
@@ -129,7 +129,7 @@ public class RedBlackMapUnit {
     System.out.println();
   }
   
-  protected static void testSortedMap(int iterations, SortedMap map, IdFactory factory, RandomSource random, int depth) {   
+  protected static void testSortedMap(int iterations, SortedMap<Id, Long> map, IdFactory factory, RandomSource random, int depth) {   
     Id[] sorted = (Id[]) map.keySet().toArray(new Id[0]);
     Arrays.sort(sorted);
 
@@ -214,8 +214,8 @@ public class RedBlackMapUnit {
     }
   }
   
-  protected static void testHeadMap(Id head, Id[] sorted, SortedMap sub) {    
-    Iterator it = sub.keySet().iterator();
+  protected static void testHeadMap(Id head, Id[] sorted, SortedMap<Id, Long> sub) {    
+    Iterator<Id> it = sub.keySet().iterator();
     int count = 0;
     
     while (it.hasNext()) {
@@ -234,8 +234,8 @@ public class RedBlackMapUnit {
       throw new RuntimeException("FAILURE: Head test did not receive element " + sorted[count]);
   }
   
-  protected static void testTailMap(Id tail, Id[] sorted, SortedMap sub) {        
-    Iterator it = sub.keySet().iterator();
+  protected static void testTailMap(Id tail, Id[] sorted, SortedMap<Id, Long> sub) {        
+    Iterator<Id> it = sub.keySet().iterator();
     int count = getIndex(tail, sorted);
     
     while (it.hasNext()) {
@@ -254,8 +254,8 @@ public class RedBlackMapUnit {
       throw new RuntimeException("FAILURE: Tail test did not receive element " + sorted[count]);
   }  
   
-  protected static void testNormalSubMap(Id from, Id to, Id[] sorted, SortedMap sub) {        
-    Iterator it = sub.keySet().iterator();
+  protected static void testNormalSubMap(Id from, Id to, Id[] sorted, SortedMap<Id, Long> sub) {        
+    Iterator<Id> it = sub.keySet().iterator();
     int count = getIndex(from, sorted);
     
     while (it.hasNext()) {
@@ -274,10 +274,10 @@ public class RedBlackMapUnit {
       throw new RuntimeException("FAILURE: Normal subMap test did not receive element " + sorted[count]);
   }
   
-  protected static void testWrappedSubMap(Id from, Id to, Id[] sorted, SortedMap sub) {         
+  protected static void testWrappedSubMap(Id from, Id to, Id[] sorted, SortedMap<Id, Long> sub) {         
     try {
     
-    Iterator it = sub.keySet().iterator();
+    Iterator<Id> it = sub.keySet().iterator();
     int count = (sorted.length > 0 ? (sorted[0].compareTo(to) < 0 ? 0 : getIndex(from, sorted)) : 0);
     
     while (it.hasNext()) {

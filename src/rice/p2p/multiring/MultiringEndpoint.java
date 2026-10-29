@@ -347,8 +347,7 @@ public class MultiringEndpoint implements Endpoint {
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    */
-  @SuppressWarnings("unchecked")
-  public void process(Executable task, Continuation command) {
+  public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
     endpoint.process(task, command);
   }
   
@@ -441,11 +440,21 @@ public class MultiringEndpoint implements Endpoint {
   }
 
   public int proximity(NodeHandle nh) {
-    return endpoint.proximity(nh);    
+    return endpoint.proximity(unwrap(nh));    
   }
   
   public boolean isAlive(NodeHandle nh) {
-    return endpoint.isAlive(nh);
+    return endpoint.isAlive(unwrap(nh));
+  }
+
+  /**
+   * The underlying endpoint only understands the wrapped handles.
+   */
+  private NodeHandle unwrap(NodeHandle nh) {
+    if (nh instanceof MultiringNodeHandle) {
+      return ((MultiringNodeHandle) nh).getHandle();
+    }
+    return nh;
   }
 
   public void setConsistentRouting(boolean val) {

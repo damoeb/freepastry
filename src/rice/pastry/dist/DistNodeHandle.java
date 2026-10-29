@@ -54,7 +54,7 @@ import java.util.*;
  *
  * @author Alan Mislove
  */
-public abstract class DistNodeHandle<Identifier> extends TransportLayerNodeHandle<Identifier> implements Observer {
+public abstract class DistNodeHandle<Identifier> extends TransportLayerNodeHandle<Identifier> {
     static final long serialVersionUID = 6030505652558872412L;
     // the nodeId of this node handle's remote node
     protected Id nodeId;

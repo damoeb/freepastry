@@ -64,7 +64,7 @@ public class RingId implements Id {
   /**
    * Support for coalesced Ids - ensures only one copy of each Id is in memory
    */
-  private static WeakHashMap RINGID_MAP = new WeakHashMap();
+  private static WeakHashMap<RingId, WeakReference<RingId>> RINGID_MAP = new WeakHashMap<RingId, WeakReference<RingId>>();
   
   /**
    * The id which this ringId represents
@@ -110,13 +110,14 @@ public class RingId implements Id {
    */
   private static RingId resolve(RingId id) {
     synchronized (RINGID_MAP) {
-      Object ref = RINGID_MAP.get(id);
+      WeakReference<RingId> ref = RINGID_MAP.get(id);
       RingId result = null;
       
-      if ((ref != null) && ((result = (RingId) ref) != null)) {
+      if ((ref != null) && ((result = ref.get()) != null)) {
         return result;
       } else {
-        RINGID_MAP.put(id, id);
+        // the value must not strongly reference the key, or the entry is never collected
+        RINGID_MAP.put(id, new WeakReference<RingId>(id));
         return id;
       }
     }    

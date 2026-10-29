@@ -62,15 +62,15 @@ import java.util.*;
 public abstract class PastryRegrTest {
   protected PastryNodeFactory factory;
 
-  public Vector pastryNodes;
+  public Vector<PastryNode> pastryNodes;
 
   /**
    * of Id
    */
-  public SortedMap pastryNodesSorted;
-  public SortedMap pastryNodesSortedReady;
+  public SortedMap<Id, PastryNode> pastryNodesSorted;
+  public SortedMap<Id, PastryNode> pastryNodesSortedReady;
 
-  public Vector pastryNodesLastAdded;
+  public Vector<PastryNode> pastryNodesLastAdded;
 
   public boolean inConcJoin;
 
@@ -162,7 +162,18 @@ public abstract class PastryRegrTest {
   }
 
   protected PastryNode generateNode(NodeHandle bootstrap) {
-    PastryNode pn = factory.newNode(bootstrap);
+    PastryNode pn;
+    try {
+      pn = factory.newNode();
+    } catch (java.io.IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    // the socket factory hands out BogusNodeHandles, which have to be booted from their addresses
+    if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle) {
+      pn.boot(((rice.pastry.transport.BogusNodeHandle)bootstrap).addresses);
+    } else {
+      pn.boot(bootstrap);
+    }
 
     return pn;
   }
@@ -314,7 +325,7 @@ public abstract class PastryRegrTest {
     for (int i = -ls.ccwSize(); i < 0; i++) {
       NodeHandle nh = ls.get(i);
 
-      if (!nh.isAlive())
+      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
         System.out.println("checkLeafSet: dead node handle " + nh.getNodeId()
             + " in leafset at " + rta.getNodeId() + "\n" + ls);
 
@@ -336,7 +347,7 @@ public abstract class PastryRegrTest {
     for (int i = 1; i <= ls.cwSize(); i++) {
       NodeHandle nh = ls.get(i);
 
-      if (!nh.isAlive())
+      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
         System.out.println("checkLeafSet: dead node handle " + nh.getNodeId()
             + " in leafset at " + rta.getNodeId() + "\n" + ls);
 
@@ -374,7 +385,7 @@ public abstract class PastryRegrTest {
     for (int k = -ls.ccwSize(); k <= ls.cwSize(); k++) {
       // for each id in the leafset
       Id id = ls.get(k).getNodeId();
-      TreeSet distanceSet = new TreeSet(new DistComp(id));
+      TreeSet<Id> distanceSet = new TreeSet<Id>(new DistComp(id));
 
       // compute a representation of the leafset, sorted by distance from the id
       for (int i = -ls.ccwSize(); i <= ls.cwSize(); i++) {
@@ -565,7 +576,7 @@ public abstract class PastryRegrTest {
           for (int k = 0; k < rs.size(); k++) {
 
             // check for correct proximity ordering
-            if (rs.get(k).isAlive() && rta.getPastryNode().proximity(rs.get(k)) < bestProximity) {
+            if (rs.get(k).getLiveness() < NodeHandle.LIVENESS_DEAD && rta.getPastryNode().proximity(rs.get(k)) < bestProximity) {
               System.out.println("checkRoutingTable failure 1, row=" + i
                   + " column=" + j + " rank=" + k);
 

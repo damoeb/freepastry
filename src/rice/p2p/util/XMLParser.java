@@ -92,7 +92,7 @@ public class XMLParser implements XmlPullParser {
   /**
    * The internal stack of tags which have been read
    */
-  protected Stack tags;
+  protected Stack<String> tags;
   
   /**
    * If the tag parsed was a start/end, the name of the tag
@@ -130,7 +130,7 @@ public class XMLParser implements XmlPullParser {
     this.bufferPosition = 0;
     this.bufferLimit = 0;
     this.mark = -1;
-    this.tags = new Stack();
+    this.tags = new Stack<String>();
     this.cache = new StringCache();
     this.inTag = false;
     this.numAttributes = 0;

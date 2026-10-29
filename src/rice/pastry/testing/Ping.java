@@ -40,6 +40,7 @@ import rice.pastry.*;
 import rice.pastry.client.*;
 import rice.pastry.routing.*;
 import rice.pastry.messaging.*;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.direct.*;
 
 import java.util.*;
@@ -77,7 +78,7 @@ public class Ping extends PastryAppl {
     double fDistance = pMsg.getDistance();
     double rDistance;
 
-    NetworkSimulator sim = ((DirectNodeHandle) (thePastryNode)
+    NetworkSimulator<DirectNodeHandle, RawMessage> sim = ((DirectNodeHandle) (thePastryNode)
         .getLocalHandle()).getSimulator();
     PingTestRecord tr = (PingTestRecord) (sim.getTestRecord());
 

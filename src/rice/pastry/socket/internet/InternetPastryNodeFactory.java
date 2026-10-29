@@ -166,17 +166,17 @@ public class InternetPastryNodeFactory extends
    * @param localAddress the address of the interface we should search for a NAT on
    * @return
    */
-  @SuppressWarnings("unchecked")
   protected NATHandler getDefaultNatHandler(Environment env, InetAddress localAddress) {
     Parameters params = env.getParameters();
     if (params.contains("nat_handler_class")) {
       try {
-        Class natHandlerClass = Class.forName(params.getString("nat_handler_class"));
-        Class[] args = {Environment.class, InetAddress.class};
+        Class<?> natHandlerClass = Class.forName(params.getString("nat_handler_class"));
+        Class<?>[] args = {Environment.class, InetAddress.class};
 //        Class[] args = new Class[2];
 //        args[0] = environment.getClass();
 //        args[1] = InetAddress.class;
-        Constructor constructor = natHandlerClass.getConstructor(args);
+        Constructor<?> constructor = natHandlerClass.getConstructor(args);
+
         Object[] foo = {env, localAddress};
         return (NATHandler)constructor.newInstance(foo);
       } catch (ClassNotFoundException e) {

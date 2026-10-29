@@ -125,9 +125,9 @@ public class StorageManagerImpl implements StorageManager {
    * @param newId The new id of the object in question.
    * @param c The command to run once the operation is complete
    */
-  public void rename(final Id oldId, final Id newId, Continuation c) {
-    cache.rename(oldId, newId, new StandardContinuation(c) {
-      public void receiveResult(Object o) {
+  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
+    cache.rename(oldId, newId, new StandardContinuation<Boolean, Boolean, Exception>(c) {
+      public void receiveResult(Boolean o) {
         storage.rename(oldId, newId, parent);
       }
       public String toString() { return "rename of " + oldId + " to " + newId; }
@@ -141,9 +141,9 @@ public class StorageManagerImpl implements StorageManager {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete
    */
-  public void getObject(final Id id, Continuation c) {
-    cache.getObject(id, new StandardContinuation(c) {
-      public void receiveResult(Object o) {
+  public void getObject(final Id id, Continuation<? super Serializable, Exception> c) {
+    cache.getObject(id, new StandardContinuation<Serializable, Serializable, Exception>(c) {
+      public void receiveResult(Serializable o) {
         if (o != null) {
           parent.receiveResult(o);
         } else {
@@ -175,9 +175,9 @@ public class StorageManagerImpl implements StorageManager {
    * @param metadata The metadata to store
    * @param c The command to run once the operation is complete
    */
-  public void setMetadata(final Id id, final Serializable metadata, Continuation command) {
-    cache.setMetadata(id, metadata, new StandardContinuation(command) {
-      public void receiveResult(Object o) {
+  public void setMetadata(final Id id, final Serializable metadata, Continuation<? super Boolean, Exception> command) {
+    cache.setMetadata(id, metadata, new StandardContinuation<Boolean, Boolean, Exception>(command) {
+      public void receiveResult(Boolean o) {
         storage.setMetadata(id, metadata, parent);
       }
       public String toString() { return "setMetadata of " + id; }
@@ -219,7 +219,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param range The range to query  
    * @return The map containg the keys 
    */
-  public SortedMap scanMetadata(IdRange range) {
+  public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
     return storage.scanMetadata(range);
   }
   
@@ -229,7 +229,7 @@ public class StorageManagerImpl implements StorageManager {
    *
    * @return The treemap mapping ids to metadata 
    */
-  public SortedMap scanMetadata() {
+  public SortedMap<Id, Serializable> scanMetadata() {
     return storage.scanMetadata();
   }
   
@@ -240,7 +240,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param value The maximal metadata value 
    * @return The submapping
    */
-  public SortedMap scanMetadataValuesHead(Object value) {
+  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
     return storage.scanMetadataValuesHead(value);
   }
   
@@ -249,7 +249,7 @@ public class StorageManagerImpl implements StorageManager {
    *
    * @return The submapping
    */
-  public SortedMap scanMetadataValuesNull() {
+  public SortedMap<Id, Serializable> scanMetadataValuesNull() {
     return storage.scanMetadataValuesNull();
   }
 
@@ -289,7 +289,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param obj The object to store.
    * @param c The command to run once the operation is complete
    */
-  public void store(Id id, Serializable metadata, Serializable obj, Continuation c) {
+  public void store(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
     storage.store(id, metadata, obj, c);
   }
 
@@ -304,7 +304,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param pid The object's persistence id
    * @param c The command to run once the operation is complete
    */
-  public void unstore(Id id, Continuation c) {
+  public void unstore(Id id, Continuation<? super Boolean, Exception> c) {
     storage.unstore(id, c);
   }
 
@@ -325,7 +325,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param obj The object to cache.
    * @param c The command to run once the operation is complete
    */
-  public void cache(Id id, Serializable metadata, Serializable obj, Continuation c) {
+  public void cache(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
     cache.cache(id, metadata, obj, c);
   }
 
@@ -340,7 +340,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param pid The object's id
    * @param c The command to run once the operation is complete
    */
-  public void uncache(Id id, Continuation c) {
+  public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
     cache.uncache(id, c);
   }
 
@@ -366,7 +366,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param size The new maximum size, in bytes, of the cache.
    * @param c The command to run once the operation is complete
    */
-  public void setMaximumSize(int size, Continuation c) {
+  public void setMaximumSize(int size, Continuation<? super Boolean, Exception> c) {
     cache.setMaximumSize(size, c);
   }
   
@@ -376,9 +376,9 @@ public class StorageManagerImpl implements StorageManager {
    *
    * @param c The command to run once done
    */
-  public void flush(Continuation c) {
-    cache.flush(new StandardContinuation(c) {
-      public void receiveResult(Object o) {
+  public void flush(Continuation<? super Boolean, Exception> c) {
+    cache.flush(new StandardContinuation<Boolean, Boolean, Exception>(c) {
+      public void receiveResult(Boolean o) {
         storage.flush(parent);
       }
     });

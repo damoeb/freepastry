@@ -74,7 +74,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
   }
 
   @SuppressWarnings("unchecked")
-  public void prefetchLocalObject(VersionKey key, Continuation command) {
+  public void prefetchLocalObject(VersionKey key, Continuation<? super PastContent, Exception> command) {
     command.receiveResult(null);
   }
 

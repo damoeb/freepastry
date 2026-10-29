@@ -260,7 +260,7 @@ public class JoinRequest extends PRawMessage {
     
   }
 
-  public JoinRequest(InputBuffer buf, NodeHandleFactory nhf, NodeHandle sender, PastryNode localNode) throws IOException {
+  public JoinRequest(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender, PastryNode localNode) throws IOException {
     super(JoinAddress.getCode());
     
     byte version = buf.readByte();

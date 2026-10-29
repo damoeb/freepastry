@@ -47,27 +47,27 @@ import rice.p2p.commonapi.Id;
 public class LockManagerImpl implements LockManager {
 
   // map: Id -> List<Continuation>
-  private HashMap<Id, List<Continuation>> locks;
+  private HashMap<Id, List<Continuation<?, ?>>> locks;
   
   protected Logger logger;
 
   public LockManagerImpl(Environment env) {
-    this.locks = new HashMap<Id, List<Continuation>>();
+    this.locks = new HashMap<Id, List<Continuation<?, ?>>>();
     this.logger =  env.getLogManager().getLogger(StorageManagerImpl.class,null);
   }
 
   
-  public void lock(Id id, Continuation c) {
-    Continuation torun = null;
+  public void lock(Id id, Continuation<?, ?> c) {
+    Continuation<?, ?> torun = null;
     if (logger.level <= Logger.FINE) logger.log("locking on id "+id+" for continuation "+c);
     synchronized (this) {
       if (locks.containsKey(id)) {
-        List<Continuation> locklist = locks.get(id);
+        List<Continuation<?, ?>> locklist = locks.get(id);
         if (logger.level <= Logger.FINER) logger.log("locking on id "+id+"; blocked on "+locklist.size()+" earlier continuations");
         if (locklist.size() > 10 && logger.level <= Logger.INFO) logger.log("locking on id "+id+"; "+locklist.size()+" continuations in queue.  That seems large");
         locklist.add(c);
       } else {
-        locks.put(id, new LinkedList<Continuation>());
+        locks.put(id, new LinkedList<Continuation<?, ?>>());
         if (logger.level <= Logger.FINER) logger.log("locking on id "+id+"; no contention so running "+c);
         torun = c;
       }
@@ -77,15 +77,15 @@ public class LockManagerImpl implements LockManager {
   }
   
   public void unlock(Id id) {
-    Continuation torun = null;
+    Continuation<?, ?> torun = null;
     if (logger.level <= Logger.FINE) logger.log("unlocking on id "+id);
     synchronized (this) {
       if (locks.containsKey(id)) {
-        if (((List)locks.get(id)).isEmpty()) {
+        if (locks.get(id).isEmpty()) {
           if (logger.level <= Logger.FINER) logger.log("unlocking on id "+id+"; last out the door -- removing lock ");
           locks.remove(id);
         } else {
-          Continuation next = (Continuation)((List)locks.get(id)).remove(0);
+          Continuation<?, ?> next = locks.get(id).remove(0);
           if (logger.level <= Logger.FINER) logger.log("unlocking on id "+id+"; starting next continuation "+next);
           torun = next;
         }

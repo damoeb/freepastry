@@ -38,6 +38,7 @@ package rice.pastry.routing;
 
 import rice.environment.Environment;
 import rice.environment.logging.Logger;
+import rice.p2p.commonapi.LegacyObservable;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.*;
 import rice.pastry.Id.Distance;
@@ -72,7 +73,7 @@ import java.util.*;
  * @author Peter Druschel
  */
 
-public class RoutingTable extends Observable implements NodeSetEventSource {
+public class RoutingTable extends LegacyObservable implements NodeSetEventSource {
   /**
    * The routing calculations will occur in base <EM>2 <SUP>idBaseBitLength
    * </SUP></EM>
@@ -241,7 +242,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
         for (int k = 0; rs != null && k < rs.size(); k++) {
           NodeHandle n = rs.get(k);
 
-          if (n.isAlive()) {
+          if (n.getLiveness() < NodeHandle.LIVENESS_DEAD) {
             Id.Distance nDist = n.getNodeId().distance(key);
 
             if (myDistance.compareTo(nDist) > 0) {
@@ -370,7 +371,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
               if (rs != null && k < rs.size()) {
                 NodeHandle n = rs.get(k);
       
-                if (n.isAlive()) {
+                if (n.getLiveness() < NodeHandle.LIVENESS_DEAD) {
                   Id.Distance nDist = n.getNodeId().distance(key);
       
                   k++;
@@ -544,7 +545,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
     
     for (int i = 0; i < rs.size(); i++) {
       NodeHandle nh = rs.get(i);
-      if (!nh.isAlive()) return TEST_SUCCESS_ENTRY_WAS_DEAD;
+      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) return TEST_SUCCESS_ENTRY_WAS_DEAD;
       if (pn.proximity(nh) > prox) return TEST_SUCCESS_BETTER_PROXIMITY;      
     }   
     return TEST_FAIL_EXISTING_ARE_BETTER;
@@ -745,6 +746,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
    * Generates too many objects to use this interface
    * @deprecated use addNodeSetListener
    */
+  @Deprecated
   public void addObserver(Observer o) {
     if (logger.level <= Logger.WARNING) logger.logException("WARNING: Observer on RoutingTable is deprecated", new Exception("Stack Trace"));
     super.addObserver(o); 
@@ -754,6 +756,7 @@ public class RoutingTable extends Observable implements NodeSetEventSource {
    * Generates too many objects to use this interface
    * @deprecated use deleteNodeSetListener
    */
+  @Deprecated
   public void deleteObserver(Observer o) {
     if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
     super.deleteObserver(o); 

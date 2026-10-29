@@ -115,7 +115,7 @@ public class Recorder implements MyEvents {
     final SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
       
       @Override
-      public rice.pastry.NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory nhf) {
+      public rice.pastry.NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
         SocketNodeHandle ret = (SocketNodeHandle)super.getLocalHandle(pn, nhf);
         if (logger.level <= Logger.FINE) logger.log("getLocalHandle():"+ret.toStringFull());
         return ret;
@@ -154,10 +154,10 @@ public class Recorder implements MyEvents {
       
       @Override
       @SuppressWarnings("unchecked")
-      protected Bootstrapper getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory handleFactory, ProximityNeighborSelector pns) {
-        final Bootstrapper internal = super.getBootstrapper(pn, tl, handleFactory, pns);
-        Bootstrapper ret = new Bootstrapper() {        
-          public void boot(Collection bootaddresses) {
+      protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, ProximityNeighborSelector pns) {
+        final Bootstrapper<InetSocketAddress> internal = super.getBootstrapper(pn, tl, handleFactory, pns);
+        Bootstrapper<InetSocketAddress> ret = new Bootstrapper<InetSocketAddress>() {        
+          public void boot(Collection<InetSocketAddress> bootaddresses) {
             try {
               recorders.get(pn).logEvent(EVT_BOOT);
             } catch (IOException ioe) {

@@ -49,6 +49,7 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
  * 
  * @author Jeff Hoye
  */
-public abstract class RendezvousLivenessProvider implements LivenessProvider {
+public abstract class RendezvousLivenessProvider<Identifier> implements LivenessProvider<Identifier> {
+
 
 }

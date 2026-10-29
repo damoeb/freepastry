@@ -152,7 +152,7 @@ public class VersionKey implements Id, Serializable {
    * @return DESCRIBE THE RETURN VALUE
    */
   public int hashCode() {
-    return (id.hashCode() + (new Long(version).hashCode()));
+    return (id.hashCode() + Long.hashCode(version));
   }
 
   /**

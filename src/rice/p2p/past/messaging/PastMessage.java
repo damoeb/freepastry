@@ -153,8 +153,7 @@ public abstract class PastMessage implements RawMessage {
    *
    * @param c The continuation to return the reponse to.
    */
-  @SuppressWarnings("unchecked")
-  public abstract void returnResponse(Continuation c, Environment env, String instance);
+  public abstract void returnResponse(Continuation<Object, Exception> c, Environment env, String instance);
   
   /**
    * Method which is designed to be overridden by subclasses if they need

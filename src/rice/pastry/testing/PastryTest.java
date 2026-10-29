@@ -40,6 +40,7 @@ import rice.environment.Environment;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.pastry.*;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.direct.*;
 import rice.pastry.standard.*;
 import rice.pastry.join.*;
@@ -61,7 +62,7 @@ import java.util.*;
 public class PastryTest {
   private DirectPastryNodeFactory factory;
 
-  private NetworkSimulator simulator;
+  private NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   private Vector<PastryNode> pastryNodes;
 
@@ -71,7 +72,7 @@ public class PastryTest {
 
   public PastryTest(Environment env) {
     environment = env;
-    simulator = new EuclideanNetwork(env);
+    simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(env), simulator,
         env);
 
@@ -90,7 +91,14 @@ public class PastryTest {
   }
 
   public void makePastryNode() {
-    PastryNode pn = factory.newNode(getBootstrap());
+    NodeHandle bootHandle = getBootstrap();
+    PastryNode pn;
+    try {
+      pn = factory.newNode();
+    } catch (java.io.IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    pn.boot(bootHandle);
     pastryNodes.addElement(pn);
 
     PingClient pc = new PingClient(pn);

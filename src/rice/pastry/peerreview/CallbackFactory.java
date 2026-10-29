@@ -63,13 +63,13 @@ public class CallbackFactory extends SocketPastryNodeFactory {
   @Override
   public NodeHandleAdapter getNodeHandleAdapter(
       PastryNode pn, 
-      NodeHandleFactory handleFactory2, 
+      NodeHandleFactory<?> handleFactory2, 
       TLDeserializer deserializer) throws IOException {
     return null;
   }
   
   @Override
-  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory nhf) {
+  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
     NodeHandle ret = localHandleTable.remove(pn);
     if (ret == null) throw new IllegalStateException("Couldn't find the handle in localHandleTable:"+pn);
     return ret;

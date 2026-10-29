@@ -115,7 +115,7 @@ public class Replayer implements MyEvents, EventCallback {
 //      }
 
       @Override
-      public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory nhf) {
+      public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
         SocketNodeHandle ret = (SocketNodeHandle)super.getLocalHandle(pn, nhf);
         logger.log(ret.toStringFull());
         return ret;

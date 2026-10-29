@@ -93,7 +93,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   Environment environment;
   Logger logger;
   SourceRoute<Identifier> localIdentifier;
-  Collection<SourceRouteTap> taps;
+  Collection<SourceRouteTap<Identifier>> taps;
   SourceRouteFactory<Identifier> srFactory;
   SourceRouteForwardStrategy<Identifier> forwardSourceRouteStrategy;
   
@@ -109,7 +109,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     this.srFactory = srFactory;
     this.errorHandler = errorHandler;
     localIdentifier = this.srFactory.getSourceRoute(etl.getLocalIdentifier());
-    taps = new ArrayList<SourceRouteTap>();    
+    taps = new ArrayList<SourceRouteTap<Identifier>>();    
     MAX_NUM_HOPS = env.getParameters().getInt("transport_sr_max_num_hops");
     
 //    this.callback = new DefaultCallback<SourceRoute<Identifier>, ByteBuffer>(env);
@@ -279,10 +279,10 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
                       if (b.hasRemaining()) {
                         socket.register(false, true, this); 
                       } else {
-                        for (SourceRouteTap tap : taps) {
+                        for (SourceRouteTap<Identifier> tap : taps) {
                           tap.socketOpened(sr, socka, sockb);
                         }
-                        new Forwarder<Identifier>(sr, socka, sockb, logger);
+                        new Forwarder<Identifier>(sr, socka, sockb, logger, taps);
                       }
                     }
                   
@@ -419,7 +419,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
       }
       if (logger.level <= Logger.FINER) logger.log("I'm hop "+hopNum+" in "+sr);
       // notify taps
-      for (SourceRouteTap tap : taps) {
+      for (SourceRouteTap<Identifier> tap : taps) {
         byte[] retArr = new byte[m.array().length];
         System.arraycopy(m.array(), 0, retArr, 0, retArr.length);
         ByteBuffer ret = ByteBuffer.wrap(retArr);
@@ -455,7 +455,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     etl.acceptSockets(b);
   }
 
-  public SourceRoute getLocalIdentifier() {
+  public SourceRoute<Identifier> getLocalIdentifier() {
     return localIdentifier;
   }
   
@@ -463,11 +463,11 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     etl.destroy();
   }
 
-  public void addSourceRouteTap(SourceRouteTap tap) {
+  public void addSourceRouteTap(SourceRouteTap<Identifier> tap) {
     taps.add(tap);
   }
 
-  public boolean removeSourceRouteTap(SourceRouteTap tap) {
+  public boolean removeSourceRouteTap(SourceRouteTap<Identifier> tap) {
     return taps.remove(tap);
   }
 

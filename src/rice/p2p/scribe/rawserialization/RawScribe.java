@@ -62,6 +62,7 @@ public interface RawScribe extends BaseScribe {
    * @param content The content to include in the subscribe
    * @deprecated use subscribe(Topic, ScribeMultiClient, RawScribeContent, NodeHandle)
    */
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client, RawScribeContent content);
 
   /**
@@ -74,6 +75,7 @@ public interface RawScribe extends BaseScribe {
    * @param hint The first hop of the message ( Helpful to implement a centralized solution)
    * @deprecated use the version with the MultiClient
    */
+  @Deprecated
   public void subscribe(Topic topic, ScribeClient client, RawScribeContent content, NodeHandle hint);
   public void subscribe(Topic topic, ScribeMultiClient client, RawScribeContent content, NodeHandle hint);
 
@@ -86,6 +88,7 @@ public interface RawScribe extends BaseScribe {
    * @param hint the first hop
    * @deprecated use the version with the MultiClient
    */
+  @Deprecated
   public void subscribe(Collection<Topic> topics, ScribeClient client, RawScribeContent content, NodeHandle hint);
   public void subscribe(Collection<Topic> topics, ScribeMultiClient client, RawScribeContent content, NodeHandle hint);
 

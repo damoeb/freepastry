@@ -46,6 +46,7 @@ import org.mpisws.p2p.transport.liveness.LivenessListener;
 
 import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
+import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.util.TimerWeakHashMap;
 import rice.pastry.*;
@@ -68,7 +69,7 @@ import rice.selector.TimerTask;
  * 
  * @author Jeff Hoye
  */
-public class ConsistentJoinProtocol extends StandardJoinProtocol implements Observer, NodeSetListener, LoopObserver /*, ReadyStrategy */{
+public class ConsistentJoinProtocol extends StandardJoinProtocol implements NodeHandleListener, PastryNodeListener, NodeSetListener, LoopObserver /*, ReadyStrategy */{
 
   /**
    * This variable is set to prevent the process from going to sleep or not
@@ -237,7 +238,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Obse
     observing = new HashSet<NodeHandle>();
     this.nextReadyStrategy = nextReadyStrategy;
     ls.addNodeSetListener(this);
-    ln.addObserver(this);
+    ln.addPastryNodeListener(this);
     Parameters p = ln.getEnvironment().getParameters();
     MAX_TIME_TO_BE_SCHEDULED = p.getInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled"); // 15000
     RETRY_INTERVAL = p.getInt("pastry_protocol_consistentJoin_retry_interval");
@@ -259,7 +260,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Obse
             if (ft.time < expiration) {
               if (logger.level<=Logger.FINE)logger.log("CJP: Removing "+ft.handle+" from failed set.");
               i.remove(); 
-              ft.handle.deleteObserver(ConsistentJoinProtocol.this);   
+              ft.handle.removeNodeHandleListener(ConsistentJoinProtocol.this);   
               observing.remove(ft.handle);
             } else {
               if (logger.level<=Logger.FINER)logger.log("CJP: Not Removing "+ft.handle+" from failed set until "+(ft.time+failedNodeExpirationTime)+" which is another "+(ft.time+failedNodeExpirationTime-now)+" millis.");               
@@ -311,7 +312,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Obse
     leafSet.put(nh);
     if (!observing.contains(nh)) {
       if (logger.level <= Logger.FINE) logger.log("CJP observing "+nh);
-      nh.addObserver(this, 40);
+      nh.addNodeHandleListener(this, 40);
       observing.add(nh);
     }
   }
@@ -634,8 +635,36 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Obse
   
   /**
    * Can be PastryNode updates, leafset updates, or nodehandle updates.
+   * 
+   * @deprecated this class is no longer an Observer, see {@link #nodeHandleUpdate} and {@link PastryNodeListener}
    */
+  @Deprecated
   public void update(Observable arg0, Object arg) {
+    update((Object)arg0, arg);
+  }
+
+  /**
+   * PastryNode updates are only logged.
+   */
+  public void pastryNodeReady(PastryNode node, boolean ready) {
+    update((Object)node, Boolean.valueOf(ready));
+  }
+
+  /**
+   * PastryNode updates are only logged.
+   */
+  public void pastryNodeJoinFailed(PastryNode node, JoinFailedException reason) {
+    update((Object)node, reason);
+  }
+
+  /**
+   * NodeHandle updates.
+   */
+  public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle handle, Object arg) {
+    update((Object)handle, arg);
+  }
+
+  private void update(Object arg0, Object arg) {
     if (logger.level <= Logger.FINEST) logger.log("CJP: update("+arg0+","+arg+")"+arg.getClass().getName());
     
     // we went offline for whatever reason.  Now we need to try to come back online.
@@ -710,7 +739,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Obse
     Iterator<NodeHandle> it2 = observing.iterator();
     while(it2.hasNext()) {
       NodeHandle nh = (NodeHandle)it2.next();
-      nh.deleteObserver(this);
+      nh.removeNodeHandleListener(this);
       it2.remove();
     }
     observing.clear();

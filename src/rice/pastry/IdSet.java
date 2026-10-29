@@ -63,7 +63,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   
   static final long serialVersionUID = -1565571743719309172L;
 
-  private SortedMap idSet;
+  private SortedMap<rice.p2p.commonapi.Id, ?> idSet;
 
   // a cache of the fingerprint hash
   private byte[] cachedHash;
@@ -73,7 +73,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
    * Constructor.
    */
   public IdSet() {
-    idSet = new RedBlackMap();
+    idSet = new RedBlackMap<rice.p2p.commonapi.Id, Object>();
     validHash = false;
   }
 
@@ -82,7 +82,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
    * constructs 
    * @param s the TreeSet based on which we construct a new IdSet
    */
-  public IdSet(SortedMap s) {
+  public IdSet(SortedMap<rice.p2p.commonapi.Id, ?> s) {
     idSet = s;
     validHash = false;
   }
@@ -190,7 +190,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
    * return an iterator over the elements of this set
    * @return the interator
    */
-  public Iterator getIterator() {
+  public Iterator<rice.p2p.commonapi.Id> getIterator() {
     return idSet.keySet().iterator();
   }
 
@@ -211,7 +211,8 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
       //return null;
     }
 
-    Iterator it = getIterator();
+    Iterator<rice.p2p.commonapi.Id> it = getIterator();
+
     byte[] raw = new byte[Id.IdBitLength / 8];
     Id id;
 
@@ -231,7 +232,8 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
    * Returns a string representation of the IdSet.
    */
   public String toString() {
-    Iterator it = getIterator();
+    Iterator<rice.p2p.commonapi.Id> it = getIterator();
+
     Id key;
     String s = "[ IdSet: ";
     while(it.hasNext()) {

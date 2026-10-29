@@ -102,7 +102,7 @@ public class InitiateJoin extends Message implements Serializable {
    */
   public NodeHandle getHandle() {
     for (int i = 0; i < handle.length; i++) {
-      if (handle[i].isAlive()) return handle[i];
+      if (handle[i].getLiveness() < NodeHandle.LIVENESS_DEAD) return handle[i];
     }
     return null;
   }
@@ -110,7 +110,7 @@ public class InitiateJoin extends Message implements Serializable {
   public String toString() {
     String s = "IJ{"; 
     for (int i = 0; i < handle.length; i++) {
-      s+=handle[i]+":"+handle[i].isAlive();
+      s+=handle[i]+":"+(handle[i].getLiveness() < NodeHandle.LIVENESS_DEAD);
       if (i != handle.length-1) s+=",";
     }
     s+="}";

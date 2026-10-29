@@ -53,6 +53,7 @@ import rice.environment.time.simple.SimpleTimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 
 import rice.pastry.*;
 import rice.pastry.commonapi.*;
@@ -94,7 +95,7 @@ public abstract class CommonAPITest {
   protected NodeIdFactory idFactory;
 
   // the simulator, in case of direct
-  protected NetworkSimulator simulator;
+  protected NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
   
   // the environment
   protected Environment environment;
@@ -169,11 +170,11 @@ public abstract class CommonAPITest {
 
     if (PROTOCOL.equalsIgnoreCase(PROTOCOL_DIRECT)) {
       if (SIMULATOR.equalsIgnoreCase(SIMULATOR_SPHERE)) {
-        simulator = new SphereNetwork<NodeHandle, Message>(env);
+        simulator = new SphereNetwork<DirectNodeHandle, RawMessage>(env);
       } else if (SIMULATOR.equalsIgnoreCase(SIMULATOR_GT_ITM)){
-        simulator = new GenericNetwork<NodeHandle, Message>(env);        
+        simulator = new GenericNetwork<DirectNodeHandle, RawMessage>(env);        
       } else {
-        simulator = new EuclideanNetwork<NodeHandle, Message>(env);
+        simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
       }
 //      simulator.addSimulatorListener(new SimulatorListener() {      
 //        public void messageSent(Message m, NodeHandle from, NodeHandle to, int delay) {
@@ -316,11 +317,18 @@ public abstract class CommonAPITest {
    * @return The created node
    */
   protected Node createNode(int num) {
+    rice.pastry.NodeHandle bootstrap = (num == 0) ? null : getBootstrap();
     PastryNode ret;
-    if (num == 0) {
-      ret = factory.newNode((rice.pastry.NodeHandle) null);
+    try {
+      ret = factory.newNode();
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    // the socket factory hands out BogusNodeHandles, which have to be booted from their addresses
+    if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle) {
+      ret.boot(((rice.pastry.transport.BogusNodeHandle) bootstrap).addresses);
     } else {
-      ret = factory.newNode(getBootstrap());
+      ret.boot((Object) bootstrap);
     }
 //    ret.addNetworkListener(new NetworkListener() {
 //    

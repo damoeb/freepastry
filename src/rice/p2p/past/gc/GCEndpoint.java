@@ -264,8 +264,7 @@ public class GCEndpoint implements Endpoint {
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    */
-  @SuppressWarnings("unchecked")
-  public void process(Executable task, Continuation command) {
+  public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
     endpoint.process(task, command);
   }
   

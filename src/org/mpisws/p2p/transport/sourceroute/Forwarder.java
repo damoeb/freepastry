@@ -38,6 +38,9 @@ package org.mpisws.p2p.transport.sourceroute;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
@@ -45,28 +48,68 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
 import rice.environment.logging.Logger;
 
 public class Forwarder<Identifier> {
-  SourceRoute sr;
+  SourceRoute<Identifier> sr;
   P2PSocket<Identifier> socka;
   P2PSocket<Identifier> sockb;
   Logger logger;
+  /**
+   * Notified of the forwarded bytes and when the forwarding ends.
+   */
+  Collection<SourceRouteTap<Identifier>> taps;
+  /**
+   * Number of directions whose input has been shut down (0..2).
+   */
+  int numShutdown = 0;
+  boolean closed = false;
   
   public Forwarder(SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger) {
+    this(sr, socka, sockb, logger, Collections.<SourceRouteTap<Identifier>>emptyList());
+  }
+  
+  /**
+   * @param taps notified via {@link SourceRouteTap#receivedBytes} and {@link SourceRouteTap#socketClosed};
+   * the collection is read live, so taps added/removed later are honored
+   */
+  public Forwarder(SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger, Collection<SourceRouteTap<Identifier>> taps) {
     this.sr = sr;
     this.socka = socka;
     this.sockb = sockb;
     this.logger = logger;
+    this.taps = taps;
     
     new HalfPipe(socka,sockb);
     new HalfPipe(sockb,socka);
   }
+  
+  /**
+   * Called when one direction has been fully forwarded and its output shut down.  When both are done, close both sockets.
+   */
+  private void halfPipeShutdown() {
+    synchronized(this) {
+      numShutdown++;
+      if (numShutdown < 2) return;
+    }
+    close();
+  }
+  
+  private void close() {
+    synchronized(this) {
+      if (closed) return;
+      closed = true;
+    }
+    socka.close();
+    sockb.close();
+    for (SourceRouteTap<Identifier> tap : taps) {
+      tap.socketClosed(sr, socka, sockb);
+    }
+  }
     
-  private class HalfPipe implements P2PSocketReceiver {
-    P2PSocket from;
-    P2PSocket to;
+  private class HalfPipe implements P2PSocketReceiver<Identifier> {
+    P2PSocket<Identifier> from;
+    P2PSocket<Identifier> to;
     ByteBuffer buf;
-    boolean shutdownTo = false;
     
-    public HalfPipe(P2PSocket from, P2PSocket to) {
+    public HalfPipe(P2PSocket<Identifier> from, P2PSocket<Identifier> to) {
       this.from = from;
       this.to = to;    
       buf = ByteBuffer.allocate(1024);
@@ -77,23 +120,29 @@ public class Forwarder<Identifier> {
       return "HalfPipe "+from+"=>"+to;    
     }
 
-    public void receiveException(P2PSocket socket, Exception e) {
+    public void receiveException(P2PSocket<Identifier> socket, Exception e) {
       if (logger.level <= Logger.FINE) logger.logException(this+" "+socket, e);
-      from.close();
-      to.close();
+      close();
     }
 
-    public void receiveSelectResult(P2PSocket socket, boolean canRead, boolean canWrite) throws IOException {
+    public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       if (canRead) {
         if (socket != from) throw new IOException("Expected to read from "+from+" got "+socket);      
         long result = from.read(buf);
         if (result == -1) {
           if (logger.level <= Logger.FINE) logger.log(from+" has shut down input, shutting down output on "+to);
-          shutdownTo = true;
+          // nothing is buffered (we only read after buf has been fully written), so shut down now
+          to.shutdownOutput();
+          halfPipeShutdown();
           return;
         }
         if (logger.level <= Logger.FINER) logger.log("Read "+result+" bytes from "+from);
         buf.flip(); 
+        if (!taps.isEmpty()) {
+          for (SourceRouteTap<Identifier> tap : taps) {
+            tap.receivedBytes(ByteBuffer.wrap(Arrays.copyOfRange(buf.array(), buf.position(), buf.limit())), sr, from, to);
+          }
+        }
         to.register(false, true, this);        
       } else {
         if (canWrite) {
@@ -102,7 +151,8 @@ public class Forwarder<Identifier> {
           long result = to.write(buf);         
           if (result == -1) {
             if (logger.level <= Logger.FINE) logger.log(to+" has closed, closing "+from);
-            from.close();            
+            close();
+            return;
           }
           if (logger.level <= Logger.FINER) logger.log("Wrote "+result+" bytes to "+to);
           
@@ -111,10 +161,6 @@ public class Forwarder<Identifier> {
             // keep writing
             to.register(false, true, this);
           } else {
-            if (shutdownTo) {
-              to.shutdownOutput();
-              return;
-            }
             // read again
             buf.clear();
             from.register(true, false, this);

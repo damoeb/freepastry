@@ -181,7 +181,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
       for (Identifier i : measured.keySet()) {
         Tuple<int[], Collection<MySocket>> t = measured.get(i);
         int[] vals = t.a();
-        ret.put(i,new Tuple3(vals[LAST_DOWN], vals[LAST_UP], (vals[LAST_SATURATED] == SATURATED)?true:false));
+        ret.put(i,new Tuple3<Integer, Integer, Boolean>(vals[LAST_DOWN], vals[LAST_UP], (vals[LAST_SATURATED] == SATURATED)?true:false));
       }
       return ret;
     }

@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package rice.pastry.standard;
 
 import rice.environment.logging.Logger;
+import rice.p2p.commonapi.NodeHandleListener;
 import rice.pastry.*;
 import rice.pastry.messaging.*;
 import rice.pastry.client.PastryAppl;
@@ -54,7 +55,7 @@ import java.util.*;
  * @author Andrew Ladd
  */
 
-public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtocol, Observer {
+public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtocol, NodeHandleListener {
   protected final boolean failstop = true;
 
   // nodes are assumed to fail silently
@@ -72,7 +73,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     Iterator<NodeHandle> i = leafSet.asList().iterator();
     while(i.hasNext()) {
       NodeHandle nh = (NodeHandle)i.next(); 
-      nh.addObserver(this);
+      nh.addNodeHandleListener(this);
     }    
     cachedSet = new HashSet<NodeHandle>(leafSet.maxSize() * 2);  
     routeTable = rt;
@@ -135,7 +136,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
       NodeHandle returnHandle = rls.returnHandle();
 
-      if (returnHandle.isAlive()) {
+      if (returnHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
         BroadcastLeafSet bls = new BroadcastLeafSet(thePastryNode.getLocalHandle(), leafSet,
             BroadcastLeafSet.Update, rls.getTimeStamp());
 
@@ -249,7 +250,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
         continue;
 
       NodeHandle nh = leafSet.get(i);
-      if (nh == null || nh.isAlive() == false)
+      if (nh == null || nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
         continue;
 
       if (!sent.isMember(nh.getNodeId())) {
@@ -282,7 +283,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       else
         nh = ls.get(i);
 
-      if (nh == null || nh.isAlive() == false)
+      if (nh == null || nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
         continue;
 
       thePastryNode.send(nh,bls,null, options);
@@ -348,7 +349,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     // request from most distant live ccw entry
     for (int i = -ccwSize; i < 0; i++) {
       NodeHandle handle = leafSet.get(i);
-      if (handle != null && handle.isAlive()) {
+      if (handle != null && handle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
         thePastryNode.send(handle,rls,null, options);
         allDead = false;
         break;
@@ -364,7 +365,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     // request from most distant live cw entry
     for (int i = cwSize; i > 0; i--) {
       NodeHandle handle = leafSet.get(i);
-      if (handle != null && handle.isAlive()) {
+      if (handle != null && handle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
         thePastryNode.send(handle,rls,null, options);
         allDead = false;
         break;
@@ -391,21 +392,29 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
   public void leafSetChange(NodeHandle nh, boolean wasAdded) {
     super.leafSetChange(nh, wasAdded);
     if (wasAdded) {
-      nh.addObserver(this); 
+      nh.addNodeHandleListener(this); 
     } else {
-      nh.deleteObserver(this); 
+      nh.removeNodeHandleListener(this); 
     }
   }
 
   /**
    * If nodehandle is dead, remove it from the leafset.
    */
-  public void update(Observable o, Object arg) {
+  public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle o, Object arg) {
 //    if (o instanceof NodeHandle) {      
       if (arg == NodeHandle.DECLARED_DEAD) {
         leafSet.remove((NodeHandle)o);
       }
 //    }    
+  }
+
+  /**
+   * @deprecated this class is no longer an Observer, see {@link #nodeHandleUpdate}
+   */
+  @Deprecated
+  public void update(Observable o, Object arg) {
+    nodeHandleUpdate((NodeHandle)o, arg);
   }
 
 }

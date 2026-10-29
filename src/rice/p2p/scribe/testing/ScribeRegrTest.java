@@ -48,9 +48,10 @@ import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.commonapi.testing.CommonAPITest;
 import rice.p2p.scribe.*;
-import rice.p2p.scribe.messaging.SubscribeMessage;
+import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.PastryNode;
+import rice.pastry.transport.BogusNodeHandle;
 
 /**
  * @(#) DistScribeRegrTest.java Provides regression testing for the Scribe service using distributed
@@ -170,13 +171,25 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart("Tree Construction id "+id);
     for (int i = 0; i < NUM_NODES; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
-      scribes[i].subscribe(topic, clients[i]);
+      scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
       simulate();
     }
     stepDone(SUCCESS);
     
     stepStart("Add New Root");
-    PastryNode pn = factory.newNode(getBootstrap(),(rice.pastry.Id)id);
+    PastryNode pn;
+    try {
+      pn = factory.newNode((rice.pastry.Id)id);
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    rice.pastry.NodeHandle bootstrap = getBootstrap();
+    if (bootstrap instanceof BogusNodeHandle) {
+      // socket: the bootstrapper expects the addresses
+      pn.boot(((BogusNodeHandle) bootstrap).addresses);
+    } else {
+      pn.boot(bootstrap);
+    }
     nodes[NUM_NODES] = pn;
     processNode(NUM_NODES, pn);    
     if (logger.level <= Logger.INFO) logger.log("Adding new root: "+ pn);
@@ -207,7 +220,7 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart(name + " Tree Construction");
     for (int i = 0; i < NUM_NODES/SKIP; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
-      scribes[i].subscribe(topic, clients[i]);
+      scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
       simulate();
     }
     simulate(NUM_NODES/SKIP);
@@ -347,13 +360,13 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart(name + " Tree Completely Demolished");
     failed = false;
     for (int i=0; i < NUM_NODES; i++) {
-      if (scribes[i].getClients(topic).size() > 0) {
-        stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no clients, had " + scribes[i].getClients(topic).size());
+      if (scribes[i].getClientsByTopic(topic).size() > 0) {
+        stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no clients, had " + scribes[i].getClientsByTopic(topic).size());
         failed = true;
       }
 
-      if (scribes[i].getChildren(topic).length > 0) {
-        stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no children, had " + scribes[i].getChildren(topic).length);
+      if (scribes[i].getChildrenOfTopic(topic).size() > 0) {
+        stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no children, had " + scribes[i].getChildrenOfTopic(topic).size());
         failed = true;
       }
 
@@ -392,7 +405,7 @@ public class ScribeRegrTest extends CommonAPITest {
       stepStart(name + " Tree Construction (Parent Independence)");
       for (int i = 0; i < NUM_NODES; i++) {
         clients[i] = new TestScribeClient(scribes[i], topics, i);
-        scribes[i].subscribe(topics, clients[i],null, null);
+        scribes[i].subscribe(topics, clients[i], (RawScribeContent) null, null);
         simulate();
       }
 
@@ -536,13 +549,13 @@ public class ScribeRegrTest extends CommonAPITest {
       failed = false;
       for (int i=0; i < NUM_NODES; i++) {
         for (Topic topic : topics) {
-          if (scribes[i].getClients(topic).size() > 0) {
-            stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no clients, had " + scribes[i].getClients(topic).size());
+          if (scribes[i].getClientsByTopic(topic).size() > 0) {
+            stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no clients, had " + scribes[i].getClientsByTopic(topic).size());
             failed = true;
           }
   
-          if (scribes[i].getChildren(topic).length > 0) {
-            stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no children, had " + scribes[i].getChildren(topic).length);
+          if (scribes[i].getChildrenOfTopic(topic).size() > 0) {
+            stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no children, had " + scribes[i].getChildrenOfTopic(topic).size());
             failed = true;
           }
   
@@ -575,7 +588,7 @@ public class ScribeRegrTest extends CommonAPITest {
 
     for (int i = 0; i < NUM_NODES/2; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
-      scribes[i].subscribe(topic, clients[i]);
+      scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
       simulate();
     }
     simulate(NUM_NODES);
@@ -608,7 +621,7 @@ public class ScribeRegrTest extends CommonAPITest {
     TestScribePolicy policy = null;
 
     for (int i=0; (i<NUM_NODES) && (scribe == null); i++) {
-      if (scribes[i].getChildren(topic).length > 0) {
+      if (scribes[i].getChildrenOfTopic(topic).size() > 0) {
         scribe = scribes[i];
         client = clients[i];
         policy = policies[i];
@@ -618,7 +631,7 @@ public class ScribeRegrTest extends CommonAPITest {
     if (scribe == null) {
       stepDone(FAILURE, "Could not find any scribes with children");
     } else {
-      NodeHandle child = scribe.getChildren(topic)[0];
+      NodeHandle child = scribe.getChildrenOfTopic(topic).iterator().next();
 
       // set this client to never allow subscribes
       policy.neverAllowSubscribe(true);
@@ -642,9 +655,9 @@ public class ScribeRegrTest extends CommonAPITest {
         }
       }
 
-      NodeHandle[] children = scribe.getChildren(topic);
+      Collection<NodeHandle> children = scribe.getChildrenOfTopic(topic);
 
-      if (Arrays.asList(children).contains(child)) {
+      if (children.contains(child)) {
         stepDone(FAILURE, "Child resubscribed to previous node, policy should prevent this.");
         failed = true;
       }
@@ -695,7 +708,7 @@ public class ScribeRegrTest extends CommonAPITest {
       i = environment.getRandomSource().nextInt(NUM_NODES-1);
     
     client = new TestScribeClient(scribes[i], topic, i);
-    scribes[i].subscribe(topic, client);
+    scribes[i].subscribe(topic, client, (RawScribeContent) null, null);
     simulate();
 
     stepDone(SUCCESS);
@@ -729,7 +742,7 @@ public class ScribeRegrTest extends CommonAPITest {
       stepStart(name + " TopicId=" + topic.getId());
       for (int i = 0; i < NUM_NODES; i++) {
         clients[i] = new TestScribeClient(scribes[i], topic, i);
-        scribes[i].subscribe(topic, clients[i]);
+        scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
         simulate();
       }
       
@@ -767,7 +780,7 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart("Tree Construction");
     for (int i = 0; i < NUM_NODES; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
-      scribes[i].subscribe(topic, clients[i]);
+      scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
       simulate();
     }
     simulate(NUM_NODES);
@@ -947,6 +960,7 @@ public class ScribeRegrTest extends CommonAPITest {
      * @deprecated
      * @return The Message value
      */
+    @Deprecated
     public Message getMessage() {
       return message;
     }
@@ -994,7 +1008,7 @@ public class ScribeRegrTest extends CommonAPITest {
    * @version $Id: ScribeRegrTest.java 4221 2008-05-19 16:41:19Z jeffh $
    * @author amislove
    */
-  protected class TestScribeClient implements ScribeClient {
+  protected class TestScribeClient implements ScribeMultiClient {
 
     /**
      * DESCRIBE THE FIELD
@@ -1009,12 +1023,12 @@ public class ScribeRegrTest extends CommonAPITest {
     /**
      * The publish messages received so far
      */
-    protected Vector publishMessages;
+    protected Vector<ScribeContent> publishMessages;
 
     /**
       * The publish messages received so far
      */
-    protected Vector anycastMessages;
+    protected Vector<ScribeContent> anycastMessages;
 
     /**
      * The topic this client is listening for
@@ -1045,8 +1059,8 @@ public class ScribeRegrTest extends CommonAPITest {
       this.scribe = scribe;
       this.i = i;
       this.topics = topics;
-      this.publishMessages = new Vector<Object>();
-      this.anycastMessages = new Vector<Object>();
+      this.publishMessages = new Vector<ScribeContent>();
+      this.anycastMessages = new Vector<ScribeContent>();
       this.acceptAnycast = false;
       this.subscribeFailed = false;
     }
@@ -1109,9 +1123,22 @@ public class ScribeRegrTest extends CommonAPITest {
      // System.out.println("CHILD REMOVED AT " + scribe.getId());
     }
 
+    public void subscribeFailed(Collection<Topic> topics) {
+      for (Topic topic : topics) {
+        subscribeFailed = true;
+        scribe.subscribe(topic, this, (RawScribeContent) null, null);
+      }
+    }
+
+    /**
+     * @deprecated use subscribeFailed(Collection)
+     */
+    @Deprecated
     public void subscribeFailed(Topic topic) {
-      subscribeFailed = true;
-      scribe.subscribe(topic, this);
+      subscribeFailed(Collections.singletonList(topic));
+    }
+
+    public void subscribeSuccess(Collection<Topic> topics) {
     }
 
     public boolean getSubscribeFailed() {
@@ -1153,9 +1180,15 @@ public class ScribeRegrTest extends CommonAPITest {
       this.neverAllowSubscribe = neverAllowSubscribe;
     }
 
-    public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
-  //System.out.println("Allow subscribe , client.size "+clients.length+", children "+children.length+" for subscriber "+message.getSubscriber());
-      return (! neverAllowSubscribe) && (allowSubscribe || (clients.length > 0) || this.scribe.isRoot(message.getTopic()));
+    public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
+      Iterator<Topic> i = topics.iterator();
+      while (i.hasNext()) {
+        Topic topic = i.next();
+        if (!((! neverAllowSubscribe) && (allowSubscribe || !scribe.getClientsByTopic(topic).isEmpty() || this.scribe.isRoot(topic)))) {
+          i.remove();
+        }
+      }
+      return topics;
     }
   }
 }
