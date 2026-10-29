@@ -90,7 +90,7 @@ public class Authenticator implements Comparable<Authenticator> {
   }
 
   public boolean equals(Object o) {
-    Authenticator that = (Authenticator)o;
+    if (!(o instanceof Authenticator that)) return false;
     if (seq == that.seq) {
       if (Arrays.equals(hash, that.hash)) {
         if (Arrays.equals(signature, that.signature)) {
