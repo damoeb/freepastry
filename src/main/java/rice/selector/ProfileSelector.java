@@ -267,6 +267,7 @@ public class ProfileSelector extends SelectorManager {
     Iterator<SelectionKey> i2;
     synchronized(this) {
       i2 = new ArrayList<SelectionKey>(modifyKeys).iterator();
+      modifyKeys.clear();
     }
     SelectionKey key;
     while (i2.hasNext()) {
