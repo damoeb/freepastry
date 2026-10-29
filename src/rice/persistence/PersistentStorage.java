@@ -1057,7 +1057,7 @@ public class PersistentStorage implements Storage {
    * @return The sublist
    */
   private String[] getMatchingDirectories(String prefix, String[] dirNames) {
-    Vector<String> result = new Vector<String>();
+    List<String> result = new ArrayList<String>();
     
     for (int i=0; i<dirNames.length; i++) 
       if (dirNames[i].startsWith(prefix))
@@ -1618,7 +1618,9 @@ public class PersistentStorage implements Storage {
     try {
       fin = new FileInputStream(metadata);
       ObjectInputStream objin = new ObjectInputStream(new BufferedInputStream(fin));
-      
+      // defense in depth against a planted metadata file: only admit allowlisted classes
+      JavaSerializationFilter.install(objin, environment);
+
       IdRange range = getRangeForDirectory(file);
       
       try {

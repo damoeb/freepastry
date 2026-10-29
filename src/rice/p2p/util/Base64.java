@@ -882,7 +882,9 @@ public class Base64
         {
             bais = new java.io.ByteArrayInputStream( objBytes );
             ois  = new java.io.ObjectInputStream( bais );
-        
+            // the encoded string may come from anywhere: only admit allowlisted classes
+            ois.setObjectInputFilter( JavaSerializationFilter.getDefault() );
+
             obj = ois.readObject();
         }   // end try
         catch( java.io.IOException e )

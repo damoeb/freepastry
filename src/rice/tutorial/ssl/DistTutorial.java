@@ -47,6 +47,7 @@ import java.security.Security;
 import java.util.Map;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.mpisws.p2p.pki.x509.CAToolImpl;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.identity.BindStrategy;
 import org.mpisws.p2p.transport.identity.IdentityImpl;
@@ -96,8 +97,11 @@ public class DistTutorial {
     Security.addProvider(new BouncyCastleProvider());
     
     // create the keystore    
-    final KeyStore store = KeyStore.getInstance("UBER", "BC");
-    store.load(new FileInputStream(keyStoreFile), "".toCharArray());        
+    // written by "CAToolImpl -store" (PKCS12, blank password)
+    final KeyStore store = KeyStore.getInstance(CAToolImpl.DEFAULT_KEYSTORE_TYPE);
+    try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
+      store.load(fis, "".toCharArray());
+    }
     
     // create the id from the file name
     rice.pastry.Id id = rice.pastry.Id.build(keyStoreFile.getName().split("\\.")[0]);

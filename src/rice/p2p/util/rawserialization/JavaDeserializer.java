@@ -47,6 +47,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 
 import rice.p2p.commonapi.*;
+import rice.p2p.util.JavaSerializationFilter;
 
 /**
  * coalesces NodeHandles on the fly during java deserialization
@@ -65,6 +66,8 @@ public class JavaDeserializer extends ObjectInputStream {
       throws IOException {
     super(stream);
     this.endpoint = endpoint;
+    // the bytes come from the network: only admit allowlisted classes
+    JavaSerializationFilter.install(this, endpoint == null ? null : endpoint.getEnvironment());
     enableResolveObject(true);
   }
 

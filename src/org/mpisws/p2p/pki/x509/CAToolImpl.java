@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.pki.x509;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -69,12 +68,18 @@ import java.util.Calendar;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.bouncycastle.asn1.x509.X509Extensions;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.cert.CertIOException;
+import org.bouncycastle.cert.X509v1CertificateBuilder;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
+import org.bouncycastle.cert.jcajce.JcaX509v1CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.x509.X509V1CertificateGenerator;
-import org.bouncycastle.x509.X509V3CertificateGenerator;
-import org.bouncycastle.x509.extension.AuthorityKeyIdentifierStructure;
-import org.bouncycastle.x509.extension.SubjectKeyIdentifierStructure;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import rice.environment.Environment;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
@@ -91,8 +96,13 @@ public class CAToolImpl implements CATool {
   }
   
   static SecureRandom random = new SecureRandom();
-  public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA1withRSA";
-  
+  /** Was SHA1withRSA, which JDK 25 rejects for certificate paths in TLS. */
+  public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256withRSA";
+  /** RSA modulus size for generated CA and node keys (was 768, which JDK 25 rejects in TLS). */
+  public static final int DEFAULT_KEY_SIZE = 2048;
+  /** Type of the key stores this tool reads and writes (was BouncyCastle's legacy "UBER"). */
+  public static final String DEFAULT_KEYSTORE_TYPE = "PKCS12";
+
   X509Certificate cert; 
   KeyPair keyPair;
   
@@ -129,16 +139,15 @@ public class CAToolImpl implements CATool {
     
     File caStoreFile = new File(CN+"-store");
     if (caStoreFile.exists()) {
-      KeyStore store = KeyStore.getInstance("UBER", "BC");
-      try {
-        store.load(new FileInputStream(caStoreFile), pw);        
-      } catch (EOFException eof) {
-        throw new RuntimeException("Invalid password for "+caStoreFile);
+      KeyStore store = KeyStore.getInstance(DEFAULT_KEYSTORE_TYPE);
+      try (FileInputStream fis = new FileInputStream(caStoreFile)) {
+        store.load(fis, pw);
+      } catch (IOException ioe) {
+        throw new IOException("Could not load "+caStoreFile+" as a "+DEFAULT_KEYSTORE_TYPE+" key store: wrong password, or a store written by an older FreePastry (UBER format, no longer supported)", ioe);
       }
-      PublicKey pub = (PublicKey)store.getKey(CA_STORE_PUBLIC, null);
-      PrivateKey priv = (PrivateKey)store.getKey(CA_STORE_PRIVATE, null);
-      caPair = new KeyPair(pub,priv);
       caCert = (X509Certificate)store.getCertificate(CA_STORE_CERT);
+      PrivateKey priv = (PrivateKey)store.getKey(CA_STORE_PRIVATE, pw);
+      caPair = new KeyPair(caCert.getPublicKey(),priv);
     } else {
       // make a self-signed cert
       Date exp = new Date();
@@ -156,30 +165,34 @@ public class CAToolImpl implements CATool {
       System.out.println(caCert);
       
       // store it
-      KeyStore store = KeyStore.getInstance("UBER", "BC");
-      store.load(null, null);        
-      store.setKeyEntry(CA_STORE_PRIVATE, caPair.getPrivate(), null, chain);
-      store.setKeyEntry(CA_STORE_PUBLIC, caPair.getPublic(), null, null);
+      // PKCS12 cannot hold a bare public key: it is read back from the certificate
+      KeyStore store = KeyStore.getInstance(DEFAULT_KEYSTORE_TYPE);
+      store.load(null, null);
+      store.setKeyEntry(CA_STORE_PRIVATE, caPair.getPrivate(), pw, chain);
       store.setCertificateEntry(CA_STORE_CERT, caCert);
-  
-      store.store(new FileOutputStream(CN+"-store"), pw);    
-    }    
+
+      try (FileOutputStream fos = new FileOutputStream(caStoreFile)) {
+        store.store(fos, pw);
+      }
+    }
     return new CAToolImpl(caCert, caPair);
   }
   
   public static Tuple<X509Certificate, KeyPair> generateNewCA(String CN, Date expiryDate) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
-    // make a KeyPair
-    KeyPairGenerator keyPairGen =
-      KeyPairGenerator.getInstance("RSA", "BC");
-    keyPairGen.initialize(
-        new RSAKeyGenParameterSpec(768,
-            RSAKeyGenParameterSpec.F4),
-        random);
-    KeyPair caPair = keyPairGen.generateKeyPair();
-    
+    KeyPair caPair = generateKeyPair();
+
     X509Certificate cert = generateNewCA(CN,new Date(), expiryDate, 1, caPair, DEFAULT_SIGNATURE_ALGORITHM);
     
     return new Tuple<X509Certificate, KeyPair>(cert,caPair);
+  }
+
+  /**
+   * @return a new RSA key pair of {@link #DEFAULT_KEY_SIZE} bits, suitable for a CA or a node certificate
+   */
+  public static KeyPair generateKeyPair() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA", "BC");
+    keyPairGen.initialize(new RSAKeyGenParameterSpec(DEFAULT_KEY_SIZE, RSAKeyGenParameterSpec.F4), random);
+    return keyPairGen.generateKeyPair();
   }
   
   /**
@@ -198,21 +211,35 @@ public class CAToolImpl implements CATool {
    * @throws CertificateEncodingException 
    */
   public static X509Certificate generateNewCA(String CN, Date startDate, Date expiryDate, long serialNumber, KeyPair keyPair, String signatureAlgorithm) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
-    X509V1CertificateGenerator certGen = new X509V1CertificateGenerator();
-    
     X500Principal dnName = new X500Principal("CN="+CN);
 
-    certGen.setSerialNumber(BigInteger.valueOf(serialNumber));
-    certGen.setIssuerDN(dnName);
-    certGen.setNotBefore(startDate);
-    certGen.setNotAfter(expiryDate);
-    certGen.setSubjectDN(dnName);                       // note: same as issuer
-    certGen.setPublicKey(keyPair.getPublic());
-    certGen.setSignatureAlgorithm(signatureAlgorithm);
+    X509v1CertificateBuilder certGen = new JcaX509v1CertificateBuilder(
+        dnName, BigInteger.valueOf(serialNumber), startDate, expiryDate,
+        dnName,                                         // note: same as issuer
+        keyPair.getPublic());
 
-    X509Certificate cert = certGen.generate(keyPair.getPrivate(), "BC");
-    return cert;
+    return generate(certGen.build(signer(signatureAlgorithm, keyPair.getPrivate())));
   }  
+  
+  /**
+   * @param signatureAlgorithm e.g. DEFAULT_SIGNATURE_ALGORITHM
+   * @param privateKey the key the certificate is signed with
+   */
+  private static ContentSigner signer(String signatureAlgorithm, PrivateKey privateKey) throws InvalidKeyException {
+    try {
+      return new JcaContentSignerBuilder(signatureAlgorithm).setProvider("BC").build(privateKey);
+    } catch (OperatorCreationException oce) {
+      throw new InvalidKeyException("Could not create signer for "+signatureAlgorithm, oce);
+    }
+  }
+  
+  private static X509Certificate generate(org.bouncycastle.cert.X509CertificateHolder holder) throws CertificateEncodingException {
+    try {
+      return new JcaX509CertificateConverter().setProvider("BC").getCertificate(holder);
+    } catch (CertificateException ce) {
+      throw new CertificateEncodingException(ce);
+    }
+  }
   
   public X509Certificate sign(String CN, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     Date exp = new Date();
@@ -230,24 +257,23 @@ public class CAToolImpl implements CATool {
 //    X509Certificate caCert = ...;        // public key certificate of the certifying authority
 //    KeyPair keyPair = ...;               // public/private key pair that we are creating certificate for
 
-    X509V3CertificateGenerator certGen = new X509V3CertificateGenerator();
     X500Principal subjectName = new X500Principal("CN="+CN);
 
-    certGen.setSerialNumber(BigInteger.valueOf(serialNumber));
-    certGen.setIssuerDN(caCert.getSubjectX500Principal());
-    certGen.setNotBefore(new Date());
-    certGen.setNotAfter(expiryDate);
-    certGen.setSubjectDN(subjectName);
-    certGen.setPublicKey(publicKey);
-    certGen.setSignatureAlgorithm(DEFAULT_SIGNATURE_ALGORITHM);
+    X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
+        caCert.getSubjectX500Principal(), BigInteger.valueOf(serialNumber), new Date(), expiryDate,
+        subjectName, publicKey);
 
-    certGen.addExtension(X509Extensions.AuthorityKeyIdentifier, false,
-                            new AuthorityKeyIdentifierStructure(caCert));
-    certGen.addExtension(X509Extensions.SubjectKeyIdentifier, false,
-                            new SubjectKeyIdentifierStructure(publicKey));
+    try {
+      JcaX509ExtensionUtils extUtils = new JcaX509ExtensionUtils();
+      certGen.addExtension(Extension.authorityKeyIdentifier, false,
+                              extUtils.createAuthorityKeyIdentifier(caCert));
+      certGen.addExtension(Extension.subjectKeyIdentifier, false,
+                              extUtils.createSubjectKeyIdentifier(publicKey));
+    } catch (CertIOException cioe) {
+      throw new CertificateEncodingException(cioe);
+    }
 
-    X509Certificate cert = certGen.generate(privateKey, "BC");   // note: private key of CA
-    return cert;        
+    return generate(certGen.build(signer(DEFAULT_SIGNATURE_ALGORITHM, privateKey)));   // note: private key of CA
   }
   
   public X509Certificate sign(String CN, PublicKey publicKey, Date expiryDate, long serialNumber) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
@@ -256,6 +282,7 @@ public class CAToolImpl implements CATool {
   
 //  public static final String CA_STORE_FILENAME = "ca-store";
   public static final String CA_STORE_PRIVATE = "private";
+  /** No longer written: PKCS12 stores cannot hold a bare public key, it is taken from {@link #CA_STORE_CERT}. */
   public static final String CA_STORE_PUBLIC = "public";
   public static final String CA_STORE_CERT = "cert";
   
@@ -295,19 +322,12 @@ public class CAToolImpl implements CATool {
         
     CATool caTool = getCATool(caName,pw);
    
-    // make a KeyPair
-    KeyPairGenerator keyPairGen =
-      KeyPairGenerator.getInstance("RSA", "BC");
-    keyPairGen.initialize(
-        new RSAKeyGenParameterSpec(768,
-            RSAKeyGenParameterSpec.F4),
-        random);
-    KeyPair pair = keyPairGen.generateKeyPair();    
+    KeyPair pair = generateKeyPair();
     X509Certificate cert = caTool.sign(CN,pair.getPublic());
-    
+
     if (store) {
       // initialize the clientStore
-      KeyStore clientStore = KeyStore.getInstance("UBER", "BC");
+      KeyStore clientStore = KeyStore.getInstance(DEFAULT_KEYSTORE_TYPE);
       clientStore.load(null, null);
       
       // store the private key under the client cert
@@ -367,19 +387,12 @@ public class CAToolImpl implements CATool {
   
   //    if (USE_BOGUS) {
       if (true) {
-        // make a KeyPair
-        KeyPairGenerator kpg =
-          KeyPairGenerator.getInstance("RSA", "BC");
-        kpg.initialize(
-            new RSAKeyGenParameterSpec(768,
-                RSAKeyGenParameterSpec.F4),
-            random);
-        KeyPair bogusPair = kpg.generateKeyPair();
+        KeyPair bogusPair = generateKeyPair();
     
         try {
           cert.verify(bogusPair.getPublic());
           System.out.println("WARNING!  Bogus key verified!!!");
-        } catch (InvalidKeyException se) {
+        } catch (InvalidKeyException | SignatureException se) {
           System.out.println("bogus didn't verify.");
         }
      

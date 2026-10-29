@@ -224,22 +224,34 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
       continueHandshaking();
   }
 
+  /**
+   * Unwraps as many complete TLS records as are buffered. Stops early when the handshake needs to
+   * run a task or send something, so that continueHandshaking() can do it first.
+   */
   protected void unwrap() throws SSLException{
-    Iterator<ByteBuffer> i = unwrapMe.iterator();
-    while (i.hasNext()) {
-      ByteBuffer b = i.next();
+    if (unwrapMe.isEmpty()) return;
+    if (unwrapMe.size() > 1) {
+      // a record can be split across socket reads: coalesce, so that the engine sees it whole
+      int len = 0;
+      for (ByteBuffer b : unwrapMe) len += b.remaining();
+      ByteBuffer all = ByteBuffer.allocate(len);
+      for (ByteBuffer b : unwrapMe) all.put(b);
+      all.flip();
+      unwrapMe.clear();
+      unwrapMe.add(all);
+    }
+    ByteBuffer b = unwrapMe.getFirst();
+    while (b.hasRemaining()) {
       ByteBuffer foo = ByteBuffer.allocate(appBufferMax);
       handleResult(engine.unwrap(b, foo));
-//      logger.log("client unwrap: "+foo+" "+result);
       if (foo.position() != 0) {
         foo.flip();
         readMe.addLast(foo);
-//        logger.log("reading into " +decryptToMe);
       }
-//      logger.log("unwrapped:"+b);
-      if (b.hasRemaining()) break;
-      i.remove();
+      if (result.getStatus() != SSLEngineResult.Status.OK || result.bytesConsumed() == 0) break; // need more bytes, or closed
+      if (status == NEED_TASK || status == NEED_WRAP) break; // let the handshake proceed first
     }
+    if (!b.hasRemaining()) unwrapMe.removeFirst();
   }
   
   protected void handshakeUnwrap() {
@@ -285,7 +297,9 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
       checkDone();
       return;
     case NEED_TASK:
+      // continueHandshaking() is called again when the tasks are done
       runDelegatedTasks();
+      return;
     case NEED_WRAP:
       handshakeWrap();
       return;
@@ -338,7 +352,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   boolean runningTaskLock = false;
 
   private void runDelegatedTasks() {
-    if (result.getHandshakeStatus() == HandshakeStatus.NEED_TASK) {
+    if (status == HandshakeStatus.NEED_TASK) {
       runningTaskLock = true;
       sslTL.environment.getProcessor().process(new Executable<Object, Exception>() {
         
@@ -379,6 +393,15 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
       P2PSocketReceiver<Identifier> receiver) {
     if (wantToRead) {
       // try to read, decrypt
+      if (readMe.isEmpty() && !unwrapMe.isEmpty()) {
+        // records that arrived together with the end of the handshake are already buffered
+        try {
+          unwrap();
+        } catch (SSLException ssle) {
+          receiver.receiveException(this, ssle);
+          return;
+        }
+      }
       if (!readMe.isEmpty()) {
         try {
           receiver.receiveSelectResult(this, true, false);
@@ -430,14 +453,16 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
     
     // now try reading off the socket
-    if (dsts.hasRemaining()) {
+    if (dsts.hasRemaining() && readMe.isEmpty()) {
       if (read()) {
         unwrap();
-        dsts.put(readMe.getFirst());
-        if (readMe.getFirst().hasRemaining()) {
-          return dsts.position()-start;
-        } else {
-          readMe.removeFirst();
+        while(dsts.hasRemaining() && !readMe.isEmpty()) {
+          ByteBuffer foo = readMe.getFirst();
+          int len = Math.min(dsts.remaining(), foo.remaining());
+          int pos = foo.position();
+          dsts.put(foo.array(),pos,len);
+          foo.position(pos+len);
+          if (!foo.hasRemaining()) readMe.removeFirst();
         }
       }    
     }

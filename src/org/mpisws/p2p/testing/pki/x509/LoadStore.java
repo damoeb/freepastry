@@ -57,7 +57,7 @@ public class LoadStore {
     Security.addProvider(new BouncyCastleProvider());
     
     // store it
-    KeyStore store = KeyStore.getInstance("UBER", "BC");
+    KeyStore store = KeyStore.getInstance(org.mpisws.p2p.pki.x509.CAToolImpl.DEFAULT_KEYSTORE_TYPE);
     store.load(new FileInputStream("ca-store"), pw);        
 
     Enumeration<String> e = store.aliases();

@@ -45,6 +45,7 @@ import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -94,9 +95,18 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
      TableTransprotLayerImpl<Identifier, I, X509Certificate> 
      implements IdentityTransport<Identifier, I> {
     
-  public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA1withRSA";
-  public static final short DEFAULT_SIGNATURE_SIZE = 96;
+  /**
+   * The algorithm of all PeerReview signatures. Changed from SHA1withRSA: this is part of the wire
+   * protocol, nodes with different algorithms cannot verify each other.
+   */
+  public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256withRSA";
+  /**
+   * Signature size for a 2048-bit RSA key (was 96, i.e. 768-bit keys). The actual size is derived from
+   * the local certificate's key, see {@link #getSignatureSizeBytes()}; all nodes must use the same key size.
+   */
+  public static final short DEFAULT_SIGNATURE_SIZE = 256;
   String signatureAlgorithm = DEFAULT_SIGNATURE_ALGORITHM;
+  short signatureSize = DEFAULT_SIGNATURE_SIZE;
   String signatureImpl = "BC";
   
   Signature signer;
@@ -147,7 +157,10 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     this.logger = env.getLogManager().getLogger(IdentityTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(this.logger);
     
-    signer = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM,"BC");
+    if (localCert.getPublicKey() instanceof RSAPublicKey) {
+      signatureSize = (short)((((RSAPublicKey)localCert.getPublicKey()).getModulus().bitLength()+7)/8);
+    }
+    signer = Signature.getInstance(signatureAlgorithm,signatureImpl);
     signer.initSign(localPrivate);    
   }
   
@@ -222,7 +235,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
       if (ret == null) {
         if (knownValues.containsKey(i)) {
           X509Certificate cert = knownValues.get(i);
-          ret = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM, "BC");
+          ret = Signature.getInstance(signatureAlgorithm, signatureImpl);
           ret.initVerify(cert);
           verifiers.put(i, ret);
         }
@@ -234,7 +247,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   }
 
   public short getSignatureSizeBytes() {
-    return DEFAULT_SIGNATURE_SIZE;
+    return signatureSize;
   }
 
   public byte[] getEmptyHash() {

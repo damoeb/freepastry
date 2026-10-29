@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 
+import rice.p2p.util.JavaSerializationFilter;
 import rice.pastry.*;
 
 /**
@@ -65,6 +66,8 @@ public class PastryObjectInputStream extends ObjectInputStream {
       throws IOException {
     super(stream);
     this.node = node;
+    // the bytes come from the network: only admit allowlisted classes
+    JavaSerializationFilter.install(this, node == null ? null : node.getEnvironment());
     enableResolveObject(true);
   }
 
