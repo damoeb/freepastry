@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Replays a SEND against a log in which that SEND is stored only as a hash.
+ * Replays a SEND against the SEND entry in the log.
  */
 public class ReplayVerifierSendTest implements PeerReviewConstants {
 
@@ -204,6 +204,55 @@ public class ReplayVerifierSendTest implements PeerReviewConstants {
     verifier.send(TARGET, ByteBuffer.wrap(other), 3);
 
     assertFalse(verifier.verifiedOK(), "the irrelevant part is covered by its hash");
+  }
+
+  /** A logged (not hashed) SEND entry of a partly relevant message, with the flag that marks it as such. */
+  byte[] flaggedPartlyHashedSendEntry(Integer target, byte[] message, int relevantLen) throws IOException {
+    byte[] irrelevantHash = hashProv.hash(ByteBuffer.wrap(message, relevantLen, message.length - relevantLen));
+    SimpleOutputBuffer buf = new SimpleOutputBuffer();
+    SERIALIZER.serialize(target, buf);
+    buf.writeBoolean(true);
+    buf.write(message, 0, relevantLen);
+    buf.write(irrelevantHash, 0, irrelevantHash.length);
+    return buf.getBytes();
+  }
+
+  SendVerifier loggedPartlyRelevantSend() throws IOException {
+    history.appendEntry(EVT_SEND, true, ByteBuffer.wrap(flaggedPartlyHashedSendEntry(TARGET, MESSAGE, 3)));
+    SendVerifier verifier = new SendVerifier(hashProv, history);
+    verifier.useLogHashFlag = true;
+    return verifier;
+  }
+
+  @Test
+  public void loggedPartlyRelevantSendMatchesTheSameMessage() throws IOException {
+    SendVerifier verifier = loggedPartlyRelevantSend();
+
+    verifier.send(TARGET, ByteBuffer.wrap(MESSAGE), 3);
+
+    assertTrue(verifier.verifiedOK());
+  }
+
+  @Test
+  public void loggedPartlyRelevantSendDetectsADifferentRelevantPart() throws IOException {
+    SendVerifier verifier = loggedPartlyRelevantSend();
+
+    byte[] other = MESSAGE.clone();
+    other[0]++;
+    verifier.send(TARGET, ByteBuffer.wrap(other), 3);
+
+    assertFalse(verifier.verifiedOK());
+  }
+
+  @Test
+  public void loggedPartlyRelevantSendDetectsADifferentIrrelevantPart() throws IOException {
+    SendVerifier verifier = loggedPartlyRelevantSend();
+
+    byte[] other = MESSAGE.clone();
+    other[other.length - 1]++;
+    verifier.send(TARGET, ByteBuffer.wrap(other), 3);
+
+    assertFalse(verifier.verifiedOK());
   }
 
   @Test

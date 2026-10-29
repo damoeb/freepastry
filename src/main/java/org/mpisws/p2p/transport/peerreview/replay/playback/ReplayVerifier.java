@@ -302,21 +302,22 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       byte[] loggedMsg = new byte[logRelevantLen];
       nextEvent.read(loggedMsg);
       ByteBuffer loggedMsgBB = ByteBuffer.wrap(loggedMsg);
-      if ((relevantLen > 0) && message.equals(loggedMsgBB)) {
+      ByteBuffer relevant = message.duplicate();
+      relevant.limit(pos+relevantLen);
+      if ((relevantLen > 0) && !relevant.equals(loggedMsgBB)) {
         logger.warn("Replay: Relevant part of partly hashed message differs");
         logger.debug("Expected: [{}]", loggedMsgBB);
-        logger.debug("Actual:   [{}]", message);
+        logger.debug("Actual:   [{}]", relevant);
         foundFault = true;
         return;
       }
 
       byte[] logHash = new byte[hashSizeBytes];
       nextEvent.read(logHash);
-      byte[] msgHashBytes = message.array();
-      byte[] msgHash = new byte[hashSizeBytes];
-      System.arraycopy(msgHashBytes, msgHashBytes.length-hashSizeBytes, msgHash, 0, hashSizeBytes);
-      assert(msgLen == (relevantLen + hashSizeBytes));
-      if (!msgHash.equals(logHash)) {
+      ByteBuffer irrelevant = message.duplicate();
+      irrelevant.position(pos+relevantLen);
+      byte[] msgHash = hashProv.hash(irrelevant);
+      if (!Arrays.equals(msgHash, logHash)) {
         logger.warn("Replay: Hashed part of partly hashed message differs");
         logger.debug("Expected: [{}]", logHash);
         logger.debug("Actual:   [{}]", msgHash);
