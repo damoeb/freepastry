@@ -67,7 +67,7 @@ public class DirectTimeSource implements TimeSource {
 
   public DirectTimeSource(long time, String instance) {
     if (time < 0) {
-      time = System.currentTimeMillis();
+      this.time = System.currentTimeMillis();
     } else {
       this.time = time;
     }
