@@ -36,9 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
 import org.mpisws.p2p.transport.peerreview.audit.SnippetEntry;
 
@@ -48,10 +51,15 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 public class LogSnippitTest {
 
   /**
-   * @param args
+   * Serializes and deserializes a random snippet of 400 entries (of all the size classes) for a few fixed seeds.
    */
-  public static void main(String[] args) throws Exception {
-    Random r = new Random();
+  @Test
+  public void serializationRoundTrip() throws Exception {
+    for (long seed : new long[] {1, 2, 3, 42, 4711}) serializationRoundTrip(seed);
+  }
+
+  private void serializationRoundTrip(long seed) throws Exception {
+    Random r = new Random(seed);
     int hashSize = r.nextInt(100)+1;
 
     ArrayList<SnippetEntry> list = new ArrayList<SnippetEntry>(100);
@@ -117,11 +125,7 @@ public class LogSnippitTest {
     SimpleInputBuffer sib = new SimpleInputBuffer(sob.getBytes());
     LogSnippet ls2 = new LogSnippet(sib,hashSize);
     
-    if (ls2.equals(ls)) {
-      System.out.println("success");
-    } else {
-      System.out.println("failure");
-    }
+    assertEquals(ls, ls2, "seed "+seed);
   }
 
 }

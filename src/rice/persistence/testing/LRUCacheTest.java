@@ -45,13 +45,15 @@ package rice.persistence.testing;
  *
  * @version $Id: LRUCacheTest.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
+import java.util.zip.GZIPOutputStream;
 
 import rice.*;
 import rice.environment.Environment;
 import rice.persistence.*;
 import rice.p2p.commonapi.*;
+import rice.p2p.util.XMLObjectOutputStream;
 import rice.pastry.commonapi.*;
 
 /**
@@ -61,7 +63,25 @@ import rice.pastry.commonapi.*;
 @SuppressWarnings("unchecked")
 public class LRUCacheTest extends Test {
 
-  protected static final int CACHE_SIZE = 100;
+  /**
+   * The objects of the setup: the cache holds the second and third, so the third evicts the first, and the fourth
+   * (random bytes, incompressible) never fits.
+   */
+  private static final Serializable FIRST = new byte[3], SECOND = new byte[13], THIRD = new byte[38];
+  private static final Serializable FOURTH = randomBytes(1000);
+
+  /**
+   * The stress test inserts byte[num*num*num] for num = START_NUM..END_NUM, and expects only those from
+   * LAST_NUM_REMAINING on to remain cached.
+   */
+  private static final int START_NUM = 10, END_NUM = 98, SKIP = 2, LAST_NUM_REMAINING = 66;
+
+  /**
+   * The cache counts the gzipped XML-serialized size (about 160 bytes even for a byte[3]), so the limits are derived
+   * from it instead of being hard-coded.
+   */
+  protected final int CACHE_SIZE = serializedSize(SECOND) + serializedSize(THIRD);
+  private final int STRESS_CACHE_SIZE;
 
   private IdFactory FACTORY;
   
@@ -84,7 +104,39 @@ public class LRUCacheTest extends Test {
         x[3] = i;
         data[i] = FACTORY.buildId(x);
     }
-    
+
+    int stressSize = 0;
+    for (int num = LAST_NUM_REMAINING; num <= END_NUM; num += SKIP)
+      stressSize += serializedSize(stressObject(num));
+    STRESS_CACHE_SIZE = stressSize;
+
+    if (serializedSize(FIRST) + serializedSize(SECOND) > CACHE_SIZE || serializedSize(FOURTH) <= CACHE_SIZE)
+      throw new IllegalStateException("Object sizes do not fit the test's assumptions");
+  }
+
+  private static byte[] randomBytes(int length) {
+    byte[] result = new byte[length];
+    new Random(42).nextBytes(result);
+    return result;
+  }
+
+  private static byte[] stressObject(int num) {
+    return new byte[num * num * num];
+  }
+
+  /**
+   * The size the cache accounts for an object, as computed by LRUCache.getSize()
+   */
+  private static int serializedSize(Object obj) {
+    try {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(baos)));
+      oos.writeObject(obj);
+      oos.close();
+      return baos.toByteArray().length;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   public void setUp(final Continuation<Object, Exception> c) {
@@ -113,8 +165,8 @@ public class LRUCacheTest extends Test {
           stepDone(FAILURE);
         }
 
-        stepStart("Inserting Fourth Object (227 bytes)");
-        cache.cache(data[4], null, new byte[200], put4);
+        stepStart("Inserting Fourth Object (too big, rejected)");
+        cache.cache(data[4], null, FOURTH, put4);
       }
 
       public void receiveException(Exception e) {
@@ -130,8 +182,8 @@ public class LRUCacheTest extends Test {
           stepDone(FAILURE);
         }
 
-        stepStart("Inserting Third Object (65 bytes)");
-        cache.cache(data[3], null, new byte[38], put3);
+        stepStart("Inserting Third Object (evicts the first)");
+        cache.cache(data[3], null, THIRD, put3);
       }
 
       public void receiveException(Exception e) {
@@ -147,8 +199,8 @@ public class LRUCacheTest extends Test {
           stepDone(FAILURE);
         }
 
-        stepStart("Inserting Second Object (40 bytes)");
-        cache.cache(data[2], null, new byte[13], put2);
+        stepStart("Inserting Second Object");
+        cache.cache(data[2], null, SECOND, put2);
       }
 
       public void receiveException(Exception e) {
@@ -158,8 +210,8 @@ public class LRUCacheTest extends Test {
 
     sectionStart("Inserting Objects");
     
-    stepStart("Inserting First Object (30 bytes)");
-    cache.cache(data[1], null, new byte[3], put1);
+    stepStart("Inserting First Object");
+    cache.cache(data[1], null, FIRST, put1);
   }
 
   private void testExists(final Continuation<Object, Exception> c) {
@@ -167,16 +219,16 @@ public class LRUCacheTest extends Test {
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           sectionStart("Checking for Objects");
-          stepStart("Checking for First Object");
-          if (cache.exists(data[1])) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking First Object was evicted");
+          if (!cache.exists(data[1])) stepDone(SUCCESS); else stepDone(FAILURE);
           stepStart("Checking for Second Object");
           if (cache.exists(data[2])) stepDone(SUCCESS); else stepDone(FAILURE);
           stepStart("Checking for Third Object");
           if (cache.exists(data[3])) stepDone(SUCCESS); else stepDone(FAILURE);
-          stepStart("Checking for Fourth Object");
-          if (cache.exists(data[4])) stepDone(SUCCESS); else stepDone(FAILURE);
-          stepStart("Checking for Fifth Object");
-          if (cache.exists(data[5])) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking Fourth Object was not cached");
+          if (!cache.exists(data[4])) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking Fifth Object was never cached");
+          if (!cache.exists(data[5])) stepDone(SUCCESS); else stepDone(FAILURE);
           sectionEnd();
           
           c.receiveResult(Boolean.valueOf(true));
@@ -270,12 +322,7 @@ public class LRUCacheTest extends Test {
 
   private void testRandomInserts(final Continuation<Object, Exception> c) {
     
-    final int START_NUM = 10;
-    final int END_NUM = 98;
-    final int SKIP = 2;
-
-    final int NUM_ELEMENTS = 17;
-    final int LAST_NUM_REMAINING = 66;
+    final int NUM_ELEMENTS = (END_NUM - LAST_NUM_REMAINING) / SKIP + 1;
     
     final Continuation<Object, Exception> checkRandom = new Continuation<Object, Exception>() {
 
@@ -378,7 +425,7 @@ public class LRUCacheTest extends Test {
         
         if (count == START_NUM) {
           stepDone(SUCCESS);
-          stepStart("Inserting 40 objects from 100 to 1000000 bytes");
+          stepStart("Inserting 45 objects from 1000 to 941192 bytes");
         }
 
         if (count > END_NUM) {
@@ -390,7 +437,7 @@ public class LRUCacheTest extends Test {
         int num = count;
         count += SKIP;
         
-        cache.cache(data[13 + num], null, new byte[num * num * num], this);
+        cache.cache(data[13 + num], null, stressObject(num), this);
       }
 
       public void receiveException(Exception e) {
@@ -407,9 +454,9 @@ public class LRUCacheTest extends Test {
         }
 
         sectionStart("Stress Testing");
-        stepStart("Increasing cache size to 10000000 bytes");
+        stepStart("Increasing cache size to " + STRESS_CACHE_SIZE + " bytes");
 
-        cache.setMaximumSize(10000000, insert);
+        cache.setMaximumSize(STRESS_CACHE_SIZE, insert);
       }
 
       public void receiveException(Exception e) {
@@ -432,7 +479,8 @@ public class LRUCacheTest extends Test {
 
         stepDone(SUCCESS);
 
-        sectionEnd();        
+        sectionEnd();
+        testsPassed();
       }
 
       public void receiveException(Exception e) {
@@ -487,8 +535,6 @@ public class LRUCacheTest extends Test {
   }
 
   public static void main(String[] args) throws IOException {
-    LRUCacheTest test = new LRUCacheTest(new Environment());
-
-    test.start();
+    runMain(new LRUCacheTest(new Environment()));
   }
 }

@@ -327,6 +327,7 @@ public class NodeIdUnit {
     msdTest();
     alternateTest();
     domainPrefixTest();
+    env.destroy();
   }
 
   public static void main(String args[]) {

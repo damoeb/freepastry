@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -59,7 +60,11 @@ import rice.selector.TimerTask;
 public class PRNonconform1 extends PRRegressionTest {
 
   public PRNonconform1() throws Exception {
-    super(45000);
+    this(new File("."));
+  }
+
+  public PRNonconform1(File dir) throws Exception {
+    super(DEFAULT_MILLIS_TO_FINISH, dir);
   }
 
   @Override
@@ -68,19 +73,22 @@ public class PRNonconform1 extends PRRegressionTest {
     try {
       if (recordedStatus.get(aliceHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
         logger.log("Alice Didn't expose bob");
-        System.exit(1);
+        fail("Alice Didn't expose bob");
+        return;
       }
       if (recordedStatus.get(carolHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
         logger.log("Carol Didn't expose bob");
-        System.exit(1);
+        fail("Carol Didn't expose bob");
+        return;
       }
     } catch (Exception e) {
       // in case there is no record
       logger.logException("Failure", e);
-      System.exit(1);
+      fail("No status recorded: "+e);
+      return;
     }
     logger.log("Success");
-    System.exit(0);    
+    succeed();    
   }
   
   @Override
@@ -120,7 +128,8 @@ public class PRNonconform1 extends PRRegressionTest {
         if (newStatus == STATUS_EXPOSED) {
           if (!id.equals(bobHandle.id)) {
             logger.log("Node not trusted: "+id);
-            System.exit(1);
+            fail("Node not trusted: "+id+" at "+player.localHandle);
+            return;
           }
         }
         addStatusNotification(this.player.localHandle,id,newStatus);
@@ -135,7 +144,7 @@ public class PRNonconform1 extends PRRegressionTest {
 //  }
     
   public static void main(String[] args) throws Exception {
-    new PRNonconform1();
+    runMain(new PRNonconform1());
   }
 
 }

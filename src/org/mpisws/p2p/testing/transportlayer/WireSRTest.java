@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -45,8 +45,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
@@ -88,7 +88,7 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
    */
   public static final byte[] GOOD_HDR = {(byte)0xDE,(byte)0xAD,(byte)0xBE,(byte)0xEF};
 
-  @BeforeClass
+  @BeforeAll
   public static void setUpBeforeClass() throws Exception {
     srFactory = new WireSourceRouteFactory();
     TLTest.setUpBeforeClass();
@@ -187,17 +187,17 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
     carol_tap.removeSourceRouteTap(tap);
     
     // verify that carol's tap saw the forwarded socket open, carry bytes and close
-    assertTrue("bad:"+bad.size(), bad.isEmpty());
-    assertTrue("opened:"+opened.size(), opened.size() == 1);
-    assertTrue("received:"+received.size(), !received.isEmpty());
-    assertTrue("closed:"+closed.size(), closed.size() == 1);
+    assertTrue(bad.isEmpty(), "bad:"+bad.size());
+    assertTrue(opened.size() == 1, "opened:"+opened.size());
+    assertTrue(!received.isEmpty(), "received:"+received.size());
+    assertTrue(closed.size() == 1, "closed:"+closed.size());
     int numBytes = 0;
     synchronized(lock) {
       for (Triplet t : received) {
         numBytes += t.m.remaining();
       }
     }
-    assertTrue("numBytes:"+numBytes, numBytes == sentBytes.length);
+    assertTrue(numBytes == sentBytes.length, "numBytes:"+numBytes);
   }
 
   @Test

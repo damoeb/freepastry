@@ -152,6 +152,10 @@ public abstract class CommonAPITest {
   public static String INSTANCE_NAME = "DistCommonAPITest";
   
   protected Logger logger;
+
+  private volatile String currentStep;
+
+  private final List<AssertionError> failures = Collections.synchronizedList(new ArrayList<AssertionError>());
   
   // ----- EXTERNALLY AVAILABLE METHODS -----
   
@@ -457,6 +461,7 @@ public abstract class CommonAPITest {
    * @param name The name of step
    */
   protected final void stepStart(String name) {
+    currentStep = name;
     System.out.print(/*environment.getTimeSource().currentTimeMillis()+*/pad("  " + name));
   }
 
@@ -495,8 +500,27 @@ public abstract class CommonAPITest {
       if (environment.getParameters().getBoolean("commonapi_testing_exit_on_failure")) {
         System.exit(1);
       } else {
-        try { Thread.sleep(100000000); }catch(InterruptedException ie) {System.exit(1);}
+        fail(new AssertionError("Step '" + currentStep + "' failed: " + message));
       }
+    }
+  }
+
+  /**
+   * Without commonapi_testing_exit_on_failure (e.g. in a Jupiter test): records the failure, see
+   * {@link #getFailures()}, and throws it to stop the test. A step can fail on a thread other than the
+   * one running {@link #start()}, where the error would get lost, hence the record.
+   */
+  private void fail(AssertionError error) {
+    failures.add(error);
+    throw error;
+  }
+
+  /**
+   * The failed steps, if commonapi_testing_exit_on_failure is false.
+   */
+  public List<AssertionError> getFailures() {
+    synchronized (failures) {
+      return new ArrayList<AssertionError>(failures);
     }
   }
 
@@ -508,7 +532,11 @@ public abstract class CommonAPITest {
   protected final void stepException(Exception e) {
     logger.logException("\nException occurred during testing.",e);
 
-    System.exit(2);
+    if (environment.getParameters().getBoolean("commonapi_testing_exit_on_failure")) {
+      System.exit(2);
+    } else {
+      fail(new AssertionError("Exception during step '" + currentStep + "'", e));
+    }
   }
 
   /**

@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -48,9 +48,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.JUnitCore;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -86,7 +85,7 @@ public class MagicNumberTest extends WireTest {
   
   
   
-  @BeforeClass
+  @BeforeAll
   public static void setUpBeforeClass() throws Exception {
     int startPort = 5009;
     env = new Environment();
@@ -393,11 +392,5 @@ public class MagicNumberTest extends WireTest {
   }
 
   
-  /**
-   * @param args
-   */
-  public static void main(String[] args) throws Exception {
-    JUnitCore.main("org.mpisws.p2p.testing.transportlayer.MagicNumberTest");
-  }
 
 }

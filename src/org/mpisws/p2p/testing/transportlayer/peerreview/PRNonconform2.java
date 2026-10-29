@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
+import java.io.File;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
@@ -54,7 +55,11 @@ import rice.environment.logging.Logger;
 public class PRNonconform2 extends PRRegressionTest {
 
   public PRNonconform2() throws Exception {
-    super(45000);
+    this(new File("."));
+  }
+
+  public PRNonconform2(File dir) throws Exception {
+    super(DEFAULT_MILLIS_TO_FINISH, dir);
   }
 
   @Override
@@ -63,19 +68,22 @@ public class PRNonconform2 extends PRRegressionTest {
     try {
       if (recordedStatus.get(bobHandle).get(aliceHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
         logger.log("Bob Didn't expose Alice");
-        System.exit(1);
+        fail("Bob Didn't expose Alice");
+        return;
       }
       if (recordedStatus.get(carolHandle).get(aliceHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
         logger.log("Carol Didn't expose Alice");
-        System.exit(1);
+        fail("Carol Didn't expose Alice");
+        return;
       }
     } catch (Exception e) {
       // in case there is no record
       logger.logException("Failure", e);
-      System.exit(1);
+      fail("No status recorded: "+e);
+      return;
     }
     logger.log("Success");
-    System.exit(0);    
+    succeed();    
   }
   
   @Override
@@ -119,7 +127,8 @@ public class PRNonconform2 extends PRRegressionTest {
           if (newStatus == STATUS_EXPOSED) {
             if (!id.equals(aliceHandle.id)) {
               logger.log("Node not trusted: "+id);
-              System.exit(1);
+              fail("Node not trusted: "+id+" at "+player.localHandle);
+              return;
             }
           }
           addStatusNotification(this.player.localHandle,id,newStatus);
@@ -135,7 +144,7 @@ public class PRNonconform2 extends PRRegressionTest {
 //  }
     
   public static void main(String[] args) throws Exception {
-    new PRNonconform2();
+    runMain(new PRNonconform2());
   }
 
 }

@@ -175,6 +175,8 @@ public class MultiringRegrTest {
    * Constructor, which takes no arguments and sets up the
    * factories in preparation for node creation.
    */
+  private final List<AssertionError> failures = Collections.synchronizedList(new ArrayList<AssertionError>());
+
   public MultiringRegrTest(Environment env) throws IOException {
     this.environment = env;
     
@@ -523,7 +525,25 @@ public class MultiringRegrTest {
     }
 
     if(status.equals(FAILURE))
-      System.exit(0);
+      fail(new AssertionError("Step failed: " + message));
+  }
+
+  /**
+   * Records the failure, see {@link #getFailures()}, and throws it to stop the test (it used to call
+   * System.exit(0), even on failure). Steps can fail on another thread, hence the record.
+   */
+  private void fail(AssertionError error) {
+    failures.add(error);
+    throw error;
+  }
+
+  /**
+   * The failed steps.
+   */
+  public List<AssertionError> getFailures() {
+    synchronized (failures) {
+      return new ArrayList<AssertionError>(failures);
+    }
   }
 
   /**
@@ -535,7 +555,7 @@ public class MultiringRegrTest {
     System.out.println("\nException " + e + " occurred during testing.");
 
     e.printStackTrace();
-    System.exit(0);
+    fail(new AssertionError("Exception occurred during testing", e));
   }
 
   /**
@@ -670,7 +690,7 @@ public class MultiringRegrTest {
         if (s.equalsIgnoreCase("sphere"))
           SIMULATOR = SIMULATOR_SPHERE;
         else if (s.equalsIgnoreCase("euclidean"))
-          PROTOCOL = SIMULATOR_EUCLIDEAN;
+          SIMULATOR = SIMULATOR_EUCLIDEAN;
         else
           System.out.println("ERROR: Unsupported simulator: " + s);
 
@@ -688,7 +708,15 @@ public class MultiringRegrTest {
       env = new Environment();
     }
     MultiringRegrTest test = new MultiringRegrTest(env);
-    test.start();
-    env.destroy();
+    int status = 1;
+    try {
+      test.start();
+      if (test.getFailures().isEmpty()) status = 0;
+    } catch (AssertionError e) {
+      e.printStackTrace();
+    } finally {
+      env.destroy();
+    }
+    System.exit(status);
   }
 }

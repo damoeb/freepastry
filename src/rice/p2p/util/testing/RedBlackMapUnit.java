@@ -53,7 +53,8 @@ public class RedBlackMapUnit {
   
   public static void main(String[] args) {
     int n = Integer.parseInt(args[0]);
-    int t = Integer.parseInt(args[0]);
+    // optional second argument: the number of random sub-map checks per level (used to be args[0] as well)
+    int t = args.length > 1 ? Integer.parseInt(args[1]) : n;
     
     Environment env = new Environment();
     
@@ -78,6 +79,7 @@ public class RedBlackMapUnit {
     
     testRemove(map);
     testSortedMap(t, map, factory, random, 2);
+    env.destroy();
   }
   
   protected static void testRemove(SortedMap<Id, Long> map) {

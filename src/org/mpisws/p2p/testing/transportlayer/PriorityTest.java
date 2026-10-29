@@ -43,8 +43,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
@@ -64,7 +64,7 @@ import rice.environment.Environment;
 import rice.environment.logging.CloneableLogManager;
 
 public class PriorityTest extends TLTest<MultiInetSocketAddress> {
-  @BeforeClass
+  @BeforeAll
   public static void setUpBeforeClass() throws Exception {
     TLTest.setUpBeforeClass();
     logger = env.getLogManager().getLogger(PriorityTest.class, null);

@@ -66,9 +66,16 @@ public class PersistentStorageTest extends MemoryStorageTest {
    * Builds a MemoryStorageTest
    */
   public PersistentStorageTest(boolean store, Environment environment) throws IOException {
+    this(store, environment, ".");
+  }
+
+  /**
+   * Builds a PersistentStorageTest that keeps its files below the given directory
+   */
+  public PersistentStorageTest(boolean store, Environment environment, String rootDir) throws IOException {
     super(store, environment);
     FACTORY = new PastryIdFactory(this.environment);
-    storage = new PersistentStorage(FACTORY, "PersistentStorageTest" , ".", 20000000, environment);
+    storage = new PersistentStorage(FACTORY, "PersistentStorageTest" , rootDir, 20000000, environment);
   }
 
   public static void main(String[] args) throws IOException {
@@ -78,8 +85,6 @@ public class PersistentStorageTest extends MemoryStorageTest {
       store = ! args[0].equals("-nostore");
     }
     
-    PersistentStorageTest test = new PersistentStorageTest(store, new Environment());
-    
-    test.start();
+    runMain(new PersistentStorageTest(store, new Environment()));
   }
 }

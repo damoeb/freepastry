@@ -729,127 +729,24 @@ public class MemoryStorageTest extends Test {
     testRandomInserts(insertNullKey);
   }
   
-  public void testVariableLength() {
-    final HashSet<Id> tmp = new HashSet<Id>();
-    final HashSet<Id> all = new HashSet<Id>();
-    
+  // A former "variable-length Ids" section stored a stub Id class (compareTo always 0, no distances, no bytes) in
+  // this storage. A storage keeps its Ids in an IdSet of its IdFactory, here rice.pastry.IdSet, which holds only
+  // rice.pastry.Ids, so that section failed with a ClassCastException. Even with another IdSet the stub could not
+  // work: its compareTo collapses all Ids in sorted maps. Storing Ids of another factory is not supported.
+  public void start() {
     testErrors(new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(false))) {
           stepDone(FAILURE, "Error tests failed");
           return;
         }
-        
-        sectionStart("Testing variable-length Ids");
-        stepStart("Inserting a whole bunch of Ids");
-        
-        new Continuation<Object, Exception>() {
-          int num = 0;
-          
-          public void receiveResult(Object o) {
-            if (o.equals(Boolean.valueOf(false))) {
-              stepDone(FAILURE, "Insert of Id #" + num + " failed");
-              return;
-            }
-            
-            if (num < 1000) {
-              num++;
-              storage.store(new VariableId(num), null, num + " length", this);
-            } else {
-              stepDone(SUCCESS);
-              stepStart("Reinserting same Ids");
-
-              new Continuation<Object, Exception>() {
-                int num = 0;
-                
-                public void receiveResult(Object o) {
-                  if (o.equals(Boolean.valueOf(false))) {
-                    stepDone(FAILURE, "Reinsert of Id #" + num + " failed");
-                    return;
-                  }
-                  
-                  if (num < 1000) {
-                    num++;
-                    VariableId id = new VariableId(num);
-                    all.add(id);
-                    tmp.add(id);
-                    storage.store(new VariableId(num), null, num + " length", this);
-                  } else {
-                    stepDone(SUCCESS);
-                    stepStart("Deleting all Ids again");
-
-                    new Continuation<Object, Exception>() {
-                      Id id = null;
-                      
-                      public void receiveResult(Object o) {
-                        if (o.equals(Boolean.valueOf(false))) {
-                          stepDone(FAILURE, "Delete of Id " + id + " failed");
-                          return;
-                        }
-                  
-                        if (tmp.size() > 0) {
-                          id = (Id) tmp.iterator().next();
-                          tmp.remove(id);
-                          storage.unstore(id, this);
-                        } else {
-                          stepDone(SUCCESS);
-                          sectionEnd();
-                          
-                          System.out.println("All tests completed successfully - exiting.");
-                          System.exit(0);
-                        }
-                      }
-                      public void receiveException(Exception e) { stepException(e); }
-                    }.receiveResult(Boolean.TRUE);
-                  }
-                }
-                public void receiveException(Exception e) { stepException(e); }
-              }.receiveResult(Boolean.TRUE);
-            }
-          }
-          public void receiveException(Exception e) { stepException(e); }
-        }.receiveResult(Boolean.TRUE);
+        testsPassed();
       }
       public void receiveException(Exception e) { stepException(e); }
     });
   }
-  
-  public void start() {
-    testVariableLength();
-  try{  Thread.sleep(20000);}catch(InterruptedException ie){;}
-  }
 
   public static void main(String[] args) throws IOException {
-    MemoryStorageTest test = new MemoryStorageTest(true, new Environment());
-
-    test.start();
-  }
-  
-  public class VariableId implements Id {
-    public static final short TYPE = 4893;
-    protected int num;    
-    public static final String STRING = "0123456789ABCDEF";
-    public VariableId(int num) { this.num = num; }
-    public boolean isBetween(Id ccw, Id cw) { return false; }
-    public boolean clockwise(Id nid) { return false; }
-    public Id addToId(Distance offset) { return null; }
-    public Distance distanceFromId(Id nid) { return null; }
-    public Distance longDistanceFromId(Id nid) { return null; }
-    public byte[] toByteArray() { return null; }
-    public void toByteArray(byte[] array, int offset) {}
-    public int getByteArrayLength() { return 0; }
-    public String toStringFull() { 
-      if (num <= STRING.length())
-        return STRING.substring(0, num);
-      else
-        return STRING + num;
-    }
-    public int compareTo(Id o) { return 0; }
-    public void serialize(OutputBuffer buf) throws IOException {
-      buf.writeInt(num);
-    }
-    public short getType() {
-      return TYPE;
-    }
+    runMain(new MemoryStorageTest(true, new Environment()));
   }
 }

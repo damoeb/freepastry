@@ -36,6 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer;
 
+import org.junit.jupiter.api.BeforeAll;
+
 public class SRTestBypassEpoch extends SRTest {
-  // TODO: Set the epochtl.setSendIdentifier(false) in the BeforeClass
+  // TODO: Set the epochtl.setSendIdentifier(false) in the BeforeAll
+  @BeforeAll
+  public static void setUpBypassEpoch() throws Exception {
+    setUpSourceRoutes();
+  }
 }

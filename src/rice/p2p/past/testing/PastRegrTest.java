@@ -105,6 +105,11 @@ public class PastRegrTest extends CommonAPITest {
   }
 
   /**
+   * The directory below which the nodes' PersistentStorages keep their files, set before start()
+   */
+  public String storageRoot = ".";
+
+  /**
    * Method which should process the given newly-created node
    *
    * @param node The newly created node
@@ -113,7 +118,7 @@ public class PastRegrTest extends CommonAPITest {
   protected void processNode(int num, Node node) {
     try {
       storages[num] = new StorageManagerImpl(FACTORY,
-                                             new PersistentStorage(FACTORY, "root-" + num, ".", 1000000, environment),
+                                             new PersistentStorage(FACTORY, "root-" + num, storageRoot, 1000000, environment),
                                              new LRUCache(new MemoryStorage(FACTORY), 100000, environment));
       pasts[num] = new PastImpl(node, storages[num], REPLICATION_FACTOR, INSTANCE);
     } catch (IOException e) {

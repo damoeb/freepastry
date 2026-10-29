@@ -36,7 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -46,9 +47,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
@@ -76,12 +77,23 @@ public abstract class TLTest<Identifier> {
    */
   static List<Destructable> otherTLs = new ArrayList<Destructable>();
 
-  @BeforeClass
+  /**
+   * Creates the shared Environment. Not a {@code @BeforeAll} itself: every subclass's setup calls it explicitly.
+   */
   public static void setUpBeforeClass() throws Exception {
     env = new Environment();
   }
+
+  /**
+   * Jupiter runs a superclass's {@code @BeforeAll} for its subclasses too, even when they hide it with their own
+   * (JUnit 4 did not). A concrete test class that is also extended uses this to skip its setup when a subclass runs,
+   * since each subclass builds its own transport layers on the same ports.
+   */
+  static boolean runsForSubclass(TestInfo info, Class<?> declaringClass) {
+    return info.getTestClass().orElseThrow() != declaringClass;
+  }
   
-  @AfterClass
+  @AfterAll
   public static void tearDownAfterClass() throws Exception {
     // Destroy the transport layers so that their ports are released: Environment.destroy() alone only stops the 
     // selector (dropping pending invocations), leaving the server sockets bound for the next test class in this JVM.
@@ -279,7 +291,7 @@ public abstract class TLTest<Identifier> {
     
     assertTrue(sentList.size() == 1);
     assertTrue(receivedList.size() == 1);
-    assertTrue("recList.arr:"+receivedList.get(0).array()[0]+","+receivedList.get(0).array()[1],Arrays.equals(sentList.get(0).array(), receivedList.get(0).array()));
+    assertTrue(Arrays.equals(sentList.get(0).array(), receivedList.get(0).array()), "recList.arr:"+receivedList.get(0).array()[0]+","+receivedList.get(0).array()[1]);
     assertTrue(exceptionList.isEmpty());
 
     // Part III test shutdown/close()
@@ -355,7 +367,7 @@ public abstract class TLTest<Identifier> {
     bob().setCallback(null);
 
     assertTrue(exceptionList.isEmpty());
-    assertTrue("receivedList.size():"+receivedList.size(), receivedList.size() == 1);
+    assertTrue(receivedList.size() == 1, "receivedList.size():"+receivedList.size());
     assertTrue(closed.size() == 2);
     assertTrue(closed.contains(aliceSockets.get(0)));
     assertTrue(closed.contains(bobSockets.get(0)));
@@ -435,14 +447,14 @@ public abstract class TLTest<Identifier> {
 
     // results
     if (!exceptionList.isEmpty()) throw exceptionList.get(0); // we got no exceptions
-    assertTrue("receivedList.size():"+receivedList.size(),receivedList.size() == 1);  // we got 1 result
+    assertTrue(receivedList.size() == 1, "receivedList.size():"+receivedList.size());  // we got 1 result
     byte[] rec = new byte[receivedList.get(0).buf.remaining()];
     receivedList.get(0).buf.get(rec);
     assertTrue(Arrays.equals(rec, sentBuffer.array())); // it is equal
-    assertTrue("i:"+receivedList.get(0).i+" getI():"+getIdentifier(bob(), alice()), receivedList.get(0).i.equals(getIdentifier(bob(), alice())));
-    assertTrue("sentList.size():"+sentList.size(),sentList.size() == 1); // we got one notification
+    assertTrue(receivedList.get(0).i.equals(getIdentifier(bob(), alice())), "i:"+receivedList.get(0).i+" getI():"+getIdentifier(bob(), alice()));
+    assertTrue(sentList.size() == 1, "sentList.size():"+sentList.size()); // we got one notification
     assertTrue(sentList.get(0) == handle); // it is the buffer we sent        
-    assertTrue("handle.getMessage():"+handle.getMessage()+" sentBuffer:"+sentBuffer,handle.getMessage() == sentBuffer); // it is the buffer we sent        
+    assertTrue(handle.getMessage() == sentBuffer, "handle.getMessage():"+handle.getMessage()+" sentBuffer:"+sentBuffer); // it is the buffer we sent        
     bob().setCallback(null);
   }
   
@@ -493,7 +505,7 @@ public abstract class TLTest<Identifier> {
 
     // results
     assertTrue(sentList.isEmpty());  // we got 1 result
-    assertTrue("exceptionList.size():"+exceptionList.size(), exceptionList.size() == 1);
+    assertTrue(exceptionList.size() == 1, "exceptionList.size():"+exceptionList.size());
     assertTrue(failedList.size() == 1);
     assertTrue(failedList.get(0) == cancellable);
     assertTrue(cancellable.getMessage() == sentBuffer);
@@ -501,7 +513,7 @@ public abstract class TLTest<Identifier> {
 //    logger.logException("Expected:", exceptionList.get(0));
   }  
   
-  @Test(expected=IllegalArgumentException.class)
+  @Test
   public void noCallbackTest() throws Exception {
     final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes); 
     
@@ -547,14 +559,15 @@ public abstract class TLTest<Identifier> {
 
     // results
     if (!exceptionList.isEmpty()) throw exceptionList.get(0); // we got no exceptions
-    assertTrue("receivedList.size():"+receivedList.size(),receivedList.size() == 1);  // we got 1 result
+    assertTrue(receivedList.size() == 1, "receivedList.size():"+receivedList.size());  // we got 1 result
     byte[] rec = new byte[receivedList.get(0).buf.remaining()];
     receivedList.get(0).buf.get(rec);
     assertTrue(Arrays.equals(rec, sentBuffer.array())); // it is equal
     assertTrue(receivedList.get(0).i.equals(getIdentifier(bob(), alice())));
     bob().setCallback(null); 
     
-    alice().openSocket(getIdentifier(alice(), bob()), null, options);
+    // opening a socket without a callback is rejected
+    assertThrows(IllegalArgumentException.class, () -> alice().openSocket(getIdentifier(alice(), bob()), null, options));
   }
 
 }

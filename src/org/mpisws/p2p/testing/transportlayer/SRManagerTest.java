@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -48,8 +48,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.TransportLayer;
@@ -99,7 +99,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
 
   static MultiInetSocketAddress alice_addr, bob_addr;
   
-  @BeforeClass
+  @BeforeAll
   public static void setUpBeforeClass() throws Exception {
     srFactory = new MultiAddressSourceRouteFactory();
     TLTest.setUpBeforeClass();
@@ -167,8 +167,8 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     }
     aliceLP.removeLivenessListener(ll);
     bobLP.removeLivenessListener(ll);
-    assertTrue("alice->bob:"+aliceLP.getLiveness(bobId, null), aliceLP.getLiveness(bobId, null) == LivenessListener.LIVENESS_ALIVE);
-    assertTrue("bob->alice:"+bobLP.getLiveness(aliceId, null), bobLP.getLiveness(aliceId, null) == LivenessListener.LIVENESS_ALIVE);
+    assertTrue(aliceLP.getLiveness(bobId, null) == LivenessListener.LIVENESS_ALIVE, "alice->bob:"+aliceLP.getLiveness(bobId, null));
+    assertTrue(bobLP.getLiveness(aliceId, null) == LivenessListener.LIVENESS_ALIVE, "bob->alice:"+bobLP.getLiveness(aliceId, null));
   }
 
   private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
@@ -347,7 +347,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     int aliceProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(alice().getLocalIdentifier(), options);
     int carolProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(carol.getLocalIdentifier(), options);
 
-    assertTrue("aliceProx:"+aliceProx+" carolProx:"+carolProx,aliceProx > carolProx+100);
+    assertTrue(aliceProx > carolProx+100, "aliceProx:"+aliceProx+" carolProx:"+carolProx);
 //    System.out.println("aliceProx"+aliceProx);
 //    System.out.println("carolProx"+carolProx);
   }
@@ -397,7 +397,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     }
 
     int result = alice.getLiveness(daveAddress, null);
-    assertTrue("result = "+result, result == LivenessListener.LIVENESS_ALIVE);
+    assertTrue(result == LivenessListener.LIVENESS_ALIVE, "result = "+result);
     assertTrue(tupels.size() == 1);
 
     
@@ -416,8 +416,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     }
     
     result = alice.getLiveness(daveAddress, null);
-    assertTrue("result = "+result, 
-        result == LivenessListener.LIVENESS_DEAD);
+    assertTrue(result == LivenessListener.LIVENESS_DEAD, "result = "+result);
     // suspected/dead
     assertTrue(tupels.size() == 3);
   }

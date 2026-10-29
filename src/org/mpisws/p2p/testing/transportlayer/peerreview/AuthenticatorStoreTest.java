@@ -36,6 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -47,6 +50,7 @@ import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.SortedSet;
 
+import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -84,11 +88,10 @@ public class AuthenticatorStoreTest {
   
   
   
-  /**
-   * @param args
-   */
-  public static void main(String[] args) throws Exception {
+  @Test
+  public void addAndFlushAuthenticators() throws Exception {
     Environment env = new Environment();
+    try {
     PeerReview<MyInetSocketAddress, MyInetSocketAddress> pr = new TestPeerReview(env, new AuthenticatorSerializerImpl(HASH_LEN, SIGN_LEN));
     TestAuthenticatorStore store = new TestAuthenticatorStore(pr,false);
     
@@ -125,30 +128,17 @@ public class AuthenticatorStoreTest {
     store.addAuthenticatorToMemory(id, a1);
     store.addAuthenticatorToMemory(id, a2); // should not crash here
     
-    boolean fail = true;
-    try {
-      store.addAuthenticatorToMemory(id, a3); // should crash here
-      fail = false;
-    } catch (RuntimeException re) {
-      fail = true;
-    }
-    if (!fail) {
-      System.out.println("Allowed Duplicates, BAD!!!!");
-      return;
-    }
+    // a different authenticator with the same sequence number is rejected
+    assertThrows(RuntimeException.class, () -> store.addAuthenticatorToMemory(id, a3), "Allowed duplicates");
     
     store.flushAuthenticatorsFromMemory(id, 8, 42);
-    if (store.findSubject(id).size() != 4) {
-      System.out.println("flush failed! "+store.findSubject(id));
-    }
+    assertEquals(4, store.findSubject(id).size(), () -> "flush failed! "+store.findSubject(id));
 
     store.flushAuthenticatorsFromMemory(id, 43, 43);
-    if (store.findSubject(id).size() != 3) {
-      System.out.println("flush failed! "+store.findSubject(id));
+    assertEquals(3, store.findSubject(id).size(), () -> "flush failed! "+store.findSubject(id));
+    } finally {
+      env.destroy();
     }
-
-    System.out.println("success");
-    env.destroy();
   }
 }
   class TestPeerReview implements PeerReview<MyInetSocketAddress, MyInetSocketAddress> {

@@ -45,21 +45,22 @@ import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.security.spec.RSAKeyGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.mpisws.p2p.pki.x509.CATool;
 import org.mpisws.p2p.pki.x509.CAToolImpl;
@@ -98,6 +99,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
+import rice.p2p.util.tuples.Tuple;
 import rice.selector.TimerTask;
 
 public class PRRegressionTest {
@@ -195,8 +197,12 @@ public class PRRegressionTest {
   }
   
   
-  static class BogusTransport implements TransportLayer<HandleImpl, ByteBuffer> {
-    public static Map<HandleImpl, BogusTransport> peerTable = new HashMap<HandleImpl, BogusTransport>();
+  /**
+   * The in-memory "network": delivers each message straight to the destination's selector.
+   */
+  Map<HandleImpl, BogusTransport> peerTable = new HashMap<HandleImpl, BogusTransport>();
+
+  class BogusTransport implements TransportLayer<HandleImpl, ByteBuffer> {
     
     HandleImpl localIdentifier;
     Environment env;
@@ -243,8 +249,8 @@ public class PRRegressionTest {
           try {                
             callback.messageReceived(i, m, null);
           } catch (IOException ioe) {
-            ioe.printStackTrace();
-            System.exit(0);
+            logger.logException("Error delivering a message to "+localIdentifier, ioe);
+            fail("Error delivering a message to "+localIdentifier+": "+ioe);
           }
         }      
       });
@@ -424,7 +430,8 @@ public class PRRegressionTest {
       if (logger.level <= Logger.INFO) logger.log("notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
       if (newStatus != STATUS_TRUSTED) {
         logger.log("Failure, Node not trusted: "+id+" at "+player.localHandle);
-        System.exit(1);
+        fail("Node not trusted: "+id+" at "+player.localHandle);
+        return;
       }
       addStatusNotification(this.player.localHandle,id,newStatus);
     }
@@ -439,10 +446,9 @@ public class PRRegressionTest {
     }
   }
 
-  static Map<HandleImpl, IdentityTransportLayerImpl<HandleImpl, IdImpl>> idTLTable = new HashMap<HandleImpl, IdentityTransportLayerImpl<HandleImpl,IdImpl>>();
+  Map<HandleImpl, IdentityTransportLayerImpl<HandleImpl, IdImpl>> idTLTable = new HashMap<HandleImpl, IdentityTransportLayerImpl<HandleImpl,IdImpl>>();
 
   CATool caTool;
-  KeyPairGenerator keyPairGen;
 
   Map<HandleImpl,Player> playerTable = new HashMap<HandleImpl, Player>();
 
@@ -478,7 +484,7 @@ public class PRRegressionTest {
       
       this.logger = env.getLogManager().getLogger(Player.class, null);
       
-      File f = new File(localHandle.name);
+      final File f = new File(dir, localHandle.name);
       if (f.exists()) {
         File f2 = new File(f,"peers");
         File[] foo = f2.listFiles();
@@ -505,7 +511,8 @@ public class PRRegressionTest {
       this.localHandle = localHandle;
       playerTable.put(localHandle, this);
       
-      pair = keyPairGen.generateKeyPair();    
+      // every node must use the same key size: the signature size is derived from the local certificate's key
+      pair = CAToolImpl.generateKeyPair();
       cert = caTool.sign(localHandle.name,pair.getPublic());
 
       t1 = getTL();
@@ -519,10 +526,10 @@ public class PRRegressionTest {
       env.getSelectorManager().invoke(new Runnable() {
         public void run() {
           try {
-            pr.init(Player.this.localHandle.name);
+            pr.init(f.getPath());
           } catch (IOException ioe) {
-            ioe.printStackTrace();
-            env2.destroy();
+            logger.logException("Error initializing PeerReview of "+Player.this.localHandle, ioe);
+            fail("Error initializing PeerReview of "+Player.this.localHandle+": "+ioe);
           }
         }
       });
@@ -623,16 +630,9 @@ public class PRRegressionTest {
   }
 
   public void buildCryptoMaterial(Environment env) throws Exception {
-    SecureRandom random = new SecureRandom();
-    caTool = CAToolImpl.getCATool("CommitmentTest","foo".toCharArray());
-    
-    // make a KeyPair
-    keyPairGen =
-      KeyPairGenerator.getInstance("RSA", "BC");
-    keyPairGen.initialize(
-        new RSAKeyGenParameterSpec(768,
-            RSAKeyGenParameterSpec.F4),
-        random);    
+    // an in-memory CA, valid for a day (CAToolImpl.getCATool() would keep it in a key store file in the working directory)
+    Tuple<X509Certificate, KeyPair> ca = CAToolImpl.generateNewCA("CommitmentTest", new Date(System.currentTimeMillis()+24L*60*60*1000));
+    caTool = new CAToolImpl(ca.a(), ca.b());
     hasher = new SHA1HashProvider();
     historyFactory = new SecureHistoryFactoryImpl(hasher,env);
   }
@@ -649,40 +649,119 @@ public class PRRegressionTest {
     carol.witnessed.add(bob.localHandle);    
   }
   
-  protected Map<HandleImpl, Map<IdImpl, Integer>> recordedStatus = new HashMap<HandleImpl, Map<IdImpl,Integer>>();
+  /**
+   * The last status each node was notified of, per node (written by the nodes' selector threads)
+   */
+  protected Map<HandleImpl, Map<IdImpl, Integer>> recordedStatus = new ConcurrentHashMap<HandleImpl, Map<IdImpl,Integer>>();
   protected void addStatusNotification(HandleImpl localHandle, IdImpl id,
       int newStatus) {
-    Map<IdImpl, Integer> foo = recordedStatus.get(localHandle);
-    if (foo == null) {
-      foo = new HashMap<IdImpl, Integer>();
-      recordedStatus.put(localHandle,foo);
-    }
-    foo.put(id,newStatus);
+    recordedStatus.computeIfAbsent(localHandle, h -> new ConcurrentHashMap<IdImpl, Integer>()).put(id,newStatus);
   }
 
+  /**
+   * Called after millisToFinish (simulated) milliseconds: checks the outcome and calls {@link #succeed()} or
+   * {@link #fail(String)}. This scenario expects every node to trust every other node.
+   */
   public void finish() {
     for (Entry<HandleImpl, Map<IdImpl, Integer>> foo : recordedStatus.entrySet()) {
       for (Entry<IdImpl, Integer> i : foo.getValue().entrySet()) {
         if (i.getValue() != StatusChangeListener.STATUS_TRUSTED) {
           logger.log("Fail: "+foo.getKey()+" found "+i.getKey()+" "+i.getValue());
-          System.exit(1);
+          fail(foo.getKey()+" found "+i.getKey()+" "+PeerReviewImpl.getStatusString(i.getValue()));
+          return;
         }
       }
     }
     logger.log("Success");
-    System.exit(1);
+    succeed();
   }
-  
+
+  private final CountDownLatch done = new CountDownLatch(1);
+  private volatile String failure;
+
+  /**
+   * Records the (first) failure and ends the scenario.
+   */
+  protected void fail(String reason) {
+    synchronized (done) {
+      if (failure == null) failure = reason;
+    }
+    done.countDown();
+  }
+
+  /**
+   * Ends the scenario successfully (unless it failed before).
+   */
+  protected void succeed() {
+    done.countDown();
+  }
+
+  /**
+   * Waits for the scenario's outcome, then destroys its environment.
+   *
+   * @throws AssertionError if the scenario failed or did not finish in time
+   */
+  public void await(long timeoutMillis) throws InterruptedException {
+    try {
+      if (!done.await(timeoutMillis, TimeUnit.MILLISECONDS))
+        throw new AssertionError(getClass().getSimpleName()+" did not finish within "+timeoutMillis+" ms");
+      synchronized (done) {
+        if (failure != null) throw new AssertionError(getClass().getSimpleName()+": "+failure);
+      }
+    } finally {
+      env.destroy();
+    }
+  }
+
+  /**
+   * @return the PeerReview identity transport of each node
+   */
+  public Collection<IdentityTransportLayerImpl<HandleImpl, IdImpl>> getIdentityTransports() {
+    return idTLTable.values();
+  }
+
+  /**
+   * Runs the scenario as a program: exits with 0 on success, 1 otherwise.
+   */
+  protected static void runMain(PRRegressionTest test) {
+    int status = 1;
+    try {
+      test.await(MAIN_TIMEOUT_MILLIS);
+      status = 0;
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
+    System.exit(status);
+  }
+
+  /**
+   * How long the scenarios run (simulated time, which runs at wall-clock speed here) before {@link #finish()}.
+   */
+  public static final int DEFAULT_MILLIS_TO_FINISH = 45000;
+  static final long MAIN_TIMEOUT_MILLIS = 3L*DEFAULT_MILLIS_TO_FINISH;
+
   Environment env;
   Logger logger;
-  
+  /**
+   * The directory below which each node keeps its PeerReview files (in a subdirectory named after the node).
+   */
+  final File dir;
+
   /**
    * @param millisToFinish Call finish() after this amount of time
    * @throws Exception
    */
   public PRRegressionTest(int millisToFinish) throws Exception {
+    this(millisToFinish, new File("."));
+  }
 
-    
+  /**
+   * @param millisToFinish Call finish() after this amount of time
+   * @param dir the directory for the nodes' PeerReview files
+   * @throws Exception
+   */
+  public PRRegressionTest(int millisToFinish, File dir) throws Exception {
+    this.dir = dir;
     env = RecordLayer.generateEnvironment(); //new Environment();
     env.getSelectorManager().schedule(new TimerTask() {
       
@@ -705,14 +784,14 @@ public class PRRegressionTest {
           
           setupWitnesses();
         } catch (Exception ioe) {
-          env.destroy();      
-          throw new RuntimeException(ioe);
+          logger.logException("Error building the players", ioe);
+          fail("Error building the players: "+ioe);
         }
       }
     });          
   }
   
-  public static void main(String[] agrs) throws Exception {
-    new PRRegressionTest(45000);
+  public static void main(String[] args) throws Exception {
+    runMain(new PRRegressionTest(DEFAULT_MILLIS_TO_FINISH));
   }
 }

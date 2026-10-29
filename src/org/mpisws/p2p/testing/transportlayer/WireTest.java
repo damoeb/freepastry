@@ -41,8 +41,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 
@@ -50,8 +51,9 @@ import rice.environment.Environment;
 import rice.environment.logging.CloneableLogManager;
 
 public class WireTest extends TLTest<InetSocketAddress> {
-  @BeforeClass
-  public static void setUpBeforeClass() throws Exception {
+  @BeforeAll
+  public static void setUpBeforeClass(TestInfo info) throws Exception {
+    if (runsForSubclass(info, WireTest.class)) return;
     TLTest.setUpBeforeClass();
     logger = env.getLogManager().getLogger(WireTest.class, null);
     
