@@ -125,10 +125,7 @@ public class UnsubscribeMessage implements RawMessage {
   public static UnsubscribeMessage build(InputBuffer buf, Endpoint endpoint) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-    case 0:
-      // TODO: version 0 is not supported, so such a message is dropped (null is returned)
-      return null;
-    case 1:
+      case 1:
         return new UnsubscribeMessage(buf, endpoint);
       default:
         throw new IOException("Unknown Version: "+version);

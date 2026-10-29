@@ -162,9 +162,6 @@ public class SubscribeMessage extends AnycastMessage {
   public static SubscribeMessage buildSM(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer scd) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
-        // TODO: version 0 is not supported, so such a message is dropped (null is returned)
-        return null;
       case 1:
         return new SubscribeMessage(buf, endpoint, scd);
       default:

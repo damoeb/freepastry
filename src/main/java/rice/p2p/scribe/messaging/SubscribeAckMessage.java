@@ -139,9 +139,6 @@ public class SubscribeAckMessage extends AbstractSubscribeMessage {
   public static SubscribeAckMessage build(InputBuffer buf, Endpoint endpoint) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
-        // TODO: version 0 is not supported, so such a message is dropped (null is returned)
-        return null;
       case 1:
         return new SubscribeAckMessage(buf, endpoint);
       default:
