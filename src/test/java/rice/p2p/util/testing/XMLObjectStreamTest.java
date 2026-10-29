@@ -177,6 +177,34 @@ public class XMLObjectStreamTest {
     assertEquals("node", node.name);
   }
 
+  // ----- reset() -----
+
+  @Test
+  public void resetForgetsReferences() throws Exception {
+    Node shared = new Node();
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    XMLObjectOutputStream xoos = new XMLObjectOutputStream(baos);
+    xoos.writeObject(shared);
+    xoos.writeObject(shared);
+    xoos.reset();
+    xoos.writeObject(shared);
+    xoos.reset();
+    xoos.writeInt(42);
+    xoos.close();
+
+    XMLObjectInputStream xois = new XMLObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+    try {
+      Object first = xois.readObject();
+      assertSame(first, xois.readObject());
+      Object afterReset = xois.readObject();
+      assertNotSame(first, afterReset, "an object written after reset() is a new copy");
+      assertEquals("node", ((Node) afterReset).name);
+      assertEquals(42, xois.readInt());
+    } finally {
+      xois.close();
+    }
+  }
+
   // ----- helpers and test classes -----
 
   private static byte[] write(Object o) throws IOException {

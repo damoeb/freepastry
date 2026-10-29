@@ -214,6 +214,32 @@ public class XMLObjectInputStream extends ObjectInputStream {
   }
 
   /**
+   * Steps to the start tag of the next top-level item, applying the reset commands written by
+   * {@link XMLObjectOutputStream#reset()} on the way.
+   *
+   * @throws IOException If an error occurs
+   */
+  protected void readNextStartTag() throws IOException {
+    reader.readStartTag();
+    while (reader.getStartTag().equals("reset")) {
+      reader.readEndTag("reset");
+      reset();
+      reader.readStartTag();
+    }
+  }
+
+  /**
+   * Like {@link #readNextStartTag()}, and asserts that the start tag has the given name.
+   *
+   * @param name The expected tag
+   * @throws IOException If an error occurs or the tag differs
+   */
+  protected void readNextStartTag(String name) throws IOException {
+    readNextStartTag();
+    reader.assertStartTag(name);
+  }
+
+  /**
    * Method which reads a byte from the underlying output stream.  Simply calls
    * readByte()
    *
@@ -230,7 +256,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public int read(byte[] b, int offset, int length) throws IOException {
-    reader.readStartTag("base64");
+    readNextStartTag("base64");
     byte[] bytes = reader.readBase64();
 
     int written = (length < bytes.length ? length : bytes.length);
@@ -286,7 +312,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public int readInt() throws IOException {
-    reader.readStartTag("primitive");
+    readNextStartTag("primitive");
     return readIntHelper();
   }
 
@@ -297,7 +323,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public boolean readBoolean() throws IOException {
-    reader.readStartTag("primitive");
+    readNextStartTag("primitive");
     return readBooleanHelper();
   }
 
@@ -308,7 +334,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public byte readByte() throws IOException {
-    reader.readStartTag("primitive");
+    readNextStartTag("primitive");
     return readByteHelper();
   }
 
@@ -319,7 +345,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public char readChar() throws IOException {
-    reader.readStartTag("primitive");
+    readNextStartTag("primitive");
     return readCharHelper();
   }
 
@@ -330,7 +356,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public double readDouble() throws IOException {
-    reader.readStartTag("primitive");
+    readNextStartTag("primitive");
     return readDoubleHelper();
   }
 
@@ -341,7 +367,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public float readFloat() throws IOException {
-    reader.readStartTag("primitive");
+    readNextStartTag("primitive");
     return readFloatHelper();
   }
 
@@ -352,7 +378,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public long readLong() throws IOException {
-    reader.readStartTag("primitive");
+    readNextStartTag("primitive");
     return readLongHelper();
   }
 
@@ -363,7 +389,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public short readShort() throws IOException {
-    reader.readStartTag("primitive");
+    readNextStartTag("primitive");
     return readShortHelper();
   }
 
@@ -394,7 +420,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws ClassNotFoundException If a class in the stream cannot be found
    */
   protected Object readObjectOverride() throws IOException, ClassNotFoundException {
-    reader.readStartTag();
+    readNextStartTag();
 
     Object result = readObjectHelper();
 
@@ -415,7 +441,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws ClassNotFoundException If a class in the stream cannot be found
    */
   public Object readUnshared() throws IOException, ClassNotFoundException {
-    reader.readStartTag();
+    readNextStartTag();
 
     Object result = readUnsharedHelper(false);
 

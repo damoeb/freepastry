@@ -225,7 +225,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * @throws IOException If an error occurs, or an object is currently being written
    */
   public void reset() throws IOException {
-    if (currentObjects.peek() == null) {
+    if (currentObjects.isEmpty()) {
       references = new Hashtable<Reference, String>();
       writeReset();
     } else {
