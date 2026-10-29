@@ -4,8 +4,12 @@ A modular, open-source implementation of the [Pastry](http://freepastry.org/) pe
 
 ## Requirements
 
-- Java 17 or higher
-- Apache Maven 3.6+
+- Java 25 (LTS) or higher
+- Apache Maven 3.9+ (or use the bundled wrapper: `./mvnw`, pinned to Maven 3.10.0)
+
+With [SDKMAN!](https://sdkman.io/), run `sdk env install` in the project root to get the exact JDK and Maven versions from `.sdkmanrc`.
+
+The compiler runs with `-Xlint:rawtypes,deprecation,removal,dep-ann -Werror`: raw (untyped) generic types and calls to deprecated APIs fail the build. Failing tests fail the build too.
 
 ## Quick Start
 
@@ -96,7 +100,7 @@ FreePastry uses the following libraries (managed by Maven):
 - XML Pull Parser - XML parsing
 - XPP3 - XML parsing
 - SBBI UPnP Library - UPnP support
-- JUnit 5 - Testing framework
+- JUnit 6 (Jupiter, plus the Vintage engine for the JUnit 4 tests) - Testing framework
 
 ## Documentation
 
