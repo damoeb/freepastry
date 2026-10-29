@@ -24,7 +24,7 @@ FreePastry has three layers:
 
 Ways to build one:
 
-- `new Environment()` and `new Environment(String paramFile)` set up a real-network environment. The defaults come from `freepastry.params` on the classpath; the build copies `jars/freepastry/freepastry.params` there as a resource (`pom.xml`, `<resources>`). An optional mutable params file overrides the defaults.
+- `new Environment()` and `new Environment(String paramFile)` set up a real-network environment. The defaults come from `freepastry.params` on the classpath; it is the main resource `src/main/resources/freepastry.params`. An optional mutable params file overrides the defaults.
 - `Environment.directEnvironment()` sets up the simulator: a `DirectTimeSource`, a `SimProcessor` and a selector that is driven by the simulator.
 - Subclasses can override `chooseDefaults()`.
 
@@ -356,6 +356,6 @@ The implementations:
 ## Where to go next
 
 - The tutorials in `src/rice/tutorial/` (lesson1 to lesson4, `past`, `scribe`, `splitstream`, `rawserialization`, `transportlayer`, `ssl`, …) are small, runnable programs. The HTML that goes with them is in `html/rawtutorial/`.
-- The defaults and comments for every parameter are in `jars/freepastry/freepastry.params`.
+- The defaults and comments for every parameter are in `src/main/resources/freepastry.params`.
 - The `package-info.java` of each main package gives a one-paragraph summary.
 - Beware of outdated material. `docs/README.html` (release notes from the Ant era), `docs/javadoc/` (stale pre-generated Javadoc) and parts of `html/rawtutorial/` still mention the xmlpull/xpp3 and SBBI UPnP jars, which are no longer used. Generate current API docs with `mvn javadoc:javadoc`.

@@ -47,12 +47,12 @@
             <version>${bouncycastle.version}</version>
         </dependency>
 
-        <!-- JUnit Jupiter for testing. Not test-scoped yet: the tests live in src/ next to the production code, so the
-             main compilation compiles them too. Switch the API to <scope>test</scope> once they move to src/test/java. -->
+        <!-- JUnit Jupiter for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -63,16 +63,6 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src</sourceDirectory>
-        <resources>
-            <resource>
-                <directory>jars/freepastry</directory>
-                <includes>
-                    <include>freepastry.params</include>
-                </includes>
-            </resource>
-        </resources>
-
         <plugins>
             <!-- Enforce the toolchain this build is verified with -->
             <plugin>
@@ -99,26 +89,6 @@
                 </executions>
             </plugin>
 
-            <!-- Build Helper Plugin to add src as test source -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.2</version>
-                <executions>
-                    <execution>
-                        <id>add-test-source</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-test-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>src</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             
             <!-- Maven Compiler Plugin -->
             <plugin>
@@ -181,7 +151,6 @@
                     </sourceFileIncludes>
                     <sourceFileExcludes>
                         <exclude>rice/p2p/saar/**/*.java</exclude>
-                        <exclude>rice/pastry/socket/testing/*.java</exclude>
                     </sourceFileExcludes>
                 </configuration>
             </plugin>
