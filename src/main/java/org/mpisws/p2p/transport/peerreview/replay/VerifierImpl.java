@@ -454,7 +454,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
     int msgLen = message.remaining();
     int pos = message.position();
-    int lim = message.limit();
 
     int relevantLen = message.remaining();
     if (options != null && options.containsKey(PeerReview.RELEVANT_LENGTH)) {
@@ -496,9 +495,11 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       buf.write(message.array(), message.position(), relevantLen);
 
       if (relevantLen<msgLen) {
-        message.position(pos);
-        message.limit(lim);
-        byte[] hash = transport.hash(message);
+        // the irrelevant part is logged as its hash
+        ByteBuffer irrelevant = message.duplicate();
+        irrelevant.position(pos+relevantLen);
+        byte[] hash = transport.hash(irrelevant);
+        buf.write(hash, 0, hash.length);
       }
       byte[] cHash = transport.hash(buf.getByteBuffer());
       if (!Arrays.equals(cHash,next.getContentHash())) {

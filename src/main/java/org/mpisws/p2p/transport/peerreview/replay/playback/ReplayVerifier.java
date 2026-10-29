@@ -213,7 +213,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   protected void send(Identifier target, ByteBuffer message, int relevantLen) throws IOException {
     int msgLen = message.remaining();
     int pos = message.position();
-    int lim = message.limit();
 
     if (relevantLen < 0)
       relevantLen = message.remaining();
@@ -248,9 +247,11 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       buf.write(message.array(), message.position(), relevantLen);
 
       if (relevantLen<msgLen) {
-        message.position(pos);
-        message.limit(lim);
-        byte[] hash = hashProv.hash(message);
+        // the irrelevant part is logged as its hash
+        ByteBuffer irrelevant = message.duplicate();
+        irrelevant.position(pos+relevantLen);
+        byte[] hash = hashProv.hash(irrelevant);
+        buf.write(hash, 0, hash.length);
       }
       byte[] cHash = hashProv.hash(ByteBuffer.wrap(buf.getBytes()));
       if (!Arrays.equals(cHash, next.getContentHash())) {

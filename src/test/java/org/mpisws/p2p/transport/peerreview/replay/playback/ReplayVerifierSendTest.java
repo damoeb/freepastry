@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.peerreview.replay.playback;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
@@ -172,6 +173,37 @@ public class ReplayVerifierSendTest implements PeerReviewConstants {
     SERIALIZER.serialize(target, buf);
     buf.write(message, 0, message.length);
     return buf.getBytes();
+  }
+
+  /** The SEND entry of a partly relevant message: the receiver, the relevant part, then the hash of the rest. */
+  byte[] partlyHashedSendEntry(Integer target, byte[] message, int relevantLen) throws IOException {
+    byte[] irrelevantHash = hashProv.hash(ByteBuffer.wrap(message, relevantLen, message.length - relevantLen));
+    SimpleOutputBuffer buf = new SimpleOutputBuffer();
+    buf.write(sendEntry(target, Arrays.copyOf(message, relevantLen)));
+    buf.write(irrelevantHash, 0, irrelevantHash.length);
+    return buf.getBytes();
+  }
+
+  @Test
+  public void hashedPartlyRelevantSendMatchesTheSameMessage() throws IOException {
+    history.appendHash(EVT_SEND, hashProv.hash(ByteBuffer.wrap(partlyHashedSendEntry(TARGET, MESSAGE, 3))));
+    SendVerifier verifier = new SendVerifier(hashProv, history);
+
+    verifier.send(TARGET, ByteBuffer.wrap(MESSAGE), 3);
+
+    assertTrue(verifier.verifiedOK());
+  }
+
+  @Test
+  public void hashedPartlyRelevantSendDetectsADifferentIrrelevantPart() throws IOException {
+    history.appendHash(EVT_SEND, hashProv.hash(ByteBuffer.wrap(partlyHashedSendEntry(TARGET, MESSAGE, 3))));
+    SendVerifier verifier = new SendVerifier(hashProv, history);
+
+    byte[] other = MESSAGE.clone();
+    other[other.length - 1]++;
+    verifier.send(TARGET, ByteBuffer.wrap(other), 3);
+
+    assertFalse(verifier.verifiedOK(), "the irrelevant part is covered by its hash");
   }
 
   @Test
