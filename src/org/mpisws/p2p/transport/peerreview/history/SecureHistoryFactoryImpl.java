@@ -169,7 +169,13 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
 
   public SecureHistory createTemp(long baseSeq, byte[] baseHash)
       throws IOException {
-    return create(null, baseSeq, baseHash);
+    // temporary histories go to the temp directory, not the working directory, and are deleted when the JVM exits
+    String name = new File(System.getProperty("java.io.tmpdir"),
+        "peerReview."+environment.getTimeSource().currentTimeMillis()+"."+environment.getRandomSource().nextInt()).getPath();
+    SecureHistory result = create(name, baseSeq, baseHash);
+    new File(name+".index").deleteOnExit();
+    new File(name+".data").deleteOnExit();
+    return result;
   }
 
 }
