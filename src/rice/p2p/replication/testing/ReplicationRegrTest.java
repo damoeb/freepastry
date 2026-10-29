@@ -146,13 +146,8 @@ public class ReplicationRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
     
-    int count = 0;
+    int count = awaitReplicas(id, all, REPLICATION_FACTOR + 1);
     
-    for (int i=0; i<NUM_NODES; i++)  {
-      if (clients[i].scan(all).isMemberId(id)) 
-        count++;
-    }
-  
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 1) + " was " + count, 
                count == REPLICATION_FACTOR + 1);
     
@@ -183,13 +178,8 @@ public class ReplicationRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
     
-    int count = 0;
-    
-    for (int i=0; i<NUM_NODES; i++)  {
-      if (clients[i].scan(all).isMemberId(id)) 
-        count++;
-    }
-    
+    int count = awaitReplicas(id, all, REPLICATION_FACTOR + 1);
+
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 1) + " was " + count, 
                count == REPLICATION_FACTOR + 1);
     
@@ -211,13 +201,8 @@ public class ReplicationRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
     
-    count = 0;
-    
-    for (int i=0; i<NUM_NODES; i++)  {
-      if (clients[i].scan(all).isMemberId(id)) 
-        count++;
-    }
-    
+    count = awaitReplicas(id, all, REPLICATION_FACTOR + 2);
+
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 2) + " was " + count, 
                count == REPLICATION_FACTOR + 2);
     
@@ -226,6 +211,24 @@ public class ReplicationRegrTest extends CommonAPITest {
     sectionDone();
   }
   
+  /**
+   * Counts the nodes holding the id, simulating until the count is as expected or about 10 s passed: the
+   * replication runs on the processing thread, so a fixed single wait made this test flaky under load.
+   */
+  protected int awaitReplicas(Id id, IdRange all, int expected) {
+    int count = 0;
+    for (int round = 0; round < 20; round++) {
+      count = 0;
+      for (int i=0; i<NUM_NODES; i++)  {
+        if (clients[i].scan(all).isMemberId(id))
+          count++;
+      }
+      if (count == expected) return count;
+      simulate();
+    }
+    return count;
+  }
+
   public void runMaintenance() {
     for (int i=0; i<NUM_NODES; i++) {
       replications[i].replicate();
