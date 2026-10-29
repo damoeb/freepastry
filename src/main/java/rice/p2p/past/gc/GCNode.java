@@ -41,8 +41,6 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) GCNode.java
- *
  * This class wraps a Node
  *
  * @version $Id: GCNode.java 3992 2007-12-02 20:09:18Z jeffh $
@@ -52,15 +50,14 @@ import rice.p2p.commonapi.*;
 public class GCNode implements Node {
   
   /**
-   * The node which this mulitring node is wrapping
+   * The node which this GC node is wrapping
    */
   protected Node node;
   
   /**
    * Constructor
    *
-   * @param node The node which this multiring node is wrapping
-   * @param ringId The Id of this node's ring
+   * @param node The node which this GC node is wrapping
    */
   public GCNode(Node node) {
     this.node = node;
@@ -107,9 +104,6 @@ public class GCNode implements Node {
    * @return The endpoint specific to this applicationk, which can be used for
    *         message sending/receiving.
    */
-//  public Endpoint registerApplication(Application application, int port) {
-//    return new GCEndpoint(node.registerApplication(application, port));
-//  }
   
   /**
    * Method which returns the node handle to the local node

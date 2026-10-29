@@ -181,15 +181,12 @@ public class MyScribeClient implements ScribeMultiClient, Application {
   }
 
   public void childAdded(Topic topic, NodeHandle child) {
-//    System.out.println("MyScribeClient.childAdded("+topic+","+child+")");
   }
 
   public void childRemoved(Topic topic, NodeHandle child) {
-//    System.out.println("MyScribeClient.childRemoved("+topic+","+child+")");
   }
 
   public void subscribeFailed(Collection<Topic> topics) {
-//    System.out.println("MyScribeClient.childFailed("+topics+")");
   }
 
   /**
@@ -197,11 +194,9 @@ public class MyScribeClient implements ScribeMultiClient, Application {
    */
   @Deprecated
   public void subscribeFailed(Topic topic) {
-//    System.out.println("MyScribeClient.childFailed("+topic+")");
   }
 
   public void subscribeSuccess(Collection<Topic> topics) {
-//    System.out.println("MyScribeClient.subscribeSuccess("+topics+")");
   }
 
   public boolean forward(RouteMessage message) {
@@ -226,10 +221,9 @@ public class MyScribeClient implements ScribeMultiClient, Application {
   }
   
   public NodeHandle getParent() {
-    // NOTE: Was just added to the Scribe interface.  May need to cast myScribe to a
-    // ScribeImpl if using 1.4.1_01 or older.
+    // NOTE: getParent() is part of the Scribe interface now; the cast to
+    // ScribeImpl is only needed with 1.4.1_01 or older.
     return ((ScribeImpl)myScribe).getParent(myTopic); 
-    //return myScribe.getParent(myTopic); 
   }
   
   public NodeHandle[] getChildren() {

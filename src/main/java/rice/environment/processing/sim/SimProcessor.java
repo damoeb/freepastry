@@ -72,7 +72,6 @@ public class SimProcessor implements Processor {
   }
 
   public void destroy() {
-    // TODO Auto-generated method stub
 
   }
 

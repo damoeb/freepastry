@@ -59,7 +59,7 @@ public interface NATHandler {
   public InetAddress findFireWall(InetAddress bindAddress) throws IOException;
   
   /**
-   * The neame of the firewall's external address.  null if there is no firewall.
+   * The name of the firewall's external address.  null if there is no firewall.
    * 
    * @return
    */

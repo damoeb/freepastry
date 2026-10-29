@@ -151,7 +151,6 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     } else {
       if (simulator.isAlive(i)) {
         int delay = (int)Math.round(simulator.networkDelay(localIdentifier, i));
-//        simulator.notifySimulatorListenersSent(m, localIdentifier, i, delay);
         handle.setSubCancellable(simulator.deliverMessage(m, i, localIdentifier, delay));
         if (deliverAckToMe != null) deliverAckToMe.ack(handle);
       } else {

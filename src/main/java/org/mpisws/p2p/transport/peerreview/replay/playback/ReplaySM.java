@@ -81,14 +81,12 @@ public class ReplaySM extends SelectorManager {
     if (env == null) throw new IllegalArgumentException("env is null!");
     if (environment != null) return;
     environment = env;
-//    start();
   }
   
   @Override
   protected synchronized void addTask(TimerTask task) {
     long now = timeSource.currentTimeMillis();
     if ((task.scheduledExecutionTime() < now) && (timeSource instanceof DirectTimeSource)) {
-//      task.setNextExecutionTime(now);
       if (logger.level <= Logger.WARNING) logger.logException("Can't schedule a task in the past. "+task+" now:"+now+" task.execTime:"+task.scheduledExecutionTime(), new Exception("Stack Trace"));
       throw new RuntimeException("Can't schedule a task in the past.");
     }
@@ -106,26 +104,7 @@ public class ReplaySM extends SelectorManager {
     while (timerProgress) {
       now = verifier.getNextEventTime();
       if (now == -1) return false;
-//      timerProgress = false;
   
-//     int best = -1;
-//     for (int i=0; i<numTimers; i++) {
-//       if ((timer[i].time <= now) && ((best<0) || (timer[i].time<timer[best].time) || ((timer[i].time==timer[best].time) && (timer[i].id<timer[best].id))))
-//         best = i;
-//     }
-//  
-//     if (best >= 0) {
-//       int id = timer[best].id;
-//       TimerCallback *callback = timer[best].callback;
-//       now = timer[best].time;
-//       timer[best] = timer[--numTimers];
-//       vlog(2, "Verifier: Timer expired (#%d, now=%lld)", id, now);
-//       callback->timerExpired(id);
-//       timerProgress = true;
-//     }
-//   }
-//
-//    
       TimerTask next = null;
       
       synchronized (this) {
@@ -156,18 +135,12 @@ public class ReplaySM extends SelectorManager {
     super.doInvocations();
     
     return verifier.makeProgress();
-//    if (!verifier.makeProgress()) {
-//      isSuccess();
-////      if (!verifier.verifiedOK()) throw new RuntimeException("Verification failed.");
-//    }
   }
 
   protected boolean isSuccess() {
     boolean ret = verifier.isSuccess();
     if (ret) {
-      // success!
-//      logger.log("success!");
-      // TODO: do something different 
+      // TODO: let the caller decide what happens on success instead of destroying the environment
       environment.destroy();    
     }
     return ret;

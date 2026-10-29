@@ -82,8 +82,6 @@ public class SecureHistoryImpl implements SecureHistory {
     if (logger == null) throw new IllegalArgumentException("logger is null");
     this.indexFactory = indexFactory;
 
-//    if (hashProv.getHashSizeBytes() != HASH_LENGTH) throw new IllegalArgumentException("HashProvider must use the same hashLength");
-    
     // read the first entry
     indexFile.seek(0);
     IndexEntry firstEntry = indexFactory.build(indexFile);
@@ -104,10 +102,6 @@ public class SecureHistoryImpl implements SecureHistory {
     this.readOnly = readOnly;
     this.hashProv = hashProv;
   }
-  
-//  private void writeEntry(IndexEntry entry, OutputBuffer fileWriter) throws IOException {
-//    entry.serialize(fileWriter);
-//  }
   
   public long getBaseSeq() {
     return baseSeq;
@@ -179,11 +173,6 @@ public class SecureHistoryImpl implements SecureHistory {
     // Optionally, the index file entries can be padded to a multiple of 16 bytes,
     // so they're easier to read in a hexdump. 
  
-//    #ifdef USE_PADDING
-//     for (int i=0; i<sizeof(e.padding); i++)
-//       e.padding[i] = 0xEE;
-//    #endif
-
     // Write the entry to the index file 
 
     topEntry = e;
@@ -200,7 +189,6 @@ public class SecureHistoryImpl implements SecureHistory {
     assert(indexFile != null && dataFile != null);
     
     // Sanity check (for debugging) 
-
     if (readOnly) throw new IllegalStateException("Cannot append entry to readonly history");
     
     if (!pointerAtEnd) {
@@ -218,11 +206,6 @@ public class SecureHistoryImpl implements SecureHistory {
     e.fileIndex = -1;
     e.sizeInFile = -1;
     
-//    #ifdef USE_PADDING
-//    for (int i=0; i<sizeof(e.padding); i++)
-//      e.padding[i] = 0xEE;
-//    #endif
-
     // Write an entry to the index file 
     topEntry = e;
     topEntry.serialize(indexFile);
@@ -231,8 +214,8 @@ public class SecureHistoryImpl implements SecureHistory {
   
   /**
    * Sets the next sequence number to be used. The PeerReview library typically
-   * uses the format <xxxx...xxxyyyy>, where X is a timestamp in microseconds
-   * and Y a sequence number. The sequence numbers need not be contigious
+   * uses the format xxxx...xxxyyyy, where X is a timestamp in microseconds
+   * and Y a sequence number. The sequence numbers need not be contiguous
    * (and usually aren't) 
    */
   public boolean setNextSeq(long nextSeq) {
@@ -351,8 +334,6 @@ public class SecureHistoryImpl implements SecureHistory {
         throw new IOException("History read error");
         
       // we're going to write directly to outfile, in the c++ impl it used header[]/bytesInHeader
-//      byte[] header = new byte[200];
-//      int bytesInHeader = 0;
       
       assert((previousSeq == -1) || (ie.seq > previousSeq));
       
@@ -360,7 +341,6 @@ public class SecureHistoryImpl implements SecureHistory {
       byte[] buffer = null;
       if (ie.sizeInFile > 0) {
         buffer = new byte[(int)ie.sizeInFile]; // grumble...  This needs to be long eventually...
-//        buffer = (unsigned char*) malloc(ie.sizeInFile);
         assert(ie.fileIndex >= 0);
         dataFile.seek(ie.fileIndex);
         dataFile.read(buffer);
@@ -381,7 +361,6 @@ public class SecureHistoryImpl implements SecureHistory {
     }
     
     LogSnippet ret = new LogSnippet(baseHash,entryList);
-//    logger.log("serializeRange("+idxFrom+","+idxTo+"):"+ret);
     return ret;
   }
   
@@ -408,8 +387,6 @@ public class SecureHistoryImpl implements SecureHistory {
         throw new IOException("History read error");
         
       // we're going to write directly to outfile, in the c++ impl it used header[]/bytesInHeader
-//      byte[] header = new byte[200];
-//      int bytesInHeader = 0;
       
       assert((previousSeq == -1) || (ie.seq > previousSeq));
       
@@ -421,18 +398,13 @@ public class SecureHistoryImpl implements SecureHistory {
       if (previousSeq >= 0) {
         if (ie.seq == (previousSeq+1)) {
           outfile.writeByte((byte)0);
-//          header[bytesInHeader++] = 0;
         } else {
           long dhigh = (ie.seq/1000) - (previousSeq/1000);
           if ((dhigh < 255) && ((ie.seq%1000)==0)) {
             outfile.writeByte((byte)(dhigh & 0xFF));
-//            header[bytesInHeader++] = (byte)(dhigh & 0xFF);
           } else {
             outfile.writeByte((byte)0xFF);
-//            header[bytesInHeader++] = (byte)0xFF;
             outfile.writeLong(ie.seq);
-//          *(long*)&header[bytesInHeader] = ie.seq; 
-//            bytesInHeader += sizeof(long long);
           }
         }
       }
@@ -442,13 +414,11 @@ public class SecureHistoryImpl implements SecureHistory {
       // Append entry type
       
       outfile.writeShort(ie.type);
-      //header[bytesInHeader++] = ie.type;
       
       // If entry is not hashed, read contents from the data file       
       byte[] buffer = null;
       if (ie.sizeInFile > 0) {
         buffer = new byte[(int)ie.sizeInFile]; // grumble...  This needs to be long eventually...
-//        buffer = (unsigned char*) malloc(ie.sizeInFile);
         assert(ie.fileIndex >= 0);
         dataFile.seek(ie.fileIndex);
         dataFile.read(buffer);
@@ -462,36 +432,23 @@ public class SecureHistoryImpl implements SecureHistory {
 
       if (hashIt) {
         outfile.writeByte((byte)0);
-//        header[bytesInHeader++] = 0;
         outfile.write(ie.contentHash,0,ie.contentHash.length); 
-//        for (int i=0; i<hashProv.getSizeOfHash(); i++)
-//          header[bytesInHeader++] = ie.contentHash[i];
       } else if (ie.sizeInFile < 255) {
         outfile.writeByte((byte)(ie.sizeInFile & 0xFF));
-//        header[bytesInHeader++] = (unsigned char) ie.sizeInFile;
       } else if (ie.sizeInFile < 65536) {
         outfile.writeByte((byte)0xFF);
-//        header[bytesInHeader++] = 0xFF;
         outfile.writeShort((short)(ie.sizeInFile & 0xFFFF));
-//        *(unsigned short*)&header[bytesInHeader] = (unsigned short) ie.sizeInFile;
-//        bytesInHeader += sizeof(unsigned short);
       } else {
-//  throw new RuntimeException("A");    
         outfile.writeByte((byte)0xFE);
-        //header[bytesInHeader++] = 0xFE;
         outfile.writeLong(ie.sizeInFile);
-//        *(unsigned int*)&header[bytesInHeader] = (unsigned int) ie.sizeInFile;
-//        bytesInHeader += sizeof(unsigned int);
       }
       
       // Write the entry to the output file
       
-      // don't need to do this in this impl, becuase we've been doing it all along
-//      fwrite(&header, bytesInHeader, 1, outfile);
+      // don't need to do this in this impl, because we've been doing it all along
 
       if (!hashIt) { 
         outfile.write(buffer,0,buffer.length);
-        //fwrite(buffer, ie.sizeInFile, 1, outfile);
       }        
     } // for
 
@@ -601,31 +558,8 @@ public class SecureHistoryImpl implements SecureHistory {
   }
 
   public void appendSnippetToHistory(LogSnippet snippet) throws IOException {
-//    long currentSeq = snippet.getFirstSeq();
     for (SnippetEntry sEntry : snippet.entries) {
-//    int readptr = 0;
-//
-//    while (readptr < snippetLen) {
-//      unsigned char entryType = snippet[readptr++];
-//      unsigned char sizeCode = snippet[readptr++];
-//      unsigned int entrySize = sizeCode;
-//      bool entryIsHashed = (sizeCode == 0);
-//
-//      if (sizeCode == 0xFF) {
-//        entrySize = *(unsigned short*)&snippet[readptr];
-//        readptr += 2;
-//      } else if (sizeCode == 0xFE) {
-//        entrySize = *(unsigned int*)&snippet[readptr];
-//        readptr += 4;
-//      } else if (sizeCode == 0) {
-//        entrySize = transport->getHashSizeBytes();
-//      }
 
-//  #ifdef VERBOSE
-//      plog(3, "Entry type %d, size=%d, seq=%lld", entryType, entrySize, currentSeq);
-//  #endif
-//      logger.log("ZZZ "+sEntry);
-      
       if (sEntry.seq > getLastSeq()) {
         if (!setNextSeq(sEntry.seq))
           throw new RuntimeException("Audit: Cannot set history sequence number?!?");
@@ -636,27 +570,8 @@ public class SecureHistoryImpl implements SecureHistory {
           appendHash(sEntry.type, sEntry.content);
         }
       } else {
-//  #ifdef VERBOSE
-//        if (currentSeq >= skipEverythingBeforeSeq)
-//          warning("Skipped entry because it is already present (top=%lld)", history->getLastSeq());
-//  #endif
       }
 
-//      readptr += entrySize;
-//      if (readptr == snippetLen) // legitimate end
-//        break;
-
-//      unsigned char dseqCode = snippet[readptr++];
-//      if (dseqCode == 0xFF) {
-//        currentSeq = *(long long*)&snippet[readptr];
-//        readptr += sizeof(long long);
-//      } else if (dseqCode == 0) {
-//        currentSeq ++;
-//      } else {
-//        currentSeq = currentSeq - (currentSeq%1000) + (dseqCode * 1000LL);
-//      }
-//
-//      assert(readptr <= snippetLen);
     }
   }
   

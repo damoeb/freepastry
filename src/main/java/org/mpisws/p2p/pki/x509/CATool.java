@@ -48,11 +48,6 @@ import java.util.Date;
 
 public interface CATool {
 
-  // ctor new CATool(X509Certificate);
-  // public X509Certificate makeNewCACert(); // static?
-  
-//  public X509Certificate signCert(PKCS10CertificationRequest request);
-
   public X509Certificate sign(String CN, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException;
 
   public X509Certificate sign(String CN, PublicKey publicKey, Date expiryDate, long serialNumber) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException;

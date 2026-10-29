@@ -66,7 +66,6 @@ public class EvtSendSign implements PeerReviewConstants {
     buf.read(signature);
     restOfMessage = new byte[buf.bytesRemaining()];
     buf.read(restOfMessage);
-//    restOfMessage = ByteBuffer.wrap(restOfMessageBytes);
   }
   
   public void serialize(OutputBuffer buf) throws IOException {

@@ -88,7 +88,7 @@ public class ProfileSelector extends SelectorManager {
   }
   
   /**
-   * 
+   * Also starts a watchdog thread that prints the last task every lastTaskTime millis.
    */
   public ProfileSelector(String instance, TimeSource timeSource, LogManager log, RandomSource rand, final int lastTaskTime) {
     super(instance, timeSource, log, (rand == null)?new SimpleRandomSource(log):rand);
@@ -106,10 +106,7 @@ public class ProfileSelector extends SelectorManager {
 
   }
 
-//  int numLoops = 0;
   protected void onLoop() {
-//    numLoops++;
-//    if (numLoops % 100 == 0) System.out.println("Selector loops:"+numLoops);
     if (!useHeartbeat) return;  
     long curTime = timeSource.currentTimeMillis();
     if ((curTime - lastHeartBeat) > HEART_BEAT_INTERVAL) {
@@ -125,10 +122,6 @@ public class ProfileSelector extends SelectorManager {
       numInvocationsScheduled++;
       super.invoke(d);
     }
-    //System.out.println("ProfileSelector.invoke("+d.getClass().getName()+"@"+System.identityHashCode(d)+")");
-//    if (!(d instanceof ConnectionManager.SenderInvokee)) {
-//      //Thread.dumpStack();
-//    }
     int numInvokes = getNumInvocations(); // null-safe after destroy()
     if (numInvokes > maxInvokes) {
       maxInvokes = numInvokes;
@@ -226,12 +219,6 @@ public class ProfileSelector extends SelectorManager {
           skh.read(keys[i]);
           int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Read Complete";
-//          if (skh instanceof PingManager) {
-//            addStat("readingUDP",time);   
-//          } else {
-//            addStat("readingTCP",time);               
-//          }
-          //addStat("reading",time);               
         }
 
         // write
@@ -244,12 +231,6 @@ public class ProfileSelector extends SelectorManager {
           skh.write(keys[i]);
           int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Write Complete";
-//          if (skh instanceof PingManager) {
-//            addStat("writingUDP",time);   
-//          } else {
-//            addStat("writingTCP",time);               
-//          }
-//          addStat("writing",time);   
         }
       } else {
         keys[i].channel().close();
@@ -273,7 +254,6 @@ public class ProfileSelector extends SelectorManager {
     while (i.hasNext()) {
       numInvocationsExecuted++;
       run = (Runnable)i.next();
-      //System.out.println("ProfileSelector.doInvocations()"+run.getClass().getName()+"@"+System.identityHashCode(run));
       try {
         lastTaskType = "Invocation";
         lastTaskClass = run.getClass().getName();
@@ -282,12 +262,6 @@ public class ProfileSelector extends SelectorManager {
         long startTime = timeSource.currentTimeMillis();
         run.run();
         int time = (int)(timeSource.currentTimeMillis() - startTime);
-//        if (run instanceof ConnectionManager.SenderInvokee) {
-//          ConnectionManager.SenderInvokee si = (ConnectionManager.SenderInvokee)run;
-//          addStat("sending "+si.message.getClass().getName(), time);  
-//        } else {
-//          addStat(run.getClass().getName(),time);        
-//        }
         lastTaskType = "Invocation Complete";
       } catch (Exception e) {
         if (logger.level <= Logger.SEVERE) logger.logException(
@@ -355,7 +329,7 @@ public class ProfileSelector extends SelectorManager {
   
   
   /**
-   * A statistic as to how long user code is taking to process a paritcular message.
+   * A statistic as to how long user code is taking to process a particular message.
    * 
    * @author Jeff Hoye
    */

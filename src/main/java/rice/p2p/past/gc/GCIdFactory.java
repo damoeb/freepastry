@@ -43,8 +43,6 @@ import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) GCIdFactory.java 
- *
  * This class provides the ability to build Ids which can support a multi-ring
  * hierarchy.
  *
@@ -69,50 +67,55 @@ public class GCIdFactory implements IdFactory {
   }
   
   /**
-   * Builds a protocol-specific Id given the source data.
+   * Not supported.
    *
    * @param material The material to use
-   * @return The built Id.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public Id buildNormalId(byte[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
   
   /**
-   * Builds a protocol-specific Id given the source data.
+   * Not supported.
    *
    * @param material The material to use
-   * @return The built Id.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public Id buildId(byte[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
   
   /**
-   * Builds a protocol-specific Id given the source data.
+   * Not supported.
    *
    * @param material The material to use
-   * @return The built Id.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public Id buildId(int[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
   
   /**
-   * Builds a protocol-specific Id by using the hash of the given string as source data.
+   * Not supported.
    *
    * @param string The string to use as source data
-   * @return The built Id.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public Id buildId(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
   
   /**
-   * Builds a random protocol-specific Id.
+   * Not supported.
    *
    * @param rng A random number generator
-   * @return The built Id.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public Id buildRandomId(Random rng) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
@@ -123,55 +126,56 @@ public class GCIdFactory implements IdFactory {
   }
 
   /**
-   * Builds an Id by converting the given toString() output back to an Id.  Should
-   * not normall be used.
+   * Not supported.
    *
    * @param string The toString() representation of an Id
-   * @return The built Id.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public Id buildIdFromToString(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
   
   /**
-   * Builds an Id by converting the given toString() output back to an Id.  Should
-   * not normally be used.
+   * Not supported.
    *
    * @param chars The character array
    * @param offset The offset to start reading at
    * @param length The length to read
-   * @return The built Id.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public Id buildIdFromToString(char[] chars, int offset, int length) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");  
   }
   
   /**
-   * Builds an IdRange based on a prefix.  Any id which has this prefix should
-   * be inside this IdRange, and any id which does not share this prefix should
-   * be outside it.
+   * Not supported.
    *
    * @param string The toString() representation of an Id
-   * @return The built Id.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public IdRange buildIdRangeFromPrefix(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");  
   }
   
   /**
-   * Returns the length a Id.toString should be.
+   * Not supported.
    *
-   * @return The correct length;
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public int getIdToStringLength() {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
   
   /**
-   * Builds a protocol-specific Id.Distance given the source data.
+   * Not supported.
    *
    * @param material The material to use
-   * @return The built Id.Distance.
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public Id.Distance buildIdDistance(byte[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build IdDistances!");  }
@@ -197,19 +201,21 @@ public class GCIdFactory implements IdFactory {
   }
   
   /**
-   * Creates an empty IdSet.
+   * Not supported.
    *
-   * @return an empty IdSet
+   * @param map ignored
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public IdSet buildIdSet(SortedMap<Id, ?> map) {
-    //return new GCIdSet(factory.buildIdSet(new GCSortedMap(map)), factory);
     throw new UnsupportedOperationException("GCIdFactory.buildIDSet()");
   }
   
   /**
-   * Creates an empty NodeHandleSet.
+   * Not supported.
    *
-   * @return an empty NodeHandleSet
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public NodeHandleSet buildNodeHandleSet() {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build NodeHandleSets!");

@@ -43,10 +43,10 @@ import java.security.*;
 import java.util.*;
 
 /**
- * XMLObjectInputStreamm is an extension of ObjectInputStreamm which provides
+ * XMLObjectInputStream is an extension of ObjectInputStream which provides
  * for deserialization for objects which have been converted to XML via a
  * XMLObjectOutputStream.  This class supports all of the features of 
- * the ObjectInputStreamm, including serialization support for any Java 
+ * the ObjectInputStream, including serialization support for any Java 
  * object graph implementing the Serializable interface, support for 
  * Externalizable classes, custom deserialization via the readObject() method, 
  * class evolution via the readObjectNoData() method, alternate field
@@ -103,7 +103,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected Stack<Class<?>> currentClasses;
   
   /**
-   * The ReflectionFactory (jdk.unsupported), which allows for prividged construction of
+   * The ReflectionFactory (jdk.unsupported), which allows for privileged construction of
    * objects.  Looked up reflectively so the build does not depend on internal API at
    * compile time.  As of Java 25 there is no supported replacement: java.io.ObjectStreamClass
    * does not expose instance creation, and MethodHandles cannot allocate an object
@@ -156,7 +156,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   }
   
   
-  // ----- ObjectInputStreamm Overriding Methods -----
+  // ----- ObjectInputStream Overriding Methods -----
   
   /**
    * Method which reads the XML header off of the stream.  Usually, this is the
@@ -360,7 +360,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   }
   
   /**
-   * Method which is called by ObjectInputStreamm.readObject(), and reads
+   * Method which is called by ObjectInputStream.readObject(), and reads
    * the next object from the stream, and returns the result.  If the object
    * (or any of it's descendents) has a readResolve() method, that object is
    * returned.
@@ -467,7 +467,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   
   /**
    * This method returns the readResolve() method of a given class, if such a method 
-   * exists.  This method searches the class's heirarchy for a readResolve() method
+   * exists.  This method searches the class's hierarchy for a readResolve() method
    * which is assessible by the given class.  If no such method is found, null is returned.
    *
    * @param cl The class to find the readResolve() of
@@ -519,7 +519,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   
   /**
    * This method returns the readResolve() method of a given class, if such a method 
-   * exists.  This method searches the class's heirarchy for a readResolve() method
+   * exists.  This method searches the class's hierarchy for a readResolve() method
    * which is assessible by the given class.  If no such method is found, null is returned.
    *
    * @param cl The class to find the readResolve() of
@@ -546,7 +546,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   /**
    * Method which returns the Serializable constructor for the provided class.  This
    * Constructor is the no-arg Constructor for the first non-Serializable class
-   * in the class's superclass heirarchy.  This method does not cache the result, but
+   * in the class's superclass hierarchy.  This method does not cache the result, but
    * does set the constructor to be accessible, regardless of the Java security
    * protection.
    *
@@ -637,7 +637,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   }
   
   
-  // ----- ObjectInputStreamm Referencing Methods -----
+  // ----- ObjectInputStream Referencing Methods -----
   
   /**
    * Method which adds a reference in the hashtable of references.
@@ -687,7 +687,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * that the XML reader is currently on a primitive tag, and does 
    * consume the end primitive tag.
    *
-   * @param type The type of primitive which should be next
    * @return The int read from the stream
    * @throws IOException If an error occurs
    */
@@ -700,7 +699,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * that the XML reader is currently on a primitive tag, and does 
    * consume the end primitive tag.
    *
-   * @param type The type of primitive which should be next
    * @return The boolean read from the stream
    * @throws IOException If an error occurs
    */
@@ -713,7 +711,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * that the XML reader is currently on a primitive tag, and does 
    * consume the end primitive tag.
    *
-   * @param type The type of primitive which should be next
    * @return The byte read from the stream
    * @throws IOException If an error occurs
    */
@@ -726,7 +723,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * that the XML reader is currently on a primitive tag, and does 
    * consume the end primitive tag.
    *
-   * @param type The type of primitive which should be next
    * @return The char read from the stream
    * @throws IOException If an error occurs
    */
@@ -739,7 +735,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * that the XML reader is currently on a primitive tag, and does 
    * consume the end primitive tag.
    *
-   * @param type The type of primitive which should be next
    * @return The double read from the stream
    * @throws IOException If an error occurs
    */
@@ -752,7 +747,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * that the XML reader is currently on a primitive tag, and does 
    * consume the end primitive tag.
    *
-   * @param type The type of primitive which should be next
    * @return The float read from the stream
    * @throws IOException If an error occurs
    */
@@ -765,7 +759,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * that the XML reader is currently on a primitive tag, and does 
    * consume the end primitive tag.
    *
-   * @param type The type of primitive which should be next
    * @return The long read from the stream
    * @throws IOException If an error occurs
    */
@@ -778,7 +771,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * that the XML reader is currently on a primitive tag, and does 
    * consume the end primitive tag.
    *
-   * @param type The type of primitive which should be next
    * @return The short read from the stream
    * @throws IOException If an error occurs
    */
@@ -1161,8 +1153,6 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * then returns.  Thus, any data read by this method is ignored.  However, the objects
    * here are deserialized as the stream may reference them in the future.
    *
-   * @param o The object we are reading the the class for
-   * @return The object read from the stream
    * @throws IOException If an error occurs
    * @throws ClassNotFoundException If the class cannot be found
    */
@@ -1422,8 +1412,8 @@ public class XMLObjectInputStream extends ObjectInputStream {
   
   /**
    * This class is an implementation of GetField which is compatible with 
-   * the XMLObjectInputStreamm.  It works in the same manner as the 
-   * ObjectInputStreamm.GetField.
+   * the XMLObjectInputStream.  It works in the same manner as the 
+   * ObjectInputStream.GetField.
    */
   public class GetField extends ObjectInputStream.GetField {
     

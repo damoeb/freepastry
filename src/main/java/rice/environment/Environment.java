@@ -66,8 +66,6 @@ import rice.selector.SelectorManager;
  * Used to provide properties, timesource, loggers etc to the FreePastry
  * apps and components.
  * 
- * XXX: Plan is to place the environment inside a PastryNode.
- * 
  * @author Jeff Hoye
  */
 public class Environment implements Destructable {
@@ -85,15 +83,19 @@ public class Environment implements Destructable {
   private HashSet<Destructable> destructables = new HashSet<Destructable>();
   
   /**
-   * Constructor.  You can provide null values for all/any paramenters, which will result
+   * Constructor.  You can provide null values for all parameters except params, which will result
    * in a default choice.  If you want different defaults, consider extending Environment
    * and providing your own chooseDefaults() method.
    * 
    * @param sm the SelectorManager.  Default: rice.selector.SelectorManager
+   * @param proc the Processor.  Default: rice.environment.processing.simple.SimpleProcessor,
+   *   or rice.environment.processing.sim.SimProcessor if environment_use_sim_processor is set
    * @param rs the RandomSource.  Default: rice.environment.random.simple.SimpleRandomSource
    * @param time the TimeSource.  Default: rice.environment.time.simple.SimpleTimeSource
    * @param lm the LogManager.  Default: rice.environment.logging.simple.SimpleLogManager
-   * @param props the Properties.  Default: empty properties
+   * @param params the Parameters.  Required.
+   * @param strategy the ExceptionStrategy.  Default: rice.environment.exception.simple.SimpleExceptionStrategy
+   * @throws IllegalArgumentException if params is null
    */
   public Environment(SelectorManager sm, Processor proc, RandomSource rs, TimeSource time, LogManager lm, Parameters params, ExceptionStrategy strategy) {
     this.selectorManager = sm;    
@@ -116,17 +118,13 @@ public class Environment implements Destructable {
     this.selectorManager.setEnvironment(this);
     
     addDestructable(this.time);
-    
-//    addDestructable(this.selectorManager);
-//    addDestructable(this.processor);
-    
   }
   
   /**
-   * Convienience for defaults.
+   * Convenience for defaults.
    * 
+   * @param orderedDefaultFiles the parameter files to load from the classpath, in order
    * @param paramFileName the file where parameters are saved
-   * @throws IOException
    */
   public Environment(String[] orderedDefaultFiles, String paramFileName) {
     this(null,null,null,null,null,new SimpleParameters(orderedDefaultFiles,paramFileName), null);
@@ -161,7 +159,7 @@ public class Environment implements Destructable {
   }
 
   /**
-   * Convienience for defaults.  Has no parameter file to load/store.
+   * Convenience for defaults.  Has no parameter file to load/store.
    */
   public Environment() {
     this(null);
@@ -172,9 +170,6 @@ public class Environment implements Destructable {
    */
   protected void chooseDefaults() {
     // choose defaults for all non-specified parameters
-//    if (params == null) {      
-//      params = new SimpleParameters("temp"); 
-//    }    
     if (time == null) {
       time = generateDefaultTimeSource(); 
     }

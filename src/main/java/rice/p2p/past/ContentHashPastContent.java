@@ -43,8 +43,6 @@ import rice.*;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) ContentHashPastContent.java
- *
  * An abstract class for content-hash objects stored in Past.
  *
  * Provided as a convenience.
@@ -74,7 +72,7 @@ public abstract class ContentHashPastContent implements PastContent {
    * as a function of the new and the existing object.
    *
    * @param id the key identifying the object
-   * @param existingObj the existing object stored on this node (null
+   * @param existingContent the existing object stored on this node (null
    *        if no object associated with id is stored on this node)
    * @return null, if the operation is not allowed; else, the new
    *         object to be stored on the local node.

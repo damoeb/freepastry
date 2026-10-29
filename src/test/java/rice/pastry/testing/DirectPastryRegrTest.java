@@ -100,10 +100,6 @@ public class DirectPastryRegrTest extends PastryRegrTest {
   protected boolean simulate() {
     try { Thread.sleep(300); } catch (InterruptedException ie) {}
     return false;
-//    boolean res = simulator.simulate();
-//    if (res)
-//      msgCount++;
-//    return res;
   }
 
   // do nothing in the simulated world
@@ -122,8 +118,6 @@ public class DirectPastryRegrTest extends PastryRegrTest {
    */
   protected void killNode(PastryNode pn) {
     pn.destroy();
-//    NetworkSimulator enet = (NetworkSimulator) simulator;
-//    enet.setAlive(pn.getNodeId(), false);
   }
 
   protected void checkRoutingTable(final RegrTestApp rta) {

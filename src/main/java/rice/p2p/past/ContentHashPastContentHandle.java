@@ -45,8 +45,6 @@ import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.past.rawserialization.RawPastContentHandle;
 
 /**
- * @(#) ContentHashPastContentHandle.java
- *
  * A handle class for content-hash objects stored in Past.
  *
  * @version $Id: ContentHashPastContentHandle.java 3613 2007-02-15 14:45:14Z jstewart $

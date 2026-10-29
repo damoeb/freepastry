@@ -45,8 +45,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
- * @(#) RingId.java
- *
  * This class represents an Id with a specific ring attached.
  *
  * @version $Id: RingId.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -79,7 +77,8 @@ public class RingId implements Id {
   /**
    * Constructor
    *
-   * @param node The node to base this node off of
+   * @param ringId The id of the ring
+   * @param id The id within the ring
    */
   private RingId(Id ringId, Id id) {
     this.id = id;
@@ -94,9 +93,11 @@ public class RingId implements Id {
   }  
   
   /**
-   * Constructor.
+   * Returns the canonical RingId for the given ring and id.
    *
-   * @param material an array of length at least IdBitLength/32 containing raw Id material.
+   * @param ringId The id of the ring
+   * @param id The id within the ring
+   * @return the RingId
    */
   public static RingId build(Id ringId, Id id) {   
     return resolve(new RingId(ringId, id));
@@ -124,15 +125,13 @@ public class RingId implements Id {
   }
   
   /**
-   * Define readResolve, which will replace the deserialized object with the canootical
-   * one (if one exists) to ensure RingId coalescing.
+   * Define readResolve, which is meant to replace the deserialized object with the canonical
+   * one (if one exists) to ensure RingId coalescing. Currently it returns the object itself.
    *
-   * @return The real RingId
+   * @return This RingId
    */
   private Object readResolve() throws ObjectStreamException {
-    // commented out to preserve backward compatibility with serialization 
-    // should be able to reenable in the future
-    //return resolve(this);
+    // TODO: return resolve(this) to coalesce RingIds; disabled to preserve backward compatibility with serialization
     return this;
   }
   
@@ -244,7 +243,8 @@ public class RingId implements Id {
   /**
    * Stores the byte[] value of this Id in the provided byte array
    *
-   * @return A byte[] representing this Id
+   * @param array the array to write to
+   * @param offset the offset in the array to start writing at
    */
   public void toByteArray(byte[] array, int offset) {
     id.toByteArray(array, offset);

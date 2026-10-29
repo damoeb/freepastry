@@ -165,7 +165,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
    * test if this range is adjacent to another range
    * 
    * @param o another range
-   * @return true if the range is asjacent to o
+   * @return true if the range is adjacent to o
    */
   public boolean isAdjacent(IdRange o) {
     return (ccw.equals(o.cw) || o.ccw.equals(cw)) && !empty && !o.empty
@@ -202,26 +202,6 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
   public Id getCW() {
     return cw;
   }
-
-  /**
-   * set counterclockwise edge of range
-   * 
-   * @param ccw the new id at the counterclockwise edge of the range (inclusive)
-   */
-//  private void setCCW(Id ccw) {
-//    this.ccw = ccw;
-//    empty = false;
-//  }
-
-  /**
-   * set clockwise edge of range
-   * 
-   * @param cw the new id at the clockwise edge of the range (exclusive)
-   */
-//  private void setCW(Id cw) {
-//    this.cw = cw;
-//    empty = false;
-//  }
 
   /**
    * merge two ranges if this and other don't overlap, are not adjacent, and
@@ -403,7 +383,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
     if (empty)
       return "IdRange: empty";
     else
-      return "IdRange: from:" + ccw + " to:" + cw;//+" " + (isFull() ? "full" : " size:"+size());
+      return "IdRange: from:" + ccw + " to:" + cw;
   }
 
   // Common API Support

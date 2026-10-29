@@ -70,22 +70,15 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
   }
   
   public RawMessage deserialize(InputBuffer buf, NodeHandle sender) throws IOException {
-//    InputBuffer buf = new SimpleInputBuffer(b.array(), b.position());    
     
     int address = buf.readInt();
-//    boolean hasSender = buf.readBoolean();
     byte priority = buf.readByte();
     short type = buf.readShort();
-//    logger.log("addr:"+address+" sndr:"+hasSender+" pri:"+priority+" type:"+type);
-//    NodeHandle sender = null;
-//    if (hasSender) {
-//      sender = nodeHandleFactory.readNodeHandle(buf);
-//    }
 
-    // TODO: Think about how to make this work right.  Maybe change the default deserializer?
+    // TODO: an unknown address fails the whole message; consider a default deserializer
     MessageDeserializer deserializer = getDeserializer(address);
     if (deserializer == null) {
-      throw new IOException("Unknown address:"+address);  // TODO: Make UnknownAddressException
+      throw new IOException("Unknown address:"+address);  // TODO: throw a dedicated UnknownAddressException
     }
     
     Message msg = deserializer.deserialize(buf, type, priority, sender);
@@ -101,10 +94,6 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
     int address = msg.getDestination();
     o.writeInt(address);
     
-//    NodeHandle sender = msg.getSender();
-//    boolean hasSender = (sender != null);
-//    o.writeBoolean(hasSender);
-
     
     // range check priority
     int priority = msg.getPriority();
@@ -115,23 +104,6 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
     short type = msg.getType();        
     o.writeShort(type);
     
-//    if (isRouteMessage()) {
-//      RouteMessage rm = (RouteMessage)msg; 
-//      sendOpts = rm.getOptions(); 
-//      rmSubAddress = rm.getAuxAddress();
-//      rmSubType = rm.getInternalType();
-//    }
-
-    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    // + NodeHandle sender +
-    // + +
-    // ... flexable size
-    // + +
-    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    if (hasSender) {
-//      msg.getSender().serialize(o);
-//    }
-        
     msg.serialize(o);
   }
   

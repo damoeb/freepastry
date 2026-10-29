@@ -61,7 +61,7 @@ import java.util.*;
  */
 public class EncryptedInputStream extends InputStream {
   
-  // the public key
+  // the private key
   protected PrivateKey privateKey;
   
   // the decrypted symmetric key
@@ -78,10 +78,11 @@ public class EncryptedInputStream extends InputStream {
   
   /**
    * Builds an encrypted inputstream given a private key to 
-   * decrypt thing under
+   * decrypt things under
    *
-   * @param key The key
+   * @param privateKey The key
    * @param stream The underlying stream
+   * @throws IOException if reading the encrypted symmetric key fails
    */
   public EncryptedInputStream(PrivateKey privateKey, InputStream stream) throws IOException {
     this.privateKey = privateKey;

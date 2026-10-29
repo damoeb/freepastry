@@ -477,7 +477,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   
   /**
    * This method returns the writeReplce() method of a given class, if such a method 
-   * exists.  This method searches the class's heirarchy for a writeReplace() method
+   * exists.  This method searches the class's hierarchy for a writeReplace() method
    * which is assessible by the given class.  If no such method is found, null is returned.
    *
    * @param cl The class to find the writeReplace() of
@@ -525,7 +525,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   
   /**
     * This method returns the readResolve() method of a given class, if such a method 
-   * exists.  This method searches the class's heirarchy for a readResolve() method
+   * exists.  This method searches the class's hierarchy for a readResolve() method
    * which is assessible by the given class.  If no such method is found, null is returned.
    *
    * @param cl The class to find the readResolve() of
@@ -555,7 +555,8 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * which fields are serializable.  Otherwise, all declared non-static and non-transient
    * fields are returned.
    *
-   * @param c The class to return the fields for
+   * @param cl The class to return the fields for
+   * @return the fields to serialize
    */
   protected Field[] getPersistentFields(Class<?> cl) {
     synchronized (PERSISTENT_FIELDS) {
@@ -643,7 +644,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * Method which returns an array of classes representing the class 
    * hierarchy of the provided class, exempting the Object class.  
    *
-   * @param c The class to return the heirarchy for
+   * @param c The class to return the hierarchy for
    * @return The heierarchy of the provided class
    */
   protected Class<?>[] getSuperClasses(Class<?> c) {
@@ -666,7 +667,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * Method which determines a unique hash value for each object.  This implementation
    * uses the System.identityHashCode() method, which returns the memory address.
    *
-   * @return An integer, representing a unqiue hash value
+   * @return An integer, representing a unique hash value
    */
   protected int hash(Object o) {
     return System.identityHashCode(o) & 0x7FFFFFFF;
@@ -731,7 +732,6 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * @param o The object to write to the stream
    * @param field The field name to write the object as
    * @throws IOException If an error occurs
-   * @throws ClassNotFoundException If the class cannot be found
    */
   protected void writeObject(Object o, String field) throws IOException {
     if (o == null) {
@@ -808,7 +808,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   /**
    * Method which writes a string to the stream as the provided field.
    *
-   * @param o The object to write to the stream
+   * @param s The string to write to the stream
    * @param field The field name to write the object as
    * @param shared Whether or not to record a reference to this object
    * @throws IOException If an error occurs

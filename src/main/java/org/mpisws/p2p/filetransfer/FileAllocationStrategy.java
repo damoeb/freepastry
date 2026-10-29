@@ -49,9 +49,8 @@ public interface FileAllocationStrategy {
   /**
    * 
    * @param metadata application specific, often the file name  
-   * @param size the total file size
-   * @param start the first byte intended to transfer
-   * @param finish the last byte intended to transfer
+   * @param offset the first byte intended to transfer
+   * @param length the number of bytes intended to transfer
    * @return
    * @throws IOException
    */

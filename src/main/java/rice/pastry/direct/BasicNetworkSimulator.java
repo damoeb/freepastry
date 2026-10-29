@@ -106,13 +106,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
 
   private void addTask(TimerTask dtt) {
     if (logger.level <= Logger.FINE) logger.log("addTask("+dtt+")");
-//    System.out.println("addTask("+dtt+")");
-//    synchronized(taskQueue) {
-//      taskQueue.add(dtt);
-//    }
     manager.getTimer().schedule(dtt);
-//    start();
-//    if (!manager.isSelectorThread()) Thread.yield();
   }
   
   public CancellableTask enqueueDelivery(Delivery d, int delay) {
@@ -164,39 +158,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
 
   
-  /**
-   * set the liveliness of a NodeId
-   * 
-   * @param nid the NodeId being set
-   * @param alive the value being set
-   */
-//  public void destroy(TLPastryNode node) {
-//    node.destroy();
-//    // NodeRecord nr = (NodeRecord) nodeMap.get(nid);
-//    //
-//    // if (nr == null) {
-//    // throw new Error("setting node alive for unknown node");
-//    // }
-//    //
-//    // if (nr.alive != alive) {
-//    // nr.alive = alive;
-//    //
-//    // DirectNodeHandle[] handles = (DirectNodeHandle[]) nr.handles.toArray(new
-//    // DirectNodeHandle[0]);
-//    //
-//    // for (int i = 0; i < handles.length; i++) {
-//    // if (alive) {
-//    // handles[i].notifyObservers(NodeHandle.DECLARED_LIVE);
-//    // } else {
-//    // handles[i].notifyObservers(NodeHandle.DECLARED_DEAD);
-//    // }
-//    // }
-//    // }
-//  }
-
-
   public void registerIdentifier(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord record) {
-    //logger.log("registerIdentifier("+i+") on thread "+Thread.currentThread());
     nodes.put(i, new Tupel(i, dtl, record));
   }
 
@@ -226,9 +188,6 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     Tupel t = nodes.get(i);
     if (t == null) return null;
     return t.tl;
-//    NodeHandleAdapter nha = (NodeHandleAdapter)t.tl;
-//    return (DirectTransportLayer<Identifier, MessageType>)nha.getTL();
-//    return (DirectTransportLayer<Identifier, MessageType>)nodes.get(i).tl;
   }
   
   /**

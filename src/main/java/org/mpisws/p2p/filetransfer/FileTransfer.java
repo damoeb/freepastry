@@ -50,7 +50,7 @@ public interface FileTransfer {
    * contain whatever the application needs to name the file, often a filename is sufficient.
    * @param priority the priority of sending
    * @param offset where to start in the file
-   * @param length how many bytes to send (must be <= fileLength-offset)
+   * @param length how many bytes to send (must be at most fileLength-offset)
    * @param c who to notify when it is done
    * @return
    */

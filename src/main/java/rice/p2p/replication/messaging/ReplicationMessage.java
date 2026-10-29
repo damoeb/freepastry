@@ -44,8 +44,6 @@ import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.replication.*;
 
 /**
- * @(#) ReplicationMessage.java
- *
  * This class the abstraction of a message used internally by replication.
  *
  * @version $Id: ReplicationMessage.java 3613 2007-02-15 14:45:14Z jstewart $
@@ -61,10 +59,9 @@ public abstract class ReplicationMessage implements RawMessage {
   protected NodeHandle source;
   
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
    * @param source The source address
-   * @param topic The topic
    */
   protected ReplicationMessage(NodeHandle source) {
     this.source = source;

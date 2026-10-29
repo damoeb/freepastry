@@ -60,7 +60,6 @@ public class RapidRebind {
     try {
       WireTransportLayer wtl2 = new WireTransportLayerImpl(isa,env,null);
     } catch (BindException be) {
-//      System.out.println(be);
       bindException = true;
     }
     if (!bindException) {

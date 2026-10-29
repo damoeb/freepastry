@@ -80,8 +80,6 @@ public class DirectPastryPingTest {
     } else if (token.startsWith("s")) { //standalone
       Vector<TestRecord> trlist = new Vector<TestRecord>();
 
-      //      k = 200000;
-
       for (i = 0; i < 8; i++) {
         n = k = (i + 1) * 1000;
         PingTestRecord tr = new PingTestRecord(n, k, environment.getParameters().getInt("pastry_rtBaseBitLength"));
@@ -89,18 +87,7 @@ public class DirectPastryPingTest {
         spt.test();
         System.out.println(tr.getNodeNumber() + "\t" + tr.getAveHops() + "\t"
             + tr.getAveDistance());
-        //    System.out.println( "probability of " + i + " hops: " +
-        // tr.getProbability()[i] );
       }
-      /*
-       * for( i=0; i <10; i++ ){ trlist.addElement( new PingTestRecord(
-       * (i+1)*10000, k ) ); spt = new SinglePingTest(
-       * (PingTestRecord)(trlist.lastElement()) ); spt.test(); PingTestRecord tr =
-       * (PingTestRecord)trlist.elementAt(i); System.out.println(
-       * tr.getNodeNumber() + "\t" + tr.getAveHops() +"\t"+ tr.getAveDistance() );
-       * System.out.println( "probability of " + i + " hops: " +
-       * tr.getProbability()[i] ); }
-       */
     }
     return false;
   }

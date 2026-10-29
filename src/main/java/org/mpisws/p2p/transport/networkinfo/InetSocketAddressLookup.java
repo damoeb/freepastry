@@ -60,8 +60,8 @@ public interface InetSocketAddressLookup extends Destructable {
   /**
    * find nodes outside of our firewall so I can boot
    * 
-   * @param target
-   * @param continuation
+   * @param bootstrap the node to ask
+   * @param c receives the external addresses
    * @param options
    * @return
    */
@@ -91,8 +91,10 @@ public interface InetSocketAddressLookup extends Destructable {
    * probeStrategy forwards the request to another node "Carol"
    * Carol probes local
    * 
-   * @param bootstrap
-   * @param proxyAddr
+   * @param local the addresses to verify
+   * @param probeAddresses the node that coordinates the probe
+   * @param deliverResultToMe receives the probe results
+   * @param options
    * @return
    */
   public Cancellable verifyConnectivity(MultiInetSocketAddress local, 

@@ -46,7 +46,7 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
  * When the LowerIdentity reports that a destination has changed, this layer
- * cancels all pending messages.  And reports "NodeDeadForever" as a liveness change for the old identiy.
+ * cancels all pending messages.  And reports "NodeDeadForever" as a liveness change for the old identity.
  * 
  * @author Jeff Hoye
  *

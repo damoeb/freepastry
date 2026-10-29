@@ -42,8 +42,6 @@ import rice.p2p.scribe.javaserialized.JavaScribe;
 import rice.p2p.scribe.rawserialization.*;
 
 /**
- * @(#) Scribe.java
- *
  * This interface is exported by all instances of Scribe.  
  *
  * @version $Id: Scribe.java 3911 2007-10-18 03:15:55Z jeffh $

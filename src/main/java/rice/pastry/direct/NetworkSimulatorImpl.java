@@ -67,7 +67,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
   protected ProximityGenerator generator;
   protected LivenessProvider<Identifier> livenessProvider;
   
-  // TODO: add listener to top level tl, to notify simulator listeners
+  // TODO: add a listener to the top-level transport layer to notify simulator listeners
   public NetworkSimulatorImpl(Environment env, ProximityGenerator generator) {
     Parameters params = env.getParameters();
     if (params.contains("pastry_direct_use_own_random")
@@ -91,7 +91,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     livenessProvider = simulator;
   }
 
-  // ****************** passtrhougs to simulator ***************
+  // ****************** passthroughs to simulator ***************
   public Environment getEnvironment() {
     return simulator.getEnvironment();
   }
@@ -112,37 +112,6 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     simulator.stop();
   }
   
-//  /**
-//   * find the closest NodeId to an input NodeId out of all NodeIds in the
-//   * network
-//   * 
-//   * @param nid the input NodeId
-//   * @return the NodeId closest to the input NodeId in the network
-//   */
-//  public DirectNodeHandle getClosest(DirectNodeHandle nh) {
-//    Iterator<DirectNodeHandle> it = simulator.nodes.keySet().iterator();
-//    DirectNodeHandle bestHandle = null;
-//    float bestProx = Float.MAX_VALUE;
-//    Id theId;
-//
-//    while (it.hasNext()) {
-//      DirectPastryNode theNode = (DirectPastryNode) it.next();
-//      float theProx = theNode.record.proximity(nh.getRemote().record);
-//      theId = theNode.getNodeId();
-//      if (!theNode.isAlive() || !theNode.isReady()
-//          || theId.equals(nh.getNodeId())) {
-//        continue;
-//      }
-//
-//      if (theProx < bestProx) {
-//        bestProx = theProx;
-//        bestHandle = (DirectNodeHandle) theNode.getLocalHandle();
-//      }
-//    }
-//    return bestHandle;
-//  }
-//
-//
   // ************************* What is this? ********************** 
   private TestRecord testRecord;
   /**
@@ -206,30 +175,11 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     }
   }
 
-//  public ScheduledMessage deliverMessage(Message msg, PastryNode node, DirectNodeHandle from, int delay) {
-//    node.deliverMess
-//    return new ScheduledMessage(node, msg, simulator.deliverMessage(msg, (DirectNodeHandle)node.getLocalHandle(), from, delay));
-//  }
-//
-//  public ScheduledMessage deliverMessage(Message msg, DirectPastryNode node, DirectNodeHandle from, int delay, int period) {
-//    return new ScheduledMessage(node, msg, simulator.deliverMessage(msg, (DirectNodeHandle)node.getLocalHandle(), from, delay, period));
-//  }
-//
-//  public ScheduledMessage deliverMessage(Message msg, DirectPastryNode node) {
-//    return new ScheduledMessage(node, msg, simulator.deliverMessage(msg, (DirectNodeHandle)node.getLocalHandle()));
-//  }
-//
-//  public ScheduledMessage deliverMessageFixedRate(Message msg, DirectPastryNode node, DirectNodeHandle from, int delay, int period) {
-//    return new ScheduledMessage(node, msg, simulator.deliverMessageFixedRate(msg, (DirectNodeHandle)node.getLocalHandle(), from, delay, period));    
-//  }
-
   public void destroy(DirectPastryNode dpn) {
-    // TODO Auto-generated method stub
     
   }
 
   public CancellableTask enqueueDelivery(Delivery del, int delay) {
-    // TODO Auto-generated method stub
     return null;
   }
 
@@ -238,7 +188,6 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
   }
 
   public DirectNodeHandle getClosest(DirectNodeHandle nh) {
-    // TODO Auto-generated method stub
     return null;
   }
 
@@ -255,7 +204,6 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
   }
 
   public void removeNode(PastryNode node) {
-    // TODO Auto-generated method stub
     
   }
 
@@ -271,8 +219,6 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     return simulator;
   }
 
-//  public void registerNode(PastryNode dpn, NodeRecord nr) {
-//  simulator.registerIdentifier(dpn.getLocalHandle(), dpn.getTL(), nr);
   public void registerNode(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord nr) {
     simulator.registerIdentifier(i, dtl, nr);
   }

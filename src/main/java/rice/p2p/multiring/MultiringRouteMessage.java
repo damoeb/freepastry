@@ -43,8 +43,6 @@ import rice.p2p.commonapi.rawserialization.*;
 import java.io.*;
 
 /**
- * @(#) MultiringRouteMessage.java
- *
  * This wraps a real RouteMessage.
  *
  * @version $Id: MultiringRouteMessage.java 3613 2007-02-15 14:45:14Z jstewart $

@@ -75,34 +75,6 @@ public class SplitStreamContent implements RawScribeContent {
   public byte[] getData() {
     return data;
   }
-/*
-  public String toString() {
-
-
-      //Byte bt = new Byte(data[0]);
-      String ds = new String(data);
-      StringTokenizer tk = new StringTokenizer(ds);
-      String seqNumber = tk.nextToken();
-      String sentTime = tk.nextToken();
-//      Id stripeId = (rice.pastry.Id)(s.getStripeId().getId());
-//      String str = stripeId.toString().substring(3, 4);
-//      int recv_time = (int)Systemm.currentTimeMillis();
-//      int diff;
-////      char [] c = str.toString().toCharArray();
-//      int stripe_int = c[0] - '0';
-//      if(stripe_int > 9)
-//    stripe_int = 10 + c[0] - 'A';
-//      else
-//    stripe_int = c[0] - '0';
-      
-      return seqNumber+"\t"+"\t"+sentTime;
-  }
-  
-  */
-  
-//  public String toString() {
-//    return "SSContent{"+data.length+"}";
-//  }
   
   /***************** Raw Serialization ***************************************/
   public short getType() {

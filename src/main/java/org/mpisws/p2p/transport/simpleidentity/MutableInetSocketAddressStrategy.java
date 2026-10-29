@@ -48,8 +48,6 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  * It will see if your local address changed before returning the serialized version.
  * 
  * @author Jeff Hoye
- *
- * @param <InetSocketAddress>
  */
 public class MutableInetSocketAddressStrategy implements LocalIdentifierStrategy<InetSocketAddress> {
   int port;  

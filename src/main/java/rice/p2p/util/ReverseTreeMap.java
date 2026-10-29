@@ -146,16 +146,13 @@ public class ReverseTreeMap<K,V> implements Serializable {
   
   
   /**
-   * Method which caputures the insert and adds it to the
+   * Method which captures the insert and adds it to the
    * reverse map
    *
    * @param key The key 
    * @param value The value
    */
   public void put(K key, V value) {
- //   if (reverse instanceof RedBlackMap)
- //     value = (((RedBlackMap) reverse).getKey(value) == null ? value : ((RedBlackMap) reverse).getKey(value));
-    
     V old = normal.put(key, value);
     
     // remove any old reverse mapping
@@ -230,18 +227,6 @@ public class ReverseTreeMap<K,V> implements Serializable {
   }
 
   /**
-   * Method which returns a *cloned* sub map, or all of the values
-   * not between the specified values
-   *
-   * @param start The start value
-   * @param end The end value
-   * @return a head map
-   */
-//  public SortedMap keySubNotMap(Object start, Object end) {
-//    return new UnionSortedMap(normal.headMap(start), normal.tailMap(end));
-//  }
-    
-  /**
    * Method which returns a headset of the values, or all the
    * keys with values up to the specified value
    *
@@ -262,10 +247,12 @@ public class ReverseTreeMap<K,V> implements Serializable {
   }
 
   /**
-   * Method which returns a headset of the values, or all the
-   * keys with values up to the specified value
+   * Method which returns a subset of the values, or all the
+   * keys with values from start (inclusive) up to end (exclusive)
    *
-   * @param value The maximal value
+   * @param start The minimal value
+   * @param end The maximal value
+   * @return the keys with values in that range, and their values
    */
   public SortedMap<K,V> valueSubMap(V start, V end) {
     return convert(reverse.subMap(start, end));
@@ -280,9 +267,9 @@ public class ReverseTreeMap<K,V> implements Serializable {
   }   
   
   /**
-   * Internal method which converts a sortedmap to an iterator
+   * Internal method which converts a map from values to key maps into a map from keys to values
    *
-   * @param map THe map to convert
+   * @param map The map to convert
    * @return The converted map
    */
   protected SortedMap<K,V> convert(SortedMap<V,RedBlackMap<K,V>> map) {
@@ -294,68 +281,4 @@ public class ReverseTreeMap<K,V> implements Serializable {
       
     return result;
   }
-  
-/*  protected class UnionSortedMap implements SortedMap {
-    protected SortedMap map1;
-    protected SortedMap map2;
-    
-    public UnionSortedMap(SortedMap map1, SortedMap map2) {
-      this.map1 = map1;
-      this.map2 = map2;
-    }
-    
-    public Comparator comparator() { return null; }
-    public Object firstKey() { return (map1.firstKey() == null ? map2.firstKey() : map1.firstKey()); }
-    public SortedMap headMap(Object toKey) { throw new UnsupportedOperationException("headMap not supported!"); }
-    public Object lastKey() { return (map2.lastKey() == null ? map1.lastKey() : map2.lastKey()); }
-    public SortedMap subMap(Object fromKey, Object toKey) { throw new UnsupportedOperationException("subMap not supported!"); }
-    public SortedMap tailMap(Object fromKey) { throw new UnsupportedOperationException("tailMap not supported!");}
-    public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
-    public boolean containsKey(Object key) { return map1.containsKey(key) || map2.containsKey(key); }
-    public boolean containsValue(Object value) { return map1.containsValue(value) || map2.containsValue(value); }
-    public Set entrySet() { throw new UnsupportedOperationException("entrySet not supported!");  }
-    public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
-    public Object get(Object key) { return (map1.containsKey(key) ? map1.get(key) : map2.get(key)); }
-    public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!");  }
-    public boolean isEmpty() { return map1.isEmpty() && map2.isEmpty(); }
-    public Set keySet() { return new UnionKeySet(map1.keySet(), map2.keySet()); }
-    public Object put(Object key, Object value) { throw new UnsupportedOperationException("put not supported!"); }
-    public void putAll(Map t) { throw new UnsupportedOperationException("putAll not supported!"); }
-    public Object remove(Object key) { throw new UnsupportedOperationException("remove not supported!"); }
-    public int size() { return map1.size() + map2.size(); }
-    public Collection values() { throw new UnsupportedOperationException("values not supported!"); }
-  }  
-  
-  protected class UnionKeySet implements Set {
-    protected Set set1;
-    protected Set set2;
-    
-    public UnionKeySet(Set set1, Set set2) {
-      this.set1 = set1;
-      this.set2 = set2;
-    }
-    
-    public boolean add(Object o) { throw new UnsupportedOperationException("add not supported!"); }
-    public boolean addAll(Collection c) { throw new UnsupportedOperationException("addAll not supported!"); }
-    public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
-    public boolean contains(Object o) { return (set1.contains(o) || set2.contains(o)); }
-    public boolean containsAll(Collection c) { throw new UnsupportedOperationException("containsAll not supported!"); }
-    public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
-    public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
-    public boolean isEmpty() { return set1.isEmpty() && set2.isEmpty(); }
-    public Iterator iterator() { return new Iterator() {
-      protected Iterator i = set1.iterator();
-      protected Iterator j = set2.iterator();
-      public boolean hasNext() { return (i.hasNext() || j.hasNext()); }
-      public Object next() { return (i.hasNext() ? i.next() : j.next()); }
-      public void remove() { throw new UnsupportedOperationException("remove not supported!"); }
-    };
-    }
-    public boolean remove(Object o) { throw new UnsupportedOperationException("remove not supported!"); }
-    public boolean removeAll(Collection c) { throw new UnsupportedOperationException("removeAll not supported!"); }
-    public boolean retainAll(Collection c) { throw new UnsupportedOperationException("retainAll not supported!"); }
-    public int size() { return set1.size() + set2.size(); }
-    public Object[] toArray() { throw new UnsupportedOperationException("toArray not supported!"); }
-    public Object[] toArray(Object[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
-  } */
 }

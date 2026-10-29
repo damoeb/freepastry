@@ -137,7 +137,7 @@ public class MyApp implements Application {
     if (message instanceof MessageToSelf) {
       // This will get called every 5 seconds, on Pastry's thread.
       // Thus now we can assume we are on Pastry's thread.
-      // TODO: whatever... send messages to other nodes? print out status?
+      // This is where your application does its periodic work, e.g. send messages or print its status.
       System.out.println("I got the MessageToSelf at time:"+environment.getTimeSource().currentTimeMillis());
     }
   }

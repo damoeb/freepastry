@@ -45,8 +45,6 @@ import rice.pastry.*;
 import rice.pastry.direct.proximitygenerators.GenericProximityGenerator;
 import rice.pastry.messaging.*;
 import rice.pastry.routing.*;
-// import rice.pastry.mytesting.*;
-// import rice.p2p.lala.testing.Tracker;
 
 import java.util.*;
 import java.lang.*;

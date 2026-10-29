@@ -56,7 +56,7 @@ public class DirectTimeSource implements TimeSource {
   protected SelectorManager selectorManager;
   
   /**
-   * When destry is called, throw an interrupted exception on all of these.
+   * When destroy is called, throw an interrupted exception on all of these.
    */
   protected HashSet<BlockingTimerTask> pendingTimers = new HashSet<BlockingTimerTask>();
   
@@ -98,7 +98,6 @@ public class DirectTimeSource implements TimeSource {
     if (newTime < time) {
       if (logger.level <= Logger.WARNING) logger.log("Attempted to set time from "+time+" to "+newTime+", ignoring.");
       return;
-//      throw new RuntimeException("Attempted to set time from "+time+" to "+newTime+".");
     }
     if ((newTime > time) && (logger.level <= Logger.FINER)) logger.log("DirectTimeSource.setTime("+time+"=>"+newTime+")");
     time = newTime;
@@ -119,8 +118,7 @@ public class DirectTimeSource implements TimeSource {
       synchronized(selectorManager) {
         done = true;
         selectorManager.notifyAll();
-        // selector already yields enough
-//        Thread.yield();
+        // no Thread.yield() needed: the selector already yields enough
       }
     }
 
@@ -146,23 +144,9 @@ public class DirectTimeSource implements TimeSource {
       pendingTimers.remove(btt);
     }
   }
-
-//  public void wait(Object lock, int timeToWait) throws InterruptedException {
-//    if (selector.isSelectorThread()) throw new IllegalStateException("You can't call this on the selector thread.");
-//    
-//    BlockingTimerTask2 btt = new BlockingTimerTask2(Thread.currentThread());
-//    selectorManager.getTimer().schedule(btt,timeToWait);
-//    try {
-//      lock.wait();
-//    } catch (InterruptedException ie) {
-//      
-//    }
-//    btt.cancel();
-//    
-//  }
   
   /**
-   * TODO: Get the synchronization on this correct
+   * TODO: synchronize on the selectorManager like sleep() does; pendingTimers is modified here without that lock
    */
   public void destroy() {
     for (BlockingTimerTask btt : new ArrayList<BlockingTimerTask>(pendingTimers)) {

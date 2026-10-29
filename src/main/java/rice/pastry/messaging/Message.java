@@ -60,7 +60,7 @@ public abstract class Message implements Serializable, rice.p2p.commonapi.Messag
   private NodeHandle sender;
 
   /**
-   * Potentially needed for reverse compatability with serialization?  
+   * Potentially needed for reverse compatibility with serialization?  
    * Remove this when move to byte-level protocol.
    */
   private boolean priority;
@@ -135,7 +135,7 @@ public abstract class Message implements Serializable, rice.p2p.commonapi.Messag
    * Set sender Id. Called by NodeHandle just before dispatch, so that this Id
    * is guaranteed to belong to the immediate sender.
    * 
-   * @param the immediate sender's NodeId.
+   * @param nh the immediate sender's handle.
    */
   public void setSender(NodeHandle nh) {
     sender = nh;
@@ -153,7 +153,7 @@ public abstract class Message implements Serializable, rice.p2p.commonapi.Messag
   /**
    * Set priority.
    * 
-   * @param the new priority.
+   * @param prio the new priority.
    */
   protected void setPriority(int prio) {
     priorityLevel = prio;

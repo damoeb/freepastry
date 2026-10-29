@@ -41,14 +41,14 @@ public interface FileTransferListener {
    * @param receipt description of what is being transferred
    * @param bytesTransferred the bytes that have been transferred so far
    * @param total bytes that will be transferred
-   * @param incoming true if downloding, false if uploading
+   * @param incoming true if downloading, false if uploading
    */
   public void fileTransferred(FileReceipt receipt, long bytesTransferred, long total, boolean incoming);
   /**
    * @param receipt description of what is being transferred
    * @param bytesTransferred the bytes that have been transferred so far
    * @param total bytes that will be transferred
-   * @param incoming true if downloding, false if uploading
+   * @param incoming true if downloading, false if uploading
    */
   public void msgTransferred(BBReceipt receipt, int bytesTransferred, int total, boolean incoming);
   

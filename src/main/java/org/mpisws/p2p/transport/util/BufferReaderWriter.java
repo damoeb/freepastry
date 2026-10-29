@@ -102,7 +102,6 @@ public class BufferReaderWriter<Identifier> {
   }
   
   public void done(Exception e) {
-//    System.out.println("done r:"+doneReading+" w:"+doneWriting);
     if (failed) {
       if (!sentException) {
         sentException = true;

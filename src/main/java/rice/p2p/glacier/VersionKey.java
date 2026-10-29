@@ -44,7 +44,7 @@ import rice.p2p.multiring.RingId;
 import rice.p2p.util.MathUtils;
 
 /**
- * DESCRIBE THE CLASS
+ * The key of one version of an object: the object's id plus a version number.
  *
  * @version $Id: VersionKey.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author ahae
@@ -53,11 +53,11 @@ public class VersionKey implements Id, Serializable {
   public static final short TYPE = 41;
   
   /**
-   * DESCRIBE THE FIELD
+   * The id of the object
    */
   protected Id id;
   /**
-   * DESCRIBE THE FIELD
+   * The version of the object
    */
   protected long version;
   
@@ -66,8 +66,8 @@ public class VersionKey implements Id, Serializable {
   /**
    * Constructor for VersionKey.
    *
-   * @param id DESCRIBE THE PARAMETER
-   * @param version DESCRIBE THE PARAMETER
+   * @param id the id of the object
+   * @param version the version of the object
    */
   public VersionKey(Id id, long version) {
     this.id = id;
@@ -93,10 +93,10 @@ public class VersionKey implements Id, Serializable {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Determines equality
    *
-   * @param peer DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param peer the object to compare to
+   * @return whether the given object is an equal key
    */
   public boolean equals(Object peer) {
     if (!(peer instanceof VersionKey)) {
@@ -108,28 +108,28 @@ public class VersionKey implements Id, Serializable {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns a short string form of this key
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the short string form
    */
   public String toString() {
     return id.toString() + "v" + version;
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns the full string form of this key
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the full string form
    */
   public String toStringFull() {
     return id.toStringFull() + "v" + version;
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Compares this key to another key of the same type
    *
-   * @param o DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param o the key to compare to
+   * @return a negative number, zero or a positive number as this key is less than, equal to or greater than o
    */
   public int compareTo(Id o) {
     int idResult = id.compareTo(((VersionKey) o).id);
@@ -147,18 +147,18 @@ public class VersionKey implements Id, Serializable {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns a hash code for this key
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the hash code
    */
   public int hashCode() {
     return (id.hashCode() + Long.hashCode(version));
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns the byte[] value of this key
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return a byte[] representing this key
    */
   public byte[] toByteArray() {
     byte[] result = new byte[getByteArrayLength()];
@@ -171,7 +171,8 @@ public class VersionKey implements Id, Serializable {
   /**
     * Stores the byte[] value of this Id in the provided byte array
    *
-   * @return A byte[] representing this Id
+   * @param result the array to write to
+   * @param offset the offset in the array to start writing at
    */
   public void toByteArray(byte[] result, int offset) {
     id.toByteArray(result, offset);

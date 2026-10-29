@@ -81,7 +81,7 @@ import java.io.*;
  */
 public abstract class CommonAPITest {
 
-  // ----- VARAIBLES -----
+  // ----- VARIABLES -----
   
   // the collection of nodes which have been created
   protected Node[] nodes;
@@ -108,7 +108,7 @@ public abstract class CommonAPITest {
   public int NUM_NODES;
 
   // the factory which creates pastry ids
-  public final IdFactory FACTORY; //= new PastryIdFactory();
+  public final IdFactory FACTORY;
 
 
   // ----- TESTING SPECIFIC FIELDS -----
@@ -142,11 +142,11 @@ public abstract class CommonAPITest {
   // the port on the bootstrap to contact
   public static int BOOTSTRAP_PORT = 5009;
 
-  // the procotol to use when creating nodes
-  public String PROTOCOL;// = PROTOCOL_DIRECT; //DistPastryNodeFactory.PROTOCOL_DEFAULT;
+  // the protocol to use when creating nodes
+  public String PROTOCOL;
 
   // the simulator to use in the case of direct
-  public String SIMULATOR; // = SIMULATOR_SPHERE;
+  public String SIMULATOR;
 
   // the instance name to use
   public static String INSTANCE_NAME = "DistCommonAPITest";
@@ -169,7 +169,6 @@ public abstract class CommonAPITest {
     setupParams(env);
         
       FACTORY = new PastryIdFactory(env);
-      //idFactory = new IPNodeIdFactory(PORT); 
       idFactory = new RandomNodeIdFactory(environment);
 
     if (PROTOCOL.equalsIgnoreCase(PROTOCOL_DIRECT)) {
@@ -180,16 +179,6 @@ public abstract class CommonAPITest {
       } else {
         simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
       }
-//      simulator.addSimulatorListener(new SimulatorListener() {      
-//        public void messageSent(Message m, NodeHandle from, NodeHandle to, int delay) {
-//          if (!(m instanceof BroadcastLeafSet) && !(m instanceof RequestLeafSet))
-//            System.out.println("messageSent("+m+","+from+","+to+","+delay+")");
-//        }      
-//        public void messageReceived(Message m, NodeHandle from, NodeHandle to) {
-//          if (!(m instanceof BroadcastLeafSet) && !(m instanceof RequestLeafSet))
-//            System.out.println("messageReceived("+m+","+from+","+to+")");
-//        }      
-//      });
       
       factory = new DirectPastryNodeFactory(idFactory, simulator, env);
     } else if (PROTOCOL.equalsIgnoreCase(PROTOCOL_SOCKET)) {
@@ -277,7 +266,6 @@ public abstract class CommonAPITest {
    * Method which starts the creation of nodes
    */
   public void start() {
-//    simulator.start();
     createNodes();
 
     System.out.println("\nTest Beginning\n");
@@ -303,18 +291,12 @@ public abstract class CommonAPITest {
   protected void simulate(int numOps) {
     if (environment.getSelectorManager().isSelectorThread()) return;
     synchronized(this) {try { wait(500*numOps); } catch (InterruptedException e) {}}
-    
-//    if (PROTOCOL.equalsIgnoreCase(PROTOCOL_DIRECT)) {
-//      while (simulator.simulate()) {}
-//    } else {
-//      pause(500);
-//    }
   }
 
   
   
   /**
-   * Method which creates a single node, given it's node
+   * Method which creates a single node, given its node
    * number
    *
    * @param num The number of creation order
@@ -334,26 +316,6 @@ public abstract class CommonAPITest {
     } else {
       ret.boot((Object) bootstrap);
     }
-//    ret.addNetworkListener(new NetworkListener() {
-//    
-//      public void dataSent(int msgAddress, short msgType,
-//          InetSocketAddress socketAddress, int size, int wireType) {
-//        System.out.println("dataSent("+msgAddress+","+msgType+","+socketAddress+","+size+","+wireType+")");
-//      }
-//    
-//      public void dataReceived(int msgAddress, short msgType,
-//          InetSocketAddress socketAddress, int size, int wireType) {
-//        System.out.println("dataReceived("+msgAddress+","+msgType+","+socketAddress+","+size+","+wireType+")");
-//      }
-//    
-//      public void channelOpened(InetSocketAddress addr, int reason) {
-//        System.out.println("channelOpened("+addr+","+reason+")");
-//      }
-//    
-//      public void channelClosed(InetSocketAddress addr) {
-//        System.out.println("channelClosed("+addr+")");
-//      }    
-//    });
     synchronized(ret) {
       while(!ret.isReady()) {
         try {
@@ -398,8 +360,6 @@ public abstract class CommonAPITest {
     try { 
       environment.getTimeSource().sleep(ms); 
     } catch (InterruptedException e) {}
-    //    if (!PROTOCOL.equalsIgnoreCase(PROTOCOL_DIRECT))
-//      try { wait(ms); } catch (InterruptedException e) {}
   }
 
   /**
@@ -408,15 +368,11 @@ public abstract class CommonAPITest {
    * @param n The node to kill
    */
   protected void kill(int n) {
-    //if (PROTOCOL.equalsIgnoreCase(PROTOCOL_DIRECT))
       ((PastryNode)nodes[n]).destroy();
     if (!PROTOCOL.equalsIgnoreCase(PROTOCOL_DIRECT)) {
       // give node time to show up dead
       pause(2000);
     }
-      
-//      simulator.setAlive((rice.pastry.NodeId) nodes[n].getId(), false);
-    
   }
 
 
@@ -462,7 +418,7 @@ public abstract class CommonAPITest {
    */
   protected final void stepStart(String name) {
     currentStep = name;
-    System.out.print(/*environment.getTimeSource().currentTimeMillis()+*/pad("  " + name));
+    System.out.print(pad("  " + name));
   }
 
   /**
@@ -525,7 +481,7 @@ public abstract class CommonAPITest {
   }
 
   /**
-   * Method which prints an exception which occured during testing.
+   * Method which prints an exception which occurred during testing.
    *
    * @param e The exception which was thrown
    */

@@ -101,9 +101,8 @@ public class PastTutorial {
       // create a different storage root for each node
       String storageDirectory = "./storage"+node.getId().hashCode();
 
-      // create the persistent part
-//      Storage stor = new PersistentStorage(idf, storageDirectory, 4 * 1024 * 1024, node
-//          .getEnvironment());
+      // create the persistent part; to keep it on disk, use
+      // new PersistentStorage(idf, storageDirectory, 4 * 1024 * 1024, node.getEnvironment())
       Storage stor = new MemoryStorage(idf);
       Past app = new PastImpl(node, new StorageManagerImpl(idf, stor, new LRUCache(
           new MemoryStorage(idf), 512 * 1024, node.getEnvironment())), 0, "");

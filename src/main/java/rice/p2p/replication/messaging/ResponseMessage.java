@@ -44,8 +44,6 @@ import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.replication.*;
 
 /**
- * @(#) ReaponseMessage.java
- *
  * This class represents a response for a set of keys in the replication
  * system.
  *
@@ -63,10 +61,11 @@ public class ResponseMessage extends ReplicationMessage {
   protected Id[][] ids;
   
   /**
-  * Constructor which takes a unique integer Id
+   * Constructor
    *
    * @param source The source address
-   * @param topic The topic
+   * @param ranges The ranges being answered
+   * @param setA The keys in each range that the requester should fetch, one set per range
    */
   public ResponseMessage(NodeHandle source, IdRange[] ranges, IdSet[] setA) {
     super(source);
@@ -114,25 +113,15 @@ public class ResponseMessage extends ReplicationMessage {
     buf.writeByte((byte)0); // version
     super.serialize(buf);
     // encode the ids table
-    // note, can uncomment thes lines if this array turns out to be non-full
+    // the table must be full: rows and entries are written without null markers
     buf.writeInt(ids.length);
     for (int i=0; i<ids.length; i++) {
       Id[] thisRow = ids[i];
-//      if (thisRow != null) {
-//        buf.writeByte((byte)1);
         buf.writeInt(thisRow.length);
         for (int j=0; j<thisRow.length; j++) {
-//          if (thisRow[j] != null) {
-//            buf.writeByte((byte)1);
             buf.writeShort(thisRow[j].getType());
             thisRow[j].serialize(buf);
-//          } else {
-//            buf.writeByte((byte)0);
-//          }
         }
-//      } else {
-//        buf.writeByte((byte)0);
-//      }
     }
     
     // ranges

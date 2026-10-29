@@ -40,8 +40,6 @@ package rice.p2p.multiring;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) MultiringApplication.java
- *
  * Application which wraps a real application
  *
  * @version $Id: MultiringApplication.java 3613 2007-02-15 14:45:14Z jstewart $

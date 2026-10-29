@@ -122,7 +122,7 @@ public class BloomFilter implements Serializable {
   
   /**
    * Method which returns whether or not an element *may* be in the set.  Specifically, 
-   * if this method returns false, the element is definately not in the set.  Otherwise, 
+   * if this method returns false, the element is definitely not in the set.  Otherwise, 
    * if true is returned, the element may be in the set, but it is not guaranteed.
    *
    * @param array The element to check for

@@ -322,7 +322,6 @@ public class NetworkInfoTransportLayer implements
               socket.close();
               return;
             }
-//            notifyListenersWrite((int)ret, socket.getIdentifier(), socket.getOptions(), false, true);
             if (logger.level <= Logger.FINEST) logger.log("openSocket("+i+","+header.length+") wrote "+ret+".  Remaining:"+buf.remaining());
 
             if (buf.hasRemaining()) {
@@ -339,7 +338,6 @@ public class NetworkInfoTransportLayer implements
       public void receiveException(SocketRequestHandle<InetSocketAddress> c, Exception exception) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
         deliverSocketToMe.receiveException(cancellable, exception);
-//        errorHandler.receivedException(i, exception);
       }    
     }, options));
     
@@ -581,7 +579,6 @@ public class NetworkInfoTransportLayer implements
       
         public void receiveException(P2PSocket<InetSocketAddress> socket,
             Exception ioe) {
-          // TODO Auto-generated method stub
       
         }
       
@@ -761,34 +758,6 @@ public class NetworkInfoTransportLayer implements
           }        
         });
         
-//        final SocketInputBuffer sib = new SocketInputBuffer(sock);
-//        
-//        try {
-//          new P2PSocketReceiver<InetSocketAddress>() {
-//            
-//            public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
-//                boolean canRead, boolean canWrite) throws IOException {
-//              // read response
-//              
-//              try {
-//                InetSocketAddress addr = addrSerializer.deserialize(sib, null, null);
-//                c.receiveResult(addr);
-//              } catch (InsufficientBytesException ibe) {
-//                socket.register(true, false, this);
-//              } catch (Exception e) {
-//                c.receiveException(e);
-//              }
-//            }
-//          
-//            public void receiveException(P2PSocket<InetSocketAddress> socket,
-//                Exception ioe) {
-//              c.receiveException(ioe);
-//            }
-//          
-//          }.receiveSelectResult(sock, true, false);        
-//        } catch (IOException ioe) {
-//          c.receiveException(ioe);
-//        }
       }
     
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
@@ -855,39 +824,6 @@ public class NetworkInfoTransportLayer implements
         }
         sock.close();
         
-//        sock.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
-//        
-//          public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
-//              boolean canRead, boolean canWrite) throws IOException {
-//            // we just want to record the socket closing
-//            long bytesRead = socket.read(ByteBuffer.allocate(1));
-//            
-//            if (bytesRead < 0) {
-//              // what we expect
-//              socket.close();
-//              return;
-//            }
-//
-//            if (bytesRead == 0) {
-//              // weird, but just reregister
-//              socket.register(true,false,this);
-//              return;
-//            }
-//            
-//            if (bytesRead > 0) {
-//              // this shouldn't happen, it should be closed, reregister anyway
-//              if (logger.level <= Logger.WARNING) logger.log("Unexpected response on REQUEST_PROBE_SOCKET reregistering.");
-//              socket.register(true,false,this);              
-//              return;
-//            }            
-//          }
-//        
-//          public void receiveException(P2PSocket<InetSocketAddress> socket,
-//              Exception ioe) {
-//            if (logger.level <= Logger.FINER) logger.log("probe("+addr+","+uid+","+deliverResponseToMe+","+options+").tcpFailure() "+ioe);
-//            if (deliverResponseToMe != null) deliverResponseToMe.receiveException(ioe);
-//          }        
-//        });        
       }
     
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,

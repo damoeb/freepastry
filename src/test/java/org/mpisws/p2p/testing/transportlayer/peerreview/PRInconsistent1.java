@@ -77,8 +77,6 @@ public class PRInconsistent1 extends PRRegressionTest {
   protected PeerReviewImpl<HandleImpl, IdImpl> getPeerReview(Player player, MyIdTL transport, Environment env) {
     if (player.localHandle.id.id == 2) {
       return new PeerReviewImpl<HandleImpl, IdImpl>(transport, env, new HandleSerializer(), new IdSerializer(), new IdExtractor(), getIdStrTranslator()
-//          ,new AuthenticatorSerializerImpl(20,96), new EvidenceSerializerImpl<HandleImpl, IdImpl>(new HandleSerializer(),
-//              new IdSerializer(),transport.getHashSizeBytes(),transport.getSignatureSizeBytes())
               ) {
         
         @Override
@@ -94,7 +92,6 @@ public class PRInconsistent1 extends PRRegressionTest {
                 public void appendEntry(short type, boolean storeFullEntry,
                     ByteBuffer... entry) throws IOException {
                   super.appendEntry(type, storeFullEntry, entry);
-//                  logger.log("appendEntry "+type);
                   // fork after the 3rd msg
                   if (type == EVT_SIGN) {
                     acks++;
@@ -143,10 +140,9 @@ public class PRInconsistent1 extends PRRegressionTest {
       dataFile.setLength(entry.getFileIndex());
       indexFile.setLength(entryIndex*indexFactory.getSerializedSize());
       
-      numEntries = entryIndex; //(int)(indexFile.length()/indexFactory.getSerializedSize());      
+      numEntries = entryIndex;
       topEntry = statEntry(entryIndex-1);
       assert(topEntry != null);
-//      nextSeq = topEntry.getSeq()+1;
     }
     
   }
@@ -185,7 +181,6 @@ public class PRInconsistent1 extends PRRegressionTest {
           IdImpl id,
           int newStatus) {
         if (player.localHandle.id.id == 2) return; // ignore bob's stuff
-       // logger.log("notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
         if (logger.level <= Logger.INFO) logger.log("notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
         if (newStatus == STATUS_EXPOSED) {
           if (!id.equals(bobHandle.id)) {
@@ -200,11 +195,6 @@ public class PRInconsistent1 extends PRRegressionTest {
     };
   }
 
-//  @Override
-//  public void buildPlayers(Environment env) throws Exception {
-//    super.buildPlayers(env);
-//  }
-    
   public static void main(String[] args) throws Exception {
     runMain(new PRInconsistent1());
   }

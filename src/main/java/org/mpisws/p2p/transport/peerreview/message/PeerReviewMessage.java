@@ -51,11 +51,4 @@ public interface PeerReviewMessage extends PeerReviewConstants, RawSerializable 
 
   public short getType();
   
-//  public ByteBuffer serialize() throws IOException {
-//    SimpleOutputBuffer sob = new SimpleOutputBuffer();
-//    sob.writeByte(PeerReview.PEER_REVIEW_COMMIT);
-//    sob.writeByte((byte)getType());
-//    serialize(sob);
-//    return sob.getByteBuffer();
-//  }
 }

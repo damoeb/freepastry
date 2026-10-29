@@ -158,7 +158,7 @@ public abstract class TLTest<Identifier> {
   }
 
   /**
-   * The identifer to a bogus node.
+   * The identifier to a bogus node.
    * 
    * @return
    */
@@ -186,7 +186,6 @@ public abstract class TLTest<Identifier> {
     
       public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options)
           throws IOException {
-        // TODO Auto-generated method stub
     
       }
     
@@ -377,7 +376,7 @@ public abstract class TLTest<Identifier> {
     // send on the selector
     // send not on the selector
     
-    // TODO: do the same to send UDP message
+    // TODO: this test is empty: send on and off the selector thread, over TCP and UDP
   }
   
   /*********************** UDP *************************/  
@@ -402,7 +401,6 @@ public abstract class TLTest<Identifier> {
     final List<Exception> exceptionList = new ArrayList<Exception>(1);
     final List<MessageRequestHandle<Identifier, ByteBuffer>> sentList = new ArrayList<MessageRequestHandle<Identifier, ByteBuffer>>(1);
     final Object lock = new Object();
-//    TestEnv<Identifier> tenv = getTestEnv();
 
     // make a way for bob to receive the callback
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {    
@@ -471,7 +469,6 @@ public abstract class TLTest<Identifier> {
     final List<MessageRequestHandle<Identifier, ByteBuffer>> sentList = new ArrayList<MessageRequestHandle<Identifier, ByteBuffer>>(1);
     final List<Exception> exceptionList = new ArrayList<Exception>(1);
     final Object lock = new Object();
-//    TestEnv<Identifier> tenv = getTestEnv();
 
     MessageRequestHandle<Identifier, ByteBuffer> cancellable = alice().sendMessage(
         getIdentifier(alice(), bob()), 
@@ -487,7 +484,6 @@ public abstract class TLTest<Identifier> {
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception exception) {
             synchronized(lock) {
               failedList.add(msg);
-//              logger.logException("foo", exception);
               exceptionList.add(exception);
               lock.notify();
             }
@@ -510,7 +506,6 @@ public abstract class TLTest<Identifier> {
     assertTrue(failedList.get(0) == cancellable);
     assertTrue(cancellable.getMessage() == sentBuffer);
     
-//    logger.logException("Expected:", exceptionList.get(0));
   }  
   
   @Test
@@ -530,7 +525,6 @@ public abstract class TLTest<Identifier> {
     final List<Tupel<Identifier>> receivedList = new ArrayList<Tupel<Identifier>>(1);
     final List<Exception> exceptionList = new ArrayList<Exception>(1);
     final Object lock = new Object();
-//    TestEnv<Identifier> tenv = getTestEnv();
 
     // make a way for bob to receive the callback
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {    

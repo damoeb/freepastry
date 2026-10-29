@@ -47,7 +47,7 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.*;
 
 /**
- * @(#) AnycastMessage.java The anycast message.
+ * The anycast message.
  *
  * @version $Id: AnycastMessage.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Alan Mislove
@@ -87,7 +87,6 @@ public class AnycastMessage extends ScribeMessage {
   public AnycastMessage(NodeHandle source, Topic topic, RawScribeContent content) {
     super(source, topic);
     this.initialRequestor = source;
-//    if (content == null) throw new IllegalArgumentException
     this.content = content;
     this.visited = new ArrayList<NodeHandle>();
     this.toVisit = new LinkedList<NodeHandle>();
@@ -164,7 +163,6 @@ public class AnycastMessage extends ScribeMessage {
    * @param handle The node to add
    */
   public void addVisited(NodeHandle handle) {
-//    if (!(this instanceof SubscribeMessage)) System.out.println(this+".addVisited("+handle+")");
     if (handle == null) {
       return;
     }
@@ -179,13 +177,11 @@ public class AnycastMessage extends ScribeMessage {
   }
 
   /**
-   * Adds a node the the front of the to-visit list
+   * Adds a node to the front of the to-visit list
    *
    * @param handle The handle to add
    */
   public void addFirst(NodeHandle handle) {
-//    if (!(this instanceof SubscribeMessage)) System.out.println(this+".addFirst("+handle+")");
-
     if (handle == null) {
       return;
     }
@@ -196,13 +192,11 @@ public class AnycastMessage extends ScribeMessage {
   }
 
   /**
-   * Adds a node the the end of the to-visit list
+   * Adds a node to the end of the to-visit list
    *
    * @param handle The handle to add
    */
   public void addLast(NodeHandle handle) {
-//    if (!(this instanceof SubscribeMessage)) System.out.println(this+".addLast("+handle+")");
-    
     if (handle == null) {
       return;
     }
@@ -262,7 +256,7 @@ public class AnycastMessage extends ScribeMessage {
   }
   
   public void serialize(OutputBuffer buf) throws IOException {
-//  super.serialize(buf); // note, can't make this a hierarchy, because of the super() must be first line rule in java
+    // no super.serialize(buf): the version byte comes first, and a deserializing constructor's super(...) call can't read it
     buf.writeByte((byte)1); // version
     serializeHelper(buf);
     

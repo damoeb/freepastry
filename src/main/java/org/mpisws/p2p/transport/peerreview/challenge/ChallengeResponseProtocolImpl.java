@@ -215,7 +215,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
             if (logger.level <= Logger.FINEST) logger.log( "Advancing endSeq past "+followingSeq+" (idx="+idxTo+")");
           }
                     
-//          unsigned char endType;
           if ((toEntry = history.statEntry(idxTo)) == null) { 
             throw new RuntimeException("Cannot get endType during AUDIT challenge "+idxTo);
           }
@@ -227,18 +226,15 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
           /* Serialize the requested log snippet */
         
           HashPolicy hashPolicy = new ChallengeHashPolicy<Identifier>(flags, challenge.originator, peerreview.getIdSerializer());
-//          SimpleOutputBuffer sob = new SimpleOutputBuffer();
-          LogSnippet snippit;
-          if ((snippit = history.serializeRange(idxFrom, idxTo, hashPolicy)) != null) {
-//            ByteBuffer buf = sob.getByteBuffer();
-//            int size = buf.remaining();
+          LogSnippet snippet;
+          if ((snippet = history.serializeRange(idxFrom, idxTo, hashPolicy)) != null) {
             /* Put together a RESPONSE message */
             ResponseMessage<Identifier> response = new ResponseMessage<Identifier>(
-                challenge.originator,peerreview.getLocalId(),challenge.evidenceSeq,new AuditResponse<Handle>(peerreview.getLocalHandle(),snippit));
+                challenge.originator,peerreview.getLocalId(),challenge.evidenceSeq,new AuditResponse<Handle>(peerreview.getLocalHandle(),snippet));
             
             /* ... and send it back to the challenger */
   
-            if (logger.level <= Logger.FINER) logger.log("Answering AUDIT challenge with "+snippit.entries.size()+"-entry log snippet"); 
+            if (logger.level <= Logger.FINER) logger.log("Answering AUDIT challenge with "+snippet.entries.size()+"-entry log snippet"); 
             peerreview.transmit(source, response, null, options);
           } else {
             if (logger.level <= Logger.WARNING) logger.log("Error accessing history in handleChallenge("+source+","+challenge+")");
@@ -316,9 +312,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     /* It's not an AUDIT, so let's see whether it matches any of our evidence (if not, the
        sender is responding to a challenge we haven't even made) */
     
-//    int evidenceLen = 0;
-//    bool isProof = false;
-//    bool haveResponse = false;
     Handle interestedParty = null;
     
     EvidenceRecord<Handle, Identifier> record = infoStore.findEvidence(message.originator, message.subject, message.evidenceSeq);
@@ -391,19 +384,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       boolean includePrevCheckpoint = evidenceAudit.isIncludePrevCheckpoint();
 
       long firstSeq = responseAudit.getFirstSeq();
-//      int readptr = 0;
-//      readByte(response, (unsigned int*)&readptr); /* RESP_AUDIT */
-//      Handle subjectHandle = peerreview->readNodeHandle(response, (unsigned int*)&readptr, responseLen);
-//      long firstSeq = readLongLong(response, (unsigned int*)&readptr);
-//      readptr += 1 + response[readptr]; /* skip extInfo */
-//      unsigned char baseHash[hashSizeBytes];
-//      memcpy(baseHash, &response[readptr], hashSizeBytes);
-//      readptr += hashSizeBytes;
-//
-//      unsigned char subjectHandleInBytes[MAX_HANDLE_SIZE];
-//      unsigned int subjectHandleInBytesLen = 0;
-//      subjectHandle->write(subjectHandleInBytes, &subjectHandleInBytesLen, sizeof(subjectHandleInBytes));
-//
       if ((requestedBeginSeq % 1000000) > 0) {
         requestedBeginSeq -= requestedBeginSeq % 1000000;
       }
@@ -418,8 +398,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       boolean snippetOK = peerreview.getEvidenceTool().checkSnippetSignatures(
           responseAudit.getLogSnippet(), responseAudit.getLogOwner(), extractAuthsFromResponse ? authOutStore : null,
               evidenceAudit.flags,commitmentProtocol,evidenceAudit.from.getHash(),fromNodeMaxSeq); 
-      //&response[readptr], responseLen - readptr, firstSeq, baseHash, subjectHandle, extractAuthsFromResponse ? authOutStore : NULL, 
-      // includePrevCheckpoint, peerreview, peerreview, commitmentProtocol, &evidence[2+sizeof(long long)], fromNodeMaxSeq);
 
       if (!snippetOK)
         return false;
@@ -428,18 +406,15 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     }
     case CHAL_SEND: {
       UserDataMessage<Handle> evidenceUDM = (UserDataMessage<Handle>)evidence;
-      long senderSeq = evidenceUDM.getTopSeq(); //readLongLong(evidence, &pos);
-      Handle senderHandle = evidenceUDM.getSenderHandle(); //peerreview->readNodeHandle(evidence, &pos, evidenceLen);
+      long senderSeq = evidenceUDM.getTopSeq();
+      Handle senderHandle = evidenceUDM.getSenderHandle();
       byte[] senderHtopMinusOne = evidenceUDM.getHTopMinusOne();
       byte[] senderSignature = evidenceUDM.getSignature();      
-//      byte relevantCode = evidenceUDM.getRelevantCode(); //readByte(evidence, &pos);
       int relevantLen = evidenceUDM.getRelevantLen(); 
       
       AckMessage<Identifier> responseAck = (AckMessage<Identifier>)response;
       
-//      unsigned int pos2 = 0;
-//      readByte(response, &pos2); // CHAL_SEND
-      Identifier receiverID = responseAck.getNodeId(); //peerreview->readIdentifier(response, &pos2, responseLen);
+      Identifier receiverID = responseAck.getNodeId();
       long ackSenderSeq = responseAck.getSendEntrySeq();
       long ackReceiverSeq = responseAck.getRecvEntrySeq();
       byte[] receiverHtopMinusOne = responseAck.getHashTopMinusOne();
@@ -455,7 +430,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       if (okay) {      
         byte[] innerHash = evidenceUDM.getInnerHash(transport);
         
-        //unsigned char authenticator[sizeof(long long) + hashSizeBytes + signatureSizeBytes];
         Authenticator authenticator = peerreview.extractAuthenticator(receiverID, ackReceiverSeq, EVT_RECV, innerHash, receiverHtopMinusOne, receiverSignature);
         if (authenticator != null) {
           if (logger.level <= Logger.FINE) logger.log( "Auth OK");
@@ -483,13 +457,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
   public void handleStatement(Handle source, PeerReviewMessage m, Map<String, Object> options) throws IOException {
     assert(m.getType() == MSG_ACCUSATION || m.getType() == MSG_RESPONSE);
-
-//    unsigned int pos = 1;
-//    Identifier originator = peerreview->readIdentifier(statement, &pos, statementLen);
-//    Identifier subject = peerreview->readIdentifier(statement, &pos, statementLen);
-//    long long evidenceSeq = readLongLong(statement, &pos);
-//    unsigned char *payload = &statement[pos];
-//    int payloadLen = statementLen - pos;
 
     /* We get called from the StatementProtocol, so we already know that the statement
        is well-formed, and that we have acquired all the necessary supplementary material,
@@ -554,9 +521,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
    * Looks up the first unanswered challenge to a SUSPECTED node, and sends it to that node 
    */
   public void challengeSuspectedNode(Handle target) {    
-//    Identifier originator;
-//    long evidenceSeq;
-//    int evidenceLen;
     
     Identifier tIdentifier = peerreview.getIdentifierExtractor().extractIdentifier(target);
     EvidenceRecord<Handle, Identifier> record = infoStore.statFirstUnansweredChallenge(tIdentifier);

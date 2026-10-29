@@ -310,22 +310,6 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
       // make sure to leave m at the proper position
       m.position(m.array().length - sib.bytesRemaining());
       
-//      if (!m.hasRemaining()) {
-//        errorHandler.receivedUnexpectedData(new EpochInetSocketAddress(i), m.array());
-//      }
-//      
-//      byte numAddresses = m.get();
-//      if (numAddresses < 1 || numAddresses > MAX_NUM_ADDRESSES) {
-//        errorHandler.receivedUnexpectedData(new EpochInetSocketAddress(i), m.array()); 
-//      }
-//      
-//      // make sure to leave m at the proper position
-//      byte[] eisaBuffer = new byte[8+1+(numAddresses*6)];            
-//      eisaBuffer[0] = numAddresses;
-//      m.get(eisaBuffer, 1, eisaBuffer.length-1);
-//      
-//      SimpleInputBuffer sib = new SimpleInputBuffer(eisaBuffer);
-//      EpochInetSocketAddress eisa = EpochInetSocketAddress.build(sib);
       callback.messageReceived(eisa, m, options);
     } else {
       callback.messageReceived(new MultiInetSocketAddress(i), m, options); 

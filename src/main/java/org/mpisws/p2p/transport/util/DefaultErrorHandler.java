@@ -50,7 +50,6 @@ import rice.environment.logging.Logger;
  * @author Jeff Hoye
  *
  * @param <Identifier>
- * @param <E>
  */
 public class DefaultErrorHandler<Identifier> implements
     ErrorHandler<Identifier> {
@@ -84,7 +83,6 @@ public class DefaultErrorHandler<Identifier> implements
   public void receivedException(Identifier i, Throwable error) {
     if (logger.level <= printlevel) {      
       logger.logException(i == null ? null : i.toString(), error);
-//      logger.logException("here I am", new Exception("ErrorHandlerCall"));
     }
   }
 

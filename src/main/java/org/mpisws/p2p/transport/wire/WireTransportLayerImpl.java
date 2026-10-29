@@ -157,30 +157,7 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
       Map<String, Object> options) {
     if (logger.level <= Logger.FINE) logger.log("sendMessage("+destination+","+m+")");
     return udp.sendMessage(destination, m, deliverAckToMe, options); 
-//    if (options != null) {
-//      Integer val = options.get(WireTransportLayer.OPTION_TRANSPORT_TYPE);
-//      if (val != null) {
-//        if (val.intValue() == WireTransportLayer.TRANSPORT_TYPE_DATAGRAM) {
-//          udp.sendMessage(destination, m, deliverAckToMe); 
-//          return;
-//        }
-//      }
-//    }
-//    tcp.sendMessage(destination, m, deliverAckToMe);
   }
-
-  /**
-   * Notification methods
-   * 
-   * @param destination
-   * @param msg
-   * @param i
-   * @param data
-   * @param transport_type WireTransportLayer.TRANSPORT_TYPE_DATAGRAM or WireTransportLayer.TRANSPORT_TYPE_GUARANTEED
-   */
-//  public void msgSent(InetSocketAddress destination, byte[] msg, int transport_type_datagram) {
-//    // TODO notify listeners
-//  }
 
   public InetSocketAddress getLocalIdentifier() {
     return bindAddress;

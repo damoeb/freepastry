@@ -47,8 +47,6 @@ import rice.p2p.past.*;
 import rice.p2p.util.rawserialization.*;
 
 /**
- * @(#) ContinuationMessage.java
- *
  * This class the abstraction of a message used internally by Past which serves
  * as a continuation (for receiving the results of an operation).
  *
@@ -100,8 +98,6 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
    */
   public void receiveException(Exception e) {
     setResponse();
-//    System.out.println("ContinuationMessage.receiveException("+e+")");
-//    e.printStackTrace();
     exception = e;
   }
 
@@ -180,29 +176,19 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
     }          
   }
 
-  /**
-   * Deprecated to cause warnings.
-   * 
-   * use serialize(OutputBuffer buf, boolean javaSerialize)
-   */
-//  public void serialize(OutputBuffer buf) throws IOException {
-//    throw new RuntimeException("Illegal call.  Must call serialize(OutputBuffer, boolean");
-//  }
-  
   public abstract void serialize(OutputBuffer buf) throws IOException;
   
   protected byte serType;
   
   /**
    * If you want this class to serialize itself, set javaSerialize to true,
-   * otherwise, the subclass is expected to do an optimal serializatoin
+   * otherwise, the subclass is expected to do an optimal serialization
    * 
-   * @param buf
-   * @param javaSerialize
-   * @throws IOException
+   * @param buf the buffer to write to
+   * @param javaSerialize whether to Java-serialize the response or exception
+   * @throws IOException if writing fails
    */
   public void serialize(OutputBuffer buf, boolean javaSerialize) throws IOException {
-//    System.out.println("ContinuationMessage<"+getClass().getName()+">.serialize("+javaSerialize+") resp:"+response+" exc:"+exception+" id:"+id+" src:"+source+" dst:"+dest);
     super.serialize(buf);
     
     serType = S_EMPTY;
@@ -220,8 +206,6 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
         serType = S_EMPTY;
         buf.writeByte(serType);
       } else {      
-//      if (true) throw new IOException("Test");
-//        System.out.println("ContinuationMessage<"+getClass().getName()+">.serialize():"+serType+" "+response+" "+exception);
         try {
           buf.writeByte(serType);        
           ByteArrayOutputStream baos = new ByteArrayOutputStream();

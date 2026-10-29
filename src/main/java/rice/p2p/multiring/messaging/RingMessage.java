@@ -48,8 +48,6 @@ import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.util.rawserialization.JavaSerializedMessage;
 
 /**
- * @(#) RingMessage.java
- *
  * This class the abstraction of a message used internally by the multiring hierarchy.
  *
  * @version $Id: RingMessage.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -79,16 +77,12 @@ public class RingMessage implements RawScribeContent {
   protected String application;
 
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param id The unique id
-   * @param source The source address
-   * @param dest The destination address
+   * @param id The target of this ring message
+   * @param message The internal message to be sent
+   * @param application The name of the application which sent this message
    */
-//  public RingMessage(RingId id, Message message, String application) {
-//    this(id, message instanceof RawMessage ? (RawMessage) message : new JavaSerializedMessage(message), application);
-//  }
-//  
   public RingMessage(RingId id, RawMessage message, String application) {
     this.id = id;
     this.message = message;
@@ -163,13 +157,14 @@ public class RingMessage implements RawScribeContent {
   }
   
   /**
-   * TODO: This can probably be done more efficiently, IE, deserialize the message on getMessage().  Can do that later.
-   * @param buf
-   * @param endpoint
-   * @param md
-   * @param sender
-   * @param priority
-   * @throws IOException
+   * Deserializing constructor.
+   *
+   * TODO: deserialize the inner message lazily, on getMessage(), instead of here
+   *
+   * @param buf the buffer to read from
+   * @param ringEndpoint the endpoint used to read the ring id
+   * @param endpoints the endpoints by application name, used to find the inner message's deserializer
+   * @throws IOException if the buffer cannot be read or the application is unknown
    */
   public RingMessage(InputBuffer buf, Endpoint ringEndpoint, Map<String, Endpoint> endpoints) throws IOException {
     id = new RingId(buf, ringEndpoint);
@@ -184,8 +179,7 @@ public class RingMessage implements RawScribeContent {
     
     short type = buf.readShort();
     byte priority = buf.readByte();
-    // Jeff - 3/31/06 not sure if this is the correct decision, but I don't know how to get the sender
-//    NodeHandle sender = endpoint.readNodeHandle(buf);
+    // the sender is not serialized, so the inner message is deserialized without one
     Message m = md.deserialize(buf, type, priority, null);
     if (type == 0) {
       message = new JavaSerializedMessage(m);

@@ -47,8 +47,6 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  * Uses NodeHandle as Identifier
  * Serializes RawMessage
  * 
- * TODO: Rename to CommonAPITransportLayer
- * 
  * @author Jeff Hoye
  *
  */

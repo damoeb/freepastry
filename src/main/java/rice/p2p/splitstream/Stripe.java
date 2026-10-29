@@ -300,11 +300,7 @@ public class Stripe implements ScribeMultiClient {
 
       failed.put(topic, count);
     } else {
-      // TODO: Make this random exponential backoff!
-      // set random exponential backoff timer
-      // if there is a parent then cancel self, else 
-      
-      // TODO: Need to reset count, (and in the future, the exponential backoff count)
+      // TODO: retry with a random exponential backoff instead of a fixed delay, and reset the failure count
       TimerTask resubscribeTask = new TimerTask() {
         public void run() {
           if (getParent() == null) {

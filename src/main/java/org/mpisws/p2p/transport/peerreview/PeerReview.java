@@ -68,7 +68,7 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
     IdentityTransportCallback<Handle, Identifier>, PeerReviewConstants, IdentityTransport<Handle, Identifier> {
 
   /**
-   * Option should map to an int < 255 to record the relevant length of the message.
+   * Option should map to an int below 255 to record the relevant length of the message.
    */
   public static final String RELEVANT_LENGTH = "PeerReview_Relevant_length";  
 
@@ -101,15 +101,13 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
 
   public Authenticator extractAuthenticator(long seq, short entryType, byte[] entryHash, byte[] hTopMinusOne, byte[] signature);
 
-//  public MessageRequestHandle<Handle, PeerReviewMessage> transmit(Handle dest, boolean b, PeerReviewMessage message, MessageCallback<Handle, PeerReviewMessage> deliverAckToMe);
-  
   public void transmit(Handle dest, 
       PeerReviewMessage message,
       MessageCallback<Handle, ByteBuffer> deliverAckToMe, 
       Map<String, Object> options);
 
   /**
-   * Current time in millis, however, we depend on there being a timesource that is more discritized
+   * Current time in millis, however, we depend on there being a timesource that is more discretized
    * than the "wall" clock.  It is only advanced on a timeout or a message receipt.
    * @return
    */

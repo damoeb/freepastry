@@ -48,8 +48,6 @@ import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.gc.*;
 
 /**
- * @(#) GCInsertMessage.java
- *
  * This class represents a message which is an insert request in past, 
  * coupled with an expiration time for the object.
  *

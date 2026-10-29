@@ -172,7 +172,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
   /**
    * This reads a log snippet entry by entry, looks up all the nodeIDs that are
    * mentioned, and requests the first nodeID certificate we don't have locally.
-   * Also, it checks if the snipped is malformed in any way. That way, the other
+   * Also, it checks if the snippet is malformed in any way. That way, the other
    * protocols won't have to do all these sanity checks later.
    */
   int checkSnippetAndRequestCertificates(LogSnippet snippet, IncompleteStatementInfo<Handle, Identifier> idx) {
@@ -221,10 +221,6 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
       return;
     }
  
-  // unsigned char subjectAsBytes[identifierSizeBytes];
-  // unsigned int subjectAsBytesLen = 0;
-  // subject->write(subjectAsBytes, &subjectAsBytesLen, sizeof(subjectAsBytes));
-   
    /* Further checking depends on the type of the statement. At this point, we may still request
       additional material from the sender, if it becomes necessary. */
    
@@ -267,8 +263,6 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
        }
        case PROOF_INCONSISTENT: {
          ProofInconsistent pi = (ProofInconsistent)payload;
-//         if (pi.snippet != null)
-//           throw new RuntimeException("Inconsistency II (log) not implemented "+pi);
   
          if (!peerreview.verify(subject, pi.auth1)) {
            if (logger.level <= Logger.WARNING) logger.log("INCONSISTENT proof's first authenticator has an invalid signature");
@@ -300,21 +294,8 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
              return;
            }           
          } else {
-//           unsigned int xpos = 2+2*authenticatorSizeBytes;
-//           unsigned char extInfoLen = ((xpos+sizeof(long long))<payloadLen) ? payload[xpos+sizeof(long long)] : 0;
-//
-//           if (payloadLen < (xpos + sizeof(long long) + 1 + extInfoLen + hashSizeBytes)) {
-//             if (logger.level <= Logger.WARNING) logger.log("INCONSISTENT-1 proof is too short (case #2); discarding");
-//             idx.finished = true;
-//             return;
-//           }
            
            long firstSeq = pi.snippet.getFirstSeq();
-//           unsigned char *baseHash = &payload[xpos+sizeof(long long)+1+extInfoLen];
-//           unsigned char *snippet = &payload[xpos+sizeof(long long)+1+extInfoLen+hashSizeBytes];
-//           int snippetLen = payloadLen - (xpos+sizeof(long long)+1+extInfoLen+hashSizeBytes);
-           
-//           assert(snippetLen >= 0);
            
            if (!((firstSeq<seq2) && (seq2<seq1))) {
              if (logger.level <= Logger.WARNING) logger.log("INCONSISTENT-1 proof's sequence numbers do not make sense (first="+firstSeq+", seq2="+seq2+", seq1="+seq1+") -- discarding");
@@ -340,17 +321,8 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
        case PROOF_NONCONFORMANT: {
          ProofNonconformant<Handle> pn = (ProofNonconformant<Handle>)payload;
          
-  //       unsigned int pos = 1;
-  //       unsigned char *auth = &payload[pos];
-  //       pos += authenticatorSizeBytes;
-  //       NodeHandle *subjectHandle = peerreview->readNodeHandle(payload, &pos, payloadLen);
-  //       long long firstSeq = readLongLong(payload, &pos);
-  //       unsigned char *baseHash = &payload[pos];
-  //       pos += hashSizeBytes;
-  //
          /* Is the authenticator properly signed? */
   
-  //       unsigned char signedHash[hashSizeBytes];       
          if (!peerreview.verify(subject, pn.to)) {
            if (logger.level <= Logger.WARNING) logger.log("NONCONFORMANT proof's authenticator has an invalid signature");
            idx.finished = true;
@@ -386,9 +358,8 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
          try {
            SecureHistory subjectHistory = peerreview.getHistoryFactory().createTemp(pn.snippet.getFirstSeq()-1, pn.snippet.getBaseHash());
            subjectHistory.appendSnippetToHistory(pn.snippet);
-  //         peerreview.getEvidenceTool().appendSnippetToHistory(pn.snippet, subjectHistory, -1);
     
-    //#warning ext info missing
+           // TODO: pass the extInfo of the proof to the verifier (null for now; inherited from the C++ PeerReview port)
            Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, pn.myHandle, 1, pn.snippet.getFirstSeq()/1000000, null);
            PeerReviewCallback<Handle, Identifier> replayApp = peerreview.getApp().getReplayInstance(verifier);
            verifier.setApplication(replayApp);
@@ -408,7 +379,6 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
            if (logger.level <= Logger.WARNING) logger.logException("Couldn't replay!!! "+pn, ioe);
          }
          break;        
-  //       throw new RuntimeException("todo: implement");
        }
        default: {
          if (logger.level <= Logger.WARNING) logger.log("Unknown payload type #"+payload.getEvidenceType()+" in accusation; discarding");
@@ -436,14 +406,6 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
          
          AuditResponse<Handle> auditResponse = (AuditResponse<Handle>)payload;
          
-  //       int readptr = 0;
-  //       readByte(payload, (unsigned int*)&readptr); /* RESP_AUDIT */
-  //       NodeHandle *subjectHandle = peerreview->readNodeHandle(payload, (unsigned int*)&readptr, payloadLen);
-  //       readptr += sizeof(long long);
-  //       readptr += 1 + payload[readptr];
-  //       readptr += hashSizeBytes;
-  //       delete subjectHandle;
-  
          switch (checkSnippetAndRequestCertificates(auditResponse.getLogSnippet(), idx)) {
            case INVALID:
              if (logger.level <= Logger.WARNING) logger.log("AUDIT RESPONSE is not well-formed; discarding");

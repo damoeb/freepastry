@@ -57,7 +57,7 @@ import rice.p2p.util.*;
  * This class provides both persistent and caching services to
  * external applications. Building the StorageManager requires a
  * Storage object, to provide the back-end storage, and a Cache
- * to serve as a cache.  Note that this implementation has seperate
+ * to serve as a cache.  Note that this implementation has separate
  * areas for the Cache and Storage, but the next version will allow
  * the cache to use the unused storage space.
  */
@@ -136,7 +136,7 @@ public class StorageManagerImpl implements StorageManager {
 
   /**
    * Returns the object identified by the given id, or <code>null</code> if
-   * there is no cooresponding object (through receiveResult on c).
+   * there is no corresponding object (through receiveResult on c).
    *
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete
@@ -173,7 +173,7 @@ public class StorageManagerImpl implements StorageManager {
    *
    * @param id The id for the metadata 
    * @param metadata The metadata to store
-   * @param c The command to run once the operation is complete
+   * @param command The command to run once the operation is complete
    */
   public void setMetadata(final Id id, final Serializable metadata, Continuation<? super Boolean, Exception> command) {
     cache.setMetadata(id, metadata, new StandardContinuation<Boolean, Boolean, Exception>(command) {
@@ -254,11 +254,9 @@ public class StorageManagerImpl implements StorageManager {
   }
 
   /**
-   * Returns the total size of the stored data in bytes.The result
-   * is returned via the receiveResult method on the provided
-   * Continuation with an Integer representing the size.
+   * Returns the total size of the stored data in bytes.
    *
-   * @param c The command to run once the operation is complete
+   * @return The total size, in bytes, of data stored.
    */
   public long getTotalSize() {
     return cache.getTotalSize() + storage.getTotalSize();
@@ -301,7 +299,7 @@ public class StorageManagerImpl implements StorageManager {
    * Returns <code>True</code> if the action succeeds, else
    * <code>False</code>  (through receiveResult on c).
    *
-   * @param pid The object's persistence id
+   * @param id The object's persistence id
    * @param c The command to run once the operation is complete
    */
   public void unstore(Id id, Continuation<? super Boolean, Exception> c) {
@@ -337,7 +335,7 @@ public class StorageManagerImpl implements StorageManager {
    * Returns <code>True</code> if the action succeeds, else
    * <code>False</code>  (through receiveResult on c).
    *
-   * @param pid The object's id
+   * @param id The object's id
    * @param c The command to run once the operation is complete
    */
   public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
@@ -345,11 +343,9 @@ public class StorageManagerImpl implements StorageManager {
   }
 
   /**
-   * Returns the maximum size of the cache, in bytes. The result
-   * is returned via the receiveResult method on the provided
-   * Continuation with an Integer representing the size.
+   * Returns the maximum size of the cache, in bytes.
    *
-   * @param c The command to run once the operation is complete
+   * @return The maximum size, in bytes, of the cache.
    */
   public long getMaximumSize() {
     return cache.getMaximumSize();

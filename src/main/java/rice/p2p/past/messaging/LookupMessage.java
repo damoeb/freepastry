@@ -47,8 +47,6 @@ import rice.p2p.past.gc.GCId;
 import rice.p2p.past.rawserialization.*;
 
 /**
- * @(#) LookupMessage.java
- *
  * This class is the representation of a lookup request (by Id) in Past.
  *
  * response should be PastContent
@@ -76,7 +74,6 @@ public class LookupMessage extends ContinuationMessage {
    *
    * @param uid The unique id
    * @param id The location to be stored
-   * @param useReplicas Whether or not to look for nearest replicas
    * @param source The source address
    * @param dest The destination address
    */

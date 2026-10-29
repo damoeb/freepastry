@@ -88,17 +88,6 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   }
 
   /**
-   * Copy constructor.
-   * constructs a shallow copy of the given IdSet o.
-   * @param o the IdSet to copy
-   */
-//  public IdSet(IdSet o) {
-//    idSet = o.idSet;
-//    cachedHash = o.cachedHash;
-//    validHash = o.validHash;
-//  }
-
-  /**
    * return the number of elements
    */
   public int numElements() {
@@ -156,19 +145,6 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
    */
   public IdSet subSet(Id from, Id to) {
     return new IdSet(idSet.subMap(from, to));
-/*    IdSet res;
-
-    if (from.compareTo(to) <= 0) {
-      res = new IdSet(idSet.subMap(from, to));
-    } else {
-      res = new IdSet(idSet.tailMap(from));
-      //SortedSet ss = idSet.tailSet(from);
-      //ss.addAll(idSet.headSet(to));
-      //res = new IdSet( (TreeSet) ss);
-      res.idSet.putAll(idSet.headMap(to));
-    }
-
-    return res; */
   }
 
   /**
@@ -188,7 +164,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
 
   /**
    * return an iterator over the elements of this set
-   * @return the interator
+   * @return the iterator
    */
   public Iterator<rice.p2p.commonapi.Id> getIterator() {
     return idSet.keySet().iterator();
@@ -208,7 +184,6 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
       md = MessageDigest.getInstance("SHA");
     } catch ( NoSuchAlgorithmException e ) {
       throw new RuntimeException("No SHA support!",e);
-      //return null;
     }
 
     Iterator<rice.p2p.commonapi.Id> it = getIterator();
@@ -283,12 +258,10 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   
   /**
    * return a subset of this set, consisting of the member ids in a given range
-   * @param from the lower end of the range (inclusive)
-   * @param to the upper end of the range (exclusive)
+   * @param range the range (a rice.pastry.IdRange)
    * @return the subset
    */
   public rice.p2p.commonapi.IdSet subSet(rice.p2p.commonapi.IdRange range) {
-    //return subSet((Id) range.getCWId(), (Id) range.getCCWId());
     return subSet((IdRange) range);
   }
   

@@ -476,10 +476,12 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
   /**
    * Helper method for finding prefix match between two Ids.
    *
+   * @param target the first id
+   * @param sample the second id
+   * @param digitLength the number of bits per digit
    * @return The number of most significant digits that match.
    */
   public static int getPrefixMatch(Id target, Id sample, int digitLength){
-//    int digitLength = RoutingTable.baseBitLength();
     int numDigits = rice.pastry.Id.IdBitLength / digitLength - 1;
 
     return (numDigits - ((rice.pastry.Id)target).indexOfMSDD((rice.pastry.Id)sample, digitLength));

@@ -74,7 +74,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   protected HashSet<SelectionKey> cancelledKeys;
 
   // the set used to store the timer events
-//  protected TreeSet timerQueue = new TreeSet();
   protected Queue<TimerTask> timerQueue = new PriorityQueue<TimerTask>();
 
   // the next time the selector is scheduled to wake up
@@ -84,7 +83,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   long lastTime = 0;
 
-//  protected LogManager log;
   protected Logger logger;
   
   protected String instance;
@@ -107,7 +105,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   protected RandomSource random;
   
   /**
-   * Constructor, which is private since there is only one selector per JVM.
+   * Constructor.
    */
   public SelectorManager(String instance,
       TimeSource timeSource, LogManager log, RandomSource random) {    
@@ -145,7 +143,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * This is needed so that when the NodeFactory clones the Environment, it doesn't
    * get restarted/have multiple different environments etc...
    * 
-   * @param env
+   * @param env the environment; also starts this thread on the first call
    */
   public void setEnvironment(Environment env) {
     if (env == null) throw new IllegalArgumentException("env is null!");
@@ -191,9 +189,9 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Registers a new channel with the selector, and attaches the given
    * SelectionKeyHandler as the handler for the newly created key. Operations
-   * which the hanlder is interested in will be called as available.
+   * which the handler is interested in will be called as available.
    * 
-   * @param channel The channel to regster with the selector
+   * @param channel The channel to register with the selector
    * @param handler The handler to use for the callbacks
    * @param ops The initial interest operations
    * @return The SelectionKey which uniquely identifies this channel
@@ -263,7 +261,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * to be started when this thread's start() method is invoked.
    */
   public void run() {
-    //System.out.println("SelectorManager starting..."+Thread.currentThread());
     if (logger.level <= Logger.INFO) logger.log("SelectorManager -- " + instance + " starting...");
 
     lastTime = timeSource.currentTimeMillis();
@@ -307,7 +304,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         if (logger.level <= Logger.SEVERE) logger.logException(
             "ERROR (SelectorManager.run): " , t);
         environment.getExceptionStrategy().handleException(this, t);
-//        System.exit(-1);
       }
     } // while(running)
     shutdown();
@@ -414,7 +410,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   
   /**
    * Set this to false when using the simulator, because you don't need to notify loop observers.
-   * @param val
+   * @param val true to notify the loop observers on each loop
    */
   public void useLoopListeners(boolean val) {
     useLoopListeners = val;
@@ -475,7 +471,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     }
 
     for (int i = 0; i < keys.length; i++) {
-//      System.out.println("handling key "+keys[i].attachment());
       selector.selectedKeys().remove(keys[i]);      
 
       synchronized (keys[i]) {
@@ -534,8 +529,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
             ctr++;
           }
         }        
-//        if (logger.level <= Logger.SEVERE) logger.logException( 
-//            "Invoking runnable caused exception " + e + " - continuing",e);
         throw e;
       }
     }
@@ -554,7 +547,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   /**
-   * Method which synchroniously returns the first element off of the
+   * Method which synchronously returns the first element off of the
    * invocations list.
    * 
    * @return An item from the invocations list
@@ -567,9 +560,9 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   /**
-   * Method which synchroniously returns on element off of the modifyKeys list
+   * Method which synchronously returns one element off of the modifyKeys set
    * 
-   * @return An item from the invocations list
+   * @return A key from the modifyKeys set, or null if it is empty
    */
   protected synchronized SelectionKey getModifyKey() {
     if (modifyKeys.size() > 0) {
@@ -582,11 +575,12 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   /**
-   * Selects on the selector, and returns the result. Also properly synchronizes
-   * around the selector
+   * Selects on the selector, and returns the result. Selects without blocking if
+   * time is not positive or invocations or key modifications are pending.
    * 
-   * @return DESCRIBE THE RETURN VALUE
-   * @exception IOException DESCRIBE THE EXCEPTION
+   * @param time the maximum time to wait in millis, capped at TIMEOUT
+   * @return the number of selected keys (1 after an interrupted system call)
+   * @exception IOException if the select fails
    */
   protected int select(int time) throws IOException {
     if (logger.level <= Logger.FINEST) logger.log("SM.select("+time+")");
@@ -614,22 +608,10 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   /**
-   * Selects all of the keys on the selector and returns the result as an array
-   * of keys.
+   * Returns the currently selected keys of the selector as an array of keys,
+   * in random order.
    * 
    * @return The array of keys
-   * @exception IOException DESCRIBE THE EXCEPTION
-   */
-//  private SelectionKey[] keys() throws IOException {
-//    return (SelectionKey[]) selector.keys().toArray(new SelectionKey[0]);
-//  }
-
-  /**
-   * Selects all of the currently selected keys on the selector and returns the
-   * result as an array of keys.
-   * 
-   * @return The array of keys
-   * @exception IOException DESCRIBE THE EXCEPTION
    */
   protected SelectionKey[] selectedKeys() throws IOException {
     Set<SelectionKey> s = selector.selectedKeys();
@@ -655,9 +637,10 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   /**
-   * Method which schedules a task to run after a specified number of millis.  The task must have a proper nextExecutionTime set
+   * Method which schedules a task to run at its own next execution time, which must already be set
    * 
    * @param task The task to run
+   * @return the task
    */
   public TimerTask schedule(TimerTask task) {
     addTask(task);
@@ -701,14 +684,15 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     return task;
   }
 
+  protected Object seqLock = new Object();
+  protected int seqCtr = Integer.MIN_VALUE;
+
   /**
-   * Internal method which adds a task to the task tree, waking up the selector
+   * Internal method which adds a task to the task queue, waking up the selector
    * if necessary to recalculate the sleep time
    * 
    * @param task The task to add
    */
-  protected Object seqLock = new Object();
-  protected int seqCtr = Integer.MIN_VALUE;
   protected synchronized void addTask(TimerTask task) {
     if (invocations == null) {
       // destroyed, it would never run
@@ -718,11 +702,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     synchronized(seqLock) {
       task.seq = seqCtr++;
     }
-//    if (logger.level <= Logger.FINE && task.scheduledExecutionTime() <= timeSource.currentTimeMillis()) {
-//      logger.logException("Scheduling task for now:"+task, new Exception());
-//    }
     if (logger.level <= Logger.FINER) logger.log("addTask("+task+") scheduled for "+task.scheduledExecutionTime());
-//    synchronized (selector) {
       if (!timerQueue.add(task)) {
         if (logger.level <= Logger.WARNING) logger.log("ERROR: Got false while enqueueing task "+task+"!");
         Thread.dumpStack();
@@ -745,9 +725,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         wakeup();
       }
     }
-    
-//    } // synchronized
-
   }
   
   public synchronized void removeTask(TimerTask task) {
@@ -760,16 +737,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    *
    */
   public void wakeup() {
-    //System.out.println("wakeup()");
     selector.wakeup();
     this.notifyAll();
   }
 
   public long getNextTaskExecutionTime() {
-//    if (!invocations.isEmpty()) return timeSource.currentTimeMillis();
     if (timerQueue.size() > 0) {
       TimerTask next = (TimerTask) timerQueue.peek();
-      //System.out.println(next);
       return next.scheduledExecutionTime();
     }
     return -1;    
@@ -792,8 +766,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           TimerTask next = (TimerTask) timerQueue.peek();
           if (next.scheduledExecutionTime() <= now) {
             executeNow.add(next);
-            //System.out.println("Removing:"+next);
-//            timerQueue.remove(next);
             timerQueue.poll();
           } else {
             done = true;
@@ -825,12 +797,10 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           i = addBack.iterator();
           while (i.hasNext()) {
             TimerTask tt = (TimerTask) i.next();
-            //System.out.println("SM.addBack("+tt+")");
             timerQueue.add(tt);
           }
         }
         
-//        if (logger.level <= Logger.SEVERE) logger.logException("",e);
         throw e;
       }
     }
@@ -840,7 +810,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       i = addBack.iterator();
       while (i.hasNext()) {
         TimerTask tt = (TimerTask) i.next();
-        //System.out.println("SM.addBack("+tt+")");
         timerQueue.add(tt);
       }
     }

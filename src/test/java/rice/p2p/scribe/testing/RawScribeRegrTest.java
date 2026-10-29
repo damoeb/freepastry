@@ -53,7 +53,7 @@ import rice.p2p.scribe.messaging.SubscribeMessage;
 import rice.p2p.scribe.rawserialization.*;
 
 /**
- * @(#) DistScribeRegrTest.java Provides regression testing for the Scribe service using distributed
+ * Provides regression testing for the Scribe service using distributed
  * nodes.
  *
  * @version $Id: ScribeRegrTest.java 3157 2006-03-19 12:16:58Z jeffh $
@@ -89,8 +89,6 @@ public class RawScribeRegrTest extends ScribeRegrTest {
   /**
    * Usage: DistScribeRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (rmi|wire)]
    * [-help]
-   *
-   * @param args DESCRIBE THE PARAMETER
    */
   public static void main(String args[]) throws IOException {
     Environment env = parseArgs(args);
@@ -113,9 +111,6 @@ public class RawScribeRegrTest extends ScribeRegrTest {
     public static final short TYPE = 1;
     /**
      * Constructor for TestScribeContent.
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param num DESCRIBE THE PARAMETER
      */
     public RawTestScribeContent(Topic topic, int num) {
       super(topic, num);

@@ -51,7 +51,7 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.*;
 
 /**
- * @(#) SubscribeMessage.java The subscribe message.
+ * The subscribe message.
  *
  * @version $Id: SubscribeMessage.java 3801 2007-07-18 15:04:40Z jeffh $
  * @author Alan Mislove
@@ -136,7 +136,6 @@ public class SubscribeMessage extends AnycastMessage {
   }
   
   public void serialize(OutputBuffer buf) throws IOException {
-//    System.out.println("SubscribeMessage.serialize()");
     buf.writeByte((byte)1); // version
     super.serializeHelper(buf);
     
@@ -162,8 +161,7 @@ public class SubscribeMessage extends AnycastMessage {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        // TODO: Handle this
-        
+        // TODO: version 0 is not supported, so such a message is dropped (null is returned)
         return null;
       case 1:
         return new SubscribeMessage(buf, endpoint, scd);
@@ -199,11 +197,9 @@ public class SubscribeMessage extends AnycastMessage {
   /**
    * Call this when you accept topics in the list.
    * 
-   * @param topic
-   * @return the remaining topics
+   * @param accepted the topics to remove from this message
    */
   public void removeTopics(Collection<Topic> accepted) {
-//    ArrayList<Topic> ret = new ArrayList<Topic>();
     topics.removeAll(accepted);
        
     if (topics.isEmpty()) {
@@ -211,7 +207,6 @@ public class SubscribeMessage extends AnycastMessage {
     } else {
       topic = topics.get(0);
     }
-//    System.out.println(this+".removeTopics("+accepted+")");
   }
 
   

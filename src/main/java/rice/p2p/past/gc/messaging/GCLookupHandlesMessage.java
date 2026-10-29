@@ -47,8 +47,6 @@ import rice.p2p.past.messaging.*;
 import rice.p2p.past.gc.*;
 
 /**
- * @(#) GCLookupHandlesMessage.java
- *
  * This class represents a message which is an request to find the leafset of
  * a remote node in the GC Past.
  *

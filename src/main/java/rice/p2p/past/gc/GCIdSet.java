@@ -45,8 +45,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.util.*;
 
 /**
- * @(#) GCIdSet.java
- *
  * Internal representation of a set of GCIds
  * 
  * @version $Id: GCIdSet.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -118,8 +116,7 @@ public class GCIdSet implements IdSet {
   
   /**
    * return a subset of this set, consisting of the member ids in a given range
-   * @param from the lower end of the range (inclusive)
-   * @param to the upper end of the range (exclusive)
+   * @param range the range (a GCIdRange)
    * @return the subset
    */
   public IdSet subSet(IdRange range) {
@@ -163,9 +160,10 @@ public class GCIdSet implements IdSet {
   }
   
   /**
-   * return a hash of this set
+   * Not supported.
    *
-   * @return the hash of this set
+   * @return never returns
+   * @throws UnsupportedOperationException always
    */
   public byte[] hash() {
     throw new UnsupportedOperationException("hash on GCIdSet()!");
@@ -174,7 +172,7 @@ public class GCIdSet implements IdSet {
   /**
    * Determines equality
    *
-   * @param other To compare to
+   * @param o To compare to
    * @return Equals
    */
   public boolean equals(Object o) {

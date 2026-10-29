@@ -81,8 +81,6 @@ public class LeafSetTest {
 
     NodeHandle handle = leafset.get(halfLeafSet);
     System.out.println("Removing " + handle);
-    // NodeId nid = (NodeId)handle.getId();
-    // NodeHandle nh = handle;
     leafset.remove(handle);
 
     System.out.println("Adding " + handle);
@@ -105,7 +103,6 @@ public class LeafSetTest {
       boolean rightSide = false;
 
       while (leafset.size() > 2) {
-        // System.out.println("looping");
         rightSide = !rightSide;
         int r;
         if (rightSide) {
@@ -113,18 +110,14 @@ public class LeafSetTest {
           if (r != 0) {
             handle = leafset.get(r);
             System.out.println("Removing " + handle);
-            // nid = (NodeId)handle.getId();
             leafset.remove(handle);
-            // leafset.remove(r);
           }
         } else {
           r = random.nextInt(leafset.ccwSize());
           if (r != 0) {
             handle = leafset.get(-r);
             System.out.println("Removing " + handle);
-            // nid = (NodeId)handle.getId();
             leafset.remove(handle);
-            // leafset.remove(-r);
           }
         }
       }

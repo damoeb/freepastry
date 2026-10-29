@@ -40,8 +40,6 @@ package rice.p2p.past.gc;
 import rice.p2p.past.*;
 
 /**
- * @(#) PastException.java
- * 
  * Any exception specific to Past.
  *
  * @version $Id: GCPastException.java 3613 2007-02-15 14:45:14Z jstewart $

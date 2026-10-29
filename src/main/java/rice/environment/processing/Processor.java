@@ -46,7 +46,7 @@ import rice.p2p.commonapi.Cancellable;
 import rice.selector.SelectorManager;
 
 /**
- * Provides a mechanism to do time consuming tasks off of FreePastry's selecto thread.
+ * Provides a mechanism to do time consuming tasks off of FreePastry's selector thread.
  * 
  * Usually acquired by calling environment.getProcessor().
  * 
@@ -61,6 +61,10 @@ public interface Processor extends Destructable {
    *
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
+   * @param selector the selector whose thread the result is delivered on
+   * @param ts the time source used to time the task
+   * @param log the log manager the request logs to
+   * @return a handle to cancel the task before it starts
    */
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R,E> command, SelectorManager selector, TimeSource ts, LogManager log);
     
@@ -70,16 +74,21 @@ public interface Processor extends Destructable {
    * of the underlying node's thread, and should only be done via this method.  The continuation will
    * be called on the Selector thread. Passes a priority that will be respected if possible.  
    *
-   * @param priority lower number is higher priority, 0 is default priority, and negative numbers are high priority
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
+   * @param priority lower number is higher priority, 0 is default priority, and negative numbers are high priority
+   * @param selector the selector whose thread the result is delivered on
+   * @param ts the time source used to time the task
+   * @param log the log manager the request logs to
+   * @return a handle to cancel the task before it starts
    */
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R,E> command, int priority, SelectorManager selector, TimeSource ts, LogManager log);
 
   /**
    * Schedules a different type of task.  This thread is for doing Disk IO that is required to be blocking.
    * 
-   * @param request
+   * @param request the request; its result is delivered on the selector thread
+   * @return a handle to cancel the request before it starts
    */
   public Cancellable processBlockingIO(WorkRequest<?> request);
   

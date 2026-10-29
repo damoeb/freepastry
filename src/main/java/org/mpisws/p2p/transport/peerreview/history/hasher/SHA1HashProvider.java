@@ -50,13 +50,7 @@ public class SHA1HashProvider implements HashProvider {
   private MessageDigest md;
   
   public SHA1HashProvider() throws NoSuchAlgorithmException {
-//    try {
       md = MessageDigest.getInstance("SHA");
-//    } catch ( NoSuchAlgorithmException e ) {
-//      Logger logger = env.getLogManager().getLogger(getClass(), null);
-//      if (logger.level <= Logger.SEVERE) logger.log(
-//        "No SHA support!" );
-//    }
 
   }
   
@@ -69,7 +63,6 @@ public class SHA1HashProvider implements HashProvider {
   }
 
   public synchronized byte[] hash(long seq, short type, byte[] nodeHash, byte[] contentHash) {
-//    System.out.println("Hashing "+seq+","+type+","+MathUtils.toBase64(nodeHash)+","+MathUtils.toBase64(contentHash));
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       sob.writeLong(seq);
@@ -83,16 +76,13 @@ public class SHA1HashProvider implements HashProvider {
   }
 
   public synchronized byte[] hash(ByteBuffer... hashMe) {    
-//    System.out.println("Hashing "+hashMe.length);
     
     for (ByteBuffer bb : hashMe) {
       int pos = bb.position();
-//      System.out.println(MathUtils.toHex(bb.array()));
       md.update(bb);
       bb.position(pos);
     }
     byte[] ret = md.digest();
-//    System.out.println("hash: "+MathUtils.toBase64(ret));
     return ret;
   }
   

@@ -54,15 +54,6 @@ public class RandomAccessFileIOBuffer extends RandomAccessFile implements
     super(name, mode);
   }
 
-//  public int bytesRemaining() {
-//    try {
-//      return this.available();
-//    } catch (IOException ioe) {
-//      if (logger.level <= Logger.WARNING) logger.logException("error getting available bytes for "+this+".",ioe);
-//      return -1;
-//    }
-//  }
-
   public int bytesRemaining() {
     return Integer.MAX_VALUE;
   }

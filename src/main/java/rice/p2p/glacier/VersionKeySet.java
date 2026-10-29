@@ -44,7 +44,7 @@ import rice.p2p.glacier.*;
 import rice.p2p.util.*;
 
 /**
- * DESCRIBE THE CLASS
+ * A sorted set of VersionKeys.
  *
  * @version $Id: VersionKeySet.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author ahae
@@ -106,36 +106,13 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
   }
 
   /**
-   * compute a fingerprint of the members in this IdSet
+   * Not supported.
    *
-   * @return an Id containing the secure hash of this set
+   * @return never returns
+   * @throws RuntimeException always
    */
-
   public byte[] getHash() {
     throw new RuntimeException("VersionKeySet.getHash() is not supported!");
-    /*
-     *  if (validHash) return cachedHash;
-     *  / recompute the hash
-     *  MessageDigest md = null;
-     *  try {
-     *  md = MessageDigest.getInstance("SHA");
-     *  } catch ( NoSuchAlgorithmException e ) {
-     *  System.errr.println( "No SHA support!" );
-     *  return null;
-     *  }
-     *  Iterator it = idSet.iterator();
-     *  byte[] raw = new byte[Id.IdBitLength / 8];
-     *  Id id;
-     *  while (it.hasNext()) {
-     *  id = (Id) it.next();
-     *  id.blit(raw);
-     *  md.update(raw);
-     *  }
-     *  byte[] digest = md.digest();
-     *  cachedHash = new Id(digest);
-     *  validHash = true;
-     *  return cachedHash;
-     */
   }
 
   /**
@@ -151,7 +128,7 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
   /**
    * return the number of elements
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the number of elements
    */
   public int numElements() {
     return idSet.size();
@@ -225,7 +202,7 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
   /**
    * Returns a string representation of the IdSet.
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the short string form
    */
 
   public String toString() {
@@ -258,11 +235,10 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
   /**
    * return a subset of this set, consisting of the member ids in a given range
    *
-   * @param range DESCRIBE THE PARAMETER
+   * @param range the range (a VersionKeyRange)
    * @return the subset
    */
   public rice.p2p.commonapi.IdSet subSet(rice.p2p.commonapi.IdRange range) {
-    //return subSet((Id) range.getCWId(), (Id) range.getCCWId());
     return subSet((VersionKeyRange) range);
   }
 
@@ -276,9 +252,9 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns a copy of this set
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the copy
    */
   public Object clone() {
     return new VersionKeySet(this);

@@ -96,12 +96,6 @@ public class TCPLayer extends SelectionKeyHandler {
   
   Logger logger;
   
-//  Set<SocketAcceptor> pending;
-  /**
-   * Which socket to collect.
-   */
-//  LinkedHashMap<SocketManager, SocketManager> sockets;
-
   public TCPLayer(WireTransportLayerImpl wire, boolean enableServer) throws IOException {
     this.wire = wire;
     this.logger = wire.environment.getLogManager().getLogger(TCPLayer.class, null);
@@ -113,8 +107,6 @@ public class TCPLayer extends SelectionKeyHandler {
       TCP_NO_DELAY = p.getBoolean("transport_tcp_no_delay");
     }
     ServerSocketChannel temp = null; // just to clean up after the exception
-//    sockets = new LinkedHashMap<SocketManager, SocketManager>(10,0.75f,true);    
-//    pending = new HashSet<SocketAcceptor>();
     
     // bind to port
     if (enableServer) {
@@ -163,24 +155,6 @@ public class TCPLayer extends SelectionKeyHandler {
     sockets.remove(sm);
   }
 
-  /**
-   * Method which cloeses a socket to a given remote node handle, and updates
-   * the bookkeeping to keep track of this closing.  Note that this method does
-   * not completely close the socket, rather,  it simply calls shutdown(), which
-   * starts the shutdown process.
-   *
-   * @param address The address of the remote node
-   */
-//  protected void closeSocket(InetSocketAddress addr) {
-//    synchronized (sockets) {
-//      if (sockets.containsKey(addr)) {
-//        ((SocketManager) sockets.get(addr)).shutdown();
-//      } else {
-//        if (logger.level <= Logger.SEVERE) logger.log( "(SCM) SERIOUS ERROR: Request to close socket to non-open handle to path " + addr);
-//      }
-//    }
-//  }
-
   public void destroy() {
     if (logger.level <= Logger.INFO) logger.log("destroy()");
 
@@ -196,7 +170,6 @@ public class TCPLayer extends SelectionKeyHandler {
 
     // TODO: add a flag to disable this to simulate a silent fault
     for (SocketManager socket : new ArrayList<SocketManager>(sockets)) {
-     // logger.log("closing "+socket);
       socket.close();      
     }
   }

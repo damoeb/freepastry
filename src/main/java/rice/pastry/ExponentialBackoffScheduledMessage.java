@@ -36,9 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 /*
  * Created on May 6, 2004
- *
- * To change the template for this generated file go to
- * Window>Preferences>Java>Code Generation>Code and Comments
  */
 package rice.pastry;
 
@@ -49,9 +46,6 @@ import rice.selector.TimerTask;
 
 /**
  * @author jeffh
- *
- * To change the template for this generated type comment go to
- * Window>Preferences>Java>Code Generation>Code and Comments
  */
 public class ExponentialBackoffScheduledMessage extends ScheduledMessage {
   boolean cancelled = false;
@@ -80,11 +74,6 @@ public class ExponentialBackoffScheduledMessage extends ScheduledMessage {
 
   public ExponentialBackoffScheduledMessage(PastryNode node, Message msg, Timer timer, long initialDelay, double expBase) {
     this(node, msg, timer, initialDelay, initialDelay, expBase, -1);
-//    super(node,msg);
-//    this.timer = timer;
-//    this.initialPeriod = initialDelay;
-//    this.expBase = expBase;
-//    schedule(initialDelay);
     numTimes=1;
   }
 

@@ -112,10 +112,6 @@ public class PastryNetworkTest {
                 gotResponse = true;
                 ps.println(handle.getInetSocketAddress().getAddress().getHostAddress()+":"+
                     handle.getInetSocketAddress().getPort());
-        //        SourceRoute[] routes = factory.getRoutes(handle);
-                
-        //        for (int i=0; i<routes.length; i++) 
-        //          System.out.println("ROUTE:\t" + routes[i].prepend(handle.getEpochAddress()));
                 
                 leafsets.put(handle, ls);
                 
@@ -186,7 +182,7 @@ public class PastryNetworkTest {
       }
     }
     
-    // check leafset sfor unknowns...
+    // check leafsets for unknowns...
     
     System.out.println("Done testing...");
   }  
@@ -247,14 +243,10 @@ public class PastryNetworkTest {
   
   public void start() throws Exception {
     testLeafSets();
-    //testRoutingTables();
     System.exit(0);
   }
   
   public static void main(String[] args) throws Exception {
-//    PrintStream ps = new PrintStream(new FileOutputStream("lses.txt"));
-//    System.setOut(ps);
-//    System.setErr(ps);
     Environment env = new Environment();
     PastryNetworkTest test = new PastryNetworkTest(env, new SocketPastryNodeFactory(null, 1, env), new InetSocketAddress(args[0], Integer.parseInt(args[1])));
     test.start();

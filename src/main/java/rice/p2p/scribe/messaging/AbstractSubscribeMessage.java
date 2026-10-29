@@ -47,8 +47,6 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * @(#) AbstractSubscribeMessage.java
- *
  * The ack for a subscribe message.
  *
  * @version $Id: AbstractSubscribeMessage.java 3672 2007-04-12 10:46:09Z jeffh $
@@ -76,11 +74,11 @@ public abstract class AbstractSubscribeMessage implements RawMessage /*extends S
   
 
   /**
-  * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param id The unique id
    * @param source The source address
-   * @param dest The destination address
+   * @param topics The topics
+   * @param id The unique id of the subscribe
    */
   public AbstractSubscribeMessage(NodeHandle source, List<Topic> topics, int id) {
     this.source = source;

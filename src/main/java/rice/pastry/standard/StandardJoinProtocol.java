@@ -56,7 +56,7 @@ import java.util.*;
  * 
  * Overview:
  * initiateJoin() causes InitiateJoinMsg to be sent periodically on the joiner
- * causes handleInitiateJoin() constructs a RouteMessage(JoinRequest) and sends it to the boostrap
+ * causes handleInitiateJoin() constructs a RouteMessage(JoinRequest) and sends it to the bootstrap
  * causes handleIntermediateHop() on each node along the route
  * causes respondToJoiner() on last hop
  * causes completeJoin() on joiner
@@ -96,7 +96,6 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
    * Constructor.
    * 
    * @param lh the local node handle.
-   * @param sm the Pastry security manager.
    */
 
   public StandardJoinProtocol(PastryNode ln, NodeHandle lh,RoutingTable rt, LeafSet ls) {
@@ -165,7 +164,6 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
       thePastryNode.joinFailed(new JoinFailedException("Cannot join ring.  All bootstraps are faulty."+ij));
     } else {
       if (logger.level <= Logger.INFO) logger.log("InitiateJoin attempting to join:"+nh+" liveness:"+nh.getLiveness());
-//      if (nh.isAlive() == true) { // this was already done in ij.getHandle()
         getJoinRequest(nh, new Continuation<JoinRequest, Exception>() {
         
           public void receiveResult(JoinRequest jr) {
@@ -178,13 +176,11 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
           }
         
           public void receiveException(Exception exception) {
-            // TODO Auto-generated method stub
         
           }
         
         });
 
-//      }
     }    
   }
   
@@ -247,7 +243,6 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
     NodeHandle joiner = jr.getHandle();
 
     // this is the terminal node on the request path
-    // leafSet.put(joiner);
     if (thePastryNode.isReady()) {
       if (logger.level <= Logger.CONFIG) logger.log("acceptJoin "+jr);
       jr.acceptJoin(localHandle, leafSet);
@@ -319,7 +314,6 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
    */
 
   public void broadcastRows(JoinRequest jr) {
-    // NodeId localId = localHandle.getNodeId();
     int n = jr.numRows();
 
     // send the rows to the RouteSetProtocol on the local node
@@ -350,19 +344,12 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
         NodeHandle nh = rs.closestNode();
         if (nh != null)
           thePastryNode.send(nh,brr, null, options);
-
-        /*
-         * int m = rs.size(); for (int k=0; k<m; k++) { NodeHandle nh =
-         * rs.get(k);
-         * 
-         * nh.receiveMessage(brr); }
-         */
       }
     }
   }
 
   /**
-   * Should not be called becasue we are overriding the receiveMessage()
+   * Should not be called because we are overriding the receiveMessage()
    * interface anyway.
    */
   public void messageForAppl(Message msg) {

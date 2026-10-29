@@ -90,7 +90,6 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
   
   public void register(boolean wantToRead, boolean wantToWrite,
       final P2PSocketReceiver<Identifier> receiver) {
-//    logger.log(this+"register("+wantToRead+","+wantToWrite+","+receiver+")");
     if (logger.level <= Logger.FINEST) logger.log(this+"register("+wantToRead+","+wantToWrite+","+receiver+")");
     if (wantToRead) {
       if (reader != null && reader != receiver) throw new IllegalStateException("Already registered "+reader+" for reading. Can't register "+receiver);
@@ -102,26 +101,10 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
     }
     socket.register(wantToRead, wantToWrite, this);
     
-//    new P2PSocketReceiver<SubIdentifier>() {    
-//      public void receiveSelectResult(P2PSocket<SubIdentifier> socket, boolean canRead,
-//          boolean canWrite) throws IOException {
-//        if (logger.level <= Logger.FINEST) logger.log(SocketWrapperSocket.this+"rsr("+socket+","+canRead+","+canWrite+")");
-//        receiver.receiveSelectResult(SocketWrapperSocket.this, canRead, canWrite);
-//      }
-//    
-//      public void receiveException(P2PSocket<SubIdentifier> socket, IOException e) {
-//        receiver.receiveException(SocketWrapperSocket.this, e);
-//      }    
-//      
-//      public String toString() {
-//        return SocketWrapperSocket.this+"$1";
-//      }
-//    });
   }
 
   public void receiveSelectResult(P2PSocket<SubIdentifier> socket, boolean canRead,
       boolean canWrite) throws IOException {
-//    logger.log(this+"rsr("+socket+","+canRead+","+canWrite+")");
     if (logger.level <= Logger.FINEST) logger.log(this+"rsr("+socket+","+canRead+","+canWrite+")");
     if (canRead && canWrite && (reader == writer)) {      
       P2PSocketReceiver<Identifier> temp = reader;
@@ -152,11 +135,9 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
     }
 
     
-//    receiver.receiveSelectResult(SocketWrapperSocket.this, canRead, canWrite);
   }
 
   public void receiveException(P2PSocket<SubIdentifier> socket, Exception e) {
-//    logger.log(this+".receiveException("+e+")");
     if (writer != null) {
       if (writer == reader) {
         P2PSocketReceiver<Identifier> temp = writer;
@@ -176,7 +157,6 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
       temp.receiveException(this, e);
     }
     if (reader == null && writer == null && errorHandler != null) errorHandler.receivedException(getIdentifier(), e);
-//    receiver.receiveException(SocketWrapperSocket.this, e);
   }    
 
   

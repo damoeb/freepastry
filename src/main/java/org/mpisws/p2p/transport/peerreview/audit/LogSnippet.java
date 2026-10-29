@@ -136,36 +136,15 @@ public class LogSnippet {
   public boolean checkHashChainContains(byte[] keyNodeHash, long keyNodeSeq, HashProvider transport, Logger logger) {
     assert(keyNodeHash != null && (keyNodeSeq >= 0));
 
-//    const int hashSizeBytes = transport->getHashSizeBytes();
     byte[] currentNodeHash = baseHash;
-//    long currentSeq = getFirstSeq();
-//    memcpy(currentNodeHash, baseHash, hashSizeBytes);
     
     if (logger.level <= Logger.FINE) logger.log("Checking whether hash chain in snippet contains node #"+keyNodeSeq);
 
-//    int readptr = 0;
     for (SnippetEntry entry : entries) {
       if (entry.seq > keyNodeSeq) break; // fail
-//    while ((readptr < snippetLen) && (currentSeq <= keyNodeSeq)) {
-//      if (currentSeq <= keyNodeSeq) {
-//      unsigned char entryType = snippet[readptr++];
-//      unsigned char sizeCode = snippet[readptr++];
-//      unsigned int entrySize = sizeCode;
-//      bool entryIsHashed = (sizeCode == 0);
-//
-//      if (sizeCode == 0xFF) {
-//        entrySize = *(unsigned short*)&snippet[readptr];
-//        readptr += 2;
-//      } else if (sizeCode == 0xFE) {
-//        entrySize = *(unsigned int*)&snippet[readptr];
-//        readptr += 4;
-//      } else if (sizeCode == 0) {
-//        entrySize = hashSizeBytes;
-//      }
 
       if (logger.level <= Logger.FINER) logger.log("Entry "+entry);
 
-//      unsigned char *entry = &snippet[readptr];
       byte[] contentHash;
       if (entry.isHash) {
         contentHash = entry.content;
@@ -189,21 +168,6 @@ public class LogSnippet {
 
       /* Skip ahead to the next entry in the snippet */
 
-//      readptr += entrySize;
-//      if (readptr == snippetLen) // legitimate end
-//        break;
-
-//      unsigned char dseqCode = snippet[readptr++];
-//      if (dseqCode == 0xFF) {
-//        currentSeq = *(long long*)&snippet[readptr];
-//        readptr += sizeof(long long);
-//      } else if (dseqCode == 0) {
-//        currentSeq ++;
-//      } else {
-//        currentSeq = currentSeq - (currentSeq%1000) + (dseqCode * 1000LL);
-//      }
-//
-//      assert(readptr <= snippetLen);
     }
 
     if (logger.level <= Logger.FINER) logger.log("No, a node with this sequence number was not found");

@@ -44,7 +44,7 @@ import rice.p2p.commonapi.*;
 import rice.p2p.replication.messaging.*;
 
 /**
- * @(#) ReplicationPolicy.java This interface represents a policy for Replication, 
+ * This interface represents a policy for Replication, 
  * which is asked whenever the replication manager need to make an application-specific
  * decision.
  *

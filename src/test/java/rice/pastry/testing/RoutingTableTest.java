@@ -91,33 +91,15 @@ public class RoutingTableTest {
   Topic topic;
   
   int reportRate = 60*1000; // 1 minute
-//  int reportRate = 60*1000*10; // 10 minutes
-//  int reportRate = 60*1000*60; // 1 hour
   
   int testTime = 60*1000*60*10; // 10 hours
-//  int testTime = 60*1000*60; // 1 hour
 
-  
-//  public static boolean useMaintenance = false;
-//  public static boolean useMessaging = false;
-//  public static boolean useScribe = false;
-//  
-//  public static int rtMaintInterval = 15*60; // seconds
-//  public static int msgSendRate = 10000; // millis per node
   
   public static final boolean logHeavy = false;
   
-//  public static int T_total = 0;
-//  public static int T_ctr = 0;
-//  public static int T_ave = 0;
-  
   /**
-   * This constructor launches numNodes PastryNodes.  They will bootstrap 
-   * to an existing ring if one exists at the specified location, otherwise
-   * it will start a new ring.
+   * This constructor launches numNodes PastryNodes in the simulator.
    * 
-   * @param bindport the local port to bind to 
-   * @param bootaddress the IP:port of the node to boot from
    * @param numNodes the number of nodes to create in this JVM
    * @param env the environment for these nodes
    */
@@ -139,12 +121,8 @@ public class RoutingTableTest {
     nidFactory = new RandomNodeIdFactory(env);
     
     env.getParameters().setInt("pastry_direct_gtitm_max_overlay_size",numNodes);
-//    if (numNodes > 2000) {
     env.getParameters().setString("pastry_direct_gtitm_matrix_file","sample_10k");
-//    env.getParameters().setString("pastry_direct_gtitm_matrix_file","sample_2k");
-//    }  
     // construct the PastryNodeFactory, this is how we use rice.pastry.direct, with a Euclidean Network
-//    factory = new DirectPastryNodeFactory(nidFactory, new GenericNetwork(env), env);
     factory = new DirectPastryNodeFactory(nidFactory, new EuclideanNetwork<DirectNodeHandle, RawMessage>(env), env);
     
     // loop to construct the nodes/apps
@@ -187,20 +165,6 @@ public class RoutingTableTest {
         if (ctr >= numNodes) {
           startLoggerTask();          
           cancel();
-//          env.getSelectorManager().getTimer().schedule(new TimerTask() {          
-//            public void run() {
-//              killNodes(numToKill);
-//              if (logHeavy)
-//                env.getParameters().setInt("rice.pastry.routing.RoutingTable_loglevel", Logger.FINE);
-//              
-//              env.getSelectorManager().getTimer().schedule(new TimerTask() {
-//                public void run() {
-//                  testRoutingTables();
-//                }    
-//              },1000*60,1000*60);
-//            }          
-//          },100000);
-//          notifyAll(); 
         }
       }
     }    
@@ -209,11 +173,6 @@ public class RoutingTableTest {
   public void createNodes() throws InterruptedException {    
     CreatorTimerTask ctt = new CreatorTimerTask();    
     env.getSelectorManager().getTimer().schedule(ctt,1000,1000); 
-//    synchronized(ctt) {
-//      while(ctt.ctr < numNodes) {
-//        ctt.wait(); 
-//      }
-//    }
   }
   
   public void sendSomeMessages() {        
@@ -247,33 +206,18 @@ public class RoutingTableTest {
    */
   protected static class TestScribeContent implements ScribeContent {
 
-    /**
-     * DESCRIBE THE FIELD
-     */
     protected Topic topic;
 
-    /**
-     * DESCRIBE THE FIELD
-     */
     protected int num;
 
     /**
      * Constructor for TestScribeContent.
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param num DESCRIBE THE PARAMETER
      */
     public TestScribeContent(Topic topic, int num) {
       this.topic = topic;
       this.num = num;
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param o DESCRIBE THE PARAMETER
-     * @return DESCRIBE THE RETURN VALUE
-     */
     public boolean equals(Object o) {
       if (!(o instanceof TestScribeContent)) {
         return false;
@@ -283,11 +227,6 @@ public class RoutingTableTest {
         ((TestScribeContent) o).num == num);
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @return DESCRIBE THE RETURN VALUE
-     */
     public String toString() {
       return "TestScribeContent(" + topic + ", " + num + ")";
     }
@@ -320,7 +259,6 @@ public class RoutingTableTest {
     // this will add "magic" to the node such that if it is destroyed, then it will automatically create its replacement
     node.addDestructable(new Destructable() {          
       public void destroy() {
-//        System.out.println("Destructable called.");
         nodes.remove(node);
         apps.remove(node);
         try {
@@ -338,22 +276,13 @@ public class RoutingTableTest {
       System.out.println("Creating "+node);
     
     // the node may require sending several messages to fully boot into the ring
-//    synchronized(node) {
-//      while(!node.isReady()) {
-//        // delay so we don't busy-wait
-//        node.wait();
-////        env.getTimeSource().sleep(100);
-//      }
-//    }    
     synchronized(node) {
       if (node.isReady()) {
         finishNode(node);
       } else {
-//        System.out.println("Adding observer to "+node);
       node.addPastryNodeListener(new PastryNodeListener() {
 
       public void pastryNodeReady(PastryNode o, boolean ready) {
-//        System.out.println("observer.update("+ready+")");
         if (!ready) return;
           
         node.removePastryNodeListener(this);
@@ -361,13 +290,10 @@ public class RoutingTableTest {
       }
 
       public void pastryNodeJoinFailed(PastryNode o, JoinFailedException arg) {
-//          System.out.println("Got JoinFailedException:"+arg);
           node.destroy(); 
       }
 
     });//addPastryNodeListener
-    //    System.out.println("Adding "+node);
-    //      nodes.add(node);
       }//if
     }//synchronized
     return node;
@@ -391,15 +317,6 @@ public class RoutingTableTest {
           if (env.getRandomSource().nextInt(meanSessionTime * 2) == 0) {
             if (printLiveness)
               System.out.println("Destroying " + node);
-            // if (!nodes.remove(node)) {
-            // String s = "Couldn't remove "+node+" from ";
-            // Iterator<PastryNode> i = nodes.iterator();
-            // while(i.hasNext()) {
-            // s+="\t"+i.next()+"\n";
-            // }
-            //              
-            // System.out.print(s);
-            // }
             cancel();
             node.destroy();
           }
@@ -439,7 +356,6 @@ public class RoutingTableTest {
   }
   
   private void testLeafSets() {
-//    if (!logHeavy) return;
     ArrayList<PastryNode> nds = new ArrayList<PastryNode>(nodes);
     Collections.sort(nds,new Comparator<PastryNode>() {
     
@@ -461,16 +377,16 @@ public class RoutingTableTest {
   private void testRoutingTables(int round) {    
     if (printLeafSets)
       testLeafSets();
-    double streatch;
+    double stretch;
     int holes;
     if (numNodes <= 1000) {
-      streatch = testRoutingTables1();
+      stretch = testRoutingTables1();
       holes = testRoutingTables2();
     } else {
-      streatch = testRoutingTables1a();
+      stretch = testRoutingTables1a();
       holes = testRoutingTables2a();      
     }
-    System.out.println(round+","+streatch+","+holes+" numNodes:"+nodes.size());
+    System.out.println(round+","+stretch+","+holes+" numNodes:"+nodes.size());
     if (round%50 == 0) {
       PastryNode pn = nodes.get(nodes.size()/2);
       System.out.println(pn.getRoutingTable().printSelf());
@@ -512,16 +428,13 @@ public class RoutingTableTest {
           }
           if (latency < proximity) { // due to rounding error
             latency = proximity;            
-//            calcLatency(node, thatHandle); 
           }          
-          double streatch = (1.0*latency)/(1.0*proximity);
-//          if (streatch > 3.0) System.out.println("streatch: "+streatch);
-          acc+=streatch;
+          double stretch = (1.0*latency)/(1.0*proximity);
+          acc+=stretch;
           ctr++;
         }
       }
     }    
-//    System.out.println("Time "+env.getTimeSource().currentTimeMillis()+" = "+(acc/ctr));
     return acc/ctr;
   }
 
@@ -544,15 +457,12 @@ public class RoutingTableTest {
         }
         if (latency < proximity) { // due to rounding error
           latency = proximity;            
-//            calcLatency(node, thatHandle); 
         }          
-        double streatch = (1.0*latency)/(1.0*proximity);
-//          if (streatch > 3.0) System.out.println("streatch: "+streatch);
-        acc+=streatch;
+        double stretch = (1.0*latency)/(1.0*proximity);
+        acc+=stretch;
         ctr++;
       }
     }
-//    System.out.println("Time "+env.getTimeSource().currentTimeMillis()+" = "+(acc/ctr));
     return acc/ctr;
   }
 
@@ -583,7 +493,6 @@ public class RoutingTableTest {
       DirectPastryNode.setCurrentNode(temp);
       curNodeIndex++;
     }    
-//    System.out.println("Time "+env.getTimeSource().currentTimeMillis()+" = "+ctr+"   ENTRY_WAS_DEAD:"+ctrs[2]+" AVAILABLE_SPACE:"+ctrs[3]+" NO_ENTRIES:"+ctrs[4]);
     return ctr;
   }
 
@@ -615,7 +524,6 @@ public class RoutingTableTest {
       DirectPastryNode.setCurrentNode(temp);
       curNodeIndex++;
     }    
-//    System.out.println("Time "+env.getTimeSource().currentTimeMillis()+" = "+ctr+"   ENTRY_WAS_DEAD:"+ctrs[2]+" AVAILABLE_SPACE:"+ctrs[3]+" NO_ENTRIES:"+ctrs[4]);
     return ctr;
   }
 
@@ -626,7 +534,6 @@ public class RoutingTableTest {
       thePenalty = 0;
       NodeHandle next = getNextHop(rt, ls, thatHandle, node);
       int penalty = thePenalty;
-//      if (penalty > 0) System.out.println("penalty "+thePenalty);
       if (next == thatHandle) return node.proximity(thatHandle);  // base case
       DirectNodeHandle dnh = (DirectNodeHandle)next;    
       PastryNode nextNode = dnh.getRemote();
@@ -719,10 +626,7 @@ public class RoutingTableTest {
             }
           }
         }
-      } //else {
-        // we found an appropriate RT entry, check for RT holes at previous node
-//      checkForRouteTableHole(msg, handle);
-//      }
+      }
 
       return handle;    
     }
@@ -812,9 +716,6 @@ public class RoutingTableTest {
   
   class TestScribeClient implements ScribeMultiClient {
 
-    /**
-     * DESCRIBE THE FIELD
-     */
     protected Scribe scribe;
 
     /**
@@ -834,9 +735,6 @@ public class RoutingTableTest {
 
     /**
      * Constructor for TestScribeClient.
-     *
-     * @param scribe DESCRIBE THE PARAMETER
-     * @param i DESCRIBE THE PARAMETER
      */
     public TestScribeClient(Scribe scribe, Topic topic) {
       this.scribe = scribe;
@@ -849,45 +747,18 @@ public class RoutingTableTest {
       this.acceptAnycast = value;
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param content DESCRIBE THE PARAMETER
-     * @return DESCRIBE THE RETURN VALUE
-     */
     public boolean anycast(Topic topic, ScribeContent content) {
       return acceptAnycast;
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param content DESCRIBE THE PARAMETER
-     */
     public void deliver(Topic topic, ScribeContent content) {
 
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param child DESCRIBE THE PARAMETER
-     */
     public void childAdded(Topic topic, rice.p2p.commonapi.NodeHandle child) {
-     // System.out.println("CHILD ADDED AT " + scribe.getId());
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param child DESCRIBE THE PARAMETER
-     */
     public void childRemoved(Topic topic, rice.p2p.commonapi.NodeHandle child) {
-     // System.out.println("CHILD REMOVED AT " + scribe.getId());
     }
 
     @Deprecated
@@ -911,8 +782,6 @@ public class RoutingTableTest {
    * Usage: 
    */
   public static void main(String[] args) throws Exception {
-//    System.setOut(new PrintStream("out.txt"));
-//    System.setErr(System.out);
     
   
     int numNodes = 100;
@@ -933,9 +802,6 @@ public class RoutingTableTest {
     int[] rtMaintVals = {0,60,15,1};
     int[] msgSendVals = {0,10000,1000,100};
     int[] numNodesVals = {100,200,500,1000,2000,5000,10000};
-//    for (numNodesIndex = 0; numNodesIndex < numNodesVals.length; numNodesIndex++) 
-//      for (numNodes = 100; numNodes <= 10000; numNodes*=10) 
-//        for (meanSessionTime = 1; meanSessionTime < 10001; meanSessionTime*=10)          
         for (useScribeIndex = 0; useScribeIndex < 2; useScribeIndex++) 
         for (msgSendRateIndex = ((useScribeIndex == 0) ? 0 : 1); msgSendRateIndex < 4; msgSendRateIndex++)
         for (rtMaintIndex = 0; rtMaintIndex < 4; rtMaintIndex++)
@@ -963,7 +829,6 @@ public class RoutingTableTest {
             }
 
             // launch our node!
-//            public RoutingTableTest(int numNodes, int meanSessionTime, int msgSendRate, int rtMaintTime, final Environment env) throws Exception {
             RoutingTableTest dt = new RoutingTableTest(numNodes, meanSessionTime, useScribe, msgSendVals[msgSendRateIndex], rtMaintVals[rtMaintIndex], tries, env);
             synchronized(lock) {
               lock.wait(); // will be notified when the environment is destroyed

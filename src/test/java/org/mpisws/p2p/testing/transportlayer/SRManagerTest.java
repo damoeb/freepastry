@@ -106,22 +106,13 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     int startPort = START_PORT;
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();    
-//    InetAddress addr = InetAddress.getByName("10.0.0.10");
     Parameters p = env.getParameters();
     timer = env.getSelectorManager().getTimer();
     
     // this makes the liveness check super fast
       p.setInt("pastry_socket_scm_num_ping_tries", 2);
-//      PING_DELAY = p.getInt("pastry_socket_scm_ping_delay");
-//      PING_JITTER = p.getFloat("pastry_socket_scm_ping_jitter");
-//      BACKOFF_INITIAL = p.getInt("pastry_socket_scm_backoff_initial");
-//      BACKOFF_LIMIT = p.getInt("pastry_socket_scm_backoff_limit");
-//      CHECK_DEAD_THROTTLE = p.getLong("pastry_socket_srm_check_dead_throttle"); // 300000
       p.setInt("pastry_socket_srm_default_rto", 400); // 3000 // 3 seconds
       p.setInt("pastry_socket_srm_rto_ubound", 500);//240000; // 240 seconds
-//      RTO_LBOUND = p.getInt("pastry_socket_srm_rto_lbound");//1000;
-//      gainH = p.getDouble("pastry_socket_srm_gain_h");//0.25;
-//      gainG = p.getDouble("pastry_socket_srm_gain_g");//0.125;
 
     alice = buildTL("alice", addr, startPort, env);
     bob = buildTL("bob", addr, startPort+1, env);
@@ -230,17 +221,14 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
   static boolean connectionAllowed(MultiInetSocketAddress a, MultiInetSocketAddress b, String context) {
     if (a.equals(alice_addr)) {
       if (b.equals(bob_addr)) {
-//        System.out.println("Alice rejects Bob for "+context);
         return false;
       }      
     }
     if (b.equals(alice_addr)) {
       if (a.equals(bob_addr)) {
-//        System.out.println("Bob rejects Alice for "+context);
         return false;
       }      
     }
-//    System.out.println(b+"->"+a+":"+context);
     return true; 
   }
   
@@ -295,18 +283,10 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
   }
   
   public static int getDelay(SourceRoute<MultiInetSocketAddress> a, SourceRoute<MultiInetSocketAddress> b) {
-//    System.out.println("getDelay("+a+","+b+")");
-//    TransportLayer<SourceRoute, ByteBuffer> bob = SRManagerTest.bob;
     if (b.getLastHop().equals(bob.getLocalIdentifier()) &&
         b.getFirstHop().equals(alice.getLocalIdentifier())) {
-//       System.out.println("here");
        return 150;
     }
-//    System.out.println("here2 "+a+","+b+
-//        " 1:"+b.getLastHop().equals(bob.getLocalIdentifier())+
-//        " 1a:"+b.getLastHop()+
-//        " 1b:"+bob.getLocalIdentifier().getLastHop()+
-//        " 2:"+a.equals(alice.getLocalIdentifier()));
     return 2;
   }
   
@@ -318,7 +298,6 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     PingListener<SourceRoute<MultiInetSocketAddress>> pl = new PingListener<SourceRoute<MultiInetSocketAddress>>() {    
       public void pingResponse(SourceRoute<MultiInetSocketAddress> i, int rtt, Map<String, Object> options) {
         synchronized(lock) {
-//          System.out.println("i"+i.getLastHop());
           pingResponse.put(i.getLastHop(), new Tupel(i.getLastHop(), rtt));
           lock.notify();
         }
@@ -348,8 +327,6 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     int carolProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(carol.getLocalIdentifier(), options);
 
     assertTrue(aliceProx > carolProx+100, "aliceProx:"+aliceProx+" carolProx:"+carolProx);
-//    System.out.println("aliceProx"+aliceProx);
-//    System.out.println("carolProx"+carolProx);
   }
   
   class Tupel {
@@ -366,14 +343,12 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
   public void testLiveness() throws Exception {    
     LivenessProvider<MultiInetSocketAddress> alice = (LivenessProvider<MultiInetSocketAddress>)SRManagerTest.alice;
     MultiInetSocketAddress daveAddress = (MultiInetSocketAddress)dave.getLocalIdentifier();
-//    SourceRoute aliceToDave = getIdentifier(alice, dave);
     final List<Tupel> tupels = new ArrayList<Tupel>(3);
     final Object lock = new Object();
     
     alice.addLivenessListener(new LivenessListener<MultiInetSocketAddress>() {    
       public void livenessChanged(MultiInetSocketAddress i, int val, Map<String, Object> options) {
         synchronized(lock) {
-//          System.out.println("adding("+i+","+val+")");
           tupels.add(new Tupel(i,val));        
           lock.notify();
         }
@@ -385,9 +360,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         alice.getLiveness(daveAddress, null) == 
         LivenessListener.LIVENESS_SUSPECTED);
     
-//    System.out.println("here");
     // becomes alive
-//    assertTrue(alice.checkLiveness(daveAddress));
 
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {

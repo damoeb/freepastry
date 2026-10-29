@@ -64,7 +64,7 @@ public class ProcessingThread extends Thread {
         if (e != null)
           e.run();
       } catch (java.lang.InterruptedException ie) {
-        // do nothing (maybe should call errorHandler)
+        // do nothing: destroy() interrupts the thread to stop it
       }
     }
   }

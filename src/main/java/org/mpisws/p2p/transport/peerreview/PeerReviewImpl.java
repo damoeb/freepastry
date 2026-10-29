@@ -247,22 +247,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     }
   }
 
-//  /* Called by applications to log some application-specific event, such as PAST_GET. */
-//
-//  void logEvent(short type, ByteBuffer entry) throws IOException {
-//    assert(initialized && (type > EVT_MAX_RESERVED));
-//    updateLogTime();
-//    history.appendEntry(type, true, entry);   
-//  }
-//
-//  /* Called internally to log events */
-//
-//  void logEventInternal(short type, ByteBuffer entry) throws IOException {
-//    assert(initialized && (type <= EVT_MAX_RESERVED));
-//    updateLogTime();
-//    history.appendEntry(type, true, entry);   
-//  }
-  
   public MessageRequestHandle<Handle, ByteBuffer> sendMessage(Handle target,
       ByteBuffer message,
       final MessageCallback<Handle, ByteBuffer> deliverAckToMe,
@@ -299,10 +283,8 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
     assert(initialized);
 
-    /* Maybe do some mischief for testing? */
+    /* The misbehavior hook of the C++ implementation (tampering with data for testing) is not ported */
 
-    // if (misbehavior)
-    // misbehavior.maybeTamperWithData((unsigned char*)message, msglen);
     updateLogTime();
 
     /* Pass the message to the Commitment protocol */
@@ -332,7 +314,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     }
 
     
-    /* Maybe do some mischief for testing */
+    /* The misbehavior hook of the C++ implementation (tampering with data for testing) is not ported */
     
     /* Deliver datagrams */
     byte passthrough = message.get();    
@@ -371,7 +353,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       case MSG_USERDATA:
         UserDataMessage<Handle> udm = UserDataMessage.build(sib, handleSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
         challengeProtocol.handleIncomingMessage(handle, udm, options);
-  //      commitmentProtocol.handleIncomingMessage(handle, udm, options);
         break;
       default:
         throw new RuntimeException("Unknown message type in PeerReview: #"+ type);
@@ -415,7 +396,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
      assert(transport.hasCertificate(subject));
 
      try {
-//       System.out.println("Verifying "+auth.getSeq()+" "+MathUtils.toBase64(auth.getHash()));
        byte[] signedHash = transport.hash(auth.getPartToHashThenSign());
        int sigResult = transport.verify(subject, signedHash, auth.getSignature());
        assert((sigResult == SIGNATURE_OK) || sigResult == SIGNATURE_BAD);
@@ -424,7 +404,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
        if (!verify(subject,auth)) {
          return false; 
        }
-//    char buf1[1000];
        
        /* Do we already have an authenticator with the same sequence number and from the same node? */
        if (existingAuth != null) {
@@ -487,17 +466,10 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
 
   public void writeCheckpoint() throws IOException {
-//    const int maxlen = 1048576*96;
-//    unsigned char *buffer = (unsigned char*) malloc(maxlen);
     int size = 0;
 
-//    if (prng != null)
-//      size += prng->storeCheckpoint(&buffer[size], maxlen - size);
     SimpleOutputBuffer sob = new SimpleOutputBuffer();;
-    callback.storeCheckpoint(sob); //&buffer[size], maxlen - size);
-
-//    if ((size < 0) || (size >= maxlen))
-//      panic("Cannot write checkpoint (size=%d)", size);
+    callback.storeCheckpoint(sob);
 
     updateLogTime();
     if (logger.level <= Logger.INFO) logger.log( "Writing checkpoint ("+sob.getWritten()+" bytes)");
@@ -543,9 +515,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
   
   public void notifyStatusChange(final Identifier id, final int newStatus) {
-//    char buf1[256];
     if (logger.level <= Logger.INFO) logger.log("Status change: <"+id+"> becomes "+getStatusString(newStatus));
-//    logger.logException("Status change: <"+id+"> becomes "+getStatusString(newStatus),new Exception("Stack Trace"));
     challengeProtocol.notifyStatusChange(id, newStatus);
     commitmentProtocol.notifyStatusChange(id, newStatus);
     
@@ -615,7 +585,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     this.challengeProtocol = new ChallengeResponseProtocolImpl<Handle, Identifier>(this, transport, infoStore, history, authOutStore, auditProtocol, commitmentProtocol);
     this.statementProtocol = new StatementProtocolImpl<Handle, Identifier>(this, challengeProtocol, infoStore, transport);
     
-    this.evidenceTool = new EvidenceToolImpl<Handle, Identifier>(this, handleSerializer, idSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes()); // TODO: implement
+    this.evidenceTool = new EvidenceToolImpl<Handle, Identifier>(this, handleSerializer, idSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
     this.verifierFactory = new VerifierFactoryImpl<Handle, Identifier>(this);
     
     initialized = true;
@@ -671,11 +641,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     callback.incomingSocket(s);
   }
 
-//  public void panic(String s) {
-//    if (logger.level <= Logger.SEVERE) logger.log("panic:"+s);
-//    env.destroy();
-//  }
-  
   public void acceptMessages(boolean b) {
     transport.acceptMessages(b);
   }
@@ -697,7 +662,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
 
   public void setErrorHandler(ErrorHandler<Handle> handler) {
-    // TODO Auto-generated method stub
     
   }
 
@@ -731,10 +695,8 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
   
   public Authenticator extractAuthenticator(Identifier id, long seq, short entryType, byte[] entryHash, byte[] hTopMinusOne, byte[] signature) {
-//    *(long long*)&authenticator[0] = seq;
     
-//    byte[] hash = transport.hash(seq,entryType,hTopMinusOne, entryHash);
-    Authenticator ret = extractAuthenticator(seq, entryType, entryHash, hTopMinusOne, signature); //new Authenticator(seq,hash,signature);
+    Authenticator ret = extractAuthenticator(seq, entryType, entryHash, hTopMinusOne, signature);
     if (addAuthenticatorIfValid(authOutStore, id, ret)) {
       return ret;
     }
@@ -780,7 +742,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
    * @param message
    * @param deliverAckToMe
    * @param options
-   * @return
    */
   public void transmit(Handle dest, 
       PeerReviewMessage message,
@@ -854,11 +815,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   public VerifierFactory<Handle, Identifier> getVerifierFactory() {
     return verifierFactory;
   }
-  
-//  void notifyWitnessesExt(int numSubjects, Identifier **subjects, int *witnessesPerSubject, Handle witnesses) {
-//  protected void continuePush(Map<Identifier, Collection<Handle>> subjects) {
-//    authPushProtocol.continuePush(subjects);
-//  }
   
   void disableAuthenticatorProcessing() {
     assert(initialized);

@@ -60,7 +60,7 @@ import rice.persistence.*;
  */
 public class PersistentStorageTest extends MemoryStorageTest {
 
-  private static IdFactory FACTORY;// = new PastryIdFactory();
+  private static IdFactory FACTORY;
 
   /**
    * Builds a MemoryStorageTest

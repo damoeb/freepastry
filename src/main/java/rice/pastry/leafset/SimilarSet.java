@@ -109,7 +109,7 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
     this.leafSet = leafSet;
     ln = localNode;
     clockwise = cw;
-    theSize = Math.min(handles.length,size); //handles.length;
+    theSize = Math.min(handles.length,size);
     nodes = new NodeHandle[size];
     System.arraycopy(handles,0,nodes,0,theSize);
   }
@@ -159,14 +159,12 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
 
   public boolean put(NodeHandle handle, boolean suppressNotify) {
     Id nid = handle.getNodeId();
-    //int index;
 
     if (!test(handle))
       return false;
 
     if (theSize < nodes.length) {
       nodes[theSize] = handle;
-      //index = theSize;
       theSize++;
     } else {      
 
@@ -179,10 +177,7 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
           notifyListeners(removed, false);
         }
       }
-//      if (leafSet.observe)
-//        nodes[theSize].deleteObserver(this);
 
-      //index = theSize-1;
     }
 
     // bubble the new node into the correct position
@@ -205,11 +200,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
         notifyListeners(handle, true);
     }
 
-    // register as an observer, so we'll be notified if the handle is declared
-    // dead
-//    if (leafSet.observe)
-//      handle.addObserver(this);
-
     return true;
   }
 
@@ -221,7 +211,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
    */
   @Deprecated
   public void addObserver(Observer o) {
-//    if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
     super.addObserver(o); 
   }
   
@@ -231,7 +220,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
    */
   @Deprecated
   public void deleteObserver(Observer o) {
-//    if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
     super.deleteObserver(o); 
   }
   
@@ -260,25 +248,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
       notifyObservers(new NodeSetUpdate(handle, added));
     }
   }
-
-  /**
-   * Is called by the Observer pattern whenever the liveness or proximity of a
-   * registered node handle is changed.
-   * 
-   * @param o The node handle
-   * @param arg the event type (PROXIMITY_CHANGE, DECLARED_LIVE, DECLARED_DEAD)
-   */
-//  public void update(Observable o, Object arg) {
-//    if (o instanceof NodeHandle) {
-//      // if the node is declared dead, remove it immediately
-//      if (((Integer) arg) == NodeHandle.DECLARED_DEAD) {
-//        remove((NodeHandle) o);
-//      }
-//      if (((Integer) arg) == NodeHandle.DECLARED_LIVE) {
-//        leafSet.put((NodeHandle) o);
-//      }
-//    }
-//  }
 
   /**
    * Finds the NodeHandle associated with the Id.
@@ -362,16 +331,12 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
   }
 
   public NodeHandle remove(NodeHandle nh) {
-//    try {
       for (int i = 0; i < theSize; i++) {
         if (nodes[i].equals(nh)) {
           return remove(i);
         }
       }
       return null;
-//    } finally {
-//      findMoreEntriesFromRoutingTable(); 
-//    }
   }
 
   /**
@@ -446,7 +411,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
       NodeHandle nh = rs.get(0);
       if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {        
         if (put(nh)) { 
-//          System.out.println("SimilarSet.addNextEntry()1:"+nh+" "+leafSet);
         }
       }
       return theSize == nodes.length;
@@ -467,7 +431,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
         {
           NodeHandle nh = toUse.get(0);
           if (put(nh)) {     
-//            System.out.println("SimilarSet.addNextEntry()2:"+nh+" "+leafSet);
           }
         }
         break;
@@ -476,7 +439,7 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
         Collections.sort(toUse,new Comparator<NodeHandle>() {
         
           public int compare(NodeHandle a, NodeHandle b) {
-            // smallest to biggest: TODO, verify this does the right thing... it's pretty minor though...
+            // smallest to biggest (TODO: verify the order; minor)
             if (clockwise) return a.getId().compareTo(b.getId());
             return b.getId().compareTo(a.getId());
           }        
@@ -485,7 +448,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
         while(i.hasNext()) {
           NodeHandle nh = i.next();
           if (put(nh)) {      
-//            System.out.println("SimilarSet.addNextEntry()3:"+nh+" "+leafSet);
           }
         }
     }
@@ -514,9 +476,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
       if (leafSet.observe)
         notifyListeners(handle, false);
     }
-
-//    if (leafSet.observe)
-//      handle.deleteObserver(this);
 
     return handle;
   }
@@ -554,34 +513,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
     return theSize;
   }
 
-  /**
-   * Numerically closest node to a given a node. Returns -1 if the local Id
-   * is the most similar and returns an index otherwise.
-   * 
-   * @param nid a node id.
-   * 
-   * @return -1 if the local Id is most similar, else the index of the most
-   *         similar node.
-   */
-//  public int mostSimilar(Id nid) {
-//    if (theSize == 0)
-//      return -1;
-//
-//    Id.Distance minDist = ln.getNodeId().distance(nid);
-//    int min = -1;
-//
-//    for (int i = 0; i < theSize; i++) {
-//      Id.Distance d = nodes[i].getNodeId().distance(nid);
-//      int cmp = d.compareTo(minDist);
-//      if ((!clockwise && cmp < 0) || (clockwise && cmp <= 0)) {
-//        minDist = d;
-//        min = i;
-//      }
-//    }
-//
-//    return min;
-//  }
-  
   transient Id.Distance d1 = new Id.Distance();
   transient Id.Distance d = new Id.Distance();
   /**
@@ -633,17 +564,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
   }
 
   /**
-   * Finds the NodeHandle associated with the Id.
-   * 
-   * @param id a node id.
-   * @return the handle associated with that id or null if no such handle is
-   *         found.
-   */
-//  public rice.p2p.commonapi.NodeHandle getHandle(rice.p2p.commonapi.Id id) {
-//    return getHandle((Id) id);
-//  }
-
-  /**
    * Gets the ith element in the set.
    * 
    * @param i an index.
@@ -667,7 +587,7 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
   /**
    * Removes a node id and its handle from the set.
    * 
-   * @param nid the node to remove.
+   * @param id the id of the node to remove.
    * 
    * @return the node handle removed or null if nothing.
    */
@@ -723,7 +643,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
   public void destroy() {
     for (int i = 0; i < nodes.length; i++) {
       if (nodes[i] != null) {
-//        nodes[i].deleteObserver(this); 
         nodes[i] = null;
       }
     }

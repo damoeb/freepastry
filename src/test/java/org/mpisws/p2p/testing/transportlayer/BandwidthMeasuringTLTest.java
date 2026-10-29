@@ -70,16 +70,13 @@ public class BandwidthMeasuringTLTest implements Application {
   }
   
   public void deliver(Id id, Message message) {
-//    System.out.println("Deliver. "+message);
   }
 
   public boolean forward(RouteMessage message) {
-    // TODO Auto-generated method stub
     return true;
   }
 
   public void update(NodeHandle handle, boolean joined) {
-    // TODO Auto-generated method stub
     
   }
 
@@ -116,7 +113,6 @@ public class BandwidthMeasuringTLTest implements Application {
               Tuple3<Integer, Integer, Boolean> t = map.get(addr);
               System.out.println("Bandwidth for "+addr+" d:"+t.a()+" u:"+t.b()+" saturated:"+t.c());
             }
-            //ret.getVals(i)
           }        
         }, 3000, 3000);
         
@@ -136,8 +132,6 @@ public class BandwidthMeasuringTLTest implements Application {
     PastryEndpoint ep2 = (PastryEndpoint)node2.buildEndpoint(app2, null);
     ep2.register();
     node2.boot(new InetSocketAddress(factory.getBindAddress(), bindPort));
-    
-//    System.out.println(ep1.getAddress()+" "+ep2.getAddress());
     
     Thread.sleep(5000);
     System.out.println("Spamming messages.");

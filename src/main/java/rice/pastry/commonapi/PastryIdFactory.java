@@ -46,7 +46,7 @@ import java.util.*;
 import java.security.*;
 
 /**
- * This class provides applications with a way of genertating
+ * This class provides applications with a way of generating
  * pastry Ids.
  *
  * @version $Id: PastryIdFactory.java 4232 2008-07-03 12:28:01Z jstewart $

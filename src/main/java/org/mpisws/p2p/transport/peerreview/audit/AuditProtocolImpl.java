@@ -172,8 +172,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
   public void startAudits() {
     /* Find out which nodes we are currently witnessing */
 
-//    Collection<Handle> buffer = new ArrayList<Handle>;
-    Collection<Handle> buffer = peerreview.getApp().getMyWitnessedNodes(); //app->getMyWitnessedNodes(buffer, MAX_WITNESSED_NODES);
+    Collection<Handle> buffer = peerreview.getApp().getMyWitnessedNodes();
     
     /* For each of these nodes ... */
     
@@ -259,7 +258,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     for (ActiveAuditInfo<Handle, Identifier> foo : activeAudit.values()) { 
       if ((now >= foo.currentTimeout) && !foo.isReplaying) {
         Identifier i = peerreview.getIdentifierExtractor().extractIdentifier(foo.target);
-//        int headerLen = 1 + peerreview->getIdentifierSizeBytes() + sizeof(long long);
            
         if (logger.level <= Logger.WARNING) logger.log("No response to AUDIT request; filing as evidence "+foo.evidenceSeq);
         try {
@@ -293,18 +291,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         if ((0<=authFromSeq) && (authFromSeq <= aii.since) && (aii.since < authToSeq)) {
           if (logger.level <= Logger.FINE) logger.log("Investigation of "+aii.target+" (since "+aii.since+") is proceeding with an audit");
           
-//  #if 0
-//          unsigned char lastCheckedAuth[authenticatorSizeBytes];
-//          if (infoStore->getLastCheckedAuth(aii.target->getIdentifier(), lastCheckedAuth)) {
-//            long long lastCheckedSeq = *(long long*)&lastCheckedAuth;
-//            if (lastCheckedSeq > authFromSeq) {
-//              if (logger.level <= Logger.FINER) logger.log("We already have the log up to %lld; starting investigation from there", lastCheckedSeq);
-//              memcpy(aii.authFrom, lastCheckedAuth, authenticatorSizeBytes);
-//              authFromSeq = lastCheckedSeq;
-//            }
-//          }
-//  #endif
-          
           if (authToSeq > authFromSeq) {
             if (logger.level <= Logger.FINER) logger.log("Authenticators: "+authFromSeq+"-"+authToSeq);
             beginAudit(aii.target, aii.authFrom, aii.authTo, FLAG_FULL_MESSAGES_SENDER, false);
@@ -323,7 +309,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
   }
 
   private void sendInvestigation(Handle target) {
-    // TODO Auto-generated method stub
     
   }
 
@@ -384,33 +369,20 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
    * necessary certificates (because of the statement protocol).
    */
   public void processAuditResponse(Identifier subject, long timestamp, AuditResponse<Handle> response) throws IOException {
-//    try {
     LogSnippet snippet = response.getLogSnippet();
     ActiveAuditInfo<Handle, Identifier> aai = findOngoingAudit(subject, timestamp);
     
     /* Read the header of the log snippet */
     
-//    int reqHdrSize = 1+peerreview->getIdentifierSizeBytes()+sizeof(long long);
     ChallengeAudit challengeAudit = (ChallengeAudit)aai.request.challenge;
     long fromSeq = challengeAudit.from.getSeq();
     Authenticator toAuthenticator = challengeAudit.to; 
     long toSeq = toAuthenticator.getSeq();
     byte[] currentNodeHash = snippet.baseHash;
     byte[] initialNodeHash = snippet.baseHash;
-//    int readptr = 0;
-    Handle subjectHandle = response.getLogOwner(); //peerreview->readNodeHandle(snippet, (unsigned int*)&readptr, snippetLen);
+    Handle subjectHandle = response.getLogOwner();
     long currentSeq = snippet.getFirstSeq();
-//    int extInfoLen = snippet[readptr++];
-//    unsigned char *extInfo = &snippet[readptr];
-//    readptr += extInfoLen;
-//    
     long initialCurrentSeq = currentSeq;
-//    memcpy(currentNodeHash, &snippet[readptr], hashSizeBytes);
-//    memcpy(initialNodeHash, &snippet[readptr], hashSizeBytes);
-//    readptr += hashSizeBytes;
-//    int initialReadPtr = readptr;
-//    char buf1[200];
-//    
     
     /* Retrieve all the authenticators we have for this node */
     
@@ -421,7 +393,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
     if (logger.level <= Logger.FINE) logger.log("Checking of AUDIT response against "+auths.size()+" authenticators ["+fromSeq+"-"+toSeq+"]");
 
-//    unsigned char mrauth[authenticatorSizeBytes];
     long mostRecentAuthInCache = -1;
     Authenticator mrauth = authCacheStore.getMostRecentAuthenticator(subject);
     if (mrauth != null) { 
@@ -449,22 +420,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
     for (SnippetEntry sEntry : snippet.entries) {
       currentSeq = sEntry.seq;
-//    while (readptr < snippetLen) {
-//      unsigned char entryType = snippet[readptr++];
-//      unsigned char sizeCode = snippet[readptr++];
-//      unsigned int entrySize = sizeCode;
-//      bool entryIsHashed = (sizeCode == 0);
-//
-//      if (sizeCode == 0xFF) {
-//        entrySize = *(unsigned short*)&snippet[readptr];
-//        readptr += 2;
-//      } else if (sizeCode == 0xFE) {
-//        entrySize = *(unsigned int*)&snippet[readptr];
-//        readptr += 4;
-//      } else if (sizeCode == 0) {
-//        entrySize = hashSizeBytes;
-//      }
-//
       if (logger.level <= Logger.FINER) logger.log("[2] Entry type "+sEntry.type+", size="+sEntry.content.length+
           ", seq="+currentSeq+(sEntry.isHash ? " (hashed)" : ""));
 
@@ -509,14 +464,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         if (foundMisbehavior) {
           if (logger.level <= Logger.FINE) logger.log("Extracting proof of misbehavior from audit response");
           ProofInconsistent proof = new ProofInconsistent(toAuthenticator,nextAuth,snippet);
-//          unsigned char proof[1+authenticatorSizeBytes+1+authenticatorSizeBytes+(snippetLen-posAfterNodeHandle)];
-//          unsigned int pos = 0;
-//          writeByte(proof, &pos, PROOF_INCONSISTENT);
-//          writeBytes(proof, &pos, toAuthenticator, authenticatorSizeBytes);
-//          writeByte(proof, &pos, 1);
-//          writeBytes(proof, &pos, nextAuth, authenticatorSizeBytes);
-//          writeBytes(proof, &pos, &snippet[posAfterNodeHandle], snippetLen-posAfterNodeHandle);
-//          assert(pos <= sizeof(proof));
 
           long evidenceSeq = peerreview.getEvidenceSeq();
           if (logger.level <= Logger.FINE) logger.log("Filing proof against "+subject+" under evidence sequence number #"+evidenceSeq);
@@ -524,7 +471,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
           peerreview.sendEvidenceToWitnesses(subject, evidenceSeq, proof);
 
           terminateAudit(aai.target);
-//          terminateAudit(peerreview.getIdentifierExtractor().extractIdentifier(subject));
           return;
 
         }
@@ -535,10 +481,10 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
        so we can remove them from our local store. */
 //
     if (logger.level <= Logger.FINE) logger.log( "All authenticators in range ["+fromSeq+","+toSeq+"] check out OK; flushing");
-//  #warning must check the old auths; flush from fromSeq only!
+    // TODO: check the old authenticators and flush only from fromSeq instead of Long.MIN_VALUE
     authInStore.flushAuthenticatorsFor(subject, Long.MIN_VALUE, toSeq);
 
-    /* Find out if the log snipped is 'useful', i.e. if we can append it to our local history */
+    /* Find out if the log snippet is 'useful', i.e. if we can append it to our local history */
 
     String namebuf = infoStore.getHistoryName(subject);
     
@@ -577,8 +523,8 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     }
     
     long firstNewSeq = currentSeq - (currentSeq%1000000) + 1000000;
-    subjectHistory.appendSnippetToHistory(snippet); //, , peerreview, initialCurrentSeq, firstNewSeq);
-//  #warning need to verify older authenticators against history
+    subjectHistory.appendSnippetToHistory(snippet);
+    // TODO: verify older authenticators against the appended history
 
     if (replayEnabled) {
 
@@ -591,8 +537,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
       if (lastCheckpointIdx < 0) {
         if (logger.level <= Logger.WARNING) logger.log("Cannot find last checkpoint in subject history "+namebuf);
-    //    if (subjectHistory->getNumEntries() >= MAX_ENTRIES_BETWEEN_CHECKPOINTS)
-    //      throw new RuntimeException("TODO: Must generate proof due to lack of checkpoints");
 
         terminateAudit(subjectHandle);
         return;
@@ -615,8 +559,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
       /* Do the replay */
 
-//      while (verifieverifier.makeProgress());
-//      if (true) throw new RuntimeException("delme");
       ReplaySM sm = ((ReplaySM)verifier.getEnvironment().getSelectorManager());
       while(sm.makeProgress());
       
@@ -626,11 +568,9 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       /* If there was a divergence, we have a proof of misbehavior */
 
       if (!verifiedOK) {
-//        FILE *outfile = tmpfile();
         snippet = subjectHistory.serializeRange(lastCheckpointIdx, subjectHistory.getNumEntries()-1, null);
         if (snippet == null) throw new RuntimeException("Cannot serialize range for PROOF "+subject);
 
-//        int snippet2size = ftell(outfile);
         long lastCheckpointSeq;
         IndexEntry foo = subjectHistory.statEntry(lastCheckpointIdx);
         if (foo == null) throw new RuntimeException("Cannot stat checkpoint entry");
@@ -639,18 +579,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         if (logger.level <= Logger.WARNING) logger.log("Audit revealed a protocol violation; filing evidence (snippet from "+lastCheckpointSeq+")");
 
         ProofNonconformant<Handle> proof = new ProofNonconformant<Handle>(toAuthenticator,subjectHandle,snippet);
-//        unsigned int maxProofLen = 1+authenticatorSizeBytes+MAX_HANDLE_SIZE+sizeof(long long)+snippet2size;
-//        unsigned char *proof = (unsigned char*)malloc(maxProofLen);
-//        unsigned int proofLen = 0;
-//        writeByte(proof, &proofLen, PROOF_NONCONFORMANT);
-//        writeBytes(proof, &proofLen, toAuthenticator, authenticatorSizeBytes);
-//        subjectHandle->write(proof, &proofLen, maxProofLen);
-//        writeLongLong(proof, &proofLen, lastCheckpointSeq);
-//        fseek(outfile, 0, SEEK_SET);
-//        fread(&proof[proofLen], snippet2size, 1, outfile);
-//        proofLen += snippet2size;
-//        assert(proofLen <= maxProofLen);
-//
         long evidenceSeq = peerreview.getEvidenceSeq();
         infoStore.addEvidence(peerreview.getLocalId(), subject, evidenceSeq, proof);
         peerreview.sendEvidenceToWitnesses(subject, evidenceSeq, proof);
@@ -662,9 +590,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     if (logger.level <= Logger.FINE) logger.log( "Audit completed; terminating");  
     infoStore.setLastCheckedAuth(peerreview.getIdentifierExtractor().extractIdentifier(aai.target), ((ChallengeAudit)aai.request.challenge).to);
     terminateAudit(aai.target);
-//    } catch (IOException ioe) {
-//      throw new RuntimeException(ioe);
-//    }
   }
 
   public ActiveAuditInfo<Handle, Identifier> findOngoingAudit(Identifier subject, long evidenceSeq) {
@@ -682,7 +607,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     return aii.request.challenge;
   }
   
-  /* Handle an incoming datagram, which could be either a request for autheticators, or a response to such a request */
+  /* Handle an incoming datagram, which could be either a request for authenticators, or a response to such a request */
 
   public void handleIncomingDatagram(Handle handle, PeerReviewMessage message) {
     
@@ -690,38 +615,19 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       case MSG_AUTHREQ: { /* Request for authenticators */
         AuthRequest<Identifier> request = (AuthRequest<Identifier>)message;
         
-//        if (msglen == (int)(1+sizeof(long long)+peerreview->getIdentifierSizeBytes())) {
-
           /* The request contains a timestamp T; we're being asked to return two authenticators,
              one has to be older than T, and the other must be as recent as possible */
           
-//          unsigned int pos = 1;
-//          long long since = readLongLong(message, &pos);
-//          Identifier *id = peerreview->readIdentifier(message, &pos, msglen);
           if (logger.level <= Logger.INFO) logger.log("Received authenticator request for "+request.subject+" (since "+request.timestamp+")");
-          
-//          unsigned char response[1+peerreview->getIdentifierSizeBytes()+2*authenticatorSizeBytes];
-//          boolean canRespond = true;
-//          pos = 0;
-//          writeByte(response, &pos, MSG_AUTHRESP);
-//          id->write(response, &pos, sizeof(response));
           
           /* There are several places we might find 'old' authenticators. Check all of them,
              and pick the authenticator that is closest to T */
           
-//          unsigned char a1[authenticatorSizeBytes];
           Authenticator a1 = authInStore.getLastAuthenticatorBefore(request.subject, request.timestamp);
-//          long long seq1 = *(long long*)&a1;
-//          unsigned char a2[authenticatorSizeBytes];
           Authenticator a2 = authCacheStore.getLastAuthenticatorBefore(request.subject, request.timestamp);
-//          long long seq2 = *(long long*)&a2;
-//          unsigned char a3[authenticatorSizeBytes];
           Authenticator a3 = authInStore.getOldestAuthenticator(request.subject);
-//          long long seq3 = *(long long*)&a3;
           
           Authenticator best = null;
-//          boolean haveBest = false;
-//          long seqBest = -1;
           
           if (a1 != null && (best == null || (!(best.getSeq()<request.timestamp) && (a1.getSeq()<request.timestamp)) || ((best.getSeq()<request.timestamp) && (a1.getSeq()<request.timestamp) && (best.getSeq()<a1.getSeq())))) {
             best = a1;
@@ -735,21 +641,12 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
             best = a3;
           }
           
-//          if (best != null) {
-////            memcpy(&response[pos], best, authenticatorSizeBytes);
-//          } else {
-//            canRespond = false;
-//          }
-          
           /* Recent authenticators can be found in two places; check both */
           
           Authenticator foo = authInStore.getMostRecentAuthenticator(request.subject);
           if (foo == null) {
             foo = authCacheStore.getMostRecentAuthenticator(request.subject);
           }
-          
-//          pos += 2*authenticatorSizeBytes;
-//          assert(pos == sizeof(response));
           
           if (best != null && foo != null) {
             AuthResponse<Identifier> response = new AuthResponse<Identifier>(request.subject,best,foo);
@@ -762,14 +659,9 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         break;
       case MSG_AUTHRESP: { /* Response to a request for authenticators */
         AuthResponse<Identifier> response = (AuthResponse<Identifier>)message;
-//        if (msglen == (int)(1+peerreview->getIdentifierSizeBytes()+2*authenticatorSizeBytes)) {
-//          unsigned int pos = 1;
-//          Identifier *id = peerreview->readIdentifier(message, &pos, msglen);
-//          unsigned char *authFrom = &message[pos];
-//          unsigned char *authTo = &message[pos+authenticatorSizeBytes];
           if (logger.level <= Logger.FINE) logger.log("Received AUTHRESP(<"+response.subject+">, "+response.authFrom+".."+response.authTo+") from "+handle);
 
-//  #warning must check signatures here        
+          // TODO: check the signatures of response.authFrom and response.authTo
           int idx = -1;
           ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(response.subject);
           if (idx >= 0) {

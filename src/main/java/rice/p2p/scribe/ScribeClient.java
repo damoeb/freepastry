@@ -43,8 +43,6 @@ import rice.*;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) ScribeClient.java
- *
  * This interface represents a client using the Scribe system.
  *
  * @deprecated use ScribeMultiClient

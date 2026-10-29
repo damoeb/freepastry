@@ -177,7 +177,6 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
   }
 
   public void destroy() {
-    // TODO Auto-generated method stub
     
   }
 

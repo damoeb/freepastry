@@ -56,13 +56,6 @@ import rice.p2p.util.tuples.Tuple;
  * few times when an acknowledgment is not received.
  */
 public interface CommitmentProtocol<Handle extends RawSerializable, Identifier extends RawSerializable> extends StatusChangeListener<Identifier> {
-//  int lookupPeer(Identifier handle);
-//  PacketInfo *enqueueTail(struct packetInfo *queue, unsigned char *message, int msglen);
-//  void makeProgress(int idx);
-//  int findRecvEntry(Identifier *id, long long seq);
-//  long long findAckEntry(Identifier *id, long long seq);
-//  void initReceiveCache();
-//  void addToReceiveCache(Identifier *id, long long senderSeq, int indexInLocalHistory);
   public MessageRequestHandle<Handle, ByteBuffer> handleOutgoingMessage(
       Handle target, ByteBuffer message, 
       MessageCallback<Handle, ByteBuffer> deliverAckToMe, 

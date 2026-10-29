@@ -72,7 +72,6 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
     /**
      * Constructor for NodeRecord.
      *
-     * @param nh 
      */
     public EuclideanNodeRecord() {
       x = random.nextInt() % side;
@@ -91,7 +90,6 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
       int dy = y - nr.y;
       
       float ret = (float)Math.sqrt(dx * dx + dy * dy);
-//      int ret = (int)Math.round(sqrt);
       if ((ret < 2.0) && !this.equals(that)) return (float)2.0;
       
       return ret;

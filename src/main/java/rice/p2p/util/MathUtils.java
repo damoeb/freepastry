@@ -105,7 +105,8 @@ public class MathUtils {
   /**
    * Method which returns a random int
    *
-   * @param len The number of random bytes to generate
+   * @param random The source of randomness
+   * @return a random int
    */
   public static int randomInt(RandomSource random) {
     return random.nextInt();
@@ -207,7 +208,7 @@ public class MathUtils {
   /**
    * Utility method for converting a int into a byte[]
    *
-   * @param input The log to convert
+   * @param input The int to convert
    * @return a byte[] representation
    */
   public static byte[] intToByteArray(int input) {
@@ -217,10 +218,11 @@ public class MathUtils {
   }
   
   /**
-   * Utility method for converting a int into a byte[]
+   * Utility method for writing an int into a byte[], big-endian
    *
-   * @param input The log to convert
-   * @return a byte[] representation
+   * @param input The int to convert
+   * @param output The array to write the 4 bytes to
+   * @param offset The index in output to start writing at
    */
   public static void intToByteArray(int input, byte[] output, int offset) {
     output[offset + 0] = (byte) (0xFF & (input >> 24));
@@ -269,7 +271,7 @@ public class MathUtils {
   /**
    * Utility method for converting a long into a byte[]
    *
-   * @param input The log to convert
+   * @param input The long to convert
    * @return a byte[] representation
    */
   public static byte[] longToByteArray(long input) {
@@ -279,10 +281,11 @@ public class MathUtils {
   }
   
   /**
-   * Utility method for converting a long into a byte[]
+   * Utility method for writing a long into a byte[], big-endian
    *
-   * @param input The log to convert
-   * @return a byte[] representation
+   * @param input The long to convert
+   * @param output The array to write the 8 bytes to
+   * @param offset The index in output to start writing at
    */
   public static void longToByteArray(long input, byte[] output, int offset) {    
     output[offset + 0] = (byte) (0xFF & (input >> 56));

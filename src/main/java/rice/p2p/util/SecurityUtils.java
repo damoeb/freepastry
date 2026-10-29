@@ -355,7 +355,6 @@ public class SecurityUtils {
    * @param key The key
    * @param offset The offset into the data
    * @param length The length of data to write
-   * @param iv The initialization vector
    * @return The ciphertext
    * @exception SecurityException If the encryption does not happen properly
    */
@@ -655,7 +654,7 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method which will generate a random intialization vector for
+   * Utility method which will generate a random initialization vector for
    * applications to use.
    *
    * @return A new, random DES initialization vector

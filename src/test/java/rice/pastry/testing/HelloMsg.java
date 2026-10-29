@@ -73,7 +73,6 @@ public class HelloMsg extends Message {
     } else {
       s+=" routed";
     }
-//    s += " lastAt:"+intermediateSource+" nextHop:"+nextHop+" from:" + source + " to:" + target;// +"<"+state+">"; // + " received by "+actualReceiver+"}";
     return s;
   }
     

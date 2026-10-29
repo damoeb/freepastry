@@ -44,8 +44,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
- * @(#) Topic.java
- *
  * This class represents a specific topic in the Scribe system.
  *
  * @version $Id: Topic.java 3653 2007-03-27 18:39:52Z jeffh $

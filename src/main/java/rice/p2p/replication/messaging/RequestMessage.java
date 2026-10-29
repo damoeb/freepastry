@@ -45,8 +45,6 @@ import rice.p2p.replication.*;
 import rice.p2p.util.*;
 
 /**
- * @(#) RequestMessage.java
- *
  * This class represents a request for a set of keys in the replication
  * system.
  *
@@ -64,10 +62,11 @@ public class RequestMessage extends ReplicationMessage {
   protected IdBloomFilter[] filters;
   
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
    * @param source The source address
-   * @param topic The topic
+   * @param ranges The ranges the source requests keys for
+   * @param filters Bloom filters of the keys the source already holds, one per range
    */
   public RequestMessage(NodeHandle source, IdRange[] ranges, IdBloomFilter[] filters) {
     super(source);

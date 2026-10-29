@@ -97,13 +97,11 @@ public class EncryptedFileTest {
     });
     
     RC4TransportLayer<InetSocketAddress, ByteBuffer> etl1 = new RC4TransportLayer<InetSocketAddress, ByteBuffer>(ltl1,env,"badpassword", errorHandler);
-//    TransportLayer<InetSocketAddress, ByteBuffer> mtl1 = new MagicNumberTransportLayer<InetSocketAddress>(etl1,env,errorHandler,"blah".getBytes(),30000);
 
     etl1.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
     
       public void messageReceived(InetSocketAddress i, ByteBuffer m,
           Map<String, Object> options) throws IOException {
-        // TODO Auto-generated method stub
     
       }
     
@@ -114,7 +112,6 @@ public class EncryptedFileTest {
         FileTransfer ft = new FileTransferImpl(sock,new FileTransferCallback() {
         
           public void messageReceived(ByteBuffer bb) {
-            // TODO Auto-generated method stub
         
           }
         
@@ -140,10 +137,6 @@ public class EncryptedFileTest {
               long bytesTransferred, long total, boolean incoming) {
             super.fileTransferred(receipt, bytesTransferred, total, incoming);
             
-//            if (bytesTransferred > total/2) {
-//              System.out.println("Closing connection");
-//              sock.close();
-//            }
           }
           
         });        
@@ -168,7 +161,6 @@ public class EncryptedFileTest {
     ltl2.checkLiveness(addr1, null);
     
     RC4TransportLayer<InetSocketAddress, ByteBuffer> etl2 = new RC4TransportLayer<InetSocketAddress, ByteBuffer>(ltl2,env,"badpassword", errorHandler);
-//    TransportLayer<InetSocketAddress, ByteBuffer> mtl2 = new MagicNumberTransportLayer<InetSocketAddress>(etl2,env,errorHandler,"blah".getBytes(),30000);
 
     etl2.openSocket(addr1, new SocketCallback<InetSocketAddress>() {
     
@@ -181,12 +173,10 @@ public class EncryptedFileTest {
         FileTransfer ft = new FileTransferImpl(sock, new FileTransferCallback() {
         
           public void messageReceived(ByteBuffer bb) {
-            // TODO Auto-generated method stub
         
           }
         
           public void fileReceived(File f, ByteBuffer metadata) {
-            // TODO Auto-generated method stub
         
           }
         
@@ -201,10 +191,6 @@ public class EncryptedFileTest {
               long bytesTransferred, long total, boolean incoming) {
             super.fileTransferred(receipt, bytesTransferred, total, incoming);
             
-//            if (bytesTransferred > total/2) {
-//              System.out.println("Closing connection");
-//              sock.close();
-//            }
           }
           
         });

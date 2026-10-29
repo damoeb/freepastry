@@ -81,7 +81,6 @@ public class WhatIsMyIP {
       }
     
       public void receiveException(IOException exception) {
-        // TODO Auto-generated method stub    
       }    
     });
   }

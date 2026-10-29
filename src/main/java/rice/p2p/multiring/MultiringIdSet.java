@@ -41,8 +41,6 @@ import java.util.*;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) MultringIdSet.java
- *
  * Represents a set of ids in a multiring heirarchy
  * 
  * @version $Id: MultiringIdSet.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -121,8 +119,7 @@ public class MultiringIdSet implements IdSet {
   
   /**
    * return a subset of this set, consisting of the member ids in a given range
-   * @param from the lower end of the range (inclusive)
-   * @param to the upper end of the range (exclusive)
+   * @param range the range
    * @return the subset
    */
   public IdSet subSet(IdRange range) {
@@ -179,7 +176,7 @@ public class MultiringIdSet implements IdSet {
   /**
    * Determines equality
    *
-   * @param other To compare to
+   * @param o To compare to
    * @return Equals
    */
   public boolean equals(Object o) {

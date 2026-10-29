@@ -62,15 +62,13 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
    */
   private class SphereNodeRecord implements NodeRecord {
     /**
-     * DESCRIBE THE FIELD
+     * Position on the sphere, in radians.
      */
     public double theta, phi;
     double radius;
     
     /**
-     * Constructor for NodeRecord.
-     *
-     * @param nh DESCRIBE THE PARAMETER
+     * Creates a record at a uniformly random position on the sphere.
      */
     public SphereNodeRecord() {
       this(Math.asin(2.0 * random.nextDouble() - 1.0),
@@ -84,10 +82,10 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
     }
     
     /**
-     * DESCRIBE THE METHOD
+     * The round-trip time to another node: twice the network delay, rounded.
      *
-     * @param nr DESCRIBE THE PARAMETER
-     * @return DESCRIBE THE RETURN VALUE
+     * @param that the other node's record
+     * @return the proximity
      */
     public float proximity(NodeRecord that) {
       return (float)Math.round(networkDelay(that)*2.0);

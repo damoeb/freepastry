@@ -55,8 +55,6 @@ import rice.p2p.util.MRHAdapter;
 import rice.p2p.util.rawserialization.JavaSerializedMessage;
 
 /**
- * @(#) MultiringEndpoint.java
- *
  * This class wraps an endpoint and allows for applications to transparently
  * use multiring functionality.
  *
@@ -77,34 +75,21 @@ public class MultiringEndpoint implements Endpoint {
   protected Application application;
   
   /**
-   * The node which this mulitring node is wrapping
+   * The endpoint which this multiring endpoint is wrapping
    */
   protected Endpoint endpoint;
-  
-//  protected MessageDeserializer myDeserializer;
   
   /**
   * Constructor
    *
-   * @param node The node to base this node off of
+   * @param node The multiring node supporting this endpoint
+   * @param endpoint The endpoint to wrap
+   * @param application The application this endpoint is for
    */
   protected MultiringEndpoint(MultiringNode node, Endpoint endpoint, Application application) {
     this.node = node;
     this.endpoint = endpoint;
     this.application = application;
-//    myDeserializer = endpoint.getDeserializer();
-//    endpoint.setDeserializer(new MessageDeserializer() {
-//    
-//      public Message deserialize(InputBuffer buf, short type, byte priority,
-//          NodeHandle sender) throws IOException {
-//        switch (type) {
-//          case RingMessage.TYPE:
-//            return new RingMessage(buf,MultiringEndpoint.this.endpoint,myDeserializer,sender,priority);
-//        }
-//        throw new IllegalArgumentException("Invalid type:"+type);
-//      }
-//    
-//    });
   }
   
   /**
@@ -230,7 +215,7 @@ public class MultiringEndpoint implements Endpoint {
    *
    * @param id The object's id.
    * @param maxRank The number of desired replicas.
-   * @param handle The root handle of the remove set
+   * @param root The root handle of the remove set
    * @param set The set of other nodes around the root handle
    */
   public NodeHandleSet replicaSet(Id id, int maxRank, NodeHandle root, NodeHandleSet set) {
@@ -324,8 +309,8 @@ public class MultiringEndpoint implements Endpoint {
    * milliseconds, after delay number of miliseconds have passed.
    *
    * @param message The message to be delivered
-   * @param delay The number of milliseconds to wait before delivering the fist message
-   * @param delay The number of milliseconds to wait before delivering subsequent messages
+   * @param delay The number of milliseconds to wait before delivering the first message
+   * @param period The number of milliseconds to wait before delivering subsequent messages
    */
   public CancellableTask scheduleMessage(Message message, long delay, long period) {
     return endpoint.scheduleMessage(message, delay, period);
@@ -355,7 +340,7 @@ public class MultiringEndpoint implements Endpoint {
    * Internal method which delivers the message to the application
    *
    * @param id The target id
-   * @param message The message to deliver
+   * @param target The message to deliver
    */
   protected void deliver(RingId id, Message target) {
     application.deliver(id, target);
@@ -411,7 +396,6 @@ public class MultiringEndpoint implements Endpoint {
 
   public IdRange readIdRange(InputBuffer buf) throws IOException {
     return new MultiringIdRange(buf,endpoint);
-//    return endpoint.readIdRange(buf);
   }
 
   public NodeHandle coalesce(NodeHandle handle) {

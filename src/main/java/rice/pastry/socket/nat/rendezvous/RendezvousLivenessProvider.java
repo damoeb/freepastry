@@ -42,7 +42,7 @@ import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 
 /**
- * TODO: Remove Abstract
+ * TODO: make this class concrete
  *
  * This class forces a RendezvousApp.updateRendezvousInfo() when the 
  * NodeHandle is found faulty.

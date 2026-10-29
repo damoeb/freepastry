@@ -244,9 +244,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * node. If this method is not overridden, the default behaviour is to let the
    * message pass through.
    * 
-   * @param msg the message that is passing through.
-   * @param key the key
-   * @param nextHop the default next hop for the message.
+   * @param msg the route message that is passing through (its target and next hop are set).
    *  
    */
 
@@ -258,7 +256,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * Called by pastry when the neighbor set changes.
    * 
    * @param nh the handle of the node that was added or removed.
-   * @param wasAdded true if the node was added, false if the node was removed.
+   * @param joined true if the node was added, false if the node was removed.
    */
 
   public void update(NodeHandle nh, boolean joined) {

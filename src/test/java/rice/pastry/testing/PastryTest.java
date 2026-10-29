@@ -136,7 +136,6 @@ public class PastryTest {
   public boolean simulate() {
     try { Thread.sleep(300); } catch (InterruptedException ie) {}    
     return false;
-//    return simulator.simulate();
   }
 
   public static void main(String args[]) throws IOException {
@@ -154,7 +153,6 @@ public class PastryTest {
       pt.makePastryNode();
       if(i%100 == 0)
         System.out.println("Created node "+i+"/"+n);
-//      while (pt.simulate())
         msgCount++;
 
       if ((i + 1) % m == 0) {

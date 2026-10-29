@@ -45,9 +45,9 @@ import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
- * Class which represets a source route to a remote IP address.
+ * The ordered list of addresses of a single node: the outermost (public) address first,
+ * the innermost (bind) address last.
  *
- * @version $Id
  * @author Jeff Hoye
  */
 public class MultiInetSocketAddress implements Serializable {
@@ -57,10 +57,9 @@ public class MultiInetSocketAddress implements Serializable {
   protected InetSocketAddress address[];
   
   /**
-   * Constructor
+   * Constructor for a node with a single address
    *
    * @param address The remote address
-   * @param epoch The remote epoch
    */
   public MultiInetSocketAddress(InetSocketAddress address) {
     this(new InetSocketAddress[]{address});
@@ -76,7 +75,7 @@ public class MultiInetSocketAddress implements Serializable {
   }
 
   /**
-   * Returns the hashCode of this source route
+   * Returns the hashCode of this address list
    *
    * @return The hashCode
    */
@@ -89,9 +88,9 @@ public class MultiInetSocketAddress implements Serializable {
   }
   
   /**
-   * Checks equaltiy on source routes
+   * Checks equality on address lists
    *
-   * @param o The source route to compare to
+   * @param o The address list to compare to
    * @return The equality
    */
   public boolean equals(Object o) {
@@ -105,9 +104,7 @@ public class MultiInetSocketAddress implements Serializable {
     if (this.address.length != that.address.length) {
       // this code is here so we can say we are the same if one node knows they are firewalled and the other doesn't
       
-//      System.out.println("MulitInetSocketAddress.equals(): "+this+" "+that);
       if (that.getInnermostAddress().equals(this.getInnermostAddress())) {
-//        System.out.println("MulitInetSocketAddress.equals(): "+this+" "+that+" "+true);
         return true;
       }
       return false;
@@ -119,10 +116,9 @@ public class MultiInetSocketAddress implements Serializable {
   }
   
   /**
-    * Internal method for computing the toString of an array of InetSocketAddresses
+   * Returns the addresses separated by colons
    *
-   * @param path The path
-   * @return THe string
+   * @return The string
    */
   public String toString() {
     String s = "";
@@ -147,61 +143,6 @@ public class MultiInetSocketAddress implements Serializable {
     } // ctr 
   }
   
-  /**
-   * Method which returns the address of this address
-   *
-   * @return The address
-   */
-//  public InetSocketAddress getAddress(EpochInetSocketAddress local) {   
-//    // start from the outside address, and return the first one not equal to the local address (sans port)
-//    
-//    try {
-//      for (int ctr = 0; ctr < address.length; ctr++) {
-//        if (!address[ctr].getAddress().equals(local.address[ctr].getAddress())) {
-//          return address[ctr];
-//        }
-//      }
-//    } catch (ArrayIndexOutOfBoundsException aioobe) {
-//      throw new RuntimeException("ArrayIndexOutOfBoundsException in "+this+".getAddress("+local+")",aioobe);
-//    }
-//    return address[address.length-1]; // the last address if we are on the same computer
-//  }
-  
-  /**
-   * This is for hairpinning support.  The Node is advertising many different 
-   * InetSocketAddresses that it could be contacted on.  In a typical NAT situation 
-   * this will be 2: the NAT's external address, and the Node's non-routable 
-   * address on the Lan.  
-   * 
-   * The algorithm sees if the external address matches its own external 
-   * address.  If it doesn't then the node is on a different lan, use the external.
-   * If the external address matches then both nodes are on the same Lan, and 
-   * it uses the internal address because the NAT may not support hairpinning.  
-   * 
-   * @param local my sorted list of InetAddress
-   * @return the address I should use to contact the node
-   */
-//  public InetSocketAddress getAddress(InetAddress[] local) {   
-//    // start from the outside address, and return the first one not equal to the local address (sans port)
-//    try {
-//      for (int ctr = 0; ctr < address.length; ctr++) {
-//        if (!address[ctr].getAddress().equals(local[ctr])) {
-//          return address[ctr];
-//        }
-//      }
-//    } catch (ArrayIndexOutOfBoundsException aioobe) {
-//      String s = "";
-//      for (int ctr = 0; ctr < local.length; ctr++) {
-//        s+=local[ctr];
-//        if (ctr < local.length-1) s+=":";  
-//      }
-//      throw new RuntimeException("ArrayIndexOutOfBoundsException in "+this+".getAddress("+local.length+")",aioobe);
-//    }
-//    return address[address.length-1]; // the last address if we are on the same computer
-//  }
-  
-  
-  
   public InetSocketAddress getInnermostAddress() {
     return address[address.length-1];     
   }
@@ -219,7 +160,7 @@ public class MultiInetSocketAddress implements Serializable {
   }
   
   /**
-   *   EpochInetSocketAddress: (IPV4):
+   *   MultiInetSocketAddress: (IPV4):
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   +   numAddrs    +  IPVersion 0  +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -250,30 +191,11 @@ public class MultiInetSocketAddress implements Serializable {
   }
 
   /**
-   *   EpochInetSocketAddress: (IPV4):
-   *   +-+-+-+-+-+-+-+-+
-   *   +   numAddrs    +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   internet address 0                                          +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   port 0                      +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   internet address 1                                          +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   port 1                      +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   internet address k                                          +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   port k                      +       ...
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + epoch (long)                                                  +
-   *   +                                                               +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   * Writes the format described in {@link #build(InputBuffer)}.
    * 
-   * @param buf
+   * @param buf the buffer to write to
    */
   public void serialize(OutputBuffer buf) throws IOException {
-//    System.out.println("EISA.serialize():numAddresses:"+address.length);
     buf.writeByte((byte)address.length);
     for (int ctr = 0; ctr < address.length; ctr++) {
       serializer.serialize(address[ctr], buf);

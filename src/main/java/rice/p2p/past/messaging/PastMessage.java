@@ -46,8 +46,6 @@ import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.past.*;
 
 /**
- * @(#) PastMessage.java
- *
  * This class the abstraction of a message used internally by Past.
  *
  * @version $Id: PastMessage.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -166,16 +164,13 @@ public abstract class PastMessage implements RawMessage {
   
   public PastMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     id = buf.readInt();
-//    System.out.println("PM.deserialize()" + endpoint);
     dest = endpoint.readId(buf, buf.readShort());
-//    System.out.println("PastMessage dest:"+dest+" id:"+id);
     source = endpoint.readNodeHandle(buf);
     isResponse = buf.readBoolean();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeInt(id);
-//    System.out.println("PM.serialize()" + dest);
     buf.writeShort(dest.getType());
     dest.serialize(buf);
     source.serialize(buf);

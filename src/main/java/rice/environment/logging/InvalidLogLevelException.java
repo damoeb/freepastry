@@ -45,9 +45,10 @@ package rice.environment.logging;
 public class InvalidLogLevelException extends RuntimeException {
 
   /**
-   * @param arg0
+   * @param key the parameter key
+   * @param val the value that is not a valid log level
    */
   public InvalidLogLevelException(String key, String val) {
-    super(val+" is not an apropriate value for "+key+". Must be an integer or ALL,OFF,SEVERE,WARNING,INFO,CONFIG,FINE,FINER,FINEST");
+    super(val+" is not an appropriate value for "+key+". Must be an integer or ALL,OFF,SEVERE,WARNING,INFO,CONFIG,FINE,FINER,FINEST");
   }
 }

@@ -42,7 +42,7 @@ import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
- * DESCRIBE THE CLASS
+ * A range of FragmentKeys, backed by a range of the underlying ids.
  *
  * @version $Id: FragmentKeyRange.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author ahae
@@ -57,8 +57,7 @@ public class FragmentKeyRange implements IdRange {
   /**
    * Constructor
    *
-   * @param ringId DESCRIBE THE PARAMETER
-   * @param range DESCRIBE THE PARAMETER
+   * @param range the underlying range of ids
    */
   protected FragmentKeyRange(IdRange range) {
     this.range = range;
@@ -83,9 +82,10 @@ public class FragmentKeyRange implements IdRange {
   }
 
   /**
-   * get the complement of this range
+   * Not supported.
    *
-   * @return This range's complement
+   * @return never returns
+   * @throws RuntimeException always
    */
   public IdRange getComplementRange() {
     throw new RuntimeException("FragmentKeyRange.getComplementRange() is not supported!");
@@ -111,58 +111,64 @@ public class FragmentKeyRange implements IdRange {
   }
 
   /**
-   * merges the given range with this range
+   * Not supported.
    *
-   * @param merge DESCRIBE THE PARAMETER
-   * @return The merge
+   * @param merge the range to merge with
+   * @return never returns
+   * @throws RuntimeException always
    */
   public IdRange mergeRange(IdRange merge) {
     throw new RuntimeException("FragmentKeyRange.mergeRange() is not supported!");
   }
 
   /**
-   * diffs the given range with this range
+   * Not supported.
    *
-   * @param diff DESCRIBE THE PARAMETER
-   * @return The merge
+   * @param diff the range to subtract
+   * @return never returns
+   * @throws RuntimeException always
    */
   public IdRange diffRange(IdRange diff) {
     throw new RuntimeException("FragmentKeyRange.diffRange() is not supported!");
   }
 
   /**
-   * intersects the given range with this range
+   * Not supported.
    *
-   * @param intersect DESCRIBE THE PARAMETER
-   * @return The merge
+   * @param intersect the range to intersect with
+   * @return never returns
+   * @throws RuntimeException always
    */
   public IdRange intersectRange(IdRange intersect) {
     throw new RuntimeException("FragmentKeyRange.intersectRange() is not supported!");
   }
 
   /**
-   * Determines equality
+   * Not supported.
    *
-   * @param o DESCRIBE THE PARAMETER
-   * @return Equals
+   * @param o the object to compare to
+   * @return never returns
+   * @throws RuntimeException always
    */
   public boolean equals(Object o) {
     throw new RuntimeException("FragmentKeyRange.equals() is not supported!");
   }
 
   /**
-   * Returns the hashCode
+   * Not supported.
    *
-   * @return hashCode
+   * @return never returns
+   * @throws RuntimeException always
    */
   public int hashCode() {
     throw new RuntimeException("FragmentKeyRange.hashCode() is not supported!");
   }
 
   /**
-   * Prints out the string
+   * Not supported.
    *
-   * @return A string
+   * @return never returns
+   * @throws RuntimeException always
    */
   public String toString() {
     throw new RuntimeException("FragmentKeyRange.toString() is not supported!");

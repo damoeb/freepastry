@@ -68,7 +68,6 @@ public class PMessageReceiptImpl implements PMessageReceipt {
 
   public Map<String, Object> getOptions() {
     return options;
-//    return internal.getOptions();
   }
 
   /**
@@ -98,16 +97,13 @@ public class PMessageReceiptImpl implements PMessageReceipt {
    * 
    * @param name
    */
-//  Exception setInternalStack; // delme
   public void setInternal(MessageRequestHandle<NodeHandle, RawMessage> name) {
     boolean callCancel = false;
     synchronized(this) {      
       if (internal != null && internal != name) {
-//        setInternalStack.printStackTrace();
         throw new RuntimeException("Internal already set old:"+internal+" new:"+name);
       }
       internal = name;
-//      setInternalStack = new Exception();
       callCancel = cancelled;
     }
     if (callCancel) internal.cancel();

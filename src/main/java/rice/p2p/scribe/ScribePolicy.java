@@ -45,7 +45,7 @@ import rice.p2p.scribe.messaging.*;
 import rice.p2p.util.TimerWeakHashMap;
 
 /**
- * @(#) ScribePolicy.java This interface represents a policy for Scribe, which is asked whenever a
+ * This interface represents a policy for Scribe, which is asked whenever a
  * child is about to be added or removed, or when the the local node is about to be implicitly
  * subscribed to a new topic.
  *
@@ -60,7 +60,7 @@ public interface ScribePolicy {
    * children and clients is both 0, allowing the child to join will have the effect of implicitly
    * subscribing this node the the given topic.
    *
-   * For each Topic that you are willing to accept, call message.accept(Topic);
+   * Return the topics that you are willing to accept, for example by removing the others from topics.
    * 
    * Here is some example code:
    * 
@@ -93,7 +93,7 @@ public interface ScribePolicy {
    * @param source the subscriber
    * @param topics the topics that are requested
    * @param content the content that came with the message
-   * @param return the list that is accepted
+   * @return the list that is accepted
    */
   public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content);
 
@@ -113,7 +113,7 @@ public interface ScribePolicy {
    * Informs this policy that a child was added to a topic - the topic is free to ignore this
    * upcall if it doesn't care.
    *
-   * @param topic The topic to unsubscribe from
+   * @param topic The topic the child was added to
    * @param child The child that was added
    */
   public void childAdded(Topic topic, NodeHandle child);
@@ -122,7 +122,7 @@ public interface ScribePolicy {
    * Informs this policy that a child was removed from a topic - the topic is free to ignore this
    * upcall if it doesn't care.
    *
-   * @param topic The topic to unsubscribe from
+   * @param topic The topic the child was removed from
    * @param child The child that was removed
    */
   public void childRemoved(Topic topic, NodeHandle child);
@@ -164,11 +164,13 @@ public interface ScribePolicy {
       environment = env;
     }
     /**
-     * If you don't override the deprecated allowSubscribe(), This method always return true;
+     * Asks the deprecated allowSubscribe(SubscribeMessage, ScribeClient[], NodeHandle[]) for each topic
+     * and removes the rejected ones; unless that method is overridden, all topics are accepted.
      *
-     * @param message The subscribe message in question
-     * @param children The list of children who are currently subscribed
-     * @param clients The list of clients are are currently subscribed
+     * @param scribe the Scribe that is making the request
+     * @param source the subscriber
+     * @param topics the topics that are requested; rejected topics are removed from this list
+     * @param content the content that came with the message
      * @return the topics to accept
      */
     // Bridges to the deprecated allowSubscribe(SubscribeMessage, ScribeClient[], NodeHandle[]) hook so that
@@ -220,13 +222,12 @@ public interface ScribePolicy {
     }
     
     /**
-     * Simply adds the parent and children in order, which implements a depth-first-search.
-     *
-     * randomly picks a child
+     * Adds the children in random order at the front of the to-search list and the parent at the
+     * end, which implements a randomized depth-first search.
      *
      * @param message The anycast message in question
      * @param parent Our current parent for this message's topic
-     * @param children Our current children for this message's topic
+     * @param theChildren Our current children for this message's topic
      */
     public void directAnycast(AnycastMessage message, NodeHandle parent, Collection<NodeHandle> theChildren) {
       if (parent != null) {
@@ -249,7 +250,7 @@ public interface ScribePolicy {
      * Informs this policy that a child was added to a topic - the topic is free to ignore this
      * upcall if it doesn't care.
      *
-     * @param topic The topic to unsubscribe from
+     * @param topic The topic the child was added to
      * @param child The child that was added
      */
     public void childAdded(Topic topic, NodeHandle child) {
@@ -259,7 +260,7 @@ public interface ScribePolicy {
      * Informs this policy that a child was removed from a topic - the topic is free to ignore this
      * upcall if it doesn't care.
      *
-     * @param topic The topic to unsubscribe from
+     * @param topic The topic the child was removed from
      * @param child The child that was removed
      */
     public void childRemoved(Topic topic, NodeHandle child) {
@@ -287,7 +288,7 @@ public interface ScribePolicy {
     protected int maxChildren;
 
     /**
-     * Construtor which takes a maximum number
+     * Constructor which takes a maximum number
      *
      * @param max The maximum number of children
      */
@@ -297,67 +298,17 @@ public interface ScribePolicy {
     }
 
     /**
-     * This method returns (children.length < maxChildren-1);
+     * This method returns {@code (children.length < maxChildren-1)};
      *
      * @param message The subscribe message in question
+     * @param clients The list of clients who are currently subscribed
      * @param children The list of children who are currently subscribed
-     * @param clients The list of clients are are currently subscribed
-     * @return True.
+     * @return whether the topic has room for another child
      */
     @Deprecated
     public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
       return (children.length < (maxChildren - 1));
     }
   }
-  
-  /**
-   * Nicely departs.
-   * 
-   * You must notify this policy when you depart, or when a node nicely departs.
-   * 
-   * @author Jeff Hoye
-   *
-   */
-//  public class NiceDeparturePolicy extends DefaultScribePolicy {
-//    /**
-//     * These nodes have been marked dead by the application.  Avoid them in Anycasts.
-//     */
-//    TimerWeakHashMap<NodeHandle, Object> markedDead;
-//    
-//    /**
-//     * Dummy to hold in markedDead.
-//     */
-//    public static final Object OBJECT = new Object();
-//
-//    public NiceDeparturePolicy(Environment env) {
-//      super(env);
-//      markedDead = new TimerWeakHashMap<NodeHandle, Object>(env.getSelectorManager().getTimer(),300000);
-//    }
-//
-//    /**
-//     * Call this when you know a neighbor has nicely left, so we won't 
-//     * route messags to it any more.
-//     * @param neighbor
-//     */
-//    public void markDead(NodeHandle neighbor) {
-//      markedDead.put(neighbor, OBJECT);
-//    }
-//  public static final int REPLICAS_TO_NOTIFY = 24;
-//  /**
-//   * endpoint is supposed to fail if we ask for too many replicas... so just try to get as many as possible
-//   * @return
-//   */
-//  protected Iterable<NodeHandle> getReplicaSet() {
-//    for (int numReplicas = REPLICAS_TO_NOTIFY; numReplicas > 0; numReplicas--) {
-//      try {
-//        return endpoint.replicaSet(endpoint.getId(), numReplicas);         
-//      } catch (Exception e) {
-//        // try again
-//      }
-//    }
-//    return Collections.emptyList();
-//  }
-//
-//  }
 }
 

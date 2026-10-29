@@ -36,9 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 /*
  * Created on May 10, 2004
- *
- * To change the template for this generated file go to
- * Window>Preferences>Java>Code Generation>Code and Comments
  */
 package rice.pastry.messaging;
 
@@ -59,7 +56,8 @@ public class PastryObjectInputStream extends ObjectInputStream {
   protected PastryNode node;
 
   /**
-   * @param arg0
+   * @param stream the stream to read from
+   * @param node the node used to resolve node handles
    * @throws java.io.IOException
    */
   public PastryObjectInputStream(InputStream stream, PastryNode node)
@@ -73,7 +71,6 @@ public class PastryObjectInputStream extends ObjectInputStream {
 
   protected Object resolveObject(Object input) throws IOException {
     if (input instanceof NodeHandle) {
-//      System.out.println("POIS.resolveObject("+input+"@"+System.identityHashCode(input)+"):"+node);
       if (node != null) {
         // coalesce
         input = node.coalesce((NodeHandle) input);

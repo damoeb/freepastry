@@ -85,8 +85,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
   /**
    * Constructor.
    * 
-   * @param lh the local handle
-   * @param sm the security manager
+   * @param ln the local node
    * @param rt the routing table
    */
   public StandardRouteSetProtocol(PastryNode ln, RoutingTable rt) {

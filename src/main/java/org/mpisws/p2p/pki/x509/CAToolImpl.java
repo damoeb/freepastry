@@ -251,12 +251,6 @@ public class CAToolImpl implements CATool {
   }
   
   public static X509Certificate sign(String CN, PublicKey publicKey, Date expiryDate, long serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
-//    Date expiryDate = ...;               // time after which certificate is not valid
-//    BigInteger serialNumber = ...;       // serial number for certificate
-//    PrivateKey caKey = ...;              // private key of the certifying authority (ca) certificate
-//    X509Certificate caCert = ...;        // public key certificate of the certifying authority
-//    KeyPair keyPair = ...;               // public/private key pair that we are creating certificate for
-
     X500Principal subjectName = new X500Principal("CN="+CN);
 
     X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
@@ -280,7 +274,6 @@ public class CAToolImpl implements CATool {
     return sign(CN,publicKey,expiryDate,serialNumber,cert,keyPair.getPrivate());
   }
   
-//  public static final String CA_STORE_FILENAME = "ca-store";
   public static final String CA_STORE_PRIVATE = "private";
   /** No longer written: PKCS12 stores cannot hold a bare public key, it is taken from {@link #CA_STORE_CERT}. */
   public static final String CA_STORE_PUBLIC = "public";
@@ -385,7 +378,6 @@ public class CAToolImpl implements CATool {
       verifier.update(msg);
       System.out.println("verified:"+verifier.verify(signature));
   
-  //    if (USE_BOGUS) {
       if (true) {
         KeyPair bogusPair = generateKeyPair();
     

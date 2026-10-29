@@ -101,12 +101,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   
   Environment environment;
   
-  // these are shortcuts in the Java impl, they would all be true in the c++ impl, but in some cases it's more efficient if we can turn them off
-//  boolean useSendSign = false;  // true if we're sending the signature after the message
-//  boolean useSenderSeq = false;
-//  boolean useLogHashFlag = false;
-//  boolean useBeginInitialized = true;
-
   Object extInfo;
   
   public VerifierImpl(
@@ -115,7 +109,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       SecureHistory history, 
       Handle localHandle, 
       long firstEntryToReplay, 
-      Object extInfo) /* : ReplayWrapper() */ throws IOException {    
+      Object extInfo) throws IOException {    
     if (!(env.getSelectorManager() instanceof ReplaySM)) {
       throw new IllegalArgumentException("Environment.getSelectorManager() must be a ReplaySM, was a "+env.getSelectorManager().getClass());          
     }
@@ -129,7 +123,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     this.foundFault = false;
     this.nextEventIndex = firstEntryToReplay-1;
     this.initialized = false;
-//    if (useBeginInitialized) this.initialized = true;
     this.extInfo = extInfo;
     
     for (int i=0; i<256; i++)
@@ -152,7 +145,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     next = null;
     nextEventIndex++;
 
-//    unsigned char chash[transport.getHashSizeBytes()];
     try {
       next = history.statEntry(nextEventIndex);
     } catch (IOException ioe) {
@@ -170,14 +162,10 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     if (next.isHashed()) {
       // make the nextEvent only the content hash
       
-//      nextEvent = new SimpleInputBuffer(next.getContentHash());
-//      nextEventSize = transport.getHashSizeBytes();
-//      memcpy(nextEvent, chash, transport.getHashSizeBytes());
       if (logger.level <= Logger.FINE) logger.log("Fetched log entry #"+nextEventIndex+" (type "+next.getType()+", hashed, seq="+next.getSeq()+")");
     } else {
       // load the nextEvent from the file
       
-//      assert(nextEventSize < (int)sizeof(nextEvent));
       try {
         nextEvent = new SimpleInputBuffer(history.getEntry(nextEventIndex, next.getSizeInFile()));
       } catch (IOException ioe) {
@@ -186,7 +174,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return;
       }
       if (logger.level <= Logger.FINE) logger.log("Fetched log entry #"+nextEventIndex+" (type "+next.getType()+", size "+next.getSizeInFile()+" bytes, seq="+next.getSeq()+")");
-//      vdump(nextEvent, nextEventSize);
     }    
   }
   
@@ -266,9 +253,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       }
 
       case EVT_SEND : /* SEND events should have been handled by Verifier::send() */
-//        if (logger.level <= Logger.FINE) logger.log("Replay: Encountered EVT_SEND, waiting for node.");
         if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SEND evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
-//        transport->dump(2, nextEvent, next.getSizeInFile());
         foundFault = true;
         return false;
       case EVT_SOCKET_READ: {
@@ -294,9 +279,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         
         int msgLen = nextEvent.bytesRemaining();
 
-//        unsigned char *msgbuf = (unsigned char*) malloc(msglen);
-//        memcpy(msgbuf, &nextEvent[headerSize], msglen);
-        
         byte[] msgBytes = new byte[msgLen];
         nextEvent.read(msgBytes);
         ByteBuffer msgBuf = ByteBuffer.wrap(msgBytes);
@@ -315,7 +297,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         /* Deliver the message to the state machine */
         
         app.messageReceived(sender, msgBuf, null);
-//        receive(sender, msgBuf);
         break;
       case EVT_SIGN : /* SIGN events should have been handled by the preceding RECV */
         if (logger.level <= Logger.WARNING) logger.log("Replay: Spurious SIGN event; marking as invalid");
@@ -357,7 +338,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         
           /* Ask the state machine to do a checkpoint now ... */
         
-//          int maxlen = 1048576*4;
           SimpleOutputBuffer buf = new SimpleOutputBuffer();
           app.storeCheckpoint(buf);
           int actualCheckpointSize = buf.getWritten();
@@ -387,13 +367,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
               return false;
             }
           } else {            
-//            if (next.getSizeInFile() != transport.getHashSizeBytes()) {
-//              if (logger.level <= Logger.WARNING) logger.log("Replay: Checkpoint is hashed but has the wrong length?!? file:"+next.getSizeInFile()+" hashSize:"+transport.getHashSizeBytes());
-//              foundFault = true;
-//              return false;
-//            }
           
-//            unsigned char checkpointHash[transport.getHashSizeBytes()];
             byte[] checkpointHash = transport.hash(buf.getByteBuffer());
             if (!Arrays.equals(checkpointHash, next.getContentHash())) {
               if (logger.level <= Logger.WARNING) logger.log("Replay: Checkpoint is hashed, but does not match hash value in the log\n"+
@@ -415,7 +389,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         fetchNextEvent();
         break;
       case EVT_SOCKET_OPEN_INCOMING: {
-//        logger.log(next+" s:"+nextEvent.bytesRemaining());
         int socketId = nextEvent.readInt();
         Handle opener = peerreview.getHandleSerializer().deserialize(nextEvent);
         fetchNextEvent();
@@ -484,21 +457,16 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       Map<String, Object> options) {
     try {
 
-//  protected void sendMessage(Handle target, ByteBuffer message, MessageCallback<Handle, ByteBuffer> callback, int relevantLen) throws IOException {
     int msgLen = message.remaining();
     int pos = message.position();
     int lim = message.limit();
     
-//    assert(!datagram);
-
     int relevantLen = message.remaining();
     if (options != null && options.containsKey(PeerReview.RELEVANT_LENGTH)) {
       relevantLen = (Integer)options.get(PeerReview.RELEVANT_LENGTH);
     }
     
-//    char buf1[256], buf2[256];
     if (logger.level <= Logger.FINE) logger.log("Verifier::send("+target+", "+relevantLen+"/"+message.remaining()+" bytes)");
-    //vdump(message, msglen);
     
     // Sanity checks 
     
@@ -527,43 +495,18 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     
     if (next.isHashed()) {
       SimpleOutputBuffer buf = new SimpleOutputBuffer();
-//      // this code serializes the target to buf
-//      assert(relevantLen < 1024);
-//      //unsigned char buf[MAX_ID_SIZE+1+1024+transport.getHashSizeBytes()];
-//      int pos = 0;
       Identifier targetId = peerreview.getIdentifierExtractor().extractIdentifier(target);
       targetId.serialize(buf);
-//      buf.write(bb.array(), bb.position(), bb.remaining());
-//      target->getIdentifier()->write(buf, &pos, sizeof(buf));
-//      buf[pos++] = (relevantlen<msglen) ? 1 : 0;
       buf.writeBoolean(relevantLen<msgLen);
-//      if (relevantlen>0) {
-//        memcpy(&buf[pos], message, relevantlen);
-//        pos += relevantlen;
-//      }
-//      
-//      // this code serializes the message
       buf.write(message.array(), message.position(), relevantLen);
       
-//      assert(pos<(sizeof(buf)-transport.getHashSizeBytes()));
       if (relevantLen<msgLen) {        
-  // ugly; this should be an argument
-//        if (msglen == (relevantlen+transport.getHashSizeBytes()))
-//          memcpy(&buf[pos], &message[relevantlen], transport.getHashSizeBytes());
-//        else
         message.position(pos);
         message.limit(lim);
         byte[] hash = transport.hash(message);
-//          
-//        pos += transport.getHashSizeBytes();
       }
-//      
-//      // this code serializes the contentHash
-//      unsigned char chash[transport.getHashSizeBytes()];
-//      hash(chash, buf, pos);
       byte[] cHash = transport.hash(buf.getByteBuffer());
       if (!Arrays.equals(cHash,next.getContentHash())) {
-//      if (memcmp(chash, nextEvent, transport.getHashSizeBytes())) {
         if (logger.level <= Logger.WARNING) logger.log("Replay: SEND is hashed, but hash of predicted SEND entry does not match hash in the log");
         foundFault = true;
         return null;
@@ -578,12 +521,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
     // Are we sending to the same destination? 
     Handle logReceiver;
-//    try {
      logReceiver = peerreview.getHandleSerializer().deserialize(nextEvent);
-//    } catch (IllegalArgumentException iae) {
-//      if (logger.level <= Logger.WARNING) logger.log("Error deserializing event "+nextEventIndex+". send("+target+","+message+")");
-//      throw iae;
-//    }
     if (!logReceiver.equals(target)) {
       if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SEND to "+target+" during replay, but log shows SEND to "+logReceiver+"; marking as invalid");      
       // reset nextEvent so next time we parse this event it isn't nonsense
@@ -660,8 +598,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return null;        
       }
       
-//      nextEvent.read(loggedMsg);
-//      ByteBuffer loggedMsgBB = ByteBuffer.wrap(loggedMsg);
       if ((msgLen > 0) && !Arrays.equals(loggedMsg, sentMsg)) {
         if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay differs from message in the log");
         foundFault = true;
@@ -684,7 +620,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   }
   
   public long getNextEventTime() {
-//    logger.log("getNextEventTime() "+next);
     if (next == null) return -1;
     return next.getSeq()/1000000;
   }
@@ -693,7 +628,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     if (initialized && verifiedOK()) {
       if (next == null) return true;
     }
-//    logger.log("i:"+initialized+" v:"+verifiedOK()+" n:"+nextEvent);
     return false;
   }
   
@@ -713,7 +647,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       try {
         c = Class.forName(className);
       } catch (ClassNotFoundException cnfe) {
-        throw new RuntimeException("Couldn't find class"+className+" "+message);                  
+        throw new RuntimeException("Couldn't find class "+className+" "+message);                  
       }
       
       Class<?>[] parameterTypes = new Class<?>[1];
@@ -722,9 +656,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         Constructor<?> ctor = c.getConstructor(parameterTypes);
         IOException ioe = (IOException)ctor.newInstance(message);
         return ioe;
-//      } catch (NoSuchMethodException nsme) {
-//      } catch (IllegalAccessException iae) {        
-//      } catch (InvocationTargetException ite) {
       } catch (Exception e) {
         try {
           // no String constructor, fall back to the no-arg constructor (the message is lost)
@@ -732,16 +663,12 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
           IOException ioe = (IOException)ctor.newInstance();
           return ioe;
         } catch (Exception e2) {
-          throw new RuntimeException("Couldn't find constructor for"+className+" "+message);          
+          throw new RuntimeException("Couldn't find constructor for "+className+" "+message);          
         }
       }
-      // TODO: make sure this is an IOException
-//      if (c.getInterfaces()
-      
-      
+      // TODO: check up front that className is an IOException; today a ClassCastException surfaces as "Couldn't find constructor"
     default: throw new RuntimeException("Unknown EX_TYPE:"+exType);
     }
-//    return new ClosedChannelException("Replay Exception"); //new IOException();
   } 
   
 
@@ -752,7 +679,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   public SocketRequestHandle<Handle> openSocket(final Handle i, SocketCallback<Handle> deliverSocketToMe, final Map<String, Object> options) {
     try {
       int socketId = openSocket(i);
-//      logger.log("openSocket("+i+"):"+socketId);
       ReplaySocket<Handle> socket = new ReplaySocket<Handle>(i,socketId,this,options);
       socket.setDeliverSocketToMe(deliverSocketToMe);
       sockets.put(socketId, socket);
@@ -789,21 +715,17 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   }
   
   protected void socketOpened(int socketId) throws IOException {
-//    logger.log("socketOpened("+socketId+")");
     sockets.get(socketId).socketOpened();
   }
 
   protected void socketException(int socketId, IOException ioe) throws IOException {
-    //logger.log("socketException("+socketId+")");
-//    sockets.get(socketId).receiveException(new IOException("Replay Exception"));
     sockets.get(socketId).receiveException(ioe);
-    // TODO Auto-generated method stub
     
   }  
 
   /**
    * Return the new socketId
-   * @param i
+   * @param target
    * @return the new socketId, Integer.MIN_VALUE for an error
    */
   public int openSocket(Handle target) throws IOException {
@@ -841,7 +763,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
    * @return number of bytes read
    */
   public int readSocket(int socketId, ByteBuffer dst) throws IOException {
-//    logger.log("readSocket("+socketId+","+dst+")");
     if (next == null) {
       if (logger.level <= Logger.WARNING) logger.log("Replay: ReadSocket event after end of segment; marking as invalid");
       foundFault = true;

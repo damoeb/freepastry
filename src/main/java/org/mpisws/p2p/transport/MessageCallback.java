@@ -41,8 +41,8 @@ package org.mpisws.p2p.transport;
  * 
  * @author Jeff Hoye
  *
- * @param <MessageType>
- * @param <E>
+ * @param <Identifier> the type of the destination
+ * @param <MessageType> the type of the message
  */
 public interface MessageCallback<Identifier, MessageType> {
   /**

@@ -48,7 +48,7 @@ import java.net.*;
  * <p/>You hear about network input via <code>dataReceived()</code> and network output via
  * <code>dataSent()</code>.  
  *
- * <p/>channelOpened() has a reason for opening the chanel.  The reason falls under 
+ * <p/>channelOpened() has a reason for opening the channel.  The reason falls under 
  * matrix of reasons:
  * <ul>
  *  <li>It may have been initiated locally, or be accepting of the socket from a
@@ -68,7 +68,7 @@ import java.net.*;
  * </ol>
  * 
  * <p/>the <code>dataSent()</code>/<code>dataReceived()</code> methods include a wireType.  These tell you if the 
- * data was TCP/UDP and wether it was part of the SourceRoute
+ * data was TCP/UDP and whether it was part of the SourceRoute
  *
  * @version $Id: NetworkListener.java 3613 2007-02-15 14:45:14Z jstewart $
  *

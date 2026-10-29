@@ -43,8 +43,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
- * @(#) MutliringIdRange.java
- *
  * Represents a contiguous range of Ids in a multiring heirarchy.
  * 
  * @version $Id: MultiringIdRange.java 3613 2007-02-15 14:45:14Z jstewart $
@@ -94,7 +92,6 @@ public class MultiringIdRange implements IdRange {
     if (key instanceof RingId) {
       RingId rkey = (RingId) key;
       if (!rkey.getRingId().equals(this.ringId)) {        
-        //System.err.println("ERROR: Testing membership for keys in a different ring (got id " + key + "), range " + this);
         return false;
       }
       
@@ -168,7 +165,7 @@ public class MultiringIdRange implements IdRange {
   /**
    * Determines equality
    *
-   * @param other To compare to
+   * @param o To compare to
    * @return Equals
    */
   public boolean equals(Object o) {

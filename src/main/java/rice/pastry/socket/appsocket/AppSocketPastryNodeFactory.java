@@ -104,13 +104,11 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
   public AppSocketPastryNodeFactory(NodeIdFactory nf, int startPort,
       Environment env) throws IOException {
     super(nf, startPort, env);
-    // TODO Auto-generated constructor stub
   }
 
   public AppSocketPastryNodeFactory(NodeIdFactory nf, InetAddress bindAddress,
       int startPort, Environment env) throws IOException {
     super(nf, bindAddress, startPort, env);
-    // TODO Auto-generated constructor stub
   }
 
   public static final String STORE_SOCKET = "store_socket";
@@ -146,13 +144,11 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         final InetSocketAddress i,
         final SocketCallback<InetSocketAddress> deliverSocketToMe,
         final Map<String, Object> options) {
-//      logger.log("openSocket("+i+","+options+")");
 
       return wtl.openSocket(i, new SocketCallback<InetSocketAddress>() {
       
         public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
             P2PSocket<InetSocketAddress> sock) {
-//          logger.log("openSocket2("+i+","+options+")");
 
           SocketManager sa = (SocketManager)sock;
           if (options.containsKey(STORE_SOCKET)) {
@@ -163,7 +159,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
       
         public void receiveException(SocketRequestHandle<InetSocketAddress> s,
             Exception ex) {
-//          logger.logException("receiveException("+s+")",ex);
           deliverSocketToMe.receiveException(s,ex);
         }
       
@@ -174,7 +169,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         InetSocketAddress i, ByteBuffer m,
         MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
-      //logger.log("sendMessage("+m+","+options+")");
       return wtl.sendMessage(i, m, deliverAckToMe, options);
     }
 
@@ -198,7 +192,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
     }
 
     public void destroy() {
-      // TODO Auto-generated method stub
       
     }
   }
@@ -285,7 +278,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
                 // return the socket
                 SocketManager sm = socketTable.remove(myUid); 
                 SocketChannel ret = sm.getSocketChannel();
-//                System.out.println(ret+" "+ret.isRegistered()+" "+ret.validOps());
                 c.receiveResult(ret);
               }          
             }, options);
@@ -349,7 +341,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
           public void receiveException(
               SocketRequestHandle<TransportLayerNodeHandle<MultiInetSocketAddress>> s,
               Exception ex) {
-            // TODO Auto-generated method stub
         
           }
         
@@ -402,30 +393,25 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
             public void addLivenessListener(
                 LivenessListener<SourceRoute<MultiInetSocketAddress>> name) {
-              // TODO Auto-generated method stub
               
             }
 
             public boolean checkLiveness(SourceRoute<MultiInetSocketAddress> i,
                 Map<String, Object> options) {
-              // TODO Auto-generated method stub
               return false;
             }
 
             public void clearState(SourceRoute<MultiInetSocketAddress> i) {
-              // TODO Auto-generated method stub
               
             }
 
             public int getLiveness(SourceRoute<MultiInetSocketAddress> i,
                 Map<String, Object> options) {
-              // TODO Auto-generated method stub
               return LivenessListener.LIVENESS_ALIVE;
             }
 
             public boolean removeLivenessListener(
                 LivenessListener<SourceRoute<MultiInetSocketAddress>> name) {
-              // TODO Auto-generated method stub
               return false;
             }};
         }
@@ -434,7 +420,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
             public void setLiveness(SourceRoute<MultiInetSocketAddress> i,
                 int liveness, Map<String, Object> options) {
-              // TODO Auto-generated method stub
               
             }};
         }
@@ -443,19 +428,16 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
             public void addPingListener(
                 PingListener<SourceRoute<MultiInetSocketAddress>> name) {
-              // TODO Auto-generated method stub
               
             }
 
             public boolean ping(SourceRoute<MultiInetSocketAddress> i,
                 Map<String, Object> options) {
-              // TODO Auto-generated method stub
               return false;
             }
 
             public boolean removePingListener(
                 PingListener<SourceRoute<MultiInetSocketAddress>> name) {
-              // TODO Auto-generated method stub
               return false;
             }};
         }    

@@ -48,7 +48,6 @@ import rice.p2p.util.MathUtils;
  * MathUtils unit tests
  * 
  * @author jstewart
- * @param argv The command line arguments
  */
 public class MathUtilsUnit {
   
@@ -100,11 +99,6 @@ public class MathUtilsUnit {
         int l = r.nextInt();
         byte[] ar = MathUtils.intToByteArray(l);
         int res = MathUtils.byteArrayToInt(ar);
-        /*
-        long l = r.nextLong();
-        byte[] ar = longToByteArray(l);
-        long result = byteArrayToLong(ar);
-        */
 
         if (res != l) {
           passed = false;

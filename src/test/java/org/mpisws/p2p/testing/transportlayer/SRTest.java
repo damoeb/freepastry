@@ -103,7 +103,6 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     int startPort = START_PORT;
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();    
-//    InetAddress addr = InetAddress.getByName("10.0.0.10");
     
     alice = buildTL("alice", addr, startPort, env);
     bob = buildTL("bob", addr, startPort+1, env);
@@ -157,7 +156,6 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     SourceRouteTap<MultiInetSocketAddress> tap = new SourceRouteTap<MultiInetSocketAddress>(){    
       public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
-//          System.out.println("socketOpened("+path+","+a+","+b+")");
           opened.add(new Triplet(path, a, b));
           lock.notify();
         }
@@ -237,7 +235,6 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
       }
     
       public void receivedMessage(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path) {
-//        System.out.println("receivedMessage("+m+","+path+"):"+m.remaining());        
         synchronized(lock) {
           taptupels.add(new TapTupel(m,path));
           lock.notify(); 
@@ -260,11 +257,6 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     
     // verify that we got the tap info, and it is all correct
     assertTrue(taptupels.size() == 1);
-//    ByteBuffer m = taptupels.get(0).m;
-//    assertTrue("m.remaining() = "+m.remaining()+" expected "+sentBytes.length, m.remaining() == sentBytes.length);
-//    byte[] result = new byte[m.remaining()];
-//    m.get(result);
-//    assertTrue(Arrays.equals(result, sentBytes));
     assertTrue(taptupels.get(0).path.equals(getIdentifier(alice(), bob())));
   }
 

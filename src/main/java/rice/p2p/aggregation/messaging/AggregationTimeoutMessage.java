@@ -50,16 +50,8 @@ public class AggregationTimeoutMessage extends AggregationMessage {
     super(uid, local, local.getId());
   }
 
-//  public AggregationTimeoutMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
-//    super(buf, endpoint);
-//  }
-
   public String toString() {
     return "[AggregationTimeoutMessage "+getUID()+"]";
   }
-
-//  public short getType() {
-//    return TYPE;
-//  }
 }
 

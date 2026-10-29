@@ -58,7 +58,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
    * so this is the timeout for it to increase, you could set this to infinity, 
    * but that may be bad because it doesn't account for intermediate link failures
    */
-   public int PROX_TIMEOUT;// = 60*60*1000;
+   public int PROX_TIMEOUT;
 
    /**
     * Holds only pending DeadCheckers
@@ -131,9 +131,9 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     
     protected long lastPingTime = Integer.MIN_VALUE; // we don't want underflow, but we don't want this to be zero either
     /**
-     * Constructor - builds a route manager given the route
+     * Constructor - builds a manager for the given identifier
      *
-     * @param route The route
+     * @param route The remote identifier
      */
     public EntityManager(Identifier route) {
       if (route == null) throw new IllegalArgumentException("route is null");
@@ -152,11 +152,10 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     }
 
     /**
-     * Method which returns the last cached proximity value for the given address.
+     * Method which returns the last cached proximity value for this identifier.
      * If there is no cached value, then DEFAULT_PROXIMITY is returned.
      *
-     * @param address The address to return the value for
-     * @return The ping value to the remote address
+     * @return The ping value to the remote identifier
      */
     public int proximity() {
       return proximity;

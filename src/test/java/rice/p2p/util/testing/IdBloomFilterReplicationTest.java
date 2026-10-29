@@ -53,10 +53,10 @@ public class IdBloomFilterReplicationTest {
   public static int NUM = 10000;
   public static int NUM_RUNS = 100;
   
-  public static RandomSource random = null; //new SimpleRandomSource();
-  public static IdFactory pFactory = null;// = new PastryIdFactory();
-  public static IdFactory factory = null;// = new MultiringIdFactory(pFactory.buildRandomId(random), pFactory);
-  public static GCIdFactory gFactory = null; //new GCIdFactory(factory);
+  public static RandomSource random = null;
+  public static IdFactory pFactory = null;
+  public static IdFactory factory = null;
+  public static GCIdFactory gFactory = null;
   
   public static Id[] SHARED = new Id[NUM];
   public static Id[] EXTRA = new Id[2 * NUM];
@@ -69,13 +69,7 @@ public class IdBloomFilterReplicationTest {
     pFactory = new PastryIdFactory(env);
     factory = new MultiringIdFactory(pFactory.buildRandomId(random), pFactory);
     gFactory = new GCIdFactory(factory);
- //   for (int bpk=7; bpk<10; bpk++) {
- //     for (int hash=2; hash<5; hash++) {
- //       IdBloomFilter.NUM_BITS_PER_KEY = bpk;
- //       IdBloomFilter.NUM_HASH_FUNCTIONS = hash;
-       doConfig();
- //     }
- //   }
+    doConfig();
   }
 
   public static void buildShared() {
@@ -100,7 +94,6 @@ public class IdBloomFilterReplicationTest {
     
     for (int i=0; i<NUM; i += NUM/10) {
       System.out.print(i + "\t\t");
-      //for (int j=0; j<2*NUM; j += NUM/10) 
         System.out.print(doRun(i, 10000) + "\t");
 
       System.out.println();

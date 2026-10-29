@@ -79,9 +79,7 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
     running = true;
 
     try {
-     // long start = environment.getTimeSource().currentTimeMillis();
       final R result = doWork();
-     // System.outt.println("PT: " + (environment.getTimeSource().currentTimeMillis() - start) + " " + toString());
       selectorManager.invoke(new Runnable() {
         public void run() {
           returnResult(result);

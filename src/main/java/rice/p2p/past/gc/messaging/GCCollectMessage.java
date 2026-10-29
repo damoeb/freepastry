@@ -47,8 +47,6 @@ import rice.p2p.past.*;
 import rice.p2p.past.messaging.*;
 
 /**
- * @(#) GCCollectMessage.java
- *
  * This class represents a message which tells GC Past that it's time to
  * delete all the expired objects in the local store.
  *

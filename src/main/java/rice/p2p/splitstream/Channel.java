@@ -49,9 +49,9 @@ import rice.p2p.scribe.*;
  * stripes themselves, and one of the stripe is the primary stripe for this channel.
  * A stripe whose topicId matches some prefix with local node id, then it becomes its primary stripe.
  * A channelId uniquely identifies a channel. Number of stripes is obtained by pow(2, STRIPE_BASE), so for
- * STRIPE_BASE = 4, it is 16. Stripe identifiers are obtained by replacing first digit by every possible value of 
- * a digit and second digit by 8. So, if channelId is <0x1AB88..>, then stripe id's generated are <0x08B88..>,
- * <0x18B88..>, <0x28B88..> etc. 
+ * STRIPE_BASE = 4, it is 16. Stripe identifiers are obtained by replacing the first STRIPE_BASE bits of the
+ * channelId by every possible value. So, for STRIPE_BASE = 4, if channelId is {@code 0x1AB88..}, then the stripe
+ * ids generated are {@code 0x0AB88..}, {@code 0x1AB88..}, {@code 0x2AB88..} etc. 
  *
  * @version $Id: Channel.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Ansley Post
@@ -160,7 +160,8 @@ public class Channel {
   /**
    * Creates and returns the Ids associated with the provided channelId
    *
-   * @param channelId The id of the channel
+   * @param id The id of the channel
+   * @param factory The factory used to build the stripe ids
    * @return The array of stripeIds based on this channelId
    */
   protected StripeId[] generateStripeIds(ChannelId id, IdFactory factory) {

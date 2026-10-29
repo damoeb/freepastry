@@ -101,20 +101,18 @@ public interface ScribeMultiClient extends ScribeClient {
   public void subscribeFailed(Topic topic);
 
   /**
-   * Informs the client that a subscribe on the given topic failed
+   * Informs the client that a subscribe on the given topics failed
    * - the client should retry the subscribe or take appropriate
    * action.
    *
-   * @param topic The topic which the subscribe failed on
+   * @param topics The topics which the subscribe failed on
    */
   public void subscribeFailed(Collection<Topic> topics);
 
   /**
-   * Informs the client that a subscribe on the given topic failed
-   * - the client should retry the subscribe or take appropriate
-   * action.
+   * Informs the client that a subscribe on the given topics succeeded.
    *
-   * @param topic The topic which the subscribe failed on
+   * @param topics The topics which the subscribe succeeded on
    */
   public void subscribeSuccess(Collection<Topic> topics);
 

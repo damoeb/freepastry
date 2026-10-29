@@ -75,8 +75,8 @@ public interface SecureHistory extends PeerReviewConstants {
 
   /**
    * Sets the next sequence number to be used. The PeerReview library typically
-   * uses the format <xxxx...xxxyyyy>, where X is a timestamp in microseconds
-   * and Y a sequence number. The sequence numbers need not be contigious
+   * uses the format xxxx...xxxyyyy, where X is a timestamp in microseconds
+   * and Y a sequence number. The sequence numbers need not be contiguous
    * (and usually aren't) 
    */
   public boolean setNextSeq(long nextSeq); 
@@ -88,7 +88,7 @@ public interface SecureHistory extends PeerReviewConstants {
   public void close() throws IOException;
  
   
-  public long findSeq(long seq) throws IOException;// { return findSeqOrHigher(seq, false); };
+  public long findSeq(long seq) throws IOException;
 
   /**
    * Look up a given sequence number, or the first sequence number that is 
@@ -116,7 +116,6 @@ public interface SecureHistory extends PeerReviewConstants {
    * Use findSeqOrHigher() to get these if only sequence numbers are known. 
    */
   public LogSnippet serializeRange(long idxFrom, long idxTo, HashPolicy hashPolicy) throws IOException;
-//  public boolean serializeRange(long idxFrom, long idxTo, HashPolicy hashPolicy, OutputBuffer outfile) throws IOException;
 
   /**
    *  Retrieve information about a given record 

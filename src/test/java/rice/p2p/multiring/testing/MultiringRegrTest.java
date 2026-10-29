@@ -261,23 +261,17 @@ public class MultiringRegrTest {
   // ----- INTERNAL METHODS -----
 
   /**
-   * In case we're using the direct simulator, this method
-   * simulates the message passing.
+   * Gives the nodes 300 ms to pass messages.
    */
   protected void simulate() {
     try { Thread.sleep(300); } catch (InterruptedException ie) {}
-//    if (PROTOCOL == PROTOCOL_DIRECT) {
-//      while (simulator.simulate()) {}
-//    } else {
-//      pause(500);
-//    }
   }
 
   /**
-   * Method which creates a non-gateway node, given it's node
-   * number
+   * Method which creates a non-gateway node
    *
-   * @param num The number of creation order
+   * @param ringId The ring to create the node in
+   * @param bootstrap The node to boot off of, or null to start a new ring
    * @return The created node
    */
   protected MultiringNode createNode(Id ringId, MultiringNode bootstrap) {
@@ -306,10 +300,11 @@ public class MultiringRegrTest {
   }
   
   /**
-   * Method which creates a gateway node, given it's node
-   * number
+   * Method which creates a gateway node
    *
-   * @param num The number of creation order
+   * @param existing The existing node in another ring; the new node shares its node id and collection
+   * @param ringId The ring to create the node in
+   * @param bootstrap The node to boot off of, or null to start a new ring
    * @return The created node
    */
   protected MultiringNode createNode(MultiringNode existing, Id ringId, MultiringNode bootstrap) {
@@ -352,8 +347,6 @@ public class MultiringRegrTest {
     if (PROTOCOL == PROTOCOL_DIRECT) {
       return ((PastryNode) bootstrap).getLocalHandle();
     } else {
-//      InetSocketAddress address = new InetSocketAddress(BOOTSTRAP_HOST, BOOTSTRAP_PORT);
-//      return ((DistPastryNodeFactory) factory).getNodeHandle(((DistNodeHandle) ((DistPastryNode) bootstrap).getLocalHandle()).getAddress());
       return ((SocketPastryNodeFactory) factory).getNodeHandle(((SocketNodeHandle) ((PastryNode) bootstrap).getLocalHandle()).eaddress.getInnermostAddress());
     }
   }
@@ -369,13 +362,11 @@ public class MultiringRegrTest {
   }
 
   /**
-   * Method which kills the specified node
+   * Does nothing: killing nodes is not implemented, and no test calls this.
    *
    * @param n The node to kill
    */
   protected void kill(int n) {
- //   if (PROTOCOL == PROTOCOL_DIRECT)
- //     simulator.setAlive((rice.pastry.NodeId) nodes[n].getId(), false);
   }
   
   /**
@@ -667,11 +658,6 @@ public class MultiringRegrTest {
       if (args[i].equals("-protocol") && i+1 < args.length) {
         String s = args[i+1];
 
-//        if (s.equalsIgnoreCase("wire"))
-//          PROTOCOL = DistPastryNodeFactory.PROTOCOL_WIRE;
-//        else if (s.equalsIgnoreCase("rmi"))
-//          PROTOCOL = DistPastryNodeFactory.PROTOCOL_RMI;
-//        else 
           if (s.equalsIgnoreCase("socket"))
           PROTOCOL = DistPastryNodeFactory.PROTOCOL_SOCKET;
         else if (s.equalsIgnoreCase("direct"))

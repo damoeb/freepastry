@@ -45,7 +45,6 @@ import java.util.Map;
  * @author Jeff Hoye
  *
  * @param <Identifier> the type of identifier at this layer
- * @param <E> the types of exceptions to expect
  */
 public interface ErrorHandler<Identifier> {
   /**

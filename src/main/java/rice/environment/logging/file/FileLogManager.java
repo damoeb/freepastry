@@ -73,42 +73,41 @@ public class FileLogManager extends SimpleLogManager {
   }
   
   /**
-   * Convienience constructor.
+   * Convenience constructor.
    * 
-   * Defauts to System.out as the stream, and SimpleTimeSource as the timesource.
+   * Defaults to the file named by the fileLogManager_* parameters as the stream, and SimpleTimeSource as the timesource.
    * 
-   * @param minPriority the minimum priority to print.
+   * @param params the parameters, which also hold the log levels and file names
    */  
   public FileLogManager(Parameters params) {
     this(getDefaultPrintStream(params), new SimpleTimeSource(), params);
   }
   
   /**
-   * Convienience constructor.
+   * Convenience constructor.
    * 
-   * Defauts to SimpleTimeSource as the timesource.
+   * Defaults to SimpleTimeSource as the timesource.
    * 
    * @param stream the stream to write to
-   * @param minPriority the minimum priority to print
+   * @param params the parameters, which also hold the log levels and file names
    */
   public FileLogManager(PrintStream stream, Parameters params) {
     this(stream, new SimpleTimeSource(), params);
   }
   
   /**
-   * Convienience constructor.
+   * Convenience constructor.
    * 
-   * Defauts to System.out as the stream.
+   * Defaults to the file named by the fileLogManager_* parameters as the stream.
    * 
    * @param timeSource the timesource to get times from
-   * @param minPriority the minimum priority to print
+   * @param params the parameters, which also hold the log levels and file names
    */
   public FileLogManager(TimeSource timeSource, Parameters params) {
     this(getDefaultPrintStream(params), timeSource, params);
   }
   
   private static PrintStream getDefaultPrintStream(Parameters params) {
-    // TODO Auto-generated method stub
     return getPrintStream(
         params.getString("fileLogManager_filePrefix"),
         params.getString("fileLogManager_defaultFileName"),
@@ -123,7 +122,6 @@ public class FileLogManager extends SimpleLogManager {
       newPS = new PrintStream(new FileOutputStream(fname,append));
     } catch (IOException ioe) {
       throw new RuntimeException(ioe); 
-//      ioe.printStackTrace(newPS);
     }
     return newPS;
   }

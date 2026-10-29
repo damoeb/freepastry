@@ -60,7 +60,7 @@ public class SimpleLogManager extends AbstractLogManager implements CloneableLog
    * 
    * @param stream the stream to write to
    * @param timeSource the timesource to get times from
-   * @param minPriority the minimum priority to print
+   * @param params the parameters, which also hold the log levels
    */
   public SimpleLogManager(PrintStream stream, TimeSource timeSource, Parameters params) {
     this(stream, timeSource, params, "", null);  
@@ -84,35 +84,35 @@ public class SimpleLogManager extends AbstractLogManager implements CloneableLog
   
   
   /**
-   * Convienience constructor.
+   * Convenience constructor.
    * 
-   * Defauts to System.out as the stream, and SimpleTimeSource as the timesource.
+   * Defaults to System.out as the stream, and SimpleTimeSource as the timesource.
    * 
-   * @param minPriority the minimum priority to print.
+   * @param params the parameters, which also hold the log levels
    */  
   public SimpleLogManager(Parameters params) {
     this(null, new SimpleTimeSource(), params);
   }
   
   /**
-   * Convienience constructor.
+   * Convenience constructor.
    * 
-   * Defauts to SimpleTimeSource as the timesource.
+   * Defaults to SimpleTimeSource as the timesource.
    * 
    * @param stream the stream to write to
-   * @param minPriority the minimum priority to print
+   * @param params the parameters, which also hold the log levels
    */
   public SimpleLogManager(PrintStream stream, Parameters params) {
     this(stream, new SimpleTimeSource(), params);
   }
   
   /**
-   * Convienience constructor.
+   * Convenience constructor.
    * 
-   * Defauts to System.out as the stream.
+   * Defaults to System.out as the stream.
    * 
    * @param timeSource the timesource to get times from
-   * @param minPriority the minimum priority to print
+   * @param params the parameters, which also hold the log levels
    */
   public SimpleLogManager(TimeSource timeSource, Parameters params) {
     this(null, timeSource, params);

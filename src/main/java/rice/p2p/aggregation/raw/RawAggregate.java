@@ -78,14 +78,6 @@ public class RawAggregate extends Aggregate implements RawGCPastContent {
     byte[] bytes = null;
     int numBytes = 0;
     try {
-//      ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-//      ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
-//
-//      objectStream.writeObject(components);
-//      objectStream.writeObject(pointers);
-//      objectStream.flush();
-//
-//      bytes = byteStream.toByteArray();
       SimpleOutputBuffer buf = new SimpleOutputBuffer();
       serializeHelper(buf);
       bytes = buf.getBytes();      

@@ -76,8 +76,6 @@ import rice.pastry.transport.PMessageReceipt;
 import rice.selector.SelectorManager;
 
 /**
- * TODO: make not abstract
- * 
  * @author Jeff Hoye
  *
  */
@@ -148,41 +146,6 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     
   }
 
-  /**
-   * If this is going to cause an infinite loop, just drop the message.
-   * 
-   * The infinite loop is caused when the next hop is the destination of the message, and is NATted.
-   * 
-   * ... and we're not connected?
-   * 
-   */
-//  @Override
-//  public void receiveMessage(Message msg) {
-//    if (msg instanceof RouteMessage) {
-//      RouteMessage rm = (RouteMessage)msg;
-//      try {
-////        Message internalMsg = (Message)rm.unwrap(getDeserializer());
-////      if (internalMsg instanceof OpenChannelMsg) {
-////        OpenChannelMsg ocm = (OpenChannelMsg)internalMsg;
-////        if (rm.getNextHop().equals(rm.getDestinationHandle())) {
-////          // this isn't going to work, we are routing to open a connection, but directly to the node in question
-////          throw new IllegalStateException("Routing "+rm+", next hop and destination are "+rm.getNextHop()+" "+thePastryNode);
-////          
-////          // there could also be some kind of oscillation between 2+ routes, which this wouldn't cover
-////        }
-////      }
-//      // if the next hop is no good..., drop it
-////      if (rm.getNextHop() )
-////        rm.sendFailed(e);
-//        super.receiveMessage(msg);
-//      } catch (IOException ioe) {
-//        // couldn't deserialize the internal message
-//      }
-//    } else {
-//      super.receiveMessage(msg);
-//    }
-//  }
-  
   @Override
   public void messageForAppl(Message msg) {
     if (msg instanceof ByteBufferMsg) {
@@ -193,11 +156,6 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       } catch (IOException ioe) {
         if (logger.level <= Logger.WARNING) logger.logException("dropping "+bbm, ioe);
       }
-      // TODO: Get a reference to the TL... is this an interface?  Should it be?
-      // TODO: Deliver this to the TL.
-      
-  //    tl.messageReceived();
-  //    throw new RuntimeException("Not implemented.");
       return;
     }
     if (msg instanceof PilotForwardMsg) {
@@ -259,9 +217,6 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));    
     rm.setDestinationHandle(target);
 
-    // don't reuse the incoming options, it will confuse things
-//    rm.setTLOptions(null);
-    
     if (logger.level <= Logger.FINER) logger.log("openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+") sending via "+rm);      
     
     // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
@@ -286,15 +241,6 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         }
       });
     }
-    
-//    Map<String, Object> rOptions;
-//    if (options == null) {
-//      rOptions = new HashMap<String, Object>(); 
-//    } else {
-//      rOptions = new HashMap<String, Object>(options);
-//    }
-//    rOptions.put(PriorityTransportLayer.OPTION_PRIORITY, pm.getPriority());
-////    logger.log("NumOptions = "+rOptions.size());
     
     rm.setTLOptions(options);
     
@@ -321,7 +267,6 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     ByteBufferMsg msg = new ByteBufferMsg(m, thePastryNode.getLocalHandle(), priority, getAddress());
     
     if (options.containsKey(RendezvousTransportLayerImpl.OPTION_USE_PILOT)) {
-//      if (true) throw new RuntimeException("Not Implemented.");
       RendezvousSocketNodeHandle pilot = (RendezvousSocketNodeHandle)options.get(RendezvousTransportLayerImpl.OPTION_USE_PILOT);
       if (logger.level <= Logger.FINER) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+pilot);      
       final MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer> ret = 
@@ -342,7 +287,6 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
             i.getNodeId(),
             msg,
           (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));    
-  //    rm.setPrevNode(thePastryNode.getLocalHandle());
       rm.setDestinationHandle(i);
   
       rm.setTLOptions(options);
@@ -383,15 +327,6 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
           }
         });
       }
-      
-  //    Map<String, Object> rOptions;
-  //    if (options == null) {
-  //      rOptions = new HashMap<String, Object>(); 
-  //    } else {
-  //      rOptions = new HashMap<String, Object>(options);
-  //    }
-  //    rOptions.put(PriorityTransportLayer.OPTION_PRIORITY, pm.getPriority());
-  ////    logger.log("NumOptions = "+rOptions.size());
       
       rm.setTLOptions(options);
       

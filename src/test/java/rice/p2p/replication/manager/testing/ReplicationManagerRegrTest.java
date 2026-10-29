@@ -48,7 +48,7 @@ import rice.p2p.commonapi.testing.CommonAPITest;
 import rice.p2p.replication.manager.*;
 
 /**
- * @(#) ReplicationRegrTest.java Provides regression testing for the replication manager service using distributed
+ * Provides regression testing for the replication manager service using distributed
  * nodes.
  *
  * @version $Id: ReplicationManagerRegrTest.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -90,14 +90,10 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
   /**
    * Usage: ReplicationRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (rmi|wire)]
    * [-help]
-   *
-   * @param args DESCRIBE THE PARAMETER
    */
   public static void main(String args[]) throws IOException {
     Environment env = parseArgs(args);
     Parameters param = env.getParameters();
-//    param.setString("loglevel","ALL");
-//    param.setBoolean("environment_logToFile",true);
     param.setString("fileLogManager_filePrefix","retest_");
     param.setString("fileLogManager_fileSuffix",".log");
     ReplicationManagerRegrTest test = new ReplicationManagerRegrTest(env);
@@ -386,8 +382,6 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
   }
 
   /**
-   * DESCRIBE THE CLASS
-   *
    * @version $Id: ReplicationManagerRegrTest.java 4654 2009-01-08 16:33:07Z jeffh $
    * @author amislove
    */
@@ -425,20 +419,17 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     }
 
     public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command) {
-      // XXX we don't test this new functionality yet
+      // TODO: existsInOverlay() and reInsert() are not tested yet
       command.receiveResult(Boolean.TRUE);
     }
 
     public void reInsert(Id id, Continuation<? super Boolean, Exception> command) {
-      // XXX we don't test this new functionality yet
+      // TODO: existsInOverlay() and reInsert() are not tested yet
       command.receiveResult(Boolean.TRUE);
     }
     
     public String toString() {
       String s = "TRMC:"+node;
-//      for (int i = 0; i < 4; i++) {
-//        s+=" r"+i+":"+endpoint.range(node.getLocalNodeHandle(),i,node.getLocalNodeHandle().getId(), true); 
-//      }
       return s;
     }
   }

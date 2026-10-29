@@ -115,7 +115,6 @@ public class PRNonconform1 extends PRRegressionTest {
       @Override
       public void messageReceived(HandleImpl i, ByteBuffer m,
           Map<String, Object> options) throws IOException {
-//        if (player.localHandle.id.id != 2) logger.logException("accepted illegal message", new Exception("stack trace"));
         if (logger.level <= Logger.INFO) logger.log("Message received: "+MathUtils.toBase64(m.array()));
       }
       
@@ -138,11 +137,6 @@ public class PRNonconform1 extends PRRegressionTest {
     };
   }
 
-//  @Override
-//  public void buildPlayers(Environment env) throws Exception {
-//    super.buildPlayers(env);
-//  }
-    
   public static void main(String[] args) throws Exception {
     runMain(new PRNonconform1());
   }

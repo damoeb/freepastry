@@ -134,7 +134,6 @@ public class SourceRouteManagerImpl<Identifier> implements
     this.localAddress = tl.getLocalIdentifier().getFirstHop();    
     tl.setCallback(this);
     livenessProvider.addLivenessListener(this);
-    //    addressManagers = new TimerWeakHashMap<Identifier, AddressManager>(environment.getSelectorManager().getTimer(),30000);
     
     addressManagers = new HashMap<Identifier, AddressManager>();
     Parameters p = environment.getParameters();
@@ -148,10 +147,9 @@ public class SourceRouteManagerImpl<Identifier> implements
   /**
    * Method which sends a message across the wire.
    *
-   * @param message The message to send
-   * @param address The address to send the message to
+   * @param i The address to send the message to
+   * @param m The message to send
    */
-//  public void send(final Identifier address, final SocketBuffer message) {    
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(
       Identifier i, 
       ByteBuffer m, 
@@ -166,20 +164,14 @@ public class SourceRouteManagerImpl<Identifier> implements
    *
    * @param address The remote address
    */
-//  Map<Identifier, Identifier> delmeAddrManagers = new HashMap<Identifier, Identifier>();
   protected AddressManager getAddressManager(Identifier address) {
     synchronized(addressManagers) {
       AddressManager manager = addressManagers.get(address); 
       
       if (manager == null) {
-//        delmeAddrManagers.put(address, address);
         manager = new AddressManager(address);
         addressManagers.put(address, manager);
       } else {
-//        Identifier key = delmeAddrManagers.get(address);
-//        if (key != address) {
-//          throw new IllegalArgumentException("key != address");
-//        }
       }
       
       return manager;
@@ -204,30 +196,11 @@ public class SourceRouteManagerImpl<Identifier> implements
   }
   
   /**
-   * Should be called while synchronized on nodeHandles
-   * 
-   * @param address
-   * @param manager
-   */
-//  public AddressManager putAddressManager(Identifier address,
-//      boolean search) {
-//
-//    AddressManager manager = addressManagers.get(address);
-//    if (manager == null) {
-//      manager = new AddressManager(address, search);
-//    }
-//    return manager;
-//  }
-  
-
-  
-  /**
-   * Method which sends a message across the wire.
+   * Method which opens a socket to the given address.
    *
-   * @param message The message to send
-   * @param address The address to send the message to
+   * @param i The address to open the socket to
+   * @param deliverSocketToMe receives the socket
    */
-//  public void connect(final Identifier address, final int appAddress, final AppSocketReceiver receiver, final int timeout) {
   public SocketRequestHandle<Identifier> openSocket(
       Identifier i, 
       SocketCallback<Identifier> deliverSocketToMe, 
@@ -235,16 +208,6 @@ public class SourceRouteManagerImpl<Identifier> implements
     if (logger.level <= Logger.INFO-50) logger.log("openSocket("+i+","+deliverSocketToMe+","+options+")");
     return getAddressManager(i).openSocket(deliverSocketToMe, options);
   }
-  
-  /**
-   * Method which suggests a ping to the remote node.
-   *
-   * @param address DESCRIBE THE PARAMETER
-   * @param prl DESCRIBE THE PARAMETER
-   */
-//  public boolean ping(Identifier address, Map<String, Object> options) {
-//    return getAddressManager(address).ping(options);
-//  } 
   
   /**
    * Method which FORCES a check of liveness of the remote node.  Note that
@@ -343,11 +306,9 @@ public class SourceRouteManagerImpl<Identifier> implements
     HashSet<SourceRoute<Identifier>> routes = new HashSet<SourceRoute<Identifier>>();
     
     /**
-     * Constructor, given an address and whether or not it should attempt to
-     * find the best route
+     * Constructor, given an address
      *
      * @param address The address
-     * @param search Whether or not the manager should try and find a route
      */
     public AddressManager(Identifier address) {
       this.address = address;
@@ -357,18 +318,11 @@ public class SourceRouteManagerImpl<Identifier> implements
       if (logger.level <= Logger.FINE) logger.log("new AddressManager("+address+")");      
       clearLivenessState();
       
-//      this.liveness = LIVENESS_UNKNOWN; // don't stay dead forever... we may have a new connection
-//      this.updated = 0L;
-//      best = srFactory.getSourceRoute(localAddress, address);
-//      routes.add(best);
-            
     }
     
     public void clearLivenessState() {
-//      synchronized(routes) {
       ArrayList<SourceRoute<Identifier>> temp = new ArrayList<SourceRoute<Identifier>>(routes);
       routes.clear();
-//      }
       
       for (SourceRoute<Identifier> sr : temp) {
         livenessProvider.clearState(sr);
@@ -485,10 +439,9 @@ public class SourceRouteManagerImpl<Identifier> implements
     }
     
     /**
-     * Method which returns the last cached proximity value for the given address.
-     * If there is no cached value, then DEFAULT_PROXIMITY is returned.
+     * Method which returns the proximity of the best route to this address.
+     * If there is no best route, then DEFAULT_PROXIMITY is returned.
      *
-     * @param address The address to return the value for
      * @return The ping value to the remote address
      */
     public int proximity(Map<String, Object> options) {
@@ -498,19 +451,11 @@ public class SourceRouteManagerImpl<Identifier> implements
         return proxProvider.proximity(best, options);
     }  
     
-//    public int rto() {
-//      if (best == null)
-//        return DEFAULT_RTO;
-//      else
-//        return getRouteManager(best).rto();
-//    }  
-//    
     /**
-     * Method which returns the last cached liveness value for the given address.
-     * If there is no cached value, then true is returned.
+     * Method which returns the last cached liveness value for this address.
+     * While the liveness is unknown, it returns LIVENESS_SUSPECTED and triggers a (throttled) liveness check.
      *
-     * @param address The address to return the value for
-     * @return The Alive value
+     * @return The liveness value
      */
     public int getLiveness(Map<String, Object> options) {
       if (liveness == LIVENESS_UNKNOWN) {
@@ -518,9 +463,6 @@ public class SourceRouteManagerImpl<Identifier> implements
         if (environment.getTimeSource().currentTimeMillis() >= this.updated+CHECK_LIVENESS_THROTTLE) {
           checkLiveness(options);
         }
-//        SourceRoute direct = srFactory.getSourceRoute(localAddress, address);
-//        tl.checkLiveness(direct, options);
-//        this.updated = environment.getTimeSource().currentTimeMillis();
         return LIVENESS_SUSPECTED;
       }
       return liveness;
@@ -575,9 +517,8 @@ public class SourceRouteManagerImpl<Identifier> implements
     /**
      * Method which opens an app socket to this address
      *
-     * @param message The message to send
+     * @param deliverSocketToMe receives the socket
      */
-//    public synchronized void connect(int appAddress, AppSocketReceiver receiver, int timeout) {
     public SocketRequestHandle<Identifier> openSocket(
         final SocketCallback<Identifier> deliverSocketToMe, 
         Map<String, Object> options) {
@@ -617,46 +558,13 @@ public class SourceRouteManagerImpl<Identifier> implements
     /**
      * Method which suggests a ping to the remote node.
      */
-//    public boolean ping(Map<String, Object> options) {
-//      if (environment.getTimeSource().currentTimeMillis() - updated > PING_THROTTLE) {
-//        this.updated = environment.getTimeSource().currentTimeMillis();
-//        
-//        switch (liveness) {
-//          case LIVENESS_DEAD_FOREVER:
-//            return false;
-//          case LIVENESS_DEAD:
-//            if (logger.level <= Logger.FINE) logger.log( "(SSRM) PING: PINGING DEAD ADDRESS " + address + " - JUST IN CASE, NO HARM ANYWAY");
-//            return pinger.ping(srFactory.getSourceRoute(getLocalIdentifier(), address), options);
-//          default:
-//            if (best != null) {
-//              boolean ret = pinger.ping(best, options);
-//              
-//              // check to see if the direct route is available
-//              if (! best.isDirect()) 
-//                pinger.ping(srFactory.getSourceRoute(getLocalIdentifier(), address), options);
-//              return ret;
-//            }
-//            return false;
-//        }
-//      } else {
-//        return false;
-//      }
-//    }  
-    
-    /**
-     * Method which suggests a ping to the remote node.
-     */
     public boolean checkLiveness(Map<String, Object> options) {
       long now = environment.getTimeSource().currentTimeMillis();
-//      if (now < this.updated+CHECK_LIVENESS_THROTTLE) {
-//        return false;
-//      }
         
       this.updated = now;
       
       switch (liveness) {
         case LIVENESS_DEAD_FOREVER:
-//          return false;
         case LIVENESS_DEAD:
         {
           if (logger.level <= Logger.FINE) logger.logException( "(SSRM) CHECKLIVENESS: CHECKING DEAD ON DEAD ADDRESS " + address + " - JUST IN CASE, NO HARM ANYWAY", new Exception("Stack Trace"));
@@ -754,10 +662,9 @@ public class SourceRouteManagerImpl<Identifier> implements
      * This method should be called when a known route is declared
      * dead.
      *
-     * @param route The now-dead route
+     * @param deadRoute The now-dead route
      */
     protected synchronized void markDead(SourceRoute<Identifier> deadRoute, Map<String, Object> options) {
-//      logger.logException(this+" markDead("+deadRoute+"):"+best, new Exception());
       if (logger.level <= Logger.FINE) logger.log(this+" markDead("+deadRoute+"):"+best);
       
       // if we're already dead, who cares
@@ -783,7 +690,7 @@ public class SourceRouteManagerImpl<Identifier> implements
           if (!route.getLastHop().equals(address)) {
             if (logger.level <= Logger.SEVERE) logger.log("SRStrategy "+strategy+" is broken.  It returned "+route+" as a route to "+address);
           } else {
-            //TODO: need to keep track of when we checked these routes, so that we can go to markDead
+            // TODO: need to keep track of when we checked these routes, so that we can go to markDead
             if (livenessProvider.checkLiveness(route, options)) {
               if (logger.level <= Logger.FINEST) logger.log(this+" Checking "+route);
               found = true;
@@ -830,8 +737,6 @@ public class SourceRouteManagerImpl<Identifier> implements
      * This method should be called when a known node is declared dead - this is
      * ONLY called when a new epoch of that node is detected.  Note that this method
      * is silent - no checks are done.  Caveat emptor.
-     *
-     * @param address The now-dead address
      */
     protected synchronized void markDeadForever(Map<String, Object> options) {      
       this.best = null;            
@@ -845,8 +750,6 @@ public class SourceRouteManagerImpl<Identifier> implements
      * @param proximity The proximity
      */
     protected synchronized void markProximity(SourceRoute<Identifier> route, int proximity, Map<String, Object> options) {
-//      getRouteManager(route).markAlive();
-//      getRouteManager(route).markProximity(proximity);
       
       // first, we check and see if we have no best route (this can happen if the best just died)
       if (best == null) {
@@ -854,8 +757,6 @@ public class SourceRouteManagerImpl<Identifier> implements
         best = route;        
       }
       
-//      setAlive();
-        
       // next, we update everyone if this is the active route
       if (route.equals(best)) {
         notifyProximityListeners(address, proximity, options);
@@ -902,9 +803,6 @@ public class SourceRouteManagerImpl<Identifier> implements
           notifyLivenessListeners(address, LIVENESS_ALIVE, options);
           if (logger.level <= Logger.FINE) logger.log( "COUNT: " + localAddress + " Found address " + address + " to be unsuspected.");
           break;
-//        case LIVENESS_DEAD_FOREVER:
-//          if (logger.level <= Logger.WARNING) logger.log( "ERROR: Found dead-forever handle to " + address + " to be alive again!");
-//          break;
       }
     }
     
@@ -931,29 +829,9 @@ public class SourceRouteManagerImpl<Identifier> implements
                 " to be suspected from dead - should not happen!", 
                 new Exception("Stack Trace"));
           break;
-//        case LIVENESS_DEAD_FOREVER:
-//          if (logger.level <= Logger.WARNING) 
-//            logger.logException(
-//                "ERROR: Found node handle " + address + 
-//                " to be suspected from dead forever - should never ever happen!", 
-//                new Exception("Stack Trace"));
-//          break;
       }
       
       // and finally we can now reroute any route messages
-//      Object[] array = pendingMessages.toArray();
-//      
-//      for (int i=0; i<array.length; i++) {
-//        SocketBuffer sb = (SocketBuffer)array[i];
-//        if (sb.isRouteMessage()) {
-//          if (sb.getOptions().multipleHopsAllowed() && sb.getOptions().rerouteIfSuspected()) {
-//            //if (logger.level <= Logger.FINE) logger.log( "REROUTE: Rerouting message " + sb + " due to suspected next hop " + address);
-//            reroute(address, sb);
-//            queue.remove(sb);
-//          }
-//        }
-//      }
-//      if (queue.isEmpty() && pendingSockets.isEmpty()) hardLinks.remove(this);
     }
     
     /**
@@ -961,23 +839,14 @@ public class SourceRouteManagerImpl<Identifier> implements
      * sends an update out to the observers.
      */
     protected void setDead(Map<String, Object> options) {
-//      logger.log(this+" marking as dead.");
       switch (liveness) {
         case LIVENESS_DEAD_FOREVER:
         case LIVENESS_DEAD:
           return;
-//        case LIVENESS_DEAD_FOREVER:
-//          if (logger.level <= Logger.WARNING) 
-//            logger.log(
-//                "ERROR: Found node handle " + address + 
-//                " to be dead from dead forever - should not happen!");
-//          break;
         default:
           this.best = null;
           this.liveness = LIVENESS_DEAD;
           notifyLivenessListeners(address, LIVENESS_DEAD, options);
-//          if (address != null) address.update(DECLARED_DEAD);   
-//          if (address != null) manager.declaredDead(address);
           if (logger.level <= Logger.FINE) 
             logger.log( "COUNT: " + localAddress + 
                 " Found address " + address + " to be dead.");
@@ -985,7 +854,6 @@ public class SourceRouteManagerImpl<Identifier> implements
       }
 
       purgeQueue();
-//      clearLivenessState();
     }
 
     /**
@@ -1016,12 +884,10 @@ public class SourceRouteManagerImpl<Identifier> implements
       while (!pendingMessages.isEmpty()) {
         PendingMessage pm = pendingMessages.removeFirst();
         if (pm.deliverAckToMe != null) pm.deliverAckToMe.sendFailed(pm, new NodeIsFaultyException(address));
-//        reroute(address, (SocketBuffer) queue.removeFirst());
       }
       while (!pendingSockets.isEmpty()) {
         PendingSocket ps = pendingSockets.removeFirst();
         ps.deliverSocketToMe.receiveException(ps, new NodeIsFaultyException(address));
-//        pas.receiver.receiveException(null, new NodeIsDeadException());
       }
       removeHardLink(this);      
     }
@@ -1050,28 +916,6 @@ public class SourceRouteManagerImpl<Identifier> implements
     }
   }
   
-//  public void addPingListener(PingListener<Identifier> name) {
-//    synchronized(pingListeners) {
-//      pingListeners.add(name);
-//    }
-//  }
-//
-//  public boolean removePingListener(PingListener<Identifier> name) {
-//    synchronized(pingListeners) {
-//      return pingListeners.remove(name);
-//    }
-//  }
-//  
-//  private void notifyPingListeners(Identifier i, int rtt) {
-//    List<PingListener<Identifier>> temp;
-//    synchronized(pingListeners) {
-//      temp = new ArrayList<PingListener<Identifier>>(pingListeners);
-//    }
-//    for (PingListener<Identifier> listener : temp) {
-//      listener.pingResponse(i, rtt, null);
-//    }
-//  }
-
   public void incomingSocket(P2PSocket<SourceRoute<Identifier>> s) throws IOException {
     callback.incomingSocket(new SourceRouteManagerP2PSocket<Identifier>(s, logger, errorHandler, environment));
   }
@@ -1084,14 +928,6 @@ public class SourceRouteManagerImpl<Identifier> implements
     if (logger.level <= Logger.FINER) logger.log("livenessChanged("+i+","+val+")");
     getAddressManager(i.getLastHop()).livenessChanged(i,val, options);
   }
-
-//  public void pingResponse(SourceRoute<Identifier> i, int rtt, Map<String, Object> options) {
-//    getAddressManager(i.getLastHop()).markProximity(i, rtt, options);
-//  }
-//  
-//  public void pingReceived(SourceRoute<Identifier> i, Map<String, Object> options) {
-//    getAddressManager(i.getLastHop()).markProximity(i, rtt, options);
-//  }
 
   Collection<ProximityListener<Identifier>> listeners = new ArrayList<ProximityListener<Identifier>>();
   public void addProximityListener(ProximityListener<Identifier> listener) {

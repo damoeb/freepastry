@@ -68,20 +68,18 @@ public interface GenericNetworkSimulator<Identifier, MessageType> extends Livene
    * Deliver message.
    * 
    * @param msg message to deliver.
-   * @param node the Pastry node to deliver it to.
-   * @param how long to delay to deliver the message
+   * @param to the node to deliver it to.
+   * @param from the node that sent it.
+   * @param delay how long to delay to deliver the message
    */
   public Cancellable deliverMessage(MessageType msg, Identifier to, Identifier from, int delay);
 
   /**
-   * Deliver message.
+   * Schedule a delivery.
    * 
-   * @param msg message to deliver.
-   * @param node the Pastry node to deliver it to.
-   * @param how long to delay to deliver the message
-   * @param period to deliver the message after the delay
+   * @param del the delivery to execute.
+   * @param delay how long to delay to deliver the message
    */
-//  public CancellableTask enqueueDelivery(Delivery del);  
   public CancellableTask enqueueDelivery(Delivery del, int delay);
    
   public DirectTransportLayer<Identifier, MessageType> getTL(Identifier i);
@@ -117,7 +115,7 @@ public interface GenericNetworkSimulator<Identifier, MessageType> extends Livene
    * Setting the simulation speed to zero will not pause the simulation, you must 
    * call stop() to do that.
    * 
-   * @param the multiple on realtime that the simulator is allowed to run at, 
+   * @param rate the multiple on realtime that the simulator is allowed to run at, 
    * zero or less will cause no bound on the simulation speed
    * 
    */

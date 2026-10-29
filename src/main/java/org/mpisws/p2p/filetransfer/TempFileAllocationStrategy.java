@@ -67,7 +67,6 @@ public class TempFileAllocationStrategy implements FileAllocationStrategy {
   
   public synchronized File getFile(ByteBuffer metadata, long offset, long length) throws IOException {
     File temp = File.createTempFile(prefix, suffix, dir);
-    //temp.deleteOnExit();
     return temp;
   }
 

@@ -53,8 +53,6 @@ import rice.p2p.past.gc.messaging.*;
 import rice.persistence.*;
 
 /**
- * @(#) GCPastImpl.java
- * 
  * This class is an implementation of the GCPast interface, which provides
  * Past services with garbage collection.
  *
@@ -205,7 +203,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * RefreshFailedException - if the refresh operation failed for any other
    *   reason (the getMessage() will describe the failure)
    * 
-   * @param id The keys which to refresh
+   * @param array The keys which to refresh
    * @param expiration The time to extend the lifetime to
    * @param command Command to be performed when the result is received
    */
@@ -231,8 +229,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * RefreshFailedException - if the refresh operation failed for any other
    *   reason (the getMessage() will describe the failure)
    * 
-   * @param id The keys which to refresh
-   * @param expiration The time to extend the lifetime to
+   * @param array The keys which to refresh
+   * @param expirations The times to extend the lifetimes to, one per key
    * @param command Command to be performed when the result is received
    */
   public void refresh(final Id[] array, long[] expirations, Continuation<? super Object[], Exception> command) {
@@ -256,8 +254,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * Internal method which actually does the refreshing.  Should not be called
    * by external applications.
    *
-   * @param ids The ids to refresh
-   * @param expiration The time to extend the lifetime until
+   * @param ids The ids to refresh, each with the time to extend its lifetime until
    * @param command The command to return the result to
    */
   protected void refresh(final GCIdSet ids, Continuation<? super Object, Exception> command) {
@@ -511,7 +508,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   /**
    * Internal method which collects all of the objects in the given set
    * 
-   * @param set THe set to collect
+   * @param map The ids to collect (only the keys are used)
    * @param command The command to call once done
    */
   protected void collect(SortedMap<Id, ?> map, Continuation<? super Boolean, Exception> command) {
@@ -625,9 +622,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   /**
    * This upcall should return the set of keys that the application
    * currently stores.  Should return a empty IdSet (not null),
-   * in the case that no keys belong to this range.
-   *
-   * @param range the requested range
+   * in the case that no keys are stored.
    */
   public IdSet scan() {
     return new GCIdSet(storage.getStorage().scan(), storage.getStorage().scanMetadata());

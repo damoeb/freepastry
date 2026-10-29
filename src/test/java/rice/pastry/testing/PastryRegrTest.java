@@ -82,8 +82,6 @@ public abstract class PastryRegrTest {
 
   public Id lastNode;
 
-//  int msgCount = 0;
-
   // abstract methods
 
   /**
@@ -148,17 +146,8 @@ public abstract class PastryRegrTest {
 
     registerapp(pn, rta);
 
-//    int msgCount = 0;
-
-//    if (bootstrap != null)
-//      while (simulate())
-//        msgCount++;
-
-    //System.out.println("created " + pn + " messages: " + msgCount);
-
     checkLeafSet(rta);
     checkRoutingTable(rta);
-    //System.out.println("");
   }
 
   protected PastryNode generateNode(NodeHandle bootstrap) {
@@ -214,8 +203,6 @@ public abstract class PastryRegrTest {
         if (n == 0) {
           // we have to join the first batch of nodes
           // sequentially, else we create multiple rings
-//          while (simulate())
-//            msgCount++;
 
           // ADDED FOR WIRE PROTOCOL...
           synchronized(pn) {
@@ -227,12 +214,6 @@ public abstract class PastryRegrTest {
           }
         }
     }
-
-//    int msgCount = 0;
-
-    // now simulate concurrent joins
-//    while (simulate())
-//      msgCount++;
 
     // ADDED FOR WIRE PROTOCOL...
     // wait until all nodes are ready
@@ -259,11 +240,7 @@ public abstract class PastryRegrTest {
       checkRoutingTable(rta[i]);
     }
 
-//    System.out.println("messages: " + msgCount);
-
     for (int i = 0; i < rtApps.size(); i++) {
-      //checkLeafSet((RegrTestApp)rtApps.get(i));
-      //checkRoutingTable((RegrTestApp)rtApps.get(i));
     }
 
   }
@@ -275,7 +252,7 @@ public abstract class PastryRegrTest {
    * Send messages among random message pairs. In each round, one message is
    * sent from a random source node to a random destination; then, a second
    * message is sent from a random source node with a random key (key is not
-   * necessaily the Id of an existing node)
+   * necessarily the Id of an existing node)
    * 
    * @param k the number of rounds
    */
@@ -295,13 +272,10 @@ public abstract class PastryRegrTest {
 
       // send to a random node
       rta.sendTrace(pn.getNodeId());
-//      while (simulate());
 
       // send to a random key
       rta.sendTrace(key);
-//      while (simulate());
 
-      //System.out.println("-------------------");
     }
   }
 
@@ -448,9 +422,6 @@ public abstract class PastryRegrTest {
           } catch (NullPointerException npe) {
           } catch (RangeCannotBeDeterminedException rcbde) {}
 
-        //System.out.println("j=" + j + " maxRank=" + maxRank + " " + range);
-
-        //if ( (range != null) != (rs.size() >= 1) ) {
         if (range == null) {
           if (maxRank >= 0) {
             System.out.println("checkLeafSet: range size failure at "
@@ -460,8 +431,6 @@ public abstract class PastryRegrTest {
           continue;
         }
 
-        //nearestPos = ls.mostSimilar(range.getCCW());
-        //nearest = ls.get(nearestPos).getNodeId();
         nearest = ls.get(k).getNodeId();
         nearestPos = k;
 
@@ -485,9 +454,6 @@ public abstract class PastryRegrTest {
             System.out.println("dist(nearest+1)="
                 + ls.get(nearestPos + 1).getNodeId().distance(range.getCCW()));
         }
-
-        //nearestPos = ls.mostSimilar(range.getCW());
-        //nearest = ls.get(nearestPos).getNodeId();
 
         // fetch the replicaSet of the key at the cw edge of the range
         cs = ls.replicaSet(range.getCW().getCCW(), maxRank + 1);
@@ -531,18 +497,12 @@ public abstract class PastryRegrTest {
       for (int j = 0; j < rt.numColumns(); j++) {
         // next column
 
-        // skip if local Id digit
-        // if (j == rta.getNodeId().getDigit(i,rt.baseBitLength())) continue;
-
         final RouteSet rs = rt.getRouteSet(i, j);
 
         Id domainFirst = rta.getNodeId().getDomainPrefix(i, j, 0,
             rt.baseBitLength());
         Id domainLast = rta.getNodeId().getDomainPrefix(i, j, -1,
             rt.baseBitLength());
-        //System.out.println("prefixes " + rta.getNodeId() + domainFirst +
-        // domainLast
-        //     + "compareTo=" + domainFirst.compareTo(domainLast));
 
         if (rs == null || rs.size() == 0) {
           // no entry
@@ -557,8 +517,6 @@ public abstract class PastryRegrTest {
             System.out.println("checkRoutingTable: missing RT entry at"
                 + rta.getNodeId() + "row=" + i + " column=" + j + " inBetween="
                 + inBetween);
-            //System.out.println("prefixes " + rta.getNodeId() + domainFirst +
-            // domainLast);
           }
         } else {
           // check entries
@@ -601,7 +559,6 @@ public abstract class PastryRegrTest {
       }
     }
 
-    //System.out.println(rt);
   }
 
   /**
@@ -665,7 +622,6 @@ public abstract class PastryRegrTest {
     Date old = new Date();
 
     while (pt.pastryNodes.size() < n) {
-      //for (int i=0; i<n; i += numConcJoins) {
       int remaining = n - pt.pastryNodes.size();
       if (remaining > numConcJoins)
         remaining = numConcJoins;
@@ -673,11 +629,9 @@ public abstract class PastryRegrTest {
       pt.makePastryNode(remaining);
 
       if (pt.pastryNodes.size() % m == 0) {
-        //if ((i + numConcJoins) % m == 0) {
         Date now = new Date();
         System.out.println(pt.pastryNodes.size() + " "
-            + (now.getTime() - old.getTime()));// + " " + pt.msgCount);
-//        pt.msgCount = 0;
+            + (now.getTime() - old.getTime()));
         old = now;
       }
 
@@ -718,11 +672,6 @@ public abstract class PastryRegrTest {
     // Dist: wait until everyone detects failed nodes
     pt.pause(5000);
 
-    // print all nodeIds, sorted
-    //Iterator it = pt.pastryNodesSorted.keySet().iterator();
-    //while (it.hasNext())
-    //System.out.println(it.next());
-
     System.out.println("starting RT and leafset check");
 
     // check all routing tables, leaf sets
@@ -730,8 +679,6 @@ public abstract class PastryRegrTest {
       pt.checkLeafSet((RegrTestApp) pt.rtApps.get(i));
       pt.checkRoutingTable((RegrTestApp) pt.rtApps.get(i));
     }
-
-    //pt.sendPings(k);
 
     for (int i = 0; i < 4; i++) {
 

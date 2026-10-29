@@ -177,11 +177,6 @@ public class DistPastryRegrTest extends PastryRegrTest {
       if (args[i].equals("-protocol") && i + 1 < args.length) {
         String s = args[i + 1];
 
-        //          if (s.equalsIgnoreCase("wire"))
-        //            protocol = DistPastryNodeFactory.PROTOCOL_WIRE;
-        //          else if (s.equalsIgnoreCase("rmi"))
-        //            protocol = DistPastryNodeFactory.PROTOCOL_RMI;
-        //          else
         if (s.equalsIgnoreCase("socket"))
           protocol = DistPastryNodeFactory.PROTOCOL_SOCKET;
         else

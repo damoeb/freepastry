@@ -150,17 +150,14 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
   }
   
   public void init() {
-    // TODO Auto-generated method stub
     
   }
 
   public void destroy() {
-    // TODO Auto-generated method stub
     
   }
 
   public void notifyCertificateAvailable(Id id) {
-    // TODO Auto-generated method stub
     
   }
 
@@ -174,17 +171,14 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
   }
 
   public void notifyStatusChange(Id id, int newStatus) {
-    // TODO Auto-generated method stub
     
   }
 
   public void acceptMessages(boolean b) {
-    // TODO Auto-generated method stub
     
   }
 
   public void acceptSockets(boolean b) {
-    // TODO Auto-generated method stub
     
   }
 
@@ -224,7 +218,6 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
   }
 
   public void setErrorHandler(ErrorHandler<TransportLayerNodeHandle<MultiInetSocketAddress>> handler) {
-    // TODO Auto-generated method stub
     
   }
 

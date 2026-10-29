@@ -46,8 +46,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
- * @(#) MultiringNodeCollection.java
- *
  * This class is the class which coordinates all of the nodes on a given
  * host, allowing the nodes to route messages between each other.  
  *
@@ -119,7 +117,10 @@ public class MultiringNodeCollection {
    *
    * @param id The target id of the message
    * @param message The message to be sent
-   * @param hint A suggested hint
+   * @param application The name of the sending application
+   * @param deliverAckToMe Notified when the message is sent or fails, may be null
+   * @param options Transport options, may be null
+   * @return The receipt of the message, or null if no local node is the next hop
    */
   protected MessageReceipt route(RingId id, RawMessage message, String application,
       DeliveryNotification deliverAckToMe, Map<String, Object> options) {
@@ -136,7 +137,6 @@ public class MultiringNodeCollection {
         best = thisNode;
     }
     
-    //System.out.println("ROUTING MESSAGE TO TARGET " + id + " VIA NODE " + best.getId());
         
     return best.route(id, message, application, deliverAckToMe, options);
   }

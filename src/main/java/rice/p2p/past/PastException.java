@@ -38,8 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 /**
- * @(#) PastException.java
- * 
  * Any exception specific to Past.
  *
  * @version $Id: PastException.java 3613 2007-02-15 14:45:14Z jstewart $

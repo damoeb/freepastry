@@ -43,24 +43,19 @@ import java.util.*;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
- * Class which represets a source route to a remote IP address.
+ * Class which represents a source route to a remote identifier: the list of hops from the source to the destination.
  *
- * @version $Id: SourceRoute.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Alan Mislove
  */
 public abstract class SourceRoute<Identifier> {
   
-  // Support for coalesced Ids - ensures only one copy of each Id is in memory
-//  private static WeakHashMap SOURCE_ROUTE_MAP = new WeakHashMap();
-  
-  // the default distance, which is used before a ping
+  // the hops of this route, from the source to the destination
   protected List<Identifier> path;
 
   /**
    * Constructor
    *
-   * @param nodeId This node handle's node Id.
-   * @param address DESCRIBE THE PARAMETER
+   * @param path the hops of the route, none of them null
    */
   protected SourceRoute(List<Identifier> path) {
     this.path = new ArrayList<Identifier>(path);
@@ -82,54 +77,6 @@ public abstract class SourceRoute<Identifier> {
     path.add(remote);
   }  
   
-  /**
-   * Method which performs the coalescing and interaction with the weak hash map
-   *
-   * @param id The Id to coalesce
-   * @return The Id to use
-   */
-//  protected static SourceRoute resolve(WeakHashMap map, SourceRoute route) {
-//    synchronized (map) {
-//      WeakReference ref = (WeakReference) map.get(route);
-//      SourceRoute result = null;
-//      
-//      if ((ref != null) && ((result = (SourceRoute) ref.get()) != null)) {
-//        return result;
-//      } else {
-//        map.put(route, new WeakReference(route));
-//        return route;
-//      }
-//    }
-//  }
-  
-  /**
-   * Constructor.
-   *
-   * @param path The path of the route
-   */
-//  public static SourceRoute build(Identifier[] path) {
-//    return resolve(SOURCE_ROUTE_MAP, new SourceRoute(path));
-//  }
-  
-  /**
-   * Constructor.
-   *
-   * @param path The path of the route
-   */
-//  public static SourceRoute build(Identifier address) {
-//    return resolve(SOURCE_ROUTE_MAP, new SourceRoute(new Identifier[] {address}));
-//  }
-  
-  /**
-   * Define readResolve, which will replace the deserialized object with the canootical
-   * one (if one exists) to ensure Id coalescing.
-   *
-   * @return The real Id
-   */
-//  private Object readResolve() throws ObjectStreamException {
-//    return resolve(SOURCE_ROUTE_MAP, this);
-//  }
-
   /**
    * Returns the hashCode of this source route
    *
@@ -163,10 +110,9 @@ public abstract class SourceRoute<Identifier> {
   }
   
   /**
-   * Internal method for computing the toString of an array of InetSocketAddresses
+   * Returns the hops of this route, separated by arrows
    *
-   * @param path The path
-   * @return THe string
+   * @return The string
    */
   public String toString() {
     StringBuffer result = new StringBuffer();
@@ -174,17 +120,6 @@ public abstract class SourceRoute<Identifier> {
     
     for (int i=0; i<path.size(); i++) {
       Identifier thePath = path.get(i);
-//      for (int ctr = 0; ctr < thePath.address.length; ctr++) {
-//        InetSocketAddress theAddr = thePath.address[ctr];
-//        InetAddress theAddr2 = theAddr.getAddress();
-//        if (theAddr2 == null) {
-//          result.append(theAddr.toString());
-//        } else {
-//          String ha = theAddr2.getHostAddress();
-//          result.append(ha + ":" + theAddr.getPort());
-//        }
-//        if (ctr < thePath.address.length - 1) result.append(";");
-//      } // ctr
       result.append(thePath.toString());
       if (i < path.size() - 1) result.append(" -> ");
     }
@@ -193,55 +128,6 @@ public abstract class SourceRoute<Identifier> {
     
     return result.toString();
   }
-  
-  /**
-   * Internal method for computing the toString of an array of InetSocketAddresses
-   *
-   * @param path The path
-   * @return THe string
-   */
-//  public String toStringFull() {
-//    StringBuffer result = new StringBuffer();
-//    result.append("{");
-//    
-//    for (int i=0; i<path.length; i++) {
-//      result.append(path[i].toString());
-//      if (i < path.length - 1) result.append(" -> ");
-//    }
-//    
-//    result.append("}");
-//    
-//    return result.toString();
-//  }
-  
-  /**
-   * Method which revereses path and cliams the corresponding address
-   *
-   * @param path The path to reverse
-   * @param address The address to claim
-   */
-//  public SourceRoute reverse(Identifier localAddress) {
-//    Identifier[] result = new Identifier[path.length];
-//    
-//    for (int i=0; i<path.length-1; i++)
-//      result[i] = path[path.length-2-i];
-//    
-//    result[result.length-1] = localAddress;
-//    
-//    return SourceRoute.build(result);
-//  }
-  
-  /**
-   * Method which revereses path
-   *
-   */
-//  public SourceRoute<Identifier> reverse() {
-//    ArrayList<Identifier> result = new ArrayList<Identifier>(path);
-//    
-//    Collections.reverse(result);
-//    
-//    return new SourceRoute<Identifier>(result);
-//  }
   
   /**
    * Method which returns the first "hop" of this source route
@@ -299,59 +185,6 @@ public abstract class SourceRoute<Identifier> {
   }
   
   /**
-   * Internal method which returns an array representing the source
-   * route
-   *
-   * @return An array represetning the route
-   */
-//  public InetSocketAddress[] toArray() {
-//    InetSocketAddress[] result = new InetSocketAddress[path.length];
-//    
-//    for (int i=0; i<result.length; i++)
-//      result[i] = path[i].getAddress();
-//    
-//    return result;
-//  }
-  
-  /**
-   * Method which creates a new source route by removing the last hop of this one
-   */
-//  public SourceRoute removeLastHop() {
-//    Identifier[] result = new Identifier[path.length-1];
-//    System.arraycopy(path, 0, result, 0, result.length);
-//    
-//    return SourceRoute.build(result);
-//  }
-  
-  /**
-   * Method which creates a new source route by appending the given address
-   * to the end of this one
-   *
-   * @param address The address to append
-   */
-//  public SourceRoute append(Identifier address) {
-//    Identifier[] result = new Identifier[path.length+1];
-//    System.arraycopy(path, 0, result, 0, path.length);
-//    result[result.length-1] = address;
-//    
-//    return SourceRoute.build(result);
-//  }
-  
-  /**
-   * Method which creates a new source route by appending the given address
-   * to the end of this one
-   *
-   * @param address The address to append
-   */
-//  public SourceRoute prepend(Identifier address) {
-//    Identifier[] result = new Identifier[path.length+1];
-//    System.arraycopy(path, 0, result, 1, path.length);
-//    result[0] = address;
-//    
-//    return SourceRoute.build(result);
-//  }
-
-  /**
    * Returns which hop in the path the identifier is.  
    * @param identifier the hop
    * @return -1 if not in the path
@@ -370,38 +203,7 @@ public abstract class SourceRoute<Identifier> {
   abstract public int getSerializedLength();
   
   
-//  public void serialize(OutputBuffer buf) throws IOException {
-//    buf.writeByte((byte)path.size());
-//    for (Identifier i : path) {
-//      i.serialize(buf);
-//    }
-//  }
   
-//  public static SourceRoute build(InputBuffer buf) throws IOException {
-////    byte version = buf.readByte();
-////    switch(version) {
-////      case 0:
-//        byte numInPath = buf.readByte();
-//        Identifier[] path = new Identifier[numInPath];
-//        for (int i = 0; i < numInPath; i++) {
-//          path[i] = Identifier.build(buf);
-//        }    
-//        return new SourceRoute(path);
-////      default:
-////        throw new IOException("Unknown Version: "+version);
-////    }     
-//  }
-
-  
-//  public int getSerializedLength() {
-//    int ret = 5; // version+numhops
-//    
-//    // the size of all the EISAs
-//    for (Identifier i : path) {
-//      ret += i.getSerializedLength();
-//    }    
-//    return ret;
-//  }
 }
 
 

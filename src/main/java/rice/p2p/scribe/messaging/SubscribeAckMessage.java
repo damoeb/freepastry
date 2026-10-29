@@ -49,15 +49,11 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * @(#) SubscribeAckMessage.java
- *
  * The ack for a subscribe message.
  * 
  * This message is sent on 2 occaisions.  
  * a) An ack to a subscribe.
- * b) When your pat to the root changes.  
- * 
- * TODO: Consider breaking up these functions.
+ * b) When your path to the root changes.  
  *
  * @version $Id: SubscribeAckMessage.java 3816 2007-08-01 17:54:53Z jeffh $
  *
@@ -73,11 +69,12 @@ public class SubscribeAckMessage extends AbstractSubscribeMessage {
   protected List<List<Id>> pathsToRoot;
 
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param id The unique id
    * @param source The source address
-   * @param dest The destination address
+   * @param topics The topics that were accepted
+   * @param pathsToRoot The path to the root of each topic, in the same order
+   * @param id The id of the subscribe being acknowledged
    */
   public SubscribeAckMessage(NodeHandle source, List<Topic> topics, List<List<Id>> pathsToRoot, int id) {
     super(source, topics, id);
@@ -142,8 +139,7 @@ public class SubscribeAckMessage extends AbstractSubscribeMessage {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        // TODO: Handle this
-      
+        // TODO: version 0 is not supported, so such a message is dropped (null is returned)
         return null;        
       case 1:        
         return new SubscribeAckMessage(buf, endpoint);

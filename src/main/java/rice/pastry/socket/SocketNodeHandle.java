@@ -56,7 +56,6 @@ import rice.pastry.dist.DistNodeHandle;
 import rice.pastry.messaging.Message;
 
 public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
-//  public class SocketNodeHandle extends DistNodeHandle implements TransportLayerNodeHandle<MultiInetSocketAddress> {
 
   public MultiInetSocketAddress eaddress;
   protected long epoch;
@@ -93,33 +92,15 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
     if (isLocal()) {
       return LIVENESS_ALIVE;
     } else {
-//      // make sure this isn't an old existance of ourself:       
-//      MultiInetSocketAddress localEaddr = ((TLNodeHandle)localnode.getLocalHandle()).eaddress;
-//      if (localEaddr.addressEquals(eaddress)) {
-//        return LIVENESS_ALIVE;        
-//      }
       return ((PastryNode)localnode).getLivenessProvider().getLiveness(this, null);
     }
   }
   
-//  /**
-//   * You can call this method if the node shuts down nicely.  This will cause it to be removed
-//   * from the leafset.  Improves the performance of consistency.
-//   */
-//  public void markDeadForever() {
-//    SocketPastryNode spn = (SocketPastryNode) getLocalNode();
-//    spn.getSocketSourceRouteManager().getAddressManager(eaddress, false).markDeadForever();
-//  }
-  
   /**
    * Returns the InetSocketAddress that should be used to contact the node
    * 
-   * @param addressList The sorted list of address alieses.  From Internet to LAN
-   * @return
+   * @return the address of the node
    */
-//  public InetSocketAddress getAddress(InetAddress[] addressList) {
-//    return eaddress.getAddress(addressList);
-//  }
   
   public MultiInetSocketAddress getAddress() {
     return eaddress;
@@ -140,11 +121,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
   public boolean checkLiveness() {
     if (logger.level <= Logger.FINE) logger.log(this+".checkLiveness()");
     ((PastryNode)localnode).getLivenessProvider().checkLiveness(this, null);
-//    SocketPastryNode spn = (SocketPastryNode) getLocalNode();
-//    
-//    if (spn != null)
-//      spn.getSocketSourceRouteManager().checkLiveness(eaddress);
-//    
     return getLiveness() < LIVENESS_DEAD;
   }
 
@@ -174,19 +150,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
   }
   
   /**
-   * Method which is used by Pastry to start the bootstrapping process on the 
-   * local node using this handle as the bootstrap handle.  Default behavior is
-   * simply to call receiveMessage(msg), but transport layer implementations may
-   * care to perform other tasks by overriding this method, since the node is
-   * not technically part of the ring yet.
-   *
-   * @param msg the bootstrap message.
-   */
-//  public void bootstrap(Message msg) throws IOException {
-//    ((SocketPastryNode) getLocalNode()).getSocketSourceRouteManager().bootstrap(eaddress, msg);
-//  }
-    
-  /**
    * Returns a String representation of this DistNodeHandle. This method is
    * designed to be called by clients using the node handle, and is provided in
    * order to ensure that the right node handle is being talked to.
@@ -195,11 +158,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
    */
   public String toString() {
     return "[SNH: " + nodeId + "/" + eaddress + "]";
-//    if (getLocalNode() == null) {
-//      return "[SNH: " + nodeId + "/" + eaddress + "]";
-//    } else {
-//      return "[SNH: " + getLocalNode().getNodeId() + " -> " + nodeId + "/" + eaddress + "]";
-//    }
   }
 
   public String toStringFull() {
@@ -222,11 +180,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
     
     boolean ret = (epoch == other.epoch && other.getNodeId().equals(getNodeId()) && other.eaddress.equals(eaddress));
 
-    // delme:
-//    if (epoch == other.epoch && !ret) {
-//      System.out.println(this+".equals("+other+") == false! nid:"+(other.getNodeId().equals(getNodeId()))+" eaddr:"+(other.eaddress.equals(eaddress)));
-//    }
-//    System.out.println(this+".equals("+other+"):"+ret);    
     return ret;
   }
 
@@ -238,7 +191,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
    */
   public int hashCode() {
     int hash = ((int)epoch) ^ getNodeId().hashCode() ^ eaddress.hashCode();
-//    System.out.println(this+" hash:"+hash);
     return hash;
   }
 
@@ -266,30 +218,12 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
   public boolean ping() {
     if (localnode.getLocalHandle().equals(this)) return false;
     ((PastryNode)localnode).getLivenessProvider().checkLiveness(this, null);
-//    final SocketPastryNode spn = (SocketPastryNode) getLocalNode();
-//    
-////    Runnable runnable = new Runnable() {    
-////      public void run() {
-//        if ((spn != null) && spn.srManager != null) 
-//          spn.srManager.ping(eaddress);
-////      }
-////    };
-////    
-////    SelectorManager sm = spn.getEnvironment().getSelectorManager();
-////    if (sm.isSelectorThread()) {
-////      runnable.run();      
-////    } else {
-////      sm.invoke(runnable);
-////    }
-//    
     return getLiveness() < LIVENESS_DEAD;
   }  
 
   /**
-   * DESCRIBE THE METHOD
-   *
-   * @param o DESCRIBE THE PARAMETER
-   * @param obj DESCRIBE THE PARAMETER
+   * @param o ignored
+   * @param obj ignored
    * @deprecated does nothing; SocketNodeHandle is no longer an Observer
    */
   @Deprecated
@@ -298,14 +232,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 
 
 /*********************** Serialization ***********************/  
-//  public void setNodeId(Id nodeId) {
-//    this.nodeId = nodeId;    
-//  }
-  
-//  public void setLocalNode(SocketPastryNode spn) {
-//    localnode = spn; 
-//    this.logger = spn.getEnvironment().getLogManager().getLogger(getClass(),null);
-//  }
   
   /**
    * Note, this SNH needs to be coalesced!!!

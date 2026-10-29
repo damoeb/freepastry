@@ -53,8 +53,6 @@ import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * @(#) MultiringNode.java
- *
  * This class wraps a Node, enabling it to support multiple hierarchical
  * scoped rings.  In order to use the multiring functionality, only one change
  * is necessary:  when one constructs a Node, one should change
@@ -63,7 +61,10 @@ import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
  *
  * to 
  *
- * Node test = new MultiringNode(factory.newNode(...));
+ * Node test = new MultiringNode(ringId, factory.newNode(...));
+ *
+ * To add a node to another ring that shares this node's collection, use
+ * new MultiringNode(otherRingId, node, existingMultiringNode).
  *
  * @version $Id: MultiringNode.java 4654 2009-01-08 16:33:07Z jeffh $
  *
@@ -182,31 +183,6 @@ public class MultiringNode implements Node, ScribeMultiClient {
   }
   
   /**
-   * This returns a Endpoint specific to the given application and
-   * instance name to the application, which the application can then use in
-   * order to send an receive messages.  This method allows advanced 
-   * developers to specify which "port" on the node they wish their
-   * application to register as.  This "port" determines which of the
-   * applications on top of the node should receive an incoming 
-   * message.
-   *
-   * NOTE: Use of this method of registering applications is recommended only
-   * for advanced users - 99% of all applications should just use the
-   * other registerApplication
-   * 
-   * @param application The Application
-   * @param port The port to use
-   * @return The endpoint specific to this applicationk, which can be used for
-   *         message sending/receiving.
-   */
-//  public Endpoint registerApplication(Application application, int port) {
-//    Endpoint endpoint = new MultiringEndpoint(this, node.registerApplication(new MultiringApplication(getRingId(), application), port), application);
-//    endpoints.put(endpoint.getInstance(), endpoint);
-//  
-//    return endpoint;
-//  }
-  
-  /**
    * Returns the Id of this node
    *
    * @return This node's Id
@@ -265,10 +241,9 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * the collection.  This node then joins the appropriate Scribe group to advertise
    * this it can route directly to that node's ring.
    *
-   * @param id The Id of the newly added ring
+   * @param otherRingId The Id of the newly added ring
    */
   protected void nodeAdded(Id otherRingId) {
-    //System.outt.println("JOINING SCRIBE GROUP " + otherRingId + " AT NODE " + getId());
     scribe.subscribe(new Topic(RingId.build(ringId, otherRingId)), this, (RawScribeContent) null, null);
   }
   
@@ -280,7 +255,10 @@ public class MultiringNode implements Node, ScribeMultiClient {
    *
    * @param id The destination Id of the message.
    * @param message The message to deliver
-   * @param hint The first node to send this message to, optional
+   * @param application The name of the sending application
+   * @param deliverAckToMe Notified when the message is sent or fails, may be null
+   * @param options Transport options, may be null
+   * @return The receipt of the message
    */
   MessageReceipt route(final RingId id, final RawMessage message, String application, 
       DeliveryNotification deliverAckToMe, Map<String, Object> options) {
@@ -289,7 +267,6 @@ public class MultiringNode implements Node, ScribeMultiClient {
       MultiringEndpoint endpoint = (MultiringEndpoint) endpoints.get(application);
       return endpoint.route(id, message, null, deliverAckToMe, options);
     } else {
-      //System.outt.println("ANYCASTING TO SCRIBE GROUP " + getTarget(id) + " AT NODE " + getId() + " FOR APPLICATION " + application);
       scribe.anycast(new Topic(RingId.build(ringId, getTarget(id))), new RingMessage(id, message, application));
       MessageReceipt ret = new MessageReceipt(){
       
@@ -365,7 +342,6 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public boolean anycast(Topic topic, ScribeContent content) {
     if (content instanceof RingMessage) {
       RingMessage rm = (RingMessage) content;
-      //System.outt.println("RECEIVED ANYCAST TO " + rm.getId() + " AT NODE " + getId());
       collection.route(rm.getId(), rm.getRawMessage(), rm.getApplication(), null, null);
     } else {
       if (logger.level <= Logger.WARNING) logger.log(

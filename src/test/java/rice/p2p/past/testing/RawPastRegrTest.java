@@ -56,8 +56,6 @@ import java.net.*;
 import java.io.Serializable;
 
 /**
- * @(#) PastRegrTest.java
- *
  * Provides regression testing for the Past service
  *
  * @version $Id: PastRegrTest.java 3157 2006-03-19 12:16:58Z jeffh $
@@ -192,9 +190,6 @@ public class RawPastRegrTest extends CommonAPITest {
           public void receive(Object result) throws Exception {
             assertTrue("Insert of file result should not be null", result != null);
             assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
-       //     assertTrue("Insert of file should return correct sized Boolean[]", (((Boolean[]) result).length == REPLICATION_FACTOR) ||
-       //               ((NUM_NODES < REPLICATION_FACTOR) &&
-       //                (((Boolean[]) result).length) == NUM_NODES));
 
             for (int i=0; i<((Boolean[]) result).length; i++) {
               assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
@@ -204,7 +199,7 @@ public class RawPastRegrTest extends CommonAPITest {
             stepDone();
 
             // run replica maintenance
-            runReplicaMaintence();
+            runReplicaMaintenance();
 
             // Check file exists
             stepStart("Remote File Lookup");
@@ -262,9 +257,6 @@ public class RawPastRegrTest extends CommonAPITest {
       public void receive(Object result) throws Exception {
         assertTrue("Insert of file result should not be null", result != null);
         assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
-     //   assertTrue("Insert of file should return correct sized Boolean[]", (((Boolean[]) result).length == REPLICATION_FACTOR) ||
-     //              ((NUM_NODES < REPLICATION_FACTOR) &&
-     //               (((Boolean[]) result).length) == NUM_NODES));
 
         for (int i=0; i<((Boolean[]) result).length; i++) {
           assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
@@ -274,7 +266,7 @@ public class RawPastRegrTest extends CommonAPITest {
         stepDone();
 
         // run replica maintenance
-        runReplicaMaintence();
+        runReplicaMaintenance();
 
         // Check file exists
         stepStart("Remote File Lookup");
@@ -292,9 +284,6 @@ public class RawPastRegrTest extends CommonAPITest {
               public void receive(Object result) throws Exception {
                 assertTrue("Insert of file result should not be null", result != null);
                 assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
-          //      assertTrue("Insert of file should return correct sized Boolean[]", (((Boolean[]) result).length == REPLICATION_FACTOR) ||
-          //                 ((NUM_NODES < REPLICATION_FACTOR) &&
-          //                  (((Boolean[]) result).length) == NUM_NODES));
 
                 for (int i=0; i<((Boolean[]) result).length; i++) {
                   assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
@@ -304,7 +293,7 @@ public class RawPastRegrTest extends CommonAPITest {
                 stepDone();
 
                 // run replica maintenance
-                runReplicaMaintence();
+                runReplicaMaintenance();
 
                 // Check correct file exists
                 stepStart("Remote Overwriting File Lookup");
@@ -322,9 +311,6 @@ public class RawPastRegrTest extends CommonAPITest {
                       public void receive(Object result) throws Exception {
                         assertTrue("Insert of file result should not be null", result != null);
                         assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
-                  //      assertTrue("Insert of file should return correct sized Boolean[]", (((Boolean[]) result).length == REPLICATION_FACTOR) ||
-                  //                 ((NUM_NODES < REPLICATION_FACTOR) &&
-                 //                   (((Boolean[]) result).length) == NUM_NODES));
 
                         for (int i=0; i<((Boolean[]) result).length; i++) {
                           assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
@@ -334,7 +320,7 @@ public class RawPastRegrTest extends CommonAPITest {
                         stepDone();
 
                         // run replica maintenance
-                        runReplicaMaintence();
+                        runReplicaMaintenance();
 
                         // Check correct file exists
                         stepStart("Remote Non-Overwriting File Lookup");
@@ -570,11 +556,7 @@ public class RawPastRegrTest extends CommonAPITest {
       public void receive(Object result) throws Exception {
         assertTrue("Insert of file result should not be null", result != null);
         assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
-   //     assertTrue("Insert of file should return correct sized Boolean[]", (((Boolean[]) result).length == REPLICATION_FACTOR) ||
-   //               ((NUM_NODES < REPLICATION_FACTOR) &&
-   //                 (((Boolean[]) result).length) == NUM_NODES));
 
-//        System.out.println("PastRegrTest.testLookupHandles() insert result.length:"+((Boolean[]) result).length);
         for (int i=0; i<((Boolean[]) result).length; i++) {
           assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
           assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
@@ -583,7 +565,7 @@ public class RawPastRegrTest extends CommonAPITest {
         stepDone();
         
         // run replica maintenance
-        runReplicaMaintence();
+        runReplicaMaintenance();
 
         // Check file exists (at 1 replica)
         stepStart("Remote Handles Lookup - 1 Replica");
@@ -745,8 +727,7 @@ public class RawPastRegrTest extends CommonAPITest {
                 // check cache
                 local.getStorageManager().getObject(id2, new TestCommand() {
                   public void receive(Object result) throws Exception {
-                  //  assertTrue("Object should not be null", result != null);
-                  //  assertTrue("Object should be correct", result.equals(file3));
+                    // TODO: this step and the next check nothing; their assertions were disabled
 
                     stepDone();
 
@@ -754,8 +735,6 @@ public class RawPastRegrTest extends CommonAPITest {
                     LookupMessage lmsg = new LookupMessage(-1, id2, local.getLocalNodeHandle(), id2);
 
                     stepStart("Lookup Satisfied By Cache");
-                  //  assertTrue("Message should not continue to be routed",
-                  //             ! local.forward(new TestRouteMessage(id2, null, lmsg)));
                     stepDone();
 
                     sectionDone();
@@ -779,7 +758,7 @@ public class RawPastRegrTest extends CommonAPITest {
    * Private method which initiates the replica maintenance on all
    * of the nodes
    */
-  private void runReplicaMaintence() {
+  private void runReplicaMaintenance() {
     for (int i=0; i<NUM_NODES; i++) {
       pasts[i].getReplication().replicate();
     }
@@ -800,12 +779,9 @@ public class RawPastRegrTest extends CommonAPITest {
                 
 
   /**
-   * Usage: DistPastTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (direct|socket)] [-help]
+   * Usage: RawPastRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (direct|socket)] [-help]
    */
   public static void main(String args[]) throws Exception {
-//    System.setOut(new PrintStream(new FileOutputStream("pastrtest.txt")));
-//    System.setErr(System.out);
-//    while(true) {
       LinkedList<File> delme = new LinkedList<File>();
       delme.add(new File("FreePastry-Storage-Root"));
       while(!delme.isEmpty()) {
@@ -827,19 +803,11 @@ public class RawPastRegrTest extends CommonAPITest {
       env.getParameters().setDouble("p2p_past_successfulInsertThreshold",1.0);
       RawPastRegrTest pastTest = new RawPastRegrTest(env);
       pastTest.start();
-      
-//      synchronized(pastTest) {
-//        pastTest.wait();  
-//      }
-//    }
   }
 
   protected void cleanUp() {
     running = false;
     environment.destroy();  
-//    synchronized(this) {
-//      this.notifyAll();
-//    }
   }
   
   /**

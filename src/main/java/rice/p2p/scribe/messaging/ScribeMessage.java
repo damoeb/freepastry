@@ -45,8 +45,6 @@ import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.scribe.*;
 
 /**
- * @(#) ScribeMessage.java
- *
  * This class the abstraction of a message used internally by Scribe.
  *
  * @version $Id: ScribeMessage.java 3613 2007-02-15 14:45:14Z jstewart $

@@ -84,7 +84,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   /**
    * Constructor.
    *
-   * @param localHandle the local node
+   * @param localNode the local node
    * @param size the size of the leaf set.
    * @param rt (to fall back on for more entries on delete operations)
    */
@@ -247,15 +247,14 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   /**
    * Removes a node id and its handle from the set.
    *
-   * @param nid the node to remove.
-   * @return the node handle removed or null if nothing.
+   * @param nh the node to remove.
    */
   public void remove(NodeHandle nh)
   {
     cwSet.remove(nh);
     ccwSet.remove(nh);
     
-    // don't do this inside SimalerSet.remove() otherwise you may get an 
+    // don't do this inside SimilarSet.remove() otherwise you may get an 
     // add notification before a removal
     cwSet.findMoreEntriesFromRoutingTable();
     ccwSet.findMoreEntriesFromRoutingTable();
@@ -275,13 +274,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    * @return the size.
    */
   public int size() { 
-    return cwSize() + ccwSize(); // old code
-    
-    // 8.16.5 decided not to do this because it will break too much code
-//    HashSet superset = new HashSet();
-//    superset.addAll(cwSet.getCollection());
-//    superset.addAll(ccwSet.getCollection());
-//    return superset.size();     
+    return cwSize() + ccwSize();
   }
 
   /**
@@ -303,8 +296,8 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    * the index of the same Id in the opposite half of the
    * leafset
    *
-   * @param index the index of the entry to complement
-   * @param the index of the same node in the opposite half of the leafset, or inx if it does not exist there
+   * @param inx the index of the entry to complement
+   * @return the index of the same node in the opposite half of the leafset, or inx if it does not exist there
    */
   private int complement(int inx) {
     int res;
@@ -324,7 +317,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   }
 
   /**
-   * Numerically closests node to a given a node in the leaf set.
+   * Numerically closest node to a given a node in the leaf set.
    *
    * @param nid a node id.
    * @return the index of the numerically closest node (0 if baseId is the closest).
@@ -338,14 +331,12 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
     if (baseId.clockwise(nid)) {
       cwMS = cwSet.mostSimilar(nid);
-      //ccwMS = ccwSet.size()-1;
       if (cwMS < cwSet.size()-1)
         return cwMS + 1;
       ccwMS = ccwSet.mostSimilar(nid);
     }
     else {
       ccwMS = ccwSet.mostSimilar(nid);
-      //cwMS = cwSet.size()-1;
       if (ccwMS < ccwSet.size()-1)
         return -ccwMS - 1;
       cwMS = cwSet.mostSimilar(nid);
@@ -359,14 +350,6 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
       return cwMS + 1;
     else
       return -ccwMS - 1;
-
-    /*
-     if (cwMinDist.compareTo(ccwMinDist) <= 0)
-      return cwMS + 1;
-     else
-      return -ccwMS - 1;
-     */
-
   }
 
   /**
@@ -477,16 +460,6 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    */
   public int getUniqueCount() {
     return getUniqueSet().size()+1; // the local node     
-//
-//    Vector v = new Vector();
-//
-//    for (int i=-ccwSize(); i<=cwSize(); i++) {
-//      if (! v.contains(get(i).getNodeId())) {
-//        v.add(get(i).getNodeId());
-//      }
-//    }
-//
-//    return v.size();
   }
   
   /**
@@ -611,7 +584,6 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     }
     if (rr == null || rprev == null) return rr;
     
-    //IdRange res = rr.diff(rprev, cw);
     IdRange res;
 
     if (!cw) res = rr.diff(rprev);
@@ -626,14 +598,12 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    * @param remotels the remote leafset
    * @param from the node from which we received the leafset
    * @param routeTable the routing table
-   * @param security the security manager
    * @param testOnly if true, do not change the leafset
    * @param insertedHandles if not null, a Set that contains, upon return of this method, the nodeHandles that would be inserted into this LeafSet if testOnly is true
    * @return true if the local leafset changed
    */
   public boolean merge(LeafSet remotels, NodeHandle from, RoutingTable routeTable,
                        boolean testOnly, Set<NodeHandle> insertedHandles) {
-//    System.out.println(this+".merge("+remotels+","+from+",...,"+testOnly+","+insertedHandles+")");
     
     boolean changed, result = false;
     int cwSize = remotels.cwSize();
@@ -645,7 +615,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     // merge the received leaf set into our own
     // to minimize inserts/removes, we do this from nearest to farthest nodes
 
-    // get indeces of localId in the leafset
+    // get indices of localId in the leafset
     int cw = remotels.cwSet.getIndex(baseId);
     int ccw = remotels.ccwSet.getIndex(baseId);
 
@@ -666,7 +636,6 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
           if (closest == -remotels.ccwSize() || closest == remotels.cwSize()) {
             // doesn't hurt to merge it anyways
-            //return;
           }
 
           if (closest == 0) {
@@ -734,7 +703,6 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
       else nh = remotels.get(i);
 
       if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
-      //if (member(nh.getNodeId())) continue;
 
       if (testOnly) {
         // see it is missing
@@ -761,7 +729,6 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
       else nh = remotels.get(i);
 
       if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
-      //if (member(nh.getNodeId())) continue;
 
       if (testOnly) {
         // see if it is missing
@@ -844,7 +811,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   /**
    * Add observer method.
    *
-   * @param o the observer to add.
+   * @param listener the listener to add.
    */
   public void addNodeSetListener(NodeSetListener listener) {
     cwSet.addNodeSetListener(listener);
@@ -854,7 +821,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   /**
    * Delete observer method.
    *
-   * @param o the observer to delete.
+   * @param listener the listener to remove.
    */
   public void deleteNodeSetListener(NodeSetListener listener) {
     cwSet.removeNodeSetListener(listener);
@@ -888,7 +855,6 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   }
 
   protected boolean testOtherSet(SimilarSet set, NodeHandle handle) {
-    //if (true) return false;
     SimilarSet otherSet = ccwSet;
     if (otherSet == set) {
       otherSet = cwSet;
@@ -1007,7 +973,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   
    *   TODO 2.23.2006 the synchronization of LeafSet is nonexistent
-   *   and it's difficult to add because the listeneer interface should not 
+   *   and it's difficult to add because the listener interface should not 
    *   be called while holding a lock, but the lock should be acquired once while
    *   making the change
    *   

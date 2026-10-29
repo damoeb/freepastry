@@ -110,7 +110,6 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
         return true;
       default:
         throw new IllegalArgumentException("Cannot evaluate isProof("+e+"):"+e.getEvidenceType());
-//        panic("Cannot evaluate isProof("+e.getType()+")");
     }    
   }
     
@@ -169,13 +168,11 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     addEvidence(originator, subject, timestamp, evidence, null);
   }
   public void addEvidence(Identifier originator, Identifier subject, long timestamp, Evidence evidence, Handle interestedParty) throws IOException {
-//    char namebuf[200], buf1[200], buf2[200];
     if (logger.level <= Logger.FINE) logger.log("addEvidence(orig="+originator+", subj="+subject+", seq="+timestamp+")");
 
     boolean proof = isProof(evidence);
 
     /* Write the actual evidence to disk */
-//  sprintf(namebuf, "%s/%s-%s-%lld.%s", dirname, subject->render(buf1), originator->render(buf2), timestamp, proof ? "proof" : "challenge");
 
     
     File outFile = getFile(subject, originator, timestamp, (proof ? "proof" : "challenge"));
@@ -215,15 +212,6 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     }
     this.directory = directory;
     
-//    if (!dir) {
-//      if (mkdir(dirname, 0755) < 0)
-//        return false;
-//      if ((dir = opendir(dirname)) == NULL)
-//        return false;
-//    }
-      
-//    strncpy(this->dirname, dirname, sizeof(this->dirname));
-
     /* To prevent a flood of status updates, we temporarily disable updates
        while we inspect the existing evidence on disk */
 
@@ -248,11 +236,6 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
           buf.close();
           setLastCheckedAuth(id, lastAuth);
         } else if (suffix.equals("challenge") || suffix.equals("response") || suffix.equals("proof")) {
-  //        char namebuf[200];
-  //        struct stat statbuf;
-  //        sprintf(namebuf, "%s/%s", dirname, ent->d_name);
-  //        int statRes = stat(namebuf, &statbuf);
-  //        assert(statRes == 0);
   
   
           
@@ -307,9 +290,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     }
   }
   
-  /* Retrieve some information about a given piece of evidence */
-  // Use findEvidence()
-//  bool PeerInfoStore::statEvidence(Identifier *originator, Identifier *subject, long long timestamp, int *evidenceLen, bool *isProof, bool *haveResponse, NodeHandle **interestedParty)
+  /* statEvidence() of the C++ implementation is not ported: use findEvidence() */
 
   /**
    * Get the actual bytes of a piece of evidence
@@ -320,7 +301,6 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     
     File infile = getFile(subject, originator, timestamp, evi.isProof() ? "proof" : "challenge");
     // done automatically by FIB
-//    if (!infile.exists()) throw new FileNotFoundException("Cannot read '"+infile+"'");
 
     FileInputBuffer buf = new FileInputBuffer(infile, logger);
     byte type = buf.readByte();
@@ -338,13 +318,6 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     EvidenceRecord<Handle, Identifier> evi = findEvidence(originator, subject, timestamp);
     assert(evi != null && !evi.isProof() && !evi.hasResponse());
     
-//    char namebuf[200], buf1[200], buf2[200];
-//    sprintf(namebuf, "%s/%s-%s-%lld.response", dirname, subject->render(buf1), originator->render(buf2), timestamp);
-//    
-//    FILE *outfile = fopen(namebuf, "w+");
-//    if (!outfile) 
-//      panic("Cannot create '%s'", namebuf);
-//      
     FileOutputBuffer outfile = new FileOutputBuffer(getFile(subject, originator, timestamp, "response"));
     outfile.writeByte((byte)response.getEvidenceType());
     response.serialize(outfile);

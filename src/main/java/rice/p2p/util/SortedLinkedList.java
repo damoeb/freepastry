@@ -67,7 +67,6 @@ public class SortedLinkedList<E extends Comparable<E>> extends LinkedList<E> {
 
   @Override
   public ListIterator<E> listIterator(int index) {
-    // TODO Auto-generated method stub
     final ListIterator<E> it = super.listIterator(index);
     
     return new ListIterator<E>(){

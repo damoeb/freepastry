@@ -86,13 +86,6 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
   /**
    * Constructor.
    * 
-   * Here is order for bind address 1) bindAddress parameter 2) if bindAddress
-   * is null, then parameter: socket_bindAddress (if it exists) 3) if
-   * socket_bindAddress doesn't exist, then InetAddress.getLocalHost()
-   * 
-   * @param nf The factory for building node ids
-   * @param bindAddress which address to bind to
-   * @param startPort The port to start creating nodes on
    * @param env The environment.
    */
   public TransportPastryNodeFactory(Environment env) {
@@ -103,9 +96,6 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
   }
     
   public PastryNode nodeHandleHelper(PastryNode pn) throws IOException {
-//    final Object lock = new Object();
-//    final ArrayList<IOException> retException = new ArrayList<IOException>();
-//    Object nhaPart1 = getnodeHandleAdapterPart1(pn);
     
     NodeHandleFactory<?> handleFactory = getNodeHandleFactory(pn);
     NodeHandle localhandle = getLocalHandle(pn, handleFactory);    
@@ -116,7 +106,6 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     RoutingTable routeTable = new RoutingTable(localhandle, rtMax, rtBase,
         pn);
     LeafSet leafSet = new LeafSet(localhandle, lSetSize, routeTable);
-//            StandardRouter router = new RapidRerouter(pn, msgDisp);
     StandardRouter router = new RapidRerouter(pn, msgDisp, getRouterStrategy(pn));
     pn.setElements(localhandle, msgDisp, leafSet, routeTable, router);
   
@@ -167,7 +156,6 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
   protected LeafSetProtocol getLeafSetProtocol(PastryNode pn, LeafSet leafSet, RoutingTable routeTable) {
     PeriodicLeafSetProtocol lsProtocol = new PeriodicLeafSetProtocol(pn,
         pn.getLocalHandle(), leafSet, routeTable);    
-//    StandardLeafSetProtocol lsProtocol = new StandardLeafSetProtocol(pn,pn.getLocalHandle(),leafSet,routeTable);
     lsProtocol.register();
     return lsProtocol;
     
@@ -176,7 +164,6 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
   protected JoinProtocol getJoinProtocol(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, ReadyStrategy lsProtocol) {
     ConsistentJoinProtocol jProtocol = new ConsistentJoinProtocol(pn,
         pn.getLocalHandle(), routeTable, leafSet, lsProtocol);
-//    StandardJoinProtocol jProtocol = new StandardJoinProtocol(pn,pn.getLocalHandle(), routeTable, leafSet);
     jProtocol.register();
     return jProtocol;    
   }

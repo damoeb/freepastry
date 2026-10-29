@@ -506,7 +506,6 @@ public class Base64
      * @param source The data to convert
      * @param off Offset in array where conversion should begin
      * @param len Length of data to convert
-     * @param breakLines Break lines at 80 characters or less.
      * @param options Specified options
      * @see Base64#GZIP
      * @see Base64#DONT_BREAK_LINES
@@ -665,9 +664,6 @@ public class Base64
         // Example: Dk==
         if( source[ srcOffset + 2] == EQUALS_SIGN )
         {
-            // Two ways to do the same thing. Don't know which way I like best.
-            //int outBuff =   ( ( DECODABET[ source[ srcOffset    ] ] << 24 ) >>>  6 )
-            //              | ( ( DECODABET[ source[ srcOffset + 1] ] << 24 ) >>> 12 );
             int outBuff =   ( ( DECODABET[ source[ srcOffset    ] ] & 0xFF ) << 18 )
                           | ( ( DECODABET[ source[ srcOffset + 1] ] & 0xFF ) << 12 );
             
@@ -678,10 +674,6 @@ public class Base64
         // Example: DkL=
         else if( source[ srcOffset + 3 ] == EQUALS_SIGN )
         {
-            // Two ways to do the same thing. Don't know which way I like best.
-            //int outBuff =   ( ( DECODABET[ source[ srcOffset     ] ] << 24 ) >>>  6 )
-            //              | ( ( DECODABET[ source[ srcOffset + 1 ] ] << 24 ) >>> 12 )
-            //              | ( ( DECODABET[ source[ srcOffset + 2 ] ] << 24 ) >>> 18 );
             int outBuff =   ( ( DECODABET[ source[ srcOffset     ] ] & 0xFF ) << 18 )
                           | ( ( DECODABET[ source[ srcOffset + 1 ] ] & 0xFF ) << 12 )
                           | ( ( DECODABET[ source[ srcOffset + 2 ] ] & 0xFF ) <<  6 );
@@ -695,11 +687,6 @@ public class Base64
         else
         {
             try{
-            // Two ways to do the same thing. Don't know which way I like best.
-            //int outBuff =   ( ( DECODABET[ source[ srcOffset     ] ] << 24 ) >>>  6 )
-            //              | ( ( DECODABET[ source[ srcOffset + 1 ] ] << 24 ) >>> 12 )
-            //              | ( ( DECODABET[ source[ srcOffset + 2 ] ] << 24 ) >>> 18 )
-            //              | ( ( DECODABET[ source[ srcOffset + 3 ] ] << 24 ) >>> 24 );
             int outBuff =   ( ( DECODABET[ source[ srcOffset     ] ] & 0xFF ) << 18 )
                           | ( ( DECODABET[ source[ srcOffset + 1 ] ] & 0xFF ) << 12 )
                           | ( ( DECODABET[ source[ srcOffset + 2 ] ] & 0xFF ) <<  6)
@@ -912,7 +899,7 @@ public class Base64
     
     
     /**
-     * A {@link Base64#InputStream} will read data from another
+     * A {@link Base64.InputStream} will read data from another
      * {@link java.io.InputStream}, given in the constructor,
      * and encode/decode to/from Base64 notation on the fly.
      *
@@ -933,7 +920,7 @@ public class Base64
         
         
         /**
-         * Constructs a {@link Base64#InputStream} in DECODE mode.
+         * Constructs a {@link Base64.InputStream} in DECODE mode.
          *
          * @param in the {@link java.io.InputStream} from which to read data.
          * @since 1.3
@@ -945,7 +932,7 @@ public class Base64
         
         
         /**
-         * Constructs a {@link Base64#InputStream} in
+         * Constructs a {@link Base64.InputStream} in
          * either ENCODE or DECODE mode.
          * <p>
          * Valid options:<pre>
@@ -1067,7 +1054,7 @@ public class Base64
             if( position >= 0 )
             {
                 // End of relevant data?
-                if( /*!encode &&*/ position >= numSigBytes )
+                if( position >= numSigBytes )
                     return -1;
                 
                 if( encode && breakLines && lineLength >= MAX_LINE_LENGTH )
@@ -1120,9 +1107,6 @@ public class Base64
             {
                 b = read();
                 
-                //if( b < 0 && i == 0 )
-                //    return -1;
-                
                 if( b >= 0 )
                     dest[off + i] = (byte)b;
                 else if( i == 0 )
@@ -1145,7 +1129,7 @@ public class Base64
     
     
     /**
-     * A {@link Base64#OutputStream} will write data to another
+     * A {@link Base64.OutputStream} will write data to another
      * {@link java.io.OutputStream}, given in the constructor,
      * and encode/decode to/from Base64 notation on the fly.
      *
@@ -1166,7 +1150,7 @@ public class Base64
         private boolean suspendEncoding;
         
         /**
-         * Constructs a {@link Base64#OutputStream} in ENCODE mode.
+         * Constructs a {@link Base64.OutputStream} in ENCODE mode.
          *
          * @param out the {@link java.io.OutputStream} to which data will be written.
          * @since 1.3
@@ -1178,7 +1162,7 @@ public class Base64
         
         
         /**
-         * Constructs a {@link Base64#OutputStream} in
+         * Constructs a {@link Base64.OutputStream} in
          * either ENCODE or DECODE mode.
          * <p>
          * Valid options:<pre>
@@ -1263,7 +1247,6 @@ public class Base64
                     {
                         int len = Base64.decode4to3( buffer, 0, b4, 0 );
                         out.write( b4, 0, len );
-                        //out.write( Base64.decode4to3( buffer ) );
                         position = 0;
                     }   // end if: enough to output
                 }   // end if: meaningful base64 character

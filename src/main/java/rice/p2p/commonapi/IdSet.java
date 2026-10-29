@@ -78,15 +78,14 @@ public interface IdSet extends Serializable {
 
   /**
    * return a subset of this set, consisting of the member ids in a given range
-   * @param from the lower end of the range (inclusive)
-   * @param to the upper end of the range (exclusive)
+   * @param range the range of ids to include
    * @return the subset
    */
   public IdSet subSet(IdRange range);
 
   /**
    * return an iterator over the elements of this set
-   * @return the interator
+   * @return the iterator
    */
   public Iterator<Id> getIterator();
   

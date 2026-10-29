@@ -59,8 +59,9 @@ public class JavaDeserializer extends ObjectInputStream {
   protected Endpoint endpoint;
 
   /**
-   * @param arg0
-   * @throws java.io.IOException
+   * @param stream the stream to read the serialized objects from
+   * @param endpoint the endpoint used to resolve serialized node handles, may be null
+   * @throws java.io.IOException if reading the stream header fails
    */
   public JavaDeserializer(InputStream stream, Endpoint endpoint)
       throws IOException {
@@ -73,7 +74,6 @@ public class JavaDeserializer extends ObjectInputStream {
 
   protected Object resolveObject(Object input) throws IOException {
     if (input instanceof NodeHandle) {
-//      System.out.println("POIS.resolveObject("+input+"@"+System.identityHashCode(input)+"):"+node);
       if (endpoint != null) {
         // coalesce
         input = endpoint.coalesce((NodeHandle) input);

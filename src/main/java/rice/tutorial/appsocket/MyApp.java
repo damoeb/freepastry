@@ -116,8 +116,7 @@ public class MyApp implements Application {
         } catch (IOException ioe) {
           ioe.printStackTrace(); 
         }
-        // only need to do this if expecting more messages
-//        socket.register(true, false, 3000, this);        
+        // if expecting more messages, call socket.register(true, false, 3000, this) here
       }
     
       /**

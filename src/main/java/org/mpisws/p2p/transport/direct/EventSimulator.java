@@ -128,12 +128,10 @@ public class EventSimulator {
           if (maxSimTime < newSimTime) {
             // we need to throttle
             long neededSysDelay = (long)((newSimTime-maxSimTime)/maxSpeed);
-//            logger.log("Waiting for "+neededSysDelay+" at "+timeSource.currentTimeMillis());
             if (neededSysDelay >= 1) {
               manager.wait(neededSysDelay);          
               long now = System.currentTimeMillis();
               long delay = now-sysTime;
-  //            System.out.println("Woke up after "+delay);
               if (delay < neededSysDelay) return true;
             }
           }
@@ -144,28 +142,6 @@ public class EventSimulator {
       }
     } // synchronized(manager)
     
-//    TimerTask task;
-//    synchronized(taskQueue) {
-//      // take a task from the taskQueue
-//      if (taskQueue.isEmpty()) {
-//        if (logger.level <= Logger.FINE) logger.log("taskQueue is empty");
-//        return false;
-//      }
-//      task = (TimerTask) taskQueue.first();
-//      if (logger.level <= Logger.FINE) logger.log("simulate():"+task);
-//      taskQueue.remove(task);
-//    }
-//      // increment the clock if needed
-//      if (task.scheduledExecutionTime() > timeSource.currentTimeMillis()) {
-//        if (logger.level <= Logger.FINER) logger.log("the time is now "+task.scheduledExecutionTime());        
-//        timeSource.setTime(task.scheduledExecutionTime());
-//      }
-//  
-//  
-//      if (task.execute(timeSource)) {
-//        addTask(task);
-//      }    
-      
       
       return true;
   }
@@ -180,7 +156,6 @@ public class EventSimulator {
         running = true;
         manager.invoke(new Runnable() {    
           public void run() {
-//            logger.log("EventSimulator.run()");
             if (!running) return;            
             try {
             if (!simulate()) {

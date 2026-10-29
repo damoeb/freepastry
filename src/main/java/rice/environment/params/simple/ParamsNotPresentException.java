@@ -52,7 +52,8 @@ public class ParamsNotPresentException extends RuntimeException {
   Exception subexception;
   
   /**
-   * @param ioe
+   * @param reason the message
+   * @param e the exception that prevented loading the file
    */
   public ParamsNotPresentException(String reason, Exception e) {
     super(reason);

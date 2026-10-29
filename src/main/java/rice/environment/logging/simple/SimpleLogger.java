@@ -49,8 +49,8 @@ import rice.environment.logging.*;
 import rice.environment.time.TimeSource;
 
 /**
- * This logger writes its name:time:message to the printstream provided, unless the 
- * priority is lower than the minimumPriority.
+ * This logger writes prefix:name:time:message to the print stream of its log manager.
+ * Callers check {@code level} before logging.
  * 
  * @author Jeff Hoye
  */
@@ -62,7 +62,7 @@ public class SimpleLogger extends HeirarchyLogger {
   String loggerName;
   
   /**
-   * The stream to print to.
+   * The log manager that provides the stream, time source, prefix and date format.
    */
   AbstractLogManager alm;
   
@@ -70,9 +70,9 @@ public class SimpleLogger extends HeirarchyLogger {
    * Constructor.
    * 
    * @param loggerName the name of this logger.
-   * @param ps the stream to print to.
-   * @param time the timesource.
-   * @param minPriority the minimum priority to display.
+   * @param alm the log manager that provides the stream to print to.
+   * @param level the minimum priority to display.
+   * @param useDefault true if the level follows the global loglevel parameter.
    */
   public SimpleLogger(String loggerName, AbstractLogManager alm, int level, boolean useDefault) {
     this.loggerName = loggerName;

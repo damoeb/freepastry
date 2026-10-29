@@ -57,8 +57,6 @@ public class BloomFilterUnit {
       filter.add(elements[i]);
     }
     
- //   System.out.println(filter.getBitSet());
-    
     for (int i=0; i<elements.length; i++) {
       if (! filter.check(elements[i]))
         System.out.println("FAILURE: Element " + i + " did not exist!");

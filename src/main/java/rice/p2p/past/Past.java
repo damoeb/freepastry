@@ -43,8 +43,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.past.rawserialization.*;
 
 /**
- * @(#) Past.java
- * 
  * This interface is exported by all instances of Past.  An instance
  * of Past provides a distributed hash table (DHT) service.  Each
  * instance stores tuples consisting of a key and an object of a

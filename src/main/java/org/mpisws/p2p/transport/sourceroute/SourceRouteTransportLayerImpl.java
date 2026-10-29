@@ -112,7 +112,6 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     taps = new ArrayList<SourceRouteTap<Identifier>>();    
     MAX_NUM_HOPS = env.getParameters().getInt("transport_sr_max_num_hops");
     
-//    this.callback = new DefaultCallback<SourceRoute<Identifier>, ByteBuffer>(env);
     this.forwardSourceRouteStrategy = fSRs;
 
     if (this.forwardSourceRouteStrategy == null) {
@@ -301,7 +300,6 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
                  */
                 public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
                   // may be nice to send some kind of error message to the opener
-  //                errorHandler.receivedException(sr, ex);
                   socka.close();
                 }
               }, null);
@@ -312,8 +310,6 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
             }            
           }
 
-//          if (sr.
-//          callback.incomingSocket(new SourceRouteP2PSocket(eisa, socket));
         } catch (InsufficientBytesException ibe) {
           socket.register(true, false, this); 
         } catch (IOException e) {

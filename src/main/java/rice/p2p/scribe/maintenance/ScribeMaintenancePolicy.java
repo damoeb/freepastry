@@ -63,7 +63,8 @@ public interface ScribeMaintenancePolicy {
   public void doMaintenance(MaintainableScribe scribe);
   
   /**
-   * Called when membership changes "near" the local node, in overlay space.  
+   * Called when membership changes "near" the local node, in overlay space, so that the
+   * local node is no longer the root of the given topics.
    * 
    * The typical use of this function would be to detect if the root has 
    * changed and subscribe to the new root, like this:
@@ -75,8 +76,8 @@ public interface ScribeMaintenancePolicy {
    * 
    * Note however that this approach can cause a long tail at the head of the tree.
    * 
-   * @param handle
-   * @param membership
+   * @param scribe the Scribe instance
+   * @param topics the topics for which the local node is no longer the root
    */
   public void noLongerRoot(MaintainableScribe scribe, List<Topic> topics); 
   
@@ -97,9 +98,8 @@ public interface ScribeMaintenancePolicy {
   /**
    * The subscription failed.  This is called if no particular client requested the Subscription.
    * 
-   * TODO: Does this belong in the normal policy instead?
-   * 
-   * @param failedTopics
+   * @param scribe the Scribe instance
+   * @param failedTopics the topics the subscribe failed on
    */
   public void subscribeFailed(MaintainableScribe scribe, List<Topic> failedTopics);
 
@@ -150,13 +150,6 @@ public interface ScribeMaintenancePolicy {
           // the update method should send out the subscribe message
           // note, this shouldn't be necessary, because the leafset changes should fix this
           // this is in update()
-//          if (!scribe.isRoot(topic)) {
-//            if (logger.level <= Logger.WARNING)
-//              logger.log("has null parent for " + manager.getTopic()
-//                  + " inspite of NOT being root, root should be "+getRoot(manager.getTopic()));
-//            scribe.subscribe(topic, null);
-////            endpoint.route(manager.getTopic().getId(), new SubscribeMessage(handle, manager.getTopic(), handle.getId(), -1, null), null);
-//          }        
         }
       }
       
@@ -177,13 +170,11 @@ public interface ScribeMaintenancePolicy {
 
     public void nodeFaulty(MaintainableScribe scribe, NodeHandle handle,
         List<Topic> nodeWasParent, List<Topic> nodeWasChild) {      
-//      if (wasParentOfTopics.size() > 1) logger.log(o+" declared dead "+wasParentOfTopics.size());
       scribe.subscribe(nodeWasParent,null,implicitSubscribe(Collections.unmodifiableList(nodeWasParent)),null);
 
     }
 
     public void subscribeFailed(MaintainableScribe scribe, List<Topic> failedTopics) {
-//      logger.log("subscribeFailed("+failedTopics.iterator().next()+")");          
       scribe.subscribe(failedTopics, null, implicitSubscribe(Collections.unmodifiableList(failedTopics)), null);
     }
     

@@ -59,7 +59,6 @@ public interface AuthenticatorStore<Identifier> {
    * Also writes it to disk.
    * @param id
    * @param authenticator
-   * @throws IOException 
    */
   public void addAuthenticator(Identifier id, Authenticator authenticator);
   

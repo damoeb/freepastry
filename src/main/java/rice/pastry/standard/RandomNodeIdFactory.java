@@ -77,9 +77,6 @@ public class RandomNodeIdFactory implements NodeIdFactory {
 
   public Id generateNodeId() {
 
-    //byte raw[] = new byte[NodeId.nodeIdBitLength >> 3];
-    //rng.nextBytes(raw);
-
     byte raw[] = new byte[8];
     long tmp = ++next;
     for (int i = 0; i < 8; i++) {

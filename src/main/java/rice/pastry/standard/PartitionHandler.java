@@ -125,7 +125,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     Iterator<GoneSetEntry> it = gone.values().iterator();
     long now = env.getTimeSource().currentTimeMillis();
 
-    if (logger.level <= Logger.FINE) logger.log("Doing maintainence in PartitionHandler "+now);
+    if (logger.level <= Logger.FINE) logger.log("Doing maintenance in PartitionHandler "+now);
 
     if (logger.level <= Logger.FINER) logger.log("gone size 1 is "+gone.size()+" of "+maxGoneSize);
 

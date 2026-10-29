@@ -53,8 +53,6 @@ import rice.p2p.replication.messaging.*;
 import rice.p2p.util.*;
 
 /**
- * @(#) ReplicationImpl.java
- *
  * This is the implementation of the replication manager.
  *
  * @version $Id: ReplicationImpl.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -170,10 +168,6 @@ public class ReplicationImpl implements Replication, Application, Destructable {
       this.policy = new DefaultReplicationPolicy();
     
     this.handle = endpoint.getLocalNodeHandle();
-    
-  //  log.addHandler(new ConsoleHandler());
-  //  log.setLevel(Level.FINER);
-  //  log.getHandlers()[0].setLevel(Level.FINER);
     
     if (logger.level <= Logger.FINER) logger.log("Starting up ReplicationImpl with client " + client + " and factor " + replicationFactor);
 

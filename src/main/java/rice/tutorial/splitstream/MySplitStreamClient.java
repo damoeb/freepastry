@@ -58,7 +58,7 @@ import rice.pastry.commonapi.PastryIdFactory;
 public class MySplitStreamClient implements SplitStreamClient, Application {
 
   /**
-   * The lenght of a message in bytes.
+   * The length of a message in bytes.
    */
   public static final int DATA_LENGTH = 10;
   /**

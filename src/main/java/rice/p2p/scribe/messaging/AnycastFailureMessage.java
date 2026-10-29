@@ -40,7 +40,6 @@ package rice.p2p.scribe.messaging;
 import java.io.IOException;
 import java.util.*;
 
-// import rice.replay.*;
 import rice.pastry.PastryNode;
 import rice.*;
 import rice.p2p.commonapi.*;
@@ -52,7 +51,7 @@ import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * @(#) AnycastMessage.java The anycast message.
+ * Sent back to the initial requestor of an anycast that no node accepted.
  * 
  * @version $Id: AnycastMessage.java,v 1.7 2005/03/11 00:58:02 jeffh Exp $
  * @author Alan Mislove
@@ -63,27 +62,6 @@ public class AnycastFailureMessage extends ScribeMessage {
   // This is the same content that was sent in the anycast message
   public RawScribeContent content;
 
-  // public void dump(ReplayBuffer buffer, PastryNode pn) {
-  // buffer.appendByte(rice.pastry.commonapi.PastryEndpointMessage.idScribeAnycastFailureMessage);
-  // super.dump(buffer,pn);
-  // if(content == null) {
-  // buffer.appendByte(Verifier.NULL);
-  // } else {
-  // buffer.appendByte(Verifier.NONNULL);
-  // content.dump(buffer,pn);
-  // }
-  // }
-  //
-  //    
-  // public AnycastFailureMessage(ReplayBuffer buffer, PastryNode pn) {
-  // super(buffer,pn);
-  // if(buffer.getByte() == Verifier.NULL) {
-  // content = null;
-  // }else {
-  // content = Verifier.restoreScribeContent(buffer,pn);
-  // }
-  // //System.out.println("Constructed AnycastFailureMessage: " + this);
-  // }
   public AnycastFailureMessage(NodeHandle source, Topic topic, ScribeContent content) {
     this(source, topic, content instanceof RawScribeContent ? (RawScribeContent)content : new JavaSerializedScribeContent(content));
   }

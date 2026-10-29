@@ -229,9 +229,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.endpoint.setDeserializer(new MessageDeserializer() {    
       public Message deserialize(InputBuffer buf, short type, int priority,
           NodeHandle sender) throws IOException {
+        // the only message type, AggregationTimeoutMessage, is scheduled locally and never deserialized
         switch(type) {
-//          case AggregationTimeoutMessage.TYPE:
-//            return new AggregationTimeoutMessage(buf, endpoint);
         }
         return null;
       }    
@@ -244,7 +243,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.contentHandleDeserializer = new JavaPastContentHandleDeserializer();
 
     this.aggregateStore = aggregateStore;
-//    this.aggregateStore.setContentDeserializer(new JavaPastContentDeserializer() {    
     this.aggregateStore.setContentDeserializer(new PastContentDeserializer() {    
       public PastContent deserializePastContent(InputBuffer buf, Endpoint endpoint,
           short contentType) throws IOException {
@@ -254,10 +252,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           case NonAggregate.TYPE:
             short subType = buf.readShort();
             return contentDeserializer.deserializePastContent(buf, endpoint, subType);
-//            
-//          case 0:
-//            PastContent content = super.deserializePastContent(buf, endpoint, (short)0);
-//            throw new IllegalArgumentException("Unknown Type:"+contentType+" content:"+content.getClass().getName()+" "+content);            
         }
         throw new IllegalArgumentException("Unknown Type:"+contentType);
       }    
@@ -326,9 +320,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
    */
   private void addTimer(long timeoutMsec, char timeoutID) {
     /*
-     *  We schedule a GlacierTimeoutMessage with the ID of the
-     *  requested timer. This message will be delivered if the
-     *  pires and it has not been removed in the meantime.
+     *  We schedule an AggregationTimeoutMessage with the ID of the
+     *  requested timer. This message will be delivered if the timer
+     *  expires and it has not been removed in the meantime.
      */
     CancellableTask timer = endpoint.scheduleMessage(new AggregationTimeoutMessage(timeoutID, getLocalNodeHandle()), timeoutMsec);
     timers.put(Integer.valueOf(timeoutID), timer);
@@ -1218,7 +1212,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         
         /* An aggregate is a candidate for consolidation iff
               - it does not need to be refreshed yet, but has reached a certain age
-                (to prevent consolidation of 'garbage'), and
+                (to prevent consolidation of 'garbage'),
+              - at least one of its objects is still alive, and
               - it does not contain enough objects, or too many of them are dead
            Pointer arrays are never consolidated; they expire after some time.
         */
@@ -1295,11 +1290,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               for (int j=0; j<adc[i].objects.length; j++) {
                 if (adc[i].objects[j].isAliveAt(now)) {
                   
-                  // just for debugging...
                   GCPastContent temp = aggr[i].getComponent(j);
-//                  if (!(temp instanceof RawGCPastContent)) {
-//                    throw new RuntimeException(temp+" is not a RawGCPastContent"); 
-//                  }
                   
                   components[componentIndex] = (RawGCPastContent)temp;
                   desc[componentIndex] = adc[i].objects[j];
@@ -1776,13 +1767,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
   private int getSize(PastContent obj) {
     try {
-//      ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-//      ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
-//
-//      objectStream.writeObject(obj);
-//      objectStream.flush();
-      
-//      return byteStream.toByteArray().length;
       RawPastContent rpc;
       if (obj instanceof RawPastContent) {
         rpc = (RawPastContent)obj;
@@ -1872,7 +1856,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                     if (logger.level <= Logger.FINE) logger.log( "Checking whether "+objData.getId()+"v"+objData.getVersion()+" is in object store...");
                     objectStore.lookupHandles(objData.getId(), 1, new Continuation<PastContentHandle[], Exception>() {
                       public void receiveResult(PastContentHandle[] o) {
-/* evil... needs pastcontenthandle */                      
                         PastContentHandle[] result = (o instanceof PastContentHandle[]) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
                         if (logger.level <= Logger.FINE) logger.log( "Handles for "+objData.getId()+"v"+objData.getVersion()+": "+result+" ("+result.length+", PCH="+(o instanceof PastContentHandle[])+")");
                         boolean gotOne = false;

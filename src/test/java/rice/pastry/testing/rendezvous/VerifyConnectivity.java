@@ -82,7 +82,7 @@ public class VerifyConnectivity {
       public void receiveResult(final InetAddress result) {
         System.out.println("My external address is "+result);
 
-        // for some reason, can't do this immeadiately... don't know why yet
+        // for some reason, can't do this immediately... don't know why yet
         Runnable r = new Runnable() {        
           public void run() {        
             InetSocketAddress[] addrs = new InetSocketAddress[2];

@@ -138,11 +138,6 @@ public class PRNonconform2 extends PRRegressionTest {
     }
   }
 
-//  @Override
-//  public void buildPlayers(Environment env) throws Exception {
-//    super.buildPlayers(env);
-//  }
-    
   public static void main(String[] args) throws Exception {
     runMain(new PRNonconform2());
   }

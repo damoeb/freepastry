@@ -49,7 +49,6 @@ public class FetchLeafsetRequest extends PRawMessage {
   /**
    * Stored in the RouteMessage
    */
-//  transient public NodeHandle sender;
   public Id subject;
   
   public FetchLeafsetRequest(NodeHandle sender, Id subject) {

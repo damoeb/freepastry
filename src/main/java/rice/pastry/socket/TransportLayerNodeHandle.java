@@ -52,7 +52,5 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  */
 public abstract class TransportLayerNodeHandle<Identifier> extends rice.pastry.NodeHandle {
   public abstract Identifier getAddress();
-//  public Id getId();
-//  public void serialize(OutputBuffer sob) throws IOException;
   public abstract long getEpoch();
 }

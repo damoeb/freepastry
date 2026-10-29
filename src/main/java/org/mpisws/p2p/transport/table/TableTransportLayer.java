@@ -58,10 +58,10 @@ public interface TableTransportLayer<Identifier, Key, Value> extends TransportLa
    * Get a Value of the source.
    * 
    * @param source
-   * @param principal
-   * @param c
+   * @param key
+   * @param c receives the value, or an UnknownValueException if the source has no value for the key
    * @param options
-   * @return UnknownValueException if the source doesn't value for the key
+   * @return a way to cancel the request
    */
   public Cancellable requestValue(Identifier source, Key key, Continuation<Value, Exception> c, Map<String, Object> options);
   

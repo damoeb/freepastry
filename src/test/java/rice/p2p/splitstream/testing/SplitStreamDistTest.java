@@ -62,7 +62,6 @@ public class SplitStreamDistTest {
     
   public static String INSTANCE = "DistSplitStreamTest";
 
-//  public static final String BOOTNODE = "ricepl-3.cs.rice.edu";
   public static final String BOOTNODE = "swsao9509";
   
   public static final boolean nameSelf = true;
@@ -96,7 +95,7 @@ public class SplitStreamDistTest {
     // artificial churn
     boolean artificialChurn = false;
     if (args.length > 0) {
-//      artificialChurn = Boolean.getBoolean(args[0]); 
+      // args[0] is ignored: artificial churn stays off
     }
     
     // parse non automatic bootstrap
@@ -206,11 +205,6 @@ public class SplitStreamDistTest {
       }
     }
 
-//    if (!isBootNode) {
-//      System.out.println("Sleeping a minute at "+env.getTimeSource().currentTimeMillis());
-//      Thread.sleep(1*60*1000);
-//      System.out.println("Done sleeping at "+env.getTimeSource().currentTimeMillis());
-//    }          
     MySplitStreamClient app = new MySplitStreamClient(node, INSTANCE);      
     ChannelId CHANNEL_ID = new ChannelId(generateId());    
     app.attachChannel(CHANNEL_ID);
@@ -222,9 +216,7 @@ public class SplitStreamDistTest {
     }   
     
     app.subscribeToAllChannels();    
-//    if (isBootNode) {
       app.startPublishTask(); 
-//    }
   
     // this is to cause different connections to open
     if (artificialChurn) {

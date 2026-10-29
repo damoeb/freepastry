@@ -47,7 +47,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.messaging.Message;
 
 /**
- * The purpose of this class is just for programming convienience to disambiguate
+ * The purpose of this class is just for programming convenience to disambiguate
  * between rice.p2p.commonapi and rice.pastry with the interfaces/classes
  *   Message
  *   NodeHandle

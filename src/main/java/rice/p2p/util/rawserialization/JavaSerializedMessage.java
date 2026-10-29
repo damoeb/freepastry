@@ -46,7 +46,8 @@ import rice.pastry.messaging.*;
 import rice.p2p.commonapi.Message;
 
 /**
- * Wrapper that converts rice.pastry.messaging.Message to rice.pastry.messageing.PRawMessage
+ * Wrapper that converts a rice.p2p.commonapi.Message to a rice.p2p.commonapi.rawserialization.RawMessage
+ * by Java-serializing it (the Pastry-level wrapper is rice.pastry.messaging.PJavaSerializedMessage)
  * 
  * @author Jeff Hoye
  */
@@ -54,12 +55,9 @@ public class JavaSerializedMessage implements RawMessage {
 
   Message msg;
   
-//  Exception constructionStack;
-  
   public JavaSerializedMessage(Message msg) {
     this.msg = msg;
     if (msg == null) throw new RuntimeException("msg cannot be null");
-//    constructionStack = new Exception("Stack Trace: msg:"+msg).printStackTrace();
   }
 
   public short getType() {
@@ -77,9 +75,6 @@ public class JavaSerializedMessage implements RawMessage {
       
       byte[] temp = baos.toByteArray();
       buf.write(temp, 0, temp.length);
-  //    System.out.println("JavaSerializedMessage.serailize() "+msg+" length:"+temp.length);
-  //    new Exception("Stack Trace").printStackTrace();
-  //    constructionStack.printStackTrace();
     } catch (IOException ioe) {
       throw new JavaSerializationException(msg, ioe);
     }

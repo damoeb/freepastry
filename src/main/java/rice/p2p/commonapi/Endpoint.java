@@ -148,8 +148,9 @@ public interface Endpoint extends NodeHandleReader {
    *
    * @param id The object's id.
    * @param maxRank The number of desired replicas.
-   * @param handle The root handle of the remove set
+   * @param root The root handle of the remote set
    * @param set The set of other nodes around the root handle
+   * @return the replica set
    */
   NodeHandleSet replicaSet(Id id, int maxRank, NodeHandle root, NodeHandleSet set);
 
@@ -207,21 +208,21 @@ public interface Endpoint extends NodeHandleReader {
   
   /**
    * Schedules a message to be delivered to this application every period number of 
-   * milliseconds, after delay number of miliseconds have passed.
+   * milliseconds, after delay number of milliseconds have passed.
    *
    * @param message The message to be delivered
-   * @param delay The number of milliseconds to wait before delivering the fist message
-   * @param delay The number of milliseconds to wait before delivering subsequent messages
+   * @param delay The number of milliseconds to wait before delivering the first message
+   * @param period The number of milliseconds to wait before delivering subsequent messages
    */
   CancellableTask scheduleMessage(Message message, long delay, long period);
     
   /**
    * Schedules a message to be delivered to this application every period number of 
-   * milliseconds, after delay number of miliseconds have passed.
+   * milliseconds, after delay number of milliseconds have passed.
    *
    * @param message The message to be delivered
-   * @param delay The number of milliseconds to wait before delivering the fist message
-   * @param delay The number of milliseconds to wait before delivering subsequent messages
+   * @param delay The number of milliseconds to wait before delivering the first message
+   * @param period The number of milliseconds to wait before delivering subsequent messages
    */
   CancellableTask scheduleMessageAtFixedRate(Message message, long delay, long period);
     
@@ -272,7 +273,7 @@ public interface Endpoint extends NodeHandleReader {
   /**
    * To use a more efficient serialization format than Java Serialization
    * 
-   * @param md
+   * @param md the deserializer for this endpoint's raw messages
    */
   public void setDeserializer(MessageDeserializer md);
   
@@ -304,17 +305,20 @@ public interface Endpoint extends NodeHandleReader {
   /**
    * Can we guarantee that this id is currently ours, and routing will be consistent?  
    * Note that this has some real timing implications, so don't cache the returned value.  
-   * Note that it will always return always returns false if you are not the root of the id.  
+   * Note that it always returns false if you are not the root of the id.  
    *  
-   * @param the id to verify
-   * @return true if routing consistency can currently be guaranteed for this
+   * @param id the id to verify
+   * @return true if routing consistency can currently be guaranteed for this id
    */
   public boolean routingConsistentFor(Id id);
   
   /**
-   * To use a more efficient serialization format than Java Serialization
+   * Reads an Id written with Id.serialize(); more efficient than Java Serialization
    * 
-   * @param md
+   * @param buf the buffer to read the id from
+   * @param type the type of the id, as returned by Id.getType()
+   * @return the id
+   * @throws IOException if reading from buf fails
    */
   public Id readId(InputBuffer buf, short type) throws IOException;
 

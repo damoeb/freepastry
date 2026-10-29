@@ -114,7 +114,6 @@ public class MergeTest {
                 
         list.add(new TestNodeHandle(Id.build(a[ctr])));
      
-//        System.out.println(a[ctr]);
       }
     }
     return list.toArray(new NodeHandle[0]);
@@ -137,101 +136,80 @@ public class MergeTest {
     
     PastryNode pn = new PastryNode((rice.pastry.Id)ls2.get(0).getId(),env){
     
-//      public PastryNode(Id id, Environment env) {
-//        super(id, env); 
-//      }
-//      
       public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
-        // TODO Auto-generated method stub
         return null;
       }
     
       @Override
       public PMessageReceipt send(NodeHandle handle, Message message, PMessageNotification deliverAckToMe, Map<String, Object> options) {
-        // TODO Auto-generated method stub
         return null;
       }
     
       @Override
       public ScheduledMessage scheduleMsgAtFixedRate(Message msg, long delay, long period) {
-        // TODO Auto-generated method stub
         return null;
       }
     
       @Override
       public ScheduledMessage scheduleMsg(Message msg, long delay) {
-        // TODO Auto-generated method stub
         return null;
       }
     
       @Override
       public ScheduledMessage scheduleMsg(Message msg, long delay, long period) {
-        // TODO Auto-generated method stub
         return null;
       }
     
       @Override
       public int proximity(NodeHandle nh) {
-        // TODO Auto-generated method stub
         return 0;
       }
     
       public int proximity(NodeHandle nh, Map<String, Object> options) {
-        // TODO Auto-generated method stub
         return 0;
       }
     
       @Override
       public SocketRequestHandle<NodeHandle> connect(NodeHandle handle, AppSocketReceiver receiver, PastryAppl appl, int timeout) {
-        // TODO Auto-generated method stub
         return null;        
       }
     
       @Override
       public NodeHandle coalesce(NodeHandle newHandle) {
-        // TODO Auto-generated method stub
         return null;
       }
 
       @Override
       public <Identifier> Bootstrapper<Identifier> getBootstrapper() {
 
-        // TODO Auto-generated method stub
         return null;
       }
 
       public void addLivenessListener(LivenessListener<NodeHandle> name) {
-        // TODO Auto-generated method stub
         
       }
 
       public boolean checkLiveness(NodeHandle i, Map<String, Object> options) {
-        // TODO Auto-generated method stub
         return false;
       }
 
       public int getLiveness(NodeHandle i, Map<String, Object> options) {
-        // TODO Auto-generated method stub
         return 0;
       }
 
       public boolean removeLivenessListener(LivenessListener<NodeHandle> name) {
-        // TODO Auto-generated method stub
         return false;
       }
 
       public void clearState(NodeHandle i) {
-        // TODO Auto-generated method stub
         
       }
 
       public void addProximityListener(ProximityListener<NodeHandle> listener) {
-        // TODO Auto-generated method stub
         
       }
 
       public boolean removeProximityListener(ProximityListener<NodeHandle> listener) {
-        // TODO Auto-generated method stub
         return false;
       }
     

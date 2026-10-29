@@ -111,7 +111,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   
   Signature signer;
   
-  // TODO: handle memory problems
+  // TODO: this cache grows without bound; evict verifiers that are no longer used
   Map<I, Signature> verifiers = new HashMap<I, Signature>();
   
   HashProvider hasher;
@@ -119,8 +119,11 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   
   /**
    * TODO: Use a param to load the store from a file.
+   * @param localId
    * @param localCert
-   * @param params
+   * @param iSerializer
+   * @param cSerializer
+   * @param buf must be null: loading a persistent store is not implemented and throws
    * @return
    */
   static <H, I> TableStore<I, X509Certificate> getTableStore(I localId, X509Certificate localCert, Serializer<I> iSerializer, X509Serializer cSerializer, InputBuffer buf) {
@@ -200,23 +203,18 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   public int verify(I id, byte[] msg, byte[] signature) {
     if (logger.level <= Logger.FINEST) logger.log("Verify:"+id+" "+msg.length+" "+MathUtils.toBase64(msg)+" == "+signature.length+" "+MathUtils.toBase64(signature));
     Signature verifier = getVerifier(id);
-    if (verifier == null) return NO_CERTIFICATE; //throw new UnknownCertificateException(getLocalIdentifier(),id);
-//    msg.array()[0] = 55;
-//    System.out.println("Verifiying of "+MathUtils.toBase64(msg.array())+" was "+MathUtils.toBase64(signature.array()));
-//    System.out.println("Verifiying of "+msg+" was "+signature);
+    if (verifier == null) return NO_CERTIFICATE;
 
     try {
       synchronized(verifier) {      
         verifier.update(msg);
         if (verifier.verify(signature)) {
           return SIGNATURE_OK;
-  //        throw new SignatureException("Signature by "+id+" failed.");
         }
       }
     } catch (SignatureException se) {
       throw new RuntimeException(se);
     }
-//    System.out.println("Signature success by "+id);   
     return SIGNATURE_BAD;
   }
   
@@ -225,9 +223,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
    * 
    * @param i
    * @return
-   * @throws NoSuchAlgorithmException
-   * @throws NoSuchProviderException
-   * @throws InvalidKeyException
+   * @throws RuntimeException if the verifier cannot be created from the certificate
    */
   public Signature getVerifier(I i) {
     Signature ret = verifiers.get(i);

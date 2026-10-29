@@ -42,8 +42,6 @@ import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 
 /**
- * @(#) VersioningPast.java
- * 
  * This interface is exported by a PAST instance that offers access to
  * specific versions of an object. 
  *
@@ -61,7 +59,7 @@ public interface VersioningPast {
    * or a PastException.
    * 
    * @param id the key to be queried
-   @ @param version the requested version
+   * @param version the requested version
    * @param command Command to be performed when the result is received
    */
   public void lookup(Id id, long version, Continuation<? super PastContent, Exception> command);
@@ -81,7 +79,7 @@ public interface VersioningPast {
    *
    * @param id the key to be queried
    * @param version the requested version
-   * @param max the maximal number of replicas requested
+   * @param num the maximal number of replicas requested
    * @param command Command to be performed when the result is received 
    */
   public void lookupHandles(Id id, long version, int num, Continuation<? super PastContentHandle[], Exception> command);
@@ -101,9 +99,9 @@ public interface VersioningPast {
    * RefreshFailedException - if the refresh operation failed for any other
    *   reason (the getMessage() will describe the failure)
    * 
-   * @param id The keys which to refresh
-   * @param version The versions which to refresh
-   * @param expiration The time to extend the lifetime to
+   * @param ids The keys which to refresh
+   * @param versions The versions which to refresh, one per key
+   * @param expirations The times to extend the lifetimes to, one per key
    * @param command Command to be performed when the result is received
    */
   public void refresh(Id[] ids, long[] versions, long[] expirations, Continuation<? super Object[], Exception> command);

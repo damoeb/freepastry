@@ -87,12 +87,9 @@ public class Replayer implements MyEvents, EventCallback {
     params.setInt("pastry_socket_scm_max_open_sockets", params.getInt("org.mpisws.p2p.testing.transportlayer.replay_pastry_socket_scm_max_open_sockets"));
 
     params.setBoolean("pastry_socket_use_own_random",false);
-//    env.getParameters().setInt("rice.environment.random_loglevel", Logger.FINER);
 
     logger = env.getLogManager().getLogger(Replayer.class, null);
 
-//    env.getParameters().setInt("org.mpisws.p2p.transport.peerreview.replay_loglevel", Logger.FINER);
-    
     final Logger simLogger = env.getLogManager().getLogger(EventSimulator.class, null);
     
     final List<ReplayLayer<InetSocketAddress>> replayers = new ArrayList<ReplayLayer<InetSocketAddress>>();
@@ -104,16 +101,6 @@ public class Replayer implements MyEvents, EventCallback {
       }    
     },addr.getPort(),env) {
   
-//      @Override
-//      protected TransportLayer<MultiInetSocketAddress, ByteBuffer> getPriorityTransportLayer(TransportLayer<MultiInetSocketAddress, ByteBuffer> trans, LivenessProvider<MultiInetSocketAddress> liveness, ProximityProvider<MultiInetSocketAddress> prox, PastryNode pn) {
-//        // get rid of the priorityLayer
-//        if (params.getBoolean("org.mpisws.p2p.testing.transportlayer.replay.use_priority")) {
-//          return super.getPriorityTransportLayer(trans, liveness, prox, pn);
-//        } else {
-//          return trans;
-//        }
-//      }
-
       @Override
       public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
         SocketNodeHandle ret = (SocketNodeHandle)super.getLocalHandle(pn, nhf);
@@ -156,34 +143,7 @@ public class Replayer implements MyEvents, EventCallback {
     
     sim.start();
 
-//    // this is an example of th enew way
-//    //PastryNode node = factory.newNode(nidFactory.generateNodeId());
-//    //node.getBootstrapper().boot(Collections.singleton(bootaddress));
-//    
-//    // the node may require sending several messages to fully boot into the ring
-//    synchronized(node) {
-//      while(!node.isReady() && !node.joinFailed()) {
-//        // delay so we don't busy-wait
-//        node.wait(500);
-//        
-//        // abort if can't join
-//        if (node.joinFailed()) {
-//          throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason()); 
-//        }
-//      }       
-//    }
-//    
-//    System.out.println("Finished creating new node: " + node);
-//    
-//    // construct a new scribe application
-//    MyScribeClient app = new MyScribeClient(node);
-//  
-//    // for all the rest just subscribe
-//    app.subscribe();
-  
-    // now, print the tree
-//    env.getTimeSource().sleep(5000);
-    
+    // let the replay run
     try {
       env.getTimeSource().sleep(55000);
     } catch (InterruptedException ie) {
@@ -199,7 +159,6 @@ public class Replayer implements MyEvents, EventCallback {
       printLog("0x"+id.toStringFull().substring(0,6), env);
 
     
-//  Environment env = Environment.directEnvironment();
     System.out.println(id.toStringFull()+" "+addr.getAddress().getHostAddress()+" "+addr.getPort()+" "+bootaddress.getPort()+" "+startTime+" "+randSeed);
     env.destroy();
     new Replayer(id, addr, bootaddress, startTime, randSeed);
@@ -213,7 +172,6 @@ public class Replayer implements MyEvents, EventCallback {
    * @param args
    */
   public static void main(String[] args) throws Exception {
-//    System.out.println(args[0]+" "+args[1]+" "+args[2]+" "+args[3]);
     String hex = args[0];
     InetAddress a = InetAddress.getByName(args[1]);
     int startPort = Integer.decode(args[2]).intValue();

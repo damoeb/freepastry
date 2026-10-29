@@ -51,7 +51,6 @@ public class RendezvousSourceRouteStrategy<Identifier> implements SourceRouteStr
 
   public Collection<SourceRoute<Identifier>> getSourceRoutes(Identifier destination) {
 
-    // TODO Auto-generated method stub
     return null;
   }
 

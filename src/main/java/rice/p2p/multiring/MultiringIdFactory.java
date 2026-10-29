@@ -42,8 +42,6 @@ import rice.p2p.commonapi.*;
 import java.util.*;
 
 /**
- * @(#) IdFactory.java 
- *
  * This class provides the ability to build Ids which can support a multi-ring
  * hierarchy.
  *

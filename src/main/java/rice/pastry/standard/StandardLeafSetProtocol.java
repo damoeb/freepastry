@@ -99,7 +99,6 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
       if (type == BroadcastLeafSet.JoinInitial) {
         // we have now successfully joined the ring, set the local node ready
-        // localNode.setReady();
       }
 
       if (!failstop) {
@@ -196,9 +195,6 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
       if (notifyMissing) {
         // send leafset to nodes that where missing from remotels
-
-        // for now, conservatively send to everyone
-        // broadcast(BroadcastLeafSet.Correction);
 
         Iterator<NodeHandle> it = new ArrayList<NodeHandle>(insertedHandles).iterator();
         while (it.hasNext()) {
@@ -323,11 +319,9 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       }
     }
 
-    // if we lost entries, or the size is below max and we don't span the entire
-    // ring then
-    // request the leafset from other leafset members
-    if (lostMembers || // (leafSet.size() < leafSet.maxSize() &&
-                        // !leafSet.overlaps())) {
+    // if we lost entries, or the size is below max, request the leafset from
+    // other leafset members
+    if (lostMembers ||
         (leafSet.size() < leafSet.maxSize())) {
 
       // request leaf sets
@@ -402,11 +396,9 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    * If nodehandle is dead, remove it from the leafset.
    */
   public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle o, Object arg) {
-//    if (o instanceof NodeHandle) {      
       if (arg == NodeHandle.DECLARED_DEAD) {
         leafSet.remove((NodeHandle)o);
       }
-//    }    
   }
 
   /**

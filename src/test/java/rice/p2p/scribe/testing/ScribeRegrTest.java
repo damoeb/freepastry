@@ -54,7 +54,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.transport.BogusNodeHandle;
 
 /**
- * @(#) DistScribeRegrTest.java Provides regression testing for the Scribe service using distributed
+ * Provides regression testing for the Scribe service using distributed
  * nodes.
  *
  * @version $Id: ScribeRegrTest.java 4221 2008-05-19 16:41:19Z jeffh $
@@ -64,15 +64,9 @@ import rice.pastry.transport.BogusNodeHandle;
 public class ScribeRegrTest extends CommonAPITest {
 
   // the instance name to use
-  /**
-   * DESCRIBE THE FIELD
-   */
   public static String INSTANCE = "ScribeRegrTest";
 
   // the scribe impls in the ring
-  /**
-   * DESCRIBE THE FIELD
-   */
   protected ScribeImpl[] scribes;
 
   /**
@@ -95,24 +89,15 @@ public class ScribeRegrTest extends CommonAPITest {
 
   public void setupParams(Environment env) {
     super.setupParams(env);
-    // we want to see if messages are dropped because not ready
-//    if (!env.getParameters().contains("rice.p2p.scribe.ScribeImpl@ScribeRegrTest_loglevel"))
-//      env.getParameters().setInt("rice.p2p.scribe.ScribeImpl@ScribeRegrTest_loglevel",Logger.INFO);
-    
     // want to retry fast because of problems with isReady()
     env.getParameters().setInt("p2p_scribe_message_timeout",3000); 
   }
   
   /**
-   * Usage: DistScribeRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (rmi|wire)]
+   * Usage: ScribeRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (rmi|wire)]
    * [-help]
-   *
-   * @param args DESCRIBE THE PARAMETER
    */
   public static void main(String args[]) throws IOException {
-//    System.setOut(new PrintStream("srt.log"));
-//    System.setErr(System.out);
-    
     Environment env = parseArgs(args);
     
     ScribeRegrTest scribeTest = new ScribeRegrTest(env);
@@ -393,14 +378,12 @@ public class ScribeRegrTest extends CommonAPITest {
       int NUM_TOPICS = 2;
       
       // build antipodal topics so they are guaranteed to have different parents   
-      // TODO: Randomize this
       TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
       List<Topic> topics = new ArrayList<Topic>(NUM_TOPICS);
       int[] id1 = {0, 0, 0, 0, 0x80000000};
       int[] id2 = {0, 0, 0, 0, 0};
       topics.add(new Topic(FACTORY.buildId(id1)));
       topics.add(new Topic(FACTORY.buildId(id2)));
-//      System.out.println(topics.get(0).toString()+" "+topics.get(1).toString());
       
       stepStart(name + " Tree Construction (Parent Independence)");
       for (int i = 0; i < NUM_NODES; i++) {
@@ -691,16 +674,6 @@ public class ScribeRegrTest extends CommonAPITest {
 
     stepDone(SUCCESS);
     
-//    stepStart("Force Root To Accept");
-//    client = new TestScribeClient(scribes[NUM_NODES-1], topic, NUM_NODES-1);
-//    // join 1 node first to force the Topic to be created
-//    scribes[NUM_NODES-1].subscribe(topic, client);
-//    simulate();
-//    if (client.getSubscribeFailed())
-//      stepDone(FAILURE, "Expected subscribe to succeed because we force the root to accept 1 child.");
-//    else
-//      stepDone(SUCCESS);
-    
     stepStart("Subscribe Attempt");
     int i = environment.getRandomSource().nextInt(NUM_NODES-1);
 
@@ -750,7 +723,6 @@ public class ScribeRegrTest extends CommonAPITest {
       for (int i=0; i < NUM_NODES; i++) {
     if (scribes[i].isRoot(topic)) {
         numRoot++;
-        //System.out.println("myId= " + scribes[i].getId());
     }
       }
       
@@ -796,12 +768,8 @@ public class ScribeRegrTest extends CommonAPITest {
     else
       stepDone(SUCCESS);
     
-//    environment.getParameters().setInt("org.mpisws.p2p.transport.wire.UDPLayer_loglevel", Logger.ALL);
-    
     stepStart("Killing Nodes");
     for (int i=0; i<NUM_NODES/2; i++) {
-//      System.out.println("Killing " + scribes[i].getId());
-//      logger.log("Killing " + nodes[i]);
       if (logger.level <= Logger.INFO) logger.log("Killing " + nodes[i]);
       scribes[i].destroy();
       kill(i);
@@ -816,8 +784,6 @@ public class ScribeRegrTest extends CommonAPITest {
     int localIndex = environment.getRandomSource().nextInt(NUM_NODES/2) + NUM_NODES/2;
     ScribeImpl local = scribes[localIndex];
 
-//    System.out.println("Local:"+nodes[localIndex]);
-    
     for (int i = 0; i < NUM_MESSAGES; i++) {
       local.publish(topic, buildTestScribeContent(topic, i));
       simulate(5);
@@ -863,33 +829,18 @@ public class ScribeRegrTest extends CommonAPITest {
    */
   protected static class TestScribeContent implements ScribeContent {
 
-    /**
-     * DESCRIBE THE FIELD
-     */
     protected Topic topic;
 
-    /**
-     * DESCRIBE THE FIELD
-     */
     protected int num;
 
     /**
      * Constructor for TestScribeContent.
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param num DESCRIBE THE PARAMETER
      */
     public TestScribeContent(Topic topic, int num) {
       this.topic = topic;
       this.num = num;
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param o DESCRIBE THE PARAMETER
-     * @return DESCRIBE THE RETURN VALUE
-     */
     public boolean equals(Object o) {
       if (!(o instanceof TestScribeContent)) {
         return false;
@@ -899,11 +850,6 @@ public class ScribeRegrTest extends CommonAPITest {
         ((TestScribeContent) o).num == num);
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @return DESCRIBE THE RETURN VALUE
-     */
     public String toString() {
       return "TestScribeContent(" + topic + ", " + num + ")";
     }
@@ -925,10 +871,6 @@ public class ScribeRegrTest extends CommonAPITest {
 
     /**
      * Constructor for TestRouteMessage.
-     *
-     * @param id DESCRIBE THE PARAMETER
-     * @param nextHop DESCRIBE THE PARAMETER
-     * @param message DESCRIBE THE PARAMETER
      */
     public TestRouteMessage(Id id, NodeHandle nextHop, Message message) {
       this.id = id;
@@ -1003,21 +945,15 @@ public class ScribeRegrTest extends CommonAPITest {
   }
 
   /**
-   * DESCRIBE THE CLASS
+   * A test client that records the publish and anycast messages it receives.
    *
    * @version $Id: ScribeRegrTest.java 4221 2008-05-19 16:41:19Z jeffh $
    * @author amislove
    */
   protected class TestScribeClient implements ScribeMultiClient {
 
-    /**
-     * DESCRIBE THE FIELD
-     */
     protected Scribe scribe;
 
-    /**
-     * DESCRIBE THE FIELD
-     */
     protected int i;
 
     /**
@@ -1026,7 +962,7 @@ public class ScribeRegrTest extends CommonAPITest {
     protected Vector<ScribeContent> publishMessages;
 
     /**
-      * The publish messages received so far
+      * The anycast messages received so far
      */
     protected Vector<ScribeContent> anycastMessages;
 
@@ -1047,9 +983,6 @@ public class ScribeRegrTest extends CommonAPITest {
 
     /**
      * Constructor for TestScribeClient.
-     *
-     * @param scribe DESCRIBE THE PARAMETER
-     * @param i DESCRIBE THE PARAMETER
      */
     public TestScribeClient(Scribe scribe, Topic topic, int i) {
       this(scribe, buildListOf1(topic), i);   
@@ -1077,50 +1010,21 @@ public class ScribeRegrTest extends CommonAPITest {
       this.acceptAnycast = value;
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param content DESCRIBE THE PARAMETER
-     * @return DESCRIBE THE RETURN VALUE
-     */
     public boolean anycast(Topic topic, ScribeContent content) {
-//      System.out.println(scribe+" "+this+".anycast():"+acceptAnycast);
       if (acceptAnycast)
         anycastMessages.add(content);
 
       return acceptAnycast;
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param content DESCRIBE THE PARAMETER
-     */
     public void deliver(Topic topic, ScribeContent content) {
-//      scribe.getEnvironment().getLogManager().getLogger(TestScribeClient.class,null).log(this+"deliver("+topic+","+content+")");
       publishMessages.add(content);
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param child DESCRIBE THE PARAMETER
-     */
     public void childAdded(Topic topic, NodeHandle child) {
-     // System.out.println("CHILD ADDED AT " + scribe.getId());
     }
 
-    /**
-     * DESCRIBE THE METHOD
-     *
-     * @param topic DESCRIBE THE PARAMETER
-     * @param child DESCRIBE THE PARAMETER
-     */
     public void childRemoved(Topic topic, NodeHandle child) {
-     // System.out.println("CHILD REMOVED AT " + scribe.getId());
     }
 
     public void subscribeFailed(Collection<Topic> topics) {

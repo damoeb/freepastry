@@ -41,7 +41,7 @@ import java.nio.channels.*;
 
 /**
  * This interface is designed to be a callback mechanism from the
- * SelectorManager. Once the manager has determines that something has happened,
+ * SelectorManager. Once the manager has determined that something has happened,
  * it informs the appropriate SelectionKeyHandler via this interface. The
  * SelectionKeyHandler which is interested in being notified of events relating
  * to the SelectionKey should attach itself to the SelectionKey via the attach()

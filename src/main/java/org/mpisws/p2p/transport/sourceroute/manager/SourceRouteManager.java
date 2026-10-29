@@ -46,7 +46,7 @@ import org.mpisws.p2p.transport.proximity.ProximityProvider;
 
 /**
  * The purpose of this class is to hide the detail of sourcerouting.  It adapts a 
- * TransportLayer<SourceRoute, Buffer> => TransportLayer<Identifier, Buffer>
+ * {@code TransportLayer<SourceRoute, Buffer>} to {@code TransportLayer<Identifier, Buffer>}
  * 
  * @author Jeff Hoye
  *

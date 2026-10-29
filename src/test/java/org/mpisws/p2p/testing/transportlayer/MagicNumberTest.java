@@ -91,7 +91,6 @@ public class MagicNumberTest extends WireTest {
     env = new Environment();
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();    
-//    InetAddress addr = InetAddress.getByName("10.0.0.10");
     alice = new MagicNumberTransportLayer<InetSocketAddress>(
         new WireTransportLayerImpl(new InetSocketAddress(addr,startPort),env, null)
         ,env, null,GOOD_HDR, 2000);
@@ -132,7 +131,6 @@ public class MagicNumberTest extends WireTest {
     
       public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options)
           throws IOException {
-        // TODO Auto-generated method stub
     
       }
     
@@ -226,7 +224,6 @@ public class MagicNumberTest extends WireTest {
     alice().setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {    
       public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options)
           throws IOException {
-        // TODO Auto-generated method stub    
       }
     
       public void incomingSocket(P2PSocket<InetSocketAddress> s)
@@ -287,11 +284,7 @@ public class MagicNumberTest extends WireTest {
     Throwable e = exceptionList.get(0);
     assertTrue(e instanceof StalledSocketException);
     
-    // it's an ephimeral port
-//    StalledSocketException sse = (StalledSocketException)e;
-//    System.out.println(sse);
-//    System.out.println(dave.getLocalIdentifier());
-//    assertTrue(sse.getInetSocketAddress().equals(dave.getLocalIdentifier()));
+    // the exception's address is not checked: the stalled socket comes from an ephemeral port, not dave's identifier
   }
 
   

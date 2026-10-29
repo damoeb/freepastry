@@ -58,10 +58,8 @@ public class BogusUDPLayerImpl implements UDPLayer {
   }
 
   public void destroy() {
-    // TODO Auto-generated method stub
   }
   
   public void acceptMessages(boolean b) {
-    // TODO Auto-generated method stub
   }
 }

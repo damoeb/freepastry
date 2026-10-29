@@ -139,18 +139,12 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
     return localnode;
   }
 
-//  transient Exception ctor;
-//  public NodeHandle() {
-//    ctor = new Exception("ctor"); 
-//  }
-  
   /**
    * May be called from handle etc methods to ensure that local node has
    * been set, either on construction or on deserialization/receivemsg.
    */
   public void assertLocalNode() {
     if (localnode == null) {
-//      ctor.printStackTrace();
       throw new RuntimeException("PANIC: localnode is null in " + this+"@"+System.identityHashCode(this));
     }
   }
@@ -266,29 +260,13 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    */
   public void update(Object update) {
     if (logger != null) {
-//      logger.log(this+".update("+update+")"+countObservers());
       if (logger.level <= Logger.FINE) {
-//        String s = "";
-//        if (obs != null)
-//          synchronized(obs) {
-//            Iterator i = obs.iterator(); 
-//            while(i.hasNext())
-//              s+=","+i.next();
-//          }
         logger.log(this+".update("+update+")"+countObservers());
       }
     }
-//    setChanged();
     notifyObservers(update);
     if (logger != null) {
       if (logger.level <= Logger.FINEST) {
-//        String s = "";
-//        if (obs != null)
-//          synchronized(obs) {
-//            Iterator i = obs.iterator(); 
-//            while(i.hasNext())
-//              s+=","+i.next();
-//          }
         logger.log(this+".update("+update+")"+countObservers()+" done");
       }
     }

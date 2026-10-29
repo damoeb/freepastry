@@ -136,7 +136,6 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
   public void close() {
     try {
       closed = true;
-//      logger.logException("close()",new Exception("close()"));
       socketIdBuffer.clear();      
       recordLayer.logEvent(EVT_SOCKET_CLOSE, socketIdBuffer);
     } catch (IOException ioe2) {
@@ -150,7 +149,6 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
     try {
       outputShutdown = true;
       
-//    logger.logException("close()",new Exception("close()"));
       socketIdBuffer.clear();      
       recordLayer.logEvent(EVT_SOCKET_SHUTDOWN_OUTPUT, socketIdBuffer);
     } catch (IOException ioe2) {
@@ -195,7 +193,6 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
       public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
         try {
           socketIdBuffer.clear();
-//          logger.logException(this+".register()", ioe);
           recordLayer.logSocketException(socketIdBuffer, ioe);
         } catch (IOException ioe2) {
           if (logger.level <= Logger.WARNING) logger.logException(this+"@"+socketId+".receiveException()",ioe2); 

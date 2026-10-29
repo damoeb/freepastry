@@ -49,8 +49,6 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * @(#) SubscribeLostMessage.java
- *
  * The ack for a subscribe message.
  *
  * @version $Id: SubscribeLostMessage.java 3653 2007-03-27 18:39:52Z jeffh $
@@ -65,11 +63,12 @@ public class SubscribeLostMessage implements Message {
   ScribeMultiClient client;
   
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param id The unique id
    * @param source The source address
-   * @param dest The destination address
+   * @param topics The topics of the outstanding subscribe
+   * @param id The id of the outstanding subscribe
+   * @param client The client to inform if the subscribe is lost
    */
   public SubscribeLostMessage(NodeHandle source, Collection<Topic> topics, int id, ScribeMultiClient client) {
     this.topics = new HashSet<Topic>(topics);

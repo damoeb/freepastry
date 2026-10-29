@@ -81,7 +81,7 @@ public interface NodeSetI extends rice.p2p.commonapi.NodeHandleSet
     /**
      * Verifies if the set contains this particular id.
      * 
-     * @param nid a node id.
+     * @param nh a node handle.
      * @return true if that node id is in the set, false otherwise.
      */
 
@@ -90,7 +90,7 @@ public interface NodeSetI extends rice.p2p.commonapi.NodeHandleSet
     /**
      * Removes a node id and its handle from the set.
      *
-     * @param nid the node to remove.
+     * @param nh the node to remove.
      *
      * @return the node handle removed or null if nothing.
      */

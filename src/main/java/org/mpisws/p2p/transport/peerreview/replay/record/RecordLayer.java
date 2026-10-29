@@ -128,7 +128,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
     
     this.handler = new DefaultErrorHandler<Identifier>(logger);
 
-//    env.addDestructable(this);  // TransportLayer will alrady call this.
+    // no env.addDestructable(this): the TransportLayer already destroys this layer
     
     initialized = true;
   }
@@ -152,7 +152,6 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
   /* Called by applications to log some application-specific event, such as PAST_GET. */
   
   public void logEvent(short type, ByteBuffer ... entry) throws IOException {
-//   assert(initialized && (type > EVT_MAX_RESERVED));
     if (history == null) return;
     if (logger.level <= Logger.FINEST) {
       logger.logException("logging #"+history.getNumEntries()+" t:"+type, new Exception("Stack Trace"));
@@ -191,7 +190,6 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
       public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
         socketIdBuffer.clear();
         try {
-//          logger.logException("socket "+socketId+" .register()", ex);
           logSocketException(socketIdBuffer, ex);
         } catch (IOException ioe) {
           if (logger.level <= Logger.WARNING) logger.logException("openSocket("+i+")@"+socketId,ioe); 
@@ -251,12 +249,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
     
     return tl.sendMessage(i, m, deliverAckToMe, options);
     
-//    assert(initialized && (0<=relevantLen) && (relevantLen<=m.remaining()));
-
-//    updateLogTime();
-    
     // Pass the message to the Commitment protocol    
-    // commitmentProtocol.handleOutgoingMessage(i, m, relevantLen);
     
     
   }
@@ -300,7 +293,6 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
   }
 
   public void destroy() {
-//    logger.log(this+".destroy()");
     try {
       if (history != null) history.close();
       history = null;

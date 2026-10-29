@@ -109,10 +109,4 @@ public abstract class PastryNodeFactory {
   }
   
 
-//  abstract public PastryNode newNode(Id id) throws IOException;
-//
-//  public Node newNode() throws IOException {
-//    // TODO Auto-generated method stub
-//    return null;
-//  }
 }

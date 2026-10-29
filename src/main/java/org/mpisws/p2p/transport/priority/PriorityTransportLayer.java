@@ -123,9 +123,9 @@ public interface PriorityTransportLayer<Identifier> extends TransportLayer<Ident
   public List<MessageInfo> getPendingMessages(Identifier i);
   
   /**
-   * open a primary connection
+   * open a primary connection; PrimarySocketListeners are notified when it is open
    * @param i
-   * @param notifyMe when it is open
+   * @param options
    */
   public void openPrimaryConnection(Identifier i, Map<String, Object> options);
   

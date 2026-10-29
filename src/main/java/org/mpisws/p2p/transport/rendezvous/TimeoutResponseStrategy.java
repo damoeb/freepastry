@@ -69,7 +69,6 @@ public class TimeoutResponseStrategy<Identifier> implements ResponseStrategy<Ide
   }
 
   public void messageSent(Identifier i, ByteBuffer msg, Map<String,Object> options) {
-    // TODO Auto-generated method stub
 
   }
 

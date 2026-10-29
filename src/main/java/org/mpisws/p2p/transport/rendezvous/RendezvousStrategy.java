@@ -58,7 +58,7 @@ public interface RendezvousStrategy<Identifier> {
   public static int SUCCESS = 1;
 
   /**
-   * Calls ChannelOpener.openChannel(dest, credentials) on target
+   * Calls ChannelOpener.openChannel() on target
    * 
    * Possible exceptions to deliverResultToMe:
    *   NodeIsFaultyException if target is faulty
@@ -74,8 +74,10 @@ public interface RendezvousStrategy<Identifier> {
    *   
    * @param target call ChannelOpener.openChannel() on this Identifier
    * @param rendezvous pass this to ChannelOpener.openChannel(), it's who the ChannelOpener will connect to
-   * @param credentials this is also passed to ChannelOpener.openChannel()
+   * @param source the node that wants the channel, also passed to ChannelOpener.openChannel()
+   * @param uid identifies the channel request, also passed to ChannelOpener.openChannel()
    * @param deliverResultToMe notify me when success/failure
+   * @param options
    * @return a way to cancel the request
    */
   public Cancellable openChannel(Identifier target, Identifier rendezvous, Identifier source, int uid, Continuation<Integer, Exception> deliverResultToMe, Map<String, Object> options);

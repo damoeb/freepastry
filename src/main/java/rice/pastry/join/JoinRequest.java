@@ -216,7 +216,6 @@ public class JoinRequest extends PRawMessage {
   }
   
   public void serialize(OutputBuffer buf) throws IOException {    
-//    buf.writeByte((byte)0); // version
     
     // version 1
     buf.writeByte((byte)1); // version

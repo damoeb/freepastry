@@ -145,7 +145,6 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
   }
 
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
-    // TODO Auto-generated method stub    
   }
 
   public void destroy() {

@@ -240,7 +240,6 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
         if (srcs.hasRemaining()) {
           vals[CUR_SATURATED] = SATURATED;
         }
-//        System.out.println("adding "+ret+" to "+CUR_UP);
         vals[CUR_UP]+=ret;
       }
       return ret;
@@ -248,7 +247,6 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     
     @Override
     public long read(ByteBuffer srcs) throws IOException {
-      // TODO Auto-generated method stub
       long ret = super.read(srcs);
       synchronized(measured) {
         int[] vals = getVals(getIdentifier()).a();

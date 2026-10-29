@@ -48,7 +48,7 @@ import rice.p2p.commonapi.testing.CommonAPITest;
 import rice.p2p.splitstream.*;
 
 /**
- * @(#) SplitStreamRegrTest.java Provides regression testing for the Scribe
+ * Provides regression testing for the Scribe
  *      service using distributed nodes.
  * 
  * @version $Id: SplitStreamRegrTest.java 3992 2007-12-02 20:09:18Z jeffh $
@@ -58,15 +58,9 @@ import rice.p2p.splitstream.*;
 public class SplitStreamRegrTest extends CommonAPITest {
 
   // the instance name to use
-  /**
-   * DESCRIBE THE FIELD
-   */
   public static String INSTANCE = "SplitStreamRegrTest";
 
   // the scribe impls in the ring
-  /**
-   * DESCRIBE THE FIELD
-   */
   protected SplitStreamImpl splitstreams[];
 
   protected SplitStreamTestClient ssclients[];
@@ -83,8 +77,6 @@ public class SplitStreamRegrTest extends CommonAPITest {
   /**
    * Usage: DistScribeRegrTest [-port p] [-bootstrap host[:port]] [-nodes n]
    * [-protocol (rmi|wire)] [-help]
-   * 
-   * @param args DESCRIBE THE PARAMETER
    */
   public static void main(String args[]) throws IOException {
 
@@ -142,10 +134,8 @@ public class SplitStreamRegrTest extends CommonAPITest {
           .getTotalChildren(channel);
       if (count > DEFAULT_MAX_CHILDREN)
         result = false;
-      //System.out.println("count "+count);
       total += count;
     }
-    //System.out.println("Total outgoing capacity Used "+total);
 
     if (result
         && (total <= (NUM_NODES - 1)
@@ -303,9 +293,6 @@ public class SplitStreamRegrTest extends CommonAPITest {
                   + " is parentless for topic "
                   + stripes[j].getStripeId().getId());
         }
-        //if(stripes[j].getParent() == null && stripes[j].isRoot())
-        //System.out.println("Node "+ssclients[i].getId()+" is parent less, but
-        // is the root for topic "+stripes[j].getStripeId().getId());
       }
     }
     return result;
@@ -430,7 +417,6 @@ public class SplitStreamRegrTest extends CommonAPITest {
 
     private void log(String s) {
       if (logger.level <= Logger.FINE) logger.log("" + n + " " + s);
-      //System.out.println("" + n + " " + s);
     }
 
   }

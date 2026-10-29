@@ -167,83 +167,68 @@ public class AuthenticatorStoreTest {
     }
 
     public Serializer<MyInetSocketAddress> getHandleSerializer() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public int getHashSizeInBytes() {
-      // TODO Auto-generated method stub
       return 0;
     }
 
     public int getSignatureSizeInBytes() {
-      // TODO Auto-generated method stub
       return 0;
     }
 
     public IdentifierExtractor<MyInetSocketAddress, MyInetSocketAddress> getIdentifierExtractor() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public Authenticator extractAuthenticator(MyInetSocketAddress id, long seq,
         short entryType, byte[] entryHash, byte[] topMinusOne, byte[] signature) {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public void challengeSuspectedNode(MyInetSocketAddress h) {
-      // TODO Auto-generated method stub
       
     }
 
     public long getEvidenceSeq() {
-      // TODO Auto-generated method stub
       return 0;
     }
 
     public void sendEvidenceToWitnesses(MyInetSocketAddress subject,
         long timestamp, Evidence evidence) {
-      // TODO Auto-generated method stub
       
     }
 
     public void notifyCertificateAvailable(MyInetSocketAddress id) {
-      // TODO Auto-generated method stub
       
     }
 
     public void incomingSocket(P2PSocket<MyInetSocketAddress> s)
         throws IOException {
-      // TODO Auto-generated method stub
       
     }
 
     public void messageReceived(MyInetSocketAddress i, ByteBuffer m,
         Map<String, Object> options) throws IOException {
-      // TODO Auto-generated method stub
       
     }
 
     public boolean hasCertificate(MyInetSocketAddress id) {
-      // TODO Auto-generated method stub
       return false;
     }
 
     public Cancellable requestCertificate(MyInetSocketAddress source,
         MyInetSocketAddress certHolder,
         Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public byte[] sign(byte[] bytes) {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public short getSignatureSizeBytes() {
-      // TODO Auto-generated method stub
       return 0;
     }
 
@@ -251,22 +236,18 @@ public class AuthenticatorStoreTest {
         byte[] signature, int soff, int slen) throws InvalidKeyException,
         NoSuchAlgorithmException, NoSuchProviderException, SignatureException,
         UnknownCertificateException {
-      // TODO Auto-generated method stub
       
     }
 
     public void acceptMessages(boolean b) {
-      // TODO Auto-generated method stub
       
     }
 
     public void acceptSockets(boolean b) {
-      // TODO Auto-generated method stub
       
     }
 
     public MyInetSocketAddress getLocalIdentifier() {
-      // TODO Auto-generated method stub
       return null;
     }
 
@@ -274,7 +255,6 @@ public class AuthenticatorStoreTest {
         MyInetSocketAddress i,
         SocketCallback<MyInetSocketAddress> deliverSocketToMe,
         Map<String, Object> options) {
-      // TODO Auto-generated method stub
       return null;
     }
 
@@ -282,61 +262,50 @@ public class AuthenticatorStoreTest {
         MyInetSocketAddress i, ByteBuffer m,
         MessageCallback<MyInetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public void setCallback(
         TransportLayerCallback<MyInetSocketAddress, ByteBuffer> callback) {
-      // TODO Auto-generated method stub
       
     }
 
     public void setErrorHandler(ErrorHandler<MyInetSocketAddress> handler) {
-      // TODO Auto-generated method stub
       
     }
 
     public void destroy() {
-      // TODO Auto-generated method stub
       
     }
 
     public byte[] getEmptyHash() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public short getHashSizeBytes() {
-      // TODO Auto-generated method stub
       return 0;
     }
 
     public byte[] hash(long seq, short type, byte[] nodeHash, byte[] contentHash) {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public byte[] hash(ByteBuffer... hashMe) {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public PeerReviewCallback<MyInetSocketAddress, MyInetSocketAddress> getApp() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public int verify(MyInetSocketAddress id, ByteBuffer msg,
         ByteBuffer signature) {
-      // TODO Auto-generated method stub
       return SIGNATURE_BAD;
     }
 
     public boolean addAuthenticatorIfValid(
         AuthenticatorStore<MyInetSocketAddress> store,
         MyInetSocketAddress subject, Authenticator auth) {
-      // TODO Auto-generated method stub
       return false;
     }
 
@@ -344,85 +313,69 @@ public class AuthenticatorStoreTest {
         MyInetSocketAddress dest, PeerReviewMessage message,
         MessageCallback<MyInetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
-      // TODO Auto-generated method stub
     }
 
     public EvidenceTool<MyInetSocketAddress, MyInetSocketAddress> getEvidenceTool() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public MyInetSocketAddress getLocalId() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public boolean verify(MyInetSocketAddress subject, Authenticator auth) {
-      // TODO Auto-generated method stub
       return false;
     }
 
     public MyInetSocketAddress getLocalHandle() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public RandomSource getRandomSource() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public SecureHistoryFactory getHistoryFactory() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public VerifierFactory<MyInetSocketAddress, MyInetSocketAddress> getVerifierFactory() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public void init(String dirname) throws IOException {
-      // TODO Auto-generated method stub
       
     }
 
     public void setApp(
         PeerReviewCallback<MyInetSocketAddress, MyInetSocketAddress> callback) {
-      // TODO Auto-generated method stub
       
     }
 
     public Cancellable requestCertificate(MyInetSocketAddress source,
         MyInetSocketAddress certHolder) {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public SecureHistory getHistory() {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public long getTimeToleranceMillis() {
-      // TODO Auto-generated method stub
       return 0;
     }
 
     public Authenticator extractAuthenticator(long seq, short entryType,
         byte[] entryHash, byte[] topMinusOne, byte[] signature) {
-      // TODO Auto-generated method stub
       return null;
     }
 
     public int verify(MyInetSocketAddress id, byte[] msg, byte[] signature) {
-      // TODO Auto-generated method stub
       return 0;
     }
 
     public void sendEvidence(MyInetSocketAddress destination,
         MyInetSocketAddress evidenceAgainst) {
-      // TODO Auto-generated method stub
       
     }
   }

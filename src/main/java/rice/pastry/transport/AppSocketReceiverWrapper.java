@@ -67,7 +67,6 @@ public class AppSocketReceiverWrapper<Identifier> implements
 
   public void receiveSelectResult(P2PSocket<Identifier> s,
       boolean canRead, boolean canWrite) throws IOException {
-//    logger.log("rSR("+canRead+","+canWrite+")");
     receiver.receiveSelectResult(socket, canRead, canWrite);
   }
 

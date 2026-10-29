@@ -40,7 +40,7 @@ import java.util.Collection;
 
 public interface Bootstrapper<Identifier> {
 
-  // TODO: figure out where to report errors
+  // TODO: boot() has no way to report errors to the caller
   void boot(Collection<Identifier> bootaddresses);
 
 }

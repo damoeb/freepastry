@@ -131,10 +131,10 @@ public interface TransportLayer<Identifier, MessageType> extends Destructable {
   public void setCallback(TransportLayerCallback<Identifier, MessageType> callback);
   
   /**
-   * To be notified of problems not related to an outgoing messaage/socket.  Or to be notified
+   * To be notified of problems not related to an outgoing message/socket.  Or to be notified
    * if a callback isn't provided.
    * 
-   * @param handler to be notified of problems not related to a specific messaage/socket.
+   * @param handler to be notified of problems not related to a specific message/socket.
    */
   public void setErrorHandler(ErrorHandler<Identifier> handler);  
 }

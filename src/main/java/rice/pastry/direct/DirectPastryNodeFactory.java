@@ -75,7 +75,6 @@ import org.mpisws.p2p.transport.proximity.ProximityProvider;
 @SuppressWarnings("unchecked")
 public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   protected NodeIdFactory nidFactory;
-//  protected RandomSource random;
 
   protected NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
   
@@ -88,7 +87,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
    * 
    * @param nf the NodeIdFactory
    * @param sim the NetworkSimulator
-   * @param e the Enviornment
+   * @param env the Environment
    */
   public DirectPastryNodeFactory(NodeIdFactory nf, NetworkSimulator<DirectNodeHandle,RawMessage> sim, Environment env) {    
     super(env);
@@ -103,7 +102,6 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     if (pn.getEnvironment().getParameters().getBoolean("pastry_direct_guarantee_consistency")) { // true
       return super.getLeafSetProtocol(pn, leafSet, routeTable);
     } else {
-//      System.out.println("using standard ls protocol");
       StandardLeafSetProtocol ret = new StandardLeafSetProtocol(pn,pn.getLocalHandle(),leafSet, routeTable);
       ret.register();
       return ret;
@@ -178,15 +176,13 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       }    
       PastryNode pn = new PastryNode(nodeId, environment);
       nodeHandleHelper(pn);
-//      ((DirectPastryNode)pn).doneNode(getNearest(pn.getLocalHandle(), bootstrap));
         
       return pn;
   }
 
   /**
    * This method returns the remote leafset of the provided handle
-   * to the caller, in a protocol-dependent fashion.  Note that this method
-   * may block while sending the message across the wire.
+   * to the caller. In the simulator it reads the remote node's leafset directly.
    *
    * @param handle The node to connect to
    * @return The leafset of the remote node
@@ -198,7 +194,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   /**
-   * The non-blocking versions here all execute immeadiately.  
+   * The non-blocking versions here all execute immediately.  
    * This CancellableTask is just a placeholder.
    * @author Jeff Hoye
    */
@@ -224,8 +220,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   /**
    * This method returns the remote route row of the provided handle
-   * to the caller, in a protocol-dependent fashion.  Note that this method
-   * may block while sending the message across the wire.
+   * to the caller. In the simulator it reads the remote node's routing table directly.
    *
    * @param handle The node to connect to
    * @param row The row number to retrieve
@@ -244,12 +239,12 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   }
   
   /**
-   * This method determines and returns the proximity of the current local
-   * node the provided NodeHandle.  This will need to be done in a protocol-
-   * dependent fashion and may need to be done in a special way.
+   * This method determines and returns the proximity between two nodes, as
+   * given by the simulator.
    *
-   * @param handle The handle to determine the proximity of
-   * @return The proximity of the provided handle
+   * @param local the local node
+   * @param remote the remote node
+   * @return The proximity of the two nodes
    */
   public int getProximity(NodeHandle local, NodeHandle remote) {
     return (int)simulator.proximity((DirectNodeHandle)local, (DirectNodeHandle)remote);
@@ -263,16 +258,14 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   @Override
   protected NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) throws IOException {
-    // TODO: Make this work
+    // TODO: this factory cannot read or build handles (it returns null); the simulator never serializes them
     return new NodeHandleFactory<NodeHandle>(){
     
       public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
-        // TODO Auto-generated method stub
         return null;
       }
     
       public NodeHandle coalesce(NodeHandle handle) {
-        // TODO Auto-generated method stub
         notifyListeners(handle);
         return null;
       }
@@ -315,7 +308,6 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       recordTable.put(pn.getNodeId(),nr);
     }
     TransportLayer<? extends NodeHandle, RawMessage> tl = getDirectTransportLayer(pn, nr);
-    // new DirectTransportLayer<NodeHandle, RawMessage>(pn.getLocalHandle(), simulator, nr, pn.getEnvironment());
         
     NodeHandleAdapter nha = new NodeHandleAdapter(tl,simulator.getLivenessProvider(),new ProximityProvider<NodeHandle>(){          
       public int proximity(NodeHandle i, Map<String, Object> options) {
@@ -363,7 +355,6 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
             pn.doneNode(result);
           }        
           public void receiveException(Exception exception) {
-            // TODO Auto-generated method stub        
           }        
         });
       }    

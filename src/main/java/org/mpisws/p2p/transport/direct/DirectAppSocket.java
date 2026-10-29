@@ -111,7 +111,6 @@ public class DirectAppSocket<Identifier, MessageType> {
     Identifier localNodeHandle;
     int seq = 0;
     
-//    boolean inputClosed;
     boolean outputClosed;
     
     // these three are tightly related, and should only be modified in synchronized methods on DirectAppSocketEndpoint.this
@@ -141,12 +140,6 @@ public class DirectAppSocket<Identifier, MessageType> {
     }
   
     public long read(ByteBuffer dsts) throws IOException {
-//      ByteBuffer[] foo = new ByteBuffer[1];
-//      foo[0] = dsts;
-//      return read(foo, 0, 1);
-//    }
-//
-//    public long read(ByteBuffer[] dsts, int offset, int length) {
       int lengthRead = 0;
       
       synchronized(this) {
@@ -154,7 +147,6 @@ public class DirectAppSocket<Identifier, MessageType> {
           return 0;
         }
         if (byteDeliveries.getFirst() == EOF) {
-//          inputClosed = true;
           return -1;          
         }
         Iterator<byte[]> i = byteDeliveries.iterator();
@@ -163,7 +155,6 @@ public class DirectAppSocket<Identifier, MessageType> {
           byte[] msg = (byte[])i.next();          
           
           // loop through all the dsts, and fill them with the current message if possible
-//          for (int dstCtr = offset; dstCtr < offset+length;dstCtr++) {
             ByteBuffer curBuffer = dsts;
             int lengthToPut = curBuffer.remaining();
             if (lengthToPut > (msg.length-firstOffset)) {
@@ -175,12 +166,8 @@ public class DirectAppSocket<Identifier, MessageType> {
             lengthRead+=lengthToPut;
             
             // we finished a message
-//            if (firstOffset == msg.length)
-//              break; // for distCtr loop
             
             // optimization: if we are here then there must be no more remaining in curBuffer
-//            offset=dstCtr+1;
-//          }
           
           // see if we finished a message
           if (firstOffset == msg.length) {
@@ -210,12 +197,6 @@ public class DirectAppSocket<Identifier, MessageType> {
     }
 
     public long write(ByteBuffer srcs) throws IOException {
-//      ByteBuffer[] foo = new ByteBuffer[1];
-//      foo[0] = srcs;
-//      return write(foo, 0, 1);
-//    }
-//
-//    public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
       if (outputClosed) return -1;
       
       if (!simulator.isAlive(counterpart.localNodeHandle)) {
@@ -223,9 +204,6 @@ public class DirectAppSocket<Identifier, MessageType> {
       }
       
       int availableToWrite = srcs.remaining();
-//      for (int i = offset; i < offset+length; i++) {
-//        availableToWrite+=srcs[i].remaining(); 
-//      }
       
       int lengthToWrite;
       synchronized(counterpart) {
@@ -236,13 +214,11 @@ public class DirectAppSocket<Identifier, MessageType> {
 
       final byte[] msg = new byte[lengthToWrite]; 
       int remaining = lengthToWrite;
-//      int i = offset;
       while(remaining > 0) {
         int lengthToReadFromBuffer = srcs.remaining();
         if (remaining < lengthToReadFromBuffer) lengthToReadFromBuffer = remaining;
         srcs.get(msg,lengthToWrite-remaining,lengthToReadFromBuffer);
         remaining-=lengthToReadFromBuffer;
-//        i++;
       }
       
       if (logger.level <= Logger.FINER) logger.log(this+".write("+srcs+") len:"+lengthToWrite+" inFlight:"+counterpart.bytesInFlight);
@@ -263,7 +239,7 @@ public class DirectAppSocket<Identifier, MessageType> {
   
     /**
      * only called on simulator thread
-     * @param bb
+     * @param msg the bytes to queue, or EOF
      */
     protected void addToReadQueue(byte[] msg) {
       synchronized(this) {
@@ -375,7 +351,6 @@ public class DirectAppSocket<Identifier, MessageType> {
     }
   
     public void shutdownInput() {
-//      inputClosed = true;
     }
   
     public void close() {
@@ -419,8 +394,6 @@ public class DirectAppSocket<Identifier, MessageType> {
       } else {
         simulator.enqueueDelivery(new ConnectorExceptionDelivery<Identifier>(connectorReceiver,connectorHandle,new NodeIsFaultyException(acceptor)),0);
         // TODO: this should probably take into account a real delay, however, acceptor has already been removed from the simulator
-//            (int)Math.round(simulator.networkDelay(acceptor, connector))+
-//            (int)Math.round(simulator.networkDelay(connector, acceptor))); 
       }
     }
     public int getSeq() {
@@ -434,7 +407,6 @@ public class DirectAppSocket<Identifier, MessageType> {
         connectorReceiver.receiveResult(connectorHandle, connectorEndpoint);
       } else {
         System.out.println("NOT IMPLEMENTED: Connector died during application socket initiation.");
-//        simulator.enqueueDelivery(new ConnectorExceptionDelivery(new NodeIsDeadException(acceptorNodeHandle))); 
       }
     }
     // out of band, needs to get in front of any other message

@@ -88,9 +88,8 @@ public class DistTutorial {
     env.getParameters().setInt("rice.tutorial.transportlayer.BandwidthLimitingTransportLayer_loglevel", Logger.FINE);
     
     // construct the PastryNodeFactory, this is how we use rice.pastry.socket
-    //PastryNodeFactory factory = BandwidthLimitingTransportLayer.exampleA(bindport, env, nidFactory, bandwidth, 1000);
+    // (BandwidthLimitingTransportLayer.exampleA() builds the same kind of factory in a different way)
     PastryNodeFactory factory = BandwidthLimitingTransportLayer.exampleB(bindport, env, nidFactory, bandwidth, 1000);
-    //  PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
 
     // loop to construct the nodes/apps
     for (int curNode = 0; curNode < numNodes; curNode++) {

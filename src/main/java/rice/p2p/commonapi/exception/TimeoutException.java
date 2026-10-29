@@ -43,17 +43,14 @@ public class TimeoutException extends AppSocketException {
 
   public TimeoutException() {
     super();
-    // TODO Auto-generated constructor stub
   }
 
   public TimeoutException(String string) {
     super(string);
-    // TODO Auto-generated constructor stub
   }
 
   public TimeoutException(Throwable reason) {
     super(reason);
-    // TODO Auto-generated constructor stub
   }
 
 }

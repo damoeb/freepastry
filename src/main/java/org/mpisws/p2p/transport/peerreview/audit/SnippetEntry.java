@@ -65,7 +65,6 @@ public class SnippetEntry {
   public long seq;
   public boolean isHash = false;
   public byte[] content; // may be a hash
-//  public HistoryEvent deserializedEvent;
   
   public static final int NUM_INDEXES = 1000000;
   
@@ -90,11 +89,9 @@ public class SnippetEntry {
   }
   
   public SnippetEntry(InputBuffer buf, long seq, int hashSize) throws IOException {
-//    System.out.println(","+seq);
     type = buf.readByte();
     this.seq = seq;
     int size = decodeSize(buf);
-//    System.out.println("decodeSize:"+size);
     isHash = false;
     if (size == 0) {
       isHash = true;
@@ -118,8 +115,6 @@ public class SnippetEntry {
   }
   
   protected static long decodeSeq(InputBuffer buf, long prevSeq) throws IOException {
-//    if (true) return buf.readLong();
-//    System.out.print("decodeSeq:"+prevSeq);
     byte b = buf.readByte();
     if (b == (byte)0) return prevSeq+1;
     if (b == (byte)0xFF) return buf.readLong();
@@ -129,13 +124,7 @@ public class SnippetEntry {
   }
   
   protected void encodeSeq(OutputBuffer buf, long prevSeq) throws IOException {
-//    System.out.print("encodeSeq "+prevSeq+","+seq);
-//    if (true) {
-//      buf.writeLong(seq);
-//      return;
-//    }
     if (seq == prevSeq+1) {
-//      System.out.println(" "+0);
       buf.writeByte((byte)0);
       return;
     }
@@ -167,11 +156,9 @@ public class SnippetEntry {
   
   public void encodeSize(OutputBuffer buf) throws IOException {
     if (isHash) {
-//      System.out.println("encodeHash");
       buf.writeByte((byte)0);
       return;
     }
-//    System.out.println("encodeSize:"+content.length);
     if (content.length < 254) {
       buf.writeByte((byte)content.length);
       return;

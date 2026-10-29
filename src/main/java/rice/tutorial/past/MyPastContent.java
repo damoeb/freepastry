@@ -56,11 +56,9 @@ public class MyPastContent extends ContentHashPastContent {
   String content;
     
   /**
-   * Takes an environment for the timestamp
-   * An IdFactory to generate the hash
-   * The content to be stored.
+   * Takes the id to store the content under and the content to be stored.
    * 
-   * @param idf to generate a hash of the content
+   * @param id the id, usually a hash of the content
    * @param content to be stored
    */
   public MyPastContent(Id id, String content) {

@@ -84,7 +84,7 @@ public class MyScribeClient implements ScribeMultiClient, Application {
   Node node;
   
   /**
-   * The Endpoint represents the underlieing node.  By making calls on the 
+   * The Endpoint represents the underlying node.  By making calls on the 
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
    * node the message is intended for.
    */
@@ -109,7 +109,6 @@ public class MyScribeClient implements ScribeMultiClient, Application {
 
     // construct the topic
     myTopic = new Topic(new PastryIdFactory(node.getEnvironment()), "example topic");
-//    System.out.println("myTopic = "+myTopic);
     
     // now we can receive messages
     endpoint.register();
@@ -183,15 +182,12 @@ public class MyScribeClient implements ScribeMultiClient, Application {
   }
 
   public void childAdded(Topic topic, NodeHandle child) {
-//    System.out.println("MyScribeClient.childAdded("+topic+","+child+")");
   }
 
   public void childRemoved(Topic topic, NodeHandle child) {
-//    System.out.println("MyScribeClient.childRemoved("+topic+","+child+")");
   }
 
   public void subscribeFailed(Collection<Topic> topics) {
-//    System.out.println("MyScribeClient.childFailed("+topics+")");
   }
 
   /**
@@ -203,7 +199,6 @@ public class MyScribeClient implements ScribeMultiClient, Application {
   }
 
   public void subscribeSuccess(Collection<Topic> topics) {
-//    System.out.println("MyScribeClient.subscribeSuccess("+topics+")");
   }
 
   public boolean forward(RouteMessage message) {
@@ -231,7 +226,6 @@ public class MyScribeClient implements ScribeMultiClient, Application {
     // NOTE: Was just added to the Scribe interface.  May need to cast myScribe to a
     // ScribeImpl if using 1.4.1_01 or older.
     return ((ScribeImpl)myScribe).getParent(myTopic); 
-    //return myScribe.getParent(myTopic); 
   }
   
   public NodeHandle[] getChildren() {

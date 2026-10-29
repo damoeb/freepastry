@@ -131,16 +131,6 @@ public class Recorder implements MyEvents {
         return new SimpleRandomSource(randSeed, lman);    
       }
 
-//      @Override
-//      protected PriorityTransportLayer<MultiInetSocketAddress> getPriorityTransportLayer(TransportLayer<MultiInetSocketAddress, ByteBuffer> trans, LivenessProvider<MultiInetSocketAddress> liveness, ProximityProvider<MultiInetSocketAddress> prox, PastryNode pn) {
-//        // get rid of the priorityLayer
-//        if (params.getBoolean("org.mpisws.p2p.testing.transportlayer.replay.use_priority")) {
-//          return super.getPriorityTransportLayer(trans, liveness, prox, pn);
-//        } else {
-//          return trans;
-//        }
-//      }
-
       @Override
       protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         // record here
@@ -170,7 +160,6 @@ public class Recorder implements MyEvents {
         return ret;
       }      
     };
-//    PastryNodeFactory factory = new TransportPastryNodeFactory(nidFactory, bindport, env);
     
     // loop to construct the nodes/apps
     for (int curNode = 0; curNode < numNodes; curNode++) {
@@ -190,10 +179,6 @@ public class Recorder implements MyEvents {
           node.getBootstrapper().boot(Collections.singleton(bootaddress));
         }      
       });
-      
-      // this is an example of th enew way
-//      PastryNode node = factory.newNode(nidFactory.generateNodeId());
-//      node.getBootstrapper().boot(Collections.singleton(bootaddress));
       
       // the node may require sending several messages to fully boot into the ring
       synchronized(nodeContainer) {
@@ -314,7 +299,7 @@ public class Recorder implements MyEvents {
    * Note that this function only works because we have global knowledge. Doing
    * this in an actual distributed environment will take some more work.
    * 
-   * @param apps Vector of the applicatoins.
+   * @param apps Vector of the applications.
    */
   public static void printTree(ArrayList<MyScribeClient> apps) {
     // build a hashtable of the apps, keyed by nodehandle
@@ -387,7 +372,6 @@ public class Recorder implements MyEvents {
     params.setInt("pastry_socket_scm_max_open_sockets", params.getInt("org.mpisws.p2p.testing.transportlayer.replay_pastry_socket_scm_max_open_sockets"));
 
     params.setBoolean("pastry_socket_use_own_random",false);
-//    env.getParameters().setInt("rice.environment.random_loglevel", Logger.FINER);
 
     // disable the UPnP setting (in case you are testing this on a NATted LAN)
     params.setString("nat_search_policy","never");

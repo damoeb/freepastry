@@ -43,8 +43,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
-* @(#) MultiringNodeHandleSet.java
- *
  * An implementation of a NodeHandleSet for use with multiple rings
  *
  * @version $Id: MultiringNodeHandleSet.java 3613 2007-02-15 14:45:14Z jstewart $
@@ -138,7 +136,7 @@ public class MultiringNodeHandleSet implements NodeHandleSet {
   /**
     * Removes a node id and its handle from the set.
    *
-   * @param nid the node to remove.
+   * @param id the node to remove.
    *
    * @return the node handle removed or null if nothing.
    */
@@ -174,7 +172,7 @@ public class MultiringNodeHandleSet implements NodeHandleSet {
   /**
    * Determines equality
    *
-   * @param other To compare to
+   * @param o To compare to
    * @return Equals
    */
   public boolean equals(Object o) {

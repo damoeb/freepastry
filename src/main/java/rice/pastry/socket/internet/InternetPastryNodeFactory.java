@@ -75,7 +75,7 @@ import rice.selector.TimerTask;
  * 1) Internet Routable, No firewall
  * 2) Internet Routable, Firewall (not NAT)
  * 3) NAT: User Configured Port Forwarding
- * 4) NAT: UPnP
+ * 4) NAT: UPnP (only with a NATHandler supplied via nat_handler_class; the default is StubNATHandler)
  * 5) NAT: No port forwarding
  * 
  * @author Jeff Hoye
@@ -172,9 +172,6 @@ public class InternetPastryNodeFactory extends
       try {
         Class<?> natHandlerClass = Class.forName(params.getString("nat_handler_class"));
         Class<?>[] args = {Environment.class, InetAddress.class};
-//        Class[] args = new Class[2];
-//        args[0] = environment.getClass();
-//        args[1] = InetAddress.class;
         Constructor<?> constructor = natHandlerClass.getConstructor(args);
 
         Object[] foo = {env, localAddress};
@@ -182,11 +179,9 @@ public class InternetPastryNodeFactory extends
       } catch (ClassNotFoundException e) {
         if (logger.level <= Logger.INFO) logger.log("Didn't find UPnP libs, skipping UPnP");
         return new StubNATHandler(env, localAddress);
-//        natHandler = new SocketNatHandler(environment, new InetSocketAddress(localAddress,port), pAddress);
       } catch (NoClassDefFoundError e) {
         if (logger.level <= Logger.INFO) logger.log("Didn't find UPnP libs, skipping UPnP");
         return new StubNATHandler(env, localAddress);
-//        natHandler = new SocketNatHandler(environment, new InetSocketAddress(localAddress,port), pAddress);
       } catch (InvocationTargetException e) {
         if (logger.level <= Logger.INFO) logger.log("Didn't find UPnP libs, skipping UPnP");
         return new StubNATHandler(env, localAddress);        
@@ -399,7 +394,7 @@ public class InternetPastryNodeFactory extends
    * Attempt to open the firewall on the specified port
    * if it doesn't work, uses Rendezvous
    * 
-   * @param port the external firewall port to (attempt to) use, -1 to use anything
+   * @param requestedPort the external firewall port to (attempt to) use, -1 to use anything
    */
   protected void openFirewallPort(final Id nodeId,
       final InetSocketAddress bindAddress,

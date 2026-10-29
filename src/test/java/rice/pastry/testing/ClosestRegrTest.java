@@ -124,10 +124,6 @@ public class ClosestRegrTest {
       if (i > 0)
         test(i, (DirectNodeHandle)node.getLocalHandle());
       
-//      try { Thread.sleep(100); } catch (InterruptedException ie) {}
-
-//      while (simulator.simulate()) {}
-
       System.out.println("CREATED NODE " + i + " " + node.getNodeId());
 
       pastryNodes.add(node);
@@ -154,19 +150,15 @@ public class ClosestRegrTest {
   protected void test(int i, DirectNodeHandle handle) {
     PastryNode bootNode = (PastryNode) pastryNodes.elementAt(environment.getRandomSource().nextInt(i));
     NodeHandle bootstrap = bootNode.getLocalHandle();
-//    System.out.println();
     
     DirectNodeHandle closest = null; // TODO: fix this, old code: (DirectNodeHandle)factory.getNearest(handle, bootstrap)[0];
     DirectNodeHandle realClosest = simulator.getClosest(handle);
-//    int cProx = simulator.proximity(closest, handle);
-//    System.out.println("cProx:"+cProx);
     if (! closest.getNodeId().equals(realClosest.getNodeId())) {
       float cProx = simulator.proximity(closest, handle);
       float rProx = simulator.proximity(realClosest, handle);
       if (cProx == 0) {
         System.out.println("ERROR: factory.getNearest("+handle+") returned "+closest); 
       }
-//      if (true) {
       if (rProx < cProx) {
         incorrect++;
         sum += (cProx / rProx);
@@ -174,9 +166,6 @@ public class ClosestRegrTest {
         System.out.println("ERROR: CLOSEST TO " + handle + " WAS " + closest.getNodeId()+":"+ cProx + " REAL CLOSEST: " + realClosest.getNodeId()+":"+rProx);
         System.out.println("SO FAR: " + incorrect + "/" + i + " PERCENTAGE: " + (sum/incorrect));
 
-//      NodeHandle closest2 = factory.getNearest(handle, bootstrap);
-//      System.out.println(closest2);
-//      NodeHandle realClosest2 = simulator.getClosest(nodeId);
       }
     }
   }

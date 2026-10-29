@@ -55,23 +55,9 @@ public interface EvidenceTool<Handle extends RawSerializable, Identifier extends
    * @return VALID|INVALID|CERT_MISSING, missingCertID 
    */
   Tuple<Integer, Identifier> checkSnippet(LogSnippet snippet);
-//  int isAuthenticatorValid(Authenticator authenticator, Identifier subject);
   boolean checkSnippetSignatures(
       LogSnippet snippet, Handle subjectHandle, 
       AuthenticatorStore<Identifier> authStoreOrNull, byte flags, CommitmentProtocol<Handle, Identifier> commitmentProtocol, 
       byte[] keyNodeHash, long keyNodeMaxSeq);
-//  boolean checkNoEntriesHashed(LogSnippet snippet, Collection<Short> typesToIgnore, int numTypesToIgnore);
   
-  /**
-   * This is called when (a) we have obtained a new log segment from some node,
-   * and (b) we are convinced that the log segment is genuine. We append any new
-   * entries to our local copy of the node's log. Note that sometimes AUDIT
-   * responses overlap (e.g. because a checkpoint has been requested), so it's
-   * perfectly legitimate to sometimes receive certain entries twice. Also, it's
-   * okay if some of the entries are hashed.
-   * 
-   * Added to history
-   */
-//  void appendSnippetToHistory(LogSnippit snippet, long firstSeq, long skipEverythingBeforeSeq);
-
 }

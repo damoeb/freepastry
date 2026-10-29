@@ -61,8 +61,6 @@ import rice.p2p.util.rawserialization.*;
 import rice.persistence.*;
 
 /**
- * @(#) PastImpl.java
- *
  * This is an implementation of the Past interface.
  *
  * @version $Id: PastImpl.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -238,10 +236,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     this.timers = new ConcurrentHashMap<Integer, CancellableTask>();
     this.replicationFactor = replicas;
     
-    //   log.addHandler(new ConsoleHandler());
-    //   log.setLevel(Level.FINE);
-    //   log.getHandlers()[0].setLevel(Level.FINE);
-    
     this.replicaManager = buildReplicationManager(node, instance);
     
     this.lockManager = new LockManagerImpl(environment);
@@ -270,7 +264,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
               return;
             }
             
-            // TODO: need to handle the condition where we don't read the whole size...          
+            // TODO: handle a partial read of the 4-byte size header
             byte[] sizeArr = bb[0].array();            
             int size = MathUtils.byteArrayToInt(sizeArr);
                         
@@ -310,9 +304,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           // cause we are currently only sending 1 message per socket, but it's better to just keep reading in case we one day reuse sockets
             socket.register(true, false, 10000, this);
 
-            // recursive call to handle next object
-            // cant do this becasue calling read when not ready throws an exception
-//          receiveSelectResult(socket, canRead, canWrite);        
+            // no recursive call to read the next object: calling read when not ready throws an exception
         } catch (IOException ioe) {
           receiveException(socket, ioe);
         }
@@ -325,7 +317,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     
       public void close(AppSocket socket) {
         if (socket == null) return;
-        //System.out.println("Closing "+socket);
         pendingSocketTransactions.remove(socket); 
         socket.close();
       }
@@ -479,11 +470,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         
         
         try {
-//          ByteBuffer[] outs = new ByteBuffer[1];    
-//          ByteBuffer out = ByteBuffer.wrap(endpoint.getLocalNodeHandle().getId().toByteArray());
-//          outs[0] = out;
-//          socket.write(outs, 0, 1);
-          
           socket.write(bb[0]);
         } catch (IOException ioe) {
           if (c != null) 
@@ -537,7 +523,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * @param id The destination id
    * @param message The message to send.
-   * @param handle The first hop hint
+   * @param hint The first hop hint
    * @param command The command to run once a result is received
    */
   protected void sendRequest(Id id, PastMessage message, NodeHandle hint, Continuation<?, Exception> command) {
@@ -654,10 +640,10 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * Here so that subclasses can override the types of insert messages
    * which are sent across the wire.
    *
-   * @param obj The object to insert
+   * @param id The id of the object to insert
    * @param builder The object which builds the messages
    * @param command The command to call once done
-   * 
+   * @param useSocket Whether to send the insert messages over a socket
    */
   protected void doInsert(final Id id, final MessageBuilder builder, Continuation<? super Boolean[], Exception> command, final boolean useSocket) {
     // first, we get all of the replicas for this id
@@ -919,7 +905,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * alternate replica can be obtained using a different handle obtained via
    * lookupHandles().
    *
-   * @param id the key to be queried
+   * @param handle the handle of the object to fetch
    * @param command Command to be performed when the result is received
    */
   public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command) {
@@ -1071,7 +1057,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
               if (logger.level <= Logger.FINE) logger.log("Pushing cached copy of " + ((PastContent) o).getId() + " to " + handle);
               
               CacheMessage cmsg = new CacheMessage(getUID(), (PastContent) o, getLocalNodeHandle(), handle.getId());    
-              //endpoint.route(null, cmsg, handle);
+              // TODO: cmsg is never sent, so the copy is not actually pushed (sending it was disabled)
             }
           }
         });
@@ -1085,7 +1071,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         lookups++;
 
         Continuation<Object, Exception> c;
-//        c = getResponseContinuation(msg);
         c = getFetchResponseContinuation(msg); // has to be special to determine how to send the message
         
         storage.getObject(fmsg.getHandle().getId(), c);
@@ -1191,9 +1176,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   /**
    * This upcall should return the set of keys that the application
    * currently stores.  Should return a empty IdSet (not null),
-   * in the case that no keys belong to this range.
-   *
-   * @param range the requested range
+   * in the case that no keys are stored.
    */
   public IdSet scan() {
     return storage.getStorage().scan();

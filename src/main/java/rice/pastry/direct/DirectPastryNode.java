@@ -79,8 +79,8 @@ public class DirectPastryNode {
   /**
    * Returns the previous one.
    * 
-   * @param dnh
-   * @return
+   * @param dpn the node to make current for this thread, null to clear it
+   * @return the previous current node
    */
   public static synchronized PastryNode setCurrentNode(PastryNode dpn) {
     Thread current = Thread.currentThread();

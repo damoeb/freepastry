@@ -105,8 +105,9 @@ public abstract class Logger {
   public int level = 0;
     
   /**
-   * Prints the message if the priority is equal to or higher than the minimum priority.
-   * @param priority the priority of this log message
+   * Prints the message.  The caller checks the priority first:
+   * {@code if (logger.level <= Logger.FINE) logger.log(...)}.
+   * 
    * @param message the message to print
    */
   public abstract void log(String message);
@@ -115,9 +116,10 @@ public abstract class Logger {
    * Prints the stack trace of the exception.  If you only want to print the 
    * exception's string, use the log() method.
    * 
-   * This is necessary because Exception doesn't have a convienient way of printing the stack trace as a string.
+   * This is necessary because Exception doesn't have a convenient way of printing the stack trace as a string.
+   * The caller checks the priority first, as for {@link #log(String)}.
    * 
-   * @param priority the priority of this log message
+   * @param message the message to print
    * @param exception the exception to print
    */
   public abstract void logException(String message, Throwable exception);
@@ -140,7 +142,7 @@ public abstract class Logger {
    * Prints the stack trace of the exception.  If you only want to print the 
    * exception's string, use the log() method.
    * 
-   * This is necessary because Exception doesn't have a convienient way of printing the stack trace as a string.
+   * This is necessary because Exception doesn't have a convenient way of printing the stack trace as a string.
    * 
    * Deprecated because string construction performance was the bottleneck
    * 

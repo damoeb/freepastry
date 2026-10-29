@@ -85,7 +85,7 @@ public interface Storage extends Catalog {
    * Returns <code>True</code> if the action succeeds, else
    * <code>False</code>  (through receiveResult on c).
    *
-   * @param pid The object's persistence id
+   * @param id The object's persistence id
    * @param c The command to run once the operation is complete
    */
   public void unstore(Id id, Continuation<? super Boolean, Exception> c);

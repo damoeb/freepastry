@@ -48,7 +48,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 
 /**
  * An easy way to read a complete object in from a socket.  Wraps a Socket as an InputBuffer
- * Throws an InsufficientBytesExceptoin when there is not enough data available locally, but 
+ * Throws an InsufficientBytesException when there is not enough data available locally, but 
  * caches the data so you can attempt to deserialize the object from the beginning when there are
  * additional bytes.
  * 

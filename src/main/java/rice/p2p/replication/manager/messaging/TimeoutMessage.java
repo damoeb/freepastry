@@ -40,8 +40,6 @@ package rice.p2p.replication.manager.messaging;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) TimeoutMessage.java
- *
  * This class represents a timeout for a client fetch call
  *
  * @version $Id: TimeoutMessage.java 3613 2007-02-15 14:45:14Z jstewart $
@@ -56,9 +54,9 @@ public class TimeoutMessage implements Message {
   protected Id id;
   
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param uid The uid
+   * @param id The id this timeout is for
    */
   public TimeoutMessage(Id id) {
     this.id = id;

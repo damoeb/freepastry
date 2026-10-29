@@ -40,8 +40,6 @@ package rice.p2p.scribe.messaging;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) MaintenanceMessage.java
- *
  * The maintenance message.
  *
  * @version $Id: MaintenanceMessage.java 3648 2007-03-13 13:50:48Z jeffh $
@@ -50,11 +48,7 @@ import rice.p2p.commonapi.*;
  */
 public class MaintenanceMessage implements Message {
   /**
-   * Constructor 
-   *
-   * @param id The unique id
-   * @param source The source address
-   * @param dest The destination address
+   * Constructor
    */
   public MaintenanceMessage() {
   }

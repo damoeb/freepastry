@@ -108,18 +108,5 @@ public abstract class AggregationMessage implements Message {
   public Id getDestination() {
     return dest;
   }
-  
-//  public AggregationMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
-//    id = buf.readInt();
-//    dest = endpoint.readId(buf, buf.readShort());
-//    source = endpoint.readNodeHandle(buf);
-//  }
-//  
-//  public void serialize(OutputBuffer buf) throws IOException {
-//    buf.writeInt(id);
-//    buf.writeShort(dest.getType());
-//    dest.serialize(buf);
-//    source.serialize(buf);
-//  }  
 }
 

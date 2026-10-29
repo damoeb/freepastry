@@ -41,47 +41,8 @@ import java.security.cert.X509Certificate;
 import org.mpisws.p2p.transport.util.Serializer;
 
 public interface X509Serializer extends Serializer<X509Certificate> {
-//  X509Certificate deserialize(InputBuffer buf) throws IOException, CertificateException, NoSuchProviderException;
-//  void serialize(OutputBuffer buf, X509Certificate cert) throws IOException, CertificateEncodingException;  
   
   
 
-
-//  private void encodeCertificate(Certificate certificate, DataOutputStream dataoutputstream)
-//  throws IOException
-//{
-//  try
-//  {
-//      byte abyte0[] = certificate.getEncoded();
-//      dataoutputstream.writeUTF(certificate.getType());
-//      dataoutputstream.writeInt(abyte0.length);
-//      dataoutputstream.write(abyte0);
-//  }
-//  catch(CertificateEncodingException certificateencodingexception)
-//  {
-//      throw new IOException(certificateencodingexception.toString());
-//  }
-//}
-//private Certificate decodeCertificate(DataInputStream datainputstream)
-//  throws IOException
-//{
-//  String s = datainputstream.readUTF();
-//  byte abyte0[] = new byte[datainputstream.readInt()];
-//  datainputstream.readFully(abyte0);
-//  try
-//  {
-//      CertificateFactory certificatefactory = CertificateFactory.getInstance(s, "BC");
-//      ByteArrayInputStream bytearrayinputstream = new ByteArrayInputStream(abyte0);
-//      return certificatefactory.generateCertificate(bytearrayinputstream);
-//  }
-//  catch(NoSuchProviderException nosuchproviderexception)
-//  {
-//      throw new IOException(nosuchproviderexception.toString());
-//  }
-//  catch(CertificateException certificateexception)
-//  {
-//      throw new IOException(certificateexception.toString());
-//  }
-//}
 
 }

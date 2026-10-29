@@ -406,9 +406,10 @@ public class XMLParser {
   }
   
   /**
-   * An assertion method
+   * An assertion method: consumes the current char if it is the expected one
    *
-   * @param the expected char
+   * @param c the expected char
+   * @throws IOException if the current char is a different one
    */
   protected void expect(char c) throws IOException {
     if (current() != c) 
@@ -418,10 +419,10 @@ public class XMLParser {
   }
   
   /**
-   * Internal method which checks for existence
+   * Internal method which checks whether a string consists of whitespace only
    *
-   * @param chars The chars to check for
-   * @param char The char
+   * @param text The string to check
+   * @return true if every char of text is whitespace
    */
   public boolean isWhitespace(String text) {
     for (int i=0; i<text.length(); i++)
@@ -435,7 +436,8 @@ public class XMLParser {
    * Internal method which checks for existence
    *
    * @param chars The chars to check for
-   * @param char The char
+   * @param c The char
+   * @return true if c is one of chars
    */
   protected boolean contains(char[] chars, char c) {
     for (int i=0; i<chars.length; i++)
@@ -494,9 +496,10 @@ public class XMLParser {
   }
     
   /**
-   * Method which parses an end tag of the form <tag />
+   * Method which parses the end of a tag of the form &lt;tag /&gt;
    *
-   * @param The name of the parsed tag
+   * @param tag The name of the parsed tag
+   * @return END_TAG
    */
   protected int parseEndTag(String tag) throws IOException {
     expect('/');
@@ -505,7 +508,6 @@ public class XMLParser {
     this.name = tag;
     this.inTag = false;
     
-//    System.out.println("Parsed default END tag '" + this.name + "'");
     
     return END_TAG;
   }
@@ -527,9 +529,9 @@ public class XMLParser {
   }
   
   /**
-   * Method which parses an end tag of the form <tag />
+   * Method which parses an end tag of the form &lt;/tag&gt;
    *
-   * @param The name of the parsed tag
+   * @return END_TAG
    */
   protected int parseEndTag() throws IOException {
     expect('/');
@@ -543,7 +545,6 @@ public class XMLParser {
     parseUntilNot(WHITESPACE);
     expect('>');
 
-//    System.out.println("Parsed END tag '" + this.name + "'");
     
     return END_TAG;
   }
@@ -559,7 +560,6 @@ public class XMLParser {
     
     parseUntilNot(WHITESPACE);
 
-//    System.out.println("Parsed START tag '" + this.name + "'");
     
     parseAttributes();
     
@@ -599,7 +599,6 @@ public class XMLParser {
     expect('?');
     expect('>');
     
-//    System.out.println("Parsed START DOCUMENT tag '" + type + "'");
     
     return START_DOCUMENT;
   }
@@ -631,7 +630,6 @@ public class XMLParser {
           value = convert(parseUntil(WHITESPACE_OR_TAG_END));
         }
         
-//        System.out.println("Parsed ATTRIBUTE '" + key + "' -> '"  + value + "'");
         
         addAttribute(key, value);
       }
@@ -639,9 +637,9 @@ public class XMLParser {
   }
   
   /**
-   * Method which parses an end tag of the form <tag />
+   * Method which parses text up to the next tag
    *
-   * @param The name of the parsed tag
+   * @return TEXT
    */
   protected int parseText() throws IOException {
     clearAttributes();
@@ -750,9 +748,11 @@ public class XMLParser {
     }
     
     /**
-      * Appends some more chars!
+     * Appends some more chars!
      *
-     * @param THe chars to append
+     * @param chars The chars to append
+     * @param off The index of the first char to append
+     * @param len The number of chars to append
      */
     public void append(char[] chars, int off, int len) {
       while (length + len > buffer.length)

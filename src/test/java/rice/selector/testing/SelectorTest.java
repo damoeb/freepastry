@@ -102,7 +102,6 @@ public class SelectorTest {
           System.out.println("Scheduled once for delay "+t1Delay+" actual delay "+curTime);
       }
     },t1Delay);
-    //if (true) return;
     final long i1Start = environment.getTimeSource().currentTimeMillis();
     sman.invoke(new Runnable() {
       public void run() {

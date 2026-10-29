@@ -44,8 +44,6 @@ import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.util.*;
 
 /**
- * @(#) GCId.java
- *
  * This class is the internal representation of an Id with an
  * expiration time in the GC Past system.  Should not be used
  * by applications.
@@ -70,7 +68,8 @@ public class GCId implements Id {
   /**
    * Constructor
    *
-   * @param node The node to base this node off of
+   * @param id The id to wrap
+   * @param expiration The expiration time
    */
   public GCId(Id id, long expiration) {
     this.id = id;
@@ -164,7 +163,8 @@ public class GCId implements Id {
   /**
    * Stores the byte[] value of this Id in the provided byte array
    *
-   * @return A byte[] representing this Id
+   * @param array the array to write to
+   * @param offset the offset in the array to start writing at
    */
   public void toByteArray(byte[] array, int offset) {
     id.toByteArray(array, offset);

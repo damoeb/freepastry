@@ -118,61 +118,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     }
   }
   
-//  static class TestNodeHandle extends NodeHandle {
-//    int num;
-//    public TestNodeHandle(int num) {
-//      this.num = num; 
-//    }
-//
-//    public NodeId getNodeId() {
-//      return null;
-//    }
-//
-//    public int getLiveness() {
-//      return 0;
-//    }
-//
-//    public int proximity() {
-//      return 0;
-//    }
-//
-//    public boolean ping() {
-//      return false;
-//    }
-//
-//    public boolean equals(Object obj) {
-//      return false;
-//    }
-//
-//    public int hashCode() {
-//      return 0;
-//    }
-//
-//    public void receiveMessage(Message msg) {
-//    }
-//    
-//    public String toString() {
-//      return "NH: "+num; 
-//    }
-//  }
-//  
-//  /**
-//   * To test the comparator...
-//   * @param foo
-//   */
-//  public static void main(String[] foo) {
-//    // we want sort to return newest first, so the list should get flipped
-//    ArrayList l = new ArrayList();
-//    for (int i = 0; i < 20; i++) {
-//      l.add(new FailedTime(new TestNodeHandle(i), i));
-//    }
-//    Collections.sort(l);
-//    Iterator i = l.iterator();
-//    while(i.hasNext()) {
-//      System.out.println(i.next()); 
-//    }
-//  }
-  
   
   /**
    * how long a node should remain in failed
@@ -291,10 +236,9 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     tryingToGoReady = true;
     if (logger.level <= Logger.INFO) logger.log("ConsistentJonProtocol.setReady()");
     gotResponse.clear();
-    //failed.clear(); // done by cleanup task as of March 6th, 2006
     
     // send a probe to everyone in the leafset
-    Iterator<NodeHandle> i = whoDoWeNeedAResponseFrom().iterator(); //leafSet.neighborSet(Integer.MAX_VALUE).iterator();
+    Iterator<NodeHandle> i = whoDoWeNeedAResponseFrom().iterator();
     while(i.hasNext()) {
       NodeHandle nh = i.next();
       sendTheMessage(nh, false);      
@@ -343,7 +287,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     while(i.hasNext()) {
       NodeHandle nh = (NodeHandle)i.next(); 
       if (logger.level <= Logger.FINE) logger.log("CJP: timeout2, still waiting to hear from "+nh);
-      //nh.checkLiveness();
       try {
         sendTheMessage(nh, false);
       } catch (NullPointerException npe) {
@@ -372,8 +315,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     thePastryNode.setReadyStrategy(thePastryNode.getDefaultReadyStrategy());
     tryingToGoReady = false;
 
-    // this doesn't actually do anything, because getDefaultReadyStrategy() is already false
-//    thePastryNode.setReady(false);
     thePastryNode.notifyReadyObservers();
     
     // restart self
@@ -391,7 +332,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     int rightIndex = leafSet.ccwSize();
     if (rightIndex > MAX_NUM_TO_HEAR_FROM/2) rightIndex = MAX_NUM_TO_HEAR_FROM/2;
     for (int i=-leftIndex; i<=rightIndex; i++) {
-//    for (int i=-leafSet.ccwSize(); i<=leafSet.cwSize(); i++) {
       if (i != 0) {
         NodeHandle nh = leafSet.get(i);          
         if (gotResponse.get(nh) == null) {
@@ -420,14 +360,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       // failed_i := failed_i - {j}
       failed.remove(j);
       
-      // Removed 6/14/06, I think we should incorporate the new info into the leafset
-//      if (thePastryNode.isReady()) {
-//        if (cjm.request) {
-//          sendTheMessage(j, true); 
-//        }
-//        return;
-//      }
-      
       // L_i.add(j);
       addToLeafSet(j);
       
@@ -443,7 +375,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
             // hopefully this is redundant with the leafset protocol
             
             // Note, can't remove from leafset, this is to only be done by the LeafSetProtocol
-//            leafSet.remove(nh); 
           } else {
             if (logger.level <= Logger.FINE) logger.log("CJP: checking liveness2 on "+nh);
             nh.checkLiveness();
@@ -489,14 +420,13 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       if (cjm.request) {
         // send reply
         sendTheMessage(j, true);
-      } //else {
+      }
         // done_probing:
         
         // mark that he knows about us
         gotResponse.put(j, new Object());
         if (tryingToGoReady)
           doneProbing();
-//      }      
     } else if (msg instanceof RequestFromEveryoneMsg) {
       requestFromEveryoneWeHaventHeardFrom();
     } else {
@@ -521,7 +451,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       HashSet<NodeHandle> seen = new HashSet<NodeHandle>();
 
       for (int i=-leftIndex; i<=rightIndex; i++) {
-//      for (int i=-leafSet.ccwSize(); i<=leafSet.cwSize(); i++) {
         if (i != 0) {
           NodeHandle nh = leafSet.get(i);          
           if (!seen.contains(nh) && (gotResponse.get(nh) == null)) {
@@ -545,15 +474,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
           }
           tryingToGoReady = false;
         }
-        // failed_i = {}
-    //      gotResponse.clear();
-        //failed.clear(); // done by cleanup task as of March 6th, 2006
-//        Iterator it2 = observing.iterator();
-//        while(it2.hasNext()) {
-//          NodeHandle nh = (NodeHandle)it2.next();
-//          nh.deleteObserver(this);
-//          it2.remove();
-//        }
+        // failed_i = {} is done by the cleanup task, not here
       } else {
         if (logger.level <= Logger.FINE) {
           String toHearFromStr = "";
@@ -596,15 +517,10 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     // if we're not trying to go ready, no need to send out requests
     if (!reply) {
       if (!tryingToGoReady) return;
-//      logException(Logger.FINEST, "StackTrace", new Exception("Stack Trace")); 
     }
     if (logger.level <= Logger.FINE) logger.log("CJP:  sendTheMessage("+nh+","+reply+")");
     
-    // todo, may want to repeat this message as long as the node is alive if we 
-    // are worried about rare message drops
-//    if (thePastryNode.isReady()) {
-    //failed.clear(); // done by cleanup task as of March 6th, 2006
-//    }    
+    // TODO: repeat this message while the node is alive, so a rare message drop cannot stall going ready
     HashSet<NodeHandle> toSend;
     if (failed.size() < maxFailedEntries) {
       toSend = new HashSet<NodeHandle>(failed.keySet());
@@ -667,19 +583,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   private void update(Object arg0, Object arg) {
     if (logger.level <= Logger.FINEST) logger.log("CJP: update("+arg0+","+arg+")"+arg.getClass().getName());
     
-    // we went offline for whatever reason.  Now we need to try to come back online.
-//    if (arg0 == thePastryNode) {
-//      if (((Boolean)arg).booleanValue() == false) {
-//        setReady();
-//      }
-//    }
-    
     if (arg0 instanceof NodeHandle) {
-//      if (thePastryNode.isReady()) {
-//        observing.remove(arg0);
-//        arg0.deleteObserver(this);
-//        return; 
-//      }
           
         // assume it's a NodeHandle, cause we
         // want to throw the exception if it is something we don't recognize
@@ -691,7 +595,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
         }
         
         // Note, can't remove from the leafset, this is the LeafSetProtocol's job
-//        leafSet.remove(nh); 
         doneProbing();
       }
   

@@ -71,7 +71,6 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
     
     int startPort = START_PORT;
     InetAddress addr = InetAddress.getLocalHost();    
-//    InetAddress addr = InetAddress.getByName("10.0.0.10");
     alice = buildTL("alice", addr, startPort, env);
     bob = buildTL("bob", addr, startPort+1, env);
   }
@@ -147,7 +146,6 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
       
       alice.sendMessage(bogus, ByteBuffer.wrap(new byte[ctr]), new MessageCallback<MultiInetSocketAddress, ByteBuffer>(){
         public void sendFailed(MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> msg, Exception reason) {
-//          System.out.println("sendFailed");
           if (reason instanceof NodeIsFaultyException) {
           } else {
             if (reason instanceof QueueOverflowException) {

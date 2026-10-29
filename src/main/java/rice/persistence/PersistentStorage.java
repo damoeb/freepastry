@@ -62,9 +62,10 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
  * This class is an implementation of Storage which provides
  * persistent storage to disk.  This class also guarantees that
  * the data will be consistent, even after a crash.  This class
- * also provides these services is a non-blocking fashion by
- * launching a separate thread which is tasked with actually
- * writing the data to disk.
+ * also provides these services in a non-blocking fashion by
+ * submitting WorkRequests to the environment's blocking-IO thread
+ * (Processor.processBlockingIO()), which writes the data to disk; the
+ * results are delivered on the selector thread.
  *
  * This class was initially designed to support only Ids whose toString()
  * method returns a String of constant length.  It has been extended to
@@ -311,15 +312,13 @@ public class PersistentStorage implements Storage {
    * and store the new object, or fail and leave the previous
    * object intact.
    *
-   * This method completes by calling recieveResult() of the provided continuation
+   * This method completes by calling receiveResult() of the provided continuation
    * with the success or failure of the operation.
    *
    * @param obj The object to be made persistent.
    * @param id The object's id. 
    * @param metadata The object's metadata
-   * @param c The command to run once the operation is complete
-   * @return <code>true</code> if the action succeeds, else
-   * <code>false</code>.
+   * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
   public void store(final Id id, final Serializable metadata, final Serializable obj, Continuation<? super Boolean, Exception> c) {
     if (id == null || obj == null) {
@@ -391,13 +390,11 @@ public class PersistentStorage implements Storage {
    * This method also guarantees that the data on disk will remain consistent,
    * even after a crash by performing the delete atomically.
    *
-   * This method completes by calling recieveResult() of the provided continuation
+   * This method completes by calling receiveResult() of the provided continuation
    * with the success or failure of the operation.
    *
    * @param id The object's persistence id
-   * @param c The command to run once the operation is complete
-   * @return <code>true</code> if the action succeeds, else
-   * <code>false</code>.
+   * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
   public void unstore(final Id id, Continuation<? super Boolean, Exception> c) {
     printStats();
@@ -511,9 +508,7 @@ public class PersistentStorage implements Storage {
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
-   * @param c The command to run once the operation is complete
-   * @return The object, or <code>null</code> if there is no corresponding
-   * object (through receiveResult on c).
+   * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
   public void getObject(final Id id, Continuation<? super Serializable, Exception> c) {
     printStats();
@@ -669,11 +664,8 @@ public class PersistentStorage implements Storage {
   }
   
   /**
-   * Returns the total size of the stored data in bytes.The result
-   * is returned via the receiveResult method on the provided
-   * Continuation with an Integer representing the size.
+   * Returns the total size of the stored data in bytes.
    *
-   * @param c The command to run once the operation is complete
    * @return The total size, in bytes, of data stored.
    */
   public long getTotalSize(){
@@ -739,7 +731,7 @@ public class PersistentStorage implements Storage {
    * PersistenceManagerImpl constructor is valid and
    * creates the necessary subdirectories.
    *
-   * @return Whether the directories are successfully initialized.
+   * @throws IOException if a directory cannot be created
    */
   private void initDirectories() throws IOException {
     rootDirectory = new File(rootDir);
@@ -945,7 +937,7 @@ public class PersistentStorage implements Storage {
    * Method which checks to see if a directory has too many files, and if so, 
    * expands the directory in order to bring it to the correct size
    *
-   * @param dir The directory to check
+   * @param directory The directory to check
    * @return Whether or not the directory was modified
    */
   private boolean checkDirectory(File directory) throws IOException {
@@ -1053,7 +1045,7 @@ public class PersistentStorage implements Storage {
    * given prefix.
    *
    * @param prefix The prefix to look for
-   * @param list The list to search through
+   * @param dirNames The list to search through
    * @return The sublist
    */
   private String[] getMatchingDirectories(String prefix, String[] dirNames) {
@@ -1183,10 +1175,11 @@ public class PersistentStorage implements Storage {
       
   /**
    * Takes a file and moves it to the correct directory
-   * this is used in cojunction with expand to move files to their correct
+   * this is used in conjunction with expand to move files to their correct
    * subdirectories below the expanded directory
    *
-   * @param file The file to be moved
+   * @param parent The directory the file is in
+   * @param name The name of the file to be moved
    */
   private void moveFileToCorrectDirectory(File parent, String name) throws IOException { 
     File file = new File(parent, name);
@@ -1248,7 +1241,7 @@ public class PersistentStorage implements Storage {
    * Create a directory given its name
    *
    * @param directory The directory to be created
-   * @return Whether the directory is successfully created.
+   * @throws IOException if the directory cannot be created
    */
   private static void createDirectory(File directory) throws IOException {
     if ((directory == null) || (directory.exists() && directory.isFile()) || (! (directory.exists()) && (! directory.mkdirs())))
@@ -1258,8 +1251,8 @@ public class PersistentStorage implements Storage {
   /**
    * Removes an empty directory given its name
    *
-   * @param directory The directory to be created
-   * @return Whether the directory is successfully created.
+   * @param directory The directory to be deleted
+   * @throws IOException if the directory is not empty or cannot be deleted
    */
   private static void deleteDirectory(File directory) throws IOException {
     if ((directory != null) && directory.exists()) {
@@ -1320,14 +1313,11 @@ public class PersistentStorage implements Storage {
   /**
    * Generates a new file name to assign for a given id
    *
-   * @param Comparable id the id to generate a name for
-   * @return String the new File name
+   * The name is the id's full string (without the directory prefix) followed by
+   * a random suffix, which is redrawn while such a file exists.
    *
-   * This method will return the hashcode of the object used as the id
-   * unless there is a collision, in which case it will return a random number
-   * Since this mapping is only needed once it does not matter what number
-   * is used to generate the filename, the hashcode is the first try for
-   * efficiency.
+   * @param id the id to generate a name for
+   * @return the new File
    */
   private File makeTemporaryFile(Id id) throws IOException {    
     File directory = getDirectoryForId(id);
@@ -1430,7 +1420,7 @@ public class PersistentStorage implements Storage {
       } else {
         /* here, we have to handle a weird case where the filename is less than that of
         an existing directory.  To handle this, we pretend like we're doing a directory
-        split, and create new subdirs so we can accomidate everything. */
+        split, and create new subdirs so we can accommodate everything. */
         String[] dirs = new String[subDirs.length + 1];
         
         for (int i=0; i<subDirs.length; i++)
@@ -1478,9 +1468,9 @@ public class PersistentStorage implements Storage {
   }
   
   /**
-   * Method which the given file to the list of files
+   * Method which appends the given file to the list of files
    *
-   * @param list The list of files
+   * @param files The list of files
    * @param file The file
    * @return The new list
    */
@@ -1517,22 +1507,22 @@ public class PersistentStorage implements Storage {
   /**
    * Returns whether or not the given filename represents a stored file
    *
+   * @param parent The directory the file is in
    * @param name The name of the file
-   * @return int the number of files
+   * @return true if it is neither a directory nor the metadata file
    */
   private boolean isFile(File parent, String name) {
-//    return (((getPrefix(parent).length() + name.length()) >= factory.getIdToStringLength()) && (! name.equals(METADATA_FILENAME)));
     return ((! new File(parent, name).isDirectory()) && (! name.equals(METADATA_FILENAME)));
   }
   
   /**
    * Returns whether or not the given filename represents a directory
    *
+   * @param parent The directory the file is in
    * @param name The name of the file
-   * @return int the number of files
+   * @return true if it is a directory
    */
   private boolean isDirectory(File parent, String name) {
-//    return (((getPrefix(parent).length() + name.length()) < factory.getIdToStringLength()) && (new File(parent, name)).isDirectory());
     return (new File(parent, name)).isDirectory();
   }
   
@@ -1828,7 +1818,7 @@ public class PersistentStorage implements Storage {
    * Abstract over writing a single object to a file using Java
    * serialization.
    *
-   * @param obj The object to be writen
+   * @param obj The object to be written
    * @param file The file to serialize the object to.
    * @return The object's disk space usage
    */
@@ -1940,7 +1930,7 @@ public class PersistentStorage implements Storage {
    * @return boolean, true if the operation succeeds false if it doesn't
    */
   public boolean setRoot(String dir) {
-    /* We should do something logical here to the existing files */
+    // TODO: files stored under the old root are neither moved nor reloaded
     rootDir = dir;
     return true;
   }
@@ -1990,7 +1980,7 @@ public class PersistentStorage implements Storage {
    * 
    * Increases the amount of storage recorded as used 
    *
-   * @param long i the amount to increase usage by 
+   * @param i the amount to increase usage by 
    */
   private void increaseUsedSpace(long i){
      usedSize = usedSize + i;
@@ -2000,7 +1990,7 @@ public class PersistentStorage implements Storage {
    * 
    * decreases the amount of storage recorded as used 
    *
-   * @param long i the amount to decrease usage by 
+   * @param i the amount to decrease usage by 
    */
   private void decreaseUsedSpace(long i){
      usedSize = usedSize - i;
@@ -2037,7 +2027,7 @@ public class PersistentStorage implements Storage {
    */ 
   private class DirectoryFilter implements FilenameFilter {
     public boolean accept(File dir, String name) {
-      return isDirectory(dir, name); //(new File(dir, name)).isDirectory(); //((getPrefix(dir).length() + name.length() < factory.getIdToStringLength()) && (new File(dir, name)).isDirectory());
+      return isDirectory(dir, name);
     }
   }
   
@@ -2047,7 +2037,7 @@ public class PersistentStorage implements Storage {
    */
   private class FileFilter implements FilenameFilter {
     public boolean accept(File dir, String name) {
-      return isFile(dir, name); //(getPrefix(dir).length() + name.length() >= factory.getIdToStringLength());
+      return isFile(dir, name);
     }
   }
   

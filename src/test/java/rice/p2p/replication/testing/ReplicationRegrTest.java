@@ -47,7 +47,7 @@ import rice.p2p.replication.*;
 import rice.persistence.MemoryStorage;
 
 /**
- * @(#) ReplicationRegrTest.java Provides regression testing for the replication service using distributed
+ * Provides regression testing for the replication service using distributed
  * nodes.
  *
  * @version $Id: ReplicationRegrTest.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -89,8 +89,6 @@ public class ReplicationRegrTest extends CommonAPITest {
   /**
    * Usage: ReplicationRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (rmi|wire)]
    * [-help]
-   *
-   * @param args DESCRIBE THE PARAMETER
    */
   public static void main(String args[]) throws IOException {
     Environment env = parseArgs(args);
@@ -249,8 +247,6 @@ public class ReplicationRegrTest extends CommonAPITest {
   }
 
   /**
-   * DESCRIBE THE CLASS
-   *
    * @version $Id: ReplicationRegrTest.java 4654 2009-01-08 16:33:07Z jeffh $
    * @author amislove
    */

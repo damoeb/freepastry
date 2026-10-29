@@ -78,12 +78,10 @@ public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRe
   }
 
   public long read(ByteBuffer dst) throws IOException {
-//    if (closed) throw new ClosedChannelException("Socket already closed.");
     return verifier.readSocket(socketId, dst);
   }
 
   public long write(ByteBuffer src) throws IOException {
-//    if (closed || outputClosed) throw new ClosedChannelException("Socket already closed.");
     return verifier.writeSocket(socketId, src);
   }
 
@@ -122,7 +120,7 @@ public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRe
       throw new IOException("I can't read or write. canRead:"+canRead+" canWrite:"+canWrite);
     }
     if (canRead && canWrite) {
-      if (writer != reader) throw new IllegalStateException("weader != writer canRead:"+canRead+" canWrite:"+canWrite);
+      if (writer != reader) throw new IllegalStateException("reader != writer canRead:"+canRead+" canWrite:"+canWrite);
       P2PSocketReceiver<Identifier> temp = writer;
       writer = null;
       reader = null;
@@ -167,7 +165,6 @@ public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRe
     outputShutdown = true;
     
     verifier.shutdownOutput(socketId);
-//    throw new RuntimeException("Not implemented.");
   }
 
   public void receiveException(IOException ioe) {

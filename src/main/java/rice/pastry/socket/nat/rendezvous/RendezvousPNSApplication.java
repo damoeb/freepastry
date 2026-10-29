@@ -56,9 +56,8 @@ import rice.pastry.routing.RouteSet;
 /**
  * Does not try to connect to NATted nodes during PNS.
  * 
- * TODO: Cull out firewalled nodes from return values
  * TODO: Make Proximity of firewalled nodes MAX_VALUE
- * TODO: Make Rendezvous Layer check the MultiInetSocketAddress to see if they can contact eachother directly
+ * TODO: Make Rendezvous Layer check the MultiInetSocketAddress to see if they can contact each other directly
  *  
  * @author Jeff Hoye
  *
@@ -103,7 +102,6 @@ public class RendezvousPNSApplication extends PNSApplication {
   protected boolean useHandle(NodeHandle handle) {
     RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)handle;
     return contactDirectStrategy.canContactDirect(rsnh);
-//    return rsnh.canContactDirect();    
   }
 
   /**
@@ -151,7 +149,6 @@ public class RendezvousPNSApplication extends PNSApplication {
   @Override
   public Cancellable getLeafSet(final NodeHandle input,
       final Continuation<LeafSet, Exception> c) {
-//    logger.log(this+".getLeafSet("+input+")");
     if (ignore(input, c)) return null;
     return super.getLeafSet(input, new Continuation<LeafSet, Exception>() {
     

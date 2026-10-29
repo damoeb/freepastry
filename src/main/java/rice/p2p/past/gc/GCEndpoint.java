@@ -51,8 +51,6 @@ import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
- * @(#) GCEndpoint.java
- *
  * This class wraps an endpoint and allows for applications to transparently
  * use GC functionality.
  *
@@ -63,14 +61,14 @@ import rice.p2p.commonapi.rawserialization.*;
 public class GCEndpoint implements Endpoint {
   
   /**
-   * The node which this mulitring node is wrapping
+   * The endpoint which this GC endpoint is wrapping
    */
   protected Endpoint endpoint;
   
   /**
   * Constructor
    *
-   * @param node The node to base this node off of
+   * @param endpoint The endpoint to wrap
    */
   protected GCEndpoint(Endpoint endpoint) {
     this.endpoint = endpoint;
@@ -167,7 +165,7 @@ public class GCEndpoint implements Endpoint {
    *
    * @param id The object's id.
    * @param maxRank The number of desired replicas.
-   * @param handle The root handle of the remove set
+   * @param root The root handle of the remove set
    * @param set The set of other nodes around the root handle
    */
   public NodeHandleSet replicaSet(Id id, int maxRank, NodeHandle root, NodeHandleSet set) {
@@ -245,8 +243,8 @@ public class GCEndpoint implements Endpoint {
    * milliseconds, after delay number of miliseconds have passed.
    *
    * @param message The message to be delivered
-   * @param delay The number of milliseconds to wait before delivering the fist message
-   * @param delay The number of milliseconds to wait before delivering subsequent messages
+   * @param delay The number of milliseconds to wait before delivering the first message
+   * @param period The number of milliseconds to wait before delivering subsequent messages
    */
   public CancellableTask scheduleMessage(Message message, long delay, long period) {
     return endpoint.scheduleMessage(message, delay, period);

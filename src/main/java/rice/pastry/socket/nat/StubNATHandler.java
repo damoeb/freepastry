@@ -49,7 +49,6 @@ public class StubNATHandler implements NATHandler {
   String errorString = "Stub NATHandler implementation.  Plese refer to http://freepastry.org/FreePastry/nat.html to better configure FreePastry for your environment.";
   
   public StubNATHandler(Environment environment, InetAddress address) {
-    // TODO Auto-generated constructor stub
   }
 
   public InetAddress getFireWallExternalAddress() {

@@ -83,7 +83,6 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     try {
       int socketId = openSocket(i);
-//      logger.log("openSocket("+i+"):"+socketId);
       ReplaySocket<Identifier> socket = new ReplaySocket<Identifier>(i,socketId,this,options);
       socket.setDeliverSocketToMe(deliverSocketToMe);
       sockets.put(socketId, socket);
@@ -137,7 +136,6 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
   }
 
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
-    // TODO Auto-generated method stub    
   }
 
   public void destroy() {
@@ -155,7 +153,6 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
   protected void receive(final Identifier from, final ByteBuffer msg) throws IOException {
     if (logger.level <= Logger.FINER) logger.log("receive("+from+","+msg+")");
         
-//          if (logger.level <= Logger.FINE) logger.log("receive("+from+","+msg+","+timeToDeliver+")");
     callback.messageReceived(from, msg, null);
   }
 
@@ -194,16 +191,12 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
 
   @Override
   protected void socketOpened(int socketId) throws IOException {
-//    logger.log("socketOpened("+socketId+")");
     sockets.get(socketId).socketOpened();
   }
 
   @Override
   protected void socketException(int socketId, IOException ioe) throws IOException {
-    //logger.log("socketException("+socketId+")");
-//    sockets.get(socketId).receiveException(new IOException("Replay Exception"));
     sockets.get(socketId).receiveException(ioe);
-    // TODO Auto-generated method stub
     
   }
 

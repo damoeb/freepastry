@@ -191,7 +191,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * Constructor, which takes the output of a toStringFull() and converts it back
    * into an Id.  Should not normally be used.
    *
-   * @param hex The hexadecimal representation from the toStringFull()
+   * @param chars the hexadecimal representation from the toStringFull()
    */
   public static Id build(char[] chars, int offset, int length) {
     int[] array = new int[nlen];
@@ -206,8 +206,8 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Internal method for mapping digit -> num
    *
-   * @param digit The printed char
-   * @param num The byte number
+   * @param c the printed char
+   * @return the value of the digit
    */
   protected static byte trans(char c) {
     if (('0' <= c) && ('9' >= c))
@@ -289,7 +289,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   }
   
   /**
-   * Define readResolve, which will replace the deserialized object with the canootical
+   * Define readResolve, which will replace the deserialized object with the canonical
    * one (if one exists) to ensure Id coalescing.
    *
    * @return The real Id
@@ -421,26 +421,6 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
 
 
   /**
-   * Sets the ith bit to a given value i = 0 is the least significant bit.
-   *
-   * @param i which bit to set.
-   * @param v new value of bit
-   */
-//  private void setBit(int i, int v) {
-//    int index = i / 32;
-//    int shift = i % 32;
-//    int val = Id[index];
-//    int mask = (1 << shift);
-//
-//    if (v == 1) {
-//      Id[index] = val | mask;
-//    } else {
-//      Id[index] = val & ~mask;
-//    }
-//  }
-
-
-  /**
    * Sets the ith digit in base 2^b. i = 0 is the least significant digit.
    *
    * @param i which digit to get.
@@ -563,7 +543,8 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Stores the byte[] value of this Id in the provided byte array
    *
-   * @return A byte[] representing this Id
+   * @param array the array to write to
+   * @param offset the index in array of the first byte to write
    */
   public void toByteArray(byte[] array, int offset) {
     blit(array, offset);
@@ -651,8 +632,6 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
       invert(dist);
     }
 
-//    Distance d = new Distance(dist);
-
     return d;
   }
 
@@ -673,18 +652,6 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
 
     return d;
   }
-
-
-  /**
-   * Xor operator for Ids. Sets this Id to the bit-wise XOR of itself and otherId
-   *
-   * @param otherId a Id object
-   */
-//  public void xor(Id otherId) {
-//    for (int i = 0; i < nlen; i++) {
-//      Id[i] ^= otherId.Id[i];
-//    }
-//  }
 
 
   /**
@@ -829,7 +796,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * Returns a string representation of the Id in base 16. The string is a byte string from most to
    * least significant.
    * 
-   * This was updated by Jeff because it was becomming a performance bottleneck.
+   * This was updated by Jeff because it was becoming a performance bottleneck.
    *
    * @return A String representation of this Id, abbreviated
    */
@@ -862,7 +829,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   }
   
   /**
-   * Returns the complete represntation of this Id, in hex.
+   * Returns the complete representation of this Id, in hex.
    *
    * @return The complete representation of this Id, in hexadecimal
    */
@@ -881,7 +848,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * clockwise if it is within the half circle clockwise from this on the ring. An Id is considered
    * counter-clockwise from itself.
    *
-   * @param nid DESCRIBE THE PARAMETER
+   * @param nid the other Id (must be a rice.pastry.Id)
    * @return true if clockwise, false otherwise.
    */
   public boolean clockwise(rice.p2p.commonapi.Id nid) {
@@ -1242,12 +1209,6 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     System.out.println(new Id(One).getCCW().toStringFull());    
     System.out.println(new Id(One).getCW().toStringFull());    
 
-//    System.out.println(build("ABCD").toStringFull());
-//    
-//    int[] material = new int[2];
-//    material[0] = 9876;
-//    material[1] = 1234;
-//    System.out.println(new Id(material).toStringFull());
   }
 
 }

@@ -37,8 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.aggregation;
 
 /**
- * @(#) Aggregation.java
- * 
  * This interface is exported by all instances of the Aggregation
  * service, in addition to the Past and GCPast interfaces.
  * The additional functions are used mainly to recover from failures,

@@ -48,11 +48,9 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * This is the implementing class of the ISplitStream interface. It provides the functionality of
+ * This is the implementing class of the SplitStream interface. It provides the functionality of
  * creating and attaching to channels. This class is responsible for handling all channels that a 
  * local node is part of.
- * @(#) SplitStreamImpl.java
- *
  * @version $Id: SplitStreamImpl.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Ansley Post
  * @author Alan Mislove

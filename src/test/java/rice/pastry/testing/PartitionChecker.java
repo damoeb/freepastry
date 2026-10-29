@@ -114,12 +114,8 @@ public class PartitionChecker {
     unmatchedBootstraps = new HashSet<InetSocketAddress>(); 
     bootstraps = new HashSet<InetSocketAddress>(); 
     
-//    byte[] ringIdbytes = ringIdString.getBytes();
-    
     
        
-//    InetSocketAddress[] addr = RingCertificate.getCertificate(null).getBootstraps();
-  
     BufferedReader in = new BufferedReader(new FileReader(ringIdString));
 
     String line;
@@ -146,12 +142,10 @@ public class PartitionChecker {
   }
   
   protected Ring buildRing(final SocketPastryNodeFactory factory, InetSocketAddress bootstrap) throws Exception {
-//    System.out.println("buildRing("+bootstrap+")");
     unmatchedBootstraps.remove(bootstrap);
     numThreads = 0;
     final Ring ring = new Ring(bootstrap);
 
-//    final HashMap leafsets = new HashMap();
     final HashSet<NodeHandle> unseen = new HashSet<NodeHandle>();
     
     
@@ -171,20 +165,14 @@ public class PartitionChecker {
           }
             unseen.remove(handle);
             ring.addNode(handle);
-//            System.out.println("Fetching leafset of " + handle + " (thread " + numThreads + " of "+MAX_THREADS+")");
             
             Thread t = new Thread() {
               public void run() {  
                 try {
                   LeafSet ls = getLeafSet(handle);
-//                  System.out.println("Response:"+handle+" "+ring.getName()+" "+ls);
                   
                   ps.println(handle.getInetSocketAddress().getAddress().getHostAddress()+":"+
                       handle.getInetSocketAddress().getPort());
-          //        SourceRoute[] routes = factory.getRoutes(handle);
-                  
-          //        for (int i=0; i<routes.length; i++) 
-          //          System.out.println("ROUTE:\t" + routes[i].prepend(handle.getEpochAddress()));
                   
                   
                   NodeSet ns = ls.neighborSet(Integer.MAX_VALUE);
@@ -206,7 +194,6 @@ public class PartitionChecker {
                   ring.addFailure(handle,e);
                   dead.add(handle);
                 } catch (IOException e) {
-//                  environment.getLogManager().getLogger(PastryNetworkTest.class, null).log(Logger.WARNING,"GOT OTHER ERROR CONNECTING TO " + handle + " - " + e);
                 } finally {
                   synchronized (unseen) {
                     numThreads--;
@@ -225,8 +212,6 @@ public class PartitionChecker {
         }
       }
         
-//    System.out.println("Fetched all leafsets - return...  Found " + nodes.size() + " nodes.");
-
     System.out.println("buildRing() complete:"+ring);
     return ring;
   }
@@ -271,8 +256,6 @@ public class PartitionChecker {
      * @param e
      */
     public void addFailure(SocketNodeHandle handle, Exception e) {
-//      System.err.println("Failure:"+handle);
-//      e.printStackTrace(System.err);
     }
 
     public synchronized void addNode(SocketNodeHandle snh) {
@@ -314,7 +297,6 @@ public class PartitionChecker {
     public int compareTo(Ring arg0) {
       Ring that = (Ring)arg0;
       return this.size() - that.size();
-//      return that.size() - this.size();
     }
     
     public int size() {

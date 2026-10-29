@@ -121,7 +121,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     this.authStore = authStore;
     this.history = history;
     this.nextReceiveCacheEntry = 0;
-//    this.numPeers = 0;
     this.timeToleranceMillis = timeToleranceMillis;
     
     this.logger = peerreview.getEnvironment().getLogManager().getLogger(CommitmentProtocolImpl.class, null);
@@ -182,7 +181,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    * Checks whether an incoming message is already in the log (which can happen with duplicates).
    * If not, it adds the message to the log. 
    * @return The ack message and whether it was already logged.
-   * @throws SignatureException 
    */
   public Tuple<AckMessage<Identifier>,Boolean> logMessageIfNew(UserDataMessage<Handle> udm) {
     try {
@@ -190,9 +188,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
       long seqOfRecvEntry;
       byte[] myHashTop;
       byte[] myHashTopMinusOne;
-      
-  //    SimpleInputBuffer sib = new SimpleInputBuffer(message);
-  //    UserDataMessage<Handle> udm = UserDataMessage.build(sib, peerreview.getHandleSerializer(), peerreview.getHashSizeInBytes(), peerreview.getSignatureSizeInBytes());
       
       /* Check whether the log contains a matching RECV entry, i.e. one with a message
       from the same node and with the same send sequence number */
@@ -225,10 +220,8 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
         
         /* If the RECV entry already exists, retrieve it */
         
-  //      unsigned char type;
-  //      bool ok = true;
-        IndexEntry i2 = history.statEntry(indexOfRecvEntry); //, &seqOfRecvEntry, &type, NULL, NULL, myHashTop);
-        IndexEntry i1 = history.statEntry(indexOfRecvEntry-1); //, NULL, NULL, NULL, NULL, myHashTopMinusOne);
+        IndexEntry i2 = history.statEntry(indexOfRecvEntry);
+        IndexEntry i1 = history.statEntry(indexOfRecvEntry-1);
         assert(i1 != null && i2 != null && i2.getType() == EVT_RECV) : "i1:"+i1+" i2:"+i2;
         seqOfRecvEntry = i2.getSeq();
         myHashTop = i2.getNodeHash();
@@ -270,7 +263,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    * has become TRUSTED, or after it has sent us an acknowledgment 
    */    
   protected void makeProgress(Identifier idx) {
-//    logger.log("makeProgress("+idx+")");
     PeerInfo<Handle> info = peer.get(idx);
     if (info == null || (info.xmitQueue.isEmpty() && info.recvQueue.isEmpty())) {
       return;
@@ -316,13 +308,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
         info.currentTimeout = INITIAL_TIMEOUT_MILLIS;
         info.retransmitsSoFar = 0;
         OutgoingUserDataMessage<Handle> oudm = info.xmitQueue.getFirst();
-//        try {
           peerreview.transmit(info.getHandle(), oudm, null, oudm.getOptions());
-//        } catch (IOException ioe) {
-//          info.xmitQueue.removeFirst();
-//          oudm.sendFailed(ioe);
-//          return;
-//        }
       } else if (peerreview.getTime() > (info.lastTransmit + info.currentTimeout)) {
       
         /* Otherwise, retransmit the current packet a few times, up to the specified limit */
@@ -336,13 +322,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
           info.currentTimeout = RETRANSMIT_TIMEOUT_MILLIS;
           info.lastTransmit = peerreview.getTime();
           OutgoingUserDataMessage<Handle> oudm = info.xmitQueue.getFirst();
-//          try {
             peerreview.transmit(info.handle, oudm, null, oudm.getOptions());
-//          } catch (IOException ioe) {
-//            info.xmitQueue.removeFirst();
-//            oudm.sendFailed(ioe);
-//            return;
-//          }
         } else {
         
           /* If the peer still won't acknowledge the message, file a SEND challenge with its witnesses */
@@ -389,12 +369,10 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
           udm.getTopSeq(), 
           EVT_SEND, 
           innerHash, udm.getHTopMinusOne(), udm.getSignature());
-//      logger.log("received message, extract auth from "+udm.getSenderHandle()+" seq:"+udm.getTopSeq()+" "+
-//          MathUtils.toBase64(innerHash)+" htop-1:"+MathUtils.toBase64(udm.getHTopMinusOne())+" sig:"+MathUtils.toBase64(udm.getSignature()));
       if (authenticator != null) {
 
         /* At this point, we are convinced that:
-              - The remote node is TRUSTED [TODO!!]
+              - The remote node is TRUSTED (TODO: this is not checked yet)
               - The message has an acceptable sequence number
               - The message is properly signed
            Now we must check our log for an existing RECV entry:
@@ -422,11 +400,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
         /* Send the ACK */
 
         if (logger.level <= Logger.FINE) logger.log("Returning ACK to"+info.getHandle());
-//        try {
           peerreview.transmit(info.handle, ret.a(), null, t.b());
-//        } catch (IOException ioe) {
-//          throw new RuntimeException("Major problem, ack couldn't be serialized." +ret.a(),ioe);
-//        }
       } else {
         if (logger.level <= Logger.WARNING) logger.log("Cannot verify signature on message "+udm.getTopSeq()+" from "+info.getHandle()+"; discarding");
       }
@@ -452,7 +426,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    * Handle an incoming USERDATA message 
    */
   public void handleIncomingMessage(Handle source, UserDataMessage<Handle> msg, Map<String, Object> options) throws IOException {
-//    char buf1[256];    
 
     /* Check whether the timestamp (in the sequence number) is close enough to our local time.
        If not, the node may be trying to roll forward its clock, so we discard the message. */
@@ -487,7 +460,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     /* Append a SEND entry to our local log */
     
     byte[] hTopMinusOne, hTop, hToSign;
-//    long topSeq;
     hTopMinusOne = history.getTopLevelEntry().getHash();
     EvtSend<Identifier> evtSend;
     if (relevantlen < message.remaining()) {      
@@ -498,7 +470,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     
 
     try {      
-//      logger.log("XXXa "+Arrays.toString(evtSend.serialize().array()));
       history.appendEntry(evtSend.getType(), true, evtSend.serialize());
     } catch (IOException ioe) {
       MessageRequestHandle<Handle, ByteBuffer> ret = new MessageRequestHandleImpl<Handle, ByteBuffer>(target,message,options);
@@ -510,7 +481,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     HashSeq top = history.getTopLevelEntry();
     
     /* Sign the authenticator */
-//    logger.log("about to sign: "+top.getSeq()+" "+MathUtils.toBase64(top.getHash()));
     hToSign = transport.hash(ByteBuffer.wrap(MathUtils.longToByteArray(top.getSeq())), ByteBuffer.wrap(top.getHash()));
 
     byte[] signature = transport.sign(hToSign);
@@ -549,7 +519,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
   /* This is called if we receive an acknowledgment from another node */
 
   public void handleIncomingAck(Handle source, AckMessage<Identifier> ackMessage, Map<String, Object> options) throws IOException {
-//  AckMessage<Identifier> ackMessage = AckMessage.build(sib, peerreview.getIdSerializer(), hasher.getHashSizeBytes(), transport.signatureSizeInBytes());
 
     /* Acknowledgment: Log it (if we don't have it already) and send the next message, if any */
 
@@ -591,7 +560,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
           
           EvtAck<Identifier> evtAck = new EvtAck<Identifier>(ackMessage.getNodeId(), ackMessage.getSendEntrySeq(), ackMessage.getRecvEntrySeq(), ackMessage.getHashTopMinusOne(), ackMessage.getSignature());
           history.appendEntry(EVT_ACK, true, evtAck.serialize());
-          udm.sendComplete(); //ackMessage.getSendEntrySeq());
+          udm.sendComplete();
 
           /* Remove the message from the xmit queue */
 

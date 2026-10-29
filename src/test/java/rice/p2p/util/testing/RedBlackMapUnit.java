@@ -60,7 +60,7 @@ public class RedBlackMapUnit {
     
     RandomSource random = env.getRandomSource();
     PastryIdFactory pFactory = new PastryIdFactory(env);
-    IdFactory factory = pFactory; //new MultiringIdFactory(pFactory.buildRandomId(random), pFactory);
+    IdFactory factory = pFactory;
     
     Id[] array = new Id[n];
     Long[] values = new Long[n];
@@ -68,7 +68,6 @@ public class RedBlackMapUnit {
     
     for (int i=0; i<array.length; i++) {
       array[i] = factory.buildRandomId(random);
-      //values[i] = new Long(random.nextLong());
       
       map.put(array[i], values[i]);
     }

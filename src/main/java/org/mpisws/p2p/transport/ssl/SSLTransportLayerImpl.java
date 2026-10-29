@@ -101,10 +101,11 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
   /**
    * 
    * @param tl
-   * @param ks set a cert on the client, and optionally a keypair (if want clientauth), on the server, need a keypair, cert if want clientauth
-   * @param clientAuth NO, OPTIONAL, REQUIRED // on the server side
+   * @param keyStore this node's keypair and certificate
+   * @param trustStore the certificates to trust
+   * @param clientAuth CLIENT_AUTH_NONE or CLIENT_AUTH_REQUIRED, used on the server side
    * @param env
-   * @throws Exception
+   * @throws IOException
    */
   public SSLTransportLayerImpl(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, int clientAuth, Environment env) throws IOException {
     if (clientAuth != CLIENT_AUTH_NONE && clientAuth != CLIENT_AUTH_REQUIRED) throw new IllegalArgumentException("clientAuth type:"+clientAuth+" not supported.");
@@ -166,7 +167,7 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
   }
 
   /**
-   * TODO: support resuming
+   * TODO: support SSL session resumption
    */
   public void incomingSocket(final P2PSocket<Identifier> s) throws IOException {
     getSocketManager(this,s,new Continuation<SSLSocketManager<Identifier>, Exception>() {

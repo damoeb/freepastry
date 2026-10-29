@@ -61,13 +61,6 @@ public class SimpleInputBuffer extends DataInputStream implements InputBuffer {
     bais = (ByteArrayInputStream)this.in;
   }
   
-//  public short peakShort() throws IOException {
-//    bais.mark(2);
-//    short temp = readShort();
-//    bais.reset();
-//    return temp;
-//  }
-  
   public int bytesRemaining() {
     try {
       return this.available();

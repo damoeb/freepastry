@@ -68,8 +68,6 @@ public class JavaSerializedGCPastContentHandle implements RawGCPastContentHandle
       byte[] temp = baos.toByteArray();
       buf.writeInt(temp.length);
       buf.write(temp, 0, temp.length);
-  //    System.out.println("JavaSerializedGCPastContentHandle.serialize() "+handle+" length:"+temp.length);
-  //    new Exception("Stack Trace").printStackTrace();
     } catch (IOException ioe) {
       throw new JavaSerializationException(handle, ioe);
     }

@@ -64,6 +64,4 @@ public interface Router {
    */
   Iterator<NodeHandle> getBestRoutingCandidates(Id key);
 
-//  boolean routeMessage(RouteMessage rm);
-
 }

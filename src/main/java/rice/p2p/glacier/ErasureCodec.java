@@ -49,7 +49,8 @@ import rice.p2p.past.rawserialization.*;
 import rice.p2p.util.rawserialization.*;
 
 /**
- * DESCRIBE THE CLASS
+ * Erasure code over GF(2^10) that encodes an object into <code>numFragments</code> fragments, any
+ * <code>numSurvivors</code> of which suffice to decode it.
  *
  * @version $Id: ErasureCodec.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author ahae
@@ -72,8 +73,9 @@ public class ErasureCodec {
   /**
    * Constructor for ErasureCodec.
    *
-   * @param _numFragments DESCRIBE THE PARAMETER
-   * @param _numSurvivors DESCRIBE THE PARAMETER
+   * @param _numFragments the total number of fragments an object is encoded into
+   * @param _numSurvivors the number of fragments needed to decode an object
+   * @param env the environment, used for logging
    */
   public ErasureCodec(int _numFragments, int _numSurvivors, Environment env) {
     environment = env;
@@ -131,29 +133,9 @@ public class ErasureCodec {
     }
   }
 
-  
-//  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
-//    byte bytes[];
-//
-//    try {
-//      ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-//      ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
-//
-//      objectStream.writeObject(obj);
-//      objectStream.flush();
-//
-//      bytes = byteStream.toByteArray();
-//    } catch (IOException ioe) {
-//      if (logger.level <= Logger.WARNING) logger.logException(
-//          "encodeObject: ", ioe);
-//      return null;
-//    }
-//
-//    return encode(bytes, generateFragment);
-//  }
 
   /**
-   * Input: buffer of size <numFragments*Lfield>; first <numSurvivors*Lfield> words contain message, rest is zeroes
+   * Input: buffer of size {@code numFragments*Lfield}; first {@code numSurvivors*Lfield} words contain message, rest is zeroes
    * Output: buffer contains fragments
    */
   protected void encodeChunk(int[] buffer) {
@@ -181,8 +163,6 @@ public class ErasureCodec {
       if (generateFragment[i])
         wantFragments ++;
         
-    // System.outt.println(Systemm.currentTimeMillis()+" XXX before encode("+bytes.length+" bytes, "+wantFragments+" fragments) free="+Runtime.getRuntime().freeMemory()+" total="+Runtime.getRuntime().totalMemory());
-    
     int numWords = (length + 3) / 4;
     int wordsPerGroup = (numSurvivors * Lfield);
     int numGroups = (numWords + (wordsPerGroup - 1)) / wordsPerGroup;
@@ -197,8 +177,6 @@ public class ErasureCodec {
         frag[i] = null;
     }
 
-    //System.outt.println(bytes.length+" bytes => "+numFragments+" fragments with "+wordsPerFragment+" words ("+numGroups+" groups)");
-    
     for (int g=0; g<numGroups; g++) {
       int offset = g * wordsPerGroup * 4;
       int wordsHere = Math.min((length - offset + 3)/4, wordsPerGroup);
@@ -225,8 +203,6 @@ public class ErasureCodec {
         }
       }
     }
-
-    // System.out.println(Systemm.currentTimeMillis()+" XXX after encode("+bytes.length+" bytes, "+wantFragments+" fragments) free="+Runtime.getRuntime().freeMemory()+" total="+Runtime.getRuntime().totalMemory());
 
     return frag;
   }
@@ -271,8 +247,6 @@ public class ErasureCodec {
     for (int i=0; i<frag.length; i++)
       if (frag[i] != null)
         firstFrag = frag[i];
-
-    // System.out.println(Systemm.currentTimeMillis()+" XXX before decode("+firstFrag.getPayload().length+" bytes per fragment) free="+Runtime.getRuntime().freeMemory()+" total="+Runtime.getRuntime().totalMemory());
 
     if (frag.length != numFragments)
       return null;
@@ -379,14 +353,6 @@ public class ErasureCodec {
 
     try {
       return deserialize(bytes, endpoint, pcd);
-//      SimpleInputBuffer sib = new SimpleInputBuffer(bytes);
-//      short type = sib.readShort();
-//      return pcd.deserializePastContent(sib, endpoint, type);
-      
-//      ByteArrayInputStream byteinput = new ByteArrayInputStream(bytes);
-//      ObjectInputStream objectInput = new ObjectInputStream(byteinput);
-//      // System.out.println(Systemm.currentTimeMillis()+" XXX after decode("+firstFrag.getPayload().length+" bytes per fragment) free="+Runtime.getRuntime().freeMemory()+" total="+Runtime.getRuntime().totalMemory());
-//      return (Serializable) objectInput.readObject();
     } catch (IOException ioe) {
       if (logger.level <= Logger.WARNING) logger.logException(
           "", ioe);
@@ -402,11 +368,6 @@ public class ErasureCodec {
   }
   
   protected PastContent deserialize(byte[] bytes, Endpoint endpoint, PastContentDeserializer pcd) throws IOException, ClassNotFoundException {
-//  ByteArrayInputStream byteinput = new ByteArrayInputStream(bytes);
-//  ObjectInputStream objectInput = new ObjectInputStream(byteinput);
-//  // System.out.println(Systemm.currentTimeMillis()+" XXX after decode("+firstFrag.getPayload().length+" bytes per fragment) free="+Runtime.getRuntime().freeMemory()+" total="+Runtime.getRuntime().totalMemory());
-//  return (Serializable) objectInput.readObject();
-    
     SimpleInputBuffer sib = new SimpleInputBuffer(bytes);
     short type = sib.readShort();
     return pcd.deserializePastContent(sib, endpoint, type);    
@@ -439,73 +400,4 @@ public class ErasureCodec {
       FieldEltToExp[ExpToFieldElt[i]] = i;
     }
   }
-
-//  public static void main(String args[]) {
-//    Environment env = new Environment();
-//    RandomSource rng = env.getRandomSource();
-//    ErasureCodec codec = new ErasureCodec(48, 5, env);
-//    Serializable s = new String("Habe Mut, Dich Deines eigenen Verstandes zu bedienen! Aufklaerung ist der Ausgang aus Deiner selbstverschuldeten Unmuendigkeit!");
-//
-//    System.out.println("Encoding...");
-//    
-//    boolean generateFragment[] = new boolean[48];
-//    Arrays.fill(generateFragment, true);
-//    
-//    Fragment frag[] = codec.encodeObject(s, generateFragment);
-//
-//    Fragment frag2[] = new Fragment[48];
-//    frag2[9] = frag[9];
-//    frag2[11] = frag[11];
-//    frag2[12] = frag[12];
-//    frag2[17] = frag[17];
-//    frag2[33] = frag[33];
-//
-//    System.out.println("Decoding...");
-//    Object d = codec.decode(frag2);
-//
-//    System.out.println(d);
-//    
-//    for (int i=0; i<100; i++) {
-//      int[] theObject = new int[rng.nextInt(100000)];
-//      for (int j=0; j<theObject.length; j++)
-//        theObject[j] = rng.nextInt(2000000000);
-//      
-//      System.out.println("#"+i+": "+(theObject.length*4)+" bytes");
-//        
-//      int fid[] = new int[5];
-//      for (int j=0; j<5; j++) {
-//        boolean again = true;
-//        while (again) {
-//          fid[j] = rng.nextInt(48);
-//          again = false;
-//          for (int k=0; k<j; k++)
-//            if (fid[k] == fid[j])
-//              again = true;
-//        }
-//      }
-//      
-//      generateFragment = new boolean[48];
-//      for (int j=0; j<48; j++)
-//        generateFragment[j] = false;
-//      for (int j=0; j<5; j++)
-//        generateFragment[fid[j]] = true;
-//      
-//      Fragment xf[] = codec.encodeObject(theObject, generateFragment);
-//      
-//      Fragment yf[] = new Fragment[48];
-//      for (int j=0; j<5; j++)
-//        yf[fid[j]] = xf[fid[j]];
-//      
-//      int[] decodedObject = (int[]) codec.decode(yf);
-//
-//      for (int j=0; j<theObject.length; j++) {
-//        if (decodedObject[j] != theObject[j]) {
-//          System.err.println("FAIL: Run #"+i+" offset "+j+" decoded="+decodedObject[j]+" original="+theObject[j]);
-//          System.exit(1);
-//        }
-//      }
-//    }
-//    
-//    System.out.println("PASS");
-//  }
 }

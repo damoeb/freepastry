@@ -85,8 +85,6 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
       if (writer != null && writer != receiver) throw new IllegalStateException("Already registered "+reader+" for writing. Can't register "+receiver);
       writer = receiver;
     }
-//    logger.log("register("+wantToRead+","+wantToWrite+","+receiver+")");
-//    internal.register(wantToRead, wantToWrite, new AppSocketReceiverWrapper(receiver, this, environment));
     internal.register(wantToRead, wantToWrite, this);
   }
 

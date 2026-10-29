@@ -52,7 +52,7 @@ import rice.p2p.commonapi.*;
  * This interface is the abstraction of something which provides a
  * caching service.  Implementations should take in parameters specific
  * to the cache algorithm.  Two implementations are provided,
- * the LRUCache and GDSCache. This interface extends the Catalog
+ * the LRUCache and EmptyCache. This interface extends the Catalog
  * interface, as the cache provides a Catalog service.
  *
  * @version $Id: Cache.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -87,17 +87,15 @@ public interface Cache extends Catalog {
    * Returns <code>True</code> if the action succeeds, else
    * <code>False</code>  (through receiveResult on c).
    *
-   * @param pid The object's id
+   * @param id The object's id
    * @param c The command to run once the operation is complete
    */
   public void uncache(Id id, Continuation<? super Boolean, Exception> c);
 
   /**
-   * Returns the maximum size of the cache, in bytes. The result
-   * is returned via the receiveResult method on the provided
-   * Continuation with an Integer representing the size.
+   * Returns the maximum size of the cache, in bytes.
    *
-   * @param c The command to run once the operation is complete
+   * @return The maximum size, in bytes, of the cache.
    */
   public long getMaximumSize();
 

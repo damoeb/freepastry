@@ -49,10 +49,10 @@ import rice.pastry.transport.Deserializer;
  * An object which remembers the mapping from names to MessageReceivers
  * and dispatches messages by request.
  * 
- * For consistent routing, modified to only deliver messages to applications 
- * if the PastryNode.isReady().  It will still deliver messages to any non-PastryAppl
- * because these "services" may be needed to boot the node into the ring.  Any 
- * messages to a PastryAppl will be buffered until the node goes ready.
+ * Nothing is buffered: a message whose address has no registered receiver is
+ * dropped. Whether an application gets messages before the node is ready is
+ * decided later, by the receiver (e.g. PastryEndpoint.receiveMessage(), which
+ * also drops them).
  * 
  * TODO:  We need to make it explicit which apps can receive messages before
  * PastryNode.isReady().
@@ -92,22 +92,17 @@ public class MessageDispatch implements Destructable {
   /**
    * Registers a receiver with the mail service.
    *
-   * @param name a name for a receiver.
+   * @param address the address of the receiver.
    * @param receiver the receiver.
    */
   public void registerReceiver(int address, PastryAppl receiver) {
     // the stack trace is to figure out who registered for what, it is not an error
-    
-
-    
     if (logger.level <= Logger.FINE) logger.log(
         "Registering "+receiver+" for address " + address);
     if (logger.level <= Logger.FINEST) logger.logException(
         "Registering receiver for address " + address, new Exception("stack trace"));
     if (addressBook.get(Integer.valueOf(address)) != null) {
       throw new IllegalArgumentException("Registering receiver for already-registered address " + address);
-//      if (logger.level <= Logger.SEVERE) logger.logException(
-//          "ERROR - Registering receiver for already-registered address " + address, new Exception("stack trace"));
     }
 
     deserializer.setDeserializer(address, receiver.getDeserializer());
@@ -126,9 +121,7 @@ public class MessageDispatch implements Destructable {
   /**
    * Dispatches a message to the appropriate receiver.
    * 
-   * It will buffer the message under the following conditions:
-   *   1) The MessageReceiver is not yet registered.
-   *   2) The MessageReceiver is a PastryAppl, and localNode.isReady() == false
+   * Returns false and drops the message if no receiver is registered for its address.
    *
    * @param msg the message.
    *
@@ -142,7 +135,7 @@ public class MessageDispatch implements Destructable {
       return false;
     }
     // NOTE: There is no safety issue with calling localNode.isReady() because this is on the 
-    // PastryThread, and the only way to set a node ready is also on the ready thread.
+    // selector thread, and a node is only set ready on the selector thread too.
     PastryAppl mr = (PastryAppl) addressBook.get(Integer.valueOf(msg.getDestination()));
 
     if (mr == null) {
@@ -157,27 +150,6 @@ public class MessageDispatch implements Destructable {
       return true;
     }
   }  
-  
-//  public boolean dispatchMessage(RawMessageDelivery msg) {
-//    if (msg.getAddress() == 0) {
-//      Logger logger = localNode.getEnvironment().getLogManager().getLogger(MessageDispatch.class, null);
-//      if (logger.level <= Logger.WARNING) logger.logException(
-//          "Message "+msg+","+msg.getClass().getName()+" has no destination.", new Exception("Stack Trace"));
-//      return false;
-//    }
-//    // NOTE: There is no safety issue with calling localNode.isReady() because this is on the 
-//    // PastryThread, and the only way to set a node ready is also on the ready thread.
-//    PastryAppl mr = (PastryAppl) addressBook.get(Integer.valueOf(msg.getAddress()));
-//
-//    if (mr == null) {
-//      if (logger.level <= Logger.WARNING) logger.log(
-//          "Dropping message " + msg + " because the application address " + msg.getAddress() + " is unknown.");
-//      return false;
-//    } else {
-//      mr.receiveMessageInternal(msg); 
-//      return true;
-//    }
-//  }  
   
   public void destroy() {
     Iterator<PastryAppl> i = addressBook.values().iterator();

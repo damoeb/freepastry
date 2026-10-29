@@ -127,7 +127,7 @@ public class RouteSet implements NodeSetI, Serializable,
         return false;
 
       if (nodes[i].getLiveness() >= NodeHandle.LIVENESS_DEAD) {
-        // node is dead, replace immeadiately
+        // node is dead, replace immediately
         notifyTable(nodes[i], false);
 
         // in case we observe this handle, stop doing so
@@ -152,7 +152,6 @@ public class RouteSet implements NodeSetI, Serializable,
     if (theSize < nodes.length) {
       nodes[theSize++] = handle;
 
-//      setChanged();
       notifyTable(handle, true);
 
       // ping handles while the set is not full
@@ -164,14 +163,12 @@ public class RouteSet implements NodeSetI, Serializable,
       if (localNode.proximity(handle) == Integer.MAX_VALUE) {
         // wait until the proximity value is available
 
-        handle.ping(); // XXX - eventually, should only ping handles pinged from
-                       // the deserializer
+        handle.ping(); // TODO: only ping handles that came from the deserializer
         handle.addNodeHandleListener(this);
 
         return false;
       } else if (localNode.proximity(handle) < worstProximity) {
         // remove handle with worst proximity
-//        setChanged();
         notifyTable(nodes[worstIndex], false);
 
         // in case we observe this handle, stop doing so
@@ -180,7 +177,6 @@ public class RouteSet implements NodeSetI, Serializable,
         // insert new handle
         nodes[worstIndex] = handle;
 
-//        setChanged();
         notifyTable(handle, true);
         handle.addNodeHandleListener(this);
 
@@ -245,7 +241,7 @@ public class RouteSet implements NodeSetI, Serializable,
   /**
    * Removes a node from a set.
    * 
-   * @param nid the node id to remove.
+   * @param nh the node to remove.
    * 
    * @return the removed handle or null.
    */
@@ -282,7 +278,7 @@ public class RouteSet implements NodeSetI, Serializable,
   /**
    * Membership test.
    * 
-   * @param nid the node id to membership of.
+   * @param nh the node to test membership of.
    * 
    * @return true if it is a member, false otherwise.
    */
@@ -424,7 +420,7 @@ public class RouteSet implements NodeSetI, Serializable,
   }
 
   /**
-   * deserialize the routeSet pings the handle the was the closests on the
+   * deserialize the routeSet pings the handle the was the closest on the
    * sending node
    */
   private void readObject(ObjectInputStream in) throws IOException,
@@ -445,7 +441,7 @@ public class RouteSet implements NodeSetI, Serializable,
     if (closest == -1)
       closestNode();
 
-    // here, we don't want to advetise nodes which are dead, so we filter
+    // here, we don't want to advertise nodes which are dead, so we filter
     // our list based on only live nodes
     NodeHandle[] tmp = new NodeHandle[nodes.length];
 
@@ -516,7 +512,7 @@ public class RouteSet implements NodeSetI, Serializable,
   /**
    * Removes a node id and its handle from the set.
    * 
-   * @param nid the node to remove.
+   * @param id the id of the node to remove.
    * 
    * @return the node handle removed or null if nothing.
    */

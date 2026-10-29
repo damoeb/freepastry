@@ -55,7 +55,6 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  */
 public interface PeerReviewCallback<Handle, Identifier> extends Destructable, IdentityTransportCallback<Handle, Identifier>, 
       StatusChangeListener<Identifier> {
-  // PeerReviewCallback() : IdentityTransportCallback() {};
   public void init();
   void storeCheckpoint(OutputBuffer buffer) throws IOException;
   /**
@@ -67,7 +66,6 @@ public interface PeerReviewCallback<Handle, Identifier> extends Destructable, Id
    */
   boolean loadCheckpoint(InputBuffer buffer) throws IOException;
   void getWitnesses(Identifier subject, WitnessListener<Handle, Identifier> callback);
-//  PeerReviewCallback getReplayInstance(ReplayWrapper replayWrapper);
   public Collection<Handle> getMyWitnessedNodes();
   PeerReviewCallback<Handle, Identifier> getReplayInstance(Verifier<Handle> v);
 }

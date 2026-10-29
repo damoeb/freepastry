@@ -128,7 +128,7 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
    * Method which generates a certificate given the nodeid, location, and private key
    *
    * @param id The id of the certificate to generate
-   * @param file The location to write the certificate to
+   * @param os The stream to write the certificate to
    * @param key The private key to use to sign the result
    */
   public static void generateCertificate(Id id, OutputStream os, PrivateKey key) {

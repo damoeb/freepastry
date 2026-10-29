@@ -62,8 +62,6 @@ import rice.p2p.util.SortedLinkedList;
 import rice.selector.SelectorManager;
 
 /**
- * TODO: implement read, write
- * 
  * @author Jeff Hoye
  *
  */
@@ -138,7 +136,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   public static final int MAX_FILE_CHUNKS_IN_MEMORY = 100;
   /**
    * Synchronized by only being mutated/checked on selector thread
-   * can be reading when < MAX_PENDING_CHUNKS, allowed to be greater
+   * can be reading when below MAX_PENDING_CHUNKS, allowed to be greater
    */
   public int fileChunksInMemory = 0;
 
@@ -190,7 +188,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   protected void purge() {
-//    logger.log("purging "+socket);
     Iterable<MessageWrapper> dropMe;
     synchronized(queue) {
       failed = true;
@@ -214,7 +211,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   
   private void enqueue(MessageWrapper ret) {    
     synchronized(queue) {
-//      logger.log("enqueue("+ret+"): queue.size() "+queue.size());
       if (failed) return;
       queue.add(ret);       
       
@@ -245,7 +241,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     // register on the writingSocket if needed
     if (!registered) {
       if (haveMessageToSend()) {
-        //logger.log(this+" registering on "+writingSocket);
         // maybe we should remember if we were registered, and don't reregister, but for now it doesn't hurt
         registered = true;  // may fail in this call and set registered back to false, so make sure to do this before calling register          
         if (logger.level <= Logger.FINEST) logger.log(this+".scheduleToWriteIfNeeded() registering to write");
@@ -343,13 +338,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
   }
 
-//  protected void notifyListenersReceiveMsgComplete(BBReceipt receipt) {
-//    if (logger.level <= Logger.FINE) logger.log("notifyListenersReceiveMsgComplete("+receipt+")");
-//    for (FileTransferListener l : getListeners()) {
-//      l.msgTransferred(receipt, (int)receipt.getSize(), (int)receipt.getSize(), true);
-//    }
-//  }
-
   protected void notifyListenersSendFileProgress(FileReceipt receipt,
       long bytesSent, long bytesTotal) {
     if (logger.level <= Logger.FINE) logger.log("notifyListenersSendFileProgress("+receipt+","+bytesSent+","+bytesTotal+")");
@@ -365,13 +353,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       l.fileTransferred(receipt, bytesReceived, bytesTotal, true);
     }
   }
-
-//  protected void notifyListenersReceiveFileComplete(FileReceipt receipt) {
-//    if (logger.level <= Logger.FINE) logger.log("notifyListenersReceiveFileComplete("+receipt+"):"+receipt.getFile());    
-//    for (FileTransferListener l : getListeners()) {
-//      l.fileTransferred(receipt, receipt.getSize(), receipt.getSize(), true);
-//    }
-//  }
 
   protected void notifyListenersSenderCancelled(DataReader receipt) {
     if (logger.level <= Logger.FINE) logger.log("notifyListenersSenderCancelled("+receipt+")");    
@@ -412,7 +393,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       Continuation<BBReceipt, Exception> c) {
     if (bb == null) throw new IllegalArgumentException("ByteBuffer bb must be non-null");
     BBReceiptImpl ret = new BBReceiptImpl(bb,priority,getUid(),c);
-//    logger.log("sendMsg("+ret+")");
     return ret;
   }
   
@@ -463,9 +443,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     
     public boolean cancel() {
       cancelled = true;
-      // TODO: remove from table
       outgoingData.remove(uid);
-      // TODO: send cancel msg
       sendCancel(uid);
       return !completed;
     }
@@ -482,8 +460,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
    * Each time complete is called, schedule the next one chunk.
    * 
    * @author Jeff Hoye
-   * 
-   * TODO: make not abstract, this is just so it compiles
    */
   class BBReceiptImpl extends ReceiptImpl implements BBReceipt {
     /**
@@ -539,7 +515,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     
     void complete(MessageWrapper wrapper) {
       // advance msg's pointer as necessary
-//      logger.log("complete part "+this);
         msg.position(chunkBuffer.position());
       
       // notify listener
@@ -576,7 +551,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       outgoingData.remove(uid);
       if (deliverAckToMe != null) deliverAckToMe.receiveResult(this);
       completed = true;
-//      notifyListenersSendMsgComplete(this);
     }
     
     public byte[] getBytes() {
@@ -618,17 +592,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     byte[] metadata;
     Continuation<FileReceipt, Exception> deliverAckToMe;
     
-//    LinkedList<ByteBuffer> msgList; 
     List<MessageWrapperImpl> outstanding = new ArrayList<MessageWrapperImpl>();// = new MessageWrapper
     List<WorkRequest<Object>> outstandingWRs = new ArrayList<WorkRequest<Object>>();
     int wrapperSeq = Integer.MIN_VALUE;    
-//    final ByteBuffer chunk;
-//    byte[] chunkBytes;
     long lastByte;
     long ptr; // managed on the selector thread
     long length;
     long initialPosition;
-//    ByteBuffer header;
     
     
     public FileReceiptImpl(File f, byte[] metadata, byte priority, long offset, long length, int uid, Continuation<FileReceipt, Exception> c) throws IOException {
@@ -658,14 +628,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
       
       ArrayList<ByteBuffer> msgList = new ArrayList<ByteBuffer>(); 
-//      long chunkSize = length;
-//      if (length > CHUNK_SIZE) chunkSize = CHUNK_SIZE;
-//      chunkBytes = new byte[(int)chunkSize]; 
-//      chunk = ByteBuffer.wrap(chunkBytes);
-//
-//      // used to send the chunks
-//      header = ByteBuffer.allocate(9);
-//      
       // construct header
       // byte MSG_BB_HEADER, int UID, long offset, long length, int nameLength, UTF name
       ByteBuffer hdr = ByteBuffer.allocate(25);
@@ -729,7 +691,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
           
           @Override
           public Object doWork() throws Exception {
-            //logger.log("doing "+seq);
             byte[] chunkBytes = new byte[1+4+4+amtToRead];
             
             chunkBytes[0] = MSG_CHUNK;
@@ -742,7 +703,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
               throw new EOFException("Unexpected EOF... cancelling "+uid+" "+f+".");
             }
             
-//            logger.log("enqueuing "+seq);
             ArrayList<ByteBuffer> foo = new ArrayList<ByteBuffer>();
             foo.add(ByteBuffer.wrap(chunkBytes));
             enqueue(new MessageWrapperImpl(FileReceiptImpl.this,seq,foo));
@@ -792,48 +752,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       if (cancelled) return;
 
       scheduleNewFileReaderIfNecessary();
-
-      // if need to send more:
-//      if (ptr < lastByte) {
-//        // Construct a chunk (note that we reuse all the objects...)
-//        try {
-//
-//          long ret = file.read(chunkBytes);
-//          if (ret < 0) {
-//            throw new EOFException("Unexpected EOF... cancelling "+uid+" "+f+".");
-//          }
-//          ptr += ret;
-//          chunk.clear();
-//          chunk.limit((int)ret);
-//                      
-//          header.clear();
-//          header.put(MSG_CHUNK);
-//          header.put(MathUtils.intToByteArray(uid));
-//          header.put(MathUtils.intToByteArray(chunk.remaining()));
-//          header.clear();
-//          msgList.add(header);
-//          msgList.add(chunk);
-//  
-//          outstanding.clear(msgList, wrapperSeq++);
-//          
-//          // schedule it
-//          enqueue(outstanding);
-//          return;        
-//        } catch (IOException ioe) {
-//          if (deliverAckToMe != null) deliverAckToMe.receiveException(ioe);          
-//          FileTransferImpl.this.sendCancel(uid);
-//          return;
-//        }
-//      }
-  
-      // we've sent the whole message
-//      try {
-//        file.close();
-//      } catch (IOException ioe) {
-//        if (logger.level <= Logger.WARNING) logger.logException("Error closing file <"+uid+"> "+file+" "+metadata.length, ioe);
-//      }
-//      outgoingData.remove(uid);
-//      if (deliverAckToMe != null) deliverAckToMe.receiveResult(this);      
     }
     
     public long getSize() {
@@ -860,11 +778,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     public boolean cancel() {
       cancelled = true;
       
-//      try {
-//        file.close();
-//      } catch (IOException ioe) {
-//        if (logger.level <= Logger.WARNING) logger.logException("Error closing file <"+uid+"> "+file, ioe);
-//      }
       for (WorkRequest<Object> wr : outstandingWRs) {
         wr.cancel();
       }
@@ -891,7 +804,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         }
       
         public void receiveException(Exception exception) {
-          // TODO Auto-generated method stub
       
         }      
       };
@@ -996,7 +908,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      */
     public boolean receiveSelectResult(AppSocket socket) throws IOException {
       if (logger.level <= Logger.FINEST) logger.log(this+".receiveSelectResult("+socket+")");
-//      if (socket == null) logger.log("Starting to write "+this+" on "+socket);
       
       if (receipt.isCancelled() && !started) {
         if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") cancelled"); 
@@ -1010,7 +921,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
           socketClosed();
           return false;
         }
-//        if (logger.level <= Logger.FINER) logger.log(this+" wrote "+bytesWritten+" bytes of "+message.capacity()+" remaining:"+message.remaining());
 
         if (message.get(0).hasRemaining()) {
           if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") has remaining"); 
@@ -1045,7 +955,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {
-//    if (canRead || !canWrite) throw new IllegalStateException(this+" Expected only to write. canRead:"+canRead+" canWrite:"+canWrite+" socket:"+socket);
     
     if (canWrite) {  
       try {
@@ -1085,18 +994,11 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     registerToReadIfPossible();
   }
   
-//  boolean readRegister = true;
   public void registerToReadIfPossible() {
     if (!environment.getSelectorManager().isSelectorThread()) throw new IllegalStateException("Must be called on selector thread to maintain sync.");
     if (fileChunksInMemory < MAX_FILE_CHUNKS_IN_MEMORY) {
-//      if (!readRegister) {
-//        logger.log("registering to read "+fileChunksInMemory);
-//      }
       socket.register(true, false, -1, this);
-//      readRegister = true;
     } else {
-//      logger.log("not registering to read "+fileChunksInMemory);
-//      readRegister = false;
     }
   }
   
@@ -1384,8 +1286,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       incomingData.remove(uid);
       
       // notify callback
-//      notifyListenersReceiveMsgComplete(this);
-//      logger.log("BBDataReader.complete() "+this);
       callback.messageReceived(ByteBuffer.wrap(getBytes()));
     }
 
@@ -1496,7 +1396,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
           // notify listeners
           long myPtr = myPtrL.longValue();
           notifyListenersReceiveFileProgress(FileDataReader.this, myPtr-offset, length);
-//          logger.logException("Stack trace "+this, new Exception("Stack Trace"));
           if (myPtr == offset+length) FileDataReader.this.complete();
         }
       
@@ -1510,7 +1409,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         @Override
         public Long doWork() throws Exception {
           if (cancelled) return -1L;
-//          if (1.0*ptr>length*0.8) throw new IOException("Test no disk space left.");
           file.write(writeMe);
           synchronized(FileDataReader.this) {
             ptr+=writeMe.length;
@@ -1531,8 +1429,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       }
         
       // notify callback
-//      notifyListenersReceiveFileComplete(this);
-//      logger.log("Complete "+this);
       callback.fileReceived(getFile(), getMetadata());
     }
 
@@ -1647,10 +1543,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
     
     public void complete() {
-      // TODO Auto-generated method stub      
     }
     public void drop() {
-      // TODO Auto-generated method stub      
     }
     public byte getPriority() {
       return CANCEL_PRIORITY;
@@ -1676,7 +1570,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      */
     public boolean receiveSelectResult(AppSocket socket) throws IOException {
       if (logger.level <= Logger.FINEST) logger.log(this+".receiveSelectResult("+socket+")");
-//      if (socket == null) logger.log("Starting to write "+this+" on "+socket);
       
       long bytesWritten;
       if ((bytesWritten = socket.write(msg)) == -1) {
@@ -1684,7 +1577,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         socketClosed();
         return false;
       }
-//        if (logger.level <= Logger.FINER) logger.log(this+" wrote "+bytesWritten+" bytes of "+message.capacity()+" remaining:"+message.remaining());
 
       if (msg.hasRemaining()) {
         if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") has remaining"); 

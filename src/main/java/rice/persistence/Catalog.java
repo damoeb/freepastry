@@ -107,7 +107,7 @@ public interface Catalog {
    *
    * @param id The id for the metadata 
    * @param metadata The metadata to store
-   * @param c The command to run once the operation is complete
+   * @param command The command to run once the operation is complete
    */
   public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> command);
   

@@ -46,7 +46,7 @@ import rice.p2p.past.messaging.*;
 import rice.persistence.*;
 
 /**
- * @(#) PastPolicy.java This interface represents a policy for Past, which is asked whenever
+ * This interface represents a policy for Past, which is asked whenever
  * the local node is told to replicate or validate an item.  This allows for applications to
  * control replication and object validate behavior, permitting behavior specific for
  * mutable or self-authenticating data.

@@ -127,8 +127,6 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
     if (valid.isEmpty()) {
       deliverResultToMe.receiveResult(false);
       return null;
-//      if (logger.level <= Logger.WARNING) logger.log("requestProbe("+addr+","+uid+") found nobody to help verify connectivity, doing it by my self");
-//      valid.add(thePastryNode.getLocalHandle());
     }
     
     // Step 2: choose one randomly

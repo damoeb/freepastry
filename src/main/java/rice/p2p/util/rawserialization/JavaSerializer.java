@@ -57,9 +57,6 @@ public class JavaSerializer {
       
       byte[] temp = baos.toByteArray();
       buf.write(temp, 0, temp.length);
-  //    System.out.println("JavaSerializedMessage.serailize() "+msg+" length:"+temp.length);
-  //    new Exception("Stack Trace").printStackTrace();
-  //    constructionStack.printStackTrace();
     } catch (IOException ioe) {
       throw new JavaSerializationException(msg, ioe);
     }

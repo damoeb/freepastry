@@ -42,8 +42,6 @@ import java.io.*;
 import rice.p2p.past.*;
 
 /**
- * @(#) GCPastMetadata.java
- * 
  * Class which is used as the metadata storage for the GC past implementation.
  * Basically wraps the long timestamp.
  *
@@ -61,7 +59,7 @@ public class GCPastMetadata implements Serializable, Comparable<GCPastMetadata> 
   /**
    * Constructor.
    *
-   * @param msg The string representing the error.
+   * @param expiration The expiration time
    */
   public GCPastMetadata(long expiration) {
     this.expiration = expiration;
@@ -77,9 +75,10 @@ public class GCPastMetadata implements Serializable, Comparable<GCPastMetadata> 
   }
   
   /**
-   * Method which sets the expiration time
+   * Returns a copy of this metadata with the given expiration time
    *
-   * @param The new expiration time
+   * @param expiration The new expiration time
+   * @return the new metadata
    */
   public GCPastMetadata setExpiration(long expiration) {
     return new GCPastMetadata(expiration);

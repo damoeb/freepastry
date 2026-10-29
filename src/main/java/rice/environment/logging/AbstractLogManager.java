@@ -113,7 +113,6 @@ public abstract class AbstractLogManager implements LogManager {
     }
     if (this.dateFormat != null && !this.dateFormat.equals("")) {      
       dateFormatter = new DateFormatter(new SimpleDateFormat(this.dateFormat));
-//      System.out.println("DateFormat "+this.dateFormat);
     }
 
     this.enabled = params.getBoolean("logging_enable");
@@ -151,7 +150,6 @@ public abstract class AbstractLogManager implements LogManager {
               while(i.hasNext()) {
                 String name = (String)i.next();
                 if (name.startsWith(loggerName)) {
-//              if (loggers.containsKey(loggerName)) { // perhaps we haven't even created such a logger yet
                   HeirarchyLogger hl = (HeirarchyLogger)loggers.get(name);
                   hl.useDefault = true;
                   hl.level = globalLogLevel;
@@ -164,7 +162,6 @@ public abstract class AbstractLogManager implements LogManager {
               while(i.hasNext()) {
                 String name = (String)i.next();
                 if (name.startsWith(loggerName)) {
-//              if (loggers.containsKey(loggerName)) { // perhaps we haven't even created such a logger yet
                   HeirarchyLogger hl = (HeirarchyLogger)loggers.get(name);
                   hl.useDefault = false;
                   hl.level = parseVal(paramName);
@@ -195,9 +192,6 @@ public abstract class AbstractLogManager implements LogManager {
     }
   }
   
-  /**
-   * 
-   */
   @SuppressWarnings("unchecked")
   public Logger getLogger(Class<?> clazz, String instance) {
     // first we want to get the logger name

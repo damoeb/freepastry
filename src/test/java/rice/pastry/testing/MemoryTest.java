@@ -78,7 +78,6 @@ public class MemoryTest {
    * TODO: test this with other environment settings
    */
   public static void testOneEnvironment() throws Exception {
-    //System.setOut(new PrintStream(new FileOutputStream("memtest.txt")));
     
     // setup
     int startPort = 5438;
@@ -100,7 +99,6 @@ public class MemoryTest {
 
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
     
-    //InetAddress localAddress = InetAddress.getByName("139.19.64.79");
     InetAddress localAddress = InetAddress.getLocalHost();
     
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, localAddress, startPort, env);
@@ -118,7 +116,6 @@ public class MemoryTest {
       while (!node.isReady()) {
         Thread.sleep(1000);
         long waitedFor = env.getTimeSource().currentTimeMillis() - waitTime;
-        //System.out.println("Waited for "+waitedFor+" millis.");
       }
       
       // print the current status
@@ -137,7 +134,6 @@ public class MemoryTest {
         PastryNode pn = (PastryNode)nodes.removeFirst(); 
         System.out.println("Destroying pastry node "+pn);
         pn.destroy();
-        //System.out.println("Done destroying.");
       }
     }    
     env.destroy();

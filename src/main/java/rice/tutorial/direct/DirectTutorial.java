@@ -63,12 +63,9 @@ public class DirectTutorial {
   List<MyApp> apps = new ArrayList<MyApp>();
   
   /**
-   * This constructor launches numNodes PastryNodes.  They will bootstrap 
-   * to an existing ring if one exists at the specified location, otherwise
-   * it will start a new ring.
+   * This constructor launches numNodes PastryNodes in the direct simulator.  The
+   * first node starts a new ring, each other node bootstraps from the one created before it.
    * 
-   * @param bindport the local port to bind to 
-   * @param bootaddress the IP:port of the node to boot from
    * @param numNodes the number of nodes to create in this JVM
    * @param env the environment for these nodes
    */
@@ -95,7 +92,6 @@ public class DirectTutorial {
   
       // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
       PastryNode node = factory.newNode();
-//      System.out.println("here:"+node+" "+env.getTimeSource().currentTimeMillis());
       
       // construct a new MyApp
       MyApp app = new MyApp(node);

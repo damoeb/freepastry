@@ -67,11 +67,8 @@ public class SPNFIdentitySerializer implements
   public void serialize(OutputBuffer buf,
       TransportLayerNodeHandle<MultiInetSocketAddress> i)
       throws IOException {
-    // SocketNodeHandle handle = (SocketNodeHandle)i;
-    // i.getAddress()
     long epoch = i.getEpoch();
     Id nid = (rice.pastry.Id) i.getId();
-    // logger.log("serialize("+i+") epoch:"+i.getEpoch()+" nid:"+nid);
     buf.writeLong(epoch);
     nid.serialize(buf);
   }

@@ -42,6 +42,14 @@ import java.util.Map;
 public interface MessageInfo {
   ByteBuffer getMessage();
   Map<String, Object> getOptions();
-  int getPriroity();
+  int getPriority();
+
+  /**
+   * @deprecated misspelled, use {@link #getPriority()}
+   */
+  @Deprecated
+  default int getPriroity() {
+    return getPriority();
+  }
   int getSize();
 }

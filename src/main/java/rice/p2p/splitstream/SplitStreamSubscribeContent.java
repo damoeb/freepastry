@@ -70,9 +70,9 @@ public class SplitStreamSubscribeContent implements RawScribeContent {
   protected int stage;
 
   /**
-   * Constructor taking in a byte[]
+   * Constructor taking the join stage
    *
-   * @param data The data for this content
+   * @param stage The stage that the client attempting to join is in
    */
   public SplitStreamSubscribeContent(int stage) {
     this.stage = stage;

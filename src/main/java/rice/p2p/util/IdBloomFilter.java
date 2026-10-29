@@ -72,7 +72,7 @@ public class IdBloomFilter implements Serializable {
   public static int NUM_HASH_FUNCTIONS = 2;
   
   /**
-   * An internal byte[] for managing ids in a memory-efficent manner
+   * An internal byte[] for managing ids in a memory-efficient manner
    * 
    * The deal with this is that we will be creating a ton of arrays in addId/check.  
    * So, what we do is allocate only 1 on a lazy basis.  The call to checkArray()
@@ -87,11 +87,11 @@ public class IdBloomFilter implements Serializable {
   protected BloomFilter filter;
     
   /**
-    * Constructor which takes the number of hash functions to use
-   * and the length of the set to use.
+   * Constructor which builds a bloom filter containing the ids of the given set,
+   * with NUM_HASH_FUNCTIONS hash functions and NUM_BITS_PER_KEY bits per id
+   * (sized for at least 64 ids).
    *
-   * @param num The number of hash functions to use
-   * @param length The length of the underlying bit set
+   * @param set The ids to add
    */
   public IdBloomFilter(IdSet set) {
     int size = (set.numElements() < 64 ? 64 : set.numElements());
@@ -162,16 +162,10 @@ public class IdBloomFilter implements Serializable {
   }
 
   public IdBloomFilter(InputBuffer buf) throws IOException {
-//    array = new byte[buf.readInt()];
-//    buf.read(array);
-
     filter = new BloomFilter(buf);
   }
   
   public void serialize(OutputBuffer buf) throws IOException {
-//    buf.writeInt(array.length);
-//    buf.write(array, 0, array.length);
-    
     filter.serialize(buf); 
   }
 }

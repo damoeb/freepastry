@@ -43,7 +43,7 @@ public interface ReadyStrategy {
   public void setReady(boolean r);
   public boolean isReady();
   /**
-   * Called when it is time to take over as the renderstrategy.
+   * Called when it is time to take over as the ReadyStrategy.
    *
    */
   public void start();

@@ -162,34 +162,24 @@ public class StringCache {
   }
   
   /**
-   * Returns the value to which the specified key is mapped in this identity
-   * hash map, or <tt>null</tt> if the map contains no mapping for this key.
-   * A return value of <tt>null</tt> does not <i>necessarily</i> indicate
-   * that the map contains no mapping for the key; it is also possible that
-   * the map explicitly maps the key to <tt>null</tt>. The
-   * <tt>containsKey</tt> method may be used to distinguish these two cases.
+   * Returns the cached String with the given characters, creating and
+   * caching it first if there is none.
    *
-   * @param   key the key whose associated value is to be returned.
-   * @return  the value to which this map maps the specified key, or
-   *          <tt>null</tt> if the map contains no mapping for this key.
-   * @see #put(Object, Object)
+   * @param   chars the characters of the string.
+   * @return  the cached String, never <tt>null</tt>.
    */
   public String get(char[] chars) {
     return get(chars, 0, chars.length);
   }
   
   /**
-   * Returns the value to which the specified key is mapped in this identity
-   * hash map, or <tt>null</tt> if the map contains no mapping for this key.
-   * A return value of <tt>null</tt> does not <i>necessarily</i> indicate
-   * that the map contains no mapping for the key; it is also possible that
-   * the map explicitly maps the key to <tt>null</tt>. The
-   * <tt>containsKey</tt> method may be used to distinguish these two cases.
+   * Returns the cached String with the given characters, creating and
+   * caching it first if there is none.
    *
-   * @param   key the key whose associated value is to be returned.
-   * @return  the value to which this map maps the specified key, or
-   *          <tt>null</tt> if the map contains no mapping for this key.
-   * @see #put(Object, Object)
+   * @param   chars the array holding the characters of the string.
+   * @param   offset the index of the first character in chars.
+   * @param   length the number of characters.
+   * @return  the cached String, never <tt>null</tt>.
    */
   public String get(char[] chars, int offset, int length) {
     int hash = hash(chars, offset, length);
@@ -216,7 +206,7 @@ public class StringCache {
    * number of keys in this map reaches its threshold.
    *
    * If current capacity is MAXIMUM_CAPACITY, this method does not
-   * resize the map, but but sets threshold to Integer.MAX_VALUE.
+   * resize the map, but sets threshold to Integer.MAX_VALUE.
    * This has the effect of preventing future calls.
    *
    * @param newCapacity the new capacity, MUST be a power of two;

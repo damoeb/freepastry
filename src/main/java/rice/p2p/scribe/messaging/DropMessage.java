@@ -46,8 +46,6 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * @(#) UnsubscribeMessage.java
- *
  * The drop message, which tells a child that it's parent can no longer
  * support it.  Note that this does not necessarily mean that the parent
  * has failed.
@@ -60,11 +58,10 @@ public class DropMessage extends ScribeMessage {
   public static final short TYPE = 6;
 
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param id The unique id
    * @param source The source address
-   * @param dest The destination address
+   * @param topic The topic the child is dropped from
    */
   public DropMessage(NodeHandle source, Topic topic) {
     super(source, topic);

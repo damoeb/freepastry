@@ -66,7 +66,6 @@ public class RecordSM extends SelectorManager {
   protected synchronized void addTask(TimerTask task) {
     long now = timeSource.currentTimeMillis();
     if ((task.scheduledExecutionTime() < now) && (timeSource instanceof DirectTimeSource)) {
-//      task.setNextExecutionTime(now);
       if (logger.level <= Logger.WARNING) logger.logException("Can't schedule a task in the past. "+task+" now:"+now+" task.execTime:"+task.scheduledExecutionTime(), new Exception("Stack Trace"));
       throw new RuntimeException("Can't schedule a task in the past.");
     }
@@ -75,7 +74,6 @@ public class RecordSM extends SelectorManager {
   
   @Override
   protected void executeDueTasks() {
-    //System.out.println("SM.executeDueTasks()");
     long now = realTime.currentTimeMillis();
         
     boolean done = false;

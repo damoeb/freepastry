@@ -153,9 +153,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   public static final String RENDEZVOUS_CONTACT_DIRECT_STRATEGY = "RendezvousSocketPastryNodeFactory.ContactDirectStrategy";
   
   /**
-   * The local node's contact state.  
-   * 
-   * TODO: Configure this
+   * The local node's contact state, set by the constructor or setContactState().
    */
   byte localContactState = RendezvousSocketNodeHandle.CONTACT_DIRECT;
   
@@ -281,7 +279,6 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
   
   protected ResponseStrategy<InetSocketAddress> getResponseStrategy(PastryNode pn) {
-//  return new NeverResponseStrategy<InetSocketAddress>();
   return new TimeoutResponseStrategy<InetSocketAddress>(3000, pn.getEnvironment());
 }
 
@@ -339,7 +336,6 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
 
   protected RendezvousGenerationStrategy<RendezvousSocketNodeHandle> getRendezvousGenerator(PastryNode pn) {
-    // TODO Auto-generated method stub
     return null;
   }
   
@@ -366,8 +362,6 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
    * 
    * This table temporarily holds the rendezvousApps until they are needed, then it is deleted.
    */
-//  Map<PastryNode, MutableTuple<RendezvousStrategy<RendezvousSocketNodeHandle>, RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle>>> rendezvousApps = 
-//    new HashMap<PastryNode, MutableTuple<RendezvousStrategy<RendezvousSocketNodeHandle>, RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle>>>();
   protected RendezvousStrategy<RendezvousSocketNodeHandle> getRendezvousStrategyHelper(PastryNode pn) {
     RendezvousStrategy<RendezvousSocketNodeHandle>  app = getRendezvousStrategy(pn);
     pn.getVars().put(RENDEZVOUS_STRATEGY, app);
@@ -506,31 +500,6 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     
     TLBootstrapper bootstrapper = new TLBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTL(), (SocketNodeHandleFactory)handleFactory, pns) {
 
-      /**
-       * Used as a helper to TLBootstrapper.boot() to generate a temporary node handle
-       *  
-       * @param addr
-       * @return
-       */
-//      @Override
-//      protected SocketNodeHandle getTempNodeHandle(InetSocketAddress addr) {
-//        RendezvousSocketNodeHandle local = (RendezvousSocketNodeHandle)pn.getLocalNodeHandle();
-//        if (!isInternetRoutablePrefix(addr.getAddress()) && !local.canContactDirect() && local.getAddress().getNumAddresses() > 1) {
-//          // assume we have the same external address
-//          return handleFactory.getNodeHandle(new MultiInetSocketAddress(local.getAddress().getOutermostAddress(), addr), -1, Id.build());          
-//        }
-//        return handleFactory.getNodeHandle(new MultiInetSocketAddress(addr), -1, Id.build());
-//      }
-      
-
-//      @Override
-//      protected void bootAsBootstrap() {
-//        if (!((RendezvousSocketNodeHandle)pn.getLocalHandle()).canContactDirect()) {
-//          throw new RuntimeException("Local node is believed to be firewalled and can't be used as a bootstrap node. "+pn.getLocalHandle());
-//        }
-//        super.bootAsBootstrap();
-//      }
-      
       @Override
       protected void checkLiveness(final SocketNodeHandle h, Map<String, Object> options) {
         // open pilot first, then call checkliveness, but it's gonna fail the first time, because the NH is bogus.
@@ -539,12 +508,10 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
           (ContactDirectStrategy<RendezvousSocketNodeHandle>)pn.getVars().get(RENDEZVOUS_CONTACT_DIRECT_STRATEGY);
         RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)h;
         if (!rsnh.canContactDirect() && contactStrat.canContactDirect(rsnh)) {
-//          logger.log("not opening pilot to "+rsnh);
           super.checkLiveness(h, options);
           return;
         }
         
-//        logger.log("opening pilot to "+rsnh);
         manager.openPilot((RendezvousSocketNodeHandle)h, new Continuation<SocketRequestHandle<RendezvousSocketNodeHandle>, Exception>() {
         
           public void receiveResult(
@@ -572,7 +539,6 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
           }
         
           public void receiveException(Exception exception) {
-            // TODO Auto-generated method stub
             logger.logException("In Rendezvous Bootstrapper.checkLiveness("+h+")", exception);
           }        
         });        

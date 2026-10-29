@@ -58,7 +58,6 @@ import rice.pastry.socket.TransportLayerNodeHandle;
  */
 
 public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> implements PastryNodeListener {
-//  private transient PastryNode remoteNode;
   public transient NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   /**
@@ -70,7 +69,6 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   protected DirectNodeHandle(PastryNode ln, NetworkSimulator<DirectNodeHandle, RawMessage> sim) {
     localnode = ln;
     logger = ln.getEnvironment().getLogManager().getLogger(getClass(), null);
-//    if (rn == null) throw new IllegalArgumentException("rn must be non-null");
     simulator = sim;
     
     ln.addPastryNodeListener(this);
@@ -116,9 +114,9 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Marks this handle changed and notifies its observers.
    *
-   * @param arg DESCRIBE THE PARAMETER
+   * @param arg the update passed to the observers
    */
   public void notifyObservers(Object arg) {
     setChanged();
@@ -126,9 +124,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   }
 
   /**
-   * DESCRIBE THE METHOD
-   *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return true if the node is not dead
    */
   public boolean ping() {
     return getLiveness() < LIVENESS_DEAD;
@@ -136,16 +132,13 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   
   public final void assertLocalNode() {
     if (DirectPastryNode.getCurrentNode() == null) {
-//      ctor.printStackTrace();
       throw new RuntimeException("PANIC: localnode is null in " + this+"@"+System.identityHashCode(this));
     }
   }
 
   /**
-   * DESCRIBE THE METHOD
-   *
-   * @deprecated
-   * @return DESCRIBE THE RETURN VALUE
+   * @deprecated use PastryNode.proximity(NodeHandle)
+   * @return the proximity of this node to the current local node
    */
   @Deprecated
   public int proximity() {
@@ -154,10 +147,10 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Sends the message to this node from the current local node.
    *
    * @deprecated use PastryNode.send()
-   * @param msg DESCRIBE THE PARAMETER
+   * @param msg the message to send
    */
   @Deprecated
   public void receiveMessage(Message msg) {
@@ -165,8 +158,8 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   }
 
   /**
-   * Equivalence relation for nodehandles. They are equal if and only if their corresponding NodeIds
-   * are equal.
+   * Equivalence relation for nodehandles. There is only one handle per node in the
+   * simulator, so handles are equal if and only if they are the same object.
    *
    * @param obj the other nodehandle .
    * @return true if they are equal, false otherwise.
@@ -175,16 +168,6 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
     // we know that there is only one of these per node in the simulator
     return obj == this;
     
-//    if (obj == null) {
-//      return false;
-//    }
-//    DirectNodeHandle nh = (DirectNodeHandle) obj;
-//
-//    if (this.remoteNode.getNodeId().equals(nh.remoteNode.getNodeId())) {
-//      return true;
-//    } else {
-//      return false;
-//    }
   }
 
   /**
@@ -196,17 +179,12 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
     return this.getNodeId().hashCode();
   }
 
-  /**
-   * DESCRIBE THE METHOD
-   *
-   * @return DESCRIBE THE RETURN VALUE
-   */
   public String toString() {
     return "[DNH " + getNodeId() + "]";
   }
 
   /**
-   * Only notify if dead.  Note that this is limitied in that it's not possible 
+   * Only notify if dead.  Note that this is limited in that it's not possible 
    * to simulate a byzantine failure of a node.  But that's out of the scope of 
    * the simulator.  If we leave in the first arg, the node notifies DECLARED_LIVE 
    * way too often.
@@ -229,9 +207,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
 
   private void localNodeUpdate() {
     if (simulator.isAlive(this)) {
-//      notifyObservers(NodeHandle.DECLARED_LIVE);      
     } else {
-//      System.out.println(this+"Notifying dead");
       notifyObservers(NodeHandle.DECLARED_DEAD);      
     }
   }

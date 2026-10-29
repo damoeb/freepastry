@@ -185,7 +185,6 @@ public class MagicNumberTransportLayer<Identifier> implements
       public void receiveException(SocketRequestHandle<Identifier> c, Exception exception) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
         deliverSocketToMe.receiveException(cancellable, exception);
-//        errorHandler.receivedException(i, exception);
       }    
     }, options));
     
@@ -216,7 +215,7 @@ public class MagicNumberTransportLayer<Identifier> implements
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             if (cancellable.getSubCancellable() != null && msg != cancellable.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+cancellable.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(cancellable);
-            notifyListenersWrite(HEADER.length, i, cancellable.getOptions(), false, false);  // non-pasthrough part
+            notifyListenersWrite(HEADER.length, i, cancellable.getOptions(), false, false);  // non-passthrough part
             notifyListenersWrite(buf.limit()-HEADER.length, i, cancellable.getOptions(), true, false); // passthrough part
           }
         
@@ -255,13 +254,13 @@ public class MagicNumberTransportLayer<Identifier> implements
     
     int remaining = m.remaining();
     if (Arrays.equals(HEADER, hdr)) {
-      notifyListenersRead(HEADER.length, i, options, false, false);  // non-pasthrough part
+      notifyListenersRead(HEADER.length, i, options, false, false);  // non-passthrough part
       notifyListenersRead(remaining, i, options, true, false); // passthrough part
       callback.messageReceived(i, m, options); 
       return;
     }
     
-    notifyListenersRead(HEADER.length, i, options, false, false);  // non-pasthrough part
+    notifyListenersRead(HEADER.length, i, options, false, false);  // non-passthrough part
     notifyListenersRead(remaining, i, options, true, false); // passthrough part
 
     errorHandler.receivedUnexpectedData(i, m.array(), 0, null);
@@ -285,7 +284,6 @@ public class MagicNumberTransportLayer<Identifier> implements
     public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
       if (stalled) return; // already reported as a StalledSocketException
       errorHandler.receivedException(socket.getIdentifier(), ioe);
-      // TODO Auto-generated method stub      
     }
 
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {

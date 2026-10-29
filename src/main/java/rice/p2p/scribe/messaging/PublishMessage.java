@@ -46,8 +46,6 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.*;
 
 /**
- * @(#) PublishMessage.java
- *
  * The publish message.
  *
  * @version $Id: PublishMessage.java 3850 2007-09-10 15:53:23Z jeffh $
@@ -61,11 +59,11 @@ public class PublishMessage extends ScribeMessage {
   protected RawScribeContent content;
 
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param id The unique id
    * @param source The source address
-   * @param dest The destination address
+   * @param topic The topic to publish to
+   * @param content The content to publish
    */
   public PublishMessage(NodeHandle source, Topic topic, ScribeContent content) {
     this(source, topic, content instanceof RawScribeContent ? (RawScribeContent)content : new JavaSerializedScribeContent(content));

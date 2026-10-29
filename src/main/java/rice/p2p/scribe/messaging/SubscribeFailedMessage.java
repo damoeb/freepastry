@@ -50,8 +50,6 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * @(#) SubscribeFailedMessage.java
- *
  * The ack for a subscribe message.
  *
  * @version $Id
@@ -62,11 +60,11 @@ public class SubscribeFailedMessage extends AbstractSubscribeMessage {
   public static final short TYPE = 4;
   
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param id The unique id
    * @param source The source address
-   * @param dest The destination address
+   * @param topics The topics the subscribe failed on
+   * @param id The id of the failed subscribe
    */
   public SubscribeFailedMessage(NodeHandle source, List<Topic> topics, int id) {
     super(source, topics, id);
@@ -95,8 +93,7 @@ public class SubscribeFailedMessage extends AbstractSubscribeMessage {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        // TODO: Handle this
-    
+        // TODO: version 0 is not supported, so such a message is dropped (null is returned)
         return null;        
       case 1:
         return new SubscribeFailedMessage(buf, endpoint);

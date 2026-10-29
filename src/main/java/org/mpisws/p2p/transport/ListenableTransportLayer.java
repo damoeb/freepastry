@@ -47,25 +47,4 @@ public interface ListenableTransportLayer<Identifier> {
   public void addTransportLayerListener(TransportLayerListener<Identifier> listener); 
   public void removeTransportLayerListener(TransportLayerListener<Identifier> listener); 
 
-  /**
-   * Example impl code
-   */
-//  Collection<TransportLayerListener<Identifier, ByteBuffer>> listeners = new ArrayList<TransportLayerListener<Identifier,ByteBuffer>>();
-//  public void addTransportLayerListener(
-//      TransportLayerListener<Identifier, ByteBuffer> listener) {
-//    synchronized(listeners) {
-//      listeners.add(listener);
-//    }
-//  }
-//
-//  public void removeTransportLayerListener(
-//      TransportLayerListener<Identifier, ByteBuffer> listener) {
-//    synchronized(listeners) {
-//      listeners.remove(listener);
-//    }
-//  }  
-//  
-//  notifyTLListenersWrite(ret,this,PASSTHROUGH);
-  
-
 }

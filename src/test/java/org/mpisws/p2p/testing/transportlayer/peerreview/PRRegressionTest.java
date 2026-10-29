@@ -236,14 +236,12 @@ public class PRRegressionTest {
         MessageCallback<HandleImpl, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {      
       peerTable.get(i).receiveMessage(localIdentifier, m);      
-//      if (deliverAckToMe != null) deliverAckToMe.ack(new Message)
       return null;
     }
 
     TransportLayerCallback<HandleImpl, ByteBuffer> callback;
     
     private void receiveMessage(final HandleImpl i, final ByteBuffer m) {
-//      System.out.println(Thread.currentThread()+" invoking onto "+env.getSelectorManager());
       env.getSelectorManager().invoke(new Runnable() {      
         public void run() {
           try {                
@@ -254,7 +252,6 @@ public class PRRegressionTest {
           }
         }      
       });
-//      System.out.println(Thread.currentThread()+" invoked onto "+env.getSelectorManager());
     }
 
     public void setCallback(
@@ -295,7 +292,6 @@ public class PRRegressionTest {
     
 
     public void init() {
-//      logger.log("init()");
       rand = new Random();
       if (player.localHandle.id.id == 1) {
         // need to give the other nodes a second to boot, otherwise this message will go nowhere
@@ -328,15 +324,12 @@ public class PRRegressionTest {
       
       logger.log("sending message "+msg.length+" "+MathUtils.toBase64(msg));
       if (logger.level <= Logger.INFO) logger.log("sending message "+msg.length+" "+MathUtils.toBase64(msg));
-//      HandleImpl dest = bob.localHandle;
       try {
       tl.sendMessage(dest, ByteBuffer.wrap(msg), new MessageCallback<HandleImpl, ByteBuffer>() {
         
         public void sendFailed(MessageRequestHandle<HandleImpl, ByteBuffer> msg,
             Exception reason) {
           logger.log("sendFailed("+msg+")");
-//          System.out.println("sendFailed("+msg+")");
-//          reason.printStackTrace();
         }
       
         public void ack(MessageRequestHandle<HandleImpl, ByteBuffer> msg) {
@@ -454,7 +447,6 @@ public class PRRegressionTest {
 
   protected PeerReviewImpl<HandleImpl, IdImpl> getPeerReview(Player player, MyIdTL transport, Environment env) {
     return new PeerReviewImpl<HandleImpl, IdImpl>(transport, env, new HandleSerializer(), new IdSerializer(), new IdExtractor(), getIdStrTranslator()
-//        ,new AuthenticatorSerializerImpl(20,96), new EvidenceSerializerImpl<HandleImpl, IdImpl>(new HandleSerializer(),new IdSerializer(),transport.getHashSizeBytes(),transport.getSignatureSizeBytes())
         );
   }
   
@@ -471,15 +463,12 @@ public class PRRegressionTest {
     BogusTransport t1;
     Environment env;
 
-//    int id;
-    
     BogusApp app;
     HandleImpl destHandle;
     
     public Player(HandleImpl localHandle, HandleImpl dstHandle, final Environment env2) throws Exception {
       super();
       this.destHandle = dstHandle;
-//      this.id = id;
       env = cloneEnvironment(env2, localHandle.name, localHandle.id.id);
       
       this.logger = env.getLogManager().getLogger(Player.class, null);
@@ -501,12 +490,7 @@ public class PRRegressionTest {
           }
         }
         
-//        System.out.println("Delete "+f+","+f.delete());        
       }
-//      File f = new File(name+".data");
-//      if (f.exists()) f.delete();
-//      f = new File(name+".index");
-//      if (f.exists()) f.delete();
       
       this.localHandle = localHandle;
       playerTable.put(localHandle, this);
@@ -537,7 +521,6 @@ public class PRRegressionTest {
     
     public BogusApp getApp() {
       return getBogusApp(this, pr, env);
-//      return new BogusApp(this,pr,env);
     }
         
     // to be overridden
@@ -589,17 +572,14 @@ public class PRRegressionTest {
     @Override
     public Cancellable requestCertificate(final HandleImpl source, final IdImpl certHolder,
         final Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
-      //logger.log("requestCert("+certHolder+" from "+source+")");
       return idTLTable.get(source).requestValue(source, certHolder, new Continuation<X509Certificate, Exception>() {
       
         public void receiveResult(X509Certificate result) {
-          //logger.log("delivering cert for ("+certHolder+") c:"+c);
           knownValues.put(certHolder, result);
           if (c != null) c.receiveResult(result);
         }
       
         public void receiveException(Exception exception) {
-          //logger.logException("exception when requesting cert for ("+certHolder+") c:"+c,exception);
           if (c != null) c.receiveException(exception);
         }
       
@@ -621,7 +601,6 @@ public class PRRegressionTest {
 
   public void setLoggingParams(Environment env) {
     env.getParameters().setInt("org.mpisws.p2p.testing.transportlayer.peerreview_loglevel", Logger.INFO);
-//    env.getParameters().setInt("org.mpisws.p2p.transport.peerreview.audit_loglevel", Logger.FINEST);    
   }
 
   protected BogusApp getBogusApp(Player player, PeerReview<HandleImpl, IdImpl> pr,
@@ -641,7 +620,6 @@ public class PRRegressionTest {
     alice = new Player(aliceHandle, bobHandle, env);
     bob = new Player(bobHandle, aliceHandle, env);    
     carol = new Player(carolHandle, null, env);  
-//    System.out.println("here");
   }
 
   public void setupWitnesses() {
@@ -762,7 +740,7 @@ public class PRRegressionTest {
    */
   public PRRegressionTest(int millisToFinish, File dir) throws Exception {
     this.dir = dir;
-    env = RecordLayer.generateEnvironment(); //new Environment();
+    env = RecordLayer.generateEnvironment();
     env.getSelectorManager().schedule(new TimerTask() {
       
       @Override

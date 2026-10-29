@@ -52,7 +52,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Jeff Hoye
  * @author Alan Mislove
  */
-public interface NodeHandleSet extends Serializable /*, Iterable<NodeHandle>*/ {
+public interface NodeHandleSet extends Serializable {
   
   /**
    * Puts a NodeHandle into the set.
@@ -90,7 +90,7 @@ public interface NodeHandleSet extends Serializable /*, Iterable<NodeHandle>*/ {
   /**
    * Removes a node id and its handle from the set.
    *
-   * @param nid the node to remove.
+   * @param id the node to remove.
    *
    * @return the node handle removed or null if nothing.
    */

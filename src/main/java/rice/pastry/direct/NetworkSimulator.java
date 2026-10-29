@@ -65,7 +65,7 @@ public interface NetworkSimulator<Identifier, MessageType> {
   /**
    * Checks to see if a node id is alive.
    * 
-   * @param nid a node id.
+   * @param nh a node.
    * 
    * @return true if alive, false otherwise.
    */
@@ -92,43 +92,6 @@ public interface NetworkSimulator<Identifier, MessageType> {
    */
   public float networkDelay(Identifier a, Identifier b);
   
-//  /**
-//   * Deliver message.
-//   * 
-//   * @param msg message to deliver.
-//   * @param node the Pastry node to deliver it to.
-//   * @param how long to delay to deliver the message
-//   */
-//  public ScheduledMessage deliverMessage(Message msg, DirectPastryNode node, DirectNodeHandle from, int delay);
-//
-//  /**
-//   * Deliver message.
-//   * 
-//   * @param msg message to deliver.
-//   * @param node the Pastry node to deliver it to.
-//   * @param how long to delay to deliver the message
-//   * @param period to deliver the message after the delay
-//   */
-//  public ScheduledMessage deliverMessage(Message msg, DirectPastryNode node, DirectNodeHandle from, int delay, int period);
-//
-//  /**
-//   * Deliver message.
-//   * 
-//   * @param msg message to deliver.
-//   * @param node the Pastry node to deliver it to.
-//   * @param how long to delay to deliver the message
-//   * @param period to deliver the message after the delay
-//   */
-//  public ScheduledMessage deliverMessageFixedRate(Message msg, DirectPastryNode node, DirectNodeHandle from, int delay, int period);
-//
-//  /**
-//   * Deliver message ASAP.
-//   * 
-//   * @param msg message to deliver.
-//   * @param node the Pastry node to deliver it to.
-//   */
-//  public ScheduledMessage deliverMessage(Message msg, DirectPastryNode node);
-
   public void setTestRecord(TestRecord tr);
 
   public TestRecord getTestRecord();
@@ -136,8 +99,8 @@ public interface NetworkSimulator<Identifier, MessageType> {
   /**
    * Returns the closest Node in proximity.
    * 
-   * @param nid
-   * @return
+   * @param nh the node to find the closest node to
+   * @return the closest live, ready node
    */
   public DirectNodeHandle getClosest(DirectNodeHandle nh);
 
@@ -150,13 +113,6 @@ public interface NetworkSimulator<Identifier, MessageType> {
    */
   public NodeRecord generateNodeRecord();
   
-  /**
-   * Registers a node handle with the simulator.
-   * 
-   * @param nh the node handle to register.
-   */
-//  public void registerNode(PastryNode dpn, TransportLayer<DirectNodeHandle, RawMessage> tl, NodeRecord nr);
-
   public void removeNode(PastryNode node);
 
   public void start();
@@ -166,12 +122,9 @@ public interface NetworkSimulator<Identifier, MessageType> {
   /**
    * Deliver message.
    * 
-   * @param msg message to deliver.
-   * @param node the Pastry node to deliver it to.
-   * @param how long to delay to deliver the message
-   * @param period to deliver the message after the delay
+   * @param del the delivery to schedule
+   * @param delay the delay in milliseconds
    */
-//  public CancellableTask enqueueDelivery(Delivery del);  
   public CancellableTask enqueueDelivery(Delivery del, int delay);
 
   /**
@@ -192,7 +145,7 @@ public interface NetworkSimulator<Identifier, MessageType> {
    * Setting the simulation speed to zero will not pause the simulation, you must 
    * call stop() to do that.
    * 
-   * @param the multiple on realtime that the simulator is allowed to run at, 
+   * @param rate the multiple on realtime that the simulator is allowed to run at, 
    * zero or less will cause no bound on the simulation speed
    * 
    */
@@ -238,8 +191,6 @@ public interface NetworkSimulator<Identifier, MessageType> {
   public NodeRecord getNodeRecord(DirectNodeHandle handle);
   
   public LivenessProvider<Identifier> getLivenessProvider();
-
-//  public ProximityProvider<NodeHandle> getProximityProvider();
 
   public GenericNetworkSimulator<Identifier, MessageType> getGenericSimulator();
   

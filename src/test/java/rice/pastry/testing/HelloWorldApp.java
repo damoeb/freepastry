@@ -173,7 +173,6 @@ public class HelloWorldApp extends PastryAppl {
     if (logger.level <= Logger.INFO)
       System.out.println("Node " + getNodeId()
           + " ready, waking up any clients");
-    //sendRndMsg(new Randon());
 
   }
 }

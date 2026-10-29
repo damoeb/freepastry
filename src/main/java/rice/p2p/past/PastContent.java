@@ -44,8 +44,6 @@ import rice.p2p.commonapi.*;
 
 
 /**
- * @(#) PastContent.java
- *
  * This interface must be implemented by all content objects stored in
  * Past.
  *
@@ -71,8 +69,7 @@ public interface PastContent extends Serializable {
    * as a function of the new and the existing object.
    *
    * @param id the key identifying the object
-   * @param newObj the new object to be stored
-   * @param existingObj the existing object stored on this node (null if no object associated with id is stored on this node)
+   * @param existingContent the existing object stored on this node (null if no object associated with id is stored on this node)
    * @return null, if the operation is not allowed; else, the new
    * object to be stored on the local node.
    */
@@ -82,7 +79,7 @@ public interface PastContent extends Serializable {
    * Produces a handle for this content object. The handle is retrieved and returned to the
    * client as a result of the Past.lookupHandles() method.
    *
-   * @param The local Past service which the content is on.
+   * @param local The local Past service which the content is on.
    * @return the handle
    */
   public PastContentHandle getHandle(Past local);

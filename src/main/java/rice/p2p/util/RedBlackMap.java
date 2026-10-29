@@ -1208,13 +1208,6 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
 
         public void remove() {
           throw new UnsupportedOperationException("Remove not supported!");
-          
-         /*   if (lastReturned == null)
-                throw new IllegalStateException();
-            if (lastReturned.left != null && lastReturned.right != null) 
-                next = lastReturned; 
-            deleteEntry(lastReturned);
-            lastReturned = null; */
         }
     }
 
@@ -1737,13 +1730,13 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      *        the iterator or stream.
      * @param it If non-null, new entries are created from entries
      *        or keys read from this iterator.
-     * @param it If non-null, new entries are created from keys and
+     * @param str If non-null, new entries are created from keys and
      *        possibly values read from this stream in serialized form.
      *        Exactly one of it and str should be non-null.
      * @param defaultVal if non-null, this default value is used for
      *        each value in the map.  If null, each value is read from
      *        iterator or stream, as described above.
-     * @throws IOException propagated from stream reads. This cannot
+     * @throws java.io.IOException propagated from stream reads. This cannot
      *         occur if str is null.
      * @throws ClassNotFoundException propagated from readObject. 
      *         This cannot occur if str is null.

@@ -43,7 +43,7 @@ import java.net.*;
 import rice.p2p.commonapi.rawserialization.*;
 
 /**
- * Class which represets a source route to a remote IP address.
+ * Class which represents the address of a remote node (most external first) plus its epoch.
  *
  * @version $Id: EpochInetSocketAddress.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Alan Mislove
@@ -55,7 +55,7 @@ public class EpochInetSocketAddress implements Serializable {
    */
   private static final long serialVersionUID = 2081191512212313338L;
 
-  // a static epoch which indicates an unknown (and unmattering) epoch number
+  // a static epoch which indicates an unknown (and irrelevant) epoch number
   public static final long EPOCH_UNKNOWN = -1;
     
   // the address list, most external first
@@ -102,9 +102,9 @@ public class EpochInetSocketAddress implements Serializable {
   }
   
   /**
-   * Checks equaltiy on source routes
+   * Checks equality of addresses and epochs
    *
-   * @param o The source route to compare to
+   * @param o The address to compare to
    * @return The equality
    */
   public boolean equals(Object o) {
@@ -126,8 +126,7 @@ public class EpochInetSocketAddress implements Serializable {
   /**
     * Internal method for computing the toString of an array of InetSocketAddresses
    *
-   * @param path The path
-   * @return THe string
+   * @return The string
    */
   public String toString() {
     String s = "";
@@ -241,7 +240,6 @@ public class EpochInetSocketAddress implements Serializable {
       short port = buf.readShort();
       saddr[ctr] = new InetSocketAddress(addr, 0xFFFF & port);
     }
-//    System.out.println("EISA.build():numAddresses:"+numAddresses);
     long epoch = buf.readLong();
     return new EpochInetSocketAddress(saddr, epoch);
   }
@@ -270,7 +268,6 @@ public class EpochInetSocketAddress implements Serializable {
    * @param buf
    */
   public void serialize(OutputBuffer buf) throws IOException {
-//    System.out.println("EISA.serialize():numAddresses:"+address.length);
     buf.writeByte((byte)address.length);
     for (int ctr = 0; ctr < address.length; ctr++) {
       buf.write(address[ctr].getAddress().getAddress(),0,4);

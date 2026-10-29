@@ -110,7 +110,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
     final ArrayList<InetSocketAddress> probeList = new ArrayList<InetSocketAddress>(probeAddresses);
     final AttachableCancellable ret = new AttachableCancellable();
 
-    // getInetSocketAddressLookup verifyies that we are on the selector
+    // getInetSocketAddressLookup verifies that we are on the selector
     ret.attach(getInetSocketAddressLookup(local, new Continuation<InetSocketAddressLookup, IOException>() {
     
       public void receiveResult(InetSocketAddressLookup lookup) {
@@ -156,8 +156,6 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
         // lookup.destroy() uses an invoke
         environment.getSelectorManager().invoke(new Runnable() {        
           public void run() {
-            //if (logger.level <= Logger.INFO) 
-//              logger.log("findExternalNodesHelper("+lookup+","+local+","+probeList+").success:"+result);
             deliverResultToMe.receiveResult(result);
           }        
         });
@@ -198,7 +196,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
     final ArrayList<InetSocketAddress> probeList = new ArrayList<InetSocketAddress>(probeAddresses);
     final AttachableCancellable ret = new AttachableCancellable();
 
-    // getInetSocketAddressLookup verifyies that we are on the selector
+    // getInetSocketAddressLookup verifies that we are on the selector
     ret.attach(getInetSocketAddressLookup(local, new Continuation<InetSocketAddressLookup, IOException>() {
     
       public void receiveResult(InetSocketAddressLookup lookup) {
@@ -279,8 +277,6 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
       final Collection<InetSocketAddress> probeAddresses,
       final ConnectivityResult deliverResultToMe) {
     final ArrayList<InetSocketAddress> probeList = new ArrayList<InetSocketAddress>(probeAddresses);
-//    logger.logException("verifyConnectivity("+local+","+probeAddresses+")", new Exception("Stack Trace"));
-//    logger.log("verifyConnectivity("+local+","+probeAddresses+")");
     if (logger.level <= Logger.FINER) logger.log("verifyConnectivity("+local+","+probeAddresses+")");
 
     // don't probe self

@@ -122,7 +122,8 @@ public interface Id extends Comparable<Id>, Serializable {
   /**
    * Stores the byte[] value of this Id in the provided byte array
    *
-   * @return A byte[] representing this Id
+   * @param array the array to write to
+   * @param offset the index in array to start writing at
    */
   public void toByteArray(byte[] array, int offset);
   

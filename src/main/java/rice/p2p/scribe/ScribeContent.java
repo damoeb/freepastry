@@ -43,8 +43,6 @@ import rice.*;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) ScribeContent.java
- *
  * This interface represents data published in a Scribe system.
  *
  * @version $Id: ScribeContent.java 3613 2007-02-15 14:45:14Z jstewart $

@@ -119,9 +119,6 @@ public class IdRangeUnit {
     if ((!r3.equals(r2) && !r2.isEmpty()) || !r3.equals(r31))
       System.out.println("ALERT: equality failed." + r2 + r3 + r31);
 
-    //if (r2.hashCode() != r3.hashCode() && !r2.isEmpty())
-    // System.out.println("ALERT: hashCode failed." + r2 + r3);
-
     IdRange r4 = new IdRange();
     IdRange r5 = new IdRange(r1.getCCW(), r1.getCCW());
 

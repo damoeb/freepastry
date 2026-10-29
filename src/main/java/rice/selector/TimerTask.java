@@ -63,8 +63,10 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
   public abstract void run();
 
   /**
-   * Returns true if should re-insert.
-   * @return
+   * Runs the task and computes its next execution time if it is periodic.
+   *
+   * @param ts the time source used for fixed-delay rescheduling
+   * @return true if the task should be re-inserted into the queue
    */
   public boolean execute(TimeSource ts) {
     if (cancelled) return false;
@@ -102,7 +104,6 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
   public int compareTo(TimerTask arg0) {
     TimerTask tt = (TimerTask)arg0;
     if (tt == this) return 0;
-//    return (int)(tt.nextExecutionTime-nextExecutionTime);
     int diff = (int)(nextExecutionTime-tt.nextExecutionTime);
     if (diff == 0) {
       // compare the sequence numbers
@@ -123,7 +124,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
   /**
    * Makes the cancel operation remove the task from the queue as well.
    * 
-   * @param timerQueue that we are enqueued on
+   * @param selector the selector manager whose queue the task is enqueued on
    */
   public void setSelectorManager(SelectorManager selector) {
     this.selector = selector;

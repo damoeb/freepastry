@@ -34,12 +34,6 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/ 
-/*
- * Created on Jun 24, 2005
- *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
- */
 package rice.p2p.past.testing;
 
 import java.io.Serializable;
@@ -120,8 +114,6 @@ public class DistPastTest {
             System.out.println("got "+results[ctr].booleanValue());
           }
           
-//          System.out.println("got: "+result);
-//          System.out.println(result.getClass().getName());
         }
 
         public void receiveException(Exception result) {

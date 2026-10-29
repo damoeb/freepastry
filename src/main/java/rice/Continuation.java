@@ -68,7 +68,7 @@ public interface Continuation<R, E extends Exception> {
    * Called when an exception occurred as a result of the
    * previous command.
    *
-   * @param result The exception which was caused.
+   * @param exception The exception which was caused.
    */
   public void receiveException(E exception);
 
@@ -271,7 +271,7 @@ public interface Continuation<R, E extends Exception> {
    * and wait for it to return its result in a Continuation.  It is essentially
    * a convenience object which combines the functionality of a Runnable that
    * can be invoked on the Selector with an ExternalContinuation that it will
-   * wait on.  Override the run(Continuation) method then call invoke() to
+   * wait on.  Override the execute(Continuation) method then call invoke() to
    * get the result or Exception from the operation.  The current thread will
    * block on invoke until the continuation returns a result or an exception.
    * 
@@ -366,7 +366,8 @@ public interface Continuation<R, E extends Exception> {
      * result continuation for the index-th result.  This should
      * be called exactly once for each int between 0 and num.
      *
-     * @param The index of this continuation
+     * @param index The index of this continuation
+     * @return the continuation that delivers the index-th result
      */
     public Continuation<Object, Exception> getSubContinuation(final int index) {
       return new Continuation<Object, Exception>() {

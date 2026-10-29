@@ -67,8 +67,6 @@ public class JavaSerializedPastContentHandle implements RawPastContentHandle {
       byte[] temp = baos.toByteArray();
       buf.writeInt(temp.length);
       buf.write(temp, 0, temp.length);
-  //    System.out.println("JavaSerializedPastContentHandle.serialize() "+handle+" length:"+temp.length);
-  //    new Exception("Stack Trace").printStackTrace();
     } catch (IOException ioe) {
       throw new JavaSerializationException(handle, ioe);
     }

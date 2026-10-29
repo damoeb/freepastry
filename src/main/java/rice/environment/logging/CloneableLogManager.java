@@ -61,7 +61,7 @@ public interface CloneableLogManager extends LogManager {
   /**
    * Return a new LogManager with identical parameters except that 
    * there is an indication of detail in each line, or filename if 
-   * seperated by files.
+   * separated by files.
    * 
    * @param detail usually will be a nodeid
    * @return a new LogManager 

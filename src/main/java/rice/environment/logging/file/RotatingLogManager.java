@@ -62,7 +62,10 @@ import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
 
 /**
- * The file name is 
+ * Writes the log to the file named by log_rotate_filename.  rotate() renames the
+ * current file (appending its modification date) and starts a new one; the task
+ * started by startRotateTask() does so every log_rotate_interval millis, and also
+ * when the file reaches log_rotate_max_size if log_rotate_size_check_interval is set.
  * 
  * @author jstewart
  * 
@@ -144,7 +147,7 @@ public class RotatingLogManager extends AbstractLogManager {
         // this won't happen
         System.err.println("could not rotate log " + filename + " because of "
             + e);
-        // XXX should also log it
+        // TODO: report the failure somewhere other than System.err; ps then stays the old, closed stream
       }
       System.out.println("rotate: starting new log");
     }

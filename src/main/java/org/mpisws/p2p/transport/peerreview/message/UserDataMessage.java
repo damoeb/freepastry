@@ -93,7 +93,6 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
       this.payload = new byte[message.remaining()];
       System.arraycopy(message.array(), message.position(), payload, 0, payload.length);
     }
-//    System.out.println("Ctor:"+toString());
   }
 
   public String toString() {
@@ -116,12 +115,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
     buf.write(signature, 0, signature.length); 
     byte relevantCode = getRelevantCode();
     buf.writeByte(relevantCode);
-//    if (relevantCode == 0xFF) {
-//    System.out.println("serializing payload:"+payload.length);
       buf.write(payload, 0, payload.length);
-//    } else {
-//      buf.write(payload.array(), payload.position(), relevantLen);      
-//    }
   }
 
   public static <H extends RawSerializable> UserDataMessage<H> build(
@@ -134,7 +128,6 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
     buf.read(sig);
     byte relevantCode = buf.readByte();
     int len = MathUtils.uByteToInt(relevantCode);
-//    System.out.println("deserializing payload:"+buf.bytesRemaining());
 
     byte[] msg = new byte[buf.bytesRemaining()];
     buf.read(msg);    
@@ -179,11 +172,9 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
   }
 
   /**
-   * Identifier myId
-   * @param myHandle
+   * @param myId
    * @param hasher
    * @return
-   * @throws IOException
    */
   public byte[] getInnerHash(RawSerializable myId, HashProvider hasher) {
     try {
@@ -215,12 +206,6 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
   public byte[] getInnerHash(ByteBuffer header, HashProvider hasher) {
     /* The peer will have logged a RECV entry, and the signature is calculated over that
     entry. To verify the signature, we must reconstruct that RECV entry locally */
-
-//    SimpleOutputBuffer sob = new SimpleOutputBuffer();
-//    serializer.serialize(senderHandle, sob);
-//    sob.writeLong(topSeq);
-//    sob.writeByte((relevantLen < payload.remaining()) ? 1 : 0);
-//    ByteBuffer recvEntryHeader = sob.getByteBuffer();
 
     if (relevantLen < payload.length) {
       byte[] irrelevantHash = hasher.hash(ByteBuffer.wrap(payload, relevantLen, payload.length-relevantLen));

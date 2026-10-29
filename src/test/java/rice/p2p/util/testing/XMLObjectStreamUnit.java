@@ -60,7 +60,6 @@ public class XMLObjectStreamUnit {
   
   protected void reset() throws IOException {
     baos = new ByteArrayOutputStream();
- //   xoos = new XMLObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(baos)));
     xoos = new XMLObjectOutputStream(new BufferedOutputStream(baos));
     bais = null;
     xois = null;
@@ -69,7 +68,6 @@ public class XMLObjectStreamUnit {
   protected void flip() throws IOException {
     xoos.close();
     bais = new ByteArrayInputStream(baos.toByteArray());
- //   xois = new XMLObjectInputStreamm(new GZIPInputStream(bais));
     xois = new XMLObjectInputStream(bais);
   }
   
@@ -209,8 +207,6 @@ public class XMLObjectStreamUnit {
     if (o1.equals(o2))
       return true;
     
-//    System.out.println("comparing: "+o1.getClass()+": "+o1+" "+o2.getClass()+" "+o2);
-    
     if (o1.getClass().isArray() && o2.getClass().isArray() &&
         o1.getClass().getComponentType().equals(o2.getClass().getComponentType())) {
       if (Array.getLength(o1) != Array.getLength(o2))
@@ -255,7 +251,7 @@ public class XMLObjectStreamUnit {
       
       // boxed primitives are value-based: valueOf() may legitimately return a cached instance
       if ((o == o2) && ! ((o instanceof Number) || (o instanceof Boolean) || (o instanceof Character)))
-        throw new IOException("Returned object is identicial to first!");
+        throw new IOException("Returned object is identical to first!");
       
       if (!compare(o,o2)) {
         System.out.println("XML IS: " + (new String(baos.toByteArray())));
@@ -283,7 +279,7 @@ public class XMLObjectStreamUnit {
       Hashtable<?, ?> table2 = (Hashtable<?, ?>) xois.readObject();
       
       if (table == table2)
-        throw new IOException("Returned table is identicial to first!");
+        throw new IOException("Returned table is identical to first!");
       
       if (! (table.equals(table2)))
         throw new IOException("Object " + table2 + " was not equal to " + table);

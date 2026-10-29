@@ -46,8 +46,6 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * Class which represents a "ping" message sent through the
  * socket pastry system.
  *
- * @version $Id: PingMessage.java 3613 2007-02-15 14:45:14Z jstewart $
- *
  * @author Alan Mislove
  */
 public class PingMessage {

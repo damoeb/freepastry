@@ -61,7 +61,7 @@ public class MessageInfoImpl implements MessageInfo {
     return options;
   }
 
-  public int getPriroity() {
+  public int getPriority() {
     return priority;
   }
 

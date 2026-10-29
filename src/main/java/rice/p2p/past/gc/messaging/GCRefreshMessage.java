@@ -47,8 +47,6 @@ import rice.p2p.past.messaging.*;
 import rice.p2p.past.gc.*;
 
 /**
- * @(#) GCRefreshMessage.java
- *
  * This class represents a message which is an request to extend the lifetime
  * of a set of keys stored in GCPast.
  *
@@ -69,8 +67,7 @@ public class GCRefreshMessage extends ContinuationMessage {
    * keys to be refreshed
    *
    * @param uid The unique id
-   * @param keys The keys to be refreshed
-   * @param expiration The new expiration time
+   * @param keys The keys to be refreshed, with their new expiration times
    * @param source The source address
    * @param dest The destination address
    */

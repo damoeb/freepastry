@@ -44,8 +44,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.past.*;
 
 /**
- * @(#) PastContentHandle.java
- * 
  * This interface represents a content handle which is used in the versioned and
  * garbage-collected version of Past.  It adds support for a version number as 
  * well as the current expiration time.

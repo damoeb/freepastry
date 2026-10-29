@@ -96,7 +96,7 @@ public interface P2PSocket<Identifier> {
   
   /**
    * Disables the output stream for this socket.  Used to properly close down a socket
-   * used for bi-directional communication that can be initated by either side.   
+   * used for bi-directional communication that can be initiated by either side.   
    */
   void shutdownOutput();
   

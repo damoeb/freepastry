@@ -66,7 +66,7 @@ import rice.selector.TimerTask;
 /**
  * Automatically closes sockets based on LRU.
  * 
- * Uses the LinkedHashMap to perfrom the LRU policy.
+ * Uses the LinkedHashMap to perform the LRU policy.
  * 
  * @author Jeff Hoye
  *
@@ -166,11 +166,9 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
      *
      */
     public void forceClose() {
-//      logger.log(this+".forceClose()");
       if (logger.level <= Logger.FINE) logger.log(this+".forceClose()");
       forcedClose = true;
       super.shutdownOutput();
-//      super.close();
       timer.schedule(new TimerTask() {
         @Override
         public void run() {

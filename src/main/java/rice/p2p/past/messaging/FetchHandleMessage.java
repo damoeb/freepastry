@@ -47,8 +47,6 @@ import rice.p2p.past.gc.GCId;
 import rice.p2p.past.rawserialization.*;
 
 /**
- * @(#) FetchHandleMessage.java
- *
  * This class represents a handle request in Past.
  *
  * response should be a PastContentHandle

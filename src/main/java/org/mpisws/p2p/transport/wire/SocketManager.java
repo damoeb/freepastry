@@ -89,9 +89,9 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    * is received, the manager makes sure that a socket for this handle is not
    * already open, and then proceeds as normal.
    *
-   * @param key The server accepting key for the channel
-   * @param manager TODO
-   * @exception IOException DESCRIBE THE EXCEPTION
+   * @param tcp
+   * @param serverKey The server accepting key for the channel
+   * @exception IOException if the connection cannot be accepted
    */
   public SocketManager(TCPLayer tcp, SelectionKey serverKey) throws IOException {
     this.tcp = tcp;
@@ -111,26 +111,22 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   }
   
   /**
-   * Constructor which creates an outgoing connection to the given node
-   * handle using the provided address as a source route intermediate node. 
+   * Constructor which creates an outgoing connection to the given address.
    * This creates the connection by building the socket and sending
    * across the greeting message. Once the response greeting message is
    * received, everything proceeds as normal.
-   * @param manager TODO
    *
-   * @param address The ultimate destination of this socket
-   * @param proxy The intermediate destination of this socket (if a source route)
+   * @param tcp
+   * @param addr The destination of this socket
+   * @param c receives the socket once it is connected
+   * @param options
    * @exception IOException An error
    */
   public SocketManager(final TCPLayer tcp, final InetSocketAddress addr, final SocketCallback<InetSocketAddress> c, Map<String, Object> options) throws IOException {
     this.tcp = tcp;
     this.options = options;
     logger = tcp.logger;
-//    if (options == null) {
-//      logger.logException("Options is null to "+addr, new Exception("Stack Trace"));
-//    }
     this.addr = addr;
-//    if (tcp.logger.level <= Logger.FINE) tcp.logger.log("Opening connection to " + addr);
     
     channel = SocketChannel.open();
     channel.socket().setSendBufferSize(tcp.SOCKET_BUFFER_SIZE);
@@ -181,8 +177,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
             if (c == null) {
               tcp.wire.errorHandler.receivedException(addr, e);              
             } else {
-//              delivered = true;
-//              logger.log("delivering2 "+SocketManager.this);
               c.receiveException(SocketManager.this, e);
             }
             close();
@@ -197,44 +191,18 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   }
   
   /**
-   * Method which initiates a shutdown of this socket by calling 
-   * shutdownOutput().  This has the effect of removing the manager from
-   * the open list.
-   */
-//  public void shutdown() {
-//    try {
-//      if (tcp.logger.level <= Logger.FINE) tcp.logger.log("Shutting down output on to " + addr);
-//      
-//      if (channel != null)
-//        channel.socket().shutdownOutput();
-//      else
-//        if (logger.level <= Logger.SEVERE) logger.log( "ERROR: Unable to shutdown output on channel; channel is null!");
-//
-//      tcp.wire.environment.getSelectorManager().modifyKey(key);
-//    } catch (IOException e) {
-//      if (logger.level <= Logger.SEVERE) logger.log( "ERROR: Received exception " + e + " while shutting down output.");
-//      close();
-//    }
-//  }
-
-  /**
    * Method which closes down this socket manager, by closing the socket,
    * cancelling the key and setting the key to be interested in nothing
    */
-//  Exception closeEx;
   public void close() {
-//    logger.logException("Closing " + this, new Exception("Stack Trace"));
-//    if (logger.level <= Logger.FINE) logger.log("close()");
     try {
       if (logger.level <= Logger.FINE) {
         logger.log("Closing " + this +" r:"+reader+" w:"+writer);
-//        logger.log("Closing connection to " + addr);
       } else if (logger.level <= Logger.FINEST) {
         logger.logException("Closing " + this +" r:"+reader+" w:"+writer, new Exception("Stack Trace"));
       }
       
       if (key != null) {
-//        closeEx = new Exception("Stack Trace");
         key.cancel();
         key.attach(null);
         key = null;
@@ -274,22 +242,9 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
         }
       });
     } catch (IOException e) {
-      if (logger.level <= Logger.SEVERE) logger.log( "ERROR: Recevied exception " + e + " while closing socket!");
+      if (logger.level <= Logger.SEVERE) logger.log( "ERROR: Received exception " + e + " while closing socket!");
     }
   }
-
-  /**
-   * The entry point for outgoing messages - messages from here are ensocketQueued
-   * for transport to the remote node
-   *
-   * @param message DESCRIBE THE PARAMETER
-   */
-//  public Cancellable send(ByteBuffer message, int priority, Continuation<ByteBuffer, Exception> ack) {
-//    Envelope e = new Envelope(message, priority, ack); 
-//    pending.put(e);
-//    tcp.wire.environment.getSelectorManager().modifyKey(key);
-//    return e;
-//  }
 
   /**
    * Method which should change the interestOps of the handler's key. This
@@ -345,7 +300,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
         return;
       }
       temp = writer;
-//      clearTimer(writer);
       writer = null;
     }
     try {
@@ -356,16 +310,9 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     tcp.wire.environment.getSelectorManager().modifyKey(key);
   }
 
-//  Exception regWriteEx;
-//  long regWriteExTime;
   public synchronized void register(final boolean wantToRead, final boolean wantToWrite, P2PSocketReceiver<InetSocketAddress> receiver) {
     if (logger.level <= Logger.FINER) logger.log(this+".register("+(wantToRead?"r":"")+(wantToWrite?"w":"")+","+receiver+")");
     if (key == null) {
-//      if (closeEx == null) {
-//        logger.log("No closeEx "+addr);
-//      } else {
-//        logger.logException("closeEx "+addr, closeEx);
-//      }
       ClosedChannelException cce = new ClosedChannelException("Socket "+addr+" "+SocketManager.this+" is already closed.");
       if (logger.level <= Logger.CONFIG) logger.logException("Socket "+addr+" "+this+" is already closed.", cce);
       receiver.receiveException(this, cce);
@@ -381,17 +328,10 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       }
       if (writer != null) {
         if (writer != receiver) {
-//          logger.logException("Already registered "+regWriteExTime,regWriteEx);
           throw new IllegalStateException("Already registered "+writer+" for writing, you can't register "+receiver+" for writing as well! SM:"+this);
-//          receiver.receiveException(this, 
-//              new IOException(
-//                  "Already registered "+writer+" for writing, you can't register "+receiver+" for writing as well!")); 
-//          return;
         }
       }
     }
-//    regWriteEx = new Exception("regWriteEx Stack Trace "+this);
-//    regWriteExTime = tcp.wire.environment.getTimeSource().currentTimeMillis();
     
     if (wantToRead) {
       if (reader != null) {
@@ -411,59 +351,33 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    * shutdownOutput().  This has the effect of removing the manager from
    * the open list.
    */
-//  Exception shutEx;
   public void shutdownOutput() {    
-//    logger.logException(this+".shutdownOutput()", new Exception());
     boolean closeMe = false;
     synchronized(this) {
       if (key == null) {
-//        logger.logException("Socket already closed.",closeEx);
         throw new IllegalStateException("Socket already closed.");
       }
       
       if (channel.socket().isClosed()) {
-//        logger.logException("Socket already closed2.",closeEx);        
       }
 
-//      if (channel.socket().isOutputShutdown()) {
-//        logger.logException("Socket already shutdown.",shutEx);        
-//      }
-      
       try {
         if (logger.level <= Logger.FINE) logger.log("Shutting down output on app connection " + this);
-//        shutEx = new Exception("shutdownOutput Stack Trace");
         
         // do we need to do this?  or does this happen twice now?
-//        manager.appSocketClosed(this);
         
-//        if (channel != null) {
-//          if (!channel.socket().isClosed()) {
             channel.socket().shutdownOutput();
             
             tcp.wire.environment.getSelectorManager().invoke(new Runnable() {
               public void run() {
                 // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
                 if (writer != null) {
-//                  try {
                     writer.receiveException(SocketManager.this, new ClosedChannelException("Channel shut down."));
-                    //writer.receiveSelectResult(SocketManager.this, false, true);          
-//                  } catch (IOException e) {
-//                    if (logger.level <= Logger.SEVERE) logger.log( "ERROR: Recevied exception " + e + " while closing socket!");
-//                  }
                   writer = null;
                 }
               }
             });
 
-//          } else {
-//            closeMe = true; 
-//          }
-//        } else
-//          if (logger.level <= Logger.SEVERE) logger.log( "ERROR: Unable to shutdown output on channel; channel is null!");
-  
-//      } catch (SocketException e) {
-//        if (logger.level <= Logger.FINE) logger.log( "ERROR: Received exception " + e + " while shutting down output for socket "+this);
-//        closeMe = true;
       } catch (IOException e) {
         if (logger.level <= Logger.SEVERE) logger.log( "ERROR: Received exception " + e + " while shutting down output for socket "+this);
         closeMe = true;
@@ -485,7 +399,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
         if (logger.level <= Logger.FINEST) {
           logger.log(this+"read("+ret+"):"+Arrays.toString(dst.array()));
         } else {
-//          logger.logException(this+"read("+ret+")", new Exception("Stack Trace"));
           logger.log(this+"read("+ret+")");
         }
       }    
@@ -498,10 +411,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       throw ioe;
     }
   }
-//  public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
-//    //System.out.println(this+"read");
-//    return channel.read(dsts, offset, length);
-//  }
 
   public long write(ByteBuffer src) throws IOException {
     if (key == null || channel.socket().isOutputShutdown()) return -1;
@@ -511,7 +420,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
         if (logger.level <= Logger.FINEST) {
           logger.log(this+"write("+ret+"):"+Arrays.toString(src.array()));
         } else {
-//          logger.logException(this+"write("+ret+")", new Exception("Stack Trace"));
           logger.log(this+"write("+ret+")");
         }
       }
@@ -524,10 +432,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       throw ioe;
     }      
   }
-//  public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
-//    //System.out.println(this+"write("+srcs.length+","+offset+","+length+")");
-//    return channel.write(srcs, offset, length);
-//  }
 
   public boolean cancel() {
     if (key == null) return false;
@@ -537,7 +441,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   }
   
   private void exceptionAndClose(IOException e) {
-//    clearTimer(receiver);
     tcp.wire.errorHandler.receivedException(addr, e);    
     close();
   }
@@ -552,36 +455,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
 
   public SocketChannel getSocketChannel() {
     tcp.wire.environment.getSelectorManager().cancel(key);
-//    tcp.wire.environment.getSelectorManager().register(channel, this, 0);
-//    channel.register(sel, 0);
     return channel;
   }
 
-//  TreeSet<Envelope> pendingMessages;  
-//  private int envSeq = Integer.MIN_VALUE;
-//  class Envelope implements Comparable<Envelope>, Cancellable {
-//    ByteBuffer message;
-//    // for ordering
-//    int priority;
-//    int seq;
-//    Continuation<ByteBuffer, Exception> ack;
-//    
-//    public Envelope(ByteBuffer message, int priority, Continuation<ByteBuffer, Exception> ack) {
-//      this.message = message;
-//      this.priority = priority;
-//      this.ack = ack;
-//      this.seq = envSeq++;
-//    }
-//
-//    public int compareTo(Envelope that) {
-//      int ret = that.priority - this.priority;
-//      if (ret == 0)
-//        ret = that.seq - this.seq;
-//      return ret;
-//    }
-//
-//    public boolean cancel() {
-//      return pendingMessages.remove(this);
-//    }
-//  }
 }

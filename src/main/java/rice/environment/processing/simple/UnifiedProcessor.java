@@ -59,12 +59,10 @@ public class UnifiedProcessor extends SimpleProcessor {
     bogusContinuation = new Continuation<Object, Exception>() {
     
       public void receiveResult(Object result) {
-        // TODO Auto-generated method stub
     
       }
     
       public void receiveException(Exception exception) {
-        // TODO Auto-generated method stub
     
       }
     

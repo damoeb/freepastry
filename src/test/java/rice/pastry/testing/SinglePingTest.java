@@ -74,7 +74,7 @@ public class SinglePingTest {
 
   public SinglePingTest(TestRecord tr, Environment env) {
     environment = env;
-    simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env); //SphereNetwork();
+    simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, env);
     simulator.setTestRecord(tr);
     testRecord = tr;
@@ -112,9 +112,6 @@ public class SinglePingTest {
       while(!pn.isReady()) {
         try {
           pn.wait(300);
-//          if (!pn.isReady()){
-//            System.out.println("Still waiting for "+pn+ " to be ready.");
-//          }
         } catch (InterruptedException ie) {}
       }
     }    
@@ -142,7 +139,6 @@ public class SinglePingTest {
 
   public boolean simulate() {
     return false;
-//    return simulator.simulate();
   }
 
   public void checkRoutingTable() {
@@ -164,7 +160,6 @@ public class SinglePingTest {
     System.out.println("time used " + (msec / 60000) + ":"
         + ((msec % 60000) / 1000) + ":" + ((msec % 60000) % 1000));
 
-    //  simulator.checkRoutingTable();
   }
 
   public void test() {
@@ -174,8 +169,6 @@ public class SinglePingTest {
     System.out.println("-------------------------");
     for (i = 0; i < testRecord.getNodeNumber(); i++) {
       PastryNode pn = makePastryNode();
-//      while (simulate());
-//      System.out.println(pn.getLeafSet());
 
       synchronized (pn) {
         while(!pn.isReady()) {

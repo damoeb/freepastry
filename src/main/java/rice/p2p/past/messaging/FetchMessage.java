@@ -46,8 +46,6 @@ import rice.p2p.past.*;
 import rice.p2p.past.rawserialization.*;
 
 /**
- * @(#) FetchMessage.java
- *
  * This class represents a message which is a fetch request in past, based
  * on a handle).
  *
@@ -139,7 +137,6 @@ public class FetchMessage extends ContinuationMessage {
     
     buf.writeBoolean(cached);
     
-//    System.out.println("FetchMessage.serialize() handle = "+handle);
     buf.writeShort(handle.getType());
     handle.serialize(buf);
   }

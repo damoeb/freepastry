@@ -426,8 +426,7 @@ public class XMLParserUnit {
     parser.setInput(new StringReader("<?xml version='1.0'?><test foo=\"bar\" baz=   6 goo=  \t29.33   >\n\t<bar   lah\n=\n\n\ndofdo/>\t\t\t\n\t</test>"));
     i = parser.next();
     
-/*    if (i == XMLParser.START_DOCUMENT) {
-      i = parser.next();*/
+    // XMLParser does not report START_DOCUMENT: the document tag is skipped
       
       if ((i == XMLParser.START_TAG) && (parser.getName().equals("test"))) {
         i = parser.next();
@@ -477,10 +476,6 @@ public class XMLParserUnit {
         System.out.println("[ FAILED ]");
         System.out.println("    Output(1):\t" + i + " " + parser.getName());
       }
-/*    } else {
-      System.out.println("[ FAILED ]");
-      System.out.println("    Output(0):\t" + i);
-    }*/
     
     System.out.print("    Testing Nasty Start Document\t\t\t");
     
@@ -488,8 +483,7 @@ public class XMLParserUnit {
     parser.setInput(new StringReader("<?xml version='1.0' foo   = 'baz\n'  \t\t ?>\n\n \t<test foo=\"bar\" baz=   6 goo=  \t29.33   >\n\t<bar   lah\n=\n\n\ndofdo/>\t\t\t\n\t</test>"));
     i = parser.next();
     
-/*    if (i == XMLParser.START_DOCUMENT) {
-      i = parser.next(); */
+    // XMLParser does not report START_DOCUMENT: the document tag is skipped
       
       if ((i == XMLParser.TEXT) && (parser.getText().equals("\n\n \t")) && (parser.isWhitespace())) {
         i = parser.next();
@@ -545,11 +539,7 @@ public class XMLParserUnit {
       } else {
         System.out.println("[ FAILED ]");
         System.out.println("    Output(0t):\t" + i + " " + parser.getText() + " " + parser.isWhitespace());
-      }    /*
-    } else {
-      System.out.println("[ FAILED ]");
-      System.out.println("    Output(0):\t" + i);
-    } */
+      }
     
     System.out.println("-------------------------------------------------------------");
   }

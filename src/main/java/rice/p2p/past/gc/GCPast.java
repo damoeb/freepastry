@@ -42,8 +42,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.past.*;
 
 /**
- * @(#) GCPast.java
- * 
  * This interface represents an extension to the Past interface, which adds
  * support for garbage collection and versionsing.  Individual objects are
  * each given versions and timeout times.  Version numbers are used to keep
@@ -122,8 +120,8 @@ public interface GCPast extends Past {
    * RefreshFailedException - if the refresh operation failed for any other
    *   reason (the getMessage() will describe the failure)
    * 
-   * @param id The keys which to refresh
-   * @param expiration The time to extend the lifetime to
+   * @param ids The keys which to refresh
+   * @param expiration The times to extend the lifetimes to, one per key
    * @param command Command to be performed when the result is received
    */
   public void refresh(Id[] ids, long[] expiration, Continuation<? super Object[], Exception> command);
@@ -143,7 +141,7 @@ public interface GCPast extends Past {
    * RefreshFailedException - if the refresh operation failed for any other
    *   reason (the getMessage() will describe the failure)
    * 
-   * @param id The keys which to refresh
+   * @param ids The keys which to refresh
    * @param expiration The time to extend the lifetime to (applies to all keys)
    * @param command Command to be performed when the result is received
    */

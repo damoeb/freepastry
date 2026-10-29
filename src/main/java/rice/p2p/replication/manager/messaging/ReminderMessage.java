@@ -40,8 +40,6 @@ package rice.p2p.replication.manager.messaging;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) ReminderMessage.java
- *
  * This class represents a reminder for the replication to intiate maintaince.
  *
  * @version $Id: ReminderMessage.java 3613 2007-02-15 14:45:14Z jstewart $
@@ -51,9 +49,7 @@ import rice.p2p.commonapi.*;
 public class ReminderMessage implements Message {
   
   /**
-   * Constructor which takes a unique integer Id
-   *
-   * @param source The source address
+   * Constructor
    */
   public ReminderMessage() {
   }

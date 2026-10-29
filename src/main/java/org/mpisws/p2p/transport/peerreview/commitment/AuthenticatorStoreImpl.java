@@ -114,7 +114,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
       authFile = null;
     }
     
-    authFile = new RandomAccessFileIOBuffer(file, "rw"); //O_RDWR | O_CREAT, 0644);
+    authFile = new RandomAccessFileIOBuffer(file, "rw");
     
     // read in authenticators
     int authenticatorsRead = 0;
@@ -124,7 +124,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     while (authFile.bytesRemaining() > 0) {
       
       try {
-        Identifier id = idSerializer.deserialize(authFile); //idbuf, &pos, sizeof(idbuf));
+        Identifier id = idSerializer.deserialize(authFile);
         Authenticator authenticator = authenticatorSerializer.deserialize(authFile);
         addAuthenticatorToMemory(id, authenticator);
         authenticatorsRead++;
@@ -225,10 +225,8 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
   public List<Authenticator> getAuthenticators(Identifier id, long minseq,
       long maxseq) {
     SortedSet<Authenticator> list = authenticators.get(id);    
-    //logger.log("getAuthenticators("+id+","+minseq+"->"+maxseq+"): total:"+list);
     if (list != null) {
       SortedSet<Authenticator> subList = list.subSet(new Authenticator(maxseq+1,null,null), new Authenticator(minseq,null,null));      
-      //logger.log("getAuthenticators: "+subList);
       return new ArrayList<Authenticator>(subList);
     }    
     return Collections.emptyList();

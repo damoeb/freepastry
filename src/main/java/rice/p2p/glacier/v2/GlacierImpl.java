@@ -116,7 +116,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final long syncRetryInterval;
   private int syncMaxFragments;
   
-//  private final int fragmentRequestMaxAttempts = 3;
   private final int fragmentRequestMaxAttempts;
   private final long fragmentRequestTimeoutDefault;
   private final long fragmentRequestTimeoutMin;
@@ -999,7 +998,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           statistics.numNeighbors = neighborStorage.scan().numElements();
           statistics.numFragments = fragmentStorage.scan().numElements();
           statistics.numContinuations = continuations.size();
-//          statistics.numObjectsInTrash = (trashStorage == null) ? 0 : trashStorage.scan().numElements();
           statistics.responsibleRange = responsibleRange;
           statistics.activeFetches = numActiveRestores[0];
           statistics.bucketMin = bucketMin;
@@ -1258,6 +1256,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
    *
    * @param objectKey Key of the original object (from PAST)
    * @param fragmentNr Fragment number (0..n-1)
+   * @param version Version of the object
    * @return The location of the fragment
    */
   private Id getFragmentLocation(Id objectKey, int fragmentNr, long version) {
@@ -1276,8 +1275,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   /**
    * This method is called when Glacier encounters a fatal error
    *
-   * @param s Message describing the error
-   * @exception Error Terminates the program
+   * @param s Message describing the error, which is logged
+   * @exception Error always
    */
   private void panic(String s) throws Error {
     if (logger.level <= Logger.SEVERE) logger.log( "PANIC: " + s);
@@ -1444,8 +1443,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       result = result + neighborStorage.scan().numElements() + " neighbors\n";
       result = result + continuations.size() + " active continuations\n";
       result = result + pendingTraffic.size() + " pending requests\n";
-//      if (trashStorage != null) 
-//        result = result + trashStorage.scan().numElements() + " fragments in trash\n";
 
       return result;
     }
@@ -2773,7 +2770,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             if (logger.level <= Logger.FINE) logger.log( "Decode complete: " + key);
 
             if (theObject == null) {
-//              if ((theObject == null) || !(theObject instanceof PastContent)) {
               if (logger.level <= Logger.WARNING) logger.log("retrieveObject: Decoder delivered "+theObject+", unexpected -- failed");
               c.receiveException(new GlacierException("Decoder delivered "+theObject+", unexpected -- failed"));
             } else {
@@ -2999,14 +2995,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         if (logger.level <= Logger.WARNING) logger.log("Exception while checking for "+key.toStringFull()+" in trash storage -- ignoring");
       }
     };
-    
-/*    if ((trashStorage!=null) && trashStorage.exists(key)) {
-      if (logger.level <= Logger.FINE) logger.log( "retrieveFragment: Key "+key.toStringFull()+" found in trash, retrieving...");
-      trashStorage.getObject(key, c2);
-    } else {
-      if (logger.level <= Logger.FINE) logger.log( "retrieveFragment: Key "+key.toStringFull()+" not found in trash");
-      c2.receiveResult(null);
-    } */
     
     if (trashStorage!=null) {
       trashStorage.getObject(key, new Continuation<Object, Exception>() {
@@ -3538,9 +3526,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       if (logger.level <= Logger.INFO) logger.log( "Fetch request for " + gfm.getKey(0) + ((gfm.getNumKeys()>1) ? (" and " + (gfm.getNumKeys() - 1) + " other keys") : "") + ", request="+gfm.getRequest());
 
       /* FetchMessages are sent during recovery to retrieve a fragment from
-         another node. They can be answered a) if the recipient has a copy
-         of the fragment, or b) if the recipient has a full replica of
-         the object. In the second case, the fragment is created on-the-fly */
+         another node. They are answered from the local fragment storage;
+         keys that are not stored here get null entries in the response. */
 
       fragmentStorage.getObject(gfm.getKey(0), new Continuation<Object, Exception>() {
         int currentLookup = 0;

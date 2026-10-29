@@ -56,8 +56,6 @@ public class InitiateRouteSetMaintenance extends Message implements
   /**
    * Constructor.
    * 
-   * @param nh the return handle.
-   * @param r which row
    */
 
   public InitiateRouteSetMaintenance() {

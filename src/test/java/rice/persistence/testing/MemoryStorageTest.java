@@ -62,7 +62,7 @@ import rice.persistence.*;
 @SuppressWarnings("unchecked")
 public class MemoryStorageTest extends Test {
 
-  private IdFactory FACTORY;// = new PastryIdFactory();
+  private IdFactory FACTORY;
   
   protected Storage storage;
 
@@ -167,7 +167,7 @@ public class MemoryStorageTest extends Test {
     storage.store(data[1], metadata[1], "First Object", put1);
   }
 
-  public void testRetreival(final Continuation<Object, Exception> c) {
+  public void testRetrieval(final Continuation<Object, Exception> c) {
     final Continuation<Object, Exception> get5 = new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         if (o == null) {
@@ -303,7 +303,7 @@ public class MemoryStorageTest extends Test {
   }
 
   public void testExists(final Continuation<Object, Exception> c) {
-    testRetreival(new Continuation<Object, Exception>() {
+    testRetrieval(new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           sectionStart("Checking for Objects");

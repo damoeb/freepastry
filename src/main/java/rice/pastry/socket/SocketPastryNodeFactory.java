@@ -200,11 +200,21 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     this(nf, null, startPort, env);
   }
 
+  /**
+   * Constructor.
+   * 
+   * Here is order for bind address 1) bindAddress parameter 2) if bindAddress
+   * is null, then parameter: socket_bindAddress (if it exists) 3) if
+   * socket_bindAddress doesn't exist, then InetAddress.getLocalHost()
+   * 
+   * @param nf The factory for building node ids
+   * @param bindAddress which address to bind to
+   * @param startPort The port to start creating nodes on
+   * @param env The environment.
+   * @throws IOException if the local address cannot be determined
+   */
   public SocketPastryNodeFactory(NodeIdFactory nf, InetAddress bindAddress, int startPort, Environment env) throws IOException {
     super(env);
-//    if (env.getTimeSource() instanceof DirectTimeSource) {
-//      throw new IllegalArgumentException("SocketPastryNodeFactory is not compatible with the DirectTimeSource in the environment.  Please use the SimpleTimeSource or an equivalent.");
-//    }
     
     environment = env;
     nidFactory = nf;
@@ -225,12 +235,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       localAddress = InetAddress.getLocalHost();
       
       Socket temp = null;
-//      ServerSocket test = null;
       ServerSocket test2 = null;
-//      try {
-//        test = new ServerSocket();
-//        test.bind(new InetSocketAddress(localAddress, port));
-//      } catch (SocketException e) {
       if (localAddress.isLoopbackAddress() &&
           !params.getBoolean("pastry_socket_allow_loopback")) {
       try {
@@ -254,10 +259,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           throw new IllegalStateException("Cannot bind to "+localAddress+":"+port,e2);
         }                
       } finally {
-//        try {
-//          if (test != null)
-//            test.close();
-//        } catch (Exception e) {}
         try {
           if (test2 != null)
             test2.close();
@@ -392,50 +393,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     return nha;
   }
   
-//  protected class SPNFIdentitySerializer implements IdentitySerializer<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress, SourceRoute<MultiInetSocketAddress>> {
-//    private PastryNode pn;
-//
-//    private SocketNodeHandleFactory factory;
-//    private SocketPastryNodeFactory spnFactory;
-//
-//    protected SPNFIdentitySerializer(PastryNode pn, SocketNodeHandleFactory factory, SocketPastryNodeFactory spnFactory) {
-//      this.pn = pn;
-//      this.factory = factory;
-//      this.spnFactory = spnFactory;
-//    }
-//
-//    public TransportLayerNodeHandle<MultiInetSocketAddress> deserialize(
-//        InputBuffer buf, SourceRoute<MultiInetSocketAddress> i)
-//        throws IOException {
-//      long epoch = buf.readLong();
-//      Id nid = Id.build(buf);
-//      
-//      SocketNodeHandle ret = new SocketNodeHandle(i.getLastHop(), epoch, nid, pn);
-//      return (TransportLayerNodeHandle<MultiInetSocketAddress>) factory.coalesce(ret);
-//    }
-//
-//    public void serialize(OutputBuffer buf,
-//        TransportLayerNodeHandle<MultiInetSocketAddress> i)
-//        throws IOException {
-//      // SocketNodeHandle handle = (SocketNodeHandle)i;
-//      // i.getAddress()
-//      long epoch = i.getEpoch();
-//      Id nid = (rice.pastry.Id) i.getId();
-//      // logger.log("serialize("+i+") epoch:"+i.getEpoch()+" nid:"+nid);
-//      buf.writeLong(epoch);
-//      nid.serialize(buf);
-//    }
-//
-//    public MultiInetSocketAddress translateDown(
-//        TransportLayerNodeHandle<MultiInetSocketAddress> i) {
-//      return i.getAddress();
-//    }
-//
-//    public MultiInetSocketAddress translateUp(SourceRoute<MultiInetSocketAddress> i) {
-//      return i.getLastHop();
-//    }
-//  }
-
   protected interface TransLiveness<Identifier, MessageType> {
     TransportLayer<Identifier, MessageType> getTransportLayer();
     LivenessProvider<Identifier> getLivenessProvider();
@@ -594,8 +551,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
             public boolean canChange(
                 TransportLayerNodeHandle<MultiInetSocketAddress> oldDest, 
                 TransportLayerNodeHandle<MultiInetSocketAddress> newDest) {
-//              if (false) logger.log("");
-//              if (logger.level <= Logger.FINE) logger.log("canChange("+oldDest+","+newDest+","+i+")");
               if (newDest.getAddress().equals(oldDest.getAddress())) {
                 if (logger.level <= Logger.INFO) logger.log("canChange("+oldDest+","+newDest+")");
                 if (newDest.getEpoch() > oldDest.getEpoch()) {
@@ -603,14 +558,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
                   return true;
                 }
               } else {
-                throw new RuntimeException("canChange("+oldDest+","+newDest+") doesn't make any sense, these aren't comparable to eachother.");
+                throw new RuntimeException("canChange("+oldDest+","+newDest+") doesn't make any sense, these aren't comparable to each other.");
               }
               if (logger.level <= Logger.INFO) logger.log("canChange("+oldDest+":"+oldDest.getEpoch()+","+newDest+":"+newDest.getEpoch()+"):false");
               return false;
               
-//            if (false) logger.log("");
-//            if (logger.level <= Logger.FINE) logger.log("canChange("+oldDest+","+newDest+","+i+")");
-//            return ((newDest.getAddress().equals(i.getLastHop()) && (newDest.getEpoch() > oldDest.getEpoch());
             }          
           }, 
           new SanityChecker<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress>() {
@@ -678,7 +630,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     Environment environment = pn.getEnvironment();
 
     SourceRouteStrategy<MultiInetSocketAddress> srStrategy = getSourceRouteStrategy(ltl, livenessProvider, pinger, pn, proxyAddress, esrFactory);
-//    TransportLayer<EpochInetSocketAddress, ByteBuffer> srm = 
     MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>> prox = 
       new MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>>(pinger, environment);
     final SourceRouteManager<MultiInetSocketAddress> srm = 
@@ -736,7 +687,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   protected TransLivenessProximity<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> getUpperIdentityLayer(
-//  protected UpperIdentity<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> getUpperIdentityLayer(
       TransportLayer<MultiInetSocketAddress, ByteBuffer> priorityTL, 
       PastryNode pn, 
       IdentityImpl<TransportLayerNodeHandle<MultiInetSocketAddress>, 
@@ -840,8 +790,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         if (m instanceof RawMessage) {
           RawMessage rm = (RawMessage)m;
           options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_TYPE, rm.getType());
-//        } else {
-//          options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_TYPE, 0);              
         }
         
         return OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_STRING, m.toString(), CommonAPITransportLayerImpl.MSG_CLASS, m.getClass().getName());
@@ -862,7 +810,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   public class TLBootstrapper implements Bootstrapper<InetSocketAddress>
   {
-//    InetSocketAddress localAddr;
     protected PastryNode pn;
     protected TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> tl;
     protected SocketNodeHandleFactory handleFactory;
@@ -881,7 +828,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       this.tl = tl;
       this.handleFactory = handleFactory;
       this.pns = pns;
-//      this.localAddr = ((MultiInetSocketAddress)localAddr).getInnermostAddress();
     }
     
     protected void bootAsBootstrap() {
@@ -937,7 +883,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       for (InetSocketAddress addr : bootaddresses) { 
         if (logger.level <= Logger.FINER) logger.log("addr:"+addr+" local:"+localAddr);
         if (!addr.equals(localAddr)) {
-//          tempBootHandles.add(handleFactory.getNodeHandle(new MultiInetSocketAddress(addr), -1, Id.build()));
           tempBootHandles.add(getTempNodeHandle(addr));
         }
       }
@@ -974,14 +919,12 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
             }
           
             public void receiveException(Exception exception) {
-              // TODO Auto-generated method stub          
             }
           
           });
         }
       
         public void receiveException(Exception exception) {
-          // TODO Auto-generated method stub          
         }      
       };
 
@@ -992,10 +935,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           Logger logger = pn.getEnvironment().getLogManager().getLogger(SocketPastryNodeFactory.class, null);
           public void livenessChanged(NodeHandle i2, int val, Map<String, Object> options) {
             SocketNodeHandle i = (SocketNodeHandle)i2;
-//            logger.logException("livenessChanged("+i+","+val+")", new Exception("Stack Trace"));
-//            logger.log("livenessChanged("+i+","+val+")");
             if (logger.level <= Logger.FINE) logger.log("livenessChanged("+i+","+val+")");
-//            System.out.println("here");
             if (val <= LIVENESS_SUSPECTED && i.getEpoch() != -1L) {
               boolean complete = false;
               
@@ -1051,12 +991,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       
       if (logger.level <= Logger.FINE) logger.log("boot() returning");
       
-//      // use the WrongEpochMessage to fetch the identity
-//      logger.log("boot");
-//      first = bootaddresses.iterator().next();
-//      tl.addLivenessListener(this);
-//      logger.log("boot:"+first);
-//      tl.checkLiveness((TLNodeHandle)handleFactory.getNodeHandle(new EpochInetSocketAddress(first), Id.build()));
     }
     /**
      * Used as a helper to TLBootstrapper.boot() to generate a temporary node handle
@@ -1070,19 +1004,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
     
 
-//    public void livenessChanged(TransportLayerNodeHandle<EpochInetSocketAddress> i, int val) {
-//      if (i.getAddress().equals(first)) {
-//        if (val != LivenessTransportLayer.LIVENESS_DEAD_FOREVER) {
-//          logger.log("Should not happen: livenessChanged("+i+","+val+")");
-//          return;
-//        }
-//        // now we have the NodeHandle
-//        
-//        
-//        tl.removeLivenessListener(this);
-//      }
-//    }    
-    
     protected void checkLiveness(SocketNodeHandle h, Map<String, Object> options) {
       pn.getLivenessProvider().checkLiveness(h, null);
     }
@@ -1119,10 +1040,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   /**
-   * Method which creates a Pastry node from the next port with the specified nodeId 
-   * (or one generated from the NodeIdFactory if not specified)
+   * Method which creates a Pastry node from the next port with an id generated
+   * by the NodeIdFactory.
    * 
    * @param bootstrap Node handle to bootstrap from.
+   * @param proxy the external address of the node, or null
    * @return A node with a random ID and next port number.
    */
   public PastryNode newNode(NodeHandle bootstrap, InetSocketAddress proxy) {
@@ -1163,11 +1085,12 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   
   /**
    * Method which creates a Pastry node from the next port with the specified nodeId 
-   * (or one generated from the NodeIdFactory if not specified)
+   * and boots it.
    * 
-   * @param pilot Node handle to bootstrap from.
-   * @param nodeId if non-null, will use this nodeId for the node, rather than using the NodeIdFactory
-   * @return A node with a random ID and next port number.
+   * @param nodeHandle Node handle to bootstrap from (a handle returned by getNodeHandle()), or null to start a new ring
+   * @param id the id of the new node
+   * @param proxyAddress the external address of the node, or null
+   * @return A node with the given ID and next port number.
    */
   public PastryNode newNode(NodeHandle nodeHandle, Id id, InetSocketAddress proxyAddress) {
     PastryNode n = newNode(id, proxyAddress);
@@ -1178,20 +1101,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       BogusNodeHandle bnh = (BogusNodeHandle)nodeHandle;
       n.<InetSocketAddress>getBootstrapper().boot(bnh.addresses);
       
-      // delme
-//      InetSocketAddressLookup inetLookupService = (InetSocketAddressLookup)((PastryNode)n).getVars().get(SocketPastryNodeFactory.IP_ADDR_SERVICE);
-//      inetLookupService.getMyInetAddress(bnh.addresses.iterator().next(), new Continuation<InetSocketAddress, Exception>() {
-//      
-//        public void receiveResult(InetSocketAddress result) {
-//          System.out.println("My ("+n+") Address is "+result);
-//        }
-//      
-//        public void receiveException(Exception exception) {
-//          // TODO Auto-generated method stub
-//      
-//        }      
-//      }, null);
-      // emled
     }
     return n;
   }
@@ -1328,53 +1237,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   
   /**
    * Only call this on the selector thread.
-   * @param nodeId
-   * @param pAddress
-   * @return
+   * @param nodeId the id of the new node
+   * @param proxyAddress the external address of the node, or null
+   * @param deliverResultToMe receives the new node, or the exception
+   * @param initialVars initial values for the node's vars
    */
-//  public PastryNode newNodeSelector(Id nodeId, InetSocketAddress pAddress) {
-//    try {
-//      return newNodeSelector(nodeId, pAddress, true); // fix the method just
-//                                                          // below if you change
-//                                                          // this
-//    } catch (BindException e) {
-//
-//      if (logger.level <= Logger.WARNING)
-//        logger.log("Warning: " + e);
-//
-//      if (environment.getParameters().getBoolean(
-//          "pastry_socket_increment_port_after_construction")) {
-//        port++;
-//        try {
-//          return newNodeSelector(nodeId, pAddress); // recursion, this will
-//                                                        // prevent from things
-//                                                        // getting too out of
-//                                                        // hand in
-//          // case the node can't bind to anything, expect a
-//          // StackOverflowException
-//        } catch (StackOverflowError soe) {
-//          if (logger.level <= Logger.SEVERE)
-//            logger
-//                .log("SEVERE: SocketPastryNodeFactory: Could not bind on any ports!"
-//                    + soe);
-//          throw soe;
-//        }
-//      } else {
-//        
-//        // clean up Environment
-//        if (this.environment.getParameters().getBoolean(
-//            "pastry_factory_multipleNodes")) {
-//          environment.destroy();
-//        }
-//        
-//        throw new RuntimeException(e);
-//      }
-//    } catch (IOException ioe) {
-//      
-//      throw new RuntimeException(ioe);      
-//    }
-//  }
-
   protected void newNodeSelector(Id nodeId,
       MultiInetSocketAddress proxyAddress, Continuation<PastryNode, IOException> deliverResultToMe, Map<String, Object> initialVars) {
     
@@ -1383,7 +1250,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       Environment environment = cloneEnvironment(this.environment, nodeId);
       
       Parameters params = environment.getParameters();
-  //    System.out.println(environment.getLogManager());
   
       PastryNode pn = new PastryNode(nodeId, environment);
       if (initialVars != null) pn.getVars().putAll(initialVars);
@@ -1396,17 +1262,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       deliverResultToMe.receiveException(ioe);
     }
   }
-
-//  protected Environment cloneEnvironment(Environment rootEnvironment, Id nodeId) {
-//    Environment ret = rootEnvironment;
-//    if (rootEnvironment.getParameters().getBoolean(
-//        "pastry_factory_multipleNodes")) {
-//      ret = rootEnvironment.cloneEnvironment("0x"+nodeId.toStringBare(), 
-//          rootEnvironment.getParameters().getBoolean("pastry_factory_selectorPerNode"),
-//          rootEnvironment.getParameters().getBoolean("pastry_factory_processorPerNode"));
-//    }
-//    return ret;
-//  }
 
   
   protected Environment cloneEnvironment(Environment rootEnvironment, Id nodeId) {
@@ -1470,7 +1325,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   
   /**
    * Method which constructs an InetSocketAddres for the local host with the
-   * specifed port number.
+   * specified port number.
    * 
    * @param portNumber The port number to create the address at.
    * @return An InetSocketAddress at the localhost with port portNumber.

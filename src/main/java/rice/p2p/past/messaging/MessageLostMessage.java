@@ -48,8 +48,6 @@ import rice.p2p.past.*;
 import rice.p2p.util.rawserialization.JavaSerializedMessage;
 
 /**
- * @(#) MessageLostMessage.java
- *
  * This class represents a reminder to Past that an outstanding message exists,
  * and that the waiting continuation should be informed if the message is lost.
  *
@@ -78,6 +76,9 @@ public class MessageLostMessage extends PastMessage {
    *
    * @param uid The unique id
    * @param local The local nodehandle
+   * @param id The id the lost message was sent to
+   * @param message The lost message (only its string form is kept)
+   * @param hint The hint the lost message was sent to
    */
   public MessageLostMessage(int uid, NodeHandle local, Id id, Message message, NodeHandle hint) {
     super(uid, local, local.getId());
@@ -121,38 +122,6 @@ public class MessageLostMessage extends PastMessage {
   
   public void serialize(OutputBuffer buf) throws IOException {
     throw new RuntimeException("serialize() not supported in MessageLostMessage"); 
-    
-//    super.serialize(buf); 
-//    
-//    if (hint == null) {
-//      buf.writeBoolean(false); 
-//    } else {
-//      buf.writeBoolean(true); 
-//      hint.serialize(buf);
-//    }
-//    
-//    if (id == null) {
-//      buf.writeBoolean(false); 
-//    } else {
-//      buf.writeBoolean(true); 
-//      buf.writeShort(id.getType());
-//      id.serialize(buf);
-//    }
-//    
-//    buf.writeUTF(messageString);
   }
-
-//  public MessageLostMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
-//    super(buf, endpoint);
-//
-//    if (buf.readBoolean()) {
-//      hint = endpoint.readNodeHandle(buf);
-//    }
-//    if (buf.readBoolean()) {
-//      id = endpoint.readId(buf, buf.readShort());
-//    }
-//    
-//    messageString = buf.readUTF();    
-//  }  
 }
 

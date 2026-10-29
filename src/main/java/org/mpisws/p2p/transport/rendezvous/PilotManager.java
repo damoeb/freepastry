@@ -63,8 +63,6 @@ public interface PilotManager<Identifier> {
    * Tells the manager that the pilot to the Identifier is no longer useful
    * 
    * @param i
-   * @param deliverAckToMe optional
-   * @return
    */
   void closePilot(Identifier i);
 

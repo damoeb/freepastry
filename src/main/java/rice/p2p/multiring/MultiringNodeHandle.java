@@ -44,8 +44,6 @@ import java.io.*;
 import java.util.*;
 
 /**
- * @(#) MultiringNodeHandle.java
- *
  * @author Alan Mislove
  */
 public class MultiringNodeHandle extends NodeHandle implements NodeHandleListener  {

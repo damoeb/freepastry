@@ -48,8 +48,6 @@ import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
- * @(#) UnsubscribeMessage.java
- *
  * The unsubscribe message.
  *
  * @version $Id: UnsubscribeMessage.java 3670 2007-04-07 00:53:57Z jeffh $
@@ -63,11 +61,10 @@ public class UnsubscribeMessage implements RawMessage {
   List<Topic> topics;
   
   /**
-   * Constructor which takes a unique integer Id
+   * Constructor
    *
-   * @param id The unique id
    * @param source The source address
-   * @param dest The destination address
+   * @param topics The topics to unsubscribe from
    */
   public UnsubscribeMessage(NodeHandle source, List<Topic> topics) {
     this.source = source;
@@ -128,8 +125,7 @@ public class UnsubscribeMessage implements RawMessage {
     byte version = buf.readByte();
     switch(version) {
     case 0:
-      // TODO: Handle this
-      
+      // TODO: version 0 is not supported, so such a message is dropped (null is returned)
       return null;
     case 1:
         return new UnsubscribeMessage(buf, endpoint);

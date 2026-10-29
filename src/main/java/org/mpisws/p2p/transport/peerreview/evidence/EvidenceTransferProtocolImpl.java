@@ -102,7 +102,6 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    *  2) Try to fill in any pending queries, (there is usually only going to be 1 or zero)
    */
   public void notifyWitnessSet(Identifier subject, Collection<Handle> witnesses) {
-//    assert(subject && (numWitnesses >= 0) && (witnesses || !numWitnesses));
 
     /* Create a cache entry, if necessary */
 
@@ -128,7 +127,6 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   }
 
   void doSendMessageToWitnesses(Collection<Handle> witnesses, MessageInfo m) {
-//    assert((0<=idx) && (idx<numCacheEntries) && cacheEntryValid(idx));
     
     for (Handle h : witnesses) {
       peerreview.transmit(h,m.message,m.deliverAckToMe,m.options);
@@ -296,7 +294,6 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     public void done() {
       if (done) return;
       done = true;
-//      logger.log(this+" done()");
       pendingQuery.remove(this);
       c.receiveResult(subjectList);       
     }

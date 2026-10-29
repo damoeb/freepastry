@@ -51,8 +51,6 @@ public interface ContactDeserializer<Identifier, HighIdentifier> {
   ByteBuffer serialize(HighIdentifier i) throws IOException;
   HighIdentifier deserialize(InputBuffer sib) throws IOException;
 
-//  byte[] readCredentials(InputBuffer sib);
-
   Identifier convert(HighIdentifier high);
   
   /**

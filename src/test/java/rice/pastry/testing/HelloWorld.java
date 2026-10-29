@@ -158,7 +158,6 @@ public class HelloWorld {
    */
   private boolean simulate() {
     return false;
-//    return simulator.simulate();
   }
 
   private static void doIinitstuff(String args[], Environment env) {
@@ -216,7 +215,6 @@ public class HelloWorld {
   public static void main(String args[]) {
     Environment env = Environment.directEnvironment();
     
-//    env.getParameters().setInt("loglevel", 800);    
     doIinitstuff(args, env);
     
     HelloWorld driver = new HelloWorld(env);

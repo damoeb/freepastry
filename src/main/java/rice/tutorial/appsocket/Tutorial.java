@@ -136,13 +136,8 @@ public class Tutorial {
       
     }
       
-    // wait 10 seconds
+    // wait 1 second
     env.getTimeSource().sleep(1000);
-
-//    
-//    MyApp tempApp = (MyApp)apps.get(0);
-//    tempApp.sendMyMsgDirect(((PastryNode)tempApp.getNode()).getLeafSet().get(-1));
-//    if (true) return;
     
     // for each app
     Iterator<MyApp> appIterator = apps.iterator();

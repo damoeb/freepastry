@@ -135,15 +135,13 @@ public class MemoryStorage implements Storage {
    * Stores the object under the key <code>id</code>.  If there is already
    * an object under <code>id</code>, that object is replaced.
    *
-   * This method completes by calling recieveResult() of the provided continuation
+   * This method completes by calling receiveResult() of the provided continuation
    * with the success or failure of the operation.
    *
    * @param obj The object to be made persistent.
    * @param id The object's id.
    * @param metadata The object's metadata
-   * @param c The command to run once the operation is complete
-   * @return <code>true</code> if the action succeeds, else
-   * <code>false</code>.
+   * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
   public void store(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
     if (id == null || obj == null) {
@@ -164,13 +162,11 @@ public class MemoryStorage implements Storage {
    * in the cached list in the first place, nothing happens and <code>false</code>
    * is returned.
    *
-   * This method completes by calling recieveResult() of the provided continuation
+   * This method completes by calling receiveResult() of the provided continuation
    * with the success or failure of the operation.
    *
    * @param id The object's persistence id
-   * @param c The command to run once the operation is complete
-   * @return <code>true</code> if the action succeeds, else
-   * <code>false</code>.
+   * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
   public void unstore(Id id, Continuation<? super Boolean, Exception> c) {
     Object stored = storage.remove(id);
@@ -214,7 +210,7 @@ public class MemoryStorage implements Storage {
    *
    * @param id The id for the metadata 
    * @param metadata The metadata to store
-   * @param c The command to run once the operation is complete
+   * @param command The command to run once the operation is complete
    */
   public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> command) {
     if (exists(id)) 
@@ -225,7 +221,7 @@ public class MemoryStorage implements Storage {
 
   /**
    * Returns the object identified by the given id, or <code>null</code> if
-   * there is no cooresponding object (through receiveResult on c).
+   * there is no corresponding object (through receiveResult on c).
    *
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete
@@ -310,11 +306,9 @@ public class MemoryStorage implements Storage {
   }
 
   /**
-   * Returns the total size of the stored data in bytes.The result
-   * is returned via the receiveResult method on the provided
-   * Continuation with an Integer representing the size.
+   * Returns the total size of the stored data in bytes.
    *
-   * @param c The command to run once the operation is complete
+   * @return The total size, in bytes, of data stored.
    */
   public long getTotalSize() {
     return currentSize;

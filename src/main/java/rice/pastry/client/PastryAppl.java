@@ -78,11 +78,6 @@ public abstract class PastryAppl /*implements Observer*/
   
   protected Map<String, Object> options;
   
-  /**
-   * Buffered while node is not ready to prevent inconsistent routing.
-   */
-//  LinkedList undeliveredMessages = new LinkedList();
-  
   private class LeafSetObserver implements NodeSetListener {
     public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
       leafSetChange(handle, added);
@@ -150,7 +145,7 @@ public abstract class PastryAppl /*implements Observer*/
    * Need to call register on this.
    *
    * @param pn the pastry node that client will attach to.
-   * @param instance The instance name of this appl.
+   * @param port the address of this application.
    */
   public PastryAppl(PastryNode pn, int port) {
     this(pn, null, port, null);
@@ -164,7 +159,6 @@ public abstract class PastryAppl /*implements Observer*/
 
     thePastryNode.registerApp(this); // just adds it to a list    
     
-//    thePastryNode.addObserver(this); // for buffered messages
   }
   
   /**
@@ -212,10 +206,6 @@ public abstract class PastryAppl /*implements Observer*/
     if (msg instanceof RouteMessage) {
       RouteMessage rm = (RouteMessage) msg;
       
-      // NOTE: the idea is to synchronize on undeliveredMessages while making the check as to whether or not to add to the queue
-      // the other part of the synchronization is just below, in update()
-      // we don't want to hold the lock to undeliveredMessages when calling receiveMessage()
-//      synchronized(undeliveredMessages) {
         // if the message has a destinationHandle, it should be for me, and it should always be delivered
         NodeHandle destinationHandle = rm.getDestinationHandle();
         if (deliverWhenNotReady() || 
@@ -230,22 +220,15 @@ public abstract class PastryAppl /*implements Observer*/
             if (logger.level <= Logger.WARNING) logger.log("Dropping "+msg+" because node is not ready.");
             
           }
-          // enable this if you want to forward RouteMessages when not ready, without calling the "forward()" method on the PastryAppl that sent the message
-//          RouteMessage rm = (RouteMessage)msg;
-//          rm.routeMessage(this.localNode.getLocalHandle());
 
-//          undeliveredMessages.add(msg);
           return;
         }
-//      } // synchronized    
 
       try {
         Message innerMessage = rm.unwrap(deserializer);
         if (enrouteMessage(innerMessage, rm.getTarget(), rm.getNextHop(), rm.getOptions())) {
           if (rm.getDestinationHandle() == thePastryNode.getLocalHandle()) {
             messageForAppl(innerMessage);
-//            if (logger.level <= Logger.WARNING) logger.log("Warning, removing destNodeHandle: "+rm.getDestinationHandle()+" from "+rm);
-//            rm.setDestinationHandle(null);
           } else {
             thePastryNode.getRouter().route(rm);
           }
@@ -258,26 +241,6 @@ public abstract class PastryAppl /*implements Observer*/
     }
   }
 
-//  public void update(Observable arg0, Object arg1) {
-//    if (arg0 == thePastryNode) {
-//      if (arg1 instanceof Boolean) {
-//        Boolean b = (Boolean)arg1;
-//        if (b.booleanValue()) {
-//          Collection copy;
-//          synchronized(undeliveredMessages) {
-//            copy = new ArrayList(undeliveredMessages); 
-//            undeliveredMessages.clear();
-//          }
-//          Iterator i = copy.iterator();
-//          while(i.hasNext()) {
-//            Message m = (Message)i.next(); 
-//            receiveMessage(m);
-//          }
-//        }
-//      }
-//    }
-//  }
-  
   // useful API methods
 
   /**
@@ -305,21 +268,12 @@ public abstract class PastryAppl /*implements Observer*/
    *
    * @param dest the destination node
    * @param msg the message to deliver.
-   * @param cred credentials that verify the authenticity of the message.
    * @param opt send options that describe how the message is to be routed.  
    */
   public boolean routeMsgDirect(NodeHandle dest, Message msg, SendOptions opt) {
     if (logger.level <= Logger.FINER) logger.log(
         "[" + thePastryNode + "] routemsgdirect " + msg + " to " + dest);
     if (dest.getLiveness() >= NodeHandle.LIVENESS_DEAD) return false;
-    //RouteMessage rm = new RouteMessage(dest, msg, cred, opt, getAddress());
-    //thePastryNode.receiveMessage(rm);
-
-    // XXX Does routeMsgDirect need credentials?
-    // Arguably, leafset messages don't need credentials because
-    // individual nodeids may be signed. (not entirely true..)
-    // But routeMsgDirect messages *do* need credentials. So do we
-    // go back to using options to differentiate from routeMsg?
 
     thePastryNode.send(dest,msg,null, options);
     return dest.getLiveness() < NodeHandle.LIVENESS_DEAD;
@@ -333,9 +287,7 @@ public abstract class PastryAppl /*implements Observer*/
    *
    * @param key the key
    * @param msg the message to deliver.
-   * @param cred credentials that verify the authenticity of the message.
    * @param opt send options that describe how the message is to be routed.
-   * @return 
    */
   public void routeMsg(Id key, Message msg, SendOptions opt) {
     if (logger.level <= Logger.FINER) logger.log(
@@ -528,17 +480,20 @@ public abstract class PastryAppl /*implements Observer*/
   protected AppSocketReceiver receiver;
   
   /**
-   * Calls receiver.receiveSocket(), then sets receiver to null.
-   * 
-   * It sets it to null to allow the application to provide SocketInitiationBackpressure
-   * 
-   * @param socket the new socket from the network
-   * @return false if receiver was null, true receiveSocket() was called
+   * @return true if a receiver is waiting for a socket
    */
   public boolean canReceiveSocket() {
     return receiver != null;
   }
   
+  /**
+   * Calls receiver.receiveSocket(), then sets receiver to null.
+   * 
+   * It sets it to null to allow the application to provide SocketInitiationBackpressure
+   * 
+   * @param socket the new socket from the network
+   * @throws IOException if the receiver throws it
+   */
   public void finishReceiveSocket(AppSocket socket) throws IOException {
     AppSocketReceiver theReceiver = receiver;
     receiver = null;

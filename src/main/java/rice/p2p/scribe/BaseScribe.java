@@ -121,7 +121,7 @@ public interface BaseScribe extends Destructable {
   /**
    * Returns the parent node for a given topic
    * 
-   * @param myTopic The topic to return the parent of
+   * @param topic The topic to return the parent of
    * @return The parent of the topic
    */
   public NodeHandle getParent(Topic topic);

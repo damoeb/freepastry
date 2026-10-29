@@ -96,7 +96,7 @@ public interface Parameters {
   public InetSocketAddress getInetSocketAddress(String paramName) throws UnknownHostException;
   
   /**
-   * String format is comma seperated.
+   * String format is comma separated.
    * ex: "computer.school.edu:1984,computer2.school.edu:1984,computer.school.edu:1985"
    * @param paramName
    * @return

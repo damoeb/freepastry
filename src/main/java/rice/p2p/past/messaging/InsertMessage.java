@@ -46,8 +46,6 @@ import rice.p2p.past.*;
 import rice.p2p.past.rawserialization.*;
 
 /**
- * @(#) InsertMessage.java
- *
  * This class represents a message which is an insert request in past.
  *
  * @version $Id: InsertMessage.java 3613 2007-02-15 14:45:14Z jstewart $

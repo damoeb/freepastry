@@ -112,22 +112,13 @@ public class LivenessTest extends SRTest {
     int startPort = 5009;
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();    
-//    InetAddress addr = InetAddress.getByName("10.0.0.10");
     Parameters p = env.getParameters();
     timer = env.getSelectorManager().getTimer();
     
     // this makes the liveness check super fast
       p.setInt("pastry_socket_scm_num_ping_tries", 2);
-//      PING_DELAY = p.getInt("pastry_socket_scm_ping_delay");
-//      PING_JITTER = p.getFloat("pastry_socket_scm_ping_jitter");
-//      BACKOFF_INITIAL = p.getInt("pastry_socket_scm_backoff_initial");
-//      BACKOFF_LIMIT = p.getInt("pastry_socket_scm_backoff_limit");
-//      CHECK_DEAD_THROTTLE = p.getLong("pastry_socket_srm_check_dead_throttle"); // 300000
       p.setInt("pastry_socket_srm_default_rto", 400); // 3000 // 3 seconds
       p.setInt("pastry_socket_srm_rto_ubound", 500);//240000; // 240 seconds
-//      RTO_LBOUND = p.getInt("pastry_socket_srm_rto_lbound");//1000;
-//      gainH = p.getDouble("pastry_socket_srm_gain_h");//0.25;
-//      gainG = p.getDouble("pastry_socket_srm_gain_g");//0.125;
 
     alice = buildTL("alice", addr, startPort, env);
     bob = buildTL("bob", addr, startPort+1, env);
@@ -178,18 +169,11 @@ public class LivenessTest extends SRTest {
   }
   
   public static int getDelay(SourceRoute<MultiInetSocketAddress> a, SourceRoute<MultiInetSocketAddress> b) {
-//    System.out.println("getDelay("+a+","+b+")");
     TestLivenessTransportLayerImpl bob = (TestLivenessTransportLayerImpl)LivenessTest.bob;
     if (b.getLastHop().equals(bob.getLocalIdentifier().getLastHop()) &&
         a.equals(alice.getLocalIdentifier())) {
-//       System.out.println("here");
        return 150;
     }
-//    System.out.println("here2 "+a+","+b+
-//        " 1:"+b.getLastHop().equals(bob.getLocalIdentifier())+
-//        " 1a:"+b.getLastHop()+
-//        " 1b:"+bob.getLocalIdentifier().getLastHop()+
-//        " 2:"+a.equals(alice.getLocalIdentifier()));
     return 0;
   }
   
@@ -201,7 +185,6 @@ public class LivenessTest extends SRTest {
     PingListener<SourceRoute<MultiInetSocketAddress>> pl = new PingListener<SourceRoute<MultiInetSocketAddress>>() {    
       public void pingResponse(SourceRoute<MultiInetSocketAddress> i, int rtt, Map<String, Object> options) {
         synchronized(lock) {
-//          System.out.println("i"+i.getLastHop());
           pingResponse.put(i.getLastHop(), new Tupel(i, rtt));
           lock.notify();
         }
@@ -230,8 +213,6 @@ public class LivenessTest extends SRTest {
     int carolProx = bob_prox.proximity(getIdentifier(bob(), carol), options);
 
     assertTrue(aliceProx > carolProx+100, "aliceProx:"+aliceProx+" carolProx:"+carolProx);
-//    System.out.println("aliceProx"+aliceProx);
-//    System.out.println("carolProx"+carolProx);
   }
   
   class Tupel {
@@ -303,68 +284,4 @@ public class LivenessTest extends SRTest {
     assertTrue(tupels.size() == 3);
   }
   
-//  @Test
-//  public void invalidNodeTest() throws Exception {
-//    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes); 
-//    
-//    class Tupel<Identifier> {
-//      Identifier i;
-//      ByteBuffer buf;
-//      public Tupel(Identifier i, ByteBuffer buf) {
-//        this.i = i;
-//        this.buf = buf;
-//      }
-//    }
-//    
-//    // added to every time bob receives something
-//    final List<Exception> exceptionList = new ArrayList<Exception>(1);
-//    final Object lock = new Object();
-//    final List<ByteBuffer> sentList = new ArrayList<ByteBuffer>(1);
-//    final List<ByteBuffer> failedList = new ArrayList<ByteBuffer>(1);
-////    TestEnv<Identifier> tenv = getTestEnv();
-//
-//    alice.sendMessage(
-//        getBogusIdentifier((SourceRoute)alice.getLocalIdentifier()), 
-//        sentBuffer, 
-//        null,
-//        new MessageCallback<ByteBuffer, Exception>() {
-//          
-//          public void ack(ByteBuffer msg) {
-//            synchronized(lock) {
-//              sentList.add(msg);
-//              lock.notify();
-//            }        
-//          }    
-//          public void receiveException(ByteBuffer msg, Exception exception) {
-//            synchronized(lock) {
-//              exceptionList.add(exception);
-//              lock.notify();
-//            }
-//          }
-//          
-//          public void sendFailed(ByteBuffer msg, FailureReason reason) {
-//            synchronized(lock) {
-//              failedList.add(msg);
-//              lock.notify();
-//            }                    
-//          }    
-//        });
-//    
-//    // block for completion
-//    long timeout = env.getTimeSource().currentTimeMillis()+4000;
-//    synchronized(lock) {
-//      while((env.getTimeSource().currentTimeMillis()<timeout) && exceptionList.isEmpty() && sentList.isEmpty() && failedList.isEmpty()) {
-//        lock.wait(1000); 
-//      }
-//    }
-//
-//    // results
-//    assertTrue("sentList:"+sentList, sentList.isEmpty());  // no success
-//    assertTrue(failedList.size() == 1);  // we got 1 result
-//    assertTrue(failedList.get(0).equals(sentBuffer));  // result matches
-//    assertTrue("exceptionList.size():"+exceptionList.size(), exceptionList.size() == 1);
-//    if (!exceptionList.isEmpty()) throw exceptionList.get(0); // we got no exceptions
-//    
-//    alice.openSocket(getBogusIdentifier((SourceRoute)alice.getLocalIdentifier()), null, options);
-//  }
 }

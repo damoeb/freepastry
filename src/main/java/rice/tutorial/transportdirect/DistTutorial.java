@@ -102,7 +102,7 @@ public class DistTutorial {
         DirectTransportLayer<InetSocketAddress, ByteBuffer> tl = new DirectTransportLayer<InetSocketAddress, ByteBuffer>(
             innermostAddress, simulator, simulator.generateNodeRecord(), pn.getEnvironment());
 
-        return tl; //super.getWireTransportLayer(innermostAddress, pn);
+        return tl;
       }      
     };
 

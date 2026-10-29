@@ -63,21 +63,6 @@ import rice.environment.logging.Logger;
      */
     public MessageDelivery(MessageType m, Identifier to, Identifier from, Map<String, Object> options, BasicNetworkSimulator<Identifier, MessageType> sim) {
       logger = ((DirectTransportLayer<Identifier, MessageType>)sim.getTL(to)).getLogger();
-//      if (m instanceof rice.pastry.routing.RouteMessage) {
-//        rice.pastry.routing.RouteMessage m1 = (rice.pastry.routing.RouteMessage)m;
-//        rice.p2p.commonapi.Message m2 = m1.unwrap();
-//        if (m2 instanceof PastryEndpointMessage) {
-//          PastryEndpointMessage m3 = (PastryEndpointMessage)m2;
-//          rice.p2p.commonapi.Message m4 = m3.getMessage();
-//          if (m4 instanceof rice.p2p.scribe.messaging.SubscribeMessage) {
-//            rice.p2p.scribe.messaging.SubscribeMessage m5 = (rice.p2p.scribe.messaging.SubscribeMessage)m4;
-//            if (m5.getTopic() == null) {
-//              logger.logException("MD.ctor("+m+" to "+to+" from:"+from+")",m5.ctor);
-//              throw new RuntimeException("bad");
-//            }
-//          }
-//        }
-//      }
       msg = m;
       node = to;
       this.options = options;
@@ -88,7 +73,6 @@ import rice.environment.logging.Logger;
       // Note: this is done to reduce memory thrashing.  There are a ton of strings created
       // in getLogger(), and this is a really temporary object.
       logger = ((DirectTransportLayer<Identifier, MessageType>)sim.getTL(to)).getLogger();
-//      logger = pn.getEnvironment().getLogManager().getLogger(MessageDelivery.class, null);
     }
 
     public void deliver() {
@@ -106,16 +90,7 @@ import rice.environment.logging.Logger;
       } catch (IOException ioe) {
         if (logger.level <= Logger.WARNING) logger.logException("Error delivering message "+this, ioe);
       }
-//      networkSimulator.notifySimulatorListenersReceived(msg, from, node);
       
-//      if (isAlive(msg.getSenderId())) {
-//        environment.getLogManager().getLogger(EuclideanNetwork.class, null).log(Logger.FINER, 
-//            "delivering "+msg+" to " + node);
-//        node.receiveMessage(msg);
-//      } else {
-//        environment.getLogManager().getLogger(EuclideanNetwork.class, null).log(Logger.INFO, 
-//            "Cant deliver "+msg+" to " + node + "because it is not alive.");        
-//      }
     } 
     
     public int getSeq() {

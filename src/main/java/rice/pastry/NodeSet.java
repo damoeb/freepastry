@@ -157,9 +157,6 @@ public class NodeSet implements NodeSetI, Serializable {
    * @return true of NodeHandle associated with id is a member, false otherwise
    */
 
-  //    public boolean member(NodeId nid) {
-  //  return (getIndex(nid) >= 0);
-  //    }
   private boolean memberId(rice.p2p.commonapi.Id id) {
     return (getIndexId(id) >= 0);
   }
@@ -386,7 +383,7 @@ public class NodeSet implements NodeSetI, Serializable {
   /**
    * Removes a node id and its handle from the set.
    * 
-   * @param nid the node to remove.
+   * @param id the id of the node to remove.
    * 
    * @return the node handle removed or null if nothing.
    */

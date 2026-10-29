@@ -70,7 +70,6 @@ public class AccusationMessage<Identifier extends RawSerializable> extends State
       Serializer<Identifier> idSerializer, EvidenceSerializer evSerializer)
       throws IOException {
     super(buf, idSerializer, evSerializer);
-    // TODO Auto-generated constructor stub
   }
 
 

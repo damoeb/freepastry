@@ -44,7 +44,7 @@ import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.glacier.*;
 
 /**
- * DESCRIBE THE CLASS
+ * Asks a fragment holder which of the given fragment keys it stores (answered with GlacierResponseMessages).
  *
  * @version $Id: GlacierQueryMessage.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author ahae

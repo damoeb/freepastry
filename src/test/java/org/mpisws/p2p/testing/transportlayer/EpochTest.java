@@ -64,7 +64,6 @@ public class EpochTest extends TLTest<MultiInetSocketAddress>{
     int startPort = START_PORT;
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();    
-//    InetAddress addr = InetAddress.getByName("10.0.0.10");
     
     alice = buildTL("alice", addr, startPort, env);
     bob = buildTL("bob", addr, startPort+1, env);
@@ -90,7 +89,7 @@ public class EpochTest extends TLTest<MultiInetSocketAddress>{
   }
 
   /**
-   * To fool eclips's testing harness.
+   * To fool Eclipse's testing harness.
    *
    */
   @Test

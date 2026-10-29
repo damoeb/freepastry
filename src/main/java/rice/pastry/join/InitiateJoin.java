@@ -60,12 +60,6 @@ public class InitiateJoin extends Message implements Serializable {
    * @param nh the node handle that the join will begin from.
    */
 
-//  public InitiateJoin(NodeHandle nh) {
-//    this((NodeHandle[])null);
-//    handle = new NodeHandle[1];
-//    handle[0] = nh;
-//  }
-
 
   public InitiateJoin(Collection<NodeHandle> nh) {
     this(null, nh);
@@ -74,23 +68,14 @@ public class InitiateJoin extends Message implements Serializable {
   /**
    * Constructor.
    * 
-   * @param jh a handle of the node trying to join the network.
    * @param stamp the timestamp
    * 
-   * @param nh the node handle that the join will begin from.
+   * @param nh the node handles that the join will begin from.
    */
 
   public InitiateJoin(Date stamp, Collection<NodeHandle> nh) {
     super(JoinAddress.getCode(), stamp);
     handle = nh.toArray(new NodeHandle[1]);
-//    for (int i = 0; i < handle.length; i++) {
-//      if (handle[i] instanceof RendezvousSocketNodeHandle) {
-//        if (!((RendezvousSocketNodeHandle)handle[i]).canContactDirect()) {
-//          throw new IllegalArgumentException("Can't contact directly "+handle[i]+" "+handle.length);
-//        }
-//      }
-//    }
-//    System.out.println("IJ<ctor>"+this);
   }
 
   /**

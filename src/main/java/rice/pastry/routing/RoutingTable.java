@@ -51,9 +51,9 @@ import java.util.*;
  * The size of this table is determined by two constants:
  * <P>
  * <UL>
- * <LI>{@link rice.pastry.Id#nodeIdBitLength nodeIdBitLength}which
+ * <LI>{@link rice.pastry.Id#IdBitLength IdBitLength} which
  * determines the number of bits in a node id (which we call <EM>n</EM>).
- * <LI>{@link RoutingTable#idBaseBitLength idBaseBitLength}which is the base
+ * <LI>{@link RoutingTable#idBaseBitLength idBaseBitLength} which is the base
  * that table is stored in (which we call <EM>b</EM>).
  * </UL>
  * <P>
@@ -79,7 +79,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    * </SUP></EM>
    */
 
-  public byte idBaseBitLength;// = 4;
+  public byte idBaseBitLength;
 
   private Id myNodeId;
 
@@ -264,76 +264,6 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
     return set;
   }
 
-  /**
-   * Starting with the diffDigit, get everyone in the table that is closer to the key than me
-   * 
-   * This can easily be sped up by building the iterator at each row as needed.
-   * 
-   * Always return the prefix-match first
-   * 
-   * @param key
-   * @return
-   */
-//  public Iterator<NodeHandle> alternateRoutesIterator(final Id key) {
-//    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
-//    if (diffDigit < 0)
-//      return Collections.EMPTY_LIST.iterator(); // return an empty iterator
-//
-//    int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
-//    final Id.Distance myDistance = myNodeId.distance(key);
-//
-//    
-//    Tuple<NodeHandle, Id.Distance> prefixMatch = null;
-//    
-//    final ArrayList<Tuple<NodeHandle, Id.Distance>> ret = new ArrayList<Tuple<NodeHandle, Id.Distance>>();
-//    for (int row = diffDigit; row >= 0; row--) {
-//      int numInRow = 0;
-//      for (int col = 0; col < cols; col++) {
-//        RouteSet rs = routingTable[row][col];
-//        if (rs != null) {
-//          for (int k = 0; k < rs.size(); k++) {
-//            NodeHandle nh = rs.get(k);
-//            if (!nh.equals(myNodeHandle)) {
-//              numInRow++;            
-//              Id.Distance nDist = nh.getNodeId().distance(key);
-//              if () {
-//                
-//              }
-//              if (myDistance.compareTo(nDist) > 0) {
-//                ret.add(new Tuple<NodeHandle, Id.Distance>(nh,nDist));
-//              }
-//            }
-//          }
-//        }
-//      }
-//      if (numInRow == 0) break;
-//    }
-//    
-//    Collections.sort(ret, new Comparator<Tuple<NodeHandle, Id.Distance>>(){
-//
-//      public int compare(Tuple<NodeHandle, Id.Distance> o1,
-//          Tuple<NodeHandle, Id.Distance> o2) {
-//        return o1.b().compareTo(o2.b());
-//      }});
-//    
-//    final Iterator<Tuple<NodeHandle, Id.Distance>> itr = ret.iterator();
-//    
-//    return new Iterator<NodeHandle>() {
-//    
-//      public void remove() {
-//        
-//      }
-//    
-//      public NodeHandle next() {
-//        return itr.next().a();
-//      }
-//    
-//      public boolean hasNext() {
-//        return itr.hasNext();
-//      }    
-//    };
-//  }
-  
   /**
    * More efficient implementation, but less accurate, doesn't include lower levels of rt.
    * @param key
@@ -586,18 +516,10 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   /**
    * Removes a node id from the table.
    * 
-   * @param nid the node id to remove.
+   * @param nh the node to remove.
    * @return the handle that was removed, or null if it did not exist.
    */
 
-  //  public NodeHandle remove(Id nid)
-  //  {
-  //RouteSet ns = getBestEntry(nid);
-  //  
-  //if (ns == null) return null;
-  //
-  //return ns.remove(nid);
-  //  }
   public synchronized NodeHandle remove(NodeHandle nh) {
     if (logger.level <= Logger.FINER) logger.log("RT: remove("+nh+")"); 
     RouteSet ns = getBestEntry(nh.getNodeId());
@@ -613,13 +535,9 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    * changed.
    * 
    * @param o the RouteSet
-   * @param arg the event
+   * @param handle the handle that was added or removed
+   * @param added true if the handle was added
    */
-//  public void update(Observable o, Object arg) {
-//    // pass the event to the Observers of this RoutingTable
-//    setChanged();
-//    notifyObservers(arg);
-//  }
 
   public void nodeSetUpdate(Object o, NodeHandle handle, boolean added) {
     if (logger.level <= Logger.FINE) {

@@ -51,8 +51,6 @@ import rice.pastry.commonapi.*;
 import rice.pastry.dist.*;
 
 /**
- * @(#) RingCertificate.java
- *
  * This class represents a certificate for a specific ring attached, which
  * contains informtation about the ring, such as bootstraps, etc...
  *
@@ -68,17 +66,15 @@ public class RingCertificate implements Serializable {
   // the static map of all RingCertificates available (id -> cert)
   protected static HashMap<Id, RingCertificate> CERTIFICATES = new HashMap<Id, RingCertificate>();
   
-  // load all certificates that con be found
+  // load all certificates that can be found
   static {
     try {
       // first load the CA public key
       URL a = ClassLoader.getSystemResource("ca.publickey");
-//      System.out.println(a.getPath());
       InputStream b = a.openStream();
       GZIPInputStream c = new GZIPInputStream(b);
       BufferedInputStream d = new BufferedInputStream(c);
       ObjectInputStream ois = new XMLObjectInputStream(d);
-//      ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(ClassLoader.getSystemResource("ca.publickey").openStream())));
       PublicKey caPublic = (PublicKey) ois.readObject();
       ois.close();
       
@@ -90,7 +86,6 @@ public class RingCertificate implements Serializable {
       String filename = null;
       
       while ((filename = r.readLine()) != null) {
-//        System.out.println(filename);
         URL a2 = ClassLoader.getSystemResource(filename);
         InputStream b2 = a2.openStream();
         RingCertificate cert = readFromStream(b2);
@@ -395,22 +390,14 @@ public class RingCertificate implements Serializable {
     
     // get the ring info
     String ring = prompt(r, w, "Please enter the name of the ring (rice, berkeley): ");
-//    String protocol = prompt(r, w, "Please enter the protocol of the ring (socket, wire, rmi): ");
     String[] bootstrap = prompt(r, w, "Please enter the bootstraps (host1:port1,host2:port2...): ").trim().split(",");
     int port = Integer.parseInt(prompt(r, w, "Please enter the default port for nodes: "));
     String logServer = prompt(r, w, "Please enter the log upload server (host:port): ");
     String pass = prompt(r, w, "Please enter a password for the ring keypair: ");
         
-    // translate the protocol
+    // socket is the only protocol
     int protocolId = 0;
-//    if (protocol.equalsIgnoreCase("wire")) {
-//      protocolId = DistPastryNodeFactory.PROTOCOL_WIRE;
-//    } else if (protocol.equalsIgnoreCase("rmi")) {
-//      protocolId = DistPastryNodeFactory.PROTOCOL_RMI;
-//    } else 
-//      if (protocol.equalsIgnoreCase("socket")) {
       protocolId = DistPastryNodeFactory.PROTOCOL_SOCKET;
-//    } 
     
     // build the id
     Id id = generateId(ring, env);
@@ -435,15 +422,15 @@ public class RingCertificate implements Serializable {
     // and finally write out the KeyPair
     writeKeyPair(pair, pass, ring.toLowerCase());
     
-    // Environment's Daemon thread.
+    // exit explicitly, the Environment's threads would keep the JVM running
     System.exit(0);
   }
   
   /**
    * Internal method for prompting the user
    *
-   * @param reader The reader
-   * @param writer The writer
+   * @param r The reader
+   * @param w The writer
    * @param prompt The prompt
    * @return The result
    */
@@ -454,9 +441,9 @@ public class RingCertificate implements Serializable {
   }
   
   /**
-   * Intenrla method for String -> InetSocketAddress
+   * Internal method for String -&gt; InetSocketAddress
    *
-   * @param string The string
+   * @param s The string, as host:port
    * @return The address
    */
   private static InetSocketAddress toInetSocketAddress(String s) throws IOException {
@@ -467,9 +454,11 @@ public class RingCertificate implements Serializable {
   }
   
   /**
-   * Internal method for convering to canocial form
+   * Internal method which builds the ring id from the canonical form of the ring name
    *
-   * @param string THe string
+   * @param s The ring name
+   * @param env The environment
+   * @return The ring id
    */
   private static Id generateId(String s, Environment env) {
     String ring = s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();

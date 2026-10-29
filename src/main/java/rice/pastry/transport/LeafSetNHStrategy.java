@@ -55,17 +55,11 @@ public class LeafSetNHStrategy implements NextHopStrategy<MultiInetSocketAddress
     this.ls = leafSet;
   }
 
-//  public void setLeafSet(LeafSet ls) {
-//    this.ls = ls;
-//  }
-  
   public Collection<MultiInetSocketAddress> getNextHops(MultiInetSocketAddress destination) {
     if (ls == null) return null;
     
     Collection<MultiInetSocketAddress> ret = walkLeafSet(destination, 8);
     
-    // don't include the direct route
-//    ret.remove(destination);
     return ret;
   }
   

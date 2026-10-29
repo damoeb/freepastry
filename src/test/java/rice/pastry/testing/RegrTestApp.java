@@ -84,27 +84,18 @@ public class RegrTestApp extends CommonAPIAppl {
   }
 
   public void sendTrace(Id nid) {
-    //System.out.println("sending a trace from " + getNodeId() + " to " +
-    // nid);
     routeMsg(nid, new RTMessage(addr, getNodeHandle(), nid),
         new SendOptions());
   }
 
-  //public void messageForAppl(Message msg) {
   /**
-   * Makes sure the message was delivered to the correct node by crossrefrencing the 
+   * Makes sure the message was delivered to the correct node by cross-referencing the 
    * sorted nodes list in the simulator.
    */
   public void deliver(Id key, Message msg) {
 
-    /*
-     * System.out.print(msg); System.out.println(" received at " +
-     * getNodeId());
-     */
-
     // check if numerically closest
     RTMessage rmsg = (RTMessage) msg;
-    //Id key = rmsg.target;
     Id localId = getNodeId();
 
     if (localId != key) {
@@ -128,21 +119,11 @@ public class RegrTestApp extends CommonAPIAppl {
         System.out.print(msg);
         System.out.println(" received at " + getNodeId());
         System.out.println(getLeafSet());
-//      } else {
-//        System.out.println("mfa success, inBetween=" + inBetween); 
-//        System.out.print(msg);
-//        System.out.println(" received at " + getNodeId());
-//        System.out.println(getLeafSet());
       }
     }
   }
 
-  //public boolean enrouteMessage(Message msg, Id key, Id nextHop,
-  // SendOptions opt) {
   public void forward(RouteMessage rm) {
-    /*
-     * System.out.print(msg); System.out.println(" at " + getNodeId());
-     */
     Message msg;
     try {
       msg = rm.unwrap(deserializer);
@@ -174,18 +155,10 @@ public class RegrTestApp extends CommonAPIAppl {
     prg.lastDist = dist;
     prg.lastNode = localId;
 
-    //return true;
   }
 
-  //public void leafSetChange(NodeHandle nh, boolean wasAdded) {
   public void update(NodeHandle nh, boolean wasAdded) {
     final Id nid = nh.getNodeId();
-
-    /*
-     * System.out.println("at... " + getNodeId() + "'s leaf set");
-     * System.out.print("node " + nid + " was "); if (wasAdded)
-     * System.out.println("added"); else System.out.println("removed");
-     */
 
     if (!prg.pastryNodesSorted.containsKey(nid) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
       System.out.println("at... " + getNodeId()
@@ -220,27 +193,13 @@ public class RegrTestApp extends CommonAPIAppl {
         || (inBetween <= lsSize && !wasAdded && !getLeafSet().member(nh))
         && prg.pastryNodesSorted.containsKey(nh.getNodeId())) {
 
-      // this can be violated with the ConsistentJoinProtocol.  Perhaps we need a more intricate mechanism to merge the leafsets.
-//      System.out.println("at... " + getNodeId()
-//          + "leafSetChange failure 3 with " + nid + " wasAdded=" + wasAdded
-//          + " inBetween=" + inBetween);
-//      System.out.println(getLeafSet());
-      /*
-       * Iterator it = prg.pastryNodesSorted.keySet().iterator(); while
-       * (it.hasNext()) System.out.println(it.next());
-       */
+      // "leafSetChange failure 3" is not reported: the ConsistentJoinProtocol can violate it.
+      // Perhaps we need a more intricate mechanism to merge the leafsets.
     }
   }
 
   public void routeSetChange(NodeHandle nh, boolean wasAdded) {
     Id nid = nh.getNodeId();
-
-    /*
-     * System.out.println("at... " + getNodeId() + "'s route set");
-     * System.out.print("node " + nid + " was "); if (wasAdded)
-     * System.out.println("added"); else System.out.println("removed");
-     * System.out.println(getRoutingTable());
-     */
 
     if (!prg.pastryNodesSorted.containsKey(nid)) {
       if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD || wasAdded)
@@ -256,8 +215,6 @@ public class RegrTestApp extends CommonAPIAppl {
    */
 
   public void notifyReady() {
-    //if (getLeafSet().size() == 0) System.out.println("notifyReady at " +
-    // getNodeId() + " : leafset is empty!!");
   }
 
   public PastryNode getPastryNode() {
@@ -273,13 +230,11 @@ public class RegrTestApp extends CommonAPIAppl {
 class RTMessage extends Message {
   public NodeHandle sourceNode;
 
-  //public Id source;
   public Id target;
 
   public RTMessage(int addr, NodeHandle src, Id tgt) {
     super(addr);
     sourceNode = src;
-    //source = src.getNodeId();
     target = tgt;
   }
 

@@ -44,12 +44,9 @@ import rice.environment.params.ParameterChangeListener;
 import rice.environment.params.Parameters;
 
 /**
- * This class represents a generic Java process launching program which reads in
- * preferences from a preferences file and then invokes another JVM using those
- * prefs. If the launched JVM dies, this process can be configured to restart
- * the JVM any number of times before giving up. This process can also be
- * configured to launch the second JVM with a specified memory allocation,
- * etc...
+ * A layered key/value parameter store: read-only defaults loaded from
+ * {@code .params} files on the classpath, overlaid by an optional mutable
+ * {@code .params} file that set*() changes and store() writes back.
  * 
  * @author Alan Mislove
  */
@@ -74,12 +71,14 @@ public class SimpleParameters implements Parameters {
   
   /**
    * 
-   * @param orderedDefaults
-   * @param mutableConfigFileName
-   *          if this is null, no params are saved, if this file doesn't exist,
+   * @param orderedDefaults the names (without extension) of the default parameter
+   *          files to load from the classpath, in order; later files override earlier ones
+   * @param mutableConfigFileName the name (without extension) of the mutable parameter file;
+   *          if this is null, user.params is used if it exists in the working directory,
+   *          otherwise no params are saved. If this file doesn't exist,
    *          you will get a warning printed to stdErr, then the file will be
    *          created if you ever store
-   * @throws IOException
+   * @throws ParamsNotPresentException if a default file cannot be loaded
    */
   public SimpleParameters(String[] orderedDefaults, String mutableConfigFileName) {
     if (mutableConfigFileName != null) {
@@ -87,7 +86,6 @@ public class SimpleParameters implements Parameters {
     } else {
       try {
         File f = new File(defaultParamsFile);
-//        System.out.println(f.getAbsolutePath());
         if (f.exists()) {
           this.configFileName = defaultParamsFile; 
         }
@@ -110,8 +108,6 @@ public class SimpleParameters implements Parameters {
       } catch (Exception ioe) {
         String errorString = "Warning, couldn't load param file:"
           + (orderedDefaults[ctr] + FILENAME_EXTENSION);
-//        System.err.println(errorString);
-//        ioe.printStackTrace(System.err);
         throw new ParamsNotPresentException(errorString,ioe);
       }
     }
@@ -163,10 +159,6 @@ public class SimpleParameters implements Parameters {
     if (result == null) {
       System.err.println("WARNING: The parameter '" + name
           + "' was not found - this is likely going to cause an error.");
-      //You " +
-      //                     "can fix this by adding this parameter (and appropriate value) to the
-      // proxy.params file in your ePOST " +
-      //                     "directory.");
     } else {
       // remove any surrounding whitespace
       result = result.trim();

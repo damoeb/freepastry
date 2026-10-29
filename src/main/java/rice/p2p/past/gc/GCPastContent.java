@@ -44,8 +44,6 @@ import rice.p2p.commonapi.*;
 import rice.p2p.past.*;
 
 /**
- * @(#) GCPastContent.java
- *
  * This interface represents an object which is storable in the GCPast
  * system.  This interface adds on methods which return the object's 
  * version number, which to used to disambiguate multiple versions of
@@ -70,7 +68,8 @@ public interface GCPastContent extends PastContent {
    * Produces a handle for this content object. The handle is retrieved and returned to the
    * client as a result of the Past.lookupHandles() method.
    *
-   * @param The local GCPast service which the content is on.
+   * @param local The local GCPast service which the content is on.
+   * @param expiration The expiration time to put in the handle
    * @return the handle
    */
   public GCPastContentHandle getHandle(GCPast local, long expiration);
@@ -79,8 +78,8 @@ public interface GCPastContent extends PastContent {
    * Returns the metadata which should be stored with this object.  Allows applications
    * to add arbitrary items into the object's metadata.
    *
-   * @param The local GCPast service which the content is on.
-   * @return the handle
+   * @param expiration The expiration time of the object
+   * @return the metadata
    */
   public GCPastMetadata getMetadata(long expiration);
 

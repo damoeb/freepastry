@@ -56,8 +56,8 @@ public class ScheduledMessage extends TimerTask {
   /**
    * Constructor
    * 
-   * @param the
-   *          message
+   * @param pn the node the message is delivered to
+   * @param msg the message
    */
   public ScheduledMessage(PastryNode pn, Message msg) {
     localNode = pn;

@@ -63,8 +63,6 @@ public class LogSnippitTest {
     int hashSize = r.nextInt(100)+1;
 
     ArrayList<SnippetEntry> list = new ArrayList<SnippetEntry>(100);
-//    list.add(new SnippitEntry((byte)4,5L,false,new byte[117]));
-//    list.add(new SnippitEntry((byte)4,6L,false,new byte[253]));
     
     long seq = Math.abs(r.nextLong());
     for (int i = 0; i < 400; i++) {

@@ -42,8 +42,6 @@ import rice.*;
 import rice.p2p.commonapi.*;
 
 /**
- * @(#) ReplicationManagerClient.java
- *
  * This interface represents client of the replication manager, which is the
  * ultimate user of the replication.
  *
@@ -99,7 +97,7 @@ public interface ReplicationManagerClient {
    * somewhere in the overlay by the client.
    * 
    * @param id The id in question
-   * @return Whether or not the id exists somewhere in the overlay
+   * @param command Receives whether or not the id exists somewhere in the overlay
    */
   public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command);
   
@@ -107,7 +105,7 @@ public interface ReplicationManagerClient {
    * Asks a client to reinsert an object it already holds into the overlay
    * 
    * @param id The id in question
-   * @return 
+   * @param command Receives whether the reinsert succeeded
    */
   public void reInsert(Id id, Continuation<? super Boolean, Exception> command);
 }

@@ -44,7 +44,7 @@ import rice.p2p.glacier.VersionKey;
 import rice.p2p.util.MathUtils;
 
 /**
- * DESCRIBE THE CLASS
+ * The key of a Glacier fragment: the key of an object version plus the fragment number.
  *
  * @version $Id: FragmentKey.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author ahae
@@ -53,11 +53,11 @@ public class FragmentKey implements Id {
   public static final short TYPE = 42;
   
   /**
-   * DESCRIBE THE FIELD
+   * The key of the object version this fragment belongs to
    */
   protected VersionKey key;
   /**
-   * DESCRIBE THE FIELD
+   * The fragment number
    */
   protected int id;
   
@@ -66,8 +66,8 @@ public class FragmentKey implements Id {
   /**
    * Constructor for FragmentKey.
    *
-   * @param key DESCRIBE THE PARAMETER
-   * @param id DESCRIBE THE PARAMETER
+   * @param key the key of the object version
+   * @param id the fragment number
    */
   public FragmentKey(VersionKey key, int id) {
     this.id = id;
@@ -75,11 +75,12 @@ public class FragmentKey implements Id {
   }
 
   /**
-   * Gets the Between attribute of the FragmentKey object
+   * Not supported.
    *
-   * @param ccw DESCRIBE THE PARAMETER
-   * @param cw DESCRIBE THE PARAMETER
-   * @return The Between value
+   * @param ccw the counterclockwise end
+   * @param cw the clockwise end
+   * @return never returns
+   * @throws RuntimeException always
    */
   public boolean isBetween(Id ccw, Id cw) {
     throw new RuntimeException("FragmentKey.isBetween() is not supported!");
@@ -106,7 +107,7 @@ public class FragmentKey implements Id {
   /**
    * Gets the PeerKey attribute of the FragmentKey object
    *
-   * @param otherId DESCRIBE THE PARAMETER
+   * @param otherId the fragment number of the peer
    * @return The PeerKey value
    */
   public FragmentKey getPeerKey(int otherId) {
@@ -114,10 +115,10 @@ public class FragmentKey implements Id {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Determines equality
    *
-   * @param peer DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param peer the object to compare to
+   * @return whether the given object is an equal key
    */
   public boolean equals(Object peer) {
     if (!(peer instanceof FragmentKey)) {
@@ -129,9 +130,9 @@ public class FragmentKey implements Id {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns the byte[] value of this key
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return a byte[] representing this key
    */
   public byte[] toByteArray() {
     byte[] result = new byte[getByteArrayLength()];
@@ -144,7 +145,8 @@ public class FragmentKey implements Id {
   /**
    * Stores the byte[] value of this Id in the provided byte array
    *
-   * @return A byte[] representing this Id
+   * @param result the array to write to
+   * @param offset the offset in the array to start writing at
    */
   public void toByteArray(byte[] result, int offset) {
     key.toByteArray(result, offset);
@@ -161,68 +163,72 @@ public class FragmentKey implements Id {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns the full string form of this key
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the full string form
    */
   public String toStringFull() {
     return key.toStringFull() + "#" + id;
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns a short string form of this key
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the short string form
    */
   public String toString() {
     return key.toString() + "#" + id;
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Not supported.
    *
-   * @param nid DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param nid the other id
+   * @return never returns
+   * @throws RuntimeException always
    */
   public Distance longDistanceFromId(Id nid) {
     throw new RuntimeException("FragmentKey.longDistanceFromId() is not supported!");
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Not supported.
    *
-   * @param nid DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param nid the other id
+   * @return never returns
+   * @throws RuntimeException always
    */
   public Distance distanceFromId(Id nid) {
     throw new RuntimeException("FragmentKey.distanceFromId() is not supported!");
   }
 
   /**
-   * Adds a feature to the ToId attribute of the FragmentKey object
+   * Not supported.
    *
    * @param offset The feature to be added to the ToId attribute
-   * @return DESCRIBE THE RETURN VALUE
+   * @return never returns
+   * @throws RuntimeException always
    */
   public Id addToId(Distance offset) {
     throw new RuntimeException("FragmentKey.addToId() is not supported!");
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Not supported.
    *
-   * @param nid DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param nid the other id
+   * @return never returns
+   * @throws RuntimeException always
    */
   public boolean clockwise(Id nid) {
     throw new RuntimeException("FragmentKey.clockwise() is not supported!");
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Compares this key to another key of the same type
    *
-   * @param o DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param o the key to compare to
+   * @return a negative number, zero or a positive number as this key is less than, equal to or greater than o
    */
   public int compareTo(Id o) {
     int keyResult = key.compareTo(((FragmentKey) o).key);
@@ -241,9 +247,9 @@ public class FragmentKey implements Id {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Returns a hash code for this key
    *
-   * @return DESCRIBE THE RETURN VALUE
+   * @return the hash code
    */
   public int hashCode() {
     return (key.hashCode() + id);
@@ -257,7 +263,6 @@ public class FragmentKey implements Id {
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeInt(id);
     key.serialize(buf);
-//    throw new RuntimeException("FragmentKey.serialize() is not supported!");
   }
 
   public short getType() {

@@ -161,7 +161,6 @@ public class LRUCache implements Cache {
       return;
     }
     
-    //System.out.println("\nCaching object of size " + size + " with ID " + id + " num " + order.size());
     
     final Continuation<Boolean, Exception> store = new Continuation<Boolean, Exception>() {
       public void receiveResult(Boolean o) {
@@ -193,7 +192,7 @@ public class LRUCache implements Cache {
    * Returns <code>True</code> if the action succeeds, else
    * <code>False</code>  (through receiveResult on c).
    *
-   * @param pid The object's id
+   * @param id The object's id
    * @param c The command to run once the operation is complete
    */
   public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
@@ -218,9 +217,7 @@ public class LRUCache implements Cache {
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
-   * @param c The command to run once the operation is complete
-   * @return The object, or <code>null</code> if there is no cooresponding
-   * object (through receiveResult on c).
+   * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
   public void getObject(Id id, Continuation<? super Serializable, Exception> c) {
     if (! exists(id)) {
@@ -255,7 +252,7 @@ public class LRUCache implements Cache {
    *
    * @param id The id for the metadata 
    * @param metadata The metadata to store
-   * @param c The command to run once the operation is complete
+   * @param command The command to run once the operation is complete
    */
   public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> command) {
     storage.setMetadata(id, metadata, command);
@@ -332,11 +329,9 @@ public class LRUCache implements Cache {
   }
 
   /**
-   * Returns the maximum size of the cache, in bytes. The result
-   * is returned via the receiveResult method on the provided
-   * Continuation with an Integer representing the size.
+   * Returns the maximum size of the cache, in bytes.
    *
-   * @param c The command to run once the operation is complete
+   * @return The maximum size, in bytes, of the cache.
    */
   public long getMaximumSize() {
     return maximumSize;
@@ -352,11 +347,8 @@ public class LRUCache implements Cache {
   }
 
   /**
-   * Returns the total size of the stored data in bytes. The result
-   * is returned via the receiveResult method on the provided
-   * Continuation with an Integer representing the size.
+   * Returns the total size of the stored data in bytes.
    *
-   * @param c The command to run once the operation is complete
    * @return The total size, in bytes, of data stored.
    */
   public long getTotalSize() {
@@ -369,9 +361,7 @@ public class LRUCache implements Cache {
    * object being evicted from the cache.
    *
    * @param size The new maximum size, in bytes, of the cache.
-   * @param c The command to run once the operation is complete
-   * @return The success or failure of the setSize operation
-   * (through receiveResult on c).
+   * @param c The command to run once the operation is complete; receives the success or failure of the setSize operation
    */
   public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> c) {
     Continuation<Boolean, Exception> local = new Continuation<Boolean, Exception>() {

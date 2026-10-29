@@ -100,7 +100,7 @@ public class Moraine implements GCPast, VersioningPast {
         if (result == null) {
           oldPast.lookup(id, cache, new Continuation<PastContent, Exception>() {
             public void receiveResult(PastContent result) {
-              // XXX store the result in newPast
+              // TODO: store the result in newPast, so that objects migrate from oldPast
               command.receiveResult(result);
             }
 
@@ -114,7 +114,7 @@ public class Moraine implements GCPast, VersioningPast {
       }
 
       public void receiveException(Exception result) {
-        // XXX do we try the other Past?
+        // TODO: decide whether to fall back to oldPast when newPast fails
         command.receiveException(result);
       }
     });
@@ -149,7 +149,7 @@ public class Moraine implements GCPast, VersioningPast {
     newPast.fetch(handle, new Continuation<PastContent, Exception>() {
       public void receiveResult(PastContent result) {
         if (result == null) {
-          // XXX store the result of the fetch in the newPast
+          // TODO: store the result of the fetch in newPast, so that objects migrate from oldPast
           oldPast.fetch(handle, command);
         } else {
           command.receiveResult(result);
@@ -157,7 +157,7 @@ public class Moraine implements GCPast, VersioningPast {
       }
 
       public void receiveException(Exception result) {
-        // XXX do we try the other Past?
+        // TODO: decide whether to fall back to oldPast when newPast fails
         command.receiveException(result);
       }
     });
@@ -182,14 +182,12 @@ public class Moraine implements GCPast, VersioningPast {
   public void setContentDeserializer(PastContentDeserializer deserializer) {
     newPast.setContentDeserializer(deserializer);
     oldPast.setContentDeserializer(deserializer);
-    // XXX maybe force this on the members and just throw an UnsupportedOperationException
   }
 
   public void setContentHandleDeserializer(
       PastContentHandleDeserializer deserializer) {
     newPast.setContentHandleDeserializer(deserializer);
     oldPast.setContentHandleDeserializer(deserializer);
-    // XXX maybe force this on the members and just throw an UnsupportedOperationException
   }
 
   // --------------------------------------------------------------------------------
@@ -229,7 +227,7 @@ public class Moraine implements GCPast, VersioningPast {
         if (result == null) {
           vOldPast.lookup(id, version, new Continuation<PastContent, Exception>() {
             public void receiveResult(PastContent result) {
-              // XXX store the result in newPast
+              // TODO: store the result in newPast, so that objects migrate from oldPast
               command.receiveResult(result);
             }
 
@@ -243,7 +241,7 @@ public class Moraine implements GCPast, VersioningPast {
       }
 
       public void receiveException(Exception result) {
-        // XXX do we try the other Past?
+        // TODO: decide whether to fall back to oldPast when newPast fails
         command.receiveException(result);
       }
     });

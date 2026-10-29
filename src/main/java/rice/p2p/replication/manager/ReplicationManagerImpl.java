@@ -51,8 +51,6 @@ import rice.p2p.replication.*;
 import rice.p2p.replication.manager.messaging.*;
 
 /**
- * @(#) ReplicationManagerImpl.java
- *
  * This class is the default provided implementation of the replication manager
  * used.
  *
@@ -231,7 +229,6 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    * @param keySet set containing the keys that needs to be fetched
    */
   public void fetch(IdSet keySet, NodeHandle hint) {
-   // log.finer(endpoint.getId() + ": Adding keyset " + keySet + " to the list of pending ids");
     helper.fetch(keySet, hint);
   }
   
@@ -587,7 +584,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
     /**
      * Implementation of continuation
      *
-     * @param o The result
+     * @param e The exception
      */
     public synchronized void receiveException(Exception e) {
       if (logger.level <= Logger.SEVERE) logger.logException( "RMImpl.deleter Unstore of " + id + " caused exception '" + e + "'!", e);

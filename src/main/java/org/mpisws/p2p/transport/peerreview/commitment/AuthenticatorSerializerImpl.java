@@ -51,12 +51,6 @@ public class AuthenticatorSerializerImpl implements AuthenticatorSerializer {
   }
   
   public Authenticator deserialize(InputBuffer buf) throws IOException {
-//    long seq = buf.readLong();
-//    byte[] hash = new byte[hashLength];
-//    buf.read(hash);
-//    byte[] signature = new byte[signatureLength];
-//    buf.read(signature);
-//    
     return new Authenticator(buf,hashLength,signatureLength);
   }
 

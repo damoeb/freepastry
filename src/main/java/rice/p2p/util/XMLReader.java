@@ -40,7 +40,7 @@ package rice.p2p.util;
 import java.io.*;
 
 /**
- * XMLReader is a utility class used by XMLObjectInputStreamm to perform the actual
+ * XMLReader is a utility class used by XMLObjectInputStream to perform the actual
  * XML parsing.  This reader uses XMLParser, a small pull parser modelled on the XML
  * Pull-Parsing API (http://www.xmlpull.org), which reads the format XMLWriter writes.
  *
@@ -89,9 +89,10 @@ public class XMLReader {
   }
   
   /**
-   * Method which writes a sequence of base64 encoded bytes to the output stream
+   * Method which reads a base64 tag and returns the decoded bytes
    *
-   * @param bytes The bytes to write
+   * @return The decoded bytes
+   * @throws IOException if the next element is not a base64 tag
    */
   public byte[] readBase64() throws IOException {
     byte[] bytes = new byte[0];

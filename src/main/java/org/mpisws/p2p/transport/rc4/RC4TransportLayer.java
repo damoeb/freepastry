@@ -83,7 +83,7 @@ import rice.pastry.commonapi.PastryIdFactory;
  * 
  * E.G:
  *   A -> B: 14  // I propose 14
- *   B -> A: 14  // I agree to 14, in this case an evesdropper could determine whether or not B agreed with A, which is a leak of info
+ *   B -> A: 14  // I agree to 14, in this case an eavesdropper could determine whether or not B agreed with A, which is a leak of info
  * 
  * Here's the Seed protocol we use:
  * 
@@ -100,15 +100,7 @@ import rice.pastry.commonapi.PastryIdFactory;
  * @param <MsgType>
  */
 public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Identifier,MsgType>, TransportLayerCallback<Identifier, MsgType> {
-  /**
-   * Default 1
-   * 1 = encrypt
-   * 0 = don't encrypt
-   * 
-   * Need to implemet this before we add it to the API
-   */
-//  public static final String ENCRYPT_SOCKET = "encrypt_socket";
-  
+
   protected TransportLayer<Identifier,MsgType> tl;
   protected TransportLayerCallback<Identifier, MsgType> callback;
   
@@ -139,13 +131,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
     this.logger=env.getLogManager().getLogger(RC4TransportLayer.class, null);
     this.random = random;
     this.errorHandler = errorHandler;
-//    try {
       md = MessageDigest.getInstance("SHA");
-//    } catch ( NoSuchAlgorithmException e ) {
-//      Logger logger = env.getLogManager().getLogger(getClass(), null);
-//      if (logger.level <= Logger.SEVERE) logger.log(
-//        "No SHA support!" );
-//    }
 
   }
   
@@ -164,13 +150,8 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
   public SocketRequestHandle<Identifier> openSocket(final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     
-    // this allows suppression of the encryption, but no notification of whether it should/shouldn't be encrypted, so you have to 
-    // predetermine this...  maybe this isn't possible?
-    // TODO: Send a byte wheter this is encrypted or not, and record this on the other end
-//    if (options != null && options.containsKey(ENCRYPT_SOCKET) && ((Integer)options.get(ENCRYPT_SOCKET) == 0)) {
-//      // don't encrypt the socket
-//      return tl.openSocket(i, deliverSocketToMe, options);
-//    }
+    // Every socket is encrypted. A per-socket option to turn encryption off would need the other end to learn that the socket is unencrypted.
+    // TODO: send a byte saying whether the socket is encrypted and honor it on the accepting end, so encryption can be turned off per socket
     
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
     
@@ -414,7 +395,6 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
   }
 
   public void destroy() {
-    // TODO Auto-generated method stub
     
   }
 

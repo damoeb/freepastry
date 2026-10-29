@@ -46,7 +46,7 @@ import rice.pastry.Id;
 import java.util.SortedMap;
 
 /**
- * DESCRIBE THE CLASS
+ * Builds FragmentKeys, and ranges and sets of them, on top of a MultiringIdFactory.
  *
  * @version $Id: FragmentKeyFactory.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author ahae
@@ -58,38 +58,40 @@ public class FragmentKeyFactory implements IdFactory {
   /**
    * Constructor for FragmentKeyFactory.
    *
-   * @param factory DESCRIBE THE PARAMETER
+   * @param factory the factory used to build the underlying ids
    */
   public FragmentKeyFactory(MultiringIdFactory factory) {
     FACTORY = factory;
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Not supported.
    *
-   * @param material DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param material the raw id material
+   * @return never returns
+   * @throws RuntimeException always
    */
   public rice.p2p.commonapi.Id buildId(byte[] material) {
     throw new RuntimeException("FragmentKeyFactory.buildId(byte[]) is not supported!");
   }
 
   /**
-   * Builds a protocol-specific Id given the source data.
+   * Not supported.
    *
    * @param material The material to use
-   * @return The built Id.
+   * @return never returns
+   * @throws RuntimeException always
    */
   public rice.p2p.commonapi.Id buildId(int[] material) {
     throw new RuntimeException("FragmentKeyFactory.buildId(byte[]) is not supported!");
   }
 
   /**
-   * Builds a protocol-specific Id by using the hash of the given string as
-   * source data.
+   * Not supported.
    *
    * @param string The string to use as source data
-   * @return The built Id.
+   * @return never returns
+   * @throws RuntimeException always
    */
   public rice.p2p.commonapi.Id buildId(String string) {
     throw new RuntimeException("FragmentKeyFactory.buildId(String) is not supported!");
@@ -110,10 +112,10 @@ public class FragmentKeyFactory implements IdFactory {
   }
 
   /**
-   * DESCRIBE THE METHOD
+   * Builds a key from its toString() form
    *
-   * @param string DESCRIBE THE PARAMETER
-   * @return DESCRIBE THE RETURN VALUE
+   * @param string the string form
+   * @return the key
    */
   public rice.p2p.commonapi.Id buildIdFromToString(String string) {
     StringTokenizer stok = new StringTokenizer(string, "(,) :v#");
@@ -135,21 +137,23 @@ public class FragmentKeyFactory implements IdFactory {
   }
 
   /**
-   * Builds a protocol-specific Id.Distance given the source data.
+   * Not supported.
    *
    * @param material The material to use
-   * @return The built Id.Distance.
+   * @return never returns
+   * @throws RuntimeException always
    */
   public rice.p2p.commonapi.Id.Distance buildIdDistance(byte[] material) {
     throw new RuntimeException("FragmentKeyFactory.buildIdDistance() is not supported!");
   }
 
   /**
-   * Creates an IdRange given the CW and CCW ids.
+   * Not supported.
    *
    * @param cw The clockwise Id
    * @param ccw The counterclockwise Id
-   * @return An IdRange with the appropriate delimiters.
+   * @return never returns
+   * @throws RuntimeException always
    */
   public IdRange buildIdRange(rice.p2p.commonapi.Id cw, rice.p2p.commonapi.Id ccw) {
     throw new RuntimeException("FragmentKeyFactory.buildIdRange() is not supported!");
@@ -187,9 +191,10 @@ public class FragmentKeyFactory implements IdFactory {
   }
 
   /**
-   * Creates an empty NodeHandleSet.
+   * Not supported.
    *
-   * @return an empty NodeHandleSet
+   * @return never returns
+   * @throws RuntimeException always
    */
   public NodeHandleSet buildNodeHandleSet() {
     throw new RuntimeException("FragmentKeyFactory.buildNodeHandleSet() is not supported!");

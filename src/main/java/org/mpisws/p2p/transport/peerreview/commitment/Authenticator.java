@@ -57,7 +57,6 @@ public class Authenticator implements Comparable<Authenticator> {
     this.hash = hash;
     this.signature = signature;
     hashCode = (int)(seq ^ (seq >>> 32))^Arrays.hashCode(hash)^Arrays.hashCode(signature);
-//    System.out.println("Auth:"+this);
   }
   
   public ByteBuffer getPartToHashThenSign() {

@@ -162,9 +162,6 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     BLS_THROTTLE = p.getInt("pastry_protocol_periodicLeafSet_request_lease_throttle");// 10 seconds
     this.lastTimeRenewedLease = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), LEASE_PERIOD*2);
 
-    // Removed after meeting on 5/5/2005 Don't know if this is always the
-    // appropriate policy.
-    // leafSet.addObserver(this);
     pingNeighborMessage = localNode.scheduleMsgAtFixedRate(
         new InitiatePingNeighbor(), PING_NEIGHBOR_PERIOD, PING_NEIGHBOR_PERIOD);
   }
@@ -205,7 +202,6 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         leafSet.merge(bls.leafSet(), bls.from(), routeTable, false,
             null);
 
-        // localNode.setReady();
         broadcastAll();
       } else {
         // first check for missing entries in their leafset
@@ -258,11 +254,11 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         }
       }
       
-      // I don't like that we're sending the message after setting lastTimeRenewedLease, becuase there
+      // I don't like that we're sending the message after setting lastTimeRenewedLease, because there
       // could be a delay between here and above, but this should still be fine, because with
       // the assumption that the clocks are both advancing normally, we still should not get inconsistency
       // because the other node will stop receiving 30 seconds after he requested the lease, and we
-      // wont receive until 30 seconds after the lastTimeRenewedLease.put() above
+      // won't receive until 30 seconds after the lastTimeRenewedLease.put() above
       thePastryNode.send(rls.returnHandle(),
           new BroadcastLeafSet(localHandle, leafSet, BroadcastLeafSet.Update, rls.getTimeStamp()),null, options);
       
@@ -300,7 +296,6 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   /**
    * Broadcast the leaf set to all members of the local leaf set.
    * 
-   * @param type the type of broadcast message used
    */
   protected void broadcastAll() {
     BroadcastLeafSet bls = new BroadcastLeafSet(localHandle, leafSet,
@@ -339,31 +334,6 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   NodeHandle lastLeft;
   NodeHandle lastRight;
   public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
-//    if ((!added) && (
-//      handle == lastLeft ||
-//      handle == lastRight
-//      )) {
-//      // check to see if we have an existing lease
-//      long curTime = localNode.getEnvironment().getTimeSource().currentTimeMillis();
-//      long leaseOffset = curTime-LEASE_PERIOD;
-//
-//      Long time = (Long)lastTimeRenewedLease.get(handle);
-//      if (time != null
-//          && (time.longValue() >= leaseOffset)) {
-//        // we gave out a lease too recently
-//        TimerTask deadLease = 
-//        new TimerTask() {        
-//          public void run() {
-//            deadLeases.remove(this);
-//            isReady();            
-//          }        
-//        };
-//        deadLeases.add(deadLease);
-//        localNode.getEnvironment().getSelectorManager().getTimer().schedule(deadLease,
-//            time.longValue()-leaseOffset);
-//        isReady();
-//      }      
-//    }
     NodeHandle newLeft = leafSet.get(-1);
     if (newLeft != null && (lastLeft != newLeft)) {
       lastLeft = newLeft;
@@ -393,20 +363,13 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   public boolean isReady() {
     // check to see if we've heard from the left/right neighbors recently enough
     boolean shouldBeReady = shouldBeReady(); // temp
-//    if (!shouldBeReady) {      
-//      // I suspect this is unnecessary because this timer should be well underway of sorting this out
-//      receiveMessage(new InitiatePingNeighbor());
-//    }
     
     if (shouldBeReady != ready) {
       thePastryNode.setReady(shouldBeReady); // will call back in to setReady() and notify the observers
     }
     
-//    logger.log("isReady() = "+shouldBeReady);
     return shouldBeReady;
   }
-  
-//  HashSet deadLeases = new HashSet();
   
   public boolean shouldBeReady() {
     
@@ -428,7 +391,6 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       sendBLS(right, true); 
     }
     
-//    if (deadLeases.size() > 0) return false;
     return ret;
   }
   
@@ -489,27 +451,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   Map<NodeHandle, Long> lastTimeRenewedLease;
   
   /**
-   * Used to kill self if leafset shrunk by too much. NOTE: PLSP is not
-   * registered as an observer.
-   * 
-   */
-  // public void update(Observable arg0, Object arg1) {
-  // NodeSetUpdate nsu = (NodeSetUpdate)arg1;
-  // if (!nsu.wasAdded()) {
-  // if (localNode.isReady() && !leafSet.isComplete() && leafSet.size() <
-  // (leafSet.maxSize()/2)) {
-  // // kill self
-  // localNode.getEnvironment().getLogManager().getLogger(PeriodicLeafSetProtocol.class,
-  // null).log(Logger.SEVERE,
-  // "PeriodicLeafSetProtocol:
-  // "+localNode.getEnvironment().getTimeSource().currentTimeMillis()+" Killing
-  // self due to leafset collapse. "+leafSet);
-  // localNode.resign();
-  // }
-  // }
-  // }
-  /**
-   * Should not be called becasue we are overriding the receiveMessage()
+   * Should not be called because we are overriding the receiveMessage()
    * interface anyway.
    */
   public void messageForAppl(Message msg) {
@@ -536,17 +478,14 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     lastTimeReceivedBLS.clear();
     lastTimeRenewedLease.clear();
     lastTimeSentBLS.clear();
-//    deadLeases.clear();
   }
 
   @Override
   public void leafSetChange(NodeHandle nh, boolean wasAdded) {
     super.leafSetChange(nh, wasAdded);
-//    logger.log("leafSetChange("+nh+","+wasAdded+")");
     if (wasAdded) {
       nh.addNodeHandleListener(this, 50); 
       if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
-        // nh.checkLiveness(); // this is done in all of the calling code (in this Protocol)
         removeFromLeafsetIfPossible(nh); 
       }
     } else {
@@ -560,7 +499,6 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    */
   public void nodeHandleUpdate(final rice.p2p.commonapi.NodeHandle o, final Object arg) {
     if (destroyed) return;
-//    logger.log("update("+o+","+arg+")");
     if (o instanceof NodeHandle) {      
       if (arg == NodeHandle.DECLARED_DEAD) {
         removeFromLeafsetIfPossible((NodeHandle)o);
@@ -603,7 +541,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       long now = timeSource.currentTimeMillis();
       if (leaseExpiration > now) {
         if (logger.level <= Logger.INFO) logger.log("Removing "+nh+" from leafset later."+(leaseExpiration-now));
-        // remove it later when lease expries
+        // remove it later when lease expires
         thePastryNode.getEnvironment().getSelectorManager().getTimer().schedule(new TimerTask() {          
           @Override
           public void run() {

@@ -80,16 +80,6 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   // largest message size than can be sent via UDP
   public int DATAGRAM_SEND_BUFFER_SIZE;
   
-  /**
-   * We always send this, and only pass up messages that match this.
-   * 
-   * If the message doesn't match this, then we call the error handler.
-   * 
-   * Usually a magic number/version
-   * 
-   * TODO: Extend this to accept different versions, perhaps have a different layer-callback/version
-   */
-  
   List<Envelope> pendingMsgs;
   
   WireTransportLayerImpl wire;
@@ -109,7 +99,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    * The ack is not the end to end, it's called when actually sent
    * 
    * @param destination
-   * @param m
+   * @param msg
    * @param deliverAckToMe ack is when the message is sent to the wire
    */
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
@@ -117,25 +107,18 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
       ByteBuffer msg,
       MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe, 
       Map<String, Object> options) {
-    //logger.log("sendMessage("+destination+","+msg+","+deliverAckToMe+")"); 
     Envelope envelope;
     if (logger.level <= Logger.FINER-3) logger.log("sendMessage("+destination+","+msg+","+deliverAckToMe+")"); 
-//    try {
     envelope = new Envelope(destination, msg, deliverAckToMe, options);
       synchronized (pendingMsgs) {        
         pendingMsgs.add(envelope);
       }
 
       wire.environment.getSelectorManager().modifyKey(key);
-//    } catch (IOException e) {
-//      if (logger.level <= Logger.SEVERE) logger.log(
-//          "ERROR: Received exceptoin " + e + " while enqueuing ping " + msg);
-//    }
       return envelope;
   }
 
   protected void openServerSocket() throws IOException {
-//    logger.log("openServerSocket("+wire.bindAddress+")");
     Parameters p = wire.environment.getParameters();
     DATAGRAM_RECEIVE_BUFFER_SIZE = p.getInt("transport_wire_datagram_receive_buffer_size");
     DATAGRAM_SEND_BUFFER_SIZE = p.getInt("transport_wire_datagram_send_buffer_size");
@@ -206,12 +189,11 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   
   /**
-   * DESCRIBE THE METHOD
+   * Reads all pending datagrams from the channel and passes them up.
    *
-   * @param key DESCRIBE THE PARAMETER
+   * @param key the selection key of the channel
    */
   public void read(SelectionKey key) {
-//    logger.log("read");
 
     try {
       InetSocketAddress address = null;
@@ -224,34 +206,18 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
           readBuffer.clear();
         } else {
           if (logger.level <= Logger.INFO) logger.log(
-            "(PM) Read from datagram channel, but no bytes were there - no bad, but wierd.");
+            "(PM) Read from datagram channel, but no bytes were there - not bad, but weird.");
           break;
         }
       }
     } catch (IOException e) {
       wire.errorHandler.receivedException(null, e);
-//      if (logger.level <= Logger.WARNING) logger.logException(
-//          "ERROR (datagrammanager:read): ", e);
     } finally {
       readBuffer.clear();
     }
   }
 
   protected void readHeader(InetSocketAddress address) throws IOException {
-    // see if we have the header
-//    if (readBuffer.remaining() < wire.HEADER.length) {
-//      byte[] remaining = new byte[readBuffer.remaining()];      
-//      readBuffer.get(remaining);
-//      wire.errorHandler.receivedUnexpectedData(address, remaining);
-//      return;
-//    }
-    // get the header
-//    byte[] header = new byte[wire.HEADER.length];
-//    readBuffer.get(header, 0, wire.HEADER.length);
-//    if (!Arrays.equals(header, wire.HEADER)) {
-//      wire.errorHandler.receivedUnexpectedData(address, header);      
-//      return;
-//    }
     if (logger.level <= Logger.FINE) 
       logger.log("readHeader("+address+","+readBuffer.remaining()+")");
     byte[] remaining = new byte[readBuffer.remaining()];      
@@ -261,12 +227,11 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   
 
   /**
-   * DESCRIBE THE METHOD
+   * Sends pending datagrams until the channel would block.
    *
-   * @param key DESCRIBE THE PARAMETER
+   * @param key the selection key of the channel
    */
   public void write(SelectionKey key) {
-//    logger.log("write");
     Envelope write = null;
     
     try {
@@ -276,17 +241,12 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
         while (i.hasNext()) {
           write = i.next();          
           try {            
-//            byte[] whole_msg = new byte[wire.HEADER.length+write.msg.remaining()];
-//            System.arraycopy(wire.HEADER, 0, whole_msg, 0, wire.HEADER.length);
-//            write.msg.get(whole_msg, wire.HEADER.length, write.msg.remaining());
-//            ByteBuffer buf = ByteBuffer.wrap(whole_msg);
 
             int len = write.msg.remaining();
             if (logger.level <= Logger.FINE) {
               logger.log("writing "+len+" to "+write.destination);
             }
             if (channel.send(write.msg, write.destination) == len) {
-//              wire.msgSent(write.destination, whole_msg, WireTransportLayer.TRANSPORT_TYPE_DATAGRAM);
               if (write.continuation != null) write.continuation.ack(write);
               i.remove();              
             } else {
@@ -299,18 +259,12 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
               write.continuation.sendFailed(write, e);
             }
             i.remove();
-            //throw e;
             return; // to get another call to write() later
           }
         }
       }
     } catch (Exception e) {
       if (logger.level <= Logger.WARNING) {
-        // This code prevents this line from filling up logs during some kinds of network outages
-        // it makes this error only be printed 1ce/second
-//        long now = timeSource.currentTimeMillis();
-//        if (lastTimePrinted+1000 > now) return;
-//        lastTimePrinted = now;
         
         logger.logException(
           "ERROR (datagrammanager:write) to " + write.destination, e);
@@ -324,9 +278,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   long lastTimePrinted = 0;
   
   /**
-   * DESCRIBE THE METHOD
+   * Registers write interest while there are pending datagrams.
    *
-   * @param key DESCRIBE THE PARAMETER
+   * @param key the selection key of the channel
    */
   public void modifyKey(SelectionKey key) {
     synchronized (pendingMsgs) {
@@ -352,8 +306,10 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     /**
      * Constructor for Envelope.
      *
-     * @param adr DESCRIBE THE PARAMETER
-     * @param m DESCRIBE THE PARAMETER
+     * @param destination
+     * @param msg
+     * @param deliverAckToMe notified when the datagram was written to the wire
+     * @param options
      */
     public Envelope(InetSocketAddress destination, 
         ByteBuffer msg,
@@ -367,7 +323,6 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
     public boolean cancel() {
       if (pendingMsgs.remove(this)) {
-//      continuation.receiveResult(msg); // do we want to do this?
         return true;
       }      
       return false;
@@ -390,7 +345,6 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     Runnable r = new Runnable(){    
       public void run() { 
         try {
-//          logger.logException("destroy", new Exception("stack trace"));
           if (logger.level <= Logger.INFO) logger.log("destroy(): "+channel);
           if (key != null) {
             if (key.channel() != null)
