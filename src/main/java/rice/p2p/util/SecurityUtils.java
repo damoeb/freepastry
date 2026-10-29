@@ -54,6 +54,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
@@ -63,7 +64,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.crypto.BadPaddingException;
@@ -117,7 +117,7 @@ public class SecurityUtils {
   public final static int SYMMETRIC_KEY_LENGTH = 56;
 
   /**
-   * The length of the symmetric keys
+   * The length of the symmetric initialization vectors, in bits
    */
   public final static int SYMMETRIC_IV_LENGTH = 64;
 
@@ -225,7 +225,7 @@ public class SecurityUtils {
   /**
    * The RNG for generating DES IVs
    */
-  private static Random random;
+  private static final SecureRandom random = new SecureRandom();
 
   // ----- STATIC BLOCK TO INITIALIZE THE KEY GENERATORS -----
 
@@ -234,7 +234,6 @@ public class SecurityUtils {
     Security.insertProviderAt(new org.bouncycastle.jce.provider.BouncyCastleProvider(), 2);
 
     try {
-      random = new Random();
       cipherSymmetric = Cipher.getInstance(SYMMETRIC_ALGORITHM);
       cipherAsymmetric = Cipher.getInstance(ASYMMETRIC_ALGORITHM, "BC");
       deprecatedCipherAsymmetric = Cipher.getInstance(DEPRECATED_ASYMMETRIC_ALGORITHM);
@@ -350,15 +349,16 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method for encrypting a block of data with symmetric encryption.
+   * Utility method for encrypting a block of data with symmetric encryption, under a fresh random
+   * initialization vector.  {@link #decryptSymmetric(byte[], byte[])} reverses it.
    *
    * @param data The data
    * @param key The key
-   * @return The ciphertext
+   * @return The initialization vector, followed by the ciphertext
    * @exception SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptSymmetric(byte[] data, byte[] key) throws SecurityException {
-    return encryptSymmetric(data, key, new byte[SYMMETRIC_IV_LENGTH]);
+    return encryptSymmetric(data, key, 0, data.length);
   }
 
   /**
@@ -375,17 +375,23 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method for encrypting a block of data with symmetric encryption.
+   * Utility method for encrypting a block of data with symmetric encryption, under a fresh random
+   * initialization vector.  {@link #decryptSymmetric(byte[], byte[])} reverses it.
    *
    * @param data The data
    * @param key The key
    * @param offset The offset into the data
    * @param length The length of data to write
-   * @return The ciphertext
+   * @return The initialization vector, followed by the ciphertext
    * @exception SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length) throws SecurityException {
-    return encryptSymmetric(data, key, offset, length, new byte[SYMMETRIC_IV_LENGTH]);
+    byte[] iv = generateIVSymmetric();
+    byte[] cipher = encryptSymmetric(data, key, offset, length, iv);
+    byte[] result = new byte[iv.length + cipher.length];
+    System.arraycopy(iv, 0, result, 0, iv.length);
+    System.arraycopy(cipher, 0, result, iv.length, cipher.length);
+    return result;
   }
 
   /**
@@ -424,13 +430,19 @@ public class SecurityUtils {
   /**
    * Utility method for decrypting some data with symmetric encryption.
    *
-   * @param data The data to decrypt
+   * @param data The initialization vector, followed by the ciphertext, as written by
+   *          {@link #encryptSymmetric(byte[], byte[])}
    * @param key The key
    * @return The decrypted data
    * @exception SecurityException If the decryption does not happen properly
    */
   public static byte[] decryptSymmetric(byte[] data, byte[] key) throws SecurityException {
-    return decryptSymmetric(data, key, new byte[SYMMETRIC_IV_LENGTH]);
+    int ivLength = SYMMETRIC_IV_LENGTH/8;
+    if (data.length < ivLength) {
+      throw new SecurityException("Ciphertext of " + data.length + " bytes is shorter than the initialization vector");
+    }
+    byte[] iv = Arrays.copyOfRange(data, 0, ivLength);
+    return decryptSymmetric(data, ivLength, data.length - ivLength, key, iv);
   }
 
  /**
@@ -443,6 +455,10 @@ public class SecurityUtils {
    * @exception SecurityException If the decryption does not happen properly
    */
   public static byte[] decryptSymmetric(byte[] data, byte[] key, byte[] iv) throws SecurityException {
+    return decryptSymmetric(data, 0, data.length, key, iv);
+  }
+
+  private static byte[] decryptSymmetric(byte[] data, int offset, int length, byte[] key, byte[] iv) throws SecurityException {
     try {
       iv = correctLength(iv, SYMMETRIC_IV_LENGTH/8);
       IvParameterSpec ivSpec = new IvParameterSpec(iv);
@@ -451,7 +467,7 @@ public class SecurityUtils {
       synchronized (cipherSymmetric) {
         cipherSymmetric.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
 
-        return cipherSymmetric.doFinal(data);
+        return cipherSymmetric.doFinal(data, offset, length);
       }
     } catch (InvalidKeyException e) {
       throw new SecurityException("InvalidKeyException decrypting object: " + e);
@@ -686,7 +702,7 @@ public class SecurityUtils {
    * @return A new, random DES initialization vector
    */
   public static byte[] generateIVSymmetric() {
-    byte[] result = new byte[SYMMETRIC_IV_LENGTH];
+    byte[] result = new byte[SYMMETRIC_IV_LENGTH/8];
     random.nextBytes(result);
 
     return result;
