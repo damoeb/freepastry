@@ -594,7 +594,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     IdRange rprev = null;
     try {
       rprev = range(n, r-1);
-    } catch (LSRangeCannotBeDeterminedException rcbde) {
+    } catch (LSRangeCannotBeDeterminedException ignored) {
       // keeps previous functionality now that we are throwing rcbde rather than returning null
     }
     if (rr == null || rprev == null) return rr;

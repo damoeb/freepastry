@@ -382,7 +382,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           }
           key.cancel();
         }
-      } catch (ClosedSelectorException cse) {
+      } catch (ClosedSelectorException ignored) {
         // already closed
       }
 

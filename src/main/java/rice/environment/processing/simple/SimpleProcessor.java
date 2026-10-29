@@ -132,7 +132,7 @@ public class SimpleProcessor implements Processor {
     // block the processor for 1 second while we schedule some more stuff
     p.process(new Executable<Object, Exception>() {
       public Object execute() {
-        try { Thread.sleep(1000); } catch (InterruptedException ie) {}
+        try { Thread.sleep(1000); } catch (InterruptedException ignored) {} // only delays the demo
         return null;
       }
 

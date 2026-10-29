@@ -1339,7 +1339,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
       } else {
         readObjectHelper();
       }
-    } catch (IllegalAccessException e) {
+    } catch (IllegalAccessException ignored) {
       // skip IAE, which is very likely caused by setting a final field on < JVM 1.5
     } catch (IllegalArgumentException e) {
       LOG.error("Could not set field {} of {} - skipping. This should not happen!", field, o.getClass().getName(), e);

@@ -85,7 +85,7 @@ public class SimpleRandomSource implements RandomSource {
           i <<= (ctr*8);
           time ^= i;
         }
-      } catch (Exception e) {
+      } catch (Exception ignored) {
         // if there is no NIC, screw it, this is really unlikely anyway
       }
       init(time, manager, instance);

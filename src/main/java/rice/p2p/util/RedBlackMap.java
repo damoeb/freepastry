@@ -151,8 +151,8 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         comparator = m.comparator();
         try {
             buildFromSorted(m.size(), m.entrySet().iterator(), null, null);
-        } catch (java.io.IOException cannotHappen) {
-        } catch (ClassNotFoundException cannotHappen) {
+        } catch (java.io.IOException | ClassNotFoundException ignored) {
+            // no stream is passed, so buildFromSorted cannot throw these
         }
     }
 
@@ -301,8 +301,8 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
               try {
                   buildFromSorted(mapSize, map.entrySet().iterator(),
                                   null, null);
-              } catch (java.io.IOException cannotHappen) {
-              } catch (ClassNotFoundException cannotHappen) {
+              } catch (java.io.IOException | ClassNotFoundException ignored) {
+                  // no stream is passed, so buildFromSorted cannot throw these
               }
               return;
             }
@@ -537,8 +537,8 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         // Initialize clone with our mappings
         try {
             clone.buildFromSorted(size, entrySet().iterator(), null, null);
-        } catch (java.io.IOException cannotHappen) {
-        } catch (ClassNotFoundException cannotHappen) {
+        } catch (java.io.IOException | ClassNotFoundException ignored) {
+            // no stream is passed, so buildFromSorted cannot throw these
         }
 
         return clone;
@@ -1715,8 +1715,8 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
     void addAllForTreeSet(SortedSet<? extends K> set, V defaultVal) {
       try {
           buildFromSorted(set.size(), set.iterator(), null, defaultVal);
-      } catch (java.io.IOException cannotHappen) {
-      } catch (ClassNotFoundException cannotHappen) {
+      } catch (java.io.IOException | ClassNotFoundException ignored) {
+          // no stream is passed, so buildFromSorted cannot throw these
       }
     }
 

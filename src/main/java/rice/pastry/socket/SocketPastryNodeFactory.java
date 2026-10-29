@@ -243,14 +243,15 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           throw new IllegalStateException("Cannot bind to "+localAddress+":"+port,e2);
         }
       } finally {
+        // best-effort cleanup of the probe sockets, the bind result is already known
         try {
           if (test2 != null)
             test2.close();
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
         try {
           if (temp != null)
             temp.close();
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
       }
       }
     }

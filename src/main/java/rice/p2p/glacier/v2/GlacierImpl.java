@@ -1626,6 +1626,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           try {
             md = MessageDigest.getInstance("SHA");
           } catch (NoSuchAlgorithmException e) {
+            logger.error("SHA digest unavailable", e);
           }
 
           md.reset();
@@ -1718,6 +1719,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             try {
               md = MessageDigest.getInstance("SHA");
             } catch (NoSuchAlgorithmException e) {
+              logger.error("SHA digest unavailable", e);
             }
 
             md.reset();

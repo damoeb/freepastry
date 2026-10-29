@@ -278,7 +278,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
                 }
               });
             }
-          } catch (RangeCannotBeDeterminedException re) {
+          } catch (RangeCannotBeDeterminedException ignored) {
             // not an error 99.99% of the time, since we're probably just at one end of the range
           }
         }

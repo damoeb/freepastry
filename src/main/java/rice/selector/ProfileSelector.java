@@ -97,7 +97,8 @@ public class ProfileSelector extends SelectorManager {
           System.out.println("LastTask: type:"+lastTaskType+" class:"+lastTaskClass+" toString():"+lastTaskToString+" hash:"+lastTaskHash);
           try {
             Thread.sleep(lastTaskTime);
-          } catch (InterruptedException ie) {
+          } catch (InterruptedException ignored) {
+            // this watchdog runs until the JVM exits, so just keep printing
           }
         }
       }

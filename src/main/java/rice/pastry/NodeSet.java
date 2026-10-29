@@ -211,7 +211,8 @@ public class NodeSet implements NodeSetI, Serializable {
         h = (NodeHandle) set.elementAt(i);
         if (h.equals(nh))
           return i;
-      } catch (Exception e) {
+      } catch (Exception ignored) {
+        // an entry that cannot be compared is not a match
       }
     }
 
@@ -226,7 +227,8 @@ public class NodeSet implements NodeSetI, Serializable {
         h = (NodeHandle) set.elementAt(i);
         if (h.getNodeId().equals(nid))
           return i;
-      } catch (Exception e) {
+      } catch (Exception ignored) {
+        // an entry that cannot be compared is not a match
       }
     }
 

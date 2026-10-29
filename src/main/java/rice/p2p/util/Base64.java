@@ -418,10 +418,11 @@ public class Base64
         }   // end catch
         finally
         {
-            try{ oos.close();   } catch( Exception e ){}
-            try{ gzos.close();  } catch( Exception e ){}
-            try{ b64os.close(); } catch( Exception e ){}
-            try{ baos.close();  } catch( Exception e ){}
+            // best-effort close; a stream is null if an earlier one failed to open
+            try{ oos.close();   } catch( Exception ignored ){}
+            try{ gzos.close();  } catch( Exception ignored ){}
+            try{ b64os.close(); } catch( Exception ignored ){}
+            try{ baos.close();  } catch( Exception ignored ){}
         }   // end finally
 
         // Return value according to relevant encoding.
@@ -547,9 +548,10 @@ public class Base64
             }   // end catch
             finally
             {
-                try{ gzos.close();  } catch( Exception e ){}
-                try{ b64os.close(); } catch( Exception e ){}
-                try{ baos.close();  } catch( Exception e ){}
+                // best-effort close; a stream is null if an earlier one failed to open
+                try{ gzos.close();  } catch( Exception ignored ){}
+                try{ b64os.close(); } catch( Exception ignored ){}
+                try{ baos.close();  } catch( Exception ignored ){}
             }   // end finally
 
             // Return value according to relevant encoding.
@@ -830,15 +832,16 @@ public class Base64
                     bytes = baos.toByteArray();
 
                 }   // end try
-                catch( java.io.IOException e )
+                catch( java.io.IOException ignored )
                 {
                     // Just return originally-decoded bytes
                 }   // end catch
                 finally
                 {
-                    try{ baos.close(); } catch( Exception e ){}
-                    try{ gzis.close(); } catch( Exception e ){}
-                    try{ bais.close(); } catch( Exception e ){}
+                    // best-effort close; a stream is null if an earlier one failed to open
+                    try{ baos.close(); } catch( Exception ignored ){}
+                    try{ gzis.close(); } catch( Exception ignored ){}
+                    try{ bais.close(); } catch( Exception ignored ){}
                 }   // end finally
 
             }   // end if: gzipped
@@ -888,8 +891,9 @@ public class Base64
         }   // end catch
         finally
         {
-            try{ bais.close(); } catch( Exception e ){}
-            try{ ois.close();  } catch( Exception e ){}
+            // best-effort close; a stream is null if an earlier one failed to open
+            try{ bais.close(); } catch( Exception ignored ){}
+            try{ ois.close();  } catch( Exception ignored ){}
         }   // end finally
 
         return obj;

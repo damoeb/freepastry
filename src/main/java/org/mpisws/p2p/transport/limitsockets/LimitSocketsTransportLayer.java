@@ -173,7 +173,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
         public void run() {
           try {
             close();
-          } catch (Exception ioe) {
+          } catch (Exception ignored) {
             // do nothing, it's probably already closed anyway
           }
         }

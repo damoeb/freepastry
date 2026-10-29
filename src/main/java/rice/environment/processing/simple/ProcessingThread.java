@@ -63,7 +63,7 @@ public class ProcessingThread extends Thread {
         ProcessingRequest<?, ?> e = queue.take();
         if (e != null)
           e.run();
-      } catch (java.lang.InterruptedException ie) {
+      } catch (java.lang.InterruptedException ignored) {
         // do nothing: destroy() interrupts the thread to stop it
       }
     }
