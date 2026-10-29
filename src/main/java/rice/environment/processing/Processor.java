@@ -39,7 +39,9 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing;
 
-import rice.*;
+import rice.Continuation;
+import rice.Destructable;
+import rice.Executable;
 import rice.environment.logging.LogManager;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Cancellable;

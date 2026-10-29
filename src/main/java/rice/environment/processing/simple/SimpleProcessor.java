@@ -39,16 +39,18 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing.simple;
 
-import rice.*;
+import java.util.Queue;
+import java.util.concurrent.PriorityBlockingQueue;
+
+import rice.Continuation;
+import rice.Executable;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
-import rice.environment.processing.*;
+import rice.environment.processing.Processor;
+import rice.environment.processing.WorkRequest;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.selector.SelectorManager;
-
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.Queue;
 
 /**
  * @author Jeff Hoye

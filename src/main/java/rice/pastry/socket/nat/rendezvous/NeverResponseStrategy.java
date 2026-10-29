@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.socket.nat.rendezvous;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 

@@ -36,12 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.join;
 
-import rice.pastry.*;
-import rice.pastry.messaging.*;
-import rice.pastry.socket.nat.rendezvous.RendezvousSocketNodeHandle;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Date;
 
-import java.io.*;
-import java.util.*;
+import rice.pastry.NodeHandle;
+import rice.pastry.messaging.Message;
 
 /**
  * Request for the join protocols on the local node to join the overlay.

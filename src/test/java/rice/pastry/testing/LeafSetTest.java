@@ -37,14 +37,20 @@ advised of the possibility of such damage.
 package rice.pastry.testing;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
 
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.RangeCannotBeDeterminedException;
-import rice.pastry.*;
-import rice.pastry.leafset.*;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.Id;
+import rice.pastry.IdRange;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.NodeSetEventSource;
+import rice.pastry.NodeSetListener;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.leafset.SimilarSet;
 import rice.pastry.messaging.Message;
 import rice.pastry.standard.RandomNodeIdFactory;
 

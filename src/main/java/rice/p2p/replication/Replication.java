@@ -37,8 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication;
 
-import rice.p2p.commonapi.*;
-
 /**
  * This interface is exported by Replication Manager (RM) for any applications 
  * which need to replicate objects across k+1 nodes closest to the object 

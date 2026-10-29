@@ -36,17 +36,13 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.transport.rendezvous;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
-import org.mpisws.p2p.transport.TransportLayer;
-
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
-import rice.pastry.socket.nat.rendezvous.RendezvousSocketNodeHandle;
 
 /**
  * Uses a 3rd party channel to request a node to connect to a dest.

@@ -38,7 +38,7 @@ advised of the possibility of such damage.
 package rice.p2p.commonapi;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Iterator;
 
 /**
  * @(#) IdSet.java

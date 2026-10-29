@@ -38,23 +38,36 @@ advised of the possibility of such damage.
 package rice.p2p.multiring.testing;
 
 import java.io.IOException;
-import java.net.*;
-import java.util.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import rice.environment.Environment;
-import rice.environment.params.simple.SimpleParameters;
 import rice.environment.random.RandomSource;
-import rice.environment.time.simulated.DirectTimeSource;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.multiring.MultiringNode;
-import rice.pastry.*;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
-import rice.pastry.direct.*;
-import rice.pastry.dist.*;
-import rice.pastry.socket.*;
+import rice.pastry.direct.DirectNodeHandle;
+import rice.pastry.direct.DirectPastryNodeFactory;
+import rice.pastry.direct.EuclideanNetwork;
+import rice.pastry.direct.NetworkSimulator;
+import rice.pastry.direct.SphereNetwork;
+import rice.pastry.dist.DistPastryNodeFactory;
+import rice.pastry.socket.SocketNodeHandle;
+import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
 import rice.pastry.transport.BogusNodeHandle;
 

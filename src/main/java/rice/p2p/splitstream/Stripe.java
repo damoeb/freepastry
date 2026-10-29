@@ -37,12 +37,17 @@ advised of the possibility of such damage.
 
 package rice.p2p.splitstream;
 
-import java.io.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.Hashtable;
+import java.util.Vector;
 
 import org.slf4j.Logger;
-import rice.p2p.commonapi.*;
-import rice.p2p.scribe.*;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.scribe.Scribe;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.ScribeImpl;
+import rice.p2p.scribe.ScribeMultiClient;
+import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.selector.TimerTask;
 

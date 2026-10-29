@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.commonapi;
 
 import org.mpisws.p2p.transport.TransportLayer;
-
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 

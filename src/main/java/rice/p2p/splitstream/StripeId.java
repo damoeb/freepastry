@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.splitstream;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
 
 /**
  * This class wraps the nodeId object so we can use type checking and allow more readable and

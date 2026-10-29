@@ -45,15 +45,16 @@ package rice.persistence.testing;
  * 
  * @version $Id: MemoryStorageTest.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
 
-import rice.*;
+import rice.Continuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.commonapi.*;
-import rice.persistence.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdSet;
+import rice.pastry.commonapi.PastryIdFactory;
+import rice.persistence.MemoryStorage;
+import rice.persistence.Storage;
 
 /**
  * This class is a class which tests the Storage class

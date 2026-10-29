@@ -36,17 +36,27 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.testing;
 
-import rice.Continuation;
-import rice.Continuation.*;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.Vector;
+
 import rice.environment.Environment;
 import rice.p2p.commonapi.RangeCannotBeDeterminedException;
-import rice.pastry.*;
-import rice.pastry.direct.*;
-import rice.pastry.messaging.*;
-import rice.pastry.routing.*;
-import rice.pastry.leafset.*;
-
-import java.util.*;
+import rice.pastry.Id;
+import rice.pastry.IdRange;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSet;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
+import rice.pastry.leafset.InitiateLeafSetMaintenance;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.messaging.Message;
+import rice.pastry.routing.InitiateRouteSetMaintenance;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.RoutingTable;
 
 /**
  * PastryRegrTest

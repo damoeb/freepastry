@@ -44,7 +44,8 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 
 import rice.p2p.util.JavaSerializationFilter;
-import rice.pastry.*;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
 
 /**
  * coalesces NodeHandles on the fly during java deserialization

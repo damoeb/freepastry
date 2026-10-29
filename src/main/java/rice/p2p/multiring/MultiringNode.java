@@ -38,17 +38,29 @@ advised of the possibility of such damage.
 package rice.p2p.multiring;
 
 import java.io.IOException;
-import java.util.*;
-
-import org.mpisws.p2p.transport.MessageCallback;
-import org.mpisws.p2p.transport.MessageRequestHandle;
+import java.util.Collection;
+import java.util.Hashtable;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.multiring.messaging.*;
-import rice.p2p.scribe.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.DeliveryNotification;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.MessageReceipt;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.p2p.multiring.messaging.RingMessage;
+import rice.p2p.scribe.Scribe;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.ScribeImpl;
+import rice.p2p.scribe.ScribeMultiClient;
+import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 

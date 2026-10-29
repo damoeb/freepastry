@@ -37,9 +37,10 @@ advised of the possibility of such damage.
 
 package rice.p2p.util;
 
-import java.io.*;
-import java.security.*;
-import java.util.*;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.PrivateKey;
 
 /**
 * @(#) EncryptedInputStream.java

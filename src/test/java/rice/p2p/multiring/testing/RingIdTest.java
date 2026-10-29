@@ -1,15 +1,18 @@
 package rice.p2p.multiring.testing;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-
 import rice.p2p.multiring.RingId;
 import rice.pastry.Id;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Regression test for the RingId interning cache: it used to store each RingId as both the key

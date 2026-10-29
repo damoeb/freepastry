@@ -39,7 +39,6 @@ package rice.p2p.util;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.MessageRequestHandle;
-
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.RawMessage;

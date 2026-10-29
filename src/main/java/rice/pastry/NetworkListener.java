@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.pastry;
 
-import java.net.*;
+import java.net.InetSocketAddress;
 
 /**
  * Represents a listener to pastry network activity.  This interface will notify

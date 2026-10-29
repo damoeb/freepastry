@@ -36,18 +36,21 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.aggregation.raw;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+import rice.p2p.aggregation.Aggregate;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.*;
-import rice.p2p.past.gc.*;
-import rice.p2p.past.gc.rawserialization.*;
-import rice.p2p.past.rawserialization.*;
+import rice.p2p.past.gc.rawserialization.JavaSerializedGCPastContent;
+import rice.p2p.past.gc.rawserialization.RawGCPastContent;
+import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
-import rice.p2p.aggregation.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.glacier.VersionKey;
-import java.security.*;
-import java.io.*;
 
 public class RawAggregate extends Aggregate implements RawGCPastContent {
   

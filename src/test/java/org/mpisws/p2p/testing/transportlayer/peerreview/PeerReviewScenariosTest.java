@@ -1,7 +1,5 @@
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.nio.file.Path;
 import java.security.interfaces.RSAPublicKey;
 
@@ -10,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mpisws.p2p.pki.x509.CAToolImpl;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransportLayerImpl;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Runs the PeerReview scenarios of {@link PRRegressionTest}: alice and bob exchange messages, carol witnesses both.

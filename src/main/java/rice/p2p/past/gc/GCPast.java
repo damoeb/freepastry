@@ -37,9 +37,10 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import rice.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.past.*;
+import rice.Continuation;
+import rice.p2p.commonapi.Id;
+import rice.p2p.past.Past;
+import rice.p2p.past.PastContent;
 
 /**
  * This interface represents an extension to the Past interface, which adds

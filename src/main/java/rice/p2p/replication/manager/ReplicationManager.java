@@ -37,8 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication.manager;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.replication.*;
+import rice.p2p.replication.Replication;
 
 /**
  * This interface represents a service run on top of the basic replication

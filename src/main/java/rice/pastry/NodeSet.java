@@ -36,11 +36,16 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry;
 
-import java.util.*;
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Vector;
 
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * Represents an ordered set of NodeHandles. *

@@ -37,12 +37,11 @@ advised of the possibility of such damage.
 
 package rice.p2p.splitstream;
 
-import java.io.*;
-import java.math.*;
-import java.util.*;
+import java.math.BigInteger;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.scribe.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.scribe.Scribe;
 
 /**
  * The channel controls all the meta data associated with a group of stripes. It contains the

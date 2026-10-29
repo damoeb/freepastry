@@ -43,7 +43,6 @@ import java.util.Map;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.peerreview.commitment.PeerInfo;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public class OutgoingUserDataMessage<Handle extends RawSerializable> extends UserDataMessage<Handle> implements MessageRequestHandle<Handle, ByteBuffer> {

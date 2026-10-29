@@ -42,7 +42,6 @@ import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.evidence.AuditResponse;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public interface AuditProtocol<Handle extends RawSerializable, Identifier> extends PeerReviewConstants {

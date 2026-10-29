@@ -36,14 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.transport.peerreview.replay.playback;
 
-import java.io.IOException;
-
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
-
-
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
-import rice.environment.time.TimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.selector.SelectorManager;
 import rice.selector.TimerTask;

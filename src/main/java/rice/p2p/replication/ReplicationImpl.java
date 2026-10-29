@@ -38,19 +38,35 @@ advised of the possibility of such damage.
 package rice.p2p.replication;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.logging.*;
+import java.util.Iterator;
 
 import org.slf4j.Logger;
-import rice.*;
-import rice.Continuation.*;
+import rice.Destructable;
+import rice.Executable;
+import rice.Continuation.ListenerContinuation;
+import rice.Continuation.MultiContinuation;
+import rice.Continuation.StandardContinuation;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.replication.ReplicationPolicy.*;
-import rice.p2p.replication.messaging.*;
-import rice.p2p.util.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.commonapi.RangeCannotBeDeterminedException;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.replication.ReplicationPolicy.DefaultReplicationPolicy;
+import rice.p2p.replication.messaging.ReminderMessage;
+import rice.p2p.replication.messaging.RequestMessage;
+import rice.p2p.replication.messaging.ResponseMessage;
+import rice.p2p.util.IdBloomFilter;
 
 /**
  * This is the implementation of the replication manager.

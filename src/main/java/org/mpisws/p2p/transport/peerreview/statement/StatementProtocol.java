@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.peerreview.statement;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /**

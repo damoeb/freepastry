@@ -40,9 +40,7 @@ import java.io.IOException;
 
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashPolicy;
-import org.mpisws.p2p.transport.peerreview.history.logentry.EvtSend;
 import org.mpisws.p2p.transport.util.Serializer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;

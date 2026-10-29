@@ -39,11 +39,14 @@ advised of the possibility of such damage.
  */
 package rice.p2p.past.rawserialization;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.past.*;
+import rice.p2p.past.ContentHashPastContentHandle;
+import rice.p2p.past.PastContentHandle;
 import rice.p2p.util.rawserialization.JavaDeserializer;
 
 public class JavaPastContentHandleDeserializer implements

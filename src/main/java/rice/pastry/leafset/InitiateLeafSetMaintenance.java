@@ -36,10 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.leafset;
 
-import rice.pastry.*;
-import rice.pastry.messaging.*;
+import java.io.Serializable;
 
-import java.io.*;
+import rice.pastry.messaging.Message;
 
 /**
  * Initiate leaf set maintenance on the local node.

@@ -41,14 +41,10 @@ import java.nio.ByteBuffer;
 
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
-import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.pastry.NodeHandle;
-import rice.pastry.socket.TransportLayerNodeHandle;
 
 public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<Identifier> {
   P2PSocket<Identifier> internal;

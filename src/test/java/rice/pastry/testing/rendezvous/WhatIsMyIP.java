@@ -44,7 +44,6 @@ import java.util.Collections;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.pastry.NodeIdFactory;
-import rice.pastry.PastryNodeFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifier;
 import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifierImpl;

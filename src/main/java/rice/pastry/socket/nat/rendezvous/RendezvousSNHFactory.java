@@ -39,10 +39,8 @@ package rice.pastry.socket.nat.rendezvous;
 import java.io.IOException;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.pastry.Id;
-import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketNodeHandleFactory;

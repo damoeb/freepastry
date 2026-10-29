@@ -45,10 +45,10 @@ package rice.persistence;
  *
  * @version $Id: Storage.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.*;
+import java.io.Serializable;
 
-import rice.*;
-import rice.p2p.commonapi.*;
+import rice.Continuation;
+import rice.p2p.commonapi.Id;
 
 /**
  * This interface is the abstraction of something which provides a

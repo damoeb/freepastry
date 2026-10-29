@@ -36,13 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.transport.ssl;
 
-import java.nio.ByteBuffer;
-
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
-
-import rice.pastry.socket.EpochInetSocketAddress;
 
 /**
  * Optionally Encrypts or Authenticates sockets.

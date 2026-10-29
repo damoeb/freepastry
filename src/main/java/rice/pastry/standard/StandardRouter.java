@@ -41,23 +41,30 @@ import java.net.NoRouteToHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
-
 import rice.p2p.commonapi.exception.AppNotRegisteredException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
-import rice.pastry.*;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
+import rice.pastry.client.PastryAppl;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.messaging.*;
-import rice.pastry.routing.*;
+import rice.pastry.messaging.Message;
+import rice.pastry.messaging.MessageDispatch;
+import rice.pastry.routing.BroadcastRouteRow;
+import rice.pastry.routing.NoLegalRouteToMakeProgressException;
+import rice.pastry.routing.RouteMessage;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.Router;
+import rice.pastry.routing.RouterAddress;
+import rice.pastry.routing.RouterStrategy;
 import rice.pastry.transport.PMessageNotification;
 import rice.pastry.transport.PMessageReceipt;
-import rice.pastry.client.PastryAppl;
 
 /**
  * An implementation of the standard Pastry routing algorithm.

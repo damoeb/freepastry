@@ -40,7 +40,6 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
 

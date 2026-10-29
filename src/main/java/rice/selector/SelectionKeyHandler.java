@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.selector;
 
-import java.nio.channels.*;
+import java.nio.channels.SelectionKey;
 
 /**
  * This interface is designed to be a callback mechanism from the

@@ -37,7 +37,9 @@ advised of the possibility of such damage.
 
 package rice.p2p.util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
 
 /**
  * XMLReader is a utility class used by XMLObjectInputStream to perform the actual

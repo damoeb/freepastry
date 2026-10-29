@@ -36,18 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.direct;
 
-import rice.environment.Environment;
-import rice.environment.params.Parameters;
-import rice.environment.random.RandomSource;
-import rice.environment.random.simple.SimpleRandomSource;
-import rice.pastry.*;
-import rice.pastry.direct.proximitygenerators.GenericProximityGenerator;
-import rice.pastry.messaging.*;
-import rice.pastry.routing.*;
+import java.io.File;
+import java.io.IOException;
+import java.lang.String;
 
-import java.util.*;
-import java.lang.*;
-import java.io.*;
+import rice.environment.Environment;
+import rice.pastry.direct.proximitygenerators.GenericProximityGenerator;
 
 // This topology will read in a topology-distance matrix and the corresponding
 // coordinates from input files

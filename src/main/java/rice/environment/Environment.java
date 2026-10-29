@@ -40,13 +40,16 @@ advised of the possibility of such damage.
 package rice.environment;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import org.slf4j.Logger;
 import rice.Destructable;
 import rice.environment.exception.ExceptionStrategy;
 import rice.environment.exception.simple.SimpleExceptionStrategy;
-import rice.environment.logging.*;
+import rice.environment.logging.LogManager;
+import rice.environment.logging.Slf4jLogManager;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;
@@ -57,7 +60,6 @@ import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.TimeSource;
 import rice.environment.time.simple.SimpleTimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
-import rice.pastry.Id;
 import rice.selector.SelectorManager;
 
 

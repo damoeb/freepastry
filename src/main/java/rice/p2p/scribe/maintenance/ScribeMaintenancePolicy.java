@@ -38,17 +38,13 @@ advised of the possibility of such damage.
 package rice.p2p.scribe.maintenance;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.scribe.Scribe;
-import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.messaging.SubscribeMessage;
 import rice.p2p.scribe.rawserialization.RawScribeContent;

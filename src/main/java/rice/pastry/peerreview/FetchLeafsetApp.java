@@ -40,18 +40,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import org.mpisws.p2p.transport.peerreview.WitnessListener;
 
 import rice.Continuation;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
-import rice.pastry.NodeHandle;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.Id;
+import rice.pastry.NodeHandle;
 import rice.pastry.NodeSet;
 import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;

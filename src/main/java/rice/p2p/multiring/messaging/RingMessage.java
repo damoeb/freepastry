@@ -40,10 +40,13 @@ package rice.p2p.multiring.messaging;
 import java.io.IOException;
 import java.util.Map;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.multiring.*;
-import rice.p2p.scribe.*;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.p2p.multiring.RingId;
 import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.util.rawserialization.JavaSerializedMessage;
 

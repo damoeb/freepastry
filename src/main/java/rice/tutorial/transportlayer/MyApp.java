@@ -41,9 +41,7 @@ package rice.tutorial.transportlayer;
 
 import java.util.Collections;
 
-import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
-
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;

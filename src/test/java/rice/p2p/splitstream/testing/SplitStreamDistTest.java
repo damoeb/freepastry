@@ -39,14 +39,21 @@ advised of the possibility of such damage.
  */
 package rice.p2p.splitstream.testing;
 
-import java.io.*;
-import java.net.*;
-import java.nio.channels.*;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.ServerSocketChannel;
 import java.util.Random;
 
 import rice.environment.Environment;
 import rice.p2p.splitstream.ChannelId;
-import rice.pastry.*;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
 import rice.pastry.transport.BogusNodeHandle;

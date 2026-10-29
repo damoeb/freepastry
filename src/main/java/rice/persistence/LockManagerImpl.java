@@ -36,7 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.persistence;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import rice.Continuation;

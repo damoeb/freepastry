@@ -43,7 +43,6 @@ import java.net.InetSocketAddress;
 
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
-
 import rice.environment.Environment;
 
 public class RapidRebind {

@@ -39,15 +39,23 @@ advised of the possibility of such damage.
  */
 package rice.pastry.testing;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import rice.environment.Environment;
-import rice.pastry.*;
-import rice.pastry.dist.DistPastryNodeFactory;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSet;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.socket.*;
+import rice.pastry.socket.SocketNodeHandle;
+import rice.pastry.socket.SocketPastryNodeFactory;
 
 /**
  * Pass in a certificate which contains bootstrap nodes.  

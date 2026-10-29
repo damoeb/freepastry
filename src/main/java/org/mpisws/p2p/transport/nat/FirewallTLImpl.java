@@ -48,7 +48,6 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.time.TimeSource;

@@ -40,8 +40,9 @@ advised of the possibility of such damage.
 package rice.environment.processing.simple;
 
 import org.slf4j.Logger;
-import rice.*;
-import rice.environment.logging.*;
+import rice.Continuation;
+import rice.Executable;
+import rice.environment.logging.LogManager;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.selector.SelectorManager;

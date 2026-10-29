@@ -45,13 +45,15 @@ package rice.persistence;
  *
  * @version $Id: StorageManagerImpl.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.SortedMap;
 
-import rice.*;
-import rice.Continuation.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.util.*;
+import rice.Continuation;
+import rice.Continuation.StandardContinuation;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
 
 /**
  * This class provides both persistent and caching services to

@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -56,11 +55,10 @@ import org.mpisws.p2p.transport.peerreview.history.stub.NullHashProvider;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.Serializer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Slf4jLogManager;
 import rice.environment.logging.LogManager;
+import rice.environment.logging.Slf4jLogManager;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;

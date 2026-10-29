@@ -45,17 +45,15 @@ package rice.persistence.testing;
  * 
  * @version $Id: GlacierPersistentStorageTest.java 3613 2007-02-15 14:45:14Z jstewart $
  */
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.zip.GZIPInputStream;
 
-import rice.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.glacier.*;
-import rice.p2p.glacier.v2.*;
-import rice.p2p.util.*;
-import rice.pastry.commonapi.*;
-import rice.persistence.*;
+import rice.p2p.glacier.v2.FragmentAndManifest;
+import rice.p2p.util.XMLObjectInputStream;
 
 /**
  * This class is a class which tests the PersistentStorage class

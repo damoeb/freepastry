@@ -37,8 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.replay;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
@@ -48,7 +46,6 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
 import org.mpisws.p2p.transport.peerreview.history.reader.EntryDeserializer;
 import org.mpisws.p2p.transport.peerreview.history.reader.LogReader;
 import org.mpisws.p2p.transport.peerreview.history.stub.NullHashProvider;
-
 import rice.environment.Environment;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 

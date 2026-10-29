@@ -72,7 +72,6 @@ import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Cancellable;

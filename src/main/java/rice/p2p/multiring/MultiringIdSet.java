@@ -36,9 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.multiring;
 
-import java.util.*;
+import java.util.Iterator;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
 
 /**
  * Represents a set of ids in a multiring heirarchy

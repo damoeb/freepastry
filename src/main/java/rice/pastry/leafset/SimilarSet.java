@@ -36,12 +36,24 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.leafset;
 
-import rice.p2p.commonapi.LegacyObservable;
-import rice.pastry.*;
-import rice.pastry.routing.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Observer;
 
-import java.util.*;
-import java.io.*;
+import rice.p2p.commonapi.LegacyObservable;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSetEventSource;
+import rice.pastry.NodeSetListener;
+import rice.pastry.NodeSetUpdate;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.RoutingTable;
 
 /**
  * A set of nodes, ordered by numerical distance of their Id from the local

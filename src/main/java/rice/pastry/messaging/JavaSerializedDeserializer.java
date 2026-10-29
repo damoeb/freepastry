@@ -39,11 +39,15 @@ advised of the possibility of such damage.
  */
 package rice.pastry.messaging;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.StreamCorruptedException;
 
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.pastry.PastryNode;
 
 /**

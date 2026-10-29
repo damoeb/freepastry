@@ -37,11 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import java.io.Serializable;
-
-import rice.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.past.*;
+import rice.p2p.past.PastContentHandle;
 
 /**
  * This interface represents a content handle which is used in the versioned and

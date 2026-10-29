@@ -38,8 +38,6 @@ package org.mpisws.p2p.transport.peerreview.commitment;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.security.SignatureException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -61,7 +59,6 @@ import org.mpisws.p2p.transport.peerreview.message.AckMessage;
 import org.mpisws.p2p.transport.peerreview.message.OutgoingUserDataMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
-
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;

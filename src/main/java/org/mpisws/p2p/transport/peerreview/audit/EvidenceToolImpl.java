@@ -57,11 +57,8 @@ import org.mpisws.p2p.transport.peerreview.history.logentry.EvtSendSign;
 import org.mpisws.p2p.transport.peerreview.history.logentry.EvtSign;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.util.Serializer;
-
 import org.slf4j.Logger;
-import rice.environment.logging.LogManager;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.tuples.Tuple;

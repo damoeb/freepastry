@@ -42,9 +42,8 @@ package rice.pastry.messaging;
 import java.io.IOException;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.pastry.*;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.Message;
+import rice.pastry.PastryNode;
 
 /**
  * The purpose of this class is just for programming convenience to disambiguate

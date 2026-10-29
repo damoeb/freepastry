@@ -37,13 +37,6 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
-import java.io.*;
-import java.util.Iterator;
-
-import rice.*;
-import rice.Continuation.*;
-import rice.p2p.commonapi.*;
-
 /*
  * @(#) StorageManager.java
  *

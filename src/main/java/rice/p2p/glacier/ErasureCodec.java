@@ -36,17 +36,18 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.glacier;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.random.RandomSource;
-import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.rawserialization.*;
-import rice.p2p.util.rawserialization.*;
+import rice.p2p.past.rawserialization.JavaSerializedPastContent;
+import rice.p2p.past.rawserialization.PastContentDeserializer;
+import rice.p2p.past.rawserialization.RawPastContent;
+import rice.p2p.util.rawserialization.SimpleInputBuffer;
+import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
  * Erasure code over GF(2^10) that encodes an object into <code>numFragments</code> fragments, any

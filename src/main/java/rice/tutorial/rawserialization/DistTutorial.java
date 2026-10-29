@@ -39,8 +39,8 @@ package rice.tutorial.rawserialization;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Iterator;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import rice.environment.Environment;

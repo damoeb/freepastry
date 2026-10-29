@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
-
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;

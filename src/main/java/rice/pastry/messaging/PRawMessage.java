@@ -39,10 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.pastry.messaging;
 
-import java.io.IOException;
 import java.util.Date;
 
-import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**

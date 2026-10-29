@@ -36,9 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
 
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * Represents a contiguous range of Pastry ids. *

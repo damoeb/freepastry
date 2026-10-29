@@ -44,7 +44,6 @@ import java.util.Map;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
-
 import rice.environment.Environment;
 import rice.p2p.util.MathUtils;
 import rice.selector.TimerTask;

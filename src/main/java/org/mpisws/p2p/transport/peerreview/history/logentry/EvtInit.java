@@ -39,11 +39,9 @@ package org.mpisws.p2p.transport.peerreview.history.logentry;
 import java.io.IOException;
 
 import org.mpisws.p2p.transport.util.Serializer;
-
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.p2p.util.rawserialization.SimpleInputBuffer;
 
 public class EvtInit<Handle extends RawSerializable> extends HistoryEvent {
   Handle handle;

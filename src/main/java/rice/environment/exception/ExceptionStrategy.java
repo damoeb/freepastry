@@ -39,8 +39,6 @@ advised of the possibility of such damage.
  */
 package rice.environment.exception;
 
-import rice.selector.SelectorManager;
-
 public interface ExceptionStrategy {
 
   void handleException(Object source, Throwable t);

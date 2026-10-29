@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.aggregation;
 
 import java.io.Serializable;
+
 import rice.p2p.commonapi.Id;
 
 public class ObjectDescriptor implements Serializable, Comparable<ObjectDescriptor> {

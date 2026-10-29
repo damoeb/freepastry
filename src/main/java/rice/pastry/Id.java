@@ -37,9 +37,11 @@ advised of the possibility of such damage.
 
 package rice.pastry;
 
-import java.io.*;
-import java.lang.ref.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.lang.ref.WeakReference;
+import java.util.Random;
+import java.util.WeakHashMap;
 
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.RawSerializable;

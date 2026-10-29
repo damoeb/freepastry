@@ -45,13 +45,11 @@ package rice.persistence.testing;
  * 
  * @version $Id: Test.java 3613 2007-02-15 14:45:14Z jstewart $
  */
-import java.util.*;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import rice.*;
 import rice.environment.Environment;
-import rice.persistence.*;
 
 /**
  * This class is a class which tests the Storage class

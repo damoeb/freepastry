@@ -37,14 +37,18 @@ advised of the possibility of such damage.
 
 package rice.p2p.splitstream;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.Hashtable;
 
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.scribe.*;
+import rice.p2p.scribe.Scribe;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.ScribeImpl;
+import rice.p2p.scribe.ScribePolicy;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**

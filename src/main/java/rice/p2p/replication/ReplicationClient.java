@@ -37,7 +37,9 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.NodeHandle;
 
 /**
  * This interface should be implemented by all applications that interact

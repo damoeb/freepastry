@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.scribe.messaging;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Message;
 
 /**
  * The maintenance message.

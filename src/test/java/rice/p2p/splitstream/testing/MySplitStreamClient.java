@@ -39,8 +39,16 @@ advised of the possibility of such damage.
  */
 package rice.p2p.splitstream.testing;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.splitstream.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.RangeCannotBeDeterminedException;
+import rice.p2p.splitstream.Channel;
+import rice.p2p.splitstream.ChannelId;
+import rice.p2p.splitstream.SplitStream;
+import rice.p2p.splitstream.SplitStreamClient;
+import rice.p2p.splitstream.SplitStreamImpl;
+import rice.p2p.splitstream.SplitStreamScribePolicy;
+import rice.p2p.splitstream.Stripe;
 import rice.p2p.util.MathUtils;
 import rice.pastry.PastryNode;
 import rice.selector.TimerTask;

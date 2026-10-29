@@ -37,15 +37,21 @@ advised of the possibility of such damage.
 package rice.tutorial.scribe;
 
 import java.io.IOException;
-import java.net.*;
-import java.util.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.NodeHandle;
-import rice.pastry.*;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.pastry.transport.TransportPastryNodeFactory;
 
 /**
  * This tutorial shows how to use Scribe.

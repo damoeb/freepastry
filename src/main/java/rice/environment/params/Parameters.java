@@ -40,7 +40,9 @@ advised of the possibility of such damage.
 package rice.environment.params;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 /**
  * Parameters interface for FreePastry

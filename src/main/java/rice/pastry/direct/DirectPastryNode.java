@@ -40,24 +40,7 @@ package rice.pastry.direct;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.SocketRequestHandle;
-
-import rice.environment.Environment;
-import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.pastry.Id;
-import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
-import rice.pastry.ReadyStrategy;
-import rice.pastry.ScheduledMessage;
-import rice.pastry.client.PastryAppl;
-import rice.pastry.join.InitiateJoin;
-import rice.pastry.messaging.Message;
-import rice.pastry.routing.RouteMessage;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
-import rice.selector.SelectorManager;
-import rice.selector.Timer;
 
 /**
  * Direct pastry node. Subclasses PastryNode, and does about nothing else.

@@ -37,8 +37,8 @@ advised of the possibility of such damage.
 
 package rice.p2p.util;
 
-import java.lang.ref.*;
-import java.util.*;
+import java.lang.ref.SoftReference;
+import java.util.HashMap;
 
 /**
  * Class which implements a Soft-Reference based HashMap, allowing the garbage

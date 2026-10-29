@@ -37,7 +37,8 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication.manager.messaging;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
 
 /**
  * This class represents a timeout for a client fetch call

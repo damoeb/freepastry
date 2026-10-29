@@ -39,7 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.p2p.aggregation.raw;
 
-import rice.p2p.aggregation.*;
+import rice.p2p.aggregation.Aggregate;
+import rice.p2p.aggregation.AggregateFactory;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.gc.GCPastContent;
 import rice.p2p.past.gc.rawserialization.RawGCPastContent;

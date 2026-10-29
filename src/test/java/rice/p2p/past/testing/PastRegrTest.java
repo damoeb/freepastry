@@ -37,22 +37,32 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.testing;
 
-import rice.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
 
+import rice.Continuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.commonapi.testing.*;
-import rice.p2p.past.*;
-import rice.p2p.past.messaging.*;
-import rice.p2p.replication.*;
-
-import rice.persistence.*;
-
-import java.io.*;
-import java.util.*;
-import java.net.*;
-import java.io.Serializable;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.p2p.commonapi.testing.CommonAPITest;
+import rice.p2p.past.Past;
+import rice.p2p.past.PastContent;
+import rice.p2p.past.PastContentHandle;
+import rice.p2p.past.PastException;
+import rice.p2p.past.PastImpl;
+import rice.p2p.past.messaging.LookupMessage;
+import rice.persistence.LRUCache;
+import rice.persistence.MemoryStorage;
+import rice.persistence.PersistentStorage;
+import rice.persistence.StorageManager;
+import rice.persistence.StorageManagerImpl;
 
 /**
  * Provides regression testing for the Past service

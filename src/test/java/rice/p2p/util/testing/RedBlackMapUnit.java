@@ -36,17 +36,16 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.util.testing;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.SortedMap;
+
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.environment.random.simple.SimpleRandomSource;
-import rice.p2p.commonapi.*;
-import rice.p2p.multiring.*;
-import rice.p2p.past.gc.*;
-import rice.pastry.commonapi.*;
-import rice.p2p.util.*;
-
-import java.io.IOException;
-import java.util.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.util.RedBlackMap;
+import rice.pastry.commonapi.PastryIdFactory;
 
 @SuppressWarnings("unchecked")
 public class RedBlackMapUnit {

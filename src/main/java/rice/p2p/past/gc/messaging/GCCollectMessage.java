@@ -39,12 +39,13 @@ package rice.p2p.past.gc.messaging;
 
 import java.io.IOException;
 
-import rice.*;
+import rice.Continuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.past.*;
-import rice.p2p.past.messaging.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.past.PastException;
+import rice.p2p.past.messaging.PastMessage;
 
 /**
  * This class represents a message which tells GC Past that it's time to

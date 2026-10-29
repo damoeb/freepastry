@@ -46,7 +46,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
-
 import rice.environment.Environment;
 import rice.environment.logging.Slf4jLogManager;
 

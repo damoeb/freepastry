@@ -37,16 +37,10 @@ advised of the possibility of such damage.
 
 package rice.pastry;
 
-import org.slf4j.Logger;
-import rice.Continuation;
-import rice.environment.Environment;
-import rice.p2p.commonapi.CancellableTask;
-import rice.p2p.commonapi.Node;
-import rice.pastry.leafset.*;
-import rice.pastry.routing.*;
+import java.io.IOException;
 
-import java.io.*;
-import java.util.*;
+import org.slf4j.Logger;
+import rice.environment.Environment;
 
 /**
  * The interface to an object which can construct PastryNodes.

@@ -1,11 +1,8 @@
 package rice.p2p.scribe.testing;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import rice.environment.Environment;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -19,6 +16,9 @@ import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.direct.NetworkSimulator;
 import rice.pastry.standard.RandomNodeIdFactory;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Regression test: ScribeImpl.allParentsContains() used to cast the stored topic collection

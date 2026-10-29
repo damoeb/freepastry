@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import rice.p2p.past.*;
+import rice.p2p.past.PastException;
 
 /**
  * Any exception specific to Past.

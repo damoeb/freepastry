@@ -41,13 +41,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import rice.environment.Environment;
-import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.NodeHandleSet;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
-import rice.pastry.leafset.LeafSet;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
 

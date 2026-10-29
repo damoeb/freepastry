@@ -41,7 +41,6 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.message.OutgoingUserDataMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.tuples.Tuple;
 

@@ -39,10 +39,8 @@ package org.mpisws.p2p.transport.peerreview.commitment;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -50,7 +48,6 @@ import java.util.TreeSet;
 
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.util.Serializer;
-
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.RandomAccessFileIOBuffer;

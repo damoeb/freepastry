@@ -37,14 +37,12 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.challenge;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 import org.mpisws.p2p.transport.peerreview.message.ChallengeMessage;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public interface ChallengeResponseProtocol<Handle extends RawSerializable, Identifier extends RawSerializable> extends StatusChangeListener<Identifier> {

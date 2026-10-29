@@ -39,7 +39,7 @@ package rice.p2p.scribe;
 
 
 import rice.p2p.scribe.javaserialized.JavaScribe;
-import rice.p2p.scribe.rawserialization.*;
+import rice.p2p.scribe.rawserialization.RawScribe;
 
 /**
  * This interface is exported by all instances of Scribe.  

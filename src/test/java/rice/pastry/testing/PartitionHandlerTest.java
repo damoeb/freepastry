@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import rice.environment.Environment;
-import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.PartitionHandler;

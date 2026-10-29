@@ -35,12 +35,13 @@ advised of the possibility of such damage.
 
 *******************************************************************************/ 
 package rice.p2p.util.testing;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
-import rice.p2p.util.*;
-import java.io.*;
-import java.util.*;
+import rice.p2p.util.StringCache;
 
 public class StringCacheUnit {
 

@@ -36,17 +36,23 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.glacier.v2;
 
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+
 import org.slf4j.Logger;
+import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
-import rice.p2p.glacier.*;
+import rice.p2p.glacier.ErasureCodec;
+import rice.p2p.glacier.Fragment;
+import rice.p2p.glacier.VersionKey;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.rawserialization.*;
+import rice.p2p.past.rawserialization.JavaSerializedPastContent;
+import rice.p2p.past.rawserialization.PastContentDeserializer;
+import rice.p2p.past.rawserialization.RawPastContent;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
-import rice.Continuation;
-import java.io.*;
-import java.util.Arrays;
-import java.security.*;
 
 public class GlacierDefaultPolicy implements GlacierPolicy {
 

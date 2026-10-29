@@ -36,12 +36,23 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.routing;
 
-import rice.p2p.commonapi.NodeHandleListener;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.pastry.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Observable;
 
-import java.util.*;
-import java.io.*;
+import rice.p2p.commonapi.NodeHandleListener;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeHandleFactory;
+import rice.pastry.NodeSetI;
+import rice.pastry.PastryNode;
 
 /**
  * A set of nodes typically stored in the routing table. The set contains a

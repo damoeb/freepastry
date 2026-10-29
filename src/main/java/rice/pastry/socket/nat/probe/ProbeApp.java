@@ -46,7 +46,6 @@ import org.mpisws.p2p.transport.multiaddress.AddressStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.networkinfo.Prober;
-
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;

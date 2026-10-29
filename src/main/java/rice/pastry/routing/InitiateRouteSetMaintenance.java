@@ -36,11 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.routing;
 
-import rice.pastry.*;
-import rice.pastry.messaging.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import rice.pastry.messaging.Message;
 
 /**
  * Initiate routing table maintenance on the local node

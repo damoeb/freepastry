@@ -35,13 +35,15 @@ advised of the possibility of such damage.
 
 *******************************************************************************/ 
 package rice.p2p.glacier;
-import java.io.Serializable;
-import java.security.*;
-import java.util.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.util.*;
+import java.util.Iterator;
+import java.util.SortedMap;
 
-import rice.p2p.glacier.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.glacier.FragmentKey;
+import rice.p2p.glacier.FragmentKeyRange;
+import rice.p2p.glacier.FragmentKeySet;
+import rice.p2p.util.RedBlackMap;
 
 /**
  * A sorted set of FragmentKeys.

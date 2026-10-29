@@ -39,11 +39,11 @@ package rice.p2p.past;
 
 import java.io.Serializable;
 
-import rice.*;
-import rice.Continuation.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.past.messaging.*;
-import rice.persistence.*;
+import rice.Continuation;
+import rice.Continuation.StandardContinuation;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
+import rice.persistence.Cache;
 
 /**
  * This interface represents a policy for Past, which is asked whenever

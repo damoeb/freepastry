@@ -51,7 +51,6 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
-
 import org.slf4j.Logger;
 import rice.environment.params.Parameters;
 import rice.selector.SelectionKeyHandler;

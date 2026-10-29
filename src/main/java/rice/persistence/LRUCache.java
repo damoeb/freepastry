@@ -45,16 +45,24 @@ package rice.persistence;
  *
  * @version $Id: LRUCache.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.SortedMap;
+import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
-import rice.*;
-import rice.Continuation.*;
+import rice.Continuation;
+import rice.Continuation.StandardContinuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.util.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.util.XMLObjectOutputStream;
 
 /**
  * This class is an encapsulation of a least-recently-used (LRU)

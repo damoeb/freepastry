@@ -37,9 +37,11 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication.manager;
 
-import rice.*;
-
-import rice.p2p.commonapi.*;
+import rice.Continuation;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.NodeHandle;
 
 /**
  * This interface represents client of the replication manager, which is the

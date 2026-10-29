@@ -39,10 +39,7 @@ advised of the possibility of such damage.
  */
 package org.mpisws.p2p.transport.sourceroute.manager.simple;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -50,7 +47,6 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.util.TimerWeakHashMap;

@@ -41,8 +41,10 @@ package rice.tutorial.rawserialization2;
 
 import java.io.IOException;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.messaging.LookupMessage;
 import rice.p2p.util.rawserialization.JavaSerializer;
 

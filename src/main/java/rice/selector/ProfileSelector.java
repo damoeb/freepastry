@@ -45,14 +45,13 @@ package rice.selector;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
-import rice.environment.logging.*;
+import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.TimeSource;

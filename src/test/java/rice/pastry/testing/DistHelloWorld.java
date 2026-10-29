@@ -36,15 +36,19 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.testing;
 
-import rice.environment.Environment;
-import rice.pastry.*;
-import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.standard.*;
-import rice.pastry.dist.*;
-
-import java.util.*;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.Vector;
+
+import rice.environment.Environment;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
+import rice.pastry.dist.DistPastryNodeFactory;
+import rice.pastry.socket.SocketPastryNodeFactory;
+import rice.pastry.standard.IPNodeIdFactory;
 
 /**
  * A hello world example for pastry. This is the distributed driver.

@@ -39,8 +39,6 @@ package rice.p2p.splitstream;
 
 import rice.Destructable;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.scribe.*;
 
 /**
  * The interface defines the methods that a splitStream object must implement. The methods are for

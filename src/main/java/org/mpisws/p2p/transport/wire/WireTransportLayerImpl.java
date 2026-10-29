@@ -41,31 +41,22 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.ListenableTransportLayer;
-import org.mpisws.p2p.transport.MessageRequestHandle;
-import org.mpisws.p2p.transport.SocketCountListener;
-import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
+import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.SocketCallback;
+import org.mpisws.p2p.transport.SocketCountListener;
+import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.TransportLayerListener;
 import org.mpisws.p2p.transport.util.DefaultCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
-
 import org.slf4j.Logger;
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.commonapi.Cancellable;
-import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.p2p.util.rawserialization.SimpleOutputBuffer;
-import rice.pastry.NetworkListener;
-import rice.pastry.messaging.Message;
 
 public class WireTransportLayerImpl implements WireTransportLayer, SocketOpeningTransportLayer<InetSocketAddress> {
   // state

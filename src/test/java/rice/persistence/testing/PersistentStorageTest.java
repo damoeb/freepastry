@@ -45,14 +45,11 @@ package rice.persistence.testing;
  * 
  * @version $Id: PersistentStorageTest.java 3613 2007-02-15 14:45:14Z jstewart $
  */
-import java.io.*;
-import java.util.*;
-
-import rice.*;
+import java.io.IOException;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.pastry.commonapi.*;
-import rice.persistence.*;
+import rice.p2p.commonapi.IdFactory;
+import rice.pastry.commonapi.PastryIdFactory;
+import rice.persistence.PersistentStorage;
 
 /**
  * This class is a class which tests the PersistentStorage class

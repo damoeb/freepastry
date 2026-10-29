@@ -37,31 +37,40 @@ advised of the possibility of such damage.
 
 package rice.pastry.direct;
 
-import rice.Continuation;
-import rice.environment.Environment;
-import rice.environment.logging.*;
-import rice.p2p.commonapi.CancellableTask;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.pastry.*;
-import rice.pastry.messaging.*;
-import rice.pastry.standard.*;
-import rice.pastry.transport.NodeHandleAdapter;
-import rice.pastry.transport.TLDeserializer;
-import rice.pastry.transport.TransportPastryNodeFactory;
-import rice.pastry.routing.*;
-import rice.pastry.boot.Bootstrapper;
-import rice.pastry.leafset.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.direct.DirectTransportLayer;
-import org.mpisws.p2p.transport.liveness.LivenessListener;
-import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
+import rice.Continuation;
+import rice.environment.Environment;
+import rice.environment.logging.Slf4jLogManager;
+import rice.p2p.commonapi.CancellableTask;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeHandleFactory;
+import rice.pastry.NodeHandleFactoryListener;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.boot.Bootstrapper;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.leafset.LeafSetProtocol;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.RoutingTable;
+import rice.pastry.standard.ProximityNeighborSelector;
+import rice.pastry.standard.StandardLeafSetProtocol;
+import rice.pastry.transport.NodeHandleAdapter;
+import rice.pastry.transport.TLDeserializer;
+import rice.pastry.transport.TransportPastryNodeFactory;
 
 /**
  * Pastry node factory for direct connections between nodes (local instances).

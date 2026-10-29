@@ -41,7 +41,6 @@ import java.util.List;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
-
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class MultiAddressSourceRoute extends SourceRoute<MultiInetSocketAddress> {

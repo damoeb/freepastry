@@ -36,15 +36,25 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Observable;
+
 import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandleListener;
-import rice.pastry.*;
-import rice.pastry.messaging.*;
+import rice.pastry.IdSet;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
-import rice.pastry.leafset.*;
-import rice.pastry.routing.*;
-
-import java.util.*;
+import rice.pastry.leafset.BroadcastLeafSet;
+import rice.pastry.leafset.InitiateLeafSetMaintenance;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.leafset.LeafSetProtocol;
+import rice.pastry.leafset.LeafSetProtocolAddress;
+import rice.pastry.leafset.RequestLeafSet;
+import rice.pastry.messaging.Message;
+import rice.pastry.routing.RoutingTable;
 
 /**
  * An implementation of a simple leaf set protocol.

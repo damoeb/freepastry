@@ -38,10 +38,7 @@ package rice.pastry.testing;
 
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.pastry.*;
-
-import java.io.IOException;
-import java.util.*;
+import rice.pastry.Id;
 
 /**
  * NodeIdUnit tests the NodeId class.

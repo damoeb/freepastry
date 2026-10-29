@@ -37,11 +37,16 @@ advised of the possibility of such damage.
 
 package rice.p2p.multiring;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.Observable;
 
-import java.io.*;
-import java.util.*;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.NodeHandleListener;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * @author Alan Mislove

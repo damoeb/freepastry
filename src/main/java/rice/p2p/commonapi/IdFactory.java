@@ -37,7 +37,8 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi;
 
-import java.util.*;
+import java.util.Random;
+import java.util.SortedMap;
 
 import rice.environment.random.RandomSource;
 

@@ -39,7 +39,9 @@ advised of the possibility of such damage.
  */
 package rice.p2p.util.rawserialization;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;

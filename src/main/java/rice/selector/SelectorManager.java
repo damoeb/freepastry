@@ -37,17 +37,29 @@ advised of the possibility of such damage.
 package rice.selector;
 
 import java.io.IOException;
-import java.nio.channels.*;
-import java.util.*;
+import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedSelectorException;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import rice.Destructable;
 import rice.environment.Environment;
-import rice.environment.logging.*;
+import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.TimeSource;
-import rice.environment.time.simulated.DirectTimeSource;
 
 /**
  * This class is the class which handles the selector, and listens for activity.

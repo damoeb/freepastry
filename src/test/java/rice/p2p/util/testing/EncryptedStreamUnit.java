@@ -36,19 +36,20 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.util.testing;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
-import rice.p2p.util.*;
-import java.io.*;
-import java.math.*;
-
-import java.security.*;
-import java.security.cert.*;
-import java.security.spec.*;
-import java.util.*;
-import java.util.zip.*;
-import javax.crypto.*;
-import javax.crypto.spec.*;
+import rice.p2p.util.EncryptedInputStream;
+import rice.p2p.util.EncryptedOutputStream;
+import rice.p2p.util.MathUtils;
+import rice.p2p.util.SecurityUtils;
 
 public class EncryptedStreamUnit {
 

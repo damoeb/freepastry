@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication.manager.messaging;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Message;
 
 /**
  * This class represents a reminder for the replication to intiate maintaince.

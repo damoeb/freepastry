@@ -38,10 +38,8 @@ package rice.p2p.glacier.v2.messaging;
 
 import java.io.IOException;
 
-import rice.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.glacier.*;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class GlacierTimeoutMessage extends GlacierMessage {
   public static final short TYPE = 15;

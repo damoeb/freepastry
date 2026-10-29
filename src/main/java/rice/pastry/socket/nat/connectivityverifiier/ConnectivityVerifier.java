@@ -43,7 +43,6 @@ import java.util.Collection;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.networkinfo.ConnectivityResult;
-
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
 

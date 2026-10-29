@@ -37,9 +37,12 @@ advised of the possibility of such damage.
 
 package rice.pastry;
 
-import java.util.*;
-import java.security.*;
-import rice.p2p.util.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
+import java.util.SortedMap;
+
+import rice.p2p.util.RedBlackMap;
 
 /**
  * Represents a set of Pastry ids.

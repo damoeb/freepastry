@@ -41,7 +41,6 @@ import java.nio.ByteBuffer;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.peerreview.PeerReviewCallback;
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
-
 import rice.environment.Environment;
 
 public interface Verifier<Handle> extends TransportLayer<Handle, ByteBuffer>, PeerReviewConstants {

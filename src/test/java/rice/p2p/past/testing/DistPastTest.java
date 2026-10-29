@@ -36,26 +36,18 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.past.testing;
 
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Iterator;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.IdFactory;
-import rice.p2p.past.ContentHashPastContent;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.PastContentHandle;
-import rice.p2p.past.PastException;
 import rice.p2p.past.PastImpl;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
-import rice.pastry.leafset.LeafSet;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
 import rice.persistence.LRUCache;

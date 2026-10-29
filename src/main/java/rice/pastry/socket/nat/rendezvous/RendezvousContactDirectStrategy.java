@@ -39,7 +39,6 @@ package rice.pastry.socket.nat.rendezvous;
 import org.mpisws.p2p.transport.multiaddress.AddressStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.rendezvous.ContactDirectStrategy;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 

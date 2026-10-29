@@ -37,16 +37,23 @@ advised of the possibility of such damage.
 package rice.tutorial.splitstream;
 
 import java.io.IOException;
-import java.net.*;
-import java.util.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.pastry.NodeHandle;
-import rice.pastry.*;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
-import rice.pastry.direct.*;
+import rice.pastry.direct.DirectNodeHandle;
+import rice.pastry.direct.DirectPastryNodeFactory;
+import rice.pastry.direct.EuclideanNetwork;
+import rice.pastry.direct.NetworkSimulator;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
 

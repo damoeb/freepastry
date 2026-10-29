@@ -36,19 +36,35 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+
 import rice.Continuation;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.pastry.*;
-import rice.pastry.messaging.*;
-import rice.pastry.leafset.*;
-import rice.pastry.routing.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.pastry.ExponentialBackoffScheduledMessage;
+import rice.pastry.Id;
+import rice.pastry.JoinFailedException;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
+import rice.pastry.ScheduledMessage;
+import rice.pastry.client.PastryAppl;
+import rice.pastry.join.InitiateJoin;
+import rice.pastry.join.JoinAddress;
+import rice.pastry.join.JoinProtocol;
+import rice.pastry.join.JoinRequest;
+import rice.pastry.leafset.BroadcastLeafSet;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PJavaSerializedDeserializer;
+import rice.pastry.routing.BroadcastRouteRow;
+import rice.pastry.routing.RouteMessage;
+import rice.pastry.routing.RouteMessageNotification;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.RoutingTable;
 import rice.pastry.transport.PMessageNotification;
 import rice.pastry.transport.PMessageReceipt;
-import rice.pastry.client.PastryAppl;
-import rice.pastry.join.*;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * An implementation of a simple join protocol.

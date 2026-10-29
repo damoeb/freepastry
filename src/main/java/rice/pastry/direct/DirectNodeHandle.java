@@ -38,14 +38,17 @@ advised of the possibility of such damage.
 package rice.pastry.direct;
 
 import java.io.IOException;
-import java.util.*;
-
+import java.util.Observable;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.commonapi.rawserialization.SizeCheckOutputBuffer;
-import rice.pastry.*;
-import rice.pastry.messaging.*;
+import rice.pastry.Id;
+import rice.pastry.JoinFailedException;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeListener;
+import rice.pastry.messaging.Message;
 import rice.pastry.socket.TransportLayerNodeHandle;
 
 /**

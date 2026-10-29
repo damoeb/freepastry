@@ -36,11 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 
 package rice.p2p.commonapi;
-import java.io.*;
-
+import java.io.IOException;
+import java.io.Serializable;
 import java.lang.Comparable;
 
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * @(#) Id.java This interface is an abstraction of an Id (or key) from the CommonAPI paper.

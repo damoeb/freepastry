@@ -41,13 +41,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.MessageCallback;
-import org.mpisws.p2p.transport.MessageRequestHandle;
-
-import rice.*;
+import rice.Continuation;
+import rice.Executable;
 import rice.environment.Environment;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.NodeHandleReader;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
  * @(#) Endpoint.java

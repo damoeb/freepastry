@@ -41,7 +41,8 @@ package rice.tutorial.lesson0a;
 
 import rice.Continuation;
 import rice.p2p.commonapi.Id;
-import rice.p2p.past.*;
+import rice.p2p.past.Past;
+import rice.p2p.past.PastContent;
 
 /**
  * @author Jeff Hoye

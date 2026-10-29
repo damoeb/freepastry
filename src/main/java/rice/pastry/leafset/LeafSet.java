@@ -37,12 +37,27 @@ advised of the possibility of such damage.
 
 package rice.pastry.leafset;
 
-import rice.p2p.commonapi.rawserialization.*;
-import rice.pastry.*;
-import rice.pastry.routing.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Observer;
+import java.util.Set;
 
-import java.util.*;
-import java.io.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.Id;
+import rice.pastry.IdRange;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeHandleFactory;
+import rice.pastry.NodeSet;
+import rice.pastry.NodeSetListener;
+import rice.pastry.routing.RoutingTable;
 
 /**
  * A class for representing and manipulating the leaf set.

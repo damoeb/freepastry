@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,11 +44,9 @@ import java.util.Map;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.priority.QueueOverflowException;
-
 import rice.p2p.commonapi.Cancellable;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
-import rice.pastry.messaging.Message;
 import rice.pastry.messaging.MessageDispatch;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouterStrategy;

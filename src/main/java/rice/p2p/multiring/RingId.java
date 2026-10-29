@@ -37,12 +37,15 @@ advised of the possibility of such damage.
 
 package rice.p2p.multiring;
 
-import java.lang.ref.*;
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.lang.ref.WeakReference;
+import java.util.WeakHashMap;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * This class represents an Id with a specific ring attached.

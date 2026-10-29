@@ -37,7 +37,11 @@ advised of the possibility of such damage.
 
 package rice.p2p.multiring;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
 
 /**
  * Application which wraps a real application

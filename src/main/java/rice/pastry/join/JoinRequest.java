@@ -36,14 +36,18 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.join;
 
-import rice.p2p.commonapi.rawserialization.*;
-import rice.pastry.*;
-import rice.pastry.messaging.*;
-import rice.pastry.routing.*;
-import rice.pastry.leafset.*;
+import java.io.IOException;
+import java.util.Date;
 
-import java.io.*;
-import java.util.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeHandleFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.messaging.PRawMessage;
+import rice.pastry.routing.RouteSet;
 
 /**
  * Request to join this network.

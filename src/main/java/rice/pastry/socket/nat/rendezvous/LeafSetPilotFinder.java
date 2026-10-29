@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import org.mpisws.p2p.transport.rendezvous.PilotFinder;
-
 import rice.environment.random.RandomSource;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;

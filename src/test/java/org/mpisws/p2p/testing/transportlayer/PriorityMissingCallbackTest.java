@@ -36,8 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -70,9 +68,13 @@ import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
-
 import rice.environment.Environment;
 import rice.environment.exception.ExceptionStrategy;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * A TCP message (or a passthrough socket) that reaches a PriorityTransportLayerImpl before the layer above set

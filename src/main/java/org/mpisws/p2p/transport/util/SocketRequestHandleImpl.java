@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.util;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.SocketRequestHandle;
-
 import org.slf4j.Logger;
 import rice.p2p.commonapi.Cancellable;
 

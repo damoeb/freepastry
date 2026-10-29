@@ -41,7 +41,8 @@ package rice.p2p.util;
 
 import java.util.WeakHashMap;
 
-import rice.selector.*;
+import rice.selector.Timer;
+import rice.selector.TimerTask;
 
 /**
  * Weak hash map that holds hard link to keys for a minimum time.

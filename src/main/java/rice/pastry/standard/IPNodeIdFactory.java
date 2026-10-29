@@ -36,12 +36,14 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
+import java.net.InetAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.pastry.*;
-
-import java.net.*;
-import java.security.*;
+import rice.pastry.Id;
+import rice.pastry.NodeIdFactory;
 
 /**
  * Constructs NodeIds for virtual nodes derived from the IP address and port

@@ -37,15 +37,14 @@ advised of the possibility of such damage.
 
 package rice.pastry;
 
+import java.io.IOException;
+import java.util.Observer;
+
 import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.pastry.messaging.*;
-import rice.pastry.socket.TransportLayerNodeHandle;
-
-import java.io.*;
-import java.util.*;
+import rice.pastry.messaging.Message;
 
 
 /**

@@ -37,16 +37,12 @@ advised of the possibility of such damage.
 package rice.tutorial.deterministicsimulator;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.JoinFailedException;
 import rice.pastry.NodeHandle;
@@ -54,7 +50,10 @@ import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
 import rice.pastry.PastryNodeListener;
-import rice.pastry.direct.*;
+import rice.pastry.direct.DirectNodeHandle;
+import rice.pastry.direct.DirectPastryNodeFactory;
+import rice.pastry.direct.EuclideanNetwork;
+import rice.pastry.direct.NetworkSimulator;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.standard.RandomNodeIdFactory;
 import rice.selector.TimerTask;

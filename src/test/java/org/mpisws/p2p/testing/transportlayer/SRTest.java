@@ -36,8 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.testing.transportlayer;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -60,9 +58,10 @@ import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
-
 import rice.environment.Environment;
 import rice.environment.logging.Slf4jLogManager;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
   static SourceRouteTransportLayer<MultiInetSocketAddress> carol_tap; // going to be the middle hop for alice/bob

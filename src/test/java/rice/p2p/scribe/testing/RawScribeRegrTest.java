@@ -36,20 +36,17 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 
 package rice.p2p.scribe.testing;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.*;
 
 import rice.environment.Environment;
-import rice.environment.params.simple.SimpleParameters;
-import rice.environment.time.simulated.DirectTimeSource;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.commonapi.testing.CommonAPITest;
-import rice.p2p.scribe.*;
-import rice.p2p.scribe.messaging.SubscribeMessage;
-import rice.p2p.scribe.rawserialization.*;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.Topic;
+import rice.p2p.scribe.rawserialization.RawScribeContent;
+import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
  * Provides regression testing for the Scribe service using distributed

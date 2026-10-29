@@ -89,7 +89,6 @@ import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordLayer;
 import org.mpisws.p2p.transport.util.Serializer;
-
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;

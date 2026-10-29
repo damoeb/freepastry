@@ -38,13 +38,9 @@ package rice.pastry.transport;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
-
-import rice.pastry.NodeHandle;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.socket.SocketNodeHandle;
 

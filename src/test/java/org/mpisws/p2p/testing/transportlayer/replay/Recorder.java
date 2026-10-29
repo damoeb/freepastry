@@ -53,7 +53,6 @@ import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.peerreview.replay.BasicEntryDeserializer;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordLayer;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
-
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.params.Parameters;

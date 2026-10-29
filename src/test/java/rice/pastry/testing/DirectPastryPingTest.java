@@ -36,17 +36,17 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.testing;
 
-import rice.environment.Environment;
-import rice.environment.params.simple.SimpleParameters;
-import rice.environment.time.simulated.DirectTimeSource;
-import rice.pastry.*;
-import rice.pastry.direct.*;
-import rice.pastry.standard.*;
-import rice.pastry.join.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.Exception;
+import java.lang.String;
+import java.lang.System;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
-import java.util.*;
-import java.io.*;
-import java.lang.*;
+import rice.environment.Environment;
+import rice.pastry.direct.TestRecord;
 
 /**
  * DirectPastryPingTest

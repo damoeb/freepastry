@@ -36,17 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.transport.peerreview.history;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
 import org.mpisws.p2p.transport.peerreview.audit.SnippetEntry;
-import org.mpisws.p2p.transport.util.FileInputBuffer;
-import org.mpisws.p2p.transport.util.FileOutputBuffer;
-
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.RandomAccessFileIOBuffer;

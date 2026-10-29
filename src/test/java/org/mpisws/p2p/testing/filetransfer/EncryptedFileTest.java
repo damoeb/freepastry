@@ -61,7 +61,6 @@ import org.mpisws.p2p.transport.simpleidentity.SimpleIdentityTransportLayer;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
-
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;

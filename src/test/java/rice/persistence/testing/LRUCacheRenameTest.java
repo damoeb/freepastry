@@ -1,20 +1,21 @@
 package rice.persistence.testing;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Regression test: LRUCache.rename() must call back its continuation.

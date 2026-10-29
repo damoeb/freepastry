@@ -37,21 +37,13 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
-import java.util.*;
-import rice.p2p.util.*;
+import java.io.Serializable;
+import java.util.SortedMap;
 
-/*
- * @(#) Catalog.java
- *
- * @author Ansley Post
- * @author Alan Mislove
- * 
- * @version $Id: Catalog.java 4654 2009-01-08 16:33:07Z jeffh $
- */
-import java.io.*;
-
-import rice.*;
-import rice.p2p.commonapi.*;
+import rice.Continuation;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
 
 /**
  * This interface is the abstraction of something which holds objects
@@ -63,6 +55,9 @@ import rice.p2p.commonapi.*;
  * Implementations of the Catalog interface are designed to be interfaces
  * which specify how objects are inserted and stored, and are designed to
  * include a cache and persistent storage interface.
+ *
+ * @author Ansley Post
+ * @author Alan Mislove
  */
 @SuppressWarnings("unchecked")
 public interface Catalog {

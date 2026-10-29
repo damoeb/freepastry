@@ -36,14 +36,19 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.testing;
 
-import rice.environment.Environment;
-import rice.pastry.*;
-import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.pastry.direct.*;
-import rice.pastry.standard.*;
-
 import java.io.IOException;
-import java.util.*;
+import java.util.NoSuchElementException;
+
+import rice.environment.Environment;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
+import rice.pastry.direct.DirectNodeHandle;
+import rice.pastry.direct.DirectPastryNode;
+import rice.pastry.direct.DirectPastryNodeFactory;
+import rice.pastry.direct.NetworkSimulator;
+import rice.pastry.direct.SphereNetwork;
+import rice.pastry.standard.RandomNodeIdFactory;
 
 /**
  * PastryRegrTest

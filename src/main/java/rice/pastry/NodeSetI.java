@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.pastry;
 
-import java.util.*;
+import java.util.NoSuchElementException;
 
 /**
  * An interface to a generic set of nodes.

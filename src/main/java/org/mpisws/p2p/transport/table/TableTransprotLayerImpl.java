@@ -53,7 +53,6 @@ import org.mpisws.p2p.transport.util.BufferWriter;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.Serializer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
-
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;

@@ -37,12 +37,10 @@ advised of the possibility of such damage.
 package rice.pastry.transport;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.commonapi.RawMessageDeserializer;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Message;
@@ -51,7 +49,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.messaging.PRawMessage;
 

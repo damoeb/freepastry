@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.peerreview.replay;
 import java.io.IOException;
 
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public interface VerifierFactory<Handle extends RawSerializable, Identifier extends RawSerializable> {

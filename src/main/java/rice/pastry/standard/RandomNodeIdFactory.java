@@ -36,12 +36,13 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.random.RandomSource;
-import rice.pastry.*;
-
-import java.security.*;
+import rice.pastry.Id;
+import rice.pastry.NodeIdFactory;
 
 /**
  * Constructs random node ids by SHA'ing consecutive numbers, with random

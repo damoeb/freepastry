@@ -42,7 +42,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-
 import rice.Continuation;
 import rice.Destructable;
 import rice.p2p.commonapi.Cancellable;

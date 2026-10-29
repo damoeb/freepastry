@@ -49,7 +49,6 @@ import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
-
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.NodeHandle;
 import rice.pastry.boot.Bootstrapper;

@@ -36,15 +36,18 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.replication.manager.testing;
 
-import java.io.*;
+import java.io.IOException;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.params.simple.SimpleParameters;
-import rice.environment.time.simulated.DirectTimeSource;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.testing.CommonAPITest;
-import rice.p2p.replication.manager.*;
+import rice.p2p.replication.manager.ReplicationManagerClient;
+import rice.p2p.replication.manager.ReplicationManagerImpl;
 
 /**
  * Provides regression testing for the replication manager service using distributed

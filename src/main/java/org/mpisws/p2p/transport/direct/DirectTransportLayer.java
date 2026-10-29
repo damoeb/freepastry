@@ -53,7 +53,6 @@ import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Cancellable;

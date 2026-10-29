@@ -51,7 +51,6 @@ import java.util.Map;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.networkinfo.CantVerifyConnectivityException;
 import org.mpisws.p2p.transport.networkinfo.ConnectivityResult;
-
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;

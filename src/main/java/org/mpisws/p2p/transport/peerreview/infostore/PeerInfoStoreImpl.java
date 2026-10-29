@@ -37,24 +37,18 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.infostore;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
-import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.util.FileInputBuffer;
 import org.mpisws.p2p.transport.util.FileOutputBuffer;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * In this class, the PeerReview library keeps information about its peers.

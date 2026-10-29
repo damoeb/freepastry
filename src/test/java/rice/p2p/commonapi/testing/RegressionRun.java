@@ -1,10 +1,10 @@
 package rice.p2p.commonapi.testing;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 
 import rice.environment.Environment;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Runs a {@link CommonAPITest} regression program inside a Jupiter test, on the direct (simulated) network of the

@@ -36,13 +36,14 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.glacier.v2;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
 import rice.environment.random.RandomSource;
-import rice.environment.random.simple.SimpleRandomSource;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class BloomFilter implements Serializable {
   

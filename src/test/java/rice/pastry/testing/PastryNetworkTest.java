@@ -36,16 +36,22 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.testing;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import rice.environment.Environment;
-import rice.pastry.*;
-import rice.pastry.routing.*;
-import rice.pastry.leafset.*;
-import rice.pastry.dist.*;
-import rice.pastry.socket.*;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSet;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.RoutingTable;
+import rice.pastry.socket.SocketNodeHandle;
+import rice.pastry.socket.SocketPastryNodeFactory;
 
 /** 
  * Utility class for checking the consistency of an existing pastry

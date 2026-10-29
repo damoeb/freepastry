@@ -41,7 +41,9 @@ package rice.tutorial.forwarding;
 
 import java.util.ArrayList;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.NodeHandle;
 
 /**
  * An example message.

@@ -37,20 +37,44 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.SortedMap;
 
 import org.slf4j.Logger;
-import rice.*;
-import rice.Continuation.*;
-import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.past.*;
-import rice.p2p.past.messaging.*;
+import rice.Continuation;
+import rice.Executable;
+import rice.Continuation.ListenerContinuation;
+import rice.Continuation.NamedContinuation;
+import rice.Continuation.StandardContinuation;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.past.PastContent;
+import rice.p2p.past.PastException;
+import rice.p2p.past.PastImpl;
+import rice.p2p.past.PastPolicy;
+import rice.p2p.past.gc.messaging.GCCollectMessage;
+import rice.p2p.past.gc.messaging.GCInsertMessage;
+import rice.p2p.past.gc.messaging.GCLookupHandlesMessage;
+import rice.p2p.past.gc.messaging.GCRefreshMessage;
+import rice.p2p.past.messaging.FetchHandleMessage;
+import rice.p2p.past.messaging.PastMessage;
 import rice.p2p.past.rawserialization.SocketStrategy;
-import rice.p2p.past.gc.messaging.*;
-import rice.persistence.*;
+import rice.persistence.Cache;
+import rice.persistence.StorageManager;
 
 /**
  * This class is an implementation of the GCPast interface, which provides

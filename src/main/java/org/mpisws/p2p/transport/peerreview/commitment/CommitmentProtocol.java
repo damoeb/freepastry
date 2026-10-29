@@ -45,7 +45,6 @@ import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 import org.mpisws.p2p.transport.peerreview.message.AckMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.tuples.Tuple;
 

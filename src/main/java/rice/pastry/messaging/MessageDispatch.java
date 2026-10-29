@@ -37,11 +37,12 @@ advised of the possibility of such damage.
 
 package rice.pastry.messaging;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
 
 import org.slf4j.Logger;
 import rice.Destructable;
-import rice.pastry.*;
+import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.transport.Deserializer;
 

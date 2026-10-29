@@ -47,7 +47,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-
 import javax.crypto.spec.SecretKeySpec;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;

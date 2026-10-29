@@ -36,11 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.glacier.v2;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.glacier.*;
+import rice.Continuation;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.glacier.Fragment;
+import rice.p2p.glacier.VersionKey;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.Continuation;
 
 public interface GlacierPolicy {
 

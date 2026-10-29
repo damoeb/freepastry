@@ -36,13 +36,21 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.aggregation;
 
-import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.*;
-import rice.p2p.past.gc.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 import rice.p2p.commonapi.Id;
-import rice.p2p.glacier.VersionKey;
-import java.security.*;
-import java.io.*;
+import rice.p2p.past.Past;
+import rice.p2p.past.PastContent;
+import rice.p2p.past.PastContentHandle;
+import rice.p2p.past.PastException;
+import rice.p2p.past.gc.GCPast;
+import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.GCPastContentHandle;
+import rice.p2p.past.gc.GCPastMetadata;
 
 public class Aggregate implements GCPastContent {
   protected GCPastContent[] components;

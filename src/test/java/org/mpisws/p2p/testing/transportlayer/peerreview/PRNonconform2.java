@@ -37,10 +37,10 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
 import java.io.File;
+
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
-
 import rice.environment.Environment;
 
 /**

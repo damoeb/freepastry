@@ -50,7 +50,6 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryImpl;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.util.RandomAccessFileIOBuffer;

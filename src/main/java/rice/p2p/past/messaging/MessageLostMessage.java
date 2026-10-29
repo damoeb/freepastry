@@ -40,12 +40,13 @@ package rice.p2p.past.messaging;
 import java.io.IOException;
 
 import org.slf4j.Logger;
-import rice.*;
+import rice.Continuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.past.*;
-import rice.p2p.util.rawserialization.JavaSerializedMessage;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.past.PastException;
 
 /**
  * This class represents a reminder to Past that an outstanding message exists,

@@ -36,28 +36,22 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.tutorial.remotesocket;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.List;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.params.simple.SimpleParameters;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
-import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
-import rice.pastry.direct.*;
-import rice.pastry.leafset.LeafSet;
-import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.appsocket.AppSocketPastryNodeFactory;
 import rice.pastry.socket.appsocket.SocketFactory;
 import rice.pastry.standard.RandomNodeIdFactory;

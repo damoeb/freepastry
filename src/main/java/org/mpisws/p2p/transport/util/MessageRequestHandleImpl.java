@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.util;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.MessageRequestHandle;
-
 import rice.p2p.commonapi.Cancellable;
 
 public class MessageRequestHandleImpl<Identifier, MessageType> implements MessageRequestHandle<Identifier, MessageType> {

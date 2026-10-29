@@ -36,14 +36,23 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.routing;
 
-import org.slf4j.Logger;
-import rice.environment.Environment;
-import rice.p2p.commonapi.LegacyObservable;
-import rice.p2p.util.tuples.Tuple;
-import rice.pastry.*;
-import rice.pastry.Id.Distance;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Observer;
 
-import java.util.*;
+import org.slf4j.Logger;
+import rice.p2p.commonapi.LegacyObservable;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSet;
+import rice.pastry.NodeSetEventSource;
+import rice.pastry.NodeSetListener;
+import rice.pastry.NodeSetUpdate;
+import rice.pastry.PastryNode;
+import rice.pastry.Id.Distance;
 
 /**
  * The Pastry routing table.

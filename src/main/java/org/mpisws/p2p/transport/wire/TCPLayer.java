@@ -39,36 +39,19 @@ package org.mpisws.p2p.transport.wire;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
-
-import org.mpisws.p2p.transport.SocketRequestHandle;
-import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.SocketCallback;
+import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
-
 import org.slf4j.Logger;
-import rice.Continuation;
-import rice.Destructable;
-import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.commonapi.Cancellable;
-import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.selector.SelectionKeyHandler;
 
 public class TCPLayer extends SelectionKeyHandler {

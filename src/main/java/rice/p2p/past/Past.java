@@ -37,10 +37,12 @@ advised of the possibility of such damage.
 
 package rice.p2p.past;
 
-import rice.*;
+import rice.Continuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.past.rawserialization.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.past.rawserialization.PastContentDeserializer;
+import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 
 /**
  * This interface is exported by all instances of Past.  An instance

@@ -1,17 +1,19 @@
 package org.mpisws.p2p.testing.pki.x509;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.KeyPair;
-import java.security.interfaces.RSAPublicKey;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mpisws.p2p.pki.x509.CAToolImpl;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * CAToolImpl's defaults are accepted by JDK 25's TLS constraints, and its CA store round-trips as PKCS12.

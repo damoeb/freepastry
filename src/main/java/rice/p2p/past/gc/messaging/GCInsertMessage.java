@@ -39,13 +39,14 @@ package rice.p2p.past.gc.messaging;
 
 import java.io.IOException;
 
-import rice.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.past.*;
-import rice.p2p.past.messaging.*;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.past.PastContent;
+import rice.p2p.past.messaging.InsertMessage;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.gc.*;
 
 /**
  * This class represents a message which is an insert request in past, 

@@ -40,7 +40,14 @@ import java.util.HashMap;
 
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.commonapi.RouteMessage;
 
 /**
  * The LookupService provides a way to find out what nodes are responsible for a

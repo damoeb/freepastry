@@ -39,7 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing.simple;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

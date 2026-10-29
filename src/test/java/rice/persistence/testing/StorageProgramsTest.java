@@ -4,7 +4,6 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
-
 import rice.environment.Environment;
 
 /**

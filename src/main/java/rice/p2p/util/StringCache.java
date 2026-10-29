@@ -36,9 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.util;
 
-import java.util.*;
-import java.io.*;
-
 /**
  * Implementation of a cache of strings
  */

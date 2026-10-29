@@ -40,10 +40,13 @@ package rice.pastry.commonapi;
 import java.io.IOException;
 
 import rice.p2p.commonapi.Message;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.util.rawserialization.JavaSerializedMessage;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.*;
+import rice.pastry.messaging.PRawMessage;
 
 /**
  * This class is an internal message to the commonapi gluecode.

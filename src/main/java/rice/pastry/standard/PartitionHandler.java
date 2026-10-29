@@ -38,14 +38,23 @@ package rice.pastry.standard;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.pastry.*;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSetEventSource;
+import rice.pastry.NodeSetListener;
+import rice.pastry.PastryNode;
 import rice.pastry.join.JoinRequest;
-import rice.pastry.routing.*;
+import rice.pastry.routing.RouteMessage;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.RoutingTable;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.selector.Timer;
 import rice.selector.TimerTask;

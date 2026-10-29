@@ -41,7 +41,6 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.Message;
 import rice.pastry.messaging.PRawMessage;
 
 public class LeafSetRequest extends PRawMessage {

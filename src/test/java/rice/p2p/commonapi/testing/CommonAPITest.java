@@ -37,38 +37,44 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi.testing;
 
-import org.slf4j.Logger;
-import rice.*;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.*;
+import rice.environment.logging.LogManager;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;
 import rice.environment.processing.sim.SimProcessor;
 import rice.environment.random.RandomSource;
-import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.TimeSource;
 import rice.environment.time.simple.SimpleTimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-
-import rice.pastry.*;
-import rice.pastry.commonapi.*;
-import rice.pastry.direct.*;
-import rice.pastry.dist.*;
-import rice.pastry.leafset.BroadcastLeafSet;
-import rice.pastry.leafset.RequestLeafSet;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
+import rice.pastry.commonapi.PastryIdFactory;
+import rice.pastry.direct.DirectNodeHandle;
+import rice.pastry.direct.DirectPastryNodeFactory;
+import rice.pastry.direct.EuclideanNetwork;
+import rice.pastry.direct.GenericNetwork;
+import rice.pastry.direct.NetworkSimulator;
+import rice.pastry.direct.SphereNetwork;
+import rice.pastry.dist.DistPastryNodeFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory;
-import rice.pastry.standard.*;
+import rice.pastry.standard.RandomNodeIdFactory;
 import rice.selector.SelectorManager;
-
-import java.util.*;
-import java.net.*;
-import java.io.*;
 
 /**
  * Provides regression testing setup for applications written on top of the

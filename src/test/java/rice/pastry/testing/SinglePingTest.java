@@ -35,18 +35,25 @@ advised of the possibility of such damage.
 
 *******************************************************************************/ 
 package rice.pastry.testing;
+import java.lang.InterruptedException;
+import java.lang.Object;
+import java.lang.RuntimeException;
+import java.lang.SuppressWarnings;
+import java.lang.System;
+import java.util.Date;
+import java.util.NoSuchElementException;
+import java.util.Vector;
 
 import rice.environment.Environment;
-import rice.pastry.*;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.pastry.direct.*;
-import rice.pastry.standard.*;
-import rice.pastry.join.*;
-import rice.pastry.routing.*;
-
-import java.util.*;
-import java.io.*;
-import java.lang.*;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
+import rice.pastry.direct.DirectNodeHandle;
+import rice.pastry.direct.DirectPastryNodeFactory;
+import rice.pastry.direct.EuclideanNetwork;
+import rice.pastry.direct.NetworkSimulator;
+import rice.pastry.direct.TestRecord;
+import rice.pastry.standard.RandomNodeIdFactory;
 
 /**
  * SinglePingTest

@@ -37,18 +37,31 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication.manager;
 
-import java.util.*;
-import java.util.logging.*;
+import java.util.HashMap;
+import java.util.Iterator;
 
 import org.slf4j.Logger;
-import rice.*;
-import rice.Continuation.*;
-
+import rice.Continuation;
+import rice.Continuation.StandardContinuation;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.commonapi.*;
-import rice.p2p.replication.*;
-import rice.p2p.replication.manager.messaging.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.CancellableTask;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.replication.Replication;
+import rice.p2p.replication.ReplicationClient;
+import rice.p2p.replication.ReplicationImpl;
+import rice.p2p.replication.ReplicationPolicy;
+import rice.p2p.replication.manager.messaging.ReminderMessage;
+import rice.p2p.replication.manager.messaging.TimeoutMessage;
 
 /**
  * This class is the default provided implementation of the replication manager

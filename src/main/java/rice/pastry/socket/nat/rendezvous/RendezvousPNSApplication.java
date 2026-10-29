@@ -42,8 +42,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.mpisws.p2p.transport.rendezvous.ContactDirectStrategy;
-
-
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
 import rice.pastry.NodeHandle;

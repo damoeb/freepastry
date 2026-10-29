@@ -40,24 +40,29 @@ advised of the possibility of such damage.
 package rice.pastry.leafset.testing;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Map;
 
-import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.proximity.ProximityListener;
-
 import rice.environment.Environment;
-import rice.pastry.*;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSetEventSource;
+import rice.pastry.NodeSetListener;
+import rice.pastry.PastryNode;
+import rice.pastry.ScheduledMessage;
 import rice.pastry.boot.Bootstrapper;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
 import rice.pastry.routing.RoutingTable;
-import rice.pastry.transport.PMessageReceipt;
 import rice.pastry.transport.PMessageNotification;
+import rice.pastry.transport.PMessageReceipt;
 
 public class MergeTest {
 

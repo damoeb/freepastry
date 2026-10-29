@@ -41,7 +41,6 @@ import java.nio.ByteBuffer;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
-
 import rice.environment.Environment;
 
 public interface IdentityTransport<Handle, Identifier> extends 

@@ -40,13 +40,20 @@ advised of the possibility of such damage.
 package rice.tutorial.splitstream;
 
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.*;
-import rice.p2p.scribe.Scribe;
-import rice.p2p.scribe.ScribeClient;
-import rice.p2p.scribe.ScribeContent;
-import rice.p2p.scribe.ScribeImpl;
-import rice.p2p.scribe.Topic;
-import rice.p2p.splitstream.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.CancellableTask;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.splitstream.Channel;
+import rice.p2p.splitstream.ChannelId;
+import rice.p2p.splitstream.SplitStream;
+import rice.p2p.splitstream.SplitStreamClient;
+import rice.p2p.splitstream.SplitStreamImpl;
+import rice.p2p.splitstream.Stripe;
 import rice.pastry.commonapi.PastryIdFactory;
 
 /**

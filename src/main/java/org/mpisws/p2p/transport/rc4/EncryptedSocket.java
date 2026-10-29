@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.rc4;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;

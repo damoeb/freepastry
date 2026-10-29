@@ -40,11 +40,16 @@ package rice.p2p.splitstream.testing;
 import java.io.IOException;
 
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
-import rice.environment.params.simple.SimpleParameters;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.testing.CommonAPITest;
-import rice.p2p.splitstream.*;
+import rice.p2p.splitstream.Channel;
+import rice.p2p.splitstream.ChannelId;
+import rice.p2p.splitstream.SplitStream;
+import rice.p2p.splitstream.SplitStreamClient;
+import rice.p2p.splitstream.SplitStreamImpl;
+import rice.p2p.splitstream.SplitStreamScribePolicy;
+import rice.p2p.splitstream.Stripe;
 
 /**
  * Provides regression testing for the Scribe

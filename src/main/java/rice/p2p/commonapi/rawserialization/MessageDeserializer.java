@@ -41,7 +41,8 @@ package rice.p2p.commonapi.rawserialization;
 
 import java.io.IOException;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.NodeHandle;
 
 /**
  * Because Pastry/Transport layer cannot know about all messge types, each app needs to 

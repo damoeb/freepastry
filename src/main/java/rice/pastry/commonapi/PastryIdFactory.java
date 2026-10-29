@@ -37,13 +37,19 @@ advised of the possibility of such damage.
 
 package rice.pastry.commonapi;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Random;
+import java.util.SortedMap;
+
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.*;
-
-import java.util.*;
-import java.security.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.NodeHandleSet;
 
 /**
  * This class provides applications with a way of generating

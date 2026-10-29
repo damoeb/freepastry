@@ -39,10 +39,12 @@ package rice.p2p.replication.messaging;
 
 import java.io.IOException;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
-import rice.p2p.replication.*;
-import rice.p2p.util.*;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.IdBloomFilter;
 
 /**
  * This class represents a request for a set of keys in the replication

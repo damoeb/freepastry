@@ -39,19 +39,52 @@ package rice.p2p.scribe;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Observable;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 import org.slf4j.Logger;
-import rice.*;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.CancellableTask;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.NodeHandleListener;
+import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.scribe.javaserialized.JavaScribeContentDeserializer;
 import rice.p2p.scribe.maintenance.MaintainableScribe;
 import rice.p2p.scribe.maintenance.ScribeMaintenancePolicy;
-import rice.p2p.scribe.messaging.*;
-import rice.p2p.scribe.rawserialization.*;
+import rice.p2p.scribe.messaging.AnycastFailureMessage;
+import rice.p2p.scribe.messaging.AnycastMessage;
+import rice.p2p.scribe.messaging.DropMessage;
+import rice.p2p.scribe.messaging.MaintenanceMessage;
+import rice.p2p.scribe.messaging.PublishMessage;
+import rice.p2p.scribe.messaging.PublishRequestMessage;
+import rice.p2p.scribe.messaging.ScribeMessage;
+import rice.p2p.scribe.messaging.SubscribeAckMessage;
+import rice.p2p.scribe.messaging.SubscribeFailedMessage;
+import rice.p2p.scribe.messaging.SubscribeLostMessage;
+import rice.p2p.scribe.messaging.SubscribeMessage;
+import rice.p2p.scribe.messaging.UnsubscribeMessage;
+import rice.p2p.scribe.rawserialization.JavaSerializedScribeContent;
+import rice.p2p.scribe.rawserialization.RawScribeContent;
+import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
  * The provided implementation of Scribe.

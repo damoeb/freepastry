@@ -39,8 +39,16 @@ package rice.tutorial.remotesocket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.appsocket.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.appsocket.AppSocket;
+import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 
 /**
  * By calling sendMyMsgDirect(NodeHandle nh), this Application opens a socket to MyApp on the requested node, and sends it's Id. 

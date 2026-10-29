@@ -37,11 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import java.io.Serializable;
-
-import rice.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.past.*;
+import rice.p2p.past.PastContent;
 
 /**
  * This interface represents an object which is storable in the GCPast

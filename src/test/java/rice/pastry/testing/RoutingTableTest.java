@@ -36,27 +36,47 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.testing;
 
-import java.io.*;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Vector;
 
 import rice.Destructable;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.p2p.scribe.*;
-import rice.pastry.*;
+import rice.p2p.scribe.Scribe;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.ScribeImpl;
+import rice.p2p.scribe.ScribeMultiClient;
+import rice.p2p.scribe.Topic;
+import rice.pastry.JoinFailedException;
 import rice.pastry.NodeHandle;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
+import rice.pastry.PastryNodeListener;
 import rice.pastry.commonapi.PastryIdFactory;
-import rice.pastry.direct.*;
+import rice.pastry.direct.DirectNodeHandle;
+import rice.pastry.direct.DirectPastryNode;
+import rice.pastry.direct.DirectPastryNodeFactory;
+import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.routing.*;
+import rice.pastry.routing.InitiateRouteSetMaintenance;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.RoutingTable;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
 import rice.tutorial.direct.MyMsg;
 

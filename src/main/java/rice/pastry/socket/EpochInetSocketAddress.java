@@ -37,10 +37,13 @@ advised of the possibility of such damage.
 
 package rice.pastry.socket;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * Class which represents the address of a remote node (most external first) plus its epoch.

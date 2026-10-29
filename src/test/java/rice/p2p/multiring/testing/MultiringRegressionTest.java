@@ -1,11 +1,10 @@
 package rice.p2p.multiring.testing;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
 import rice.environment.Environment;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The multiring regression program on the direct simulator (about 45 s; its main() defaults to real sockets).

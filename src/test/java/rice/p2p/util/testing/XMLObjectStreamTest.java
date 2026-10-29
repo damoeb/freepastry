@@ -1,16 +1,27 @@
 package rice.p2p.util.testing;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.TreeSet;
+import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
-
 import rice.p2p.util.XMLObjectInputStream;
 import rice.p2p.util.XMLObjectOutputStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * JUnit tests for XMLObjectOutputStream / XMLObjectInputStream.  Runs the checks of

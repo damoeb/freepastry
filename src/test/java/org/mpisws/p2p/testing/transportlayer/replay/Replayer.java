@@ -57,7 +57,6 @@ import org.mpisws.p2p.transport.peerreview.replay.playback.ReplayLayer;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 import org.mpisws.p2p.transport.util.Serializer;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;

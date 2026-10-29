@@ -41,7 +41,6 @@ import java.io.PrintStream;
 
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.testing.RawScribeRegrTest;
 
 /**

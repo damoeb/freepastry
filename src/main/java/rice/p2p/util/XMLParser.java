@@ -36,8 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.util;
 
-import java.io.*;
-import java.util.*;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.Stack;
 
 /** 
 * This class is a memory-efficient implementation of most of the XML

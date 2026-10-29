@@ -39,8 +39,6 @@ advised of the possibility of such damage.
  */
 package rice.selector;
 
-import java.util.Queue;
-
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.CancellableTask;
 

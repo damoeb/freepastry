@@ -38,7 +38,8 @@ package rice.p2p.util.testing;
 
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
-import rice.p2p.util.*;
+import rice.p2p.util.BloomFilter;
+import rice.p2p.util.MathUtils;
 
 public class BloomFilterUnit {
   

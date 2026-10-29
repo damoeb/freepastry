@@ -43,7 +43,7 @@ import java.net.InetAddress;
 import java.util.Random;
 
 import org.slf4j.Logger;
-import rice.environment.logging.*;
+import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
 
 /**

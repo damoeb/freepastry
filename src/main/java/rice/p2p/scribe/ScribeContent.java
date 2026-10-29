@@ -37,10 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.scribe;
 
-import java.io.*;
-
-import rice.*;
-import rice.p2p.commonapi.*;
+import java.io.Serializable;
 
 /**
  * This interface represents data published in a Scribe system.

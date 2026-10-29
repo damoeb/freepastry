@@ -36,8 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.commonapi.testing;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,11 +43,14 @@ import java.util.Observable;
 import java.util.Observer;
 
 import org.junit.jupiter.api.Test;
-
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests the NodeHandleListener mechanism of NodeHandle that replaced java.util.Observer,

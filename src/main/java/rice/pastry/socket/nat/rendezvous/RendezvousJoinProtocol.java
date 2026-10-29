@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.socket.nat.rendezvous;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.SocketRequestHandle;
@@ -45,7 +44,6 @@ import org.mpisws.p2p.transport.rendezvous.ContactDirectStrategy;
 import org.mpisws.p2p.transport.rendezvous.PilotManager;
 import org.mpisws.p2p.transport.rendezvous.RendezvousTransportLayerImpl;
 import org.mpisws.p2p.transport.util.OptionsFactory;
-
 import rice.Continuation;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.pastry.NodeHandle;

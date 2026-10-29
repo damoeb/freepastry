@@ -37,12 +37,14 @@ advised of the possibility of such damage.
 
 package org.mpisws.p2p.transport.multiaddress;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
-
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * The ordered list of addresses of a single node: the outermost (public) address first,

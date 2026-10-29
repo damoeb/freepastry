@@ -38,12 +38,10 @@ package rice.pastry.pns.messages;
 
 import java.io.IOException;
 
-import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.messaging.Message;
 import rice.pastry.messaging.PRawMessage;
 
 public class LeafSetResponse extends PRawMessage {

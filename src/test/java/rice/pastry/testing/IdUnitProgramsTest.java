@@ -1,10 +1,10 @@
 package rice.pastry.testing;
 
+import org.junit.jupiter.api.Test;
+
 import static rice.p2p.util.testing.MainProgram.assertContains;
 import static rice.p2p.util.testing.MainProgram.assertNoneOf;
 import static rice.p2p.util.testing.MainProgram.run;
-
-import org.junit.jupiter.api.Test;
 
 /**
  * Runs the legacy main()-based checks of the Pastry Ids, which report failures only by printing a marker.

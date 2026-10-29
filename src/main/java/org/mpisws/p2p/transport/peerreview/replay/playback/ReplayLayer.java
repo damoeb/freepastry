@@ -41,23 +41,19 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
-import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
-import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.Serializer;
-
 import rice.environment.Environment;
-import rice.environment.logging.Slf4jLogManager;
 import rice.environment.logging.LogManager;
+import rice.environment.logging.Slf4jLogManager;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;
@@ -67,7 +63,6 @@ import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.util.MathUtils;
 import rice.selector.SelectorManager;
-import rice.selector.TimerTask;
 
 public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
 

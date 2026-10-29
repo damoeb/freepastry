@@ -44,7 +44,10 @@ import java.util.ArrayList;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.NodeHandleSet;
-import rice.pastry.*;
+import rice.pastry.Id;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
 

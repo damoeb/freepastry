@@ -42,7 +42,6 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
-
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -59,12 +58,9 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.IdFactory;
-import rice.pastry.commonapi.PastryIdFactory;
 
 /**
  * Only encrypts socket traffic!!!

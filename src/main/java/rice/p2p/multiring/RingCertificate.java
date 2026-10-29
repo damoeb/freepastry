@@ -37,20 +37,39 @@ advised of the possibility of such damage.
 
 package rice.p2p.multiring;
 
-import java.io.*;
-import java.net.*;
-import java.security.*;
-import java.util.*;
-import java.util.zip.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.HashMap;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.multiring.*;
-import rice.p2p.util.*;
-import rice.pastry.commonapi.*;
-import rice.pastry.dist.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.multiring.RingCertificate;
+import rice.p2p.util.SecurityUtils;
+import rice.p2p.util.XMLObjectInputStream;
+import rice.p2p.util.XMLObjectOutputStream;
+import rice.pastry.commonapi.PastryIdFactory;
+import rice.pastry.dist.DistPastryNodeFactory;
 
 /**
  * This class represents a certificate for a specific ring attached, which

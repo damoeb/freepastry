@@ -39,8 +39,6 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.rawserialization2;
 
-import java.io.IOException;
-
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -48,7 +46,6 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.commonapi.rawserialization.*;
 import rice.pastry.messaging.JavaSerializedDeserializer;
 
 /**

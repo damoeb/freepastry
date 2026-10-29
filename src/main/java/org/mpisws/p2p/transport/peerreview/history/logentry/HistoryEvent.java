@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
-
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 

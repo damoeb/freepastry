@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.peerreview.infostore;
 import java.io.IOException;
 
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
-
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public interface Evidence extends PeerReviewConstants {

@@ -51,11 +51,9 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewCallback;
 import org.mpisws.p2p.transport.peerreview.WitnessListener;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
-
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
@@ -65,12 +63,7 @@ import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
-import rice.pastry.socket.SocketNodeHandle;
-import rice.pastry.socket.SocketNodeHandleFactory;
-import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.TransportLayerNodeHandle;
-import rice.pastry.transport.NodeHandleAdapter;
-import rice.pastry.transport.TLDeserializer;
 
 public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayerNodeHandle<MultiInetSocketAddress>, Id>,
     TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> {

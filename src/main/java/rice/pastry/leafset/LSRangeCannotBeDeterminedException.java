@@ -39,7 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.pastry.leafset;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RangeCannotBeDeterminedException;
 
 /**
  * @author Jeff Hoye

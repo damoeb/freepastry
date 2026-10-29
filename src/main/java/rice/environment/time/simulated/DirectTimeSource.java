@@ -43,11 +43,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import org.slf4j.Logger;
-import rice.Destructable;
-import rice.environment.logging.*;
+import rice.environment.logging.LogManager;
 import rice.environment.params.Parameters;
 import rice.environment.time.TimeSource;
-import rice.selector.*;
+import rice.selector.SelectorManager;
+import rice.selector.TimerTask;
 
 public class DirectTimeSource implements TimeSource {
 

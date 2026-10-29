@@ -45,14 +45,15 @@ package rice.persistence;
  *
  * @version $Id: EmptyCache.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
+import java.io.Serializable;
+import java.util.SortedMap;
 
-import rice.*;
-import rice.Continuation.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.util.*;
+import rice.Continuation;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.util.RedBlackMap;
 
 /**
  * This class is a cahcce which doesn't store anything.

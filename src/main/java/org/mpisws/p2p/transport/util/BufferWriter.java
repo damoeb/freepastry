@@ -42,7 +42,6 @@ import java.nio.ByteBuffer;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
-
 import rice.Continuation;
 
 /**

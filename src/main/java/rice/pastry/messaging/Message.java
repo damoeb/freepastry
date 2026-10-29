@@ -36,10 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.messaging;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Date;
 
-import rice.pastry.*;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
 
 /**
  * This is an abstract implementation of a message object.

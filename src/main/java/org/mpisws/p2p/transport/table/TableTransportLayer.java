@@ -40,7 +40,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.TransportLayer;
-
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
 

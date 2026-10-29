@@ -37,13 +37,9 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.history;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
-
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.InputBuffer;

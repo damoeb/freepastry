@@ -38,9 +38,11 @@ package rice.p2p.glacier.v2.messaging;
 
 import java.io.IOException;
 
-import rice.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.VersionKey;
 
 public class GlacierRefreshCompleteMessage extends GlacierMessage {

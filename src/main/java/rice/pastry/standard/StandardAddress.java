@@ -37,12 +37,11 @@ advised of the possibility of such damage.
 
 package rice.pastry.standard;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.pastry.*;
-import rice.pastry.messaging.*;
-
-import java.security.*;
 
 /**
  * Constructs an address for a specific class and instance name.

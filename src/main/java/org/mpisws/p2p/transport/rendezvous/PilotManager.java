@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.rendezvous;
 
 import org.mpisws.p2p.transport.SocketRequestHandle;
-
 import rice.Continuation;
 
 /**

@@ -37,8 +37,9 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.NoSuchElementException;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 

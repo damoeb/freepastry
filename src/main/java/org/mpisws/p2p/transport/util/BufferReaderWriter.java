@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.util;
 import java.nio.ByteBuffer;
 
 import org.mpisws.p2p.transport.P2PSocket;
-
 import rice.Continuation;
 
 /**

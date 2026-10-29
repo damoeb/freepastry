@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.peerreview.history.stub;
 import java.nio.ByteBuffer;
 
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
-
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 
 public class NullHashProvider implements HashProvider {

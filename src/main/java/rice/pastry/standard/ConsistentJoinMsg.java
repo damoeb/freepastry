@@ -40,13 +40,16 @@ advised of the possibility of such damage.
 package rice.pastry.standard;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
 
-import rice.p2p.commonapi.rawserialization.*;
-import rice.pastry.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeHandleFactory;
 import rice.pastry.join.JoinAddress;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.messaging.*;
+import rice.pastry.messaging.PRawMessage;
 
 /**
  * @author Jeff Hoye

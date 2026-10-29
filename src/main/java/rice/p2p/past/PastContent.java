@@ -39,8 +39,7 @@ package rice.p2p.past;
 
 import java.io.Serializable;
 
-import rice.*;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
 
 
 /**

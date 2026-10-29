@@ -37,18 +37,26 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import rice.*;
-
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
-import org.mpisws.p2p.transport.MessageCallback;
-import org.mpisws.p2p.transport.MessageRequestHandle;
-
+import rice.Continuation;
+import rice.Executable;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.CancellableTask;
+import rice.p2p.commonapi.DeliveryNotification;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.MessageReceipt;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
  * This class wraps an endpoint and allows for applications to transparently

@@ -39,7 +39,9 @@ advised of the possibility of such damage.
  */
 package rice.p2p.scribe.javaserialized;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.rawserialization.InputBuffer;

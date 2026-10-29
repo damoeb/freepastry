@@ -42,8 +42,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
-
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 public class SHA1HashProvider implements HashProvider {

@@ -44,7 +44,6 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.networkinfo.ConnectivityResult;
-
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.pastry.NodeIdFactory;

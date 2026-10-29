@@ -39,7 +39,6 @@ package rice.pastry.socket.nat.rendezvous;
 import org.mpisws.p2p.transport.rendezvous.OutgoingPilotListener;
 import org.mpisws.p2p.transport.rendezvous.PilotManager;
 import org.mpisws.p2p.transport.rendezvous.RendezvousContact;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.pastry.NodeHandle;

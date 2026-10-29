@@ -37,7 +37,9 @@ advised of the possibility of such damage.
 package rice.pastry.standard;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Observable;
 
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
@@ -46,7 +48,14 @@ import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.TimerWeakHashMap;
-import rice.pastry.*;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSet;
+import rice.pastry.NodeSetEventSource;
+import rice.pastry.NodeSetListener;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeListener;
+import rice.pastry.ReadyStrategy;
+import rice.pastry.ScheduledMessage;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.leafset.BroadcastLeafSet;
 import rice.pastry.leafset.InitiateLeafSetMaintenance;
@@ -54,7 +63,8 @@ import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.LeafSetProtocol;
 import rice.pastry.leafset.LeafSetProtocolAddress;
 import rice.pastry.leafset.RequestLeafSet;
-import rice.pastry.messaging.*;
+import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PJavaSerializedDeserializer;
 import rice.pastry.routing.RoutingTable;
 import rice.selector.TimerTask;
 

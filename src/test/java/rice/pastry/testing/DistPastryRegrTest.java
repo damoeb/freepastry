@@ -36,15 +36,18 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.testing;
 
-import rice.environment.Environment;
-import rice.pastry.*;
-import rice.pastry.dist.*;
-import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.standard.*;
-
-import java.util.*;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.Collections;
+
+import rice.environment.Environment;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
+import rice.pastry.dist.DistPastryNodeFactory;
+import rice.pastry.socket.SocketPastryNodeFactory;
+import rice.pastry.standard.IPNodeIdFactory;
 
 /**
  * a regression test suite for pastry with "distributed" nodes. All nodes are on

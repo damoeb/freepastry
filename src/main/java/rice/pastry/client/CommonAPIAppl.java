@@ -38,9 +38,13 @@ package rice.pastry.client;
 
 import java.io.IOException;
 
-import rice.pastry.*;
-import rice.pastry.messaging.*;
-import rice.pastry.routing.*;
+import rice.pastry.Id;
+import rice.pastry.IdRange;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSet;
+import rice.pastry.PastryNode;
+import rice.pastry.messaging.Message;
+import rice.pastry.routing.RouteMessage;
 
 /**
  * CommonAPIAppl is an abstract class that all new applications should extend.

@@ -37,10 +37,11 @@ advised of the possibility of such damage.
 
 package org.mpisws.p2p.transport.sourceroute;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import rice.p2p.commonapi.rawserialization.*;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * Class which represents a source route to a remote identifier: the list of hops from the source to the destination.

@@ -39,7 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.pastry.direct;
 
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.NodeHandle;
 
 /**
  * Notified for every message that is sent over the network.

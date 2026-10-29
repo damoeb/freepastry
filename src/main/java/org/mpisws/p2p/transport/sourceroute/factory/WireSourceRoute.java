@@ -41,7 +41,6 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
-
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class WireSourceRoute extends SourceRoute<InetSocketAddress> {

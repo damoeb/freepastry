@@ -37,10 +37,20 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.SortedMap;
 
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.NodeHandleSet;
 
 /**
  * This class provides the ability to build Ids which can support a multi-ring

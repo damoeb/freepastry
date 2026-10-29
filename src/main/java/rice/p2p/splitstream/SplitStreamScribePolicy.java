@@ -36,15 +36,25 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.splitstream;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
 
-import rice.p2p.commonapi.*;
-import rice.p2p.scribe.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.scribe.Scribe;
+import rice.p2p.scribe.ScribeClient;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.ScribePolicy.DefaultScribePolicy;
 import rice.p2p.scribe.maintenance.MaintainableScribe;
-import rice.p2p.scribe.messaging.*;
-
-import rice.pastry.routing.RoutingTable;
+import rice.p2p.scribe.messaging.AnycastMessage;
+import rice.p2p.scribe.messaging.ScribeMessage;
+import rice.p2p.scribe.messaging.SubscribeMessage;
 
 /**
  * This class represents SplitStream's policy for Scribe, which only allows children

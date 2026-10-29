@@ -43,7 +43,6 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.bandwidthmeasure.BandwidthMeasuringTransportLayer;
-
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Id;

@@ -45,16 +45,25 @@ package rice.persistence.testing;
  *
  * @version $Id: LRUCacheTest.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.*;
-import java.util.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.io.UncheckedIOException;
+import java.util.Random;
 import java.util.zip.GZIPOutputStream;
 
-import rice.*;
+import rice.Continuation;
 import rice.environment.Environment;
-import rice.persistence.*;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdSet;
 import rice.p2p.util.XMLObjectOutputStream;
-import rice.pastry.commonapi.*;
+import rice.pastry.commonapi.PastryIdFactory;
+import rice.persistence.Cache;
+import rice.persistence.LRUCache;
+import rice.persistence.MemoryStorage;
 
 /**
  * This class is a class which tests the Cache class

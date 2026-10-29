@@ -37,11 +37,25 @@ advised of the possibility of such damage.
 
 package rice.p2p.util.testing;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
+import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.*;
-import java.util.zip.*;
-import rice.p2p.util.*;
+import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.Vector;
+
+import rice.p2p.util.XMLObjectInputStream;
+import rice.p2p.util.XMLObjectOutputStream;
 
 @SuppressWarnings("unchecked")
 public class XMLObjectStreamUnit {

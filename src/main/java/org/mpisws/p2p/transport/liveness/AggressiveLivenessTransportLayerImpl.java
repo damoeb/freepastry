@@ -41,13 +41,10 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.ErrorHandler;
-import org.mpisws.p2p.transport.MessageCallback;
-import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl.EntityManager;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl.LSocket;
-
 import rice.environment.Environment;
 
 /**

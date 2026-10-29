@@ -41,7 +41,6 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.message.AuthPushMessage;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public interface AuthenticatorPushProtocol<Handle, Identifier extends RawSerializable> extends PeerReviewConstants {

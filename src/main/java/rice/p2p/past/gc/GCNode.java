@@ -38,7 +38,12 @@ advised of the possibility of such damage.
 package rice.p2p.past.gc;
 
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
 
 /**
  * This class wraps a Node

@@ -40,20 +40,27 @@ advised of the possibility of such damage.
 package rice.tutorial.past;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.past.*;
-import rice.pastry.*;
+import rice.p2p.past.Past;
+import rice.p2p.past.PastContent;
+import rice.p2p.past.PastImpl;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.persistence.*;
+import rice.persistence.LRUCache;
+import rice.persistence.MemoryStorage;
+import rice.persistence.Storage;
+import rice.persistence.StorageManagerImpl;
 
 /**
  * This tutorial shows how to use Past.

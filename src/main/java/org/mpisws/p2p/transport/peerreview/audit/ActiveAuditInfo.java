@@ -38,7 +38,6 @@ package org.mpisws.p2p.transport.peerreview.audit;
 
 import org.mpisws.p2p.transport.peerreview.message.ChallengeMessage;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
-
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /* Here we keep state about audits for which (a) we have not received a

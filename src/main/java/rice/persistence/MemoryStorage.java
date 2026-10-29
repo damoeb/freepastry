@@ -45,13 +45,24 @@ package rice.persistence;
  * 
  * @version $Id: MemoryStorage.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.SortedMap;
+import java.util.zip.GZIPOutputStream;
 
-import rice.*;
-import rice.p2p.commonapi.*;
-import rice.p2p.util.*;
+import rice.Continuation;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.util.ImmutableSortedMap;
+import rice.p2p.util.RedBlackMap;
+import rice.p2p.util.ReverseTreeMap;
+import rice.p2p.util.XMLObjectOutputStream;
 
 /**
  * This class is an implementation of Storage which provides

@@ -37,12 +37,16 @@ advised of the possibility of such damage.
 
 package rice.p2p.scribe;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
-import rice.p2p.scribe.messaging.*;
-import rice.p2p.util.TimerWeakHashMap;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.scribe.messaging.AnycastMessage;
+import rice.p2p.scribe.messaging.ScribeMessage;
+import rice.p2p.scribe.messaging.SubscribeMessage;
 
 /**
  * This interface represents a policy for Scribe, which is asked whenever a

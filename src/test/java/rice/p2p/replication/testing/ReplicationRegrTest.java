@@ -37,13 +37,18 @@ advised of the possibility of such damage.
 package rice.p2p.replication.testing;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
 
 import rice.Continuation.ListenerContinuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.*;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.testing.CommonAPITest;
-import rice.p2p.replication.*;
+import rice.p2p.replication.ReplicationClient;
+import rice.p2p.replication.ReplicationImpl;
 import rice.persistence.MemoryStorage;
 
 /**

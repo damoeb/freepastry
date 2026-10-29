@@ -37,9 +37,9 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import java.io.*;
-
-import rice.p2p.past.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 
 /**
  * Class which is used as the metadata storage for the GC past implementation.

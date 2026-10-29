@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;

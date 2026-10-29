@@ -42,7 +42,6 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteForwardStrategy;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
 

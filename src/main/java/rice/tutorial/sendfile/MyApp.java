@@ -50,10 +50,17 @@ import org.mpisws.p2p.filetransfer.FileTransferCallback;
 import org.mpisws.p2p.filetransfer.FileTransferImpl;
 import org.mpisws.p2p.filetransfer.FileTransferListener;
 import org.mpisws.p2p.filetransfer.Receipt;
-
 import rice.Continuation;
-import rice.p2p.commonapi.*;
-import rice.p2p.commonapi.appsocket.*;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.appsocket.AppSocket;
+import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 

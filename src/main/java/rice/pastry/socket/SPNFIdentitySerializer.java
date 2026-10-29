@@ -44,11 +44,9 @@ import org.mpisws.p2p.transport.identity.IdentitySerializer;
 import org.mpisws.p2p.transport.identity.SerializerListener;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
-
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
-import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactoryListener;
 import rice.pastry.PastryNode;
 

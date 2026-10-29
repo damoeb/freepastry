@@ -38,8 +38,6 @@ package org.mpisws.p2p.transport.wire;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -48,11 +46,10 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
-import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
-
+import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.slf4j.Logger;
 import rice.selector.SelectionKeyHandler;
 

@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.glacier;
 
-import rice.*;
-import rice.p2p.commonapi.*;
+import rice.Continuation;
+import rice.p2p.commonapi.Id;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 
