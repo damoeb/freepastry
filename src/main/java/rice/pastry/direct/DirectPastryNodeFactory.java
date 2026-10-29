@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.pastry.direct;
 
@@ -86,19 +86,19 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   protected NodeIdFactory nidFactory;
 
   protected NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
-  
-  protected Collection<NodeHandleFactoryListener<? super NodeHandle>> listeners = 
+
+  protected Collection<NodeHandleFactoryListener<? super NodeHandle>> listeners =
     new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>();
 
-  
+
   /**
    * Main constructor.
-   * 
+   *
    * @param nf the NodeIdFactory
    * @param sim the NetworkSimulator
    * @param env the Environment
    */
-  public DirectPastryNodeFactory(NodeIdFactory nf, NetworkSimulator<DirectNodeHandle,RawMessage> sim, Environment env) {    
+  public DirectPastryNodeFactory(NodeIdFactory nf, NetworkSimulator<DirectNodeHandle,RawMessage> sim, Environment env) {
     super(env);
     env.getParameters().setInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled",120000);
     nidFactory = nf;
@@ -119,11 +119,11 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   /**
    * Getter for the NetworkSimulator.
-   * 
+   *
    * @return the NetworkSimulator we are using.
    */
   public NetworkSimulator<DirectNodeHandle,RawMessage> getNetworkSimulator() { return simulator; }
-  
+
   /**
    * Manufacture a new Pastry node.
    *
@@ -160,14 +160,14 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       return null;
     }
   }
-  
+
   /**
    * Manufacture a new Pastry node.
    *
    * @return a new PastryNode
    */
   public PastryNode newNode(Id nodeId) throws IOException {
-      
+
       // this code builds a different environment for each PastryNode
       Environment environment = this.environment;
       if (this.environment.getParameters().getBoolean("pastry_factory_multipleNodes")) {
@@ -178,13 +178,13 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
             this.environment.getRandomSource(),
             this.environment.getTimeSource(),
             slm.clone("0x"+nodeId.toStringBare()),
-            this.environment.getParameters(), 
+            this.environment.getParameters(),
             this.environment.getExceptionStrategy());
         }
-      }    
+      }
       PastryNode pn = new PastryNode(nodeId, environment);
       nodeHandleHelper(pn);
-        
+
       return pn;
   }
 
@@ -202,7 +202,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   /**
-   * The non-blocking versions here all execute immediately.  
+   * The non-blocking versions here all execute immediately.
    * This CancellableTask is just a placeholder.
    * @author Jeff Hoye
    */
@@ -219,11 +219,11 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     }
   }
 
-  
+
   public CancellableTask getLeafSet(NodeHandle handle, Continuation<LeafSet, Exception> c) {
     DirectNodeHandle dHandle = (DirectNodeHandle) handle;
     c.receiveResult(dHandle.getRemote().getLeafSet());
-    return new NullCancellableTask();  
+    return new NullCancellableTask();
   }
 
   /**
@@ -243,9 +243,9 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   public CancellableTask getRouteRow(NodeHandle handle, int row, Continuation<RouteSet[], Exception> c) {
     DirectNodeHandle dHandle = (DirectNodeHandle) handle;
     c.receiveResult(dHandle.getRemote().getRoutingTable().getRow(row));
-    return new NullCancellableTask();  
+    return new NullCancellableTask();
   }
-  
+
   /**
    * This method determines and returns the proximity between two nodes, as
    * given by the simulator.
@@ -268,11 +268,11 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   protected NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) throws IOException {
     // TODO: this factory cannot read or build handles (it returns null); the simulator never serializes them
     return new NodeHandleFactory<NodeHandle>(){
-    
+
       public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
         return null;
       }
-    
+
       public NodeHandle coalesce(NodeHandle handle) {
         notifyListeners(handle);
         return null;
@@ -283,8 +283,8 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
        */
       protected void notifyListeners(NodeHandle nh) {
         Collection<NodeHandleFactoryListener<? super NodeHandle>> temp = listeners;
-        synchronized (listeners) {      
-          temp = new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>(listeners);      
+        synchronized (listeners) {
+          temp = new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>(listeners);
         }
         for (NodeHandleFactoryListener<? super NodeHandle> foo:temp) {
           foo.nodeHandleFound(nh);
@@ -316,12 +316,12 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       recordTable.put(pn.getNodeId(),nr);
     }
     TransportLayer<? extends NodeHandle, RawMessage> tl = getDirectTransportLayer(pn, nr);
-        
-    NodeHandleAdapter nha = new NodeHandleAdapter(tl,simulator.getLivenessProvider(),new ProximityProvider<NodeHandle>(){          
+
+    NodeHandleAdapter nha = new NodeHandleAdapter(tl,simulator.getLivenessProvider(),new ProximityProvider<NodeHandle>(){
       public int proximity(NodeHandle i, Map<String, Object> options) {
         return (int)simulator.proximity((DirectNodeHandle)pn.getLocalHandle(), (DirectNodeHandle)i);
       }
-    
+
       // proximity won't change, so don't worry about it
       List<ProximityListener<NodeHandle>> proxListeners = new ArrayList<ProximityListener<NodeHandle>>();
       public void addProximityListener(ProximityListener<NodeHandle> name) {
@@ -334,9 +334,9 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
       public void clearState(NodeHandle i) {
 
-      }    
+      }
     });
-    
+
     return nha;
   }
 
@@ -347,25 +347,25 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
    * @return
    */
   protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, NodeRecord nr) {
-    DirectTransportLayer<DirectNodeHandle, RawMessage> tl = new DirectTransportLayer<DirectNodeHandle, RawMessage>((DirectNodeHandle)pn.getLocalHandle(), simulator, nr, pn.getEnvironment());    
+    DirectTransportLayer<DirectNodeHandle, RawMessage> tl = new DirectTransportLayer<DirectNodeHandle, RawMessage>((DirectNodeHandle)pn.getLocalHandle(), simulator, nr, pn.getEnvironment());
 
     return tl;
   }
-  
+
   @Override
   protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector pns) {
     return new Bootstrapper<NodeHandle>() {
-    
+
       public void boot(Collection<NodeHandle> bootaddresses) {
-        pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {        
+        pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {
           public void receiveResult(Collection<NodeHandle> result) {
             logger.info("boot() calling pn.doneNode({})", result);
             pn.doneNode(result);
-          }        
+          }
           public void receiveException(Exception exception) {
-          }        
+          }
         });
-      }    
+      }
     };
   }
 }

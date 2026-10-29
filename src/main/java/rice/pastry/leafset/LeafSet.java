@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.pastry.leafset;
 
@@ -82,11 +82,11 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
   // can get backup entries from this when we remove
   transient RoutingTable routingTable;
-  
+
   private LeafSet(LeafSet that) {
-    this(that, true); 
+    this(that, true);
   }
-  
+
   private LeafSet(LeafSet that, boolean observe) {
     this.observe = observe;
     this.baseId = that.baseId;
@@ -107,10 +107,10 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     this(localNode, size, true);
     this.routingTable = rt;
   }
-  
+
   public LeafSet(NodeHandle localNode, int size, boolean observe) {
     this.observe = observe;
-    
+
     baseHandle = localNode;
     baseId = localNode.getNodeId();
     theSize = size;
@@ -126,10 +126,10 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    */
   private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
     ois.defaultReadObject();
-    
+
     observe = true;
   }
-  
+
   /**
    * Puts a NodeHandle into the set.
    *
@@ -139,7 +139,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   public boolean put(NodeHandle handle) {
     return put(handle, false);
   }
-  
+
   public boolean put(NodeHandle handle, boolean suppressNotification)
   {
     Id nid = handle.getNodeId();
@@ -186,9 +186,9 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
   /**
    * There are 2 possible indexes (if the ring is small), the cw index and the ccw, this returns the nearest index, and if they are the same, the cw index.
-   * 
+   *
    * Note: previous to FP2.1a3, this always returned the cw index if it existed.
-   * 
+   *
    * @param nh
    * @return
    * @throws NoSuchElementException
@@ -201,17 +201,17 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     int ccwIndex = ccwSet.getIndex(nh);
     if (cwIndex >= 0 && ccwIndex >= 0) {
       //the ring overlaps
-      
-      
-      if (cwIndex <= ccwIndex) { 
+
+
+      if (cwIndex <= ccwIndex) {
         // cw is closer (or equal)
         return cwIndex + 1;
       }
-      
+
       // ccw is closer
       return -ccwIndex - 1;
     }
-    
+
     if (cwIndex >= 0) return cwIndex + 1;
     if (ccwIndex >= 0) return -ccwIndex - 1;
 
@@ -242,7 +242,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   public boolean member(NodeHandle nid) {
     return cwSet.member(nid) || ccwSet.member(nid);
   }
-  
+
   public boolean contains(NodeHandle nh) {
     return member(nh);
   }
@@ -268,8 +268,8 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   {
     cwSet.remove(nh);
     ccwSet.remove(nh);
-    
-    // don't do this inside SimilarSet.remove() otherwise you may get an 
+
+    // don't do this inside SimilarSet.remove() otherwise you may get an
     // add notification before a removal
     cwSet.findMoreEntriesFromRoutingTable();
     ccwSet.findMoreEntriesFromRoutingTable();
@@ -285,10 +285,10 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   /**
    * Gets the current size of the leaf set.  Note that if the leafset overlaps,
    * there will be duplicates.  If you want the unique nodes, use getUniqueCount().
-   * 
+   *
    * @return the size.
    */
-  public int size() { 
+  public int size() {
     return cwSize() + ccwSize();
   }
 
@@ -474,18 +474,18 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    * @return the number of unique nodes in the leafset
    */
   public int getUniqueCount() {
-    return getUniqueSet().size()+1; // the local node     
+    return getUniqueSet().size()+1; // the local node
   }
-  
+
   /**
    * Unordered iterator, does not contain local node.  Contains each element only once.
-   * 
+   *
    * TODO: Make this in order from nearest neighbor to farthest neighbor, not by replica, but take cw[0], cc2[0], cw[1], ccw[1] etc...
-   * 
+   *
    * @return
    */
   public Iterator<NodeHandle> iterator() {
-    return getUniqueSet().iterator();         
+    return getUniqueSet().iterator();
   }
 
   /**
@@ -496,11 +496,11 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     HashSet<NodeHandle> superset = new HashSet<NodeHandle>();
     superset.addAll(cwSet.getCollection());
     superset.addAll(ccwSet.getCollection());
-    return superset;         
+    return superset;
   }
 
 
-  
+
   /**
    * Perform (x mod y).  This is necessary because the java % operator
    * is actually remainder instead of mod.  Useless.
@@ -524,7 +524,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    * @param r
    * @return the range of keys, or null if n is not a member of the leafset, or if the range cannot be computed
    */
-  public IdRange range(NodeHandle n, int r) { 
+  public IdRange range(NodeHandle n, int r) {
    // first, we check the arguments
    if (r < 0) throw new IllegalArgumentException("Range must be greater than or equal to zero. Attempted "+r);
    if (! (member(n) || baseHandle.equals(n))) throw new LSRangeCannotBeDeterminedException("Node "+n+" is not in this leafset.",r,Integer.MIN_VALUE, getUniqueCount(), n, this);
@@ -556,7 +556,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
      //   desired.  Last, we shift the range back down by substracting
      //   ccwSize.
      ccw = get(mod(pos - r - 1 + ccwSet.size(), num) - ccwSet.size());
-     cw = get(mod(pos + r + 1 + ccwSet.size(), num) - ccwSet.size()); 
+     cw = get(mod(pos + r + 1 + ccwSet.size(), num) - ccwSet.size());
     } else {
       // now, we need to find the pair nodes for this node range
       ccw = get(pos - r - 1);
@@ -598,7 +598,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
       // keeps previous functionality now that we are throwing rcbde rather than returning null
     }
     if (rr == null || rprev == null) return rr;
-    
+
     IdRange res;
 
     if (!cw) res = rr.diff(rprev);
@@ -619,11 +619,11 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    */
   public boolean merge(LeafSet remotels, NodeHandle from, RoutingTable routeTable,
                        boolean testOnly, Set<NodeHandle> insertedHandles) {
-    
+
     boolean changed, result = false;
     int cwSize = remotels.cwSize();
     int ccwSize = remotels.ccwSize();
-    
+
     // this is the only way to get the notification correct
     Set<NodeHandle> myInsertedHandles = new HashSet<NodeHandle>();
 
@@ -728,7 +728,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
         changed = cwSet.put(nh, true);
 
         if (changed) myInsertedHandles.add(nh);
-        
+
         // update RT as well
         routeTable.put(nh);
       }
@@ -754,7 +754,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
         changed = ccwSet.put(nh, true);
 
         if (changed) myInsertedHandles.add(nh);
-        
+
         // update RT as well
         routeTable.put(nh);
       }
@@ -780,9 +780,9 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
         else {
           // merge into our leaf set
           changed = put(nh);
-          
+
           if (changed) myInsertedHandles.add(nh);
-          
+
           // update RT as well
           routeTable.put(nh);
         }
@@ -794,9 +794,9 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
     Iterator<NodeHandle> i = myInsertedHandles.iterator();
     while(i.hasNext()) {
-      cwSet.notifyListeners(i.next(), true); 
+      cwSet.notifyListeners(i.next(), true);
     }
-    
+
     return result;
   }
   /**
@@ -858,7 +858,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
     s+=" complete:"+isComplete();
     s+=" size:"+size();
-    if (size() > 0)    
+    if (size() > 0)
     s+=" s1:"+ ccwSet.member(cwSet.get(cwSet.size()-1));
     s+=" s2:"+ cwSet.member(ccwSet.get(ccwSet.size()-1));
 
@@ -874,42 +874,42 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     if (otherSet == set) {
       otherSet = cwSet;
     }
-    
+
     return otherSet.test(handle);
   }
-  
+
   public boolean directTest(NodeHandle handle) {
     return cwSet.test(handle) || ccwSet.test(handle);
   }
-  
+
   public LeafSet copy() {
     return new LeafSet(this);
   }
 
   /**
-   * So that small LeafSets (who have overlapping nodes) don't waste bandwidth, 
-   * leafset first defines the NodeHandles to be loaded into an array, then 
+   * So that small LeafSets (who have overlapping nodes) don't waste bandwidth,
+   * leafset first defines the NodeHandles to be loaded into an array, then
    * specifies their locations. We do this because
-   * a NodeHandle takes up a lot more space than the index in the leafset, and 
-   * it may be in the leafset 1 or 2 times.  
-   * 
+   * a NodeHandle takes up a lot more space than the index in the leafset, and
+   * it may be in the leafset 1 or 2 times.
+   *
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + byte theSize  +numUniqueHandls+ byte cwSize   + byte ccwSize  +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + NodeHandle baseHandle                                         +
-   *                    ...                                             
+   *                    ...
    *   +                                                               +
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + NodeHandle 1st                                                +
-   *                    ...                                             
+   *                    ...
    *   +                                                               +
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *                    ...                                             
+   *                    ...
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + NodeHandle numUniqueHandls-th                                 +
-   *                    ...                                             
+   *                    ...
    *   +                                                               +
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -917,7 +917,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + ccw 2nd       +  ...          + ...           + ccw Nth       +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   
+   *
    */
   public static LeafSet build(InputBuffer buf, NodeHandleFactory<?> nhf) throws IOException {
     byte theSize = buf.readByte();
@@ -927,26 +927,26 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     NodeHandle baseHandle = nhf.readNodeHandle(buf);
     NodeHandle[] nhTable = new NodeHandle[numUniqueHandles];
     for (int i = 0; i < numUniqueHandles; i++) {
-      nhTable[i] = nhf.readNodeHandle(buf); 
+      nhTable[i] = nhf.readNodeHandle(buf);
     }
 
     NodeHandle[] cwTable = new NodeHandle[cwSize];
     NodeHandle[] ccwTable = new NodeHandle[ccwSize];
-    
+
     for (int i = 0; i < cwSize; i++) {
       cwTable[i] = nhTable[buf.readByte()];
     }
-    
+
     for (int i = 0; i < ccwSize; i++) {
       ccwTable[i] = nhTable[buf.readByte()];
     }
-    
+
     return new LeafSet(baseHandle,theSize, true, cwTable, ccwTable);
   }
-  
+
   public LeafSet(NodeHandle localNode, int size, boolean observe, NodeHandle[] cwTable, NodeHandle[] ccwTable) {
     this.observe = observe;
-    
+
     baseHandle = localNode;
     baseId = localNode.getNodeId();
     theSize = size;
@@ -956,29 +956,29 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   }
 
   /**
-   * So that small LeafSets (who have overlapping nodes) don't waste bandwidth, 
-   * leafset first defines the NodeHandles to be loaded into an array, then 
+   * So that small LeafSets (who have overlapping nodes) don't waste bandwidth,
+   * leafset first defines the NodeHandles to be loaded into an array, then
    * specifies their locations. We do this because
-   * a NodeHandle takes up a lot more space than the index in the leafset, and 
-   * it may be in the leafset 1 or 2 times.  
-   * 
+   * a NodeHandle takes up a lot more space than the index in the leafset, and
+   * it may be in the leafset 1 or 2 times.
+   *
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + byte theSize  +numUniqueHandls+ byte cwSize   + byte ccwSize  +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + NodeHandle baseHandle                                         +
-   *                    ...                                             
+   *                    ...
    *   +                                                               +
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + NodeHandle 1st                                                +
-   *                    ...                                             
+   *                    ...
    *   +                                                               +
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *                    ...                                             
+   *                    ...
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + NodeHandle numUniqueHandls-th                                 +
-   *                    ...                                             
+   *                    ...
    *   +                                                               +
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -986,45 +986,45 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   + ccw 2nd       +  ...          + ...           + ccw Nth       +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   
+   *
    *   TODO 2.23.2006 the synchronization of LeafSet is nonexistent
-   *   and it's difficult to add because the listener interface should not 
+   *   and it's difficult to add because the listener interface should not
    *   be called while holding a lock, but the lock should be acquired once while
    *   making the change
-   *   
-   */  
+   *
+   */
   public synchronized void serialize(OutputBuffer buf) throws IOException {
     HashSet<NodeHandle> superset = new HashSet<NodeHandle>();
     superset.addAll(cwSet.getCollection());
-    superset.addAll(ccwSet.getCollection());    
+    superset.addAll(ccwSet.getCollection());
     ArrayList<NodeHandle> list = new ArrayList<NodeHandle>(superset);
-        
+
     buf.writeByte((byte)theSize);
     buf.writeByte((byte)list.size());
     buf.writeByte((byte)cwSize());
     buf.writeByte((byte)ccwSize());
 
     baseHandle.serialize(buf);
-    
+
     Iterator<NodeHandle> it = list.iterator();
     while(it.hasNext()) {
-      NodeHandle nh = (NodeHandle)it.next(); 
+      NodeHandle nh = (NodeHandle)it.next();
       nh.serialize(buf);
     }
-    
+
     for (int i = 0; i < cwSet.size(); i++) {
-      buf.writeByte((byte)list.indexOf(cwSet.get(i))); 
+      buf.writeByte((byte)list.indexOf(cwSet.get(i)));
     }
-    
+
     for (int i = 0; i < ccwSet.size(); i++) {
-      buf.writeByte((byte)list.indexOf(ccwSet.get(i))); 
-    }    
+      buf.writeByte((byte)list.indexOf(ccwSet.get(i)));
+    }
   }
-  
+
   /**
-   * 
+   *
    * If overlaps() a NodeHandle may show up twice.  Does not return self.
-   * 
+   *
    * @return list of NodeHandle
    */
   public synchronized List<NodeHandle> asList() {
@@ -1033,7 +1033,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
       if (i != 0) {
         l.add(get(i));
       }
-    }      
+    }
     return l;
   }
 
@@ -1042,4 +1042,3 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
     ccwSet.destroy();
   }
 }
-

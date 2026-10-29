@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.audit;
 
 import java.io.IOException;
@@ -44,12 +44,12 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.MathUtils;
 
 /**
- *   
+ *
   --entry begin--           // 1 or more of these entries follow
   char type
   char sizeCode             // 0=hashed, 1-FD=size, FE=32-bit size follows, FF=16-bit size follows
  {short/int size}
-  char content[] 
+  char content[]
   char nextSeqCode          // 0=+1, 1=(idx=0,us+=1), 2=(idx=0,us+=2), ..., FF=full seq  [does not exist for the last one]
  {long long seq}
   --entry end--
@@ -63,9 +63,9 @@ public class SnippetEntry {
   public long seq;
   public boolean isHash = false;
   public byte[] content; // may be a hash
-  
+
   public static final int NUM_INDEXES = 1000000;
-  
+
   public SnippetEntry(byte type, long seq, boolean isHash, byte[] content) {
     if (content.length == 0) throw new IllegalArgumentException("Content can't be zero-length");
     this.type = type;
@@ -73,11 +73,11 @@ public class SnippetEntry {
     this.isHash = isHash;
     this.content = content;
   }
-  
+
   public SnippetEntry(InputBuffer buf, int hashSize, SnippetEntry prev) throws IOException {
     this(buf, decodeSeq(buf, prev.seq), hashSize);
   }
-  
+
   public boolean equals(Object o) {
     SnippetEntry that = (SnippetEntry)o;
     if (this.type != that.type) return false;
@@ -85,7 +85,7 @@ public class SnippetEntry {
     if (this.isHash != that.isHash) return false;
     return Arrays.equals(content, content);
   }
-  
+
   public SnippetEntry(InputBuffer buf, long seq, int hashSize) throws IOException {
     type = buf.readByte();
     this.seq = seq;
@@ -98,11 +98,11 @@ public class SnippetEntry {
     content = new byte[size];
     buf.read(content);
   }
-  
+
   public String toString() {
     return "SEntry type:"+type+" seq:"+seq+" "+(isHash?"hash":"not hash")+" len:"+content.length;
   }
-  
+
   public void serialize(OutputBuffer buf, SnippetEntry prev) throws IOException {
     if (prev != null) {
       encodeSeq(buf, prev.seq);
@@ -111,7 +111,7 @@ public class SnippetEntry {
     encodeSize(buf);
     buf.write(content, 0, content.length);
   }
-  
+
   protected static long decodeSeq(InputBuffer buf, long prevSeq) throws IOException {
     byte b = buf.readByte();
     if (b == (byte)0) return prevSeq+1;
@@ -120,13 +120,13 @@ public class SnippetEntry {
     long prevSeqMS = ((prevSeq/NUM_INDEXES)*NUM_INDEXES);
     return prevSeqMS+howMuchBigger;
   }
-  
+
   protected void encodeSeq(OutputBuffer buf, long prevSeq) throws IOException {
     if (seq == prevSeq+1) {
       buf.writeByte((byte)0);
       return;
     }
-    
+
     // If I end with 1000000
     if ((seq%NUM_INDEXES == 0)) {
       long foo = ((seq/NUM_INDEXES) - (prevSeq/NUM_INDEXES));
@@ -136,11 +136,11 @@ public class SnippetEntry {
         return;
       }
     }
-    
+
     buf.writeByte((byte)0xFF);
-    buf.writeLong(seq);    
+    buf.writeLong(seq);
   }
-  
+
   public byte getSizeCode() {
     if (isHash) return 0;
     if (content.length < 254) {
@@ -151,7 +151,7 @@ public class SnippetEntry {
     if (content.length > Integer.MAX_VALUE) throw new RuntimeException("content is too long:"+content.length);
     return (byte)0xFE;
   }
-  
+
   public void encodeSize(OutputBuffer buf) throws IOException {
     if (isHash) {
       buf.writeByte((byte)0);
@@ -160,7 +160,7 @@ public class SnippetEntry {
     if (content.length < 254) {
       buf.writeByte((byte)content.length);
       return;
-    }    
+    }
     if (content.length < 65535) {
       buf.writeByte((byte)0xFF);
       buf.writeShort((short)content.length);
@@ -171,7 +171,7 @@ public class SnippetEntry {
     buf.writeByte((byte)0xFE);
     buf.writeInt(content.length);
   }
-  
+
   public int decodeSize(InputBuffer buf) throws IOException {
     byte b = buf.readByte();
     if (b == (byte)0xFF) {

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.multiring;
 
@@ -52,28 +52,28 @@ import rice.p2p.commonapi.RouteMessage;
  * @author Peter Druschel
  */
 public class MultiringApplication implements Application {
-  
+
   /**
    * The app which this mulitring app is wrapping
    */
   protected Application application;
-  
+
   /**
    * The Id which represents the current ring this app is a member of
    */
   protected Id ringId;
-  
-  /** 
+
+  /**
    * Constructor
    */
   protected MultiringApplication(Id ringId, Application application) {
     this.application = application;
     this.ringId = ringId;
-    
+
     if ((ringId instanceof RingId) || (application instanceof MultiringApplication))
       throw new IllegalArgumentException("Illegal creation of MRApplication: " + ringId.getClass() + ", " + application.getClass());
   }
-  
+
   /**
    * This method is invoked on applications when the underlying node
    * is about to forward the given message with the provided target to
@@ -87,9 +87,9 @@ public class MultiringApplication implements Application {
    * @return Whether or not to forward the message further
    */
   public boolean forward(RouteMessage message) {
-    return application.forward(new MultiringRouteMessage(ringId, message)); 
+    return application.forward(new MultiringRouteMessage(ringId, message));
   }
-  
+
   /**
    * This method is called on the application at the destination node
    * for the given id.
@@ -104,7 +104,7 @@ public class MultiringApplication implements Application {
       application.deliver(null, message);
     }
   }
-  
+
   /**
     * This method is invoked to inform the application that the given node
    * has either joined or left the neighbor set of the local node, as the set
@@ -116,13 +116,9 @@ public class MultiringApplication implements Application {
   public void update(NodeHandle handle, boolean joined) {
     application.update(new MultiringNodeHandle(ringId, handle), joined);
   }
-  
+
   public String toString() {
-    return "MultiringApplication<"+application+">:"+ringId; 
+    return "MultiringApplication<"+application+">:"+ringId;
   }
-  
+
 }
-
-
-
-

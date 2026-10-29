@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.util;
 
@@ -64,19 +64,19 @@ import org.slf4j.LoggerFactory;
 /**
  * XMLObjectOutputStream is an extension of ObjectOutputStream which provides
  * for serialization for arbitrary Java objects, in the same manner as the
- * ObjectOutputStream class.  This class supports all of the features of 
- * the ObjectOutputStream, including serialization support for any Java 
+ * ObjectOutputStream class.  This class supports all of the features of
+ * the ObjectOutputStream, including serialization support for any Java
  * object graph implementing the Serializable interface, maintenance of
- * references in the object graph, support for Externalizable classes, 
+ * references in the object graph, support for Externalizable classes,
  * custom serialization via the writeObject() method, alternate field
- * writing mechanisms via the putFields() and writeFields() methods, support 
+ * writing mechanisms via the putFields() and writeFields() methods, support
  * for the writeUnshared() method, custom serializable field specification via
- * the serialPersistentFields field, and dynamic object replacement via the 
+ * the serialPersistentFields field, and dynamic object replacement via the
  * writeReplace() method.
  *
- * The format of the XML data written does conform to the JSX XML 
- * Schema, available online at http://www.jsx.org/jsx.xsd.  This class is 
- * designed to be able to write objects which can then be deserialized using 
+ * The format of the XML data written does conform to the JSX XML
+ * Schema, available online at http://www.jsx.org/jsx.xsd.  This class is
+ * designed to be able to write objects which can then be deserialized using
  * JSX, however, this has not been fully tested and bugs may be encountered.
  *
  * @version $Id: XMLObjectOutputStream.java 4654 2009-01-08 16:33:07Z jeffh $
@@ -87,42 +87,42 @@ import org.slf4j.LoggerFactory;
 public class XMLObjectOutputStream extends ObjectOutputStream {
   private static final Logger LOG = LoggerFactory.getLogger(XMLObjectOutputStream.class);
 
-  
+
   /**
    * A cache of the writeReplace() methods, mapping class->writeReplace()
    */
   protected static SoftHashMap<Class<?>, Method> WRITE_REPLACES = new SoftHashMap<Class<?>, Method>();
-  
+
   /**
    * A cache of the writeObject() methods, mapping class->writeObject()
    */
   protected static SoftHashMap<Class<?>, Method> WRITE_OBJECTS = new SoftHashMap<Class<?>, Method>();
-  
+
   /**
    * A cache of the persistentFields, mapping class->Field[]
    */
   protected static SoftHashMap<Class<?>, Field[]> PERSISTENT_FIELDS = new SoftHashMap<Class<?>, Field[]>();
-  
+
   /**
    * The boxed primitive classes, which are written in default field format (a single
    * "value" field), mapped to their primitive type
    */
   protected static final Map<Class<?>, Class<?>> BOXED_VALUE_TYPES = Map.of(
-      Boolean.class, Boolean.TYPE, Byte.class, Byte.TYPE, Character.class, Character.TYPE, 
-      Double.class, Double.TYPE, Float.class, Float.TYPE, Integer.class, Integer.TYPE, 
+      Boolean.class, Boolean.TYPE, Byte.class, Byte.TYPE, Character.class, Character.TYPE,
+      Double.class, Double.TYPE, Float.class, Float.TYPE, Integer.class, Integer.TYPE,
       Long.class, Long.TYPE, Short.class, Short.TYPE);
-  
+
   /**
    * The underlying XML writing engine
    */
   protected XMLWriter writer;
-  
+
   /**
-   * The collection of references stored in the stream so far, 
+   * The collection of references stored in the stream so far,
    * maps Integer(hash) -> reference name.
    */
   protected Hashtable<Reference, String> references;
-  
+
   /**
    * A counter used to generate unique references
    */
@@ -132,22 +132,22 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * The stack of objects which are currently being written to the stream
    */
   protected Stack<Object> currentObjects;
-  
+
   /**
     * The stack of classes which are currently being written to the stream
    */
   protected Stack<Class<?>> currentClasses;
-  
+
   /**
    * The stack of putFields which are currently being written to the stream
    */
   protected Stack<PutField> currentPutFields;
 
   private String debugstr;
-  
+
   /**
    * Constructor which writes data from the given output stream in order
-   * serialize objects.  This constructor also writes the header to the 
+   * serialize objects.  This constructor also writes the header to the
    * stream, and throws an IOException if an error occurs while writing
    * the header.
    *
@@ -171,9 +171,9 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     this.debugstr += "writer before writeStreamHeader: "+writer+" "+hash+"\n";
     writeStreamHeader();
   }
-  
+
   // ----- ObjectOutputStream Overriding Methods -----
-  
+
   /**
    * Method which writes the XML header to the stream.  Usually, this is the
    * <?xml version="1.0"?> tag, but it may include processing instructions.
@@ -197,26 +197,26 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       LOG.warn("writer NPE'd in writeStreamHeader(): {}", debugstr);
       throw npe;
     }
-  }  
-  
+  }
+
   /**
-   * Method which flushes all buffered data to the output stream.  
+   * Method which flushes all buffered data to the output stream.
    *
    * @throws IOException if an error occurs
    */
   public void flush() throws IOException {
     writer.flush();
   }
-  
+
   /**
-   * Method which closes the underlying output stream for writing.  Any subsequent 
+   * Method which closes the underlying output stream for writing.  Any subsequent
    * writes will throw an IOException.
    */
   public void close() throws IOException {
     writer.end("jsx");
     writer.close();
   }
-  
+
   /**
    * Method which resets the output stream, which removes the binding of all previously
    * stored references.  If the same object is written before and after a reset(), it
@@ -226,13 +226,13 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   public void reset() throws IOException {
     if (currentObjects.peek() == null) {
-      references = new Hashtable<Reference, String>(); 
+      references = new Hashtable<Reference, String>();
       writeReset();
     } else {
       throw new IOException("Reset called during active write!");
     }
   }
-  
+
   /**
    * Method which writes a byte to the underlying output stream.  Simply calls
    * writeByte(b)
@@ -242,7 +242,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void write(byte b) throws IOException {
     writeByte(b);
   }
-  
+
   /**
    * Method which writes a array of bytes to the underlying output stream.  Simply calls
    * writeByte(b[x]) on each of the array elements.
@@ -252,7 +252,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void write(byte[] b) throws IOException {
     write(b, 0, b.length);
   }
-  
+
   /**
    * Method which writes a array of bytes to the underlying output stream.  Simply calls
    * writeByte(b[x]) on each of the array elements.
@@ -265,7 +265,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     writer.writeBase64(b, offset, length);
     writer.end("base64");
   }
-  
+
   /**
    * Method which writes an int to the stream.
    *
@@ -275,7 +275,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeInt(int i) throws IOException {
     writePrimitive(i, null);
   }
-  
+
   /**
    * Method which writes an boolean to the stream.
    *
@@ -285,7 +285,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeBoolean(boolean b) throws IOException {
     writePrimitive(b, null);
   }
-  
+
   /**
    * Method which writes an byte to the stream.
    *
@@ -295,7 +295,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeByte(int i) throws IOException {
     writeByte((byte) i);
   }
-  
+
   /**
    * Method which writes an byte to the stream.
    *
@@ -305,7 +305,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeByte(byte b) throws IOException {
     writePrimitive(b, null);
   }
-  
+
   /**
    * Method which writes an char to the stream.
    *
@@ -315,7 +315,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeChar(int i) throws IOException {
     writeChar((char) i);
   }
-  
+
   /**
    * Method which writes an char to the stream.
    *
@@ -325,7 +325,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeChar(char c) throws IOException {
     writePrimitive(c, null);
   }
-  
+
   /**
    * Method which writes an double to the stream.
    *
@@ -335,7 +335,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeDouble(double d) throws IOException {
     writePrimitive(d, null);
   }
-  
+
   /**
    * Method which writes an float to the stream.
    *
@@ -345,7 +345,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeFloat(float f) throws IOException {
     writePrimitive(f, null);
   }
-  
+
   /**
    * Method which writes an long to the stream.
    *
@@ -355,7 +355,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeLong(long l) throws IOException {
     writePrimitive(l, null);
   }
-  
+
   /**
    * Method which writes an short to the stream.
    *
@@ -365,7 +365,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeShort(int i) throws IOException {
     writeShort((short) i);
   }
-  
+
   /**
    * Method which writes an short to the stream.
    *
@@ -374,10 +374,10 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   public void writeShort(short s) throws IOException {
     writePrimitive(s, null);
-  } 
-  
+  }
+
   /**
-   * Method which writes a UTF-encoded String to the stream. This method 
+   * Method which writes a UTF-encoded String to the stream. This method
    * simply calls writeObject(), as all strings are UTF encoded in XML.
    *
    * @throws IOException If an error occurs
@@ -385,7 +385,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeUTF(String s) throws IOException {
     writeObject(s);
   }
-  
+
   /**
    * Method which writes a String as a sequence of chars to the stream. This
    * method is equivalent to calling s.toCharArray() and calling writeChar()
@@ -396,11 +396,11 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   public void writeChars(String s) throws IOException {
     char[] chars = s.toCharArray();
-    
-    for (int i=0; i<chars.length; i++) 
+
+    for (int i=0; i<chars.length; i++)
       writeChar(chars[i]);
   }
-  
+
   /**
     * Method which writes a String as a sequence of chars to the stream. This
    * method is equivalent to calling s.toCharArray() and calling writeChar()
@@ -411,15 +411,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   public void writeBytes(String s) throws IOException {
     byte[] bytes = s.getBytes();
-    
-    for (int i=0; i<bytes.length; i++) 
+
+    for (int i=0; i<bytes.length; i++)
       writeByte(bytes[i]);
   }
-  
+
   /**
    * Method which is called by ObjectOutputStream.writeObject(), and writes
-   * the given object to the stream.  If the object (or any of it's descendents) 
-   * has a writeReplace() method, that object is written instead of the original 
+   * the given object to the stream.  If the object (or any of it's descendents)
+   * has a writeReplace() method, that object is written instead of the original
    * object.
    *
    * @param o The value to write to the stream
@@ -428,9 +428,9 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeObjectOverride(Object o) throws IOException {
     writeObject(o, null);
   }
-  
+
   /**
-   * Method which writes the given object to the stream and does not record a 
+   * Method which writes the given object to the stream and does not record a
    * reference to the object.  This guarantees that in future writes of this
    * object will not reference this copy of the object.
    *
@@ -440,9 +440,9 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   public void writeUnshared(Object o) throws IOException {
     writeObjectUnshared(o, null, false);
   }
-  
+
   /**
-   * Method which can be called by objects if they have a writeObject() method.  
+   * Method which can be called by objects if they have a writeObject() method.
    * This method initiates the default field serialization mechanism, and
    * writes all of the object's fields to the stream.  If this method is called,
    * the putFields() method CANNOT be called by the same object.  However, one
@@ -457,13 +457,13 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     else
       throw new NotActiveException();
   }
-  
+
   /**
-   * Method which can be called by objects if they have a writeObject() method.  
+   * Method which can be called by objects if they have a writeObject() method.
    * This method returns an object which the callee can then use to specify
    * exactly which fields and values should be written to the steam, and can
-   * specify fields which do not exist as a member of the object. If this method is 
-   * called, the defaultWriteObject() method CANNOT be called by the same object.  
+   * specify fields which do not exist as a member of the object. If this method is
+   * called, the defaultWriteObject() method CANNOT be called by the same object.
    * However, one of these two methods MUST be called in the context of a writeObject().
    *
    * @return A PutField, a container for fields to be written
@@ -476,11 +476,11 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     else
       throw new NotActiveException();
   }
-  
+
   /**
    * Method which writes the current state of the PutField object to the stream as
-   * this object's fields. If this method is called, the defaultWriteObject() method 
-   * CANNOT be called by the same object.  However, one of these two methods MUST be 
+   * this object's fields. If this method is called, the defaultWriteObject() method
+   * CANNOT be called by the same object.  However, one of these two methods MUST be
    * called in the context of a writeObject().
    *
    * @throws IOException If an error occurs
@@ -492,11 +492,11 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     else
       throw new NotActiveException();
   }
-  
+
   // ----- Internal Helper Methods -----
-  
+
   /**
-   * This method returns the writeReplce() method of a given class, if such a method 
+   * This method returns the writeReplce() method of a given class, if such a method
    * exists.  This method searches the class's hierarchy for a writeReplace() method
    * which is assessible by the given class.  If no such method is found, null is returned.
    *
@@ -506,7 +506,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   private Method getWriteReplace(Class<?> cl) {
     if (WRITE_REPLACES.containsKey(cl))
       return (Method) WRITE_REPLACES.get(cl);
-    
+
     Method meth = null;
     Class<?> defCl = cl;
     while (defCl != null) {
@@ -517,12 +517,12 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
         defCl = defCl.getSuperclass();
       }
     }
-    
+
     if (meth == null) {
       WRITE_REPLACES.put(cl, meth);
       return null;
     }
-    
+
     meth.setAccessible(true);
     int mods = meth.getModifiers();
     if ((mods & (Modifier.STATIC | Modifier.ABSTRACT)) != 0) {
@@ -538,13 +538,13 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       WRITE_REPLACES.put(cl, meth);
       return meth;
     }
-      
+
     WRITE_REPLACES.put(cl, null);
     return null;
   }
-  
+
   /**
-    * This method returns the readResolve() method of a given class, if such a method 
+    * This method returns the readResolve() method of a given class, if such a method
    * exists.  This method searches the class's hierarchy for a readResolve() method
    * which is assessible by the given class.  If no such method is found, null is returned.
    *
@@ -553,13 +553,13 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   private static Method getWriteObject(Class<?> cl) {
     synchronized (WRITE_OBJECTS) {
-      if (WRITE_OBJECTS.containsKey(cl)) 
+      if (WRITE_OBJECTS.containsKey(cl))
         return (Method) WRITE_OBJECTS.get(cl);
-      
+
       try {
         Method method = cl.getDeclaredMethod("writeObject", new Class<?>[] {ObjectOutputStream.class});
         method.setAccessible(true);
-        
+
         WRITE_OBJECTS.put(cl, method);
         return method;
       } catch (NoSuchMethodException e) {
@@ -568,7 +568,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       }
     }
   }
-  
+
   /**
    * Method which returns the serializable fields of the provided class.  If
    * the class has a serialPersistentFields field, then that is used to determine
@@ -582,48 +582,48 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     synchronized (PERSISTENT_FIELDS) {
       if (PERSISTENT_FIELDS.containsKey(cl))
         return (Field[]) PERSISTENT_FIELDS.get(cl);
-          
+
       Field[] fields = getSerialPersistentFields(cl);
-    
+
       if (fields == null) {
         fields = cl.getDeclaredFields();
       }
-    
+
       PERSISTENT_FIELDS.put(cl, fields);
       return fields;
     }
   }
-  
+
   /**
-   * Method which returns the serializablePersistenFields field of the provided class.  
-   * If no such field exists, then null is returned. 
+   * Method which returns the serializablePersistenFields field of the provided class.
+   * If no such field exists, then null is returned.
    *
    * @param c The class to return the fields for
    */
-  protected Field[] getSerialPersistentFields(Class<?> c) {    
+  protected Field[] getSerialPersistentFields(Class<?> c) {
     try {
       Field f = c.getDeclaredField("serialPersistentFields");
       int mask = Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL;
       if ((f.getModifiers() & mask) != mask) {
         return null;
       }
-      
+
       f.setAccessible(true);
       ObjectStreamField[] serialPersistentFields = (ObjectStreamField[]) f.get(null);
-      
+
       Field[] fields = new Field[serialPersistentFields.length];
-      
+
       for (int i = 0; i < serialPersistentFields.length; i++) {
         ObjectStreamField spf = serialPersistentFields[i];
-        
+
         Field thisf = c.getDeclaredField(spf.getName());
         if (! ((thisf.getType() == spf.getType()) && ((thisf.getModifiers() & Modifier.STATIC) == 0))) {
           return null;
         }
-          
+
         fields[i] = thisf;
       }
-      
+
       return fields;
     } catch (NoSuchFieldException ex) {
       return null;
@@ -631,7 +631,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       return null;
     }
   }
-  
+
   /**
    * Method which returns the component type of the given array
    * class.  If the class is not of type array, the class itself
@@ -642,10 +642,10 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   protected Class<?> getComponentType(Class<?> array) {
     if (array.isArray())
       return getComponentType(array.getComponentType());
-    
+
     return array;
   }
-  
+
   /**
    * Method which returns the dimension of the given array class.  This
    * is determines recursively by using the getCompoenetType() method
@@ -656,33 +656,33 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   protected int getDimension(Class<?> array) {
     if (array.isArray())
       return 1 + getDimension(array.getComponentType());
-    
+
     return 0;
   }
-  
+
   /**
-   * Method which returns an array of classes representing the class 
-   * hierarchy of the provided class, exempting the Object class.  
+   * Method which returns an array of classes representing the class
+   * hierarchy of the provided class, exempting the Object class.
    *
    * @param c The class to return the hierarchy for
    * @return The heierarchy of the provided class
    */
   protected Class<?>[] getSuperClasses(Class<?> c) {
     Vector<Class<?>> v = new Vector<Class<?>>();
-    
+
     while (true) {
-      if (c.getSuperclass().equals((new Object()).getClass())) 
+      if (c.getSuperclass().equals((new Object()).getClass()))
         break;
       c = c.getSuperclass();
-      
+
       v.addElement(c);
     }
-    
+
     return v.toArray(new Class<?>[0]);
-  }  
-  
+  }
+
   // ----- ObjectOutputStream Referencing Methods -----
-  
+
   /**
    * Method which determines a unique hash value for each object.  This implementation
    * uses the System.identityHashCode() method, which returns the memory address.
@@ -692,7 +692,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   protected int hash(Object o) {
     return System.identityHashCode(o) & 0x7FFFFFFF;
   }
-  
+
   /**
    * Method which adds a reference in the hashtable of references.
    * Multiple calls to this method will replace prior objects.
@@ -702,7 +702,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void putReference(Object o, String reference) {
     Reference ref = new Reference(o);
-    
+
     if (references.get(ref) == null) {
       references.put(ref, reference);
     } else {
@@ -710,7 +710,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
           references.get(ref), references.get(ref).hashCode(), o, o.hashCode());
     }
   }
-  
+
   /**
    * Method which returns a previously stored reference.  If the
    * reference cannot be found, null is returned.
@@ -721,18 +721,18 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   protected String getReference(Object o) {
     return (String) references.get(new Reference(o));
   }
-  
+
   /**
-   * Method which assigns a new unique reference. 
+   * Method which assigns a new unique reference.
    *
    * @return A new unique reference
    */
   protected String assignReference() {
     return "i" + (next++);
   }
-  
+
   // ----- ObjectOutputStream WriteX Methods -----
-  
+
   /**
    * Method which writes a reset command to the stream.
    *
@@ -742,10 +742,10 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     writer.start("reset");
     writer.end("reset");
   }
-  
+
   /**
    * Method which writes an object to the stream as the given field name
-   * If the next object represents a reference or null, then the appropriate 
+   * If the next object represents a reference or null, then the appropriate
    * helper is called.  Otherwise, writeObjectUnshared() is called to process the object.
    *
    * @param o The object to write to the stream
@@ -757,11 +757,11 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       writeNull(field);
     } else if (getReference(o) != null) {
       writeReference(o, field);
-    } else {      
+    } else {
       writeObjectUnshared(o, field, true);
     }
   }
-  
+
   /**
    * Method which writes an object to the stream.  This method assumes that
    * the type of object which is being read is *sharable*, even if it is
@@ -769,7 +769,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * String, Array, or Serializable.  This method first calls the object's
    * writeReplace() method, if such a method exists, and if a different
    * object is returned, that object is written instead.
-   *   
+   *
    * @param o The object to write to the stream
    * @param field The field name to write the object as
    * @param shared Whether or not to record a reference to this object
@@ -778,28 +778,28 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   protected void writeObjectUnshared(Object o, String field, boolean shared) throws IOException {
     // classes we cannot reflect on are written by Java serialization, which applies writeReplace() itself
     Method replace = needsJavaSerialization(o.getClass()) ? null : getWriteReplace(o.getClass());
-      
+
     if (replace != null) {
       try {
         o = replace.invoke(o, new Object[0]);
-        
+
         if (o == null) {
           writeNull(field);
           return;
         } else if (getReference(o) != null) {
           writeReference(o, field);
-          return; 
+          return;
         }
       } catch (IllegalAccessException e) {
         throw new IOException("IllegalAccessException thrown! " + e);
       } catch (InvocationTargetException e) {
         throw new IOException("InvocationTargetException thrown! " + e.getTargetException());
       }
-    } 
-    
-    if (shared) 
+    }
+
+    if (shared)
       putReference(o, assignReference());
-      
+
     if (o instanceof String) {
       writeString((String) o, field, shared);
     } else if (o.getClass().isArray()) {
@@ -808,22 +808,22 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       writeOrdinaryObject(o, field, shared);
     }
   }
-  
+
   /**
    * Method which writes a null item to the stream as the provided field.
    *
    * @param field The field name to write the object as
    * @throws IOException If an error occurs
-   */  
+   */
   protected void writeNull(String field) throws IOException {
     writer.start("null");
-    
+
     if (field != null)
       writer.attribute("field", field);
-    
+
     writer.end("null");
   }
-  
+
   /**
    * Method which writes a string to the stream as the provided field.
    *
@@ -831,43 +831,43 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * @param field The field name to write the object as
    * @param shared Whether or not to record a reference to this object
    * @throws IOException If an error occurs
-   */  
+   */
   protected void writeString(String s, String field, boolean shared) throws IOException {
     writer.start("string");
-    
+
     if (field != null)
       writer.attribute("field", field);
-    
+
     if (shared && getReference(s) != null)
       writer.attribute("id", getReference(s));
-    
+
     writer.attribute("value", s);
     writer.end("string");
   }
-  
+
   /**
-   * Method which writes an array to the stream.  This method writes the array 
-   * header, and then recursively writes all of the objects in the array to the 
+   * Method which writes an array to the stream.  This method writes the array
+   * header, and then recursively writes all of the objects in the array to the
    * stream.  If a non-serializable object is found, the object is replaced with null.
-   *  
+   *
    * @param o The object to write to the stream
    * @param field The field name to write the object as
    * @param shared Whether or not to record a reference to this object
    * @throws IOException If an error occurs
-   */  
-  protected void writeArray(Object o, String field, boolean shared) throws IOException {    
+   */
+  protected void writeArray(Object o, String field, boolean shared) throws IOException {
     writer.start("array");
-    
+
     if (field != null)
       writer.attribute("field", field);
-    
+
     if (shared && getReference(o) != null)
       writer.attribute("id", getReference(o));
-    
+
     writer.attribute("base", o.getClass().getComponentType().getName());
     writer.attribute("dim" , getDimension(o.getClass()));
     writer.attribute("length", Array.getLength(o));
-    
+
     if (o.getClass().getComponentType().isPrimitive()) {
       Class<?> c = o.getClass().getComponentType();
 
@@ -891,7 +891,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
         } else {
           throw new IllegalArgumentException("Class " + c + " is not primitive!");
         }
-      } 
+      }
     } else {
       for (int i=0; i<Array.getLength(o); i++) {
         if (Array.get(o, i) instanceof Serializable)
@@ -900,10 +900,10 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
           writeNull(null);
       }
     }
-    
+
     writer.end("array");
   }
-  
+
   /**
    * Method which writes a reference to the stream, determined from the references table.  This
    * method throws an IOException if a reference is not found to the provided object.
@@ -911,17 +911,17 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * @param o The object to write to the stream
    * @param field The field name to write the object as
    * @throws IOException If an error occurs
-   */  
+   */
   protected void writeReference(Object o, String field) throws IOException {
     writer.start("reference");
-    
+
     if (field != null)
       writer.attribute("field", field);
-    
+
     writer.attribute("idref", getReference(o));
     writer.end("reference");
-  }  
-  
+  }
+
   /**
    * Method which writes an ordinary object to the stream (not a String or Array).
    * This method first writes the class type, and a list of the classes' supertypes.
@@ -929,13 +929,13 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * method returns.  Otherwise, each of the superclasses are written, from highest
    * to lowest, using the writeClass() method.  If the object is not serializable,
    * a NotSerializableException is thrown.
-   *  
+   *
    * @param o The object to write to the stream
    * @param field The field name to write the object as
    * @param shared Whether or not to record a reference to this object
    * @throws IOException If an error occurs
    * @throws NotSerializableException If the object is not serializable
-   */  
+   */
   protected void writeOrdinaryObject(Object o, String field, boolean shared) throws IOException {
     if (! Serializable.class.isAssignableFrom(o.getClass())) {
       if (field == null)
@@ -943,32 +943,32 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       else
         return;
     }
-    
+
     if (needsJavaSerialization(o.getClass())) {
       writeJavaSerialized(o, field, shared);
       return;
     }
-    
+
     writer.start("object");
-    
+
     if (shared && getReference(o) != null)
       writer.attribute("id", getReference(o));
-    
+
     if (field != null)
       writer.attribute("field", field);
-    
+
     writer.attribute("class", o.getClass().getName());
-    
+
     StringBuffer classes = new StringBuffer();
     Class<?>[] supers = getSuperClasses(o.getClass());
-    
+
     for (int i=0; i<supers.length; i++) {
       classes.append(supers[i].getName());
       classes.append(",");
     }
-    
+
     writer.attribute("superclasses", classes.toString());
-    
+
     if (o instanceof Externalizable) {
       ((Externalizable) o).writeExternal(this);
     } else {
@@ -976,17 +976,17 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
         if (Serializable.class.isAssignableFrom(supers[i]))
           writeClass(o, supers[i]);
       }
-      
+
       writeClass(o, o.getClass());
     }
-    
+
     writer.end("object");
   }
-  
+
   /**
-   * Method which writes the information for one class for a given object to the 
+   * Method which writes the information for one class for a given object to the
    * stream. This method first writes the class type, and if it defines a writeObject()
-   * method, it is called.  Otherwise, the fields are written in a default manner.  Any 
+   * method, it is called.  Otherwise, the fields are written in a default manner.  Any
    * extra data not read in the stream is read and ignored.
    *
    * @param o The object to write to the stream
@@ -996,9 +996,9 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   protected void writeClass(Object o, Class<?> c) throws IOException {
     writer.start("declaredClass");
     writer.attribute("class", c.getName());
-    
+
     Method method = getWriteObject(c);
-    
+
     if (method != null) {
       try {
         currentObjects.push(o);
@@ -1015,15 +1015,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       }
     } else {
       writeFields(o, c);
-    } 
-    
-    writer.end("declaredClass"); 
+    }
+
+    writer.end("declaredClass");
   }
-  
+
   /**
    * Method which initiates the default field writing mechanism for the given
    * object's class.  This method only writes the non-static and non-transient
-   * fields to the stream - all others are ignored.  It reads all of the fields 
+   * fields to the stream - all others are ignored.  It reads all of the fields
    * using the writeField() method.
    *
    * @param o The object to write to the stream
@@ -1032,23 +1032,23 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writeFields(Object o, Class<?> c) throws IOException {
     writer.start("default");
-    
+
     Field[] fields = getPersistentFields(c);
-    
+
     if (BOXED_VALUE_TYPES.containsKey(c)) {
       // the value field of a JDK box is not reflectively accessible: read it through the public API
       writeBoxedValue(o);
       writer.end("default");
       return;
     }
-    
+
     for (int i=0; i<fields.length; i++) {
       // static (e.g. serialVersionUID) and transient fields are never written, and must not be
       // made accessible: for JDK classes this throws InaccessibleObjectException
-      if (! (Modifier.isStatic(fields[i].getModifiers()) || 
+      if (! (Modifier.isStatic(fields[i].getModifiers()) ||
              Modifier.isTransient(fields[i].getModifiers()))) {
         fields[i].setAccessible(true);
-        
+
         if (fields[i].getType().isPrimitive()) {
           writePrimitiveField(o, fields[i]);
         } else {
@@ -1060,10 +1060,10 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
         }
       }
     }
-    
+
     writer.end("default");
   }
-  
+
   /**
    * Method which writes the value field of a boxed primitive (Integer, Long, ...) in
    * the same format default field serialization would produce, using the public API
@@ -1093,11 +1093,11 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       throw new IllegalArgumentException("Object " + o + " is not a boxed primitive!");
     }
   }
-  
+
   /**
    * Method which returns whether objects of the given class have to be written using
-   * standard Java serialization (see writeJavaSerialized()), because the class or one 
-   * of its Serializable superclasses lives in a package which is not open to deep 
+   * standard Java serialization (see writeJavaSerialized()), because the class or one
+   * of its Serializable superclasses lives in a package which is not open to deep
    * reflection (e.g. java.util.Vector on JDK 16+).  Boxed primitives are handled
    * specially and never need Java serialization.
    *
@@ -1107,14 +1107,14 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   protected static boolean needsJavaSerialization(Class<?> cl) {
     if (cl.isArray() || BOXED_VALUE_TYPES.containsKey(cl) || cl == String.class)
       return false;
-    
-    for (Class<?> k = cl; k != null; k = k.getSuperclass()) 
+
+    for (Class<?> k = cl; k != null; k = k.getSuperclass())
       if (Serializable.class.isAssignableFrom(k) && ! isReflectable(k))
         return true;
-    
+
     return false;
   }
-  
+
   /**
    * Method which returns whether the private members of the given class can be
    * accessed reflectively by this serializer.
@@ -1125,15 +1125,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   protected static boolean isReflectable(Class<?> cl) {
     return cl.getModule().isOpen(cl.getPackageName(), XMLObjectOutputStream.class.getModule());
   }
-  
+
   /**
    * Method which writes an object whose class is not open to deep reflection (typically
-   * a JDK class such as java.util.Vector, or an enum) using the class's own Java 
-   * serialization behavior.  The object is written by a standard ObjectOutputStream 
-   * into a base64 element, but every object it references is replaced by a placeholder 
+   * a JDK class such as java.util.Vector, or an enum) using the class's own Java
+   * serialization behavior.  The object is written by a standard ObjectOutputStream
+   * into a base64 element, but every object it references is replaced by a placeholder
    * and written to this XML stream as a child element instead.  This way referenced
-   * objects are serialized as XML and references (sharing) in the object graph are 
-   * preserved.  Limitation: a referenced object may not refer back to the object being 
+   * objects are serialized as XML and references (sharing) in the object graph are
+   * preserved.  Limitation: a referenced object may not refer back to the object being
    * written (other than directly), as it is reconstructed only after its children.
    *
    * @param o The object to write to the stream
@@ -1148,41 +1148,41 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       {
         enableReplaceObject(true);
       }
-      
+
       protected Object replaceObject(Object obj) {
-        if (obj == o) 
+        if (obj == o)
           return obj;
-        
+
         children.add(obj);
         return new JavaSerializedChild(children.size() - 1);
       }
     };
     oos.writeObject(o);
     oos.close();
-    
+
     writer.start("jserial");
-    
+
     if (shared && getReference(o) != null)
       writer.attribute("id", getReference(o));
-    
+
     if (field != null)
       writer.attribute("field", field);
-    
+
     writer.attribute("class", o.getClass().getName());
-    
+
     byte[] data = bytes.toByteArray();
     write(data, 0, data.length);
-    
+
     for (int i=0; i<children.size(); i++)
       writeObject(children.get(i), null);
-    
+
     writer.end("jserial");
   }
-  
+
   /**
-   * Method which writes out the data from the given PutField class as the data 
+   * Method which writes out the data from the given PutField class as the data
    * for the given class.  Each item in the PutField is written as the type it
-   * was inserted as.  Thus, fields can be written which do not actually exist 
+   * was inserted as.  Thus, fields can be written which do not actually exist
    * in the class.
    *
    * @param p The fields to write to  the stream
@@ -1190,52 +1190,52 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePutFields(PutField p) throws IOException {
     writer.start("default");
-    
+
     String[] primitives = p.getPrimitives();
-    
+
     for (int i=0; i<primitives.length; i++) {
       String name = primitives[i];
       Object primitive = p.getPrimitive(name);
-      
+
       if (primitive.getClass().equals(Integer.class)) {
-        writePrimitive(p.getInt(name), name); 
+        writePrimitive(p.getInt(name), name);
       } else if (primitive.getClass().equals(Boolean.class)) {
-        writePrimitive(p.getBoolean(name), name); 
+        writePrimitive(p.getBoolean(name), name);
       } else if (primitive.getClass().equals(Byte.class)) {
-        writePrimitive(p.getByte(name), name); 
+        writePrimitive(p.getByte(name), name);
       } else if (primitive.getClass().equals(Character.class)) {
-        writePrimitive(p.getChar(name), name); 
+        writePrimitive(p.getChar(name), name);
       } else if (primitive.getClass().equals(Double.class)) {
-        writePrimitive(p.getDouble(name), name); 
+        writePrimitive(p.getDouble(name), name);
       } else if (primitive.getClass().equals(Float.class)) {
-        writePrimitive(p.getFloat(name), name); 
+        writePrimitive(p.getFloat(name), name);
       } else if (primitive.getClass().equals(Long.class)) {
-        writePrimitive(p.getLong(name), name); 
+        writePrimitive(p.getLong(name), name);
       } else if (primitive.getClass().equals(Short.class)) {
-        writePrimitive(p.getShort(name), name); 
+        writePrimitive(p.getShort(name), name);
       } else {
         throw new IllegalArgumentException("Field " + name + " is not primitive!");
       }
     }
-    
+
     String[] objects = p.getObjects();
-    
+
     for (int i=0; i<objects.length; i++) {
       writeObject(p.getObject(objects[i]), objects[i]);
     }
-    
+
     writer.end("default");
   }
-  
+
   /**
    * Method which writes a primitive field to the stream.  This method determiens
-   * the type of field that needs to be written, and calls f.getX(o), wiritng it 
+   * the type of field that needs to be written, and calls f.getX(o), wiritng it
    * to the stream.
    *
    * @param o The object get the primitive from
    * @param f The field representing the primitive about to be written
    * @throws IOException If an error occurs
-   */    
+   */
   protected void writePrimitiveField(Object o, Field f) throws IOException {
     try {
       if (f.getType().equals(Integer.TYPE)) {
@@ -1261,7 +1261,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       throw new IOException("IllegalAccessException thrown " + e);
     }
   }
-  
+
   /**
    * Method which writes a int to the stream, as the given field name.
    *
@@ -1271,15 +1271,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePrimitive(int i, String field) throws IOException {
     writer.start("primitive");
-    
+
     if (field != null)
       writer.attribute("field", field);
     writer.attribute("type", "int");
     writer.attribute("value", i);
-    
+
     writer.end("primitive");
-  }  
-  
+  }
+
   /**
    * Method which writes a boolean to the stream, as the given field name.
    *
@@ -1289,15 +1289,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePrimitive(boolean b, String field) throws IOException {
     writer.start("primitive");
-    
+
     if (field != null)
       writer.attribute("field", field);
     writer.attribute("type", "boolean");
     writer.attribute("value", b);
-    
+
     writer.end("primitive");
-  }  
-  
+  }
+
   /**
    * Method which writes a byte to the stream, as the given field name.
    *
@@ -1307,15 +1307,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePrimitive(byte b, String field) throws IOException {
     writer.start("primitive");
-    
+
     if (field != null)
       writer.attribute("field", field);
     writer.attribute("type", "byte");
     writer.attribute("value", b);
-    
+
     writer.end("primitive");
-  }  
-  
+  }
+
   /**
    * Method which writes a char to the stream, as the given field name.
    *
@@ -1325,15 +1325,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePrimitive(char c, String field) throws IOException {
     writer.start("primitive");
-    
+
     if (field != null)
       writer.attribute("field", field);
     writer.attribute("type", "char");
     writer.attribute("value", c);
-    
+
     writer.end("primitive");
-  }  
-  
+  }
+
   /**
    * Method which writes a double to the stream, as the given field name.
    *
@@ -1343,15 +1343,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePrimitive(double d, String field) throws IOException {
     writer.start("primitive");
-    
+
     if (field != null)
       writer.attribute("field", field);
     writer.attribute("type", "double");
     writer.attribute("value", d);
-    
+
     writer.end("primitive");
-  }  
-  
+  }
+
   /**
    * Method which writes a float to the stream, as the given field name.
    *
@@ -1361,15 +1361,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePrimitive(float f, String field) throws IOException {
     writer.start("primitive");
-    
+
     if (field != null)
       writer.attribute("field", field);
     writer.attribute("type", "float");
     writer.attribute("value", f);
-    
+
     writer.end("primitive");
-  }  
-  
+  }
+
   /**
    * Method which writes a long to the stream, as the given field name.
    *
@@ -1379,15 +1379,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePrimitive(long l, String field) throws IOException {
     writer.start("primitive");
-    
+
     if (field != null)
       writer.attribute("field", field);
     writer.attribute("type", "long");
     writer.attribute("value", l);
-    
+
     writer.end("primitive");
-  }  
-  
+  }
+
   /**
    * Method which writes a short to the stream, as the given field name.
    *
@@ -1397,49 +1397,49 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writePrimitive(short s, String field) throws IOException {
     writer.start("primitive");
-    
+
     if (field != null)
       writer.attribute("field", field);
     writer.attribute("type", "short");
     writer.attribute("value", s);
-    
+
     writer.end("primitive");
   }
-  
-  
+
+
   // ----- Implementation of PutField -----
-  
+
   /**
-   * This class is an implementation of PutField which is compatible with 
-   * the XMLObjectOutputStream.  It works in the same manner as the 
+   * This class is an implementation of PutField which is compatible with
+   * the XMLObjectOutputStream.  It works in the same manner as the
    * ObjectInputStream.PutField.
-   */  
+   */
   public class PutField extends ObjectOutputStream.PutField {
 
     protected Hashtable<String, Object> primitives = new Hashtable<String, Object>();
-    
+
     protected Hashtable<String, Object> objects = new Hashtable<String, Object>();
-    
+
     protected String[] getPrimitives() {
       return (String[]) primitives.keySet().toArray(new String[0]);
     }
-    
+
     protected String[] getObjects() {
       return (String[]) objects.keySet().toArray(new String[0]);
     }
-    
+
     public void put(String name, boolean value) {
       primitives.put(name, Boolean.valueOf(value));
     }
-    
+
     public void put(String name, byte value) {
       primitives.put(name, Byte.valueOf(value));
     }
-    
+
     public void put(String name, char value) {
       primitives.put(name, Character.valueOf(value));
     }
-    
+
     public void put(String name, double value) {
       primitives.put(name, Double.valueOf(value));
     }
@@ -1447,63 +1447,63 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     public void put(String name, float value) {
       primitives.put(name, Float.valueOf(value));
     }
-    
+
     public void put(String name, int value) {
       primitives.put(name, Integer.valueOf(value));
     }
-    
+
     public void put(String name, long value) {
       primitives.put(name, Long.valueOf(value));
     }
-    
+
     public void put(String name, short value) {
       primitives.put(name, Short.valueOf(value));
     }
-    
+
     public void put(String name, Object value) {
       objects.put(name, value);
     }
-    
+
     private Object getPrimitive(String name) {
       return primitives.get(name);
     }
-    
+
     protected Object getObject(String name) {
       return objects.get(name);
     }
-    
+
     protected boolean getBoolean(String name) {
       return ((Boolean) getPrimitive(name)).booleanValue();
     }
-    
+
     protected byte getByte(String name) {
       return ((Byte) getPrimitive(name)).byteValue();
     }
-    
+
     protected char getChar(String name) {
       return ((Character) getPrimitive(name)).charValue();
     }
-    
+
     protected double getDouble(String name) {
       return ((Double) getPrimitive(name)).doubleValue();
     }
-    
+
     protected float getFloat(String name) {
       return ((Float) getPrimitive(name)).floatValue();
     }
-    
+
     protected int getInt(String name) {
       return ((Integer) getPrimitive(name)).intValue();
     }
-    
+
     protected long getLong(String name) {
       return ((Long) getPrimitive(name)).longValue();
     }
-    
+
     protected short getShort(String name) {
       return ((Short) getPrimitive(name)).shortValue();
-    } 
-    
+    }
+
     /**
      * only exists to satisfy deprecated method in superclass
      * @deprecated
@@ -1515,37 +1515,37 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       xoos.writeFields();
     }
   }
-  
+
   /**
    * Placeholder written by writeJavaSerialized() into the Java serialization data in place
    * of each referenced object; the index denotes the XML child element holding the object.
    */
   static final class JavaSerializedChild implements Serializable {
     private static final long serialVersionUID = 1L;
-    
+
     final int index;
-    
+
     JavaSerializedChild(int index) {
       this.index = index;
     }
   }
-  
+
   // Internal class for maintaining references
-  
+
   private class Reference {
-   
+
     private Object object;
-    
+
     public Reference(Object object) {
       this.object = object;
     }
-    
+
     public int hashCode() {
       return hash(object);
     }
-    
+
     public boolean equals(Object o) {
-      return (((Reference) o).object == object); 
+      return (((Reference) o).object == object);
     }
   }
 }

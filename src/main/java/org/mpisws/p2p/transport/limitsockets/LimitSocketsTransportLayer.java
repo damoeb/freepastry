@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.limitsockets;
 
 import java.io.IOException;
@@ -64,9 +64,9 @@ import rice.selector.TimerTask;
 
 /**
  * Automatically closes sockets based on LRU.
- * 
+ *
  * Uses the LinkedHashMap to perform the LRU policy.
- * 
+ *
  * @author Jeff Hoye
  *
  */
@@ -79,7 +79,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   protected Timer timer;
   protected ErrorHandler<Identifier> handler;
 
-  
+
   public LimitSocketsTransportLayer(int max_sockets, TransportLayer<Identifier, MessageType> tl, ErrorHandler<Identifier> handler, Environment env) {
     this.MAX_SOCKETS = max_sockets;
     this.tl = tl;
@@ -90,25 +90,25 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
     if (this.handler == null) {
       this.handler = new DefaultErrorHandler<Identifier>(logger);
     }
-    
+
     tl.setCallback(this);
   }
 
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     if (logger.isTraceEnabled()) logger.trace("{}.openSocket({},{},{})", LimitSocketsTransportLayer.this, i, deliverSocketToMe, options, new Exception("Stack Trace"));
-    
+
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i, options, logger) {
       @Override
       public boolean cancel() {
         logger.trace("{}.openSocket({},{}):{}.cancel()", this, i, deliverSocketToMe, this);
         return super.cancel();
-      }      
-      
+      }
+
       public String toString() {
         return LimitSocketsTransportLayer.this+"RequestHandle.openSocket("+i+","+deliverSocketToMe+","+options+")";
       }
     };
-    
+
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>(){
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
         logger.trace("{}.openSocket({},{}):{}.receiveResult()", this, i, deliverSocketToMe, ret);
@@ -126,7 +126,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
 
     return ret;
   }
-  
+
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     logger.trace("{}.incomingSocket({})", this, s);
     callback.incomingSocket(getLSSock(s));
@@ -152,14 +152,14 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
       sock.forceClose();
     }
   }
-  
+
   class LSSocket extends SocketWrapperSocket<Identifier, Identifier> {
     boolean closed = false;
     boolean forcedClose = false;
     public LSSocket(P2PSocket<Identifier> socket) {
       super(socket.getIdentifier(), socket, LimitSocketsTransportLayer.this.logger, handler, socket.getOptions());
     }
-    
+
     /**
      * Called when we force a socket closed.
      *
@@ -176,10 +176,10 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
           } catch (Exception ioe) {
             // do nothing, it's probably already closed anyway
           }
-        }        
+        }
       }, 3000);
     }
-    
+
     /**
      * Called by the higher layer
      */
@@ -190,7 +190,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
       cache.remove(this);
       super.close();
     }
-    
+
     @Override
     public long read(ByteBuffer dsts) throws IOException {
       if (!closed) touch(this);
@@ -206,10 +206,10 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
     public void register(boolean wantToRead, boolean wantToWrite, P2PSocketReceiver<Identifier> receiver) {
       if (forcedClose) {
         if (wantToWrite) {
-          receiver.receiveException(this, new ClosedChannelException("Limit Sockets forced close. "+this));        
+          receiver.receiveException(this, new ClosedChannelException("Limit Sockets forced close. "+this));
         }
         if (wantToRead) {
-          super.register(true, false, receiver);          
+          super.register(true, false, receiver);
         }
         return;
       }
@@ -219,8 +219,8 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
 
     @Override
     public long write(ByteBuffer srcs) throws IOException {
-      if (forcedClose) throw new ClosedChannelException("Limit Sockets forced close. "+this);        
-      if (!closed) touch(this);      
+      if (forcedClose) throw new ClosedChannelException("Limit Sockets forced close. "+this);
+      if (!closed) touch(this);
       try {
         return super.write(srcs);
       } catch (IOException ioe) {
@@ -234,7 +234,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
       return LimitSocketsTransportLayer.this.toString()+"$LSSocket<"+identifier+">["+(closed?"closed":"open")+"]@"+System.identityHashCode(this)+socket.toString();
     }
   }
-  
+
   public void touch(LSSocket socket) {
     synchronized(cache) {
       if (cache.get(socket) == null) {
@@ -247,7 +247,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   public String toString() {
     return "LimitSocks<"+cache.size()+">";
   }
-  
+
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
@@ -267,19 +267,19 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   public void messageReceived(Identifier i, MessageType m, Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);
   }
-  
+
   public void setCallback(TransportLayerCallback<Identifier, MessageType> callback) {
     this.callback = callback;
   }
 
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.handler = handler;
-    tl.setErrorHandler(handler);    
+    tl.setErrorHandler(handler);
   }
 
   public void destroy() {
     tl.destroy();
   }
 
-  
+
 }

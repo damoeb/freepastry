@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.p2p.util;
 
 import java.io.EOFException;
@@ -42,7 +42,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.util.Stack;
 
-/** 
+/**
 * This class is a memory-efficient implementation of most of the XML
 * pull parsing API (http://www.xmlpull.org).  It used to implement the xmlpull
 * XmlPullParser interface; it is now self-contained so FreePastry no longer depends
@@ -85,9 +85,9 @@ public class XMLParser {
   public static final char[] WHITESPACE_OR_TAG_END = new char[] {' ', '\t', '\n', '\r', '>', '/', '?'};
   public static final char[] WHITESPACE_OR_EQUALS = new char[] {' ', '\t', '\n', '\r', '='};
   public static final char[] SINGLE = new char[1];
-  
-  public static final String[][] ENTITIES = new String[][] { {"&apos;", "'"}, 
-                                                             {"&quot;", "\""}, 
+
+  public static final String[][] ENTITIES = new String[][] { {"&apos;", "'"},
+                                                             {"&quot;", "\""},
                                                              {"&lt;", "<"},
                                                              {"&gt;", ">"},
                                                              {"&#13;", String.valueOf((char) 13)},
@@ -99,45 +99,45 @@ public class XMLParser {
    * The internal reader used to read data
    */
   protected Reader reader;
-  
+
   /**
    * The internal buffer used to process data
    */
   protected char[] buffer;
-  
+
   /**
    * Internal pointers into the buffer
    */
   protected int bufferPosition;
   protected int bufferLimit;
-  
+
   /**
    * The StringCache used to reduce the memory requirements
    */
   protected StringCache cache;
-  
+
   /**
    * The internal stack of tags which have been read
    */
   protected Stack<String> tags;
-  
+
   /**
    * If the tag parsed was a start/end, the name of the tag
    */
   protected String name;
-  
+
   /**
    * If the tag parsed was text, the text
    */
   protected String text;
-  
+
   /**
    * If the tag parsed was a start tag, the list of attribute-> value pairs
    */
   protected String[] attributeKeys = new String[MAX_ATTRIBUTES];
   protected String[] attributeValues = new String[MAX_ATTRIBUTES];
   protected int numAttributes;
-  
+
   /**
    * Whether or not we are currently in a tag...
    */
@@ -147,13 +147,13 @@ public class XMLParser {
    * The type of the last event returned by next()
    */
   protected int eventType = START_DOCUMENT;
-  
+
   /**
    * Internal variable which keeps track of the current mark
    */
   protected int mark;
   protected CharArrayBuffer marked;
-  
+
   /**
    * Constructor
    */
@@ -167,7 +167,7 @@ public class XMLParser {
     this.inTag = false;
     this.numAttributes = 0;
   }
-  
+
   /**
    * Set the input source for parser to the given reader and
    * resets the parser. The event type is set to the initial value
@@ -180,7 +180,7 @@ public class XMLParser {
   public void setInput(Reader in) throws IOException {
     this.reader = in;
   }
-  
+
   /**
    * Returns the text content of the current event as String.
    * The value returned depends on current event type,
@@ -202,7 +202,7 @@ public class XMLParser {
   public String getText() {
     return this.text;
   }
-  
+
   /**
    * For START_TAG or END_TAG events, the (local) name of the current
    * element is returned when namespaces are enabled. When namespace
@@ -218,7 +218,7 @@ public class XMLParser {
   public String getName() {
     return this.name;
   }
-  
+
   /**
    * Returns the attributes value identified by namespace URI and namespace localName.
    * If namespaces are disabled namespace must be null.
@@ -239,10 +239,10 @@ public class XMLParser {
     for (int i=0; i<numAttributes; i++)
       if (attributeKeys[i].equals(name))
         return attributeValues[i];
-    
+
     return null;
   }
-  
+
   /**
    * Returns the type of the current event (START_TAG, END_TAG, TEXT, etc.)
    *
@@ -252,7 +252,7 @@ public class XMLParser {
   public int getEventType() throws IOException {
     return eventType;
   }
-  
+
   /**
    * Get next parsing event - element content wil be coalesced and only one
    * TEXT event must be returned for whole element content
@@ -280,7 +280,7 @@ public class XMLParser {
    */
   protected int nextEvent() throws IOException {
     char next = 0;
-    
+
     try {
       next = current();
     } catch (EOFException e) {
@@ -290,7 +290,7 @@ public class XMLParser {
     switch (next) {
       case '<':
         int result = parseTag();
-        
+
         if (result == START_DOCUMENT)
           return nextEvent();
         else
@@ -304,7 +304,7 @@ public class XMLParser {
         return parseText();
     }
   }
-  
+
   /**
    * Checks whether the current TEXT event contains only whitespace
    * characters.
@@ -323,11 +323,11 @@ public class XMLParser {
   public boolean isWhitespace() throws IOException {
     return isWhitespace(text);
   }
-  
+
   /**
    *   ----- INTERNAL PARSING METHODS -----
    */
-  
+
   /**
    * Internal method which actually fills the buffer
    */
@@ -337,15 +337,15 @@ public class XMLParser {
       this.marked.append(buffer, 0, bufferPosition);
     else if (mark != -1)
       this.marked = new CharArrayBuffer(buffer, mark, bufferPosition - mark);
-    
+
     int read = reader.read(buffer);
-    
+
     if (read > 0) {
       bufferLimit = read;
       bufferPosition = 0;
     }
   }
-  
+
   /**
    * Method which returns the current char in the buffer
    *
@@ -354,29 +354,29 @@ public class XMLParser {
   protected char current() throws IOException {
     if (bufferPosition == bufferLimit) fillBuffer();
     if (bufferPosition == bufferLimit) throw new EOFException();
-    
+
     return buffer[bufferPosition];
   }
-  
+
   /**
    * Method which steps forward in the buffer
    */
   protected void step() {
     bufferPosition++;
   }
-  
+
   /**
    * Sets the mark
    */
   protected void mark() {
     this.mark = bufferPosition;
   }
-  
+
   /**
    * Unsets the mark
    */
   protected String unmark() {
-    try {    
+    try {
       if (this.marked != null) {
         this.marked.append(buffer, 0, bufferPosition);
         return cache.get(marked.getBuffer(), 0, marked.getLength());
@@ -388,26 +388,26 @@ public class XMLParser {
       this.marked = null;
     }
   }
-  
+
   /**
    * Internal method which clears the list of attributes
    */
   protected void clearAttributes() {
     this.numAttributes = 0;
   }
-  
+
   /**
    * Internal method which adds an attributes
    */
   protected void addAttribute(String key, String value) {
     if (numAttributes == attributeKeys.length)
       throw new RuntimeException("More than "+attributeKeys.length+" attributes encountered - unsupported!");
-    
+
     attributeKeys[numAttributes] = key;
     attributeValues[numAttributes] = value;
     numAttributes++;
   }
-  
+
   /**
    * An assertion method: consumes the current char if it is the expected one
    *
@@ -415,12 +415,12 @@ public class XMLParser {
    * @throws IOException if the current char is a different one
    */
   protected void expect(char c) throws IOException {
-    if (current() != c) 
+    if (current() != c)
       throw new IOException("Expected character '" + c + "' got '" + current() + "'");
     else
       step();
   }
-  
+
   /**
    * Internal method which checks whether a string consists of whitespace only
    *
@@ -431,10 +431,10 @@ public class XMLParser {
     for (int i=0; i<text.length(); i++)
       if (! contains(WHITESPACE, text.charAt(i)))
         return false;
-    
+
     return true;
   }
-  
+
   /**
    * Internal method which checks for existence
    *
@@ -446,10 +446,10 @@ public class XMLParser {
     for (int i=0; i<chars.length; i++)
       if (chars[i] == c)
         return true;
-    
+
     return false;
   }
-  
+
   /**
    * Method which parses and returns up to the next token
    *
@@ -457,17 +457,17 @@ public class XMLParser {
    */
   protected String parseUntil(char[] chars) throws IOException {
     mark();
-    
+
     while (true) {
       if (contains(chars, current()))
         break;
       else
         step();
     }
-    
+
     return unmark();
   }
-  
+
   /**
    * Method which parses and returns up to the next token
    *
@@ -475,17 +475,17 @@ public class XMLParser {
    */
   protected String parseUntil(char c) throws IOException {
     mark();
-    
+
     while (true) {
       if (current() == c)
         break;
       else
         step();
     }
-    
+
     return unmark();
   }
-  
+
   /**
    * Method which parses up to the next token
    */
@@ -495,9 +495,9 @@ public class XMLParser {
         break;
       else
         step();
-    }    
+    }
   }
-    
+
   /**
    * Method which parses the end of a tag of the form &lt;tag /&gt;
    *
@@ -510,11 +510,11 @@ public class XMLParser {
 
     this.name = tag;
     this.inTag = false;
-    
-    
+
+
     return END_TAG;
   }
-  
+
   /**
    * Internal method which parses a tag
    */
@@ -528,9 +528,9 @@ public class XMLParser {
         return parseDocumentTag();
       default:
         return parseStartTag();
-    }    
+    }
   }
-  
+
   /**
    * Method which parses an end tag of the form &lt;/tag&gt;
    *
@@ -539,73 +539,73 @@ public class XMLParser {
   protected int parseEndTag() throws IOException {
     expect('/');
     parseUntilNot(WHITESPACE);
- 
+
     clearAttributes();
     this.name = parseUntil(WHITESPACE_OR_TAG_END);
     tags.pop();
     this.inTag = false;
-    
+
     parseUntilNot(WHITESPACE);
     expect('>');
 
-    
+
     return END_TAG;
   }
-  
+
   /**
    * Method which parses a start tag
    */
   protected int parseStartTag() throws IOException {
     parseUntilNot(WHITESPACE);
-    
+
     this.name = parseUntil(WHITESPACE_OR_TAG_END);
     tags.push(this.name);
-    
+
     parseUntilNot(WHITESPACE);
 
-    
+
     parseAttributes();
-    
+
     parseUntilNot(WHITESPACE);
-        
+
     if (current() != '/') {
       expect('>');
       this.inTag = false;
     } else {
       this.inTag = true;
     }
-    
+
     return START_TAG;
   }
-  
+
   /**
    * Method which parses a document tag
    */
   protected int parseDocumentTag() throws IOException {
     expect('?');
-    
+
     parseUntilNot(WHITESPACE);
-    
+
     String type = parseUntil(WHITESPACE_OR_TAG_END);
 
     if (! (type.toLowerCase().equals("xml")))
       throw new IOException("This does not appear to be an XML document - found '" + type + "'!");
-    
+
     parseUntilNot(WHITESPACE);
-    
+
     parseAttributes();
     clearAttributes();
-    
+
     parseUntilNot(WHITESPACE);
     this.inTag = false;
-    
+
     expect('?');
     expect('>');
-    
-    
+
+
     return START_DOCUMENT;
   }
-  
+
   /**
    * Method which parses all of the attributes of a start tag
    */
@@ -614,7 +614,7 @@ public class XMLParser {
 
     while (true) {
       parseUntilNot(WHITESPACE);
-      
+
       if (contains(TAG_END, current())) {
         return;
       } else {
@@ -624,7 +624,7 @@ public class XMLParser {
         parseUntilNot(WHITESPACE);
         String value = null;
         char quote = current();
-        
+
         if (contains(QUOTE, quote)) {
           expect(quote);
           value = convert(parseUntil(quote));
@@ -632,13 +632,13 @@ public class XMLParser {
         } else {
           value = convert(parseUntil(WHITESPACE_OR_TAG_END));
         }
-        
-        
+
+
         addAttribute(key, value);
       }
     }
   }
-  
+
   /**
    * Method which parses text up to the next tag
    *
@@ -651,7 +651,7 @@ public class XMLParser {
 
     return TEXT;
   }
-  
+
   /**
    * Internal method which deconverts all of the HTML/XML entities
    * like &amp, &gt, &lt, etc...
@@ -661,19 +661,19 @@ public class XMLParser {
    */
   protected String convert(String string) {
     int amp = string.indexOf('&');
-    
+
     if (amp < 0)
       return string;
-    
+
     // Single pass over the string.  Equivalent to replacing each ENTITIES pattern in
     // turn (as this method used to do with replaceAll()): &amp; was decoded last there,
     // so a decoded '&' is never decoded again, and unknown entities are kept verbatim.
     StringBuilder result = new StringBuilder(string.length());
     int last = 0;
-    
+
     while (amp >= 0) {
       String[] entity = matchEntity(string, amp);
-      
+
       if (entity != null) {
         result.append(string, last, amp).append(entity[1]);
         last = amp + entity[0].length();
@@ -682,10 +682,10 @@ public class XMLParser {
         amp = string.indexOf('&', amp + 1);
       }
     }
-    
-    return result.append(string, last, string.length()).toString(); 
+
+    return result.append(string, last, string.length()).toString();
   }
-  
+
   /**
    * Internal method which returns the entry of ENTITIES starting at the given
    * offset of the string, or null if there is none
@@ -694,44 +694,44 @@ public class XMLParser {
     for (int i=0; i<ENTITIES.length; i++)
       if (string.startsWith(ENTITIES[i][0], offset))
         return ENTITIES[i];
-    
+
     return null;
   }
-  
+
   /**
    *   ----- INTERNAL CLASS -----
    */
-  
+
   /**
     * This class implements a char array buffer
    */
   public class CharArrayBuffer {
-    
+
     /**
     * The default initial capacity
      */
     public static final int DEFAULT_CAPACITY = 32;
-    
+
     /**
     * The internal buffer
      */
     protected char[] buffer;
-    
+
     /**
       * The markers
      */
     protected int length;
-    
+
     /**
       * Constructor
      */
     public CharArrayBuffer(char[] chars, int length, int off) {
       this.buffer = new char[DEFAULT_CAPACITY];
       this.length = 0;
-      
+
       append(chars, length, off);
     }
-    
+
     /**
       * Returns the internal array
      *
@@ -740,7 +740,7 @@ public class XMLParser {
     public char[] getBuffer() {
       return buffer;
     }
-    
+
     /**
       * Returns the length
      *
@@ -749,7 +749,7 @@ public class XMLParser {
     public int getLength() {
       return length;
     }
-    
+
     /**
      * Appends some more chars!
      *
@@ -760,144 +760,143 @@ public class XMLParser {
     public void append(char[] chars, int off, int len) {
       while (length + len > buffer.length)
         expandBuffer();
-      
+
       System.arraycopy(chars, off, buffer, length, len);
       length+=len;
     }
-    
+
     /**
       * Expands the buffer
      */
     protected void expandBuffer() {
       char[] newbuffer = new char[buffer.length * 2];
-      
+
       System.arraycopy(buffer, 0, newbuffer, 0, length);
       this.buffer = newbuffer;
     }
   }
-    
+
   /**
    *   ----- UNSUPPORTED METHODS -----
    */
-  
+
   public void setFeature(String name, boolean state) throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public boolean getFeature(String name) {
     throw new UnsupportedOperationException();
   }
-  
+
   public void setProperty(String name, Object value) throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public Object getProperty(String name) {
     throw new UnsupportedOperationException();
   }
-  
+
   public void setInput(InputStream inputStream, String inputEncoding) throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getInputEncoding() {
     throw new UnsupportedOperationException();
   }
-  
+
   public void defineEntityReplacementText(String entityName, String replacementText ) throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public int getNamespaceCount(int depth) throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getNamespacePrefix(int pos) throws IOException  {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getNamespaceUri(int pos) throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getNamespace (String prefix) {
     throw new UnsupportedOperationException();
   }
-  
+
   public int getDepth() {
     throw new UnsupportedOperationException();
   }
-    
+
   public String getPositionDescription () {
     throw new UnsupportedOperationException();
   }
-  
+
   public int getLineNumber() {
     throw new UnsupportedOperationException();
   }
-  
+
   public int getColumnNumber() {
     throw new UnsupportedOperationException();
   }
-    
+
   public char[] getTextCharacters(int [] holderForStartAndLength) {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getNamespace () {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getPrefix() {
     throw new UnsupportedOperationException();
   }
-  
+
   public boolean isEmptyElementTag() throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getAttributeNamespace (int index) {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getAttributePrefix(int index) {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getAttributeType(int index) {
     throw new UnsupportedOperationException();
   }
-  
+
   public boolean isAttributeDefault(int index) {
     throw new UnsupportedOperationException();
   }
-  
+
   public int nextToken() throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public void require(int type, String namespace, String name) throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public String nextText() throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public int nextTag() throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public int getAttributeCount() {
     throw new UnsupportedOperationException();
   }
-  
+
   public String getAttributeName(int index) {
     throw new UnsupportedOperationException();
-  } 
-  
+  }
+
   public String getAttributeValue(int index) {
     throw new UnsupportedOperationException();
   }
 }
-

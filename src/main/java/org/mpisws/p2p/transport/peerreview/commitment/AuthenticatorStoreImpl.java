@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.commitment;
 
 import java.io.File;
@@ -53,20 +53,20 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 
 public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implements AuthenticatorStore<Identifier> {
-  
+
   protected boolean allowDuplicateSeqs;
   PeerReview<?, Identifier> peerreview;
   int numSubjects;
   RandomAccessFileIOBuffer authFile;
 
   Map<Identifier,SortedSet<Authenticator>> authenticators;
-  
+
   Logger logger;
   Serializer<Identifier> idSerializer;
   AuthenticatorSerializer authenticatorSerializer;
 
   boolean memoryBufferDisabled = false;
-  
+
   public AuthenticatorStoreImpl(PeerReview<?, Identifier> peerreview) {
     this(peerreview,false);
   }
@@ -79,13 +79,13 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     this.peerreview = peerreview;
     this.authenticatorSerializer = peerreview.getAuthenticatorSerializer();
     this.idSerializer = peerreview.getIdSerializer();
-    
+
     logger = peerreview.getEnvironment().getLogManager().getLogger(AuthenticatorStoreImpl.class, null);
   }
-  
+
   public void destroy() {
     authenticators.clear();
-    
+
     if (authFile != null) {
       try {
         authFile.close();
@@ -96,30 +96,30 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
       }
     }
   }
-  
+
   /**
    * Read in the Authenticators from a file.
-   * 
+   *
    *  Each instance of this class has just a single file in which to store authenticators.
    *  The file format is (<id> <auth>)*; authenticators from different peers can be
    *  mixed. This method sets the name of the file and reads its current contents
-   *  into memory. 
+   *  into memory.
    */
   public void setFilename(File file) throws IOException {
     if (authFile != null) {
       authFile.close();
       authFile = null;
     }
-    
+
     authFile = new RandomAccessFileIOBuffer(file, "rw");
-    
+
     // read in authenticators
     int authenticatorsRead = 0;
     int bytesRead = 0;
     long pos = 0;
     authFile.seek(pos);
     while (authFile.bytesRemaining() > 0) {
-      
+
       try {
         Identifier id = idSerializer.deserialize(authFile);
         Authenticator authenticator = authenticatorSerializer.deserialize(authFile);
@@ -130,7 +130,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
         break;
       }
     }
-     
+
     // clobber anything in the file after the ioexception
     authFile.setLength(pos);
     authFile.seek(authFile.length());
@@ -138,7 +138,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
 
   /**
    * Add a new authenticator. Note that in memory, the authenticators are sorted by nodeID
-   * and by sequence number, whereas on disk, they are not sorted at all. 
+   * and by sequence number, whereas on disk, they are not sorted at all.
    */
 
   protected void addAuthenticatorToMemory(Identifier id, Authenticator authenticator) {
@@ -159,20 +159,20 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     }
     list.add(authenticator);
   }
-  
+
   /**
-   *  Discard the authenticators in a certain sequence range (presumably because we just checked 
-   *  them against the corresponding log segment, and they were okay) 
+   *  Discard the authenticators in a certain sequence range (presumably because we just checked
+   *  them against the corresponding log segment, and they were okay)
    */
   protected void flushAuthenticatorsFromMemory(Identifier id, long minseq, long maxseq) {
 
-    SortedSet<Authenticator> list = authenticators.get(id);    
+    SortedSet<Authenticator> list = authenticators.get(id);
 
     if (list != null) {
       list.removeAll(getAuthenticators(id, minseq, maxseq));
-    }    
+    }
   }
-  
+
   protected SortedSet<Authenticator> findSubject(Identifier id) {
     return authenticators.get(id);
   }
@@ -196,7 +196,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
   public void flushAuthenticatorsFor(Identifier id) {
     flushAuthenticatorsFor(id, Long.MIN_VALUE, Long.MAX_VALUE-1);
   }
-  
+
 
   public void garbageCollect() throws IOException {
     if (authFile == null) return;
@@ -221,11 +221,11 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
 
   public List<Authenticator> getAuthenticators(Identifier id, long minseq,
       long maxseq) {
-    SortedSet<Authenticator> list = authenticators.get(id);    
+    SortedSet<Authenticator> list = authenticators.get(id);
     if (list != null) {
-      SortedSet<Authenticator> subList = list.subSet(new Authenticator(maxseq+1,null,null), new Authenticator(minseq,null,null));      
+      SortedSet<Authenticator> subList = list.subSet(new Authenticator(maxseq+1,null,null), new Authenticator(minseq,null,null));
       return new ArrayList<Authenticator>(subList);
-    }    
+    }
     return Collections.emptyList();
   }
 
@@ -240,7 +240,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
   }
 
   public Authenticator getMostRecentAuthenticator(Identifier id) {
-    SortedSet<Authenticator> list = authenticators.get(id);    
+    SortedSet<Authenticator> list = authenticators.get(id);
     if (list == null || list.isEmpty()) return null;
     return list.first();
   }
@@ -250,7 +250,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
   }
 
   public Authenticator getOldestAuthenticator(Identifier id) {
-    SortedSet<Authenticator> list = authenticators.get(id);    
+    SortedSet<Authenticator> list = authenticators.get(id);
     if (list == null) return null;
     return list.last();
   }
@@ -260,13 +260,13 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
   }
 
   public int numAuthenticatorsFor(Identifier id) {
-    SortedSet<Authenticator> list = authenticators.get(id);    
+    SortedSet<Authenticator> list = authenticators.get(id);
     if (list == null) return 0;
     return list.size();
   }
 
   public int numAuthenticatorsFor(Identifier id, long minseq, long maxseq) {
-    return getAuthenticators(id, minseq, maxseq).size();    
+    return getAuthenticators(id, minseq, maxseq).size();
   }
 
   public Authenticator statAuthenticator(Identifier id, long seq) {
@@ -274,7 +274,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     if (ret == null || ret.isEmpty()) return null;
     return ret.get(0);
   }
-  
+
   public void flush(Identifier id) {
     authenticators.remove(id);
   }
@@ -283,8 +283,8 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     authenticators.clear();
   }
 
-  public void disableMemoryBuffer() { 
-    this.memoryBufferDisabled = true; 
+  public void disableMemoryBuffer() {
+    this.memoryBufferDisabled = true;
   }
 
 }

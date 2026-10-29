@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.p2p.util;
 
 import java.io.BufferedInputStream;
@@ -120,47 +120,47 @@ public class SecurityUtils {
    * The length of the symmetric keys
    */
   public final static int SYMMETRIC_IV_LENGTH = 64;
-  
+
   /**
    * The name of the hash function.
    */
   public final static String HASH_ALGORITHM = "SHA1";
-  
+
   /**
-   * The name of the hmac function. 
+   * The name of the hmac function.
    */
   public final static String HMAC_ALGORITHM = "MD5";
-  
+
   /**
-   * The name of the apop function. 
+   * The name of the apop function.
    */
   public final static String APOP_ALGORITHM = "MD5";
-  
+
   /**
    * The length of hmac keys
    */
   public final static int HMAC_KEY_LENGTH = 64;
-  
+
   /**
    * The ipad of hmac keys, as defined in RFC 2195
    */
   public final static byte HMAC_IPAD_BYTE = 0x36;
-  
+
   /**
    * The opad of hmac keys, as defined in RFC 2195
    */
   public final static byte HMAC_OPAD_BYTE = 0x5C;
-  
+
   /**
    * The ipad byte array for use in hmac
    */
   public final static byte[] HMAC_IPAD = new byte[HMAC_KEY_LENGTH];
-  
+
   /**
    * The opad byte array for use in hmac
    */
   public final static byte[] HMAC_OPAD = new byte[HMAC_KEY_LENGTH];
-  
+
   /**
    * Initialize the ipad/opad buffers
    */
@@ -175,22 +175,22 @@ public class SecurityUtils {
    * The message digest used for doing hashing
    */
   private static MessageDigest hash;
-  
+
   /**
    * The message digest used for doing apop
    */
   private static MessageDigest apop;
-  
+
   /**
    * The message digest used for doing hmacing
    */
   private static MessageDigest hmac1;
-  
+
   /**
    * The message digest used for doing hmacing
    */
   private static MessageDigest hmac2;
-  
+
   /**
    * The cipher used to encrypt/decrypt data using DES
    */
@@ -232,7 +232,7 @@ public class SecurityUtils {
   static {
     // Add a provider for RSA encryption
     Security.insertProviderAt(new org.bouncycastle.jce.provider.BouncyCastleProvider(), 2);
-    
+
     try {
       random = new Random();
       cipherSymmetric = Cipher.getInstance(SYMMETRIC_ALGORITHM);
@@ -246,7 +246,7 @@ public class SecurityUtils {
       apop = MessageDigest.getInstance(APOP_ALGORITHM);
       hmac1 = MessageDigest.getInstance(HMAC_ALGORITHM);
       hmac2 = MessageDigest.getInstance(HMAC_ALGORITHM);
-      
+
       generatorSymmetric.init(SYMMETRIC_KEY_LENGTH);
     } catch (NoSuchAlgorithmException e) {
       throw new SecurityException("NoSuchAlgorithmException on construction: " + e);
@@ -277,7 +277,7 @@ public class SecurityUtils {
     oos.writeObject(o);
     oos.flush();
     oos.close();
-    
+
     return baos.toByteArray();
   }
 
@@ -309,7 +309,7 @@ public class SecurityUtils {
       return hash.digest(input);
     }
   }
-  
+
   /**
    * Utility method for determining the apop of a challenge and password using a secure hashing
    * algorithm.
@@ -326,7 +326,7 @@ public class SecurityUtils {
       return apop.digest();
     }
   }
-  
+
   /**
    * Utility method for determining the hmac of a byte[] and key using a secure hashing
    * algorithm.
@@ -340,7 +340,7 @@ public class SecurityUtils {
     synchronized (hmac1) {
       byte[] realKey = new byte[HMAC_KEY_LENGTH];
       System.arraycopy(key, 0, realKey, 0, (key.length < realKey.length ? key.length : realKey.length));
-    
+
       hmac1.update(MathUtils.xor(realKey, HMAC_IPAD));
       hmac1.update(text);
       hmac2.update(MathUtils.xor(realKey, HMAC_OPAD));
@@ -348,7 +348,7 @@ public class SecurityUtils {
       return hmac2.digest();
     }
   }
-  
+
   /**
    * Utility method for encrypting a block of data with symmetric encryption.
    *
@@ -360,7 +360,7 @@ public class SecurityUtils {
   public static byte[] encryptSymmetric(byte[] data, byte[] key) throws SecurityException {
     return encryptSymmetric(data, key, new byte[SYMMETRIC_IV_LENGTH]);
   }
- 
+
   /**
    * Utility method for encrypting a block of data with symmetric encryption.
    *
@@ -387,7 +387,7 @@ public class SecurityUtils {
   public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length) throws SecurityException {
     return encryptSymmetric(data, key, offset, length, new byte[SYMMETRIC_IV_LENGTH]);
   }
-  
+
   /**
    * Utility method for encrypting a block of data with symmetric encryption.
    *
@@ -417,7 +417,7 @@ public class SecurityUtils {
     } catch (BadPaddingException e) {
       throw new SecurityException("BadPaddingException encrypting object: " + e);
     } catch (InvalidAlgorithmParameterException e) {
-      throw new SecurityException("InvalidAlgorithmParameterException encrypting object: " + e);    
+      throw new SecurityException("InvalidAlgorithmParameterException encrypting object: " + e);
     }
   }
 
@@ -432,7 +432,7 @@ public class SecurityUtils {
   public static byte[] decryptSymmetric(byte[] data, byte[] key) throws SecurityException {
     return decryptSymmetric(data, key, new byte[SYMMETRIC_IV_LENGTH]);
   }
-  
+
  /**
    * Utility method for decrypting some data with symmetric encryption.
    *
@@ -450,7 +450,7 @@ public class SecurityUtils {
 
       synchronized (cipherSymmetric) {
         cipherSymmetric.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
-        
+
         return cipherSymmetric.doFinal(data);
       }
     } catch (InvalidKeyException e) {
@@ -460,8 +460,8 @@ public class SecurityUtils {
     } catch (BadPaddingException e) {
       throw new SecurityException("BadPaddingException decrypting object: " + e);
     } catch (InvalidAlgorithmParameterException e) {
-      throw new SecurityException("InvalidAlgorithmParameterException decrypting object: " + e);    
-    } 
+      throw new SecurityException("InvalidAlgorithmParameterException decrypting object: " + e);
+    }
   }
 
   /**
@@ -558,7 +558,7 @@ public class SecurityUtils {
         // Trying deprecated way of decrypting
         synchronized (deprecatedCipherAsymmetric) {
           deprecatedCipherAsymmetric.init(Cipher.DECRYPT_MODE, key);
-          
+
           return deprecatedCipherAsymmetric.doFinal(data);
         }
       }
@@ -621,7 +621,7 @@ public class SecurityUtils {
     System.arraycopy(data, len.length + length, exponent, 0, exponent.length);
 
     RSAPublicKeySpec rpks = new RSAPublicKeySpec(new BigInteger(modulus), new BigInteger(exponent));
-    
+
     try {
       synchronized (factoryAsymmetric) {
         return factoryAsymmetric.generatePublic(rpks);
@@ -669,7 +669,7 @@ public class SecurityUtils {
     System.arraycopy(data, len.length + length, exponent, 0, exponent.length);
 
     RSAPrivateKeySpec rpks = new RSAPrivateKeySpec(new BigInteger(modulus), new BigInteger(exponent));
-    
+
     try {
       synchronized (factoryAsymmetric) {
         return factoryAsymmetric.generatePrivate(rpks);
@@ -688,7 +688,7 @@ public class SecurityUtils {
   public static byte[] generateIVSymmetric() {
     byte[] result = new byte[SYMMETRIC_IV_LENGTH];
     random.nextBytes(result);
-    
+
     return result;
   }
 

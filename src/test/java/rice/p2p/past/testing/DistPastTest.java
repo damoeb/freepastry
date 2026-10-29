@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.p2p.past.testing;
 
 import java.net.InetAddress;
@@ -61,9 +61,9 @@ import rice.persistence.StorageManagerImpl;
  */
 @SuppressWarnings("unchecked")
 public class DistPastTest {
-  
+
     public DistPastTest(int bindport, InetSocketAddress bootaddress, Environment env, int numNodes) throws Exception {
-      
+
       // Generate the NodeIds Randomly
       NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
       Past p = null;
@@ -72,7 +72,7 @@ public class DistPastTest {
       // used for generating PastContent object Ids.
       // this implements the "hash function" for our DHT
       PastryIdFactory idf = new rice.pastry.commonapi.PastryIdFactory(env);
-      
+
       // construct the PastryNodeFactory, this is how we use rice.pastry.socket
       PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
 
@@ -81,21 +81,21 @@ public class DistPastTest {
         // construct a node and boot it; if there is no node at bootaddress (first loop), it starts its own ring
         PastryNode node = factory.newNode();
         node.boot(bootaddress);
-          
+
         // the node may require sending several messages to fully boot into the ring
         while(!node.isReady()) {
           // delay so we don't busy-wait
           Thread.sleep(100);
         }
-        
+
         System.out.println("Finished creating new node "+node);
-        
-        
+
+
         stor = new PersistentStorage(idf,".",4*1024*1024,node.getEnvironment());
           p = new PastImpl(node, new StorageManagerImpl(idf,stor,new LRUCache(new MemoryStorage(idf),512*1024,node.getEnvironment())), 3, "");
       }
       Thread.sleep(5000);
-        
+
       String s = "test" + env.getRandomSource().nextInt();
       PastContent dptc = new DistPastTestContent(env,idf,s);
       System.out.println("Inserting "+dptc);
@@ -105,7 +105,7 @@ public class DistPastTest {
           for(int ctr = 0; ctr < results.length;ctr++) {
             System.out.println("got "+results[ctr].booleanValue());
           }
-          
+
         }
 
         public void receiveException(Exception result) {
@@ -114,7 +114,7 @@ public class DistPastTest {
       });
 
       Thread.sleep(5000);
-      
+
       p.lookup(dptc.getId(), new Continuation<PastContent, Exception>() {
         public void receiveResult(PastContent result) {
           System.out.println("Got a "+result);
@@ -127,35 +127,34 @@ public class DistPastTest {
     }
 
     /**
-     * Usage: 
+     * Usage:
      * java [-cp FreePastry-<version>.jar] rice.tutorial.lesson4.DistTutorial localbindport bootIP bootPort numNodes
      * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10
      */
     public static void main(String[] args) throws Exception {
       // Loads pastry settings
       Environment env = new Environment();
-      
+
       try {
         // the port to use locally
         int bindport = Integer.parseInt(args[0]);
-        
+
         // build the bootaddress from the command line args
         InetAddress bootaddr = InetAddress.getByName(args[1]);
         int bootport = Integer.parseInt(args[2]);
         InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
-    
+
         // the port to use locally
-        int numNodes = Integer.parseInt(args[3]);    
-        
+        int numNodes = Integer.parseInt(args[3]);
+
         // launch our node!
         DistPastTest dt = new DistPastTest(bindport, bootaddress, env, numNodes);
       } catch (Exception e) {
         // remind user how to use
-        System.out.println("Usage:"); 
+        System.out.println("Usage:");
         System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.lesson4.DistTutorial localbindport bootIP bootPort numNodes");
         System.out.println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10");
-        throw e; 
+        throw e;
       }
     }
   }
-

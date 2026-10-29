@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.multiring;
 
@@ -61,17 +61,17 @@ import rice.p2p.commonapi.NodeHandleSet;
  * @author Peter Druschel
  */
 public class MultiringIdFactory implements IdFactory {
-  
+
   /**
    * The multiring node supporting this endpoint
    */
   protected Id ringId;
-  
+
   /**
    * The underlying IdFactory
    */
   protected IdFactory factory;
-  
+
   /**
    * Constructor
    *
@@ -81,7 +81,7 @@ public class MultiringIdFactory implements IdFactory {
     this.ringId = ringId;
     this.factory = factory;
   }
-  
+
   /**
    * Method which returns the underlying Id which represents the local
    * node's ring
@@ -91,18 +91,18 @@ public class MultiringIdFactory implements IdFactory {
   public Id getRingId() {
     return ringId;
   }
-  
+
   /**
    * Builds a ringId by using the provided Id and ringIds.
    *
    * @param ringId The id to use as the ringid
-   * @param material The id material to use 
+   * @param material The id material to use
    * @return The built Id.
    */
   public RingId buildRingId(Id ringId, byte[] material) {
     return RingId.build(ringId, factory.buildId(material));
   }
-  
+
   /**
    * Builds a ringId by using the provided Id and ringIds.
    *
@@ -113,7 +113,7 @@ public class MultiringIdFactory implements IdFactory {
   public RingId buildRingId(Id ringId, Id id) {
     return RingId.build(ringId, id);
   }
-  
+
   /**
    * Builds a protocol-specific Id given the source data.
    *
@@ -123,7 +123,7 @@ public class MultiringIdFactory implements IdFactory {
   public Id buildNormalId(byte[] material) {
     return factory.buildId(material);
   }
-  
+
   /**
    * Builds a protocol-specific Id given the source data.
    *
@@ -133,7 +133,7 @@ public class MultiringIdFactory implements IdFactory {
   public Id buildNormalId(String material) {
     return factory.buildId(material);
   }
-  
+
   /**
    * Builds a protocol-specific Id given the source data.
    *
@@ -143,7 +143,7 @@ public class MultiringIdFactory implements IdFactory {
   public Id buildId(byte[] material) {
     return RingId.build(getRingId(), factory.buildId(material));
   }
-  
+
   /**
    * Builds a protocol-specific Id given the source data.
    *
@@ -153,7 +153,7 @@ public class MultiringIdFactory implements IdFactory {
   public Id buildId(int[] material) {
     return RingId.build(getRingId(), factory.buildId(material));
   }
-  
+
   /**
    * Builds a protocol-specific Id by using the hash of the given string as source data.
    *
@@ -163,7 +163,7 @@ public class MultiringIdFactory implements IdFactory {
   public Id buildId(String string) {
     return RingId.build(getRingId(), factory.buildId(string));
   }
-  
+
   /**
    * Builds a random protocol-specific Id.
    *
@@ -191,10 +191,10 @@ public class MultiringIdFactory implements IdFactory {
 
     string = string.substring(string.indexOf(", ")+2);
     Id normal = factory.buildIdFromToString(string.substring(0, string.length()-1));
-    
+
     return RingId.build(ring, normal);
   }
-  
+
   /**
    * Builds an Id by converting the given toString() output back to an Id.  Should
    * not normally be used.
@@ -207,18 +207,18 @@ public class MultiringIdFactory implements IdFactory {
   public Id buildIdFromToString(char[] chars, int offset, int length) {
     Id ring = factory.buildIdFromToString(chars, 1, find(chars, ',')-1);
     Id normal = factory.buildIdFromToString(chars, 2+find(chars, ','), find(chars, ')') - (2+find(chars, ',')));
-    
-    return RingId.build(ring, normal);    
+
+    return RingId.build(ring, normal);
   }
-  
+
   protected static int find(char[] chars, char value) {
     for (int i=0; i<chars.length; i++)
       if (chars[i] == value)
         return i;
-    
+
     return chars.length;
   }
-  
+
   /**
    * Builds an IdRange based on a prefix.  Any id which has this prefix should
    * be inside this IdRange, and any id which does not share this prefix should
@@ -228,18 +228,18 @@ public class MultiringIdFactory implements IdFactory {
    * @return The built Id.
    */
   public IdRange buildIdRangeFromPrefix(String string) {
-    if (string.indexOf(", ") < 0) 
+    if (string.indexOf(", ") < 0)
       return new MultiringIdRange(ringId, factory.buildIdRangeFromPrefix(string));
-    
+
     string = string.substring(1);
     Id ring = factory.buildIdFromToString(string.substring(0, string.indexOf(", ")));
-    
+
     string = string.substring(string.indexOf(", ")+2);
     IdRange range = factory.buildIdRangeFromPrefix(string);
-    
+
     return new MultiringIdRange(ring, range);
   }
-  
+
   /**
    * Returns the length a Id.toString should be.
    *
@@ -248,7 +248,7 @@ public class MultiringIdFactory implements IdFactory {
   public int getIdToStringLength() {
     return 4 + (2 * factory.getIdToStringLength());
   }
-  
+
   /**
    * Builds a protocol-specific Id.Distance given the source data.
    *
@@ -258,7 +258,7 @@ public class MultiringIdFactory implements IdFactory {
   public Id.Distance buildIdDistance(byte[] material) {
     return factory.buildIdDistance(material);
   }
-  
+
   /**
    * Creates an IdRange given the CW and CCW ids.
    *
@@ -269,7 +269,7 @@ public class MultiringIdFactory implements IdFactory {
   public IdRange buildIdRange(Id cw, Id ccw) {
     return new MultiringIdRange(getRingId(), factory.buildIdRange(((RingId) cw).getId(), ((RingId) ccw).getId()));
   }
-  
+
   /**
    * Creates an empty IdSet.
    *
@@ -278,7 +278,7 @@ public class MultiringIdFactory implements IdFactory {
   public IdSet buildIdSet() {
     return new MultiringIdSet(getRingId(), factory.buildIdSet());
   }
-  
+
   /**
    * Creates an empty IdSet.
    *
@@ -287,7 +287,7 @@ public class MultiringIdFactory implements IdFactory {
   public IdSet buildIdSet(SortedMap<Id, ?> map) {
     return new MultiringIdSet(getRingId(), factory.buildIdSet(new MultiringSortedMap<>(map)));
   }
-  
+
   /**
    * Creates an empty NodeHandleSet.
    *
@@ -296,15 +296,15 @@ public class MultiringIdFactory implements IdFactory {
   public NodeHandleSet buildNodeHandleSet() {
     return new MultiringNodeHandleSet(getRingId(), factory.buildNodeHandleSet());
   }
-  
+
   @SuppressWarnings("unchecked")
   protected class MultiringSortedMap<V> implements SortedMap<Id, V> {
     protected SortedMap<Id, V> map;
-    
+
     public MultiringSortedMap(SortedMap<Id, V> map) {
       this.map = map;
     }
-    
+
     public Comparator<? super Id> comparator() { return null; }
     public Id firstKey() { return (map.firstKey() == null ? null : ((RingId) map.firstKey()).getId()); }
     public SortedMap<Id, V> headMap(Id toKey) { return map.headMap(RingId.build(ringId, toKey)); }
@@ -330,11 +330,11 @@ public class MultiringIdFactory implements IdFactory {
   @SuppressWarnings("unchecked")
   protected class MultiringEntrySet<V> implements Set<Map.Entry<Id, V>> {
     protected Set<Map.Entry<Id, V>> set;
-    
+
     public MultiringEntrySet(Set<Map.Entry<Id, V>> set) {
       this.set = set;
     }
-    
+
     public boolean add(Map.Entry<Id, V> o) { throw new UnsupportedOperationException("add not supported!"); }
     public boolean addAll(Collection<? extends Map.Entry<Id, V>> c) { throw new UnsupportedOperationException("addAll not supported!"); }
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
@@ -357,15 +357,15 @@ public class MultiringIdFactory implements IdFactory {
     public Object[] toArray() { throw new UnsupportedOperationException("toArray not supported!"); }
     public <T> T[] toArray(T[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
   }
-  
+
   @SuppressWarnings("unchecked")
   protected class MultiringKeySet implements Set<Id> {
     protected Set<Id> set;
-    
+
     public MultiringKeySet(Set<Id> set) {
       this.set = set;
     }
-    
+
     public boolean add(Id o) { throw new UnsupportedOperationException("add not supported!"); }
     public boolean addAll(Collection<? extends Id> c) { throw new UnsupportedOperationException("addAll not supported!"); }
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
@@ -385,35 +385,35 @@ public class MultiringIdFactory implements IdFactory {
     public boolean removeAll(Collection<?> c) { throw new UnsupportedOperationException("removeAll not supported!"); }
     public boolean retainAll(Collection<?> c) { throw new UnsupportedOperationException("retainAll not supported!"); }
     public int size() { throw new UnsupportedOperationException("size not supported!"); }
-    public Object[] toArray() { 
+    public Object[] toArray() {
       Object[] result = new Object[set.size()];
       Iterator<Id> i = set.iterator();
       int j = 0;
-      
-      while (i.hasNext()) 
+
+      while (i.hasNext())
         result[j++] = ((RingId) i.next()).getId();
-      
+
       return result;
     }
-    public <T> T[] toArray(T[] a) { 
+    public <T> T[] toArray(T[] a) {
       T[] result = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), set.size());
       Iterator<Id> i = set.iterator();
       int j = 0;
-      
-      while (i.hasNext()) 
+
+      while (i.hasNext())
         result[j++] = (T) ((RingId) i.next()).getId();
-      
+
       return result;
     }
   }
-    
+
   protected class MultiringMapEntry<V> implements Map.Entry<Id, V> {
     protected Map.Entry<Id, V> entry;
-    
+
     public MultiringMapEntry(Map.Entry<Id, V> entry) {
       this.entry = entry;
     }
-    
+
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
     public Id getKey() { return ((RingId) entry.getKey()).getId(); }
     public V getValue() { return entry.getValue(); }
@@ -421,4 +421,3 @@ public class MultiringIdFactory implements IdFactory {
     public V setValue(V value) { throw new UnsupportedOperationException("setValue not supported!"); }
   }
 }
-

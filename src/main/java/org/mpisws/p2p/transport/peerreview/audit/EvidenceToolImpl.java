@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.audit;
 
 import java.io.IOException;
@@ -68,11 +68,11 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
   Logger logger;
   Serializer<Identifier> idSerializer;
   Serializer<Handle> handleSerializer;
-  
+
   int hashSize;
   int signatureSize;
   private PeerReview<Handle, Identifier> peerreview;
-  
+
   public EvidenceToolImpl(PeerReview<Handle, Identifier> peerreview, Serializer<Handle> handleSerializer, Serializer<Identifier> idSerializer, int hashSize, int signatureSize) {
     this.peerreview = peerreview;
     this.logger = peerreview.getEnvironment().getLogManager().getLogger(EvidenceToolImpl.class, null);
@@ -81,11 +81,11 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
     this.hashSize = hashSize;
     this.signatureSize = signatureSize;
   }
-  
+
   /**
    * 1) is the log snippet well-formed, i.e. are the entries of the correct length, and do they have the correct format?
    * 2) do we locally have the node certificate for each signature that occurs in the snippet?
-   * 
+   *
    * if the former doesn't hold, it returns INVALID
    * if the latter doesn't hold, it returns CERT_MISSING, and returns the nodeID of the node whose certificate we need to request
    */
@@ -95,7 +95,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
         logger.warn("Malformed statement: Entry of type #{} is hashed", entry.type);
         return new Tuple<Integer, Identifier>(INVALID,null);
       }
-      
+
       /* Further processing depends on the entry type */
       logger.atTrace().log(() -> "Entry type "+entry.type+", size="+entry.content.length+" "+(entry.isHash ? " (hashed)" : ""));
 
@@ -107,7 +107,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
               new EvtSend<Identifier>(sib, idSerializer, hashSize);
             }
             break;
-          case EVT_RECV : {/* We may need the certificate for the sender */          
+          case EVT_RECV : {/* We may need the certificate for the sender */
             EvtRecv<Handle> recv = new EvtRecv<Handle>(sib,handleSerializer,hashSize);
             Identifier id = peerreview.getIdentifierExtractor().extractIdentifier(recv.getSenderHandle());
             if (!peerreview.hasCertificate(id)) {
@@ -132,14 +132,14 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
           case EVT_CHOOSE_Q :
           case EVT_CHOOSE_RAND :
             break;
-          case EVT_INIT: {/* No certificates needed */          
+          case EVT_INIT: {/* No certificates needed */
             new EvtInit<Handle>(sib,handleSerializer);
             break;
           }
           case EVT_SENDSIGN : /* No certificates needed */
             break;
           default : /* No certificates needed */
-            assert(entry.type > EVT_MAX_RESERVED); 
+            assert(entry.type > EVT_MAX_RESERVED);
             break;
         }
       } catch (IOException ioe) {
@@ -147,7 +147,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
         return new Tuple<Integer, Identifier>(INVALID,null);
       }
     }
-    
+
     return new Tuple<Integer, Identifier>(VALID,null);
   }
 
@@ -160,7 +160,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
     }
   }
 
-  
+
   /**
    * The following method does several things: It verifies all the signatures in
    * a log snippet, it extracts all the authenticators for later forwarding to
@@ -169,19 +169,19 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
    */
   public boolean checkSnippetSignatures(LogSnippet snippet,
       Handle subjectHandle, AuthenticatorStore<Identifier> authStoreOrNull,
-      byte flags, CommitmentProtocol<Handle, Identifier> commitmentProtocol, 
+      byte flags, CommitmentProtocol<Handle, Identifier> commitmentProtocol,
       byte[] keyNodeHash, long keyNodeMaxSeq) {
     boolean startWithCheckpoint = (flags&FLAG_INCLUDE_CHECKPOINT) == FLAG_INCLUDE_CHECKPOINT;
     byte[] currentNodeHash= snippet.baseHash;
     byte[] prevNodeHash = null;
     byte[] prevPrevNodeHash = null;
-    
+
     boolean firstEntry = true;
     boolean keyNodeFound = false;
-    
+
     SnippetEntry lastEntry = null;
-    
-    
+
+
     /* If FLAG_FULL_MESSAGES_SENDER is set, we must get a list of all the messages we have received
        from this node, so we can later check whether it has sent any other ones */
 
@@ -197,7 +197,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
           if (entry.getSeq() < (snippet.getFirstSeq() - peerreview.getTimeToleranceMillis()*1000000))
             break;
           if (type == EVT_RECV) {
-  
+
             byte[] evtBytes = history.getEntry(entry,entry.getSizeInFile());
             EvtRecv<Handle> evtRecv = new EvtRecv<Handle>(new SimpleInputBuffer(evtBytes),handleSerializer,hashSize);
             Handle thisSender = evtRecv.getSenderHandle();
@@ -214,8 +214,8 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
        an ACK entry, we need to compute the message hash from the corresponding SEND entry */
 
     Map<Long, SendEntryRecord> secache = new HashMap<Long, SendEntryRecord>();
-    
-    
+
+
     logger.debug("Checking snippet (flags={})", flags);
     // TODO: check for FLAG_FULL here? (open question inherited from the C++ PeerReview port)
 
@@ -233,7 +233,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
           logger.warn("Log snippet attempts to roll back the sequence number from {} to {}; flagging invalid", lastEntry.seq, entry.seq);
           return false;
         }
-  
+
         if (keyNodeHash != null && !keyNodeFound && (entry.seq > keyNodeMaxSeq)) {
           logger.warn("Hash of keyNode does not appear in [{},{}]; flagging invalid", snippet.getFirstSeq(), keyNodeMaxSeq);
           return false;
@@ -258,7 +258,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
       } else {
         contentHash = peerreview.hash(ByteBuffer.wrap(entry.content));
       }
-      
+
       currentNodeHash = peerreview.hash(entry.seq, entry.type, currentNodeHash, contentHash);
 
       /* Check signatures */
@@ -314,7 +314,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
                 return false;
               }
 
-              /* If the message in the SEND entry was for the local node, we check whether we 
+              /* If the message in the SEND entry was for the local node, we check whether we
                  have previously delivered that message. If not, we deliver it now. */
 
               if (commitmentProtocol != null && (flags & FLAG_FULL_MESSAGES_SENDER) == FLAG_FULL_MESSAGES_SENDER) {
@@ -338,7 +338,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
                     msg.write(evtSend.payload.array(),evtSend.payload.position(),evtSend.payload.remaining());
                     msg.write(evtSendSign.restOfMessage);
                     UserDataMessage<Handle> message = new UserDataMessage<Handle>(lastEntry.seq,subjectHandle,prevPrevNodeHash,evtSendSign.signature,msg.getByteBuffer(),evtSend.payload.remaining());
-                    
+
                     commitmentProtocol.handleIncomingMessage(subjectHandle, message, null);
                   }
                 }
@@ -361,7 +361,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
 
             EvtSign evtSign = new EvtSign(sib,hashSize,signatureSize);
             EvtRecv<Handle> evtRecv = new EvtRecv<Handle>(new SimpleInputBuffer(lastEntry.content),handleSerializer,hashSize);
-            
+
             Handle senderHandle = evtRecv.getSenderHandle();
             long senderSeq = evtRecv.getSenderSeq();
 
@@ -400,7 +400,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
             // TODO: a snippet with an ACK but no matching SEND should probably fail the check (return false)
           } else {
             /* Extract the authenticator and check it */
-            
+
             secache.remove(evtAck.getAckedSeq());
 
             SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -426,7 +426,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
         case EVT_CHOOSE_RAND :
           break;
         default :
-          assert(entry.type > EVT_MAX_RESERVED); 
+          assert(entry.type > EVT_MAX_RESERVED);
           break;
       }
       } catch (IOException ioe) {
@@ -441,7 +441,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
       /* If this is the first entry, its hash must match the first authenticator in the challenge */
 
       if (keyNodeHash != null && !keyNodeFound) {
-        if (Arrays.equals(currentNodeHash, keyNodeHash)) { 
+        if (Arrays.equals(currentNodeHash, keyNodeHash)) {
           keyNodeFound = true;
         }
       }
@@ -481,7 +481,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
       logger.warn("Key node not found in log snippet; flagging invalid");
       return false;
     }
-    
+
     return true;
   }
 }

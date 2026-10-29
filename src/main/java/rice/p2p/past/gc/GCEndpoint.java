@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.past.gc;
 
@@ -67,12 +67,12 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  * @author Alan Mislove
  */
 public class GCEndpoint implements Endpoint {
-  
+
   /**
    * The endpoint which this GC endpoint is wrapping
    */
   protected Endpoint endpoint;
-  
+
   /**
   * Constructor
    *
@@ -81,7 +81,7 @@ public class GCEndpoint implements Endpoint {
   protected GCEndpoint(Endpoint endpoint) {
     this.endpoint = endpoint;
   }
-  
+
   /**
    * Returns this node's id, which is its identifier in the namespace.
    *
@@ -90,7 +90,7 @@ public class GCEndpoint implements Endpoint {
   public Id getId() {
     return endpoint.getId();
   }
-  
+
   /**
    * This method makes an attempt to route the message to the root of the given id.
    * The hint handle will be the first hop in the route. If the id field is null, then
@@ -106,11 +106,11 @@ public class GCEndpoint implements Endpoint {
   public MessageReceipt route(Id id, Message message, NodeHandle hint) {
     return endpoint.route(id, message, hint);
   }
-  
+
   public MessageReceipt route(Id id, RawMessage message, NodeHandle hint) {
     return endpoint.route(id, message, hint);
   }
-  
+
 
   public MessageReceipt route(Id id, Message message, NodeHandle hint, DeliveryNotification deliverAckToMe) {
     return endpoint.route(id, message, hint, deliverAckToMe);
@@ -123,13 +123,13 @@ public class GCEndpoint implements Endpoint {
   public MessageReceipt route(Id id, Message message, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
     return endpoint.route(id, message, hint, deliverAckToMe, options);
   }
-  
+
   public MessageReceipt route(Id id, RawMessage message, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
     return endpoint.route(id, message, hint, deliverAckToMe, options);
   }
 
 
-  
+
   /**
    * This call produces a list of nodes that can be used as next hops on a route towards
    * the given id, such that the resulting route satisfies the overlay protocol's bounds
@@ -143,7 +143,7 @@ public class GCEndpoint implements Endpoint {
   public NodeHandleSet localLookup(Id id, int num, boolean safe) {
     return endpoint.localLookup(id, num, safe);
   }
-  
+
   /**
    * This methods returns an unordered set of nodehandles on which are neighbors of the local
    * node in the id space.  Up to num handles are returned.
@@ -153,7 +153,7 @@ public class GCEndpoint implements Endpoint {
   public NodeHandleSet neighborSet(int num) {
     return endpoint.neighborSet(num);
   }
-  
+
   /**
    * This methods returns an ordered set of nodehandles on which replicas of an object with
    * a given id can be stored.  The call returns nodes up to and including a node with maxRank.
@@ -164,12 +164,12 @@ public class GCEndpoint implements Endpoint {
   public NodeHandleSet replicaSet(Id id, int maxRank) {
     return endpoint.replicaSet(id, maxRank);
   }
-  
+
   /**
    * This methods returns an ordered set of nodehandles on which replicas of an object with
    * a given id can be stored.  The call returns nodes up to and including a node with maxRank.
    * This call also allows the application to provide a remove "center" node, as well as
-   * other nodes in the vicinity. 
+   * other nodes in the vicinity.
    *
    * @param id The object's id.
    * @param maxRank The number of desired replicas.
@@ -179,7 +179,7 @@ public class GCEndpoint implements Endpoint {
   public NodeHandleSet replicaSet(Id id, int maxRank, NodeHandle root, NodeHandleSet set) {
     return endpoint.replicaSet(id, maxRank, root, set);
   }
-  
+
   /**
    * This operation provides information about ranges of keys for which the node is currently
    * a rank-root. The operations returns null if the range could not be determined, the range
@@ -199,7 +199,7 @@ public class GCEndpoint implements Endpoint {
     IdRange range = endpoint.range(handle, rank, lkey);
     return (range == null ? null : new GCIdRange(range));
   }
-  
+
   /**
    * This operation provides information about ranges of keys for which the node is currently
    * a rank-root. The operations returns null if the range could not be determined, the range
@@ -220,7 +220,7 @@ public class GCEndpoint implements Endpoint {
     IdRange range = endpoint.range(handle, rank, lkey, cumulative);
     return (range == null ? null : new GCIdRange(range));
   }
-  
+
   /**
    * Returns a handle to the local node below this endpoint.  This node handle is serializable,
    * and can therefore be sent to other nodes in the network and still be valid.
@@ -230,11 +230,11 @@ public class GCEndpoint implements Endpoint {
   public NodeHandle getLocalNodeHandle() {
     return endpoint.getLocalNodeHandle();
   }
-  
+
   public List<NodeHandle> networkNeighbors(int num) {
     return endpoint.networkNeighbors(num);
   }
-  
+
   /**
    * Schedules a message to be delivered to this application after the provided number of
    * milliseconds.
@@ -245,9 +245,9 @@ public class GCEndpoint implements Endpoint {
   public CancellableTask scheduleMessage(Message message, long delay) {
     return endpoint.scheduleMessage(message, delay);
   }
-  
+
   /**
-   * Schedules a message to be delivered to this application every period number of 
+   * Schedules a message to be delivered to this application every period number of
    * milliseconds, after delay number of miliseconds have passed.
    *
    * @param message The message to be delivered
@@ -257,15 +257,15 @@ public class GCEndpoint implements Endpoint {
   public CancellableTask scheduleMessage(Message message, long delay, long period) {
     return endpoint.scheduleMessage(message, delay, period);
   }
-  
+
   public CancellableTask scheduleMessageAtFixedRate(Message message, long delay, long period) {
     return endpoint.scheduleMessageAtFixedRate(message, delay, period);
   }
-  
+
   /**
    * Schedules a job for processing on the dedicated processing thread.  CPU intensive jobs, such
    * as encryption, erasure encoding, or bloom filter creation should never be done in the context
-   * of the underlying node's thread, and should only be done via this method.  
+   * of the underlying node's thread, and should only be done via this method.
    *
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
@@ -273,11 +273,11 @@ public class GCEndpoint implements Endpoint {
   public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
     endpoint.process(task, command);
   }
-  
+
   /**
    * Returns a unique instance name of this endpoint, sort of a mailbox name for this
    * application.
-   * 
+   *
    * @return The unique instance name of this application
    */
   public String getInstance() {
@@ -303,14 +303,14 @@ public class GCEndpoint implements Endpoint {
   }
 
   public void setDeserializer(MessageDeserializer md) {
-    endpoint.setDeserializer(md);    
+    endpoint.setDeserializer(md);
   }
 
   public MessageDeserializer getDeserializer() {
-    return endpoint.getDeserializer();    
+    return endpoint.getDeserializer();
   }
 
-  public Id readId(InputBuffer buf, short type) throws IOException {    
+  public Id readId(InputBuffer buf, short type) throws IOException {
     if (type == GCId.TYPE)
       return new GCId(buf, endpoint);
 
@@ -332,13 +332,13 @@ public class GCEndpoint implements Endpoint {
   public NodeHandleSet readNodeHandleSet(InputBuffer buf, short type) throws IOException {
     return endpoint.readNodeHandleSet(buf, type);
   }
-  
+
   public String toString() {
     return "GCE["+endpoint+"]";
   }
-  
+
   public void register() {
-    endpoint.register(); 
+    endpoint.register();
   }
 
   public int proximity(NodeHandle nh) {
@@ -357,10 +357,6 @@ public class GCEndpoint implements Endpoint {
     return endpoint.routingConsistentFor(id);
   }
   public void setSendOptions(Map<String, Object> options) {
-    endpoint.setSendOptions(options);    
+    endpoint.setSendOptions(options);
   }
 }
-
-
-
-

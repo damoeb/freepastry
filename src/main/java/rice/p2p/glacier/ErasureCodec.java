@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.p2p.glacier;
 
 import java.io.IOException;
@@ -70,7 +70,7 @@ public class ErasureCodec {
 
   protected Environment environment;
   protected Logger logger;
-  
+
   /**
    * Constructor for ErasureCodec.
    *
@@ -97,7 +97,7 @@ public class ErasureCodec {
         d+= 256;
       int hi = (d>>4);
       int lo = (d&15);
-        
+
       s+=hex.charAt(hi)+""+hex.charAt(lo);
       if (((i%16)==15) || (i==(data.length-1)))
         s+="\n";
@@ -112,7 +112,7 @@ public class ErasureCodec {
 
   /**
    * Serializes the object.
-   * 
+   *
    * @param obj
    * @param generateFragment
    * @return
@@ -124,7 +124,7 @@ public class ErasureCodec {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       sob.writeShort(obj.getType());
       obj.serialize(sob);
-      return encode(sob.getBytes(), sob.getWritten(), generateFragment); 
+      return encode(sob.getBytes(), sob.getWritten(), generateFragment);
     } catch (IOException ioe) {
       logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
       return null;
@@ -140,9 +140,9 @@ public class ErasureCodec {
     for (int row = 0; row < (numFragments - numSurvivors); row++) {
       for (int col = 0; col < numSurvivors; col++) {
         int exponent = (MultField - FieldEltToExp[(row ^ col) ^ (1 << (Lfield - 1))]) % MultField;
-        for (int row_bit = 0; row_bit < Lfield; row_bit ++) 
-          for (int col_bit = 0; col_bit < Lfield; col_bit ++) 
-            if ((ExpToFieldElt[exponent + row_bit] & (1 << col_bit)) != 0) 
+        for (int row_bit = 0; row_bit < Lfield; row_bit ++)
+          for (int col_bit = 0; col_bit < Lfield; col_bit ++)
+            if ((ExpToFieldElt[exponent + row_bit] & (1 << col_bit)) != 0)
               buffer[numSurvivors * Lfield + row * Lfield + row_bit] ^= buffer[col_bit + col * Lfield];
       }
     }
@@ -160,7 +160,7 @@ public class ErasureCodec {
     for (int i=0; i<generateFragment.length; i++)
       if (generateFragment[i])
         wantFragments ++;
-        
+
     int numWords = (length + 3) / 4;
     int wordsPerGroup = (numSurvivors * Lfield);
     int numGroups = (numWords + (wordsPerGroup - 1)) / wordsPerGroup;
@@ -187,9 +187,9 @@ public class ErasureCodec {
         byte b3 = (offset+4*i+3 < length) ? bytes[offset+4*i+3] : 0;
         buffer[i] = (b0<<24) | ((b1<<16)&0xFF0000) | ((b2<<8)&0xFF00) | (b3&0xFF);
       }
-      
+
       encodeChunk(buffer);
-      
+
       for (int i=0; i<numFragments; i++) {
         if (generateFragment[i]) {
           for (int j=0; j<Lfield; j++) {
@@ -208,7 +208,7 @@ public class ErasureCodec {
   protected void decodeChunk(int[] buffer, int nExtra, int[] RowInd, boolean[] haveFragment, long[][] InvMat, int[] ColInd) {
 
     // *** Second last step ***
-  
+
     int M[] = new int[(numFragments - numSurvivors) * Lfield];
     for (int i = 0; i < nExtra; i++)
       for (int j = 0; j < Lfield; j++)
@@ -218,8 +218,8 @@ public class ErasureCodec {
       for (int col = 0; col < numSurvivors; col++) {
         if (haveFragment[col]) {
           int exponent = (MultField - FieldEltToExp[RowInd[row] ^ col ^ (1 << (Lfield - 1))]) % MultField;
-          for (int row_bit = 0; row_bit < Lfield; row_bit++) 
-            for (int col_bit = 0; col_bit < Lfield; col_bit++) 
+          for (int row_bit = 0; row_bit < Lfield; row_bit++)
+            for (int col_bit = 0; col_bit < Lfield; col_bit++)
               if ((ExpToFieldElt[exponent + row_bit] & (1 << col_bit)) != 0)
                 M[row_bit + row * Lfield] ^= buffer[col_bit + col * Lfield];
         }
@@ -232,8 +232,8 @@ public class ErasureCodec {
       for (int col = 0; col < nExtra; col++) {
         int exponent = (int) InvMat[row][col];
         for (int row_bit = 0; row_bit < Lfield; row_bit++)
-          for (int col_bit = 0; col_bit < Lfield; col_bit++) 
-            if ((ExpToFieldElt[exponent + row_bit] & (1 << col_bit)) != 0) 
+          for (int col_bit = 0; col_bit < Lfield; col_bit++)
+            if ((ExpToFieldElt[exponent + row_bit] & (1 << col_bit)) != 0)
               buffer[row_bit + ColInd[row] * Lfield] ^= M[col_bit + col * Lfield];
       }
     }
@@ -248,12 +248,12 @@ public class ErasureCodec {
 
     if (frag.length != numFragments)
       return null;
-  
+
     int firstFragment = -1;
     for (int i=0; (i<numFragments) && (firstFragment == -1); i++)
       if (frag[i] != null)
         firstFragment = i;
-  
+
     int wordsPerFragment = (frag[firstFragment].payload.length + 3) / 4;
     int numGroups = wordsPerFragment / Lfield;
 
@@ -270,11 +270,11 @@ public class ErasureCodec {
     int nMissing = 0;
 
     int nExtra = 0;
-    for (int i = 0; i < numSurvivors; i++) 
-      if (!haveFragment[i]) 
+    for (int i = 0; i < numSurvivors; i++)
+      if (!haveFragment[i])
         ColInd[nMissing++] = i;
 
-    for (int i = 0; i < (numFragments - numSurvivors); i++) 
+    for (int i = 0; i < (numFragments - numSurvivors); i++)
       if (haveFragment[numSurvivors + i])
         RowInd[nExtra++] = i;
 
@@ -330,7 +330,7 @@ public class ErasureCodec {
       for (int i=0; i<numFragments; i++) {
         if (haveFragment[i]) {
           for (int j=0; j < Lfield; j++) {
-            buffer[i*Lfield + j] = 
+            buffer[i*Lfield + j] =
               ((frag[i].payload[4*(g*Lfield + j) + 0]      ) & 0x0000FF) +
               ((frag[i].payload[4*(g*Lfield + j) + 1] <<  8) & 0x00FF00) +
               ((frag[i].payload[4*(g*Lfield + j) + 2] << 16) & 0xFF0000) +
@@ -338,9 +338,9 @@ public class ErasureCodec {
           }
         }
       }
-      
+
       decodeChunk(buffer, nExtra, RowInd, haveFragment, InvMat, ColInd);
-      
+
       for (int i=0; i<(numSurvivors*Lfield); i++) {
         bytes[4*(g*(numSurvivors*Lfield) + i) + 0] = (byte)  (buffer[i] >> 24);
         bytes[4*(g*(numSurvivors*Lfield) + i) + 1] = (byte) ((buffer[i] >> 16) & 0xFF);
@@ -361,11 +361,11 @@ public class ErasureCodec {
 
     return null;
   }
-  
+
   protected PastContent deserialize(byte[] bytes, Endpoint endpoint, PastContentDeserializer pcd) throws IOException, ClassNotFoundException {
     SimpleInputBuffer sib = new SimpleInputBuffer(bytes);
     short type = sib.readShort();
-    return pcd.deserializePastContent(sib, endpoint, type);    
+    return pcd.deserializePastContent(sib, endpoint, type);
   }
 
   protected void initElt() {

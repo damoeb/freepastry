@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.routing;
 
 import java.io.IOException;
@@ -59,9 +59,9 @@ import rice.pastry.messaging.PRawMessage;
 /**
  * A route message contains a pastry message that has been wrapped to be sent to
  * another pastry node.
- * 
+ *
  * @version $Id: RouteMessage.java 4279 2008-07-15 11:13:33Z jeffh $
- * 
+ *
  * @author Andrew Ladd
  */
 
@@ -88,21 +88,21 @@ public class RouteMessage extends PRawMessage implements Serializable,
   private transient PRawMessage rawInternalMsg = null;
   private transient InputBuffer serializedMsg;
   private transient PastryNode pn;
-  
+
   boolean hasSender;
   byte internalPriority;
   short internalType;
-  
+
   /**
    * This is used by the Rerouter to keep track of how many attempted reroutes of the message.
    */
   public transient int numRetries = 0;
-  
+
   private RMDeserializer endpointDeserializer = new RMDeserializer();
-  
+
   /**
    * Constructor.
-   * 
+   *
    * @param target this is id of the node the message will be routed to.
    * @param msg the wrapped message.
    * @param serializeVersion the serialization version of the message
@@ -114,7 +114,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
 
   /**
    * Constructor.
-   * 
+   *
    * @param target this is id of the node the message will be routed to.
    * @param msg the wrapped message.
    * @param opts the send options for the message.
@@ -126,7 +126,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
 
   /**
    * Constructor.
-   * 
+   *
    * @param dest the node this message will be routed to
    * @param msg the wrapped message.
    * @param opts the send options for the message.
@@ -140,7 +140,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
 
   /**
    * Constructor.
-   * 
+   *
    * @param target this is id of the node the message will be routed to.
    * @param msg the wrapped message.
    * @param firstHop the nodeHandle of the first hop destination
@@ -149,26 +149,26 @@ public class RouteMessage extends PRawMessage implements Serializable,
   public RouteMessage(Id target, Message msg, NodeHandle firstHop, byte serializeVersion) {
     this(target, msg, firstHop, null, serializeVersion);
   }
-  
+
   private static PRawMessage convert(Message msg) {
     if (msg instanceof PRawMessage) {
       PRawMessage prm = (PRawMessage)msg;
-      if (prm.getType() == 0) 
+      if (prm.getType() == 0)
         if (prm instanceof PJavaSerializedMessage) throw new RuntimeException("Cannot route a PJavaSerializedMessage, this is used internally in RouteMessage."+msg+" "+msg.getClass().getName());
-      return prm;          
+      return prm;
     }
     return new PJavaSerializedMessage(msg);
   }
-  
+
   public RouteMessage(Id target, PRawMessage msg, NodeHandle firstHop, SendOptions opts, byte serializeVersion) {
     this(target, (Message)msg, firstHop, opts, serializeVersion);
     rawInternalMsg = msg;
     if (msg != null) internalType = msg.getType();
   }
-  
+
   /**
    * Constructor.
-   * 
+   *
    * @param target this is id of the node the message will be routed to.
    * @param msg the wrapped message.
    * @param firstHop the nodeHandle of the first hop destination
@@ -186,13 +186,13 @@ public class RouteMessage extends PRawMessage implements Serializable,
     if (msg != null) // can be null on the deserialization, but that ctor properly sets auxAddress
       auxAddress = msg.getDestination();
   }
-  
-  
 
-  
+
+
+
   /**
    * Gets the target node id of this message.
-   * 
+   *
    * @return the target node id.
    */
 
@@ -218,7 +218,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
 
   /**
    * Get priority
-   * 
+   *
    * @return the priority of this message.
    */
 
@@ -230,7 +230,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
 
   /**
    * The wrapped message.
-   * 
+   *
    * @return the wrapped message.
    * @deprecated use unwrap(MessageDeserializer)
    */
@@ -239,17 +239,17 @@ public class RouteMessage extends PRawMessage implements Serializable,
     if (internalMsg != null) {
       return internalMsg;
     }
-    try {      
+    try {
       endpointDeserializer.setSubDeserializer(new JavaSerializedDeserializer(pn));
       return unwrap(endpointDeserializer);
     } catch (IOException ioe) {
-      throw new RuntimeException(ioe); 
+      throw new RuntimeException(ioe);
     }
   }
 
   /**
    * Get transmission options.
-   * 
+   *
    * @return the options.
    */
 
@@ -322,22 +322,22 @@ public class RouteMessage extends PRawMessage implements Serializable,
    *   +                                                               +
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +            NodeHandle destinationHandle                       + 
+   *   +            NodeHandle destinationHandle                       +
    *   +  (used if the RouteMessage is intended for a specific node)   +
    *   +       (only exists if the hasHandle boolean is true)          +
-   *        ...                                                         
+   *        ...
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +            NodeHandle prev                                    + 
+   *   +            NodeHandle prev                                    +
    *   +  (used to repair routing table during routing)                +
    *   +                                                               +
-   *        ...                                                         
+   *        ...
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +            Internal Message                                   + 
+   *   +            Internal Message                                   +
    *   +  (see below)                                                  +
    *   +                                                               +
-   *   
+   *
    * version 0:
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   +            int auxAddress                                     +
@@ -348,20 +348,20 @@ public class RouteMessage extends PRawMessage implements Serializable,
    *   +                                                               +
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +            NodeHandle prev                                    + 
+   *   +            NodeHandle prev                                    +
    *   +  (used to repair routing table during routing)                +
    *   +                                                               +
-   *        ...                                                         
+   *        ...
    *   +                                                               +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +            Internal Message                                   + 
+   *   +            Internal Message                                   +
    *   +  (see below)                                                  +
    *   +                                                               +
    * @param buf
    * @return
    */
   public static RouteMessage build(InputBuffer buf, byte priority, PastryNode pn, NodeHandle prev, byte outputVersion) throws IOException {
-  
+
     byte version = buf.readByte();
     switch(version) {
     case 0:
@@ -388,7 +388,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
         throw new IOException("Unknown Version: "+version);
     }
   }
-  
+
   public RouteMessage(Id target, int auxAddress, NodeHandle prev, InputBuffer buf, byte priority, PastryNode pn, NodeHandle destinationHandle, byte serializeVersion) throws IOException {
     this(target, null, null, null, serializeVersion);
     hasSender = buf.readBoolean();
@@ -414,36 +414,36 @@ public class RouteMessage extends PRawMessage implements Serializable,
       if (destinationHandle != null) {
         destinationHandle.serialize(buf); // (deserialized in build())
       } else {
-        target.serialize(buf); // (deserialized in build())        
-      }            
+        target.serialize(buf); // (deserialized in build())
+      }
     } // switch
-    
+
     if (serializedMsg != null) { // pri, sdr
       // fixed Fabio's bug from Nov 2006 (these were deserialized in the constructor above, but not added back into the internal stream.)
       buf.writeBoolean(hasSender);
-      
+
       buf.writeShort(internalType);
-      
+
       // optimize this, possibly by extending InternalBuffer interface to access the raw underlieing bytes
-      byte[] raw = new byte[serializedMsg.bytesRemaining()]; 
+      byte[] raw = new byte[serializedMsg.bytesRemaining()];
       serializedMsg.read(raw);
       buf.write(raw,0,raw.length);
       serializedMsg = new SimpleInputBuffer(raw);
     } else {
       if (rawInternalMsg == null) {
-        rawInternalMsg = convert(internalMsg); 
+        rawInternalMsg = convert(internalMsg);
       }
 //    address was already peeled off as the auxAddress
 //    different wire to deserialize the Address and eliminate unneeded junk
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //    +bool hasSender +   Priority    +  Type (Application specific)   + // zero is java serialization
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//     
-//    optional      
+//
+//    optional
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    +            NodeHandle sender                                  + 
+//    +            NodeHandle sender                                  +
 //    +                                                               +
-//                      ...  flexible size  
+//                      ...  flexible size
 //    +                                                               +
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
       NodeHandle sender = rawInternalMsg.getSender();
@@ -461,43 +461,43 @@ public class RouteMessage extends PRawMessage implements Serializable,
 
       short type = rawInternalMsg.getType();
       buf.writeShort(type);
-      
+
       if (hasSender) {
         sender.serialize(buf);
       }
 
-      rawInternalMsg.serialize(buf);       
-    }    
+      rawInternalMsg.serialize(buf);
+    }
   }
 
   public Message unwrap(MessageDeserializer md) throws IOException {
     if (internalMsg != null) {
       return internalMsg;
     }
-    
+
     // deserialize using md
-    
+
 //  address was already peeled off as the auxAddress
 //  different wire to deserialize the Address and eliminate unneeded junk
 //  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //  +bool hasSender +   Priority    +  Type (Application specific)   + // zero is java serialization
 //  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//   
-//  optional      
+//
+//  optional
 //  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//  +            NodeHandle sender                                  + 
+//  +            NodeHandle sender                                  +
 //  +                                                               +
-//                    ...  flexible size  
+//                    ...  flexible size
 //  +                                                               +
 //  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    
+
     NodeHandle internalSender = null;
     if (hasSender) {
       internalSender = pn.readNodeHandle(serializedMsg);
     }
-    
+
     internalMsg = (Message)md.deserialize(serializedMsg, internalType, internalPriority, internalSender);
-    
+
     // the serializedMsg is now dirty, because the unwrapper may change the internal message
     serializedMsg = null;
     pn = null;
@@ -511,7 +511,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
 
   class RMDeserializer extends PJavaSerializedDeserializer {
     MessageDeserializer sub;
-    
+
     public RMDeserializer() {
       // the late binding of pn is pretty problematic, we'll set it right before we deserialize
       // the thing is, we usually won't even need it
@@ -527,19 +527,19 @@ public class RouteMessage extends PRawMessage implements Serializable,
       pn = RouteMessage.this.pn;
           return new PastryEndpointMessage(auxAddress, buf, sub, type, priority, sender);
     }
-     
+
   }
- 
+
   public int getAuxAddress() {
-    return auxAddress; 
+    return auxAddress;
   }
-  
+
   public short getInternalType() {
     if (rawInternalMsg != null) return rawInternalMsg.getType();
     if (internalMsg != null) {
       if (internalMsg instanceof RawMessage) {
         return ((RawMessage)internalMsg).getType();
-      }        
+      }
       return 0;
     }
     // we don't yet know the internal type because we haven't deserialized it far enough yet
@@ -547,7 +547,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
   }
 
   public void setDestinationHandle(NodeHandle handle) {
-    destinationHandle = handle;    
+    destinationHandle = handle;
   }
 
   public NodeHandle getDestinationHandle() {
@@ -558,35 +558,35 @@ public class RouteMessage extends PRawMessage implements Serializable,
   public Map<String, Object> getTLOptions() {
     return options;
   }
-  
+
   public void setTLOptions(Map<String, Object> options) {
     this.options = options;
   }
-  
+
   // synchronization problem...
   // This is so the RouteMessage can be cancelled
   Cancellable tlCancellable;
   public void setTLCancellable(Cancellable c) {
     tlCancellable = c;
   }
-  
+
   public boolean cancel() {
     return tlCancellable.cancel();
   }
 
   RouteMessageNotification notifyMe;
-  
+
   public void setRouteMessageNotification(RouteMessageNotification notification) {
     notifyMe = notification;
   }
-  
+
   public void sendSuccess(NodeHandle nextHop) {
     if (notifyMe != null) notifyMe.sendSuccess(this, nextHop);
   }
-  
+
   /**
    * Return true if it notified a higher layer.
-   * 
+   *
    * @param e
    * @return
    */

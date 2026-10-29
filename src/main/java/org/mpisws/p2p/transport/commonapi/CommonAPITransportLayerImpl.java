@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.commonapi;
 
 import java.io.IOException;
@@ -61,67 +61,67 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
-public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implements 
-    CommonAPITransportLayer<Identifier>, 
+public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implements
+    CommonAPITransportLayer<Identifier>,
     TransportLayerCallback<Identifier, ByteBuffer> /*,
     LivenessListener<Identifier>,
     ProximityListener<Identifier> */{
-  
+
   TransportLayer<Identifier, ByteBuffer> tl;
   TransportLayerCallback<Identifier, RawMessage> callback;
   ErrorHandler<Identifier> errorHandler;
   RawMessageDeserializer deserializer;
   IdFactory idFactory;
   Logger logger;
-  
+
   public static final String MSG_CLASS = "commonapi_msg_class";
   public static final String MSG_STRING = "commonapi_msg_string";
   public static final String MSG_TYPE = "commonapi_msg_type";
   public static final String MSG_ADDR = "commonapi_msg_addr";
 
   protected OptionsAdder optionsAdder;
-  
+
   public CommonAPITransportLayerImpl(
-      TransportLayer<Identifier, ByteBuffer> tl, 
+      TransportLayer<Identifier, ByteBuffer> tl,
       IdFactory idFactory,
       RawMessageDeserializer deserializer,
       OptionsAdder optionsAdder,
       ErrorHandler<Identifier> errorHandler,
       Environment env) {
-    
+
     this.logger = env.getLogManager().getLogger(CommonAPITransportLayerImpl.class, null);
     this.tl = tl;
-    this.deserializer = deserializer; 
+    this.deserializer = deserializer;
     this.optionsAdder = optionsAdder;
     if (this.optionsAdder == null) {
       this.optionsAdder = new OptionsAdder() {
-      
+
         public Map<String, Object> addOptions(Map<String, Object> options,
             RawMessage m) {
           return OptionsFactory.addOption(options, MSG_STRING, m.toString(), MSG_TYPE, m.getType(), MSG_CLASS, m.getClass().getName());
-        }      
+        }
       };
     }
-    
+
     if (tl == null) throw new IllegalArgumentException("tl must be non-null");
     if (idFactory == null) throw new IllegalArgumentException("idFactory must be non-null");
     if (deserializer == null) throw new IllegalArgumentException("deserializer must be non-null");
-    
+
     this.idFactory = idFactory;
     this.errorHandler = errorHandler;
-    
+
     if (this.callback == null) {
       this.callback = new DefaultCallback<Identifier, RawMessage>(env);
     }
     if (this.errorHandler == null) {
-      this.errorHandler = new DefaultErrorHandler<Identifier>(logger); 
+      this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
     }
-      
-    
+
+
     tl.setCallback(this);
-    
+
   }
-  
+
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
@@ -136,30 +136,30 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
 
   public MessageRequestHandle<Identifier, RawMessage> sendMessage(
       final Identifier i,
-      final RawMessage m, 
+      final RawMessage m,
       final MessageCallback<Identifier, RawMessage> deliverAckToMe,
       Map<String, Object> options) {
     if (destroyed) return null;
-    
+
     logger.debug("sendMessage({},{})", i, m);
 
-    final MessageRequestHandleImpl<Identifier, RawMessage> handle 
+    final MessageRequestHandleImpl<Identifier, RawMessage> handle
       = new MessageRequestHandleImpl<Identifier, RawMessage>(i, m, options);
     final ByteBuffer buf;
-    
+
     // we only serialize the Id, we assume the underlying layer got the address of the NodeHandle correct
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     try {
-      // TODO: maybe we should write my entire address to be compatible with the lower levels, why do we need to do this at all?  
-      // Is the contract that the lower level's identifier is proper?  
-      // What about the fact that the priorityTL will establish end to end connectivity?  
+      // TODO: maybe we should write my entire address to be compatible with the lower levels, why do we need to do this at all?
+      // Is the contract that the lower level's identifier is proper?
+      // What about the fact that the priorityTL will establish end to end connectivity?
       // Perhaps this is wasteful.
       // cant put the PriorityTL above this because this is where we serialize
-      
+
       deserializer.serialize(m, sob);
     } catch (IOException ioe) {
       if (ioe instanceof NodeIsFaultyException) {
-        ioe = new NodeIsFaultyException(i,m, ioe); 
+        ioe = new NodeIsFaultyException(i,m, ioe);
       }
       if (deliverAckToMe == null) {
         errorHandler.receivedException(i, ioe);
@@ -168,27 +168,27 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
       }
       return handle;
     }
-    
+
     buf = ByteBuffer.wrap(sob.getBytes());
     logger.trace("sendMessage({},{}) serialized:{}", i, m, buf);
 
     handle.setSubCancellable(tl.sendMessage(
-        i, 
-        buf, 
+        i,
+        buf,
         new MessageCallback<Identifier, ByteBuffer>() {
-    
+
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             logger.trace("sendMessage({},{}).ack()", i, m);
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(handle);
           }
-        
-          public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {            
+
+          public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             if (ex instanceof NodeIsFaultyException) {
-              ex = new NodeIsFaultyException(i, m, ex); 
+              ex = new NodeIsFaultyException(i, m, ex);
             }
             if (ex instanceof QueueOverflowException) {
-              ex = new QueueOverflowException(i, m, ex); 
+              ex = new QueueOverflowException(i, m, ex);
             }
             logger.info("sendFailed({},{})", i, m, ex);
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
@@ -198,7 +198,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
               deliverAckToMe.sendFailed(handle, ex);
             }
           }
-        }, 
+        },
         optionsAdder.addOptions(options,m)));
     return handle;
   }
@@ -225,18 +225,18 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
     tl.destroy();
   }
 
-  
+
 
 
   public SocketRequestHandle<Identifier> openSocket(
       final Identifier i,
-      final SocketCallback<Identifier> deliverSocketToMe, 
+      final SocketCallback<Identifier> deliverSocketToMe,
       Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
     logger.debug("openSocket({})", i);
     return tl.openSocket(i, deliverSocketToMe, options);
-    
+
     // we only serialize the Id, we assume the underlying layer got the address of the NodeHandle correct
   }
 

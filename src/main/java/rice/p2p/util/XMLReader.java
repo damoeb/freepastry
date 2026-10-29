@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.util;
 
@@ -51,22 +51,22 @@ import java.io.Reader;
  * @author Alan Mislove
  */
 public class XMLReader {
-  
+
   /**
    * The actual reader which the parser uses
    */
   protected Reader in;
-  
+
   /**
    * The actual XML parser which we use
    */
   protected XMLParser xpp;
-  
+
   /**
    * The cached type of the last event the parser saw
    */
   protected int eventType;
-    
+
   /**
    * Constructor which takes the provided reader and
    * builds a new XML parser to read XML from the reader.
@@ -74,12 +74,12 @@ public class XMLReader {
    * @param in The reader to base this XML reader off of
    * @throws IOException If an error occurs
    */
-  public XMLReader(Reader in) throws IOException {  
+  public XMLReader(Reader in) throws IOException {
     this.in = new BufferedReader(in);
     this.xpp = new XMLParser();
     this.xpp.setInput(this.in);
   }
-  
+
   /**
    * Method which closes the underlying reader, which will
    * cause future step attempts to throw an IOException.
@@ -87,9 +87,9 @@ public class XMLReader {
    * @throws IOException If an error occurs
    */
   public void close() throws IOException {
-    in.close(); 
+    in.close();
   }
-  
+
   /**
    * Method which reads a base64 tag and returns the decoded bytes
    *
@@ -98,20 +98,20 @@ public class XMLReader {
    */
   public byte[] readBase64() throws IOException {
     byte[] bytes = new byte[0];
-    
+
     assertStartTag("base64");
     step();
-    
+
     if (isText()) {
       bytes = xpp.getText().getBytes();
       bytes = Base64.decode(bytes, 0, bytes.length);
       step();
-    } 
-    
+    }
+
     assertEndTag("base64");
     return bytes;
   }
-  
+
   /**
    * Method which reads the header from the reader.  If an
    * invalid header is found, and IOException is thrown.
@@ -122,7 +122,7 @@ public class XMLReader {
     assertEvent(XMLParser.START_DOCUMENT);
     readStartTag("jsx");
   }
-  
+
   /**
    * Asserts that the given event type just happened.
    *
@@ -132,7 +132,7 @@ public class XMLReader {
     if (eventType != type)
       throw new IOException("Expected event " + type + ", got a " + eventType);
   }
-  
+
   /**
    * Asserts that a start tag was just read
    *
@@ -141,7 +141,7 @@ public class XMLReader {
   public void assertStartTag() throws IOException {
     assertEvent(XMLParser.START_TAG);
   }
-  
+
   /**
    * Asserts that a end tag was just read
    *
@@ -150,7 +150,7 @@ public class XMLReader {
   public void assertEndTag() throws IOException {
     assertEvent(XMLParser.END_TAG);
   }
-  
+
   /**
    * Asserts that the provided start tag was just read
    *
@@ -159,11 +159,11 @@ public class XMLReader {
    */
   public void assertStartTag(String name) throws IOException {
     assertStartTag();
-    
+
     if (! xpp.getName().equals(name))
       throw new IOException("Expected start tag '" + name + "', got a '" + xpp.getName()+"'");
   }
-  
+
   /**
    * Asserts that the provided end tag was just read
    *
@@ -172,13 +172,13 @@ public class XMLReader {
    */
   public void assertEndTag(String name) throws IOException {
     assertEvent(XMLParser.END_TAG);
-    
+
     if (! xpp.getName().equals(name))
       throw new IOException("Expected end tag '" + name + "', got a '" + xpp.getName()+"'");
   }
-  
+
   /**
-   * Asserts that a start tag will be read next.  Causes a step() 
+   * Asserts that a start tag will be read next.  Causes a step()
    * to be called.
    *
    * @throws IOException If a the assertion failed
@@ -187,20 +187,20 @@ public class XMLReader {
     step();
     assertStartTag();
   }
-  
+
   /**
-   * Asserts that a end tag will be read next.  Causes a step() 
+   * Asserts that a end tag will be read next.  Causes a step()
    * to be called.
    *
    * @throws IOException If a the assertion failed
    */
   public void readEndTag() throws IOException {
     step();
-    assertEndTag();    
+    assertEndTag();
   }
-  
+
   /**
-   * Asserts that the provided start tag will be read next.  Causes a step() 
+   * Asserts that the provided start tag will be read next.  Causes a step()
    * to be called.
    *
    * @throws IOException If a the assertion failed
@@ -209,9 +209,9 @@ public class XMLReader {
     readStartTag();
     assertStartTag(name);
   }
-  
+
   /**
-   * Asserts that the provided end tag will be read next.  Causes a step() 
+   * Asserts that the provided end tag will be read next.  Causes a step()
    * to be called.
    *
    * @throws IOException If a the assertion failed
@@ -220,7 +220,7 @@ public class XMLReader {
     readEndTag();
     assertEndTag(name);
   }
-  
+
   /**
    * Asserts that the given attribute exists and is equal to the given value.
    *
@@ -229,11 +229,11 @@ public class XMLReader {
   public void assertAttribute(String name, String value) throws IOException {
     if (getAttribute(name) == null)
       throw new IOException("Expected attribute " + name + ", found none");
-    
+
     if (! getAttribute(name).equals(value))
       throw new IOException("Expected attribute " + name + " to be '" + value + "', got '" + getAttribute(name)+"'");
   }
-  
+
   /**
    * Advances the parser one step, skipping whitespace
    *
@@ -241,11 +241,11 @@ public class XMLReader {
    */
   public void step() throws IOException {
     eventType = xpp.next();
-      
+
     if ((eventType == XMLParser.TEXT) && (xpp.isWhitespace()))
       step();
   }
-  
+
   /**
    * Returns whether or not a start document just happened
    *
@@ -254,7 +254,7 @@ public class XMLReader {
   public boolean isStartDocument() {
     return (eventType == XMLParser.START_DOCUMENT);
   }
-  
+
   /**
    * Returns whether or not a end document just happened
    *
@@ -263,16 +263,16 @@ public class XMLReader {
   public boolean isEndDocument() {
     return (eventType == XMLParser.END_DOCUMENT);
   }
-  
+
   /**
    * Returns whether or not a start tag just happened
    *
    * @return Whether or not a start tag just happened
-   */ 
+   */
   public boolean isStartTag() {
     return (eventType == XMLParser.START_TAG);
   }
-  
+
   /**
    * Returns whether or not a end tag just happened
    *
@@ -281,7 +281,7 @@ public class XMLReader {
   public boolean isEndTag() {
     return (eventType == XMLParser.END_TAG);
   }
-  
+
   /**
    * Returns whether or not a end tag just happened
    *
@@ -290,7 +290,7 @@ public class XMLReader {
   public boolean isText() {
     return (eventType == XMLParser.TEXT);
   }
-  
+
   /**
    * Returns the value of the given attribute, or null if the
    * attribute cannot be found.
@@ -301,10 +301,10 @@ public class XMLReader {
   public String getAttribute(String name) throws IOException {
     assertEvent(XMLParser.START_TAG);
     String result = xpp.getAttributeValue(null, name);
-      
+
     return result;
   }
-  
+
   /**
    * Returns the value of the current start tag
    *
@@ -319,7 +319,7 @@ public class XMLReader {
       throw new IOException("getStartTag called, caused " + e);
     }
   }
-  
+
   /**
    * Returns the value of the current end tag
    *
@@ -334,5 +334,5 @@ public class XMLReader {
       throw new IOException("getEndTag called, caused " + e);
     }
   }
-  
+
 }

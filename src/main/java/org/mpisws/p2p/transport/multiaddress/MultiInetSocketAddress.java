@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package org.mpisws.p2p.transport.multiaddress;
 
@@ -54,10 +54,10 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  */
 public class MultiInetSocketAddress implements Serializable {
   static InetSocketAddressSerializer serializer = new InetSocketAddressSerializer();
-  
+
   // the address list, most external first
   protected InetSocketAddress address[];
-  
+
   /**
    * Constructor for a node with a single address
    *
@@ -65,12 +65,12 @@ public class MultiInetSocketAddress implements Serializable {
    */
   public MultiInetSocketAddress(InetSocketAddress address) {
     this(new InetSocketAddress[]{address});
-  }  
+  }
 
   public MultiInetSocketAddress(InetSocketAddress[] addressList) {
     this.address = addressList;
   }
-  
+
   public MultiInetSocketAddress(InetSocketAddress outer,
       InetSocketAddress inner) {
     this(new InetSocketAddress[]{outer, inner});
@@ -88,7 +88,7 @@ public class MultiInetSocketAddress implements Serializable {
     }
     return result;
   }
-  
+
   /**
    * Checks equality on address lists
    *
@@ -101,11 +101,11 @@ public class MultiInetSocketAddress implements Serializable {
     MultiInetSocketAddress that = (MultiInetSocketAddress)o;
     return addressEquals(that);
   }
-  
+
   public boolean addressEquals(MultiInetSocketAddress that) {
     if (this.address.length != that.address.length) {
       // this code is here so we can say we are the same if one node knows they are firewalled and the other doesn't
-      
+
       if (that.getInnermostAddress().equals(this.getInnermostAddress())) {
         return true;
       }
@@ -116,7 +116,7 @@ public class MultiInetSocketAddress implements Serializable {
     }
     return true;
   }
-  
+
   /**
    * Returns the addresses separated by colons
    *
@@ -126,11 +126,11 @@ public class MultiInetSocketAddress implements Serializable {
     String s = "";
     for (int ctr = 0; ctr < address.length; ctr++) {
       s+=address[ctr];
-      if (ctr < address.length-1) s+=":";  
+      if (ctr < address.length-1) s+=":";
     }
     return s;
   }
-  
+
   public void toStringShort(StringBuffer result) {
     for (int ctr = 0; ctr < address.length; ctr++) {
       InetSocketAddress theAddr = address[ctr];
@@ -142,43 +142,43 @@ public class MultiInetSocketAddress implements Serializable {
         result.append(ha + ":" + theAddr.getPort());
       }
       if (ctr < address.length - 1) result.append(";");
-    } // ctr 
+    } // ctr
   }
-  
+
   public InetSocketAddress getInnermostAddress() {
-    return address[address.length-1];     
+    return address[address.length-1];
   }
-  
+
   public InetSocketAddress getOutermostAddress() {
-    return address[0];     
+    return address[0];
   }
-  
+
   public int getNumAddresses() {
-    return address.length; 
+    return address.length;
   }
-  
+
   public InetSocketAddress getAddress(int index) {
-    return address[index]; 
+    return address[index];
   }
-  
+
   /**
    *   MultiInetSocketAddress: (IPV4):
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   +   numAddrs    +  IPVersion 0  +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   internet address 0          ...                                
+   *   +   internet address 0          ...
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   +   port 0                      +  IPVersion 1  +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   internet address 1          ...                                
+   *   +   internet address 1          ...
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   +   port 1                      +  IPVersion k  +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   +   internet address k          ...                                
+   *   +   internet address k          ...
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   +   port k                      +       ...
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *  
+   *
    * @param buf
    * @return
    * @throws IOException
@@ -194,7 +194,7 @@ public class MultiInetSocketAddress implements Serializable {
 
   /**
    * Writes the format described in {@link #build(InputBuffer)}.
-   * 
+   *
    * @param buf the buffer to write to
    */
   public void serialize(OutputBuffer buf) throws IOException {
@@ -209,9 +209,7 @@ public class MultiInetSocketAddress implements Serializable {
     for (int ctr = 0; ctr < address.length; ctr++) {
       ret += serializer.getSerializedLength(address[ctr]);
     }
-    return (short)ret; 
+    return (short)ret;
   }
 
 }
-
-

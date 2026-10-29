@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice;
 
@@ -44,7 +44,7 @@ import rice.selector.SelectorManager;
 /**
  * Asynchronously receives the result to a given method call, using
  * the command pattern.
- * 
+ *
  * Implementations of this class contain the remainder of a computation
  * which included an asynchronous method call.  When the result to the
  * call becomes available, the receiveResult method on this command
@@ -88,7 +88,7 @@ public interface Continuation<R, E extends Exception> {
      * The parent continuation
      */
     protected Continuation<? super P, E> parent;
-    
+
     /**
      * Constructor which takes in the parent continuation
      * for this continuation.
@@ -110,7 +110,7 @@ public interface Continuation<R, E extends Exception> {
       parent.receiveException(result);
     }
   }
-  
+
   /**
    * This class is a Continuation provided for simplicity which
    * passes any results up to the parent Continuation which it
@@ -118,12 +118,12 @@ public interface Continuation<R, E extends Exception> {
    * receiveException() method with the appropriate behavior.
    */
   public static abstract class ErrorContinuation<R, E extends Exception> implements Continuation<R, E> {
-    
+
     /**
     * The parent continuation
      */
     protected Continuation<? super R, E> parent;
-    
+
     /**
      * Constructor which takes in the parent continuation
      * for this continuation.
@@ -133,7 +133,7 @@ public interface Continuation<R, E extends Exception> {
     public ErrorContinuation(Continuation<? super R, E> continuation) {
       parent = continuation;
     }
-    
+
     /**
      * Called when an the result is available.  Simply passes the result
      * to the parent;
@@ -157,9 +157,9 @@ public interface Continuation<R, E extends Exception> {
      * The name of this continuation
      */
     protected String name;
-    
+
     protected Logger logger;
-    
+
     /**
      * Constructor which takes in a name
      *
@@ -170,7 +170,7 @@ public interface Continuation<R, E extends Exception> {
       this.name = name;
       this.logger = env.getLogManager().getLogger(getClass(), null);
     }
-    
+
     /**
      * Called when a previously requested result is now available. Does
      * absolutely nothing.
@@ -190,13 +190,13 @@ public interface Continuation<R, E extends Exception> {
       logger.warn("ERROR - Received exception {} during task {}", result, name, result);
     }
   }
-  
+
   /**
    * This class is a Continuation provided for simplicity which
    * passes both results and exceptions to the receiveResult() method.
    */
   public abstract static class SimpleContinuation implements Continuation<Object, Exception> {
-    
+
     /**
      * Called when an exception occurred as a result of the
      * previous command.  Simply prints an error message to the screen.
@@ -242,7 +242,7 @@ public interface Continuation<R, E extends Exception> {
       if (exception != null) {
         throw new IllegalArgumentException("Exception was thrown in ExternalContinuation, but getResult() called!");
       }
-        
+
       return result;
     }
 
@@ -259,12 +259,12 @@ public interface Continuation<R, E extends Exception> {
         exception = e;
       }
     }
-    
+
     public boolean exceptionThrown() {
       return (exception != null);
     }
   }
-  
+
   /**
    * This class is used when you want to run some task on the selector thread
    * and wait for it to return its result in a Continuation.  It is essentially
@@ -273,7 +273,7 @@ public interface Continuation<R, E extends Exception> {
    * wait on.  Override the execute(Continuation) method then call invoke() to
    * get the result or Exception from the operation.  The current thread will
    * block on invoke until the continuation returns a result or an exception.
-   * 
+   *
    * @author jstewart
    *
    */
@@ -283,7 +283,7 @@ public interface Continuation<R, E extends Exception> {
     public ExternalContinuationRunnable() {
       e = new ExternalContinuation<R,E>();
     }
-    
+
     public void run() {
       try {
         execute(e);
@@ -291,9 +291,9 @@ public interface Continuation<R, E extends Exception> {
         e.fail(exc);
       }
     }
-    
+
     protected abstract void execute(Continuation<R, E> c) throws Exception;
-    
+
     public R invoke(SelectorManager sm) throws Exception {
       sm.invoke(this);
       e.sleep();
@@ -301,7 +301,7 @@ public interface Continuation<R, E extends Exception> {
         throw e.getException();
       return e.getResult();
     }
- 
+
     public R invoke(Environment env) throws Exception {
       return invoke(env.getSelectorManager());
     }
@@ -312,43 +312,43 @@ public interface Continuation<R, E extends Exception> {
    * and wait for it to return its result.  Override execute() to perform the
    * operation and then use invoke to schedule its operation.  The current
    * thread will block until the operation returns a result or an exception.
-   * 
+   *
    * @author jstewart
    *
    */
   public abstract class ExternalRunnable<R> extends ExternalContinuationRunnable<R, Exception> {
     protected abstract R execute() throws Exception;
-    
+
     protected void execute(Continuation<R, Exception> c) throws Exception {
       c.receiveResult(execute());
     }
   }
 
   /**
-   * This class represents a Continuation which is used when multiple 
+   * This class represents a Continuation which is used when multiple
    * results are expected, which can come back at different times.  The
    * prototypical example of its use is in an application like Past, where
    * Insert messages are sent to a number of replicas and the responses
-   * come back at different times.  
+   * come back at different times.
    *
-   * Optionally, the creator can override the isDone() method, which 
+   * Optionally, the creator can override the isDone() method, which
    * is called each time an intermediate result comes in.  This allows
-   * applications like Past to declare an insert successful after a 
+   * applications like Past to declare an insert successful after a
    * certain number of results have come back successful.
    *
    * @param <R> The type of result delivered to the parent continuation.  This
    *   is Object[] unless getResult() is overridden.
    */
   public static class MultiContinuation<R> {
-  
+
     protected Object result[];
     protected boolean haveResult[];
     protected Continuation<? super R, Exception> parent;
     protected boolean done;
-    
+
     /**
      * Constructor which takes a parent continuation as well
-     * as the number of results which to expect.  
+     * as the number of results which to expect.
      *
      * @param parent The parent continuation
      * @param num The number of results expected to come in
@@ -359,7 +359,7 @@ public interface Continuation<R, E extends Exception> {
       this.haveResult = new boolean[num];
       this.done = false;
     }
-    
+
     /**
      * Returns the continuation which should be used as the
      * result continuation for the index-th result.  This should
@@ -374,7 +374,7 @@ public interface Continuation<R, E extends Exception> {
         public void receiveException(Exception e) { receive(index, e); }
       };
     }
-    
+
     /**
      * Internal method which receives the results and determines
      * if we are done with this task.  This method ignores multiple
@@ -399,11 +399,11 @@ public interface Continuation<R, E extends Exception> {
         }
       }
     }
-    
+
     /**
      * Method which returns whether or not we are done.  This is designed
      * to be overridden by subclasses in order to allow for more advanced
-     * behavior.  
+     * behavior.
      *
      * If we are done and the subclass wishes to return an exception to the
      * calling application, it may throw an Exception, which will be caught
@@ -411,15 +411,15 @@ public interface Continuation<R, E extends Exception> {
      * will cause this continuation to be permanently marked as done.
      */
     public boolean isDone() throws Exception {
-      for (int i=0; i<haveResult.length; i++) 
-        if (! haveResult[i]) 
+      for (int i=0; i<haveResult.length; i++)
+        if (! haveResult[i])
           return false;
-      
+
       return true;
     }
-    
+
     /**
-     * Method which can also be overridden to change what result should be 
+     * Method which can also be overridden to change what result should be
      * returned to the parent continuation.  This defaults to the Object[]
      * containing results or exceptions; subclasses which use a different
      * result type R must override this method.
@@ -428,22 +428,22 @@ public interface Continuation<R, E extends Exception> {
      */
     @SuppressWarnings("unchecked")
     public R getResult() {
-      return (R) result; 
+      return (R) result;
     }
   }
-  
+
   /**
    * Continuation class which takes a provided string as it's name, and
    * returns that String when toString() is called.
    */
   public static class NamedContinuation<R, E extends Exception> implements Continuation<R, E> {
-    
+
     // the internal continuation
     protected Continuation<? super R, E> parent;
-    
+
     // the name of this continuation
     protected String name;
-    
+
     /**
      * Builds a new NamedContinuation given the name and the wrapped
      * continuation
@@ -455,7 +455,7 @@ public interface Continuation<R, E extends Exception> {
       this.name = name;
       this.parent = command;
     }
-    
+
     /**
      * Called when an the result is available.  Simply passes the result
      * to the parent;
@@ -465,7 +465,7 @@ public interface Continuation<R, E extends Exception> {
     public void receiveResult(R result) {
       parent.receiveResult(result);
     }
-    
+
     /**
      * Called when an exception occurred as a result of the
      * previous command.  Simply calls the parent continuation's
@@ -476,7 +476,7 @@ public interface Continuation<R, E extends Exception> {
     public void receiveException(E result) {
       parent.receiveException(result);
     }
-    
+
     /**
      * Returns the name of this continuation
      *

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.routing;
 
 import java.io.IOException;
@@ -58,9 +58,9 @@ import rice.pastry.PastryNode;
  * A set of nodes typically stored in the routing table. The set contains a
  * bounded number of the closest node handles. Since proximity value can change
  * unpredictably, we don't keep the set in sorted order.
- * 
+ *
  * @version $Id: RouteSet.java 4060 2007-12-21 17:49:36Z jeffh $
- * 
+ *
  * @author Andrew Ladd
  * @author Peter Druschel
  */
@@ -80,19 +80,19 @@ public class RouteSet implements NodeSetI, Serializable,
   transient int row;
   transient int col;
   transient PastryNode localNode;
-  
+
   /**
    * Constructor.
-   * 
+   *
    * @param maxSize the maximum number of nodes that fit in this set.
    */
 
   public RouteSet(int maxSize, int row, int col, PastryNode local, NodeHandle initialVal) {
     this(maxSize, row, col, local);
-    nodes[theSize++] = initialVal;    
+    nodes[theSize++] = initialVal;
     closest = 0;
   }
-  
+
   public RouteSet(int maxSize, int row, int col, PastryNode local) {
     this.localNode = local;
     nodes = new NodeHandle[maxSize];
@@ -103,26 +103,26 @@ public class RouteSet implements NodeSetI, Serializable,
   }
 
   public String toString() {
-    
+
     String s = "RS";
     if (col >= 0) {
       s+="("+row+","+Id.tran[col]+"):";
     } else {
-      s+=":"; 
+      s+=":";
     }
     for (int i = 0; i < nodes.length; i++) {
-      s+=nodes[i]+","; 
+      s+=nodes[i]+",";
     }
     return s;
   }
-  
+
   /**
    * Puts a node into the set. The insertion succeeds either if the set is below
    * is maximal size or if the handle is closer than the most distant member in
    * the set.
-   * 
+   *
    * @param handle the handle to put.
-   * 
+   *
    * @return true if the put succeeded, false otherwise.
    */
   public boolean put(NodeHandle handle) {
@@ -151,7 +151,7 @@ public class RouteSet implements NodeSetI, Serializable,
         handle.addNodeHandleListener(this);
         return true;
       }
-      
+
       // find entry with worst proximity
       int p = localNode.proximity(nodes[i]);
       if (p >= worstProximity) {
@@ -201,7 +201,7 @@ public class RouteSet implements NodeSetI, Serializable,
   /**
    * Is called whenever the liveness or proximity of a
    * registered node handle is changed.
-   * 
+   *
    * @param o The node handle
    * @param arg the event type (PROXIMITY_CHANGE, DECLARED_LIVE, DECLARED_DEAD)
    */
@@ -225,9 +225,9 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Removes a node from a set.
-   * 
+   *
    * @param nid the node id to remove.
-   * 
+   *
    * @return the removed handle or null.
    */
   public NodeHandle remove(Id nid) {
@@ -251,9 +251,9 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Removes a node from a set.
-   * 
+   *
    * @param nh the node to remove.
-   * 
+   *
    * @return the removed handle or null.
    */
   public NodeHandle remove(NodeHandle nh) {
@@ -276,21 +276,21 @@ public class RouteSet implements NodeSetI, Serializable,
   }
 
   transient RoutingTable observer;
-  
+
   private void notifyTable(NodeHandle handle, boolean added) {
     if (observer != null)
       observer.nodeSetUpdate(this, handle, added);
   }
-  
+
   public void setRoutingTable(RoutingTable rt) {
-    observer = rt; 
+    observer = rt;
   }
-  
+
   /**
    * Membership test.
-   * 
+   *
    * @param nh the node to test membership of.
-   * 
+   *
    * @return true if it is a member, false otherwise.
    */
   public boolean member(NodeHandle nh) {
@@ -303,9 +303,9 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Membership test.
-   * 
+   *
    * @param nid the node id to membership of.
-   * 
+   *
    * @return true if it is a member, false otherwise.
    */
   public boolean member(Id nid) {
@@ -318,15 +318,15 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Return the current size of the set.
-   * 
+   *
    * @return the size.
    */
   public int size() {
     return theSize;
   }
-  
+
   public int capacity() {
-    return nodes.length; 
+    return nodes.length;
   }
 
   /**
@@ -342,7 +342,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Return the closest live node in the set.
-   * 
+   *
    * @return the closest node, or null if no live node exists in the set.
    */
   public NodeHandle closestNode() {
@@ -351,7 +351,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Return the closest live node in the set.
-   * 
+   *
    * @return the closest node, or null if no live node exists in the set.
    */
   public NodeHandle closestNode(int minLiveness) {
@@ -379,7 +379,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Returns the node in the ith position in the set.
-   * 
+   *
    * @return the ith node.
    */
   public NodeHandle get(int i) {
@@ -391,9 +391,9 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Returns the node handle with the matching node id or null if none exists.
-   * 
+   *
    * @param nid the node id.
-   * 
+   *
    * @return the node handle.
    */
   public NodeHandle get(Id nid) {
@@ -406,7 +406,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Get the index of the node id.
-   * 
+   *
    * @return the node.
    */
   public int getIndex(Id nid) {
@@ -419,7 +419,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Get the index of the node id.
-   * 
+   *
    * @return the node.
    */
   public int getIndex(NodeHandle nh) {
@@ -479,9 +479,9 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Puts a NodeHandle into the set.
-   * 
+   *
    * @param handle the handle to put.
-   * 
+   *
    * @return true if the put succeeded, false otherwise.
    */
   public boolean putHandle(rice.p2p.commonapi.NodeHandle handle) {
@@ -490,7 +490,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Finds the NodeHandle associated with the Id.
-   * 
+   *
    * @param id a node id.
    * @return the handle associated with that id or null if no such handle is
    *         found.
@@ -501,7 +501,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Gets the ith element in the set.
-   * 
+   *
    * @param i an index.
    * @return the handle associated with that id or null if no such handle is
    *         found.
@@ -512,7 +512,7 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Verifies if the set contains this particular id.
-   * 
+   *
    * @param id a node id.
    * @return true if that node id is in the set, false otherwise.
    */
@@ -522,9 +522,9 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Removes a node id and its handle from the set.
-   * 
+   *
    * @param id the id of the node to remove.
-   * 
+   *
    * @return the node handle removed or null if nothing.
    */
   public rice.p2p.commonapi.NodeHandle removeHandle(rice.p2p.commonapi.Id id) {
@@ -533,46 +533,46 @@ public class RouteSet implements NodeSetI, Serializable,
 
   /**
    * Gets the index of the element with the given node id.
-   * 
+   *
    * @param id the id.
-   * 
+   *
    * @return the index or throws a NoSuchElementException.
    */
   public int getIndexHandle(rice.p2p.commonapi.Id id)
       throws NoSuchElementException {
     return getIndex((Id) id);
   }
-    
+
   public short getType() {
-    return TYPE; 
+    return TYPE;
   }
-  
+
  /**
   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   *   +    maxSize    +    theSize    +    closest    +
   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   *   + NodeHandle 1st                                                +
-  *                    ...                                             
+  *                    ...
   *   +                                                               +
   *   +                                                               +
   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  *                    ...                                             
+  *                    ...
   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   *   + NodeHandle theSize-th                                         +
-  *                    ...                                             
+  *                    ...
   *   +                                                               +
   *   +                                                               +
   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   */
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)nodes.length);    
-    buf.writeByte((byte)theSize);    
-    buf.writeByte((byte)closest);    
+    buf.writeByte((byte)nodes.length);
+    buf.writeByte((byte)theSize);
+    buf.writeByte((byte)closest);
     for (int i = 0; i < theSize; i++) {
       nodes[i].serialize(buf);
-    }       
+    }
   }
-  
+
   public RouteSet(InputBuffer buf, NodeHandleFactory<?> nhf, PastryNode local) throws IOException {
     this.localNode = local;
     byte maxSize = buf.readByte();
@@ -581,7 +581,7 @@ public class RouteSet implements NodeSetI, Serializable,
     nodes = new NodeHandle[maxSize];
     for (int i = 0; i < theSize; i++) {
       nodes[i] = nhf.readNodeHandle(buf);
-    }    
+    }
     row = -1;
     col = -1;
   }
@@ -593,7 +593,7 @@ public class RouteSet implements NodeSetI, Serializable,
         nodes[i] = null;
       }
     }
-    
+
   }
 
   public Iterator<NodeHandle> iterator() {
@@ -603,5 +603,5 @@ public class RouteSet implements NodeSetI, Serializable,
   public boolean isEmpty() {
     return theSize <= 0;
   }
-  
+
 }

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
 import java.io.ByteArrayInputStream;
@@ -108,9 +108,9 @@ public class PRRegressionTest {
     public IdImpl extractIdentifier(HandleImpl h) {
       return h.id;
     }
-    
+
   }
-  
+
   static class HandleSerializer implements Serializer<HandleImpl> {
 
     public HandleImpl deserialize(InputBuffer buf) throws IOException {
@@ -120,9 +120,9 @@ public class PRRegressionTest {
     public void serialize(HandleImpl i, OutputBuffer buf) throws IOException {
       i.serialize(buf);
     }
-    
+
   }
-  
+
   static class IdSerializer implements Serializer<IdImpl> {
 
     public IdImpl deserialize(InputBuffer buf) throws IOException {
@@ -132,42 +132,42 @@ public class PRRegressionTest {
     public void serialize(IdImpl i, OutputBuffer buf) throws IOException {
       i.serialize(buf);
     }
-    
+
   }
-  
+
   static class HandleImpl implements RawSerializable {
     String name;
     IdImpl id;
-    
+
     public HandleImpl(String s, IdImpl id) {
       this.name = s;
       this.id = id;
     }
-    
+
     public void serialize(OutputBuffer buf) throws IOException {
       buf.writeUTF(name);
       id.serialize(buf);
     }
-    
+
     public static HandleImpl build(InputBuffer buf) throws IOException {
       return new HandleImpl(buf.readUTF(), IdImpl.build(buf));
     }
-    
+
     public String toString() {
       return "HandleImpl<"+name+">";
     }
-    
+
     public int hashCode() {
       return id.hashCode()^name.hashCode();
     }
-    
+
     public boolean equals(Object o) {
       HandleImpl that = (HandleImpl)o;
       if (!id.equals(that.id)) return false;
       return name.equals(that.name);
     }
   }
-  
+
   static class IdImpl implements RawSerializable {
     int id;
     public IdImpl(int id) {
@@ -175,43 +175,43 @@ public class PRRegressionTest {
     }
     public void serialize(OutputBuffer buf) throws IOException {
       buf.writeInt(id);
-    }    
-    
+    }
+
     public static IdImpl build(InputBuffer buf) throws IOException {
       return new IdImpl(buf.readInt());
     }
-    
+
     public String toString() {
       return "Id<"+id+">";
     }
-    
+
     public int hashCode() {
-      return id;      
+      return id;
     }
-    
+
     public boolean equals(Object o) {
       IdImpl that = (IdImpl)o;
       return (this.id == that.id);
     }
   }
-  
-  
+
+
   /**
    * The in-memory "network": delivers each message straight to the destination's selector.
    */
   Map<HandleImpl, BogusTransport> peerTable = new HashMap<HandleImpl, BogusTransport>();
 
   class BogusTransport implements TransportLayer<HandleImpl, ByteBuffer> {
-    
+
     HandleImpl localIdentifier;
     Environment env;
-    
+
     public BogusTransport(HandleImpl handle, X509Certificate cert, Environment env) {
       peerTable.put(handle, this);
       this.localIdentifier = handle;
       this.env = env;
     }
-    
+
     public void acceptMessages(boolean b) {
       throw new RuntimeException("implement");
     }
@@ -233,23 +233,23 @@ public class PRRegressionTest {
     public MessageRequestHandle<HandleImpl, ByteBuffer> sendMessage(
         HandleImpl i, ByteBuffer m,
         MessageCallback<HandleImpl, ByteBuffer> deliverAckToMe,
-        Map<String, Object> options) {      
-      peerTable.get(i).receiveMessage(localIdentifier, m);      
+        Map<String, Object> options) {
+      peerTable.get(i).receiveMessage(localIdentifier, m);
       return null;
     }
 
     TransportLayerCallback<HandleImpl, ByteBuffer> callback;
-    
+
     private void receiveMessage(final HandleImpl i, final ByteBuffer m) {
-      env.getSelectorManager().invoke(new Runnable() {      
+      env.getSelectorManager().invoke(new Runnable() {
         public void run() {
-          try {                
+          try {
             callback.messageReceived(i, m, null);
           } catch (IOException ioe) {
             logger.warn("Error delivering a message to {}", localIdentifier, ioe);
             fail("Error delivering a message to "+localIdentifier+": "+ioe);
           }
-        }      
+        }
       });
     }
 
@@ -266,7 +266,7 @@ public class PRRegressionTest {
       throw new RuntimeException("implement");
     }
   }
-  
+
   class BogusApp implements PeerReviewCallback<HandleImpl, IdImpl> {
 
     Logger logger;
@@ -275,9 +275,9 @@ public class PRRegressionTest {
     Random rand;
     long nextSendTime = 0;
     private HandleImpl dest;
-    
+
     private TransportLayer<HandleImpl, ByteBuffer> tl;
-        
+
     public BogusApp(Player player, TransportLayer<HandleImpl, ByteBuffer> tl, Environment env) {
       super();
       this.player = player;
@@ -286,9 +286,9 @@ public class PRRegressionTest {
       this.logger = env.getLogManager().getLogger(BogusApp.class, null);
       logger.info("new bogus app {}", player);
       dest = player.destHandle;
-      tl.setCallback(this);      
+      tl.setCallback(this);
     }
-    
+
 
     public void init() {
       rand = new Random();
@@ -301,7 +301,7 @@ public class PRRegressionTest {
     public void scheduleMessageToBeSent() {
       scheduleMessageToBeSent(env.getTimeSource().currentTimeMillis()+rand.nextInt(1999)+1, true);
     }
-    
+
     public void scheduleMessageToBeSent(long time, final boolean reschedule) {
       nextSendTime = time;
       logger.debug("scheduling message to be sent at:{}", time);
@@ -309,32 +309,32 @@ public class PRRegressionTest {
         public String toString() {
           return "SendMessageTask "+scheduledExecutionTime();
         }
-        
+
         @Override
         public void run() {
           sendMessage();
           if (reschedule) scheduleMessageToBeSent();
-        }      
-      }, nextSendTime-env.getTimeSource().currentTimeMillis());      
+        }
+      }, nextSendTime-env.getTimeSource().currentTimeMillis());
     }
-    
+
     public void sendMessage() {
       byte[] msg = generateMessage();
-      
+
       logger.atInfo().log(() -> "sending message "+msg.length+" "+MathUtils.toBase64(msg));
       try {
       tl.sendMessage(dest, ByteBuffer.wrap(msg), new MessageCallback<HandleImpl, ByteBuffer>() {
-        
+
         public void sendFailed(MessageRequestHandle<HandleImpl, ByteBuffer> msg,
             Exception reason) {
           logger.info("sendFailed({})", msg);
         }
-      
+
         public void ack(MessageRequestHandle<HandleImpl, ByteBuffer> msg) {
           logger.debug("ack({}) {}", msg, Thread.currentThread());
         }
-      
-      }, null);      
+
+      }, null);
       } catch (NullPointerException npe) {
         logger.info("tl:{} {}", tl, dest);
         throw npe;
@@ -346,7 +346,7 @@ public class PRRegressionTest {
       rand.nextBytes(msg);
       return msg;
     }
-    
+
     public void storeCheckpoint(OutputBuffer buffer) throws IOException {
       logger.trace("storeCheckpoint {}", nextSendTime);
       buffer.writeInt(31173);
@@ -356,7 +356,7 @@ public class PRRegressionTest {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       new ObjectOutputStream(baos).writeObject(rand);
       byte[] bytes = baos.toByteArray();
-      buffer.writeInt(bytes.length);      
+      buffer.writeInt(bytes.length);
       buffer.write(bytes, 0, bytes.length);
       logger.atTrace().log(() -> "storeCheckpoint:"+Arrays.toString(((SimpleOutputBuffer)buffer).getBytes()));
     }
@@ -383,7 +383,7 @@ public class PRRegressionTest {
       }
       return true;
     }
-    
+
     public void destroy() {
       throw new RuntimeException("implement");
     }
@@ -446,30 +446,30 @@ public class PRRegressionTest {
     return new PeerReviewImpl<HandleImpl, IdImpl>(transport, env, new HandleSerializer(), new IdSerializer(), new IdExtractor(), getIdStrTranslator()
         );
   }
-  
-  
-  class Player {    
+
+
+  class Player {
     Logger logger;
     HandleImpl localHandle;
-    
+
     PeerReview<HandleImpl, IdImpl> pr;
     MyIdTL transport;
     public Collection<HandleImpl> witnessed = new ArrayList<HandleImpl>();
-    KeyPair pair;    
+    KeyPair pair;
     X509Certificate cert;
     BogusTransport t1;
     Environment env;
 
     BogusApp app;
     HandleImpl destHandle;
-    
+
     public Player(HandleImpl localHandle, HandleImpl dstHandle, final Environment env2) throws Exception {
       super();
       this.destHandle = dstHandle;
       env = cloneEnvironment(env2, localHandle.name, localHandle.id.id);
-      
+
       this.logger = env.getLogManager().getLogger(Player.class, null);
-      
+
       final File f = new File(dir, localHandle.name);
       if (f.exists()) {
         File f2 = new File(f,"peers");
@@ -479,27 +479,27 @@ public class PRRegressionTest {
             foo[c].delete();
           }
         }
-        
+
         foo = f.listFiles();
         if (foo != null) {
           for (int c = 0; c < foo.length; c++) {
             foo[c].delete();
           }
         }
-        
+
       }
-      
+
       this.localHandle = localHandle;
       playerTable.put(localHandle, this);
-      
+
       // every node must use the same key size: the signature size is derived from the local certificate's key
       pair = CAToolImpl.generateKeyPair();
       cert = caTool.sign(localHandle.name,pair.getPublic());
 
       t1 = getTL();
-            
+
       transport = getIdTransport();
-        
+
       idTLTable.put(localHandle, transport);
       pr = getPeerReview(this, transport, env);
       app = getApp();
@@ -515,33 +515,33 @@ public class PRRegressionTest {
         }
       });
     }
-    
+
     public BogusApp getApp() {
       return getBogusApp(this, pr, env);
     }
-        
+
     // to be overridden
     public Environment cloneEnvironment(Environment env2, String name, int id) {
-      return env2.cloneEnvironment(name);    
+      return env2.cloneEnvironment(name);
     }
 
 
     public void buildPlayerCryptoStuff() {
-      
+
     }
 
     public BogusTransport getTL() throws Exception {
-      return new BogusTransport(localHandle, cert, env); 
+      return new BogusTransport(localHandle, cert, env);
     }
-    
+
     public MyIdTL getIdTransport() throws Exception {
       return new MyIdTL(
           new IdSerializer(), new X509SerializerImpl(),this.localHandle.id,
-          cert,pair.getPrivate(),t1,new SHA1HashProvider(),env) {      
+          cert,pair.getPrivate(),t1,new SHA1HashProvider(),env) {
       };
     }
-    
-    
+
+
   }
 
   public IdStrTranslator<IdImpl> getIdStrTranslator() {
@@ -570,27 +570,27 @@ public class PRRegressionTest {
     public Cancellable requestCertificate(final HandleImpl source, final IdImpl certHolder,
         final Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
       return idTLTable.get(source).requestValue(source, certHolder, new Continuation<X509Certificate, Exception>() {
-      
+
         public void receiveResult(X509Certificate result) {
           knownValues.put(certHolder, result);
           if (c != null) c.receiveResult(result);
         }
-      
+
         public void receiveException(Exception exception) {
           if (c != null) c.receiveException(exception);
         }
-      
+
       }, options);
-    }            
+    }
   }
-  
+
   private HashProvider hasher;
   private SecureHistoryFactory historyFactory;
-  
+
   Player alice;
   Player bob;
   Player carol;
-  
+
   HandleImpl aliceHandle = new HandleImpl("alice", new IdImpl(1));
   HandleImpl bobHandle = new HandleImpl("bob", new IdImpl(2));
   HandleImpl carolHandle = new HandleImpl("carol", new IdImpl(3));
@@ -609,17 +609,17 @@ public class PRRegressionTest {
     historyFactory = new SecureHistoryFactoryImpl(hasher,env);
   }
 
-  public void buildPlayers(Environment env) throws Exception {    
+  public void buildPlayers(Environment env) throws Exception {
     alice = new Player(aliceHandle, bobHandle, env);
-    bob = new Player(bobHandle, aliceHandle, env);    
-    carol = new Player(carolHandle, null, env);  
+    bob = new Player(bobHandle, aliceHandle, env);
+    carol = new Player(carolHandle, null, env);
   }
 
   public void setupWitnesses() {
     carol.witnessed.add(alice.localHandle);
-    carol.witnessed.add(bob.localHandle);    
+    carol.witnessed.add(bob.localHandle);
   }
-  
+
   /**
    * The last status each node was notified of, per node (written by the nodes' selector threads)
    */
@@ -735,7 +735,7 @@ public class PRRegressionTest {
     this.dir = dir;
     env = RecordLayer.generateEnvironment();
     env.getSelectorManager().schedule(new TimerTask() {
-      
+
       @Override
       public void run() {
         finish();
@@ -743,24 +743,24 @@ public class PRRegressionTest {
     },millisToFinish);
 
     logger = env.getLogManager().getLogger(PRRegressionTest.class, null);
-    
+
     buildCryptoMaterial(env);
-        
+
     env.getSelectorManager().invoke(new Runnable() {
-      
+
       public void run() {
         try {
           buildPlayers(env);
-          
+
           setupWitnesses();
         } catch (Exception ioe) {
           logger.warn("Error building the players", ioe);
           fail("Error building the players: "+ioe);
         }
       }
-    });          
+    });
   }
-  
+
   public static void main(String[] args) throws Exception {
     runMain(new PRRegressionTest(DEFAULT_MILLIS_TO_FINISH));
   }

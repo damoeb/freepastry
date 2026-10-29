@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.replay.playback;
 
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
@@ -48,22 +48,22 @@ import rice.selector.TimerTask;
  *   Invokations
  *   TimerTasks
  *   Network I/O
- *   
- * The Network I/O should match exactly with our Log, and so we only have to pump Invokations   
- *   
+ *
+ * The Network I/O should match exactly with our Log, and so we only have to pump Invokations
+ *
  * @author Jeff Hoye
  *
  */
 public class ReplaySM extends SelectorManager {
   Verifier<?> verifier;
   DirectTimeSource simTime;
-  
+
   public ReplaySM(String instance, DirectTimeSource timeSource, LogManager log) {
     super(instance, timeSource, log, null);
     this.simTime = timeSource;
     setSelect(false);
   }
-  
+
   public void setVerifier(Verifier<?> v) {
     this.verifier = v;
   }
@@ -76,7 +76,7 @@ public class ReplaySM extends SelectorManager {
     if (environment != null) return;
     environment = env;
   }
-  
+
   @Override
   protected synchronized void addTask(TimerTask task) {
     long now = timeSource.currentTimeMillis();
@@ -89,7 +89,7 @@ public class ReplaySM extends SelectorManager {
 
   public boolean makeProgress() {
     // Handle any pending timers. Note that we have to be sure to call them in the exact same
-    // order as in the main code; otherwise there can be subtle bugs and side-effects. 
+    // order as in the main code; otherwise there can be subtle bugs and side-effects.
     logger.trace("executeDueTasks()");
 
     if (isSuccess()) return false;
@@ -98,15 +98,15 @@ public class ReplaySM extends SelectorManager {
     while (timerProgress) {
       now = verifier.getNextEventTime();
       if (now == -1) return false;
-  
+
       TimerTask next = null;
-      
+
       synchronized (this) {
         if (timerQueue.size() > 0) {
           next = (TimerTask) timerQueue.peek();
           if (next.scheduledExecutionTime() <= now) {
             timerQueue.poll(); // remove the event
-            simTime.setTime(next.scheduledExecutionTime()); // set the time            
+            simTime.setTime(next.scheduledExecutionTime()); // set the time
           } else {
             timerProgress = false;
           }
@@ -114,7 +114,7 @@ public class ReplaySM extends SelectorManager {
           timerProgress = false;
         }
       }
-      
+
       if (timerProgress) {
         super.doInvocations();
         logger.debug("executing task {}", next);
@@ -127,7 +127,7 @@ public class ReplaySM extends SelectorManager {
     }
     simTime.setTime(now); // so we always make some progress
     super.doInvocations();
-    
+
     return verifier.makeProgress();
   }
 
@@ -135,12 +135,12 @@ public class ReplaySM extends SelectorManager {
     boolean ret = verifier.isSuccess();
     if (ret) {
       // TODO: let the caller decide what happens on success instead of destroying the environment
-      environment.destroy();    
+      environment.destroy();
     }
     return ret;
   }
-  
-  
+
+
   @Override
   protected void doInvocations() {
     // do nothing, this is called in executeDueTasks

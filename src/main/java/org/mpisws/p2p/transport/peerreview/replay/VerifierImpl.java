@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.replay;
 
 import java.io.IOException;
@@ -70,46 +70,46 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
    * Maps EVT_XXX -> EventCallback
    */
   Map<Short, EventCallback> eventCallback = new HashMap<Short, EventCallback>();
-  
+
   /**
    * So we can call back when we get an ack.
    */
   Map<Long, VerifierMRH<Handle>> callbacks = new HashMap<Long, VerifierMRH<Handle>>();
-  
+
   protected Handle localHandle;
   protected SecureHistory history;
   PeerReviewCallback<Handle, Identifier> app;
   boolean foundFault;
-  
+
   long nextEventIndex;
   IndexEntry next;
   InputBuffer nextEvent;
-  
+
   boolean initialized;
   int[] eventToCallback = new int[256];
   protected Logger logger;
   protected IdentityTransport<Handle, Identifier> transport;
-  
+
   RandomSource prng;
-  
+
   PeerReview<Handle, Identifier> peerreview;
-  
+
   Environment environment;
-  
+
   Object extInfo;
-  
+
   public VerifierImpl(
       PeerReview<Handle, Identifier> peerreview,
       Environment env,
-      SecureHistory history, 
-      Handle localHandle, 
-      long firstEntryToReplay, 
-      Object extInfo) throws IOException {    
+      SecureHistory history,
+      Handle localHandle,
+      long firstEntryToReplay,
+      Object extInfo) throws IOException {
     if (!(env.getSelectorManager() instanceof ReplaySM)) {
-      throw new IllegalArgumentException("Environment.getSelectorManager() must be a ReplaySM, was a "+env.getSelectorManager().getClass());          
+      throw new IllegalArgumentException("Environment.getSelectorManager() must be a ReplaySM, was a "+env.getSelectorManager().getClass());
     }
     this.environment = env;
-    this.logger = environment.getLogManager().getLogger(VerifierImpl.class, localHandle.toString());    
+    this.logger = environment.getLogManager().getLogger(VerifierImpl.class, localHandle.toString());
     this.history = history;
     this.app = null;
     this.transport = peerreview;
@@ -119,22 +119,22 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     this.nextEventIndex = firstEntryToReplay-1;
     this.initialized = false;
     this.extInfo = extInfo;
-    
+
     for (int i=0; i<256; i++)
       eventToCallback[i] = -1;
-      
+
     fetchNextEvent();
     if (next == null) {
       foundFault = true;
     }
   }
-  
+
   public Object getExtInfo() {
     return extInfo;
   }
-  
+
   /**
-   * Fetch the next log entry, or set the EOF flag 
+   * Fetch the next log entry, or set the EOF flag
    */
   protected void fetchNextEvent() {
     next = null;
@@ -153,14 +153,14 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     if (next == null) {
       return;
     }
-      
+
     if (next.isHashed()) {
       // make the nextEvent only the content hash
-      
+
       logger.debug("Fetched log entry #{} (type {}, hashed, seq={})", nextEventIndex, next.getType(), next.getSeq());
     } else {
       // load the nextEvent from the file
-      
+
       try {
         nextEvent = new SimpleInputBuffer(history.getEntry(nextEventIndex, next.getSizeInFile()));
       } catch (IOException ioe) {
@@ -169,80 +169,80 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return;
       }
       logger.debug("Fetched log entry #{} (type {}, size {} bytes, seq={})", nextEventIndex, next.getType(), next.getSizeInFile(), next.getSeq());
-    }    
+    }
   }
-  
-  public boolean verifiedOK() { 
-    return !foundFault; 
+
+  public boolean verifiedOK() {
+    return !foundFault;
   };
 
 
   public IndexEntry getNextEvent() {
     return next;
   }
-  
+
   @SuppressWarnings("unchecked")
   public void setApplication(PeerReviewCallback<Handle, ?> app) {
     this.app = (PeerReviewCallback<Handle, Identifier>)app;
   }
-    
+
   /**
-   * This binds specific event types to one of the handlers 
+   * This binds specific event types to one of the handlers
    */
   public void registerEvent(EventCallback callback, short... eventType) {
     for (short s : eventType) {
       registerEvent(callback, s);
     }
   }
-  
+
   public void registerEvent(EventCallback callback, short eventType) {
     if (eventCallback.containsKey(eventType)) {
       if (callback != eventCallback.get(eventType)) throw new IllegalStateException("Event #"+eventType+" registered twice");
     }
     eventCallback.put(eventType,callback);
   }
-  
+
   /**
    * This is called by the Audit protocol to make another replay step; it returns true
    * if further calls are necessary, and false if the replay has finished. The idea
-   * is that we can stop calling this if there is more important work to do, e.g. 
-   * handle foreground requests 
+   * is that we can stop calling this if there is more important work to do, e.g.
+   * handle foreground requests
    */
   public boolean makeProgress() {
     logger.debug("makeProgress()");
     if (foundFault || next == null)
       return false;
-      
+
     if (!initialized && (next.getType() != EVT_CHECKPOINT) && (next.getType() != EVT_INIT)) {
       logger.warn("Replay: No INIT or CHECKPOINT found at the beginning of the log; marking as invalid {}", next);
       foundFault = true;
       return false;
     }
-    
+
     /**
      * Handle any pending timers. Note that we have to be sure to call them in the exact same
-     * order as in the main code; otherwise there can be subtle bugs and side-effects. 
-     */    
+     * order as in the main code; otherwise there can be subtle bugs and side-effects.
+     */
     // This code is the job of the SelectorManager, it's done in the super class of ReplaySM
-    
+
     if (next == null)
-      return false;  
-    
+      return false;
+
     /* Sanity checks */
 
     logger.trace("Replaying event #{} (type {}, seq={})", nextEventIndex, next.getType(), next.getSeq());
-      
+
     if (next.isHashed() && (next.getType() != EVT_CHECKPOINT) && (next.getType() != EVT_INIT)) {
       logger.warn("Replay: Trying to replay hashed event {}", next.getType());
       foundFault = true;
       return false;
     }
-      
+
     /* Replay the next event */
 
     try {
       switch (next.getType()) {
-      case EVT_VRF: {/* VRF events should have been handled by PRNG::checker */      
+      case EVT_VRF: {/* VRF events should have been handled by PRNG::checker */
         fetchNextEvent();
         break;
       }
@@ -254,30 +254,30 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       case EVT_SOCKET_READ: {
         logger.warn("Replay: Encountered EVT_SOCKET_READ evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
-        return false;        
+        return false;
       }
       case EVT_SOCKET_CLOSE: {
         logger.warn("Replay: Encountered EVT_SOCKET_CLOSE evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
-        return false;        
+        return false;
       }
       case EVT_SOCKET_SHUTDOWN_OUTPUT: {
         logger.warn("Replay: Encountered EVT_SOCKET_SHUTDOWN_OUTPUT evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
-        return false;        
+        return false;
       }
-        
+
       case EVT_RECV : /* Incoming message; feed it to the state machine */
         Handle sender = peerreview.getHandleSerializer().deserialize(nextEvent);
         long senderSeq = nextEvent.readLong();
         boolean hashed = nextEvent.readBoolean();
-        
+
         int msgLen = nextEvent.bytesRemaining();
 
         byte[] msgBytes = new byte[msgLen];
         nextEvent.read(msgBytes);
         ByteBuffer msgBuf = ByteBuffer.wrap(msgBytes);
-        
+
         /* The next event is going to be a SIGN; skip it, since it's irrelevant here */
 
         fetchNextEvent();
@@ -286,11 +286,11 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
           foundFault = true;
           return false;
         }
-        
+
         fetchNextEvent();
-        
+
         /* Deliver the message to the state machine */
-        
+
         app.messageReceived(sender, msgBuf, null);
         break;
       case EVT_SIGN : /* SIGN events should have been handled by the preceding RECV */
@@ -299,7 +299,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return false;
       case EVT_ACK : /* Skip ACKs */
   // warning there should be an upcall here
-        Identifier id = peerreview.getIdSerializer().deserialize(nextEvent);        
+        Identifier id = peerreview.getIdSerializer().deserialize(nextEvent);
         long ackedSeq = nextEvent.readLong();
         VerifierMRH<Handle> foo = callbacks.remove(ackedSeq);
         if (foo == null) {
@@ -316,11 +316,11 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       case EVT_CHECKPOINT : /* Verify CHECKPOINTs */
         if (!initialized) {
           if (!next.isHashed()) {
-          
+
             /* If the state machine hasn't been initialized yet, we can use this checkpoint */
-          
+
             initialized = true;
-            
+
             if (!app.loadCheckpoint(nextEvent)) {
               logger.warn("Cannot load checkpoint");
               foundFault = true;
@@ -330,13 +330,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
             foundFault = true;
           }
         } else {
-        
+
           /* Ask the state machine to do a checkpoint now ... */
-        
+
           SimpleOutputBuffer buf = new SimpleOutputBuffer();
           app.storeCheckpoint(buf);
           int actualCheckpointSize = buf.getWritten();
-                    
+
           /* ... and compare it to the contents of the CHECKPOINT entry */
 
           if (!next.isHashed()) {
@@ -347,12 +347,12 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
               foundFault = true;
               return false;
             }
-          
-            
+
+
             // compare the checkpoints
             byte[] bar = new byte[actualCheckpointSize];
             nextEvent.read(bar);
-            
+
             if (!Arrays.equals(bar, buf.getBytes())) {
               logger.warn("Replay: Checkpoint does not match");
               logger.debug("Expected:{}", next.getSizeInFile());
@@ -361,8 +361,8 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
               foundFault = true;
               return false;
             }
-          } else {            
-          
+          } else {
+
             byte[] checkpointHash = transport.hash(buf.getByteBuffer());
             if (!Arrays.equals(checkpointHash, next.getContentHash())) {
               logger.atWarn().log(() -> "Replay: Checkpoint is hashed, but does not match hash value in the log\n"+
@@ -375,7 +375,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
             history.upgradeHashedEntry((int)nextEventIndex, buf.getByteBuffer());
           }
         }
-          
+
         fetchNextEvent();
         break;
       case EVT_INIT: /* State machine is reinitialized; issue upcall */
@@ -387,7 +387,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         int socketId = nextEvent.readInt();
         Handle opener = peerreview.getHandleSerializer().deserialize(nextEvent);
         fetchNextEvent();
-        incomingSocket(opener, socketId);          
+        incomingSocket(opener, socketId);
         break;
       }
       case EVT_SOCKET_OPENED_OUTGOING: {
@@ -440,42 +440,42 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return false;
     }
-    
+
     return true;
   }
 
   /**
-   * Called by the state machine when it wants to send a message 
+   * Called by the state machine when it wants to send a message
    */
   public MessageRequestHandle<Handle, ByteBuffer> sendMessage(
-      Handle target, ByteBuffer message, MessageCallback<Handle, ByteBuffer> deliverAckToMe, 
+      Handle target, ByteBuffer message, MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
     try {
 
     int msgLen = message.remaining();
     int pos = message.position();
     int lim = message.limit();
-    
+
     int relevantLen = message.remaining();
     if (options != null && options.containsKey(PeerReview.RELEVANT_LENGTH)) {
       relevantLen = (Integer)options.get(PeerReview.RELEVANT_LENGTH);
     }
-    
+
     logger.debug("Verifier::send({}, {}/{} bytes)", target, relevantLen, message.remaining());
-    
-    // Sanity checks 
-    
+
+    // Sanity checks
+
     if (next == null) {
       logger.warn("Replay: Send event after end of segment; marking as invalid");
       foundFault = true;
       return null;
     }
-    
+
     if (next.getType() == EVT_INIT) {
       logger.trace("Skipped; next event is an INIT");
       return null;
     }
-    
+
     if (next.getType() != EVT_SEND) {
       logger.warn("Replay({}): SEND event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType());
       foundFault = true;
@@ -485,17 +485,17 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     long sendSeq = next.getSeq();
     VerifierMRH<Handle> ret = new VerifierMRH<Handle>(target,message,deliverAckToMe,options);
     callbacks.put(sendSeq,ret);
-    
+
     // If the SEND is hashed, simply compare it to the predicted entry
-    
+
     if (next.isHashed()) {
       SimpleOutputBuffer buf = new SimpleOutputBuffer();
       Identifier targetId = peerreview.getIdentifierExtractor().extractIdentifier(target);
       targetId.serialize(buf);
       buf.writeBoolean(relevantLen<msgLen);
       buf.write(message.array(), message.position(), relevantLen);
-      
-      if (relevantLen<msgLen) {        
+
+      if (relevantLen<msgLen) {
         message.position(pos);
         message.limit(lim);
         byte[] hash = transport.hash(message);
@@ -509,22 +509,22 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
       fetchNextEvent();
       assert(next.getType() == EVT_SENDSIGN);
-      
+
       fetchNextEvent();
       return ret;
     }
 
-    // Are we sending to the same destination? 
+    // Are we sending to the same destination?
     Handle logReceiver;
      logReceiver = peerreview.getHandleSerializer().deserialize(nextEvent);
     if (!logReceiver.equals(target)) {
-      logger.warn("Replay({}): SEND to {} during replay, but log shows SEND to {}; marking as invalid", nextEventIndex, target, logReceiver);      
+      logger.warn("Replay({}): SEND to {} during replay, but log shows SEND to {}; marking as invalid", nextEventIndex, target, logReceiver);
       // reset nextEvent so next time we parse this event it isn't nonsense
       nextEvent = new SimpleInputBuffer(history.getEntry(next, next.getSizeInFile()));
       foundFault = true;
       return ret;
     }
-    
+
     // Check the message against the message in the log
     boolean logIsHashed = nextEvent.readBoolean();
 
@@ -534,16 +534,16 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         foundFault = true;
         return null;
       }
-      
+
       int logRelevantLen = nextEvent.bytesRemaining() - transport.getHashSizeBytes();
       assert(logRelevantLen >= 0);
-      
+
       if (relevantLen != logRelevantLen) {
         logger.warn("Replay: Message sent during replay has {} relevant bytes, but log entry has {}; marking as invalid", relevantLen, logRelevantLen);
         foundFault = true;
         return null;
       }
-            
+
       byte[] loggedMsg = new byte[logRelevantLen];
       nextEvent.read(loggedMsg);
       ByteBuffer loggedMsgBB = ByteBuffer.wrap(loggedMsg);
@@ -554,8 +554,8 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         foundFault = true;
         return null;
       }
-      
-      byte[] logHash = new byte[transport.getHashSizeBytes()]; 
+
+      byte[] logHash = new byte[transport.getHashSizeBytes()];
       nextEvent.read(logHash);
       byte[] msgHashBytes = message.array();
       byte[] msgHash = new byte[transport.getHashSizeBytes()];
@@ -581,18 +581,18 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         foundFault = true;
         return null;
       }
-      
+
       byte[] loggedMsg = new byte[nextEvent.bytesRemaining()];
       nextEvent.read(loggedMsg);
       byte[] sentMsg = new byte[message.remaining()];
       message.get(sentMsg);
-      
+
       if (loggedMsg.length != sentMsg.length) {
         logger.warn("Replay: Message sent during replay differs from message in the log by length log:{} sent:{}", loggedMsg.length, sentMsg.length);
         foundFault = true;
-        return null;        
+        return null;
       }
-      
+
       if ((msgLen > 0) && !Arrays.equals(loggedMsg, sentMsg)) {
         logger.warn("Replay: Message sent during replay differs from message in the log");
         foundFault = true;
@@ -613,20 +613,20 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       return null;
     }
   }
-  
+
   public long getNextEventTime() {
     if (next == null) return -1;
     return next.getSeq()/1000000;
   }
-  
+
   public boolean isSuccess() {
     if (initialized && verifiedOK()) {
       if (next == null) return true;
     }
     return false;
   }
-  
-  
+
+
   @SuppressWarnings("unchecked")
   protected IOException deserializeException(InputBuffer nextEvent) throws IOException {
     short exType = nextEvent.readShort();
@@ -637,16 +637,16 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       return new ClosedChannelException(nextEvent.readUTF());
     case EX_TYPE_Unknown:
       String className = nextEvent.readUTF();
-      String message = nextEvent.readUTF();     
+      String message = nextEvent.readUTF();
       Class<?> c;
       try {
         c = Class.forName(className);
       } catch (ClassNotFoundException cnfe) {
-        throw new RuntimeException("Couldn't find class "+className+" "+message);                  
+        throw new RuntimeException("Couldn't find class "+className+" "+message);
       }
-      
+
       Class<?>[] parameterTypes = new Class<?>[1];
-      parameterTypes[0] = String.class;      
+      parameterTypes[0] = String.class;
       try {
         Constructor<?> ctor = c.getConstructor(parameterTypes);
         IOException ioe = (IOException)ctor.newInstance(message);
@@ -658,17 +658,17 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
           IOException ioe = (IOException)ctor.newInstance();
           return ioe;
         } catch (Exception e2) {
-          throw new RuntimeException("Couldn't find constructor for "+className+" "+message);          
+          throw new RuntimeException("Couldn't find constructor for "+className+" "+message);
         }
       }
       // TODO: check up front that className is an IOException; today a ClassCastException surfaces as "Couldn't find constructor"
     default: throw new RuntimeException("Unknown EX_TYPE:"+exType);
     }
-  } 
-  
+  }
+
 
   // ********************* Socket Stuff *************************
-  
+
   Map<Integer, ReplaySocket<Handle>> sockets = new HashMap<Integer, ReplaySocket<Handle>>();
 
   public SocketRequestHandle<Handle> openSocket(final Handle i, SocketCallback<Handle> deliverSocketToMe, final Map<String, Object> options) {
@@ -678,7 +678,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       socket.setDeliverSocketToMe(deliverSocketToMe);
       sockets.put(socketId, socket);
       return socket;
-    } catch (IOException ioe) {      
+    } catch (IOException ioe) {
       SocketRequestHandle<Handle> ret = new SocketRequestHandle<Handle>(){
 
         public Handle getIdentifier() {
@@ -691,9 +691,9 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
         public boolean cancel() {
           return true;
-        }      
+        }
       };
-      
+
       deliverSocketToMe.receiveException(ret, ioe);
       return ret;
     }
@@ -708,15 +708,15 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     sockets.put(socketId, socket);
     app.incomingSocket(socket);
   }
-  
+
   protected void socketOpened(int socketId) throws IOException {
     sockets.get(socketId).socketOpened();
   }
 
   protected void socketException(int socketId, IOException ioe) throws IOException {
     sockets.get(socketId).receiveException(ioe);
-    
-  }  
+
+  }
 
   /**
    * Return the new socketId
@@ -736,8 +736,8 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       return Integer.MIN_VALUE;
     }
 
-    int ret = nextEvent.readInt(); 
-    
+    int ret = nextEvent.readInt();
+
     Handle logReceiver;
     logReceiver = peerreview.getHandleSerializer().deserialize(nextEvent);
     if (!logReceiver.equals(target)) {
@@ -747,13 +747,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     }
 
     fetchNextEvent();
-    
+
     return ret;
   }
-  
+
   /**
    * Return the bytes read.
-   * 
+   *
    * @param socketId
    * @return number of bytes read
    */
@@ -763,12 +763,12 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return 0;
     }
-    
+
     if (next.getType() == EVT_SOCKET_CLOSED) {
       fetchNextEvent();
       return -1;
     }
-    
+
     if (next.getType() != EVT_SOCKET_READ) {
       logger.warn("Replay ({}): SOCKET_READ event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType(), new Exception("Stack Trace"));
       foundFault = true;
@@ -781,7 +781,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return 0;
     }
-    
+
     // TODO: Change this when we make multiple reads a single event
     int ret = nextEvent.bytesRemaining();
     if (dst.remaining() < ret) {
@@ -789,20 +789,20 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return 0;
     }
-    
+
     nextEvent.read(dst.array(), dst.position(), ret);
     dst.position(dst.position()+ret);
     fetchNextEvent();
     return ret;
   }
-  
+
   public void generatedSocketException(int socketId, IOException ioe) {
     if (next == null) {
       logger.warn("Replay: WriteSocket event after end of segment; marking as invalid");
       foundFault = true;
       return;
     }
-    
+
     if (next.getType() != EVT_SOCKET_EXCEPTION) {
       logger.warn("Replay: EVT_SOCKET_EXCEPTION event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
@@ -817,18 +817,18 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return;
       }
     } catch (IOException ioe2) {
-      logger.warn("Replay: Error reading log", ioe2);      
+      logger.warn("Replay: Error reading log", ioe2);
     }
-    
+
     // all good
     fetchNextEvent();
     return;
-    
+
   }
-  
+
   /**
    * Return the bytes written.
-   * 
+   *
    * @param socketId
    * @return number of bytes written
    */
@@ -838,12 +838,12 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return 0;
     }
-    
+
     if (next.getType() == EVT_SOCKET_CLOSED) {
       fetchNextEvent();
       return -1;
     }
-    
+
     if (next.getType() != EVT_SOCKET_WRITE) {
       logger.warn("Replay: SOCKET_WRITE event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
@@ -856,7 +856,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return 0;
     }
-    
+
     // TODO: Change this when we make multiple reads a single event
     int ret = nextEvent.bytesRemaining();
     if (src.remaining() < ret) {
@@ -864,7 +864,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return 0;
     }
-    
+
     byte[] loggedMsg = new byte[ret];
     byte[] sentMsg = new byte[ret];
     nextEvent.read(loggedMsg);
@@ -875,18 +875,18 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return 0;
     }
-    
+
     fetchNextEvent();
     return ret;
   }
-  
+
   public void close(int socketId) {
     if (next == null) {
       logger.warn("Replay({}): SOCKET_CLOSE event after end of segment; marking as invalid", nextEventIndex);
       foundFault = true;
       return;
     }
-    
+
     if (next.getType() != EVT_SOCKET_CLOSE) {
       logger.warn("Replay({}): SOCKET_CLOSE event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType());
       foundFault = true;
@@ -907,17 +907,17 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return;
     }
-    
+
     fetchNextEvent();
   }
-  
+
   public void shutdownOutput(int socketId) {
     if (next == null) {
       logger.warn("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event after end of segment; marking as invalid");
       foundFault = true;
       return;
     }
-    
+
     if (next.getType() != EVT_SOCKET_SHUTDOWN_OUTPUT) {
       logger.warn("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
@@ -938,7 +938,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       foundFault = true;
       return;
     }
-    
+
     fetchNextEvent();
   }
 

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.persistence;
 
@@ -83,7 +83,7 @@ public class LRUCache implements Cache {
   private LinkedList<Id> order;
 
   protected Environment environment;
-  
+
   /**
    * Builds a LRU cache given a storage object to store the cached
    * data in and a maximum cache size.
@@ -98,11 +98,11 @@ public class LRUCache implements Cache {
 
     this.order = new LinkedList<Id>();
     Iterator<Id> i = storage.scan().getIterator();
-    
+
     while (i.hasNext())
       order.addLast(i.next());
   }
-  
+
   /**
    * Returns the backing storage object
    *
@@ -111,7 +111,7 @@ public class LRUCache implements Cache {
   public Storage getStorage() {
     return storage;
   }
-  
+
   /**
    * Renames the given object to the new id.  This method is potentially faster
    * than store/cache and unstore/uncache.
@@ -159,23 +159,23 @@ public class LRUCache implements Cache {
         order.remove(id);
         order.addFirst(id);
       }
-      
+
       c.receiveResult(Boolean.valueOf(true));
       return;
     }
-      
+
     if (size > maximumSize) {
       c.receiveResult(Boolean.valueOf(false));
       return;
     }
-    
-    
+
+
     final Continuation<Boolean, Exception> store = new Continuation<Boolean, Exception>() {
       public void receiveResult(Boolean o) {
         synchronized (order) {
           order.addFirst(id);
         }
-        
+
         storage.store(id, metadata, obj, c);
       }
 
@@ -188,7 +188,7 @@ public class LRUCache implements Cache {
 
     if (maximumSize - size < totalSize)
       resize(maximumSize - size, store);
-    else 
+    else
       store.receiveResult(Boolean.TRUE);
   }
 
@@ -207,7 +207,7 @@ public class LRUCache implements Cache {
     synchronized (order) {
       order.remove(id);
     }
-    
+
     storage.unstore(id, c);
   }
 
@@ -240,10 +240,10 @@ public class LRUCache implements Cache {
 
     storage.getObject(id, c);
   }
-  
+
   /**
    * Returns the metadata associated with the provided object, or null if
-   * no metadata exists.  The metadata must be stored in memory, so this 
+   * no metadata exists.  The metadata must be stored in memory, so this
    * operation is guaranteed to be fast and non-blocking.
    *
    * @param id The id for which the metadata is needed
@@ -252,13 +252,13 @@ public class LRUCache implements Cache {
   public Serializable getMetadata(Id id) {
     return storage.getMetadata(id);
   }
-  
+
   /**
    * Updates the metadata stored under the given key to be the provided
    * value.  As this may require a disk access, the requestor must
-   * also provide a continuation to return the result to.  
+   * also provide a continuation to return the result to.
    *
-   * @param id The id for the metadata 
+   * @param id The id for the metadata
    * @param metadata The metadata to store
    * @param command The command to run once the operation is complete
    */
@@ -267,7 +267,7 @@ public class LRUCache implements Cache {
   }
 
   /**
-   * Return the objects identified by the given range of ids. The IdSet 
+   * Return the objects identified by the given range of ids. The IdSet
    * returned contains the Ids of the stored objects. The range is
    * partially inclusive, the lower range is inclusive, and the upper
    * exclusive.
@@ -276,57 +276,57 @@ public class LRUCache implements Cache {
    * NOTE: This method blocks so if the behavior of this method changes and
    * uses the disk, this method may be deprecated.
    *
-   * @param range The range to query  
-   * @return The idset containg the keys 
+   * @param range The range to query
+   * @return The idset containg the keys
    */
    public synchronized IdSet scan(IdRange range){
      return storage.scan(range);
    }
-  
+
   /**
    * Return all objects currently stored by this catalog
    *
    * NOTE: This method blocks so if the behavior of this method changes and
    * no longer stored in memory, this method may be deprecated.
    *
-   * @return The idset containg the keys 
+   * @return The idset containg the keys
    */
   public synchronized IdSet scan() {
     return storage.scan();
   }
-  
+
   /**
-   * Returns a map which contains keys mapping ids to the associated 
-   * metadata.  
+   * Returns a map which contains keys mapping ids to the associated
+   * metadata.
    *
-   * @param range The range to query  
-   * @return The map containg the keys 
+   * @param range The range to query
+   * @return The map containg the keys
    */
   public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
     return storage.scanMetadata(range);
   }
-  
+
   /**
-   * Returns a map which contains keys mapping ids to the associated 
-   * metadata.  
+   * Returns a map which contains keys mapping ids to the associated
+   * metadata.
    *
-   * @return The treemap mapping ids to metadata 
+   * @return The treemap mapping ids to metadata
    */
   public SortedMap<Id, Serializable> scanMetadata() {
     return storage.scanMetadata();
   }
-  
+
   /**
    * Returns the submapping of ids which have metadata less than the provided
    * value.
    *
-   * @param value The maximal metadata value 
+   * @param value The maximal metadata value
    * @return The submapping
    */
   public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
     return storage.scanMetadataValuesHead(value);
   }
-  
+
   /**
     * Returns the submapping of ids which have metadata null
    *
@@ -344,7 +344,7 @@ public class LRUCache implements Cache {
   public long getMaximumSize() {
     return maximumSize;
   }
-  
+
   /**
    * Returns the number of Ids currently stored in the catalog
    *
@@ -401,7 +401,7 @@ public class LRUCache implements Cache {
   private void resize(final int size, Continuation<? super Boolean, Exception> c) {
     final Continuation<Boolean, Exception> remove = new StandardContinuation<Boolean, Boolean, Exception>(c) {
       private boolean waitingForSize = true;
-      
+
       public void receiveResult(Boolean o) {
         if (storage.getTotalSize() > size) {
           uncache((Id) order.getLast(), this);
@@ -436,9 +436,9 @@ public class LRUCache implements Cache {
       return Integer.MAX_VALUE;
     }
   }
-  
+
   /**
-   * Method which is used to erase all data stored in the Cache.  
+   * Method which is used to erase all data stored in the Cache.
    * Use this method with care!
    *
    * @param c The command to run once done

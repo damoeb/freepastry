@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.wire;
 
 import java.io.IOException;
@@ -56,38 +56,38 @@ import rice.environment.params.Parameters;
 import rice.selector.SelectionKeyHandler;
 
 public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
-  public static final Map<String, Object> OPTIONS;  
+  public static final Map<String, Object> OPTIONS;
   static {
     Map<String, Object> map = new HashMap<String, Object>();
     map.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_DATAGRAM);
-    OPTIONS = Collections.unmodifiableMap(map);    
+    OPTIONS = Collections.unmodifiableMap(map);
   }
-  
+
   Logger logger;
-  
+
   // the channel used from talking to the network
   private DatagramChannel channel;
 
   // the key used to determine what has taken place
   private SelectionKey key;
-  
+
   // the size of the buffer used to read incoming datagrams must be big enough
   // to encompass multiple datagram packets
   public int DATAGRAM_RECEIVE_BUFFER_SIZE;
-  
+
   // the size of the buffer used to send outgoing datagrams this is also the
   // largest message size than can be sent via UDP
   public int DATAGRAM_SEND_BUFFER_SIZE;
-  
+
   List<Envelope> pendingMsgs;
-  
+
   WireTransportLayerImpl wire;
-  
+
   ByteBuffer readBuffer;
-  
+
   public UDPLayerImpl(WireTransportLayerImpl wire) throws IOException {
     this.wire = wire;
-    
+
     this.logger = wire.environment.getLogManager().getLogger(UDPLayer.class, null);
 
     this.pendingMsgs = new LinkedList<Envelope>();
@@ -96,20 +96,20 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   /**
    * The ack is not the end to end, it's called when actually sent
-   * 
+   *
    * @param destination
    * @param msg
    * @param deliverAckToMe ack is when the message is sent to the wire
    */
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
-      InetSocketAddress destination, 
+      InetSocketAddress destination,
       ByteBuffer msg,
-      MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe, 
+      MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
     Envelope envelope;
-    logger.trace("sendMessage({},{},{})", destination, msg, deliverAckToMe); 
+    logger.trace("sendMessage({},{},{})", destination, msg, deliverAckToMe);
     envelope = new Envelope(destination, msg, deliverAckToMe, options);
-      synchronized (pendingMsgs) {        
+      synchronized (pendingMsgs) {
         pendingMsgs.add(envelope);
       }
 
@@ -129,8 +129,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
       // bind to the appropriate port
       channel = DatagramChannel.open();
       channel.configureBlocking(false);
-      
-      // this needs to be false because in windows, TCP doesn't do the right thing, so we need UDP to 
+
+      // this needs to be false because in windows, TCP doesn't do the right thing, so we need UDP to
       // fail with a BindException
       /*
        * http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6421091 The
@@ -145,7 +145,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
        * address/port and connect to the same remote address/port it means the
        * second connect is required to fail. It fails with a bind error and that
        * is why we throw a BindException.
-       * 
+       *
        * So is this problem fixable? In Windows 2000 SP1 Microsoft added the
        * SO_EXCLUSIVEADDRUSE which prevents multiple sockets from binding to the
        * same address/port. This socket option was initially only usable by
@@ -157,7 +157,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
        * problems for ServerSocket/ServerSocketChannel as it prevents the
        * re-binding of the socket when a there is a previous connection in
        * TIMED_WAIT state.
-       * 
+       *
        * One possible workaround for the submitter of this bug is to set the
        * DisableAddressSharing registry.
        * (HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\Afd\Parameters)
@@ -169,7 +169,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
        * Posted Date : 2006-05-03 11:40:31.0
        */
       channel.socket().setReuseAddress(false);
-      
+
       channel.socket().bind(wire.bindAddress);
       channel.socket().setSendBufferSize(DATAGRAM_SEND_BUFFER_SIZE);
       channel.socket().setReceiveBufferSize(DATAGRAM_RECEIVE_BUFFER_SIZE);
@@ -184,9 +184,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
       throw e;
     }
   }
-  
 
-  
+
+
   /**
    * Reads all pending datagrams from the channel and passes them up.
    *
@@ -196,7 +196,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
     try {
       InetSocketAddress address = null;
-      
+
       while ((address = (InetSocketAddress) channel.receive(readBuffer)) != null) {
         readBuffer.flip();
 
@@ -217,11 +217,11 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   protected void readHeader(InetSocketAddress address) throws IOException {
     logger.debug("readHeader({},{})", address, readBuffer.remaining());
-    byte[] remaining = new byte[readBuffer.remaining()];      
+    byte[] remaining = new byte[readBuffer.remaining()];
     readBuffer.get(remaining);
-    wire.messageReceived(address, ByteBuffer.wrap(remaining), OPTIONS);    
+    wire.messageReceived(address, ByteBuffer.wrap(remaining), OPTIONS);
   }
-  
+
 
   /**
    * Sends pending datagrams until the channel would block.
@@ -230,20 +230,20 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    */
   public void write(SelectionKey key) {
     Envelope write = null;
-    
+
     try {
       synchronized (pendingMsgs) {
         Iterator<Envelope> i = pendingMsgs.iterator();
 
         while (i.hasNext()) {
-          write = i.next();          
-          try {            
+          write = i.next();
+          try {
 
             int len = write.msg.remaining();
             logger.debug("writing {} to {}", len, write.destination);
             if (channel.send(write.msg, write.destination) == len) {
               if (write.continuation != null) write.continuation.ack(write);
-              i.remove();              
+              i.remove();
             } else {
               break;
             }
@@ -259,15 +259,15 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
         }
       }
     } catch (Exception e) {
-      logger.warn("ERROR (datagrammanager:write) to {}", write.destination, e);        
+      logger.warn("ERROR (datagrammanager:write) to {}", write.destination, e);
     } finally {
-      if (pendingMsgs.isEmpty()) 
+      if (pendingMsgs.isEmpty())
         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
     }
   }
 
   long lastTimePrinted = 0;
-  
+
   /**
    * Registers write interest while there are pending datagrams.
    *
@@ -275,11 +275,11 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    */
   public void modifyKey(SelectionKey key) {
     synchronized (pendingMsgs) {
-      if (! pendingMsgs.isEmpty()) 
+      if (! pendingMsgs.isEmpty())
         key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
     }
   }
-  
+
   /**
    * Internal class which holds a pending datagram
    *
@@ -302,9 +302,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
      * @param deliverAckToMe notified when the datagram was written to the wire
      * @param options
      */
-    public Envelope(InetSocketAddress destination, 
+    public Envelope(InetSocketAddress destination,
         ByteBuffer msg,
-        MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe, 
+        MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
       this.destination = destination;
       this.msg = msg;
@@ -315,7 +315,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     public boolean cancel() {
       if (pendingMsgs.remove(this)) {
         return true;
-      }      
+      }
       return false;
     }
 
@@ -333,8 +333,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   }
 
   public void destroy() {
-    Runnable r = new Runnable(){    
-      public void run() { 
+    Runnable r = new Runnable(){
+      public void run() {
         try {
           logger.info("destroy(): {}", channel);
           if (key != null) {
@@ -344,35 +344,35 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
             key.attach(null);
           }
         } catch (IOException ioe) {
-          logger.warn("Error destroying UDPLayer", ioe); 
+          logger.warn("Error destroying UDPLayer", ioe);
         }
       }
     };
-    
-    // thread safety
-    if (wire.environment.getSelectorManager().isSelectorThread()) {
-      r.run();
-    } else {
-      wire.environment.getSelectorManager().invoke(r);
-    }    
-  }
 
-  public void acceptMessages(final boolean b) {
-    Runnable r = new Runnable(){    
-      public void run() {
-        if (b) {
-          key.interestOps(key.interestOps() | SelectionKey.OP_READ);
-        } else {
-          key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
-        }
-      }    
-    };
-    
     // thread safety
     if (wire.environment.getSelectorManager().isSelectorThread()) {
       r.run();
     } else {
       wire.environment.getSelectorManager().invoke(r);
     }
-  }  
+  }
+
+  public void acceptMessages(final boolean b) {
+    Runnable r = new Runnable(){
+      public void run() {
+        if (b) {
+          key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+        } else {
+          key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
+        }
+      }
+    };
+
+    // thread safety
+    if (wire.environment.getSelectorManager().isSelectorThread()) {
+      r.run();
+    } else {
+      wire.environment.getSelectorManager().invoke(r);
+    }
+  }
 }

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.past.testing;
 
@@ -84,13 +84,13 @@ public class RawPastRegrTest extends CommonAPITest {
 
   // the instance name to use
   public static String INSTANCE = "PastRegrTest";
-  
+
   // the replication factor in Past
   public static final int REPLICATION_FACTOR = 3;
 
   // the storage services in the ring
   protected StorageManager storages[];
-  
+
   // the past impls in the ring
   protected PastImpl pasts[];
 
@@ -102,7 +102,7 @@ public class RawPastRegrTest extends CommonAPITest {
     super(env);
     pasts = new PastImpl[NUM_NODES];
     storages = new StorageManager[NUM_NODES];
-    
+
     if (PROTOCOL == PROTOCOL_DIRECT) {
       new Thread() {
         public void run() {
@@ -137,24 +137,24 @@ public class RawPastRegrTest extends CommonAPITest {
                                              new LRUCache(new MemoryStorage(FACTORY), 100000, environment));
       pasts[num] = new PastImpl(node, storages[num], REPLICATION_FACTOR, INSTANCE);
       pasts[num].setContentDeserializer(new PastContentDeserializer() {
-      
+
         public PastContent deserializePastContent(InputBuffer buf, Endpoint endpoint,
             short contentType) throws IOException {
           switch(contentType) {
             case TestPastContent.TYPE:
               return new TestPastContent(buf, endpoint, this);
             case VersionedTestPastContent.TYPE:
-              return new VersionedTestPastContent(buf, endpoint, this);              
+              return new VersionedTestPastContent(buf, endpoint, this);
             case NonOverwritingTestPastContent.TYPE:
-              return new NonOverwritingTestPastContent(buf, endpoint, this);              
+              return new NonOverwritingTestPastContent(buf, endpoint, this);
           }
           throw new IllegalArgumentException("Unknown type:"+contentType);
-        }      
+        }
       });
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    pasts[num].setContentHandleDeserializer(new PastContentHandleDeserializer() {    
+    pasts[num].setContentHandleDeserializer(new PastContentHandleDeserializer() {
       public PastContentHandle deserializePastContentHandle(InputBuffer buf, Endpoint endpoint,
           short contentType) throws IOException {
         switch(contentType) {
@@ -162,7 +162,7 @@ public class RawPastRegrTest extends CommonAPITest {
             return new TestPastContentHandle(buf, endpoint);
         }
         throw new IllegalArgumentException("Unknown type:"+contentType);
-      }    
+      }
     });
   }
 
@@ -175,7 +175,7 @@ public class RawPastRegrTest extends CommonAPITest {
       System.out.println("The DistPastRegrTest must be run with at least 2 nodes for proper testing.  Use the '-nodes n' to specify the number of nodes.");
       return;
     }
-    
+
     // Run each test
     testRouteRequest();
   }
@@ -264,7 +264,7 @@ public class RawPastRegrTest extends CommonAPITest {
     final PastContent oldFile = new VersionedTestPastContent(remoteId, 0);
     final PastContent newFile = new VersionedTestPastContent(remoteId, 1);
     final PastContent newNewFile = new NonOverwritingTestPastContent(remoteId, 2);
-    
+
     sectionStart("Version Control");
 
     // Insert file
@@ -278,7 +278,7 @@ public class RawPastRegrTest extends CommonAPITest {
           assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
           assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
         }
-        
+
         stepDone();
 
         // run replica maintenance
@@ -332,7 +332,7 @@ public class RawPastRegrTest extends CommonAPITest {
                           assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
                           assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
                         }
-                        
+
                         stepDone();
 
                         // run replica maintenance
@@ -376,7 +376,7 @@ public class RawPastRegrTest extends CommonAPITest {
   protected void testParameterChecks() {
     final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
     final Id localId = local.getLocalNodeHandle().getId();
-    
+
     sectionStart("Parameter Checks Testing");
 
     // Null insert should fail
@@ -394,7 +394,7 @@ public class RawPastRegrTest extends CommonAPITest {
             assertTrue("Exception returned should not be null", result != null);
             assertTrue("Exception should be return", result instanceof Exception);
             stepDone();
-            
+
             // Null fetch should fail
             stepStart("Fetch Of Null");
             local.fetch((PastContentHandle) null, new TestExceptionCommand() {
@@ -410,7 +410,7 @@ public class RawPastRegrTest extends CommonAPITest {
                     assertTrue("Exception returned should not be null", result != null);
                     assertTrue("Exception should be return", result instanceof Exception);
                     stepDone();
-                    
+
                     // Lookup handles of -4 should fail
                     stepStart("Lookup Handles Of -4");
                     local.lookupHandles(localId, -4, new TestExceptionCommand() {
@@ -462,7 +462,7 @@ public class RawPastRegrTest extends CommonAPITest {
     }
 
     final PastImpl remote2 = tmp;
-    
+
     final Id id = pasts[environment.getRandomSource().nextInt(NUM_NODES)].getLocalNodeHandle().getId();
     final PastContent file1 = new VersionedTestPastContent(id, 1);
     final PastContent file2 = new VersionedTestPastContent(id, 2);
@@ -554,7 +554,7 @@ public class RawPastRegrTest extends CommonAPITest {
     });
     simulate();
   }
-  
+
   /**
    * Tests the lookup handles function in Past.
    */
@@ -577,9 +577,9 @@ public class RawPastRegrTest extends CommonAPITest {
           assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
           assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
         }
-        
+
         stepDone();
-        
+
         // run replica maintenance
         runReplicaMaintenance();
 
@@ -592,7 +592,7 @@ public class RawPastRegrTest extends CommonAPITest {
             assertTrue("Only 1 replica should be returned", ((PastContentHandle[]) result).length == 1);
             if (((PastContentHandle[]) result)[0] == null) {
               System.out.println("PastRegrTest.problem");
-              
+
             }
             assertEquals("Replica should be for right object", remoteId, ((PastContentHandle[]) result)[0].getId());
 
@@ -639,7 +639,7 @@ public class RawPastRegrTest extends CommonAPITest {
                                ((NUM_NODES < REPLICATION_FACTOR+1) && (handles.length) == NUM_NODES));
 
                     int count = 0;
-                    
+
                     for (int i=0; i<handles.length; i++) {
                       if (handles[i] != null) {
                         assertEquals("Replica " + i + " should be for right object", remoteId, handles[i].getId());
@@ -649,7 +649,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                     assertTrue("All replicas should be returned (got " + count + "/" + (REPLICATION_FACTOR+1) + ")", count == REPLICATION_FACTOR+1);
 
-                    
+
                     for (int i=0; i<handles.length; i++) {
                       for (int j=0; j<handles.length; j++) {
                         if ((i != j) && (handles[i] != null) && (handles[j] != null)) {
@@ -754,7 +754,7 @@ public class RawPastRegrTest extends CommonAPITest {
                     stepDone();
 
                     sectionDone();
-                    
+
                     cleanUp();
                   }
                 });
@@ -792,7 +792,7 @@ public class RawPastRegrTest extends CommonAPITest {
     environment.getRandomSource().nextBytes(data);
     return FACTORY.buildId(data);
   }
-                
+
 
   /**
    * Usage: RawPastRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (direct|socket)] [-help]
@@ -805,16 +805,16 @@ public class RawPastRegrTest extends CommonAPITest {
         if (f.isDirectory()) {
           File[] subs = f.listFiles();
           if (subs.length == 0) {
-            f.delete(); 
+            f.delete();
           } else {
-            delme.addAll(Arrays.asList(subs));          
-            delme.addLast(f);          
+            delme.addAll(Arrays.asList(subs));
+            delme.addLast(f);
           }
         } else {
-          f.delete(); 
+          f.delete();
         }
       }
-      
+
       Environment env = parseArgs(args);
       env.getParameters().setDouble("p2p_past_successfulInsertThreshold",1.0);
       RawPastRegrTest pastTest = new RawPastRegrTest(env);
@@ -823,9 +823,9 @@ public class RawPastRegrTest extends CommonAPITest {
 
   protected void cleanUp() {
     running = false;
-    environment.destroy();  
+    environment.destroy();
   }
-  
+
   /**
    * Common superclass for test commands.
    */
@@ -867,11 +867,11 @@ public class RawPastRegrTest extends CommonAPITest {
    */
   protected static class TestPastContent implements RawPastContent {
     public static final short TYPE = 1;
-        
+
     protected Id id;
 
     protected RawPastContent existing;
-    
+
     public TestPastContent(Id id) {
       this.id = id;
     }
@@ -914,23 +914,23 @@ public class RawPastRegrTest extends CommonAPITest {
         existing = (RawPastContent)pcd.deserializePastContent(buf, endpoint, contentType);
       }
     }
-    
+
     public void serialize(OutputBuffer buf) throws IOException {
       buf.writeShort(id.getType());
       id.serialize(buf);
       if (existing == null) {
-        buf.writeBoolean(false); 
+        buf.writeBoolean(false);
       } else {
         buf.writeBoolean(true);
         buf.writeShort(existing.getType());
         existing.serialize(buf);
-      }      
+      }
     }
   }
 
   protected static class VersionedTestPastContent extends TestPastContent {
     public static final short TYPE = 2;
-    
+
     protected int version = 0;
 
     public VersionedTestPastContent(Id id, int version) {
@@ -948,46 +948,46 @@ public class RawPastRegrTest extends CommonAPITest {
     public String toString() {
       return "VersionedTestPastContent(" + id + ", " + version + ")";
     }
-    
+
     public short getType() {
-      return TYPE; 
+      return TYPE;
     }
-    
+
     public VersionedTestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
       super(buf, endpoint, pcd);
       version = buf.readInt();
     }
-    
+
     public void serialize(OutputBuffer buf) throws IOException {
       super.serialize(buf);
       buf.writeInt(version);
     }
   }
-  
+
   protected static class NonOverwritingTestPastContent extends VersionedTestPastContent {
     public static final short TYPE = 3;
 
     public NonOverwritingTestPastContent(Id id, int version) {
       super(id, version);
     }
-    
+
     public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
       return existingContent;
     }
-    
+
     public String toString() {
       return "NonOverwritingTestPastContent(" + id + ", " + version + ")";
     }
-    
+
     public short getType() {
-      return TYPE; 
+      return TYPE;
     }
-    
+
     public NonOverwritingTestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
       super(buf, endpoint, pcd);
     }
-    
-    
+
+
     public boolean equals(Object o) {
       if (! (o instanceof NonOverwritingTestPastContent)) return false;
 
@@ -1018,7 +1018,7 @@ public class RawPastRegrTest extends CommonAPITest {
    */
   protected static class TestPastContentHandle implements RawPastContentHandle {
     public static final short TYPE = 1;
-    
+
     protected NodeHandle handle;
 
     protected Id id;
@@ -1035,16 +1035,16 @@ public class RawPastRegrTest extends CommonAPITest {
     public NodeHandle getNodeHandle() {
       return handle;
     }
-    
+
     public short getType() {
-      return TYPE; 
+      return TYPE;
     }
-    
+
     public TestPastContentHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
       handle = endpoint.readNodeHandle(buf);
       id = endpoint.readId(buf, buf.readShort());
     }
-    
+
     public void serialize(OutputBuffer buf) throws IOException {
       handle.serialize(buf);
       buf.writeShort(id.getType());
@@ -1062,13 +1062,13 @@ public class RawPastRegrTest extends CommonAPITest {
     private NodeHandle nextHop;
 
     private Message message;
-    
+
     public TestRouteMessage(Id id, NodeHandle nextHop, Message message) {
       this.id = id;
       this.nextHop = nextHop;
       this.message = message;
     }
-    
+
     public Id getDestinationId() {
       return id;
     }
@@ -1100,7 +1100,7 @@ public class RawPastRegrTest extends CommonAPITest {
     public void setMessage(Message message) {
       this.message = message;
     }
-    
+
     public void setMessage(RawMessage message) {
       this.message = message;
     }

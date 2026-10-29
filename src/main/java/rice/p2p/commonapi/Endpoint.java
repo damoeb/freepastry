@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.commonapi;
 
@@ -55,7 +55,7 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  *
  * Interface which represents a node in a peer-to-peer system, regardless of
  * the underlying protocol.  This represents the *local* node, upon which applications
- * can call methods.  
+ * can call methods.
  *
  * @version $Id: Endpoint.java 4654 2009-01-08 16:33:07Z jeffh $
  *
@@ -70,7 +70,7 @@ public interface Endpoint extends NodeHandleReader {
    * @return The local node's id
    */
   public Id getId();
-  
+
   /**
    * This method makes an attempt to route the message to the root of the given id.
    * The hint handle will be the first hop in the route. If the id field is null, then
@@ -85,9 +85,9 @@ public interface Endpoint extends NodeHandleReader {
    * @param deliverAckToMe notified when the message is sent
    * @return can cancel the request
    */
-  MessageReceipt route(Id id, Message message, NodeHandle hint,  
+  MessageReceipt route(Id id, Message message, NodeHandle hint,
       DeliveryNotification deliverAckToMe, Map<String, Object> options);
-  MessageReceipt route(Id id, Message message, NodeHandle hint,  
+  MessageReceipt route(Id id, Message message, NodeHandle hint,
       DeliveryNotification deliverAckToMe);
   MessageReceipt route(Id id, Message message, NodeHandle hint);
 
@@ -97,14 +97,14 @@ public interface Endpoint extends NodeHandleReader {
    * @param message
    * @param hint
    */
-  MessageReceipt route(Id id, RawMessage message, NodeHandle hint,  
+  MessageReceipt route(Id id, RawMessage message, NodeHandle hint,
       DeliveryNotification deliverAckToMe, Map<String, Object> options);
-  MessageReceipt route(Id id, RawMessage message, NodeHandle hint,  
+  MessageReceipt route(Id id, RawMessage message, NodeHandle hint,
       DeliveryNotification deliverAckToMe);
   MessageReceipt route(Id id, RawMessage message, NodeHandle hint);
 
-  
-  
+
+
   /**
    * This call produces a list of nodes that can be used as next hops on a route towards
    * the given id, such that the resulting route satisfies the overlay protocol's bounds
@@ -120,8 +120,8 @@ public interface Endpoint extends NodeHandleReader {
   /**
    * This methods returns an unordered set of nodehandles on which are neighbors of the local
    * node in the id space.  Up to num handles are returned.
-   * 
-   * NOTE: This is not the same thing as the neighborhood set as described in some early papers.  
+   *
+   * NOTE: This is not the same thing as the neighborhood set as described in some early papers.
    * The if you are looking for the neighborhood set, see localLookup()
    *
    * @param num The number of desired handle to return.
@@ -140,12 +140,12 @@ public interface Endpoint extends NodeHandleReader {
    * @param maxRank The number of desired replicas.
    */
   NodeHandleSet replicaSet(Id id, int maxRank);
-  
+
   /**
    * This methods returns an ordered set of nodehandles on which replicas of an object with
    * a given id can be stored.  The call returns nodes up to and including a node with maxRank.
    * This call also allows the application to provide a remote "center" node, as well as
-   * other nodes in the vicinity. 
+   * other nodes in the vicinity.
    *
    * @param id The object's id.
    * @param maxRank The number of desired replicas.
@@ -171,7 +171,7 @@ public interface Endpoint extends NodeHandleReader {
    * @param lkey An "index" in case of multiple ranges.
    */
   IdRange range(NodeHandle handle, int rank, Id lkey) throws RangeCannotBeDeterminedException;
-  
+
   /**
    * This operation provides information about ranges of keys for which the node is currently
    * a rank-root. The operations returns null if the range could not be determined, the range
@@ -206,9 +206,9 @@ public interface Endpoint extends NodeHandleReader {
    * @param delay The number of milliseconds to wait before delivering the message
    */
   CancellableTask scheduleMessage(Message message, long delay);
-  
+
   /**
-   * Schedules a message to be delivered to this application every period number of 
+   * Schedules a message to be delivered to this application every period number of
    * milliseconds, after delay number of milliseconds have passed.
    *
    * @param message The message to be delivered
@@ -216,9 +216,9 @@ public interface Endpoint extends NodeHandleReader {
    * @param period The number of milliseconds to wait before delivering subsequent messages
    */
   CancellableTask scheduleMessage(Message message, long delay, long period);
-    
+
   /**
-   * Schedules a message to be delivered to this application every period number of 
+   * Schedules a message to be delivered to this application every period number of
    * milliseconds, after delay number of milliseconds have passed.
    *
    * @param message The message to be delivered
@@ -226,25 +226,25 @@ public interface Endpoint extends NodeHandleReader {
    * @param period The number of milliseconds to wait before delivering subsequent messages
    */
   CancellableTask scheduleMessageAtFixedRate(Message message, long delay, long period);
-    
+
   /**
    * Schedules a job for processing on the dedicated processing thread.  CPU intensive jobs, such
    * as encryption, erasure encoding, or bloom filter creation should never be done in the context
-   * of the underlying node's thread, and should only be done via this method.  
+   * of the underlying node's thread, and should only be done via this method.
    *
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    */
   <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command);
-  
+
   /**
    * Returns a unique instance name of this endpoint, sort of a mailbox name for this
    * application.
-   * 
+   *
    * @return The unique instance name of this application
    */
   public String getInstance();
-  
+
   /**
    * Returns the environment.  This allows the nodes to be virtualized within the JVM
    * @return the environment for this node/app.
@@ -270,52 +270,52 @@ public interface Endpoint extends NodeHandleReader {
    * on a remote node.
    */
   public void connect(NodeHandle handle, AppSocketReceiver receiver, int timeout);
-  
+
   /**
    * To use a more efficient serialization format than Java Serialization
-   * 
+   *
    * @param md the deserializer for this endpoint's raw messages
    */
   public void setDeserializer(MessageDeserializer md);
-  
+
   /**
    * Returns the deserializer.  The default deserializer can deserialize rice.p2p.util.JavaSerializedMessage
    * @return
    */
   public MessageDeserializer getDeserializer();
-  
+
   /**
    * default value is true
-   * 
-   * Consistent routing causes RouteMessages to be dropped if we are not sure that we are 
-   * responsible for our current id range.  If you set this to false, you will be delivered 
-   * messages to forward() and deliver() even if there is possible inconsistent routing.  
-   * 
+   *
+   * Consistent routing causes RouteMessages to be dropped if we are not sure that we are
+   * responsible for our current id range.  If you set this to false, you will be delivered
+   * messages to forward() and deliver() even if there is possible inconsistent routing.
+   *
    * (The overlay still does it's best to deliver the RouteMessage to the proper key,
    * but some protocols can guarantee consistency, for example by using leases between
    * nodes)
-   * 
+   *
    * Note that when true, the overlay never purposely drops messages routed with a null
    * key:
    * endpoint.deliver(null, msg, targetNodeHandle) // will be delivered regardless of consistency
-   * 
+   *
    * @param val
    */
   public void setConsistentRouting(boolean val);
-  
+
   /**
-   * Can we guarantee that this id is currently ours, and routing will be consistent?  
-   * Note that this has some real timing implications, so don't cache the returned value.  
-   * Note that it always returns false if you are not the root of the id.  
-   *  
+   * Can we guarantee that this id is currently ours, and routing will be consistent?
+   * Note that this has some real timing implications, so don't cache the returned value.
+   * Note that it always returns false if you are not the root of the id.
+   *
    * @param id the id to verify
    * @return true if routing consistency can currently be guaranteed for this id
    */
   public boolean routingConsistentFor(Id id);
-  
+
   /**
    * Reads an Id written with Id.serialize(); more efficient than Java Serialization
-   * 
+   *
    * @param buf the buffer to read the id from
    * @param type the type of the id, as returned by Id.getType()
    * @return the id
@@ -324,51 +324,47 @@ public interface Endpoint extends NodeHandleReader {
   public Id readId(InputBuffer buf, short type) throws IOException;
 
   /**
-   * Returns an ordered list of the nearest known neighbors.  
+   * Returns an ordered list of the nearest known neighbors.
    * Note that proximity is usually an estimate, and can quickly become stale.
-   * 
+   *
    * @param num
    * @return List of NodeHandle
    */
   public List<NodeHandle> networkNeighbors(int num);
-  
+
   /**
    * To use Raw Serialization
    * @param buf
    * @return
-   * @throws IOException 
+   * @throws IOException
    */
   public IdRange readIdRange(InputBuffer buf) throws IOException;
-  
+
   public NodeHandleSet readNodeHandleSet(InputBuffer buf, short type) throws IOException;
-  
+
   public NodeHandle readNodeHandle(InputBuffer buf) throws IOException;
-  
+
   /**
    * Call this after you have set up your Endpoint:
    *   called setDeserializer(), called accept().
    *
    */
   public void register();
-  
+
   /**
    * This replaces NodeHandle.proximity(), so that you don't have to have a "coalesced" NodeHandle.
-   * 
+   *
    * @param nh
    * @return
    */
   public int proximity(NodeHandle nh);
-  
+
   public boolean isAlive(NodeHandle nh);
-  
+
   /**
    * Uses these options as defaults.
-   * 
+   *
    * @param options
    */
   public void setSendOptions(Map<String, Object> options);
 }
-
-
-
-

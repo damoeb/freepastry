@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.testing.filetransfer;
 
 import java.io.File;
@@ -80,43 +80,43 @@ public class EncryptedFileTest {
     InetAddress local = InetAddress.getLocalHost();
     final Logger logger = env.getLogManager().getLogger(EncryptedFileTest.class, null);
     DefaultErrorHandler<InetSocketAddress> errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
-    
+
     logger.info("Encrypted Test");
-    
+
     // this node will receive a file
     InetSocketAddress addr1 = new InetSocketAddress(local, 9001);
     WireTransportLayer wtl1 = new WireTransportLayerImpl(addr1,env,errorHandler);
     SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> idtl1 = new SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer>(wtl1,new InetSocketAddressSerializer(), null ,env,errorHandler);
     LivenessTransportLayer<InetSocketAddress, ByteBuffer> ltl1 = new LivenessTransportLayerImpl<InetSocketAddress>(idtl1,env,errorHandler,300000);
-    ltl1.addLivenessListener(new LivenessListener<InetSocketAddress>() {    
+    ltl1.addLivenessListener(new LivenessListener<InetSocketAddress>() {
       public void livenessChanged(InetSocketAddress i, int val,
           Map<String, Object> options) {
         logger.info("Node1: livenessChanged({},{},{})", i, val, options);
-      }    
+      }
     });
-    
+
     RC4TransportLayer<InetSocketAddress, ByteBuffer> etl1 = new RC4TransportLayer<InetSocketAddress, ByteBuffer>(ltl1,env,"badpassword", errorHandler);
 
     etl1.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
-    
+
       public void messageReceived(InetSocketAddress i, ByteBuffer m,
           Map<String, Object> options) throws IOException {
-    
+
       }
-    
+
       public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
         // we got a socket, convert it to an AppSocket, then a FileTransfer
-        logger.info("incomingSocket({})", s);    
+        logger.info("incomingSocket({})", s);
         final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
         FileTransfer ft = new FileTransferImpl(sock,new FileTransferCallback() {
-        
+
           public void messageReceived(ByteBuffer bb) {
-        
+
           }
-        
+
           public void fileReceived(File f, ByteBuffer metadata) {
             try {
-              String name = new SimpleInputBuffer(metadata).readUTF();            
+              String name = new SimpleInputBuffer(metadata).readUTF();
               logger.info("file received {} named:{} size:{}", f, name, f.length());
             } catch (IOException ioe) {
               logger.warn("Error interpreting filename ", ioe);
@@ -126,24 +126,24 @@ public class EncryptedFileTest {
           public void receiveException(Exception ioe) {
             logger.warn("Receiver FTC.receiveException()", ioe);
           }
-        
+
         },env);
-        
+
         ft.addListener(new SimpleFileTransferListener("Receiver") {
 
           @Override
           public void fileTransferred(FileReceipt receipt,
               long bytesTransferred, long total, boolean incoming) {
             super.fileTransferred(receipt, bytesTransferred, total, incoming);
-            
+
           }
-          
-        });        
+
+        });
       }
-    
+
     });
-    
-    
+
+
     // this node will send a file
     InetSocketAddress addr2 = new InetSocketAddress(local, 9002);
     WireTransportLayer wtl2 = new WireTransportLayerImpl(addr2,env,errorHandler);
@@ -151,47 +151,47 @@ public class EncryptedFileTest {
     LivenessTransportLayer<InetSocketAddress, ByteBuffer> ltl2 = new LivenessTransportLayerImpl<InetSocketAddress>(idtl2,env,errorHandler,300000);
 
     // check liveness on addr1
-    ltl2.addLivenessListener(new LivenessListener<InetSocketAddress>() {    
+    ltl2.addLivenessListener(new LivenessListener<InetSocketAddress>() {
       public void livenessChanged(InetSocketAddress i, int val,
           Map<String, Object> options) {
         logger.info("Node2: livenessChanged({},{},{})", i, val, options);
-      }    
-    });    
+      }
+    });
     ltl2.checkLiveness(addr1, null);
-    
+
     RC4TransportLayer<InetSocketAddress, ByteBuffer> etl2 = new RC4TransportLayer<InetSocketAddress, ByteBuffer>(ltl2,env,"badpassword", errorHandler);
 
     etl2.openSocket(addr1, new SocketCallback<InetSocketAddress>() {
-    
+
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> s) {
         logger.info("opened Socket {}", s);
-        
+
         // we got the socket we requested, convert it to an AppSocket, then a FileTransfer
         final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
         FileTransfer ft = new FileTransferImpl(sock, new FileTransferCallback() {
-        
+
           public void messageReceived(ByteBuffer bb) {
-        
+
           }
-        
+
           public void fileReceived(File f, ByteBuffer metadata) {
-        
+
           }
-        
+
           public void receiveException(Exception ioe) {
             logger.warn("Sender FTC.receiveException()", ioe);
           }
-        }, env);       
+        }, env);
         ft.addListener(new SimpleFileTransferListener("Sender") {
 
           @Override
           public void fileTransferred(FileReceipt receipt,
               long bytesTransferred, long total, boolean incoming) {
             super.fileTransferred(receipt, bytesTransferred, total, incoming);
-            
+
           }
-          
+
         });
 
         // send a file normal priority, don't worry about notification of completion
@@ -199,28 +199,28 @@ public class EncryptedFileTest {
           SimpleOutputBuffer sob = new SimpleOutputBuffer();
           sob.writeUTF("foo");
           ft.sendFile(new File("delme.txt"), sob.getByteBuffer(), (byte)0, new Continuation<FileReceipt, Exception>() {
-          
+
             public void receiveResult(FileReceipt result) {
               System.out.println("Send success "+result);
             }
-          
+
             public void receiveException(Exception exception) {
               System.out.println("Send Failed");
             }
-          
+
           });
         } catch (IOException ioe) {
           logger.warn("Error sending file.", ioe);
         }
-        
+
       }
-    
+
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         logger.warn("receiveException({})", s, ex);
-      }    
+      }
     }, null);
-    
+
 
   }
 

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.splitstream;
 
@@ -56,7 +56,7 @@ import rice.selector.TimerTask;
  * It is rooted at the stripeId for the stripe. It is through the stripe that data is sent. It can
  * be subscribed to in which case data is recieved or it can be unsubscribed from. A stripe can have
  * some number of children and controlling this is the way that bandwidth is controlled. If a stripe
- * is dropped then it searches for a new parent. 
+ * is dropped then it searches for a new parent.
  *
  * @version $Id: Stripe.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Ansley Post
@@ -106,9 +106,9 @@ public class Stripe implements ScribeMultiClient {
   protected Hashtable<Topic, Integer> failed;
 
   protected String instance;
-  
+
   Logger logger;
-  
+
   /**
    * The constructor used when creating a stripe from scratch.
    *
@@ -120,13 +120,13 @@ public class Stripe implements ScribeMultiClient {
     this.MAX_FAILED_SUBSCRIPTION = maxFailedSubscriptions;
     this.stripeId = stripeId;
     this.scribe = scribe;
-    logger = scribe.getEnvironment().getLogManager().getLogger(Stripe.class, instance);    
+    logger = scribe.getEnvironment().getLogManager().getLogger(Stripe.class, instance);
     this.channel = channel;
     this.isPrimary = false;
     this.failed = new Hashtable<Topic, Integer>();
     if(SplitStreamScribePolicy.getPrefixMatch(this.channel.getLocalId(), stripeId.getId(), channel.getStripeBase()) > 0)
       this.isPrimary = true;
-    
+
     this.clients = new Vector<SplitStreamClient>();
     this.topic = new Topic(stripeId.getId());
   }
@@ -194,7 +194,7 @@ public class Stripe implements ScribeMultiClient {
    * @param data The data to publish
    */
   public void publish(byte[] data) {
-    scribe.publish(topic, new SplitStreamContent(data)); 
+    scribe.publish(topic, new SplitStreamContent(data));
   }
 
   /**
@@ -308,11 +308,11 @@ public class Stripe implements ScribeMultiClient {
       TimerTask resubscribeTask = new TimerTask() {
         public void run() {
           if (getParent() == null) {
-            scribe.subscribe(topic, Stripe.this, (RawScribeContent) null, null);         
+            scribe.subscribe(topic, Stripe.this, (RawScribeContent) null, null);
           }
         }
       };
-      scribe.getEnvironment().getSelectorManager().getTimer().schedule(resubscribeTask, 
+      scribe.getEnvironment().getSelectorManager().getTimer().schedule(resubscribeTask,
           scribe.getEnvironment().getParameters().getInt("p2p_splitStream_stripe_max_failed_subscription_retry_delay"));
     }
   }
@@ -350,4 +350,3 @@ public class Stripe implements ScribeMultiClient {
     return ((ScribeImpl) this.scribe).isRoot(topic);
   }
 }
-

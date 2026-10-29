@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.wire;
 
 import java.io.IOException;
@@ -61,16 +61,16 @@ import rice.environment.params.Parameters;
 public class WireTransportLayerImpl implements WireTransportLayer, SocketOpeningTransportLayer<InetSocketAddress> {
   // state
   protected InetSocketAddress bindAddress;
-  
+
   // helpers
   protected UDPLayer udp;
   protected TCPLayer tcp;
-  
-  
+
+
   // abstract helpers
   protected Logger logger;
   protected Environment environment;
-  
+
   private TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
   protected ErrorHandler<InetSocketAddress> errorHandler;
 
@@ -79,49 +79,49 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
    */
   public boolean forceBindAddress = false;
 
-  
+
   /**
-   * 
+   *
    * @param bindAddress the address to bind to, if it fails, it will throw an exception
    * @param env will acquire the SelectorManager from the env
    * @throws IOException
    */
   public WireTransportLayerImpl(
-      InetSocketAddress bindAddress, 
-      Environment env, 
+      InetSocketAddress bindAddress,
+      Environment env,
       ErrorHandler<InetSocketAddress> errorHandler) throws IOException {
     this(bindAddress, env, errorHandler, true);
   }
-  
+
   public WireTransportLayerImpl(
-      InetSocketAddress bindAddress, 
-      Environment env, 
+      InetSocketAddress bindAddress,
+      Environment env,
       ErrorHandler<InetSocketAddress> errorHandler, boolean enableServer) throws IOException {
     this(bindAddress,env,errorHandler,enableServer,enableServer);
   }
-  
+
   public WireTransportLayerImpl(
-      InetSocketAddress bindAddress, 
-      Environment env, 
+      InetSocketAddress bindAddress,
+      Environment env,
       ErrorHandler<InetSocketAddress> errorHandler, boolean enableTCPServer, boolean enableUDPServer) throws IOException {
     this.logger = env.getLogManager().getLogger(WireTransportLayer.class, null);
     this.bindAddress = bindAddress;
     this.environment = env;
-    
+
     Parameters p = this.environment.getParameters();
     if (p.contains("wire_forceBindAddress")) {
       forceBindAddress = p.getBoolean("wire_forceBindAddress");
     }
-    
-    this.callback = new DefaultCallback<InetSocketAddress, ByteBuffer>(logger);    
+
+    this.callback = new DefaultCallback<InetSocketAddress, ByteBuffer>(logger);
     this.errorHandler = errorHandler;
-    
+
     if (this.errorHandler == null) {
-      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger); 
+      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
     }
-    
+
     if (enableUDPServer) {
-      udp = new UDPLayerImpl(this);      
+      udp = new UDPLayerImpl(this);
     } else {
       udp = new BogusUDPLayerImpl();
     }
@@ -130,9 +130,9 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     } catch (IOException ioe) {
       udp.destroy();
       throw ioe;
-    }    
+    }
   }
-  
+
   public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> callback) {
     this.callback = callback;
   }
@@ -142,12 +142,12 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
   }
 
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
-      InetSocketAddress destination, 
-      ByteBuffer m, 
-      MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe, 
+      InetSocketAddress destination,
+      ByteBuffer m,
+      MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
     logger.debug("sendMessage({},{})", destination, m);
-    return udp.sendMessage(destination, m, deliverAckToMe, options); 
+    return udp.sendMessage(destination, m, deliverAckToMe, options);
   }
 
   public InetSocketAddress getLocalIdentifier() {
@@ -162,10 +162,10 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     tcp.destroy();
   }
 
-  public boolean isDestroyed() {   
+  public boolean isDestroyed() {
     return destroyed;
   }
-  
+
   public void setErrorHandler(ErrorHandler<InetSocketAddress> handler) {
     if (handler == null) {
       this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
@@ -186,12 +186,12 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     callback.messageReceived(address, buffer, options);
   }
 
-  protected void incomingSocket(P2PSocket<InetSocketAddress> sm) throws IOException {    
+  protected void incomingSocket(P2PSocket<InetSocketAddress> sm) throws IOException {
     broadcastChannelOpened(sm.getIdentifier(), sm.getOptions(), false);
     callback.incomingSocket(sm);
   }
-  
-  Collection<TransportLayerListener<InetSocketAddress>> listeners = 
+
+  Collection<TransportLayerListener<InetSocketAddress>> listeners =
     new ArrayList<TransportLayerListener<InetSocketAddress>>();
   public void addTransportLayerListener(
       TransportLayerListener<InetSocketAddress> listener) {
@@ -199,22 +199,22 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
       listeners.add(listener);
     }
   }
-  
+
   public void removeTransportLayerListener(
       TransportLayerListener<InetSocketAddress> listener) {
     synchronized(listeners) {
       listeners.remove(listener);
     }
   }
-  
+
   protected Iterable<TransportLayerListener<InetSocketAddress>> getTLlisteners() {
     synchronized(listeners) {
       return new ArrayList<TransportLayerListener<InetSocketAddress>>(listeners);
     }
   }
-  
-  
-  Collection<SocketCountListener<InetSocketAddress>> slisteners = 
+
+
+  Collection<SocketCountListener<InetSocketAddress>> slisteners =
     new ArrayList<SocketCountListener<InetSocketAddress>>();
 
   public void addSocketCountListener(
@@ -223,25 +223,25 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
       slisteners.add(listener);
     }
   }
-  
+
   public void removeSocketCountListener(
       SocketCountListener<InetSocketAddress> listener) {
     synchronized(slisteners) {
       slisteners.remove(listener);
     }
   }
-  
+
   protected Iterable<SocketCountListener<InetSocketAddress>> getSlisteners() {
     synchronized(slisteners) {
       return new ArrayList<SocketCountListener<InetSocketAddress>>(slisteners);
     }
   }
-    
+
   public void broadcastChannelOpened(InetSocketAddress addr, Map<String, Object> options, boolean outgoing) {
     for (SocketCountListener<InetSocketAddress> listener : getSlisteners())
       listener.socketOpened(addr, options, outgoing);
   }
-  
+
   public void broadcastChannelClosed(InetSocketAddress addr, Map<String, Object> options) {
     for (SocketCountListener<InetSocketAddress> listener : getSlisteners())
       listener.socketClosed(addr, options);

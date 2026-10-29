@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.multiring;
 
@@ -64,7 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
-import rice.p2p.multiring.RingCertificate;
 import rice.p2p.util.SecurityUtils;
 import rice.p2p.util.XMLObjectInputStream;
 import rice.p2p.util.XMLObjectOutputStream;
@@ -82,13 +81,13 @@ import rice.pastry.dist.DistPastryNodeFactory;
 public class RingCertificate implements Serializable {
   private static final Logger LOG = LoggerFactory.getLogger(RingCertificate.class);
 
-  
-  // serialver 
+
+  // serialver
   private static final long serialVersionUID = 5915358246762577456L;
-  
+
   // the static map of all RingCertificates available (id -> cert)
   protected static HashMap<Id, RingCertificate> CERTIFICATES = new HashMap<Id, RingCertificate>();
-  
+
   // load all certificates that can be found
   static {
     try {
@@ -100,25 +99,25 @@ public class RingCertificate implements Serializable {
       ObjectInputStream ois = new XMLObjectInputStream(d);
       PublicKey caPublic = (PublicKey) ois.readObject();
       ois.close();
-      
+
       // and finally load and verify the certs
       URL a1 = ClassLoader.getSystemResource("ringcert.list");
       InputStream b1 = a1.openStream();
       InputStreamReader c1 = new InputStreamReader(b1);
       BufferedReader r = new BufferedReader(c1);
       String filename = null;
-      
+
       while ((filename = r.readLine()) != null) {
         URL a2 = ClassLoader.getSystemResource(filename);
         InputStream b2 = a2.openStream();
         RingCertificate cert = readFromStream(b2);
-        
+
         if (cert.verify(caPublic)) {
-          if ((getCertificate(cert.getId()) == null) || 
+          if ((getCertificate(cert.getId()) == null) ||
               (getCertificate(cert.getId()).getVersion() < cert.getVersion())) {
             cert.refresh();
             CERTIFICATES.put(cert.getId(), cert);
-          } 
+          }
         } else {
           LOG.warn("RINGCERT: Could not verify ring certificate {} ignoring.", cert);
         }
@@ -127,7 +126,7 @@ public class RingCertificate implements Serializable {
       LOG.error("RINGCERT: Found an exception while reading in ring certificates!", e);
     }
   }
-  
+
   /**
    * Method which returns the certificates found for the given ringId
    *
@@ -137,10 +136,10 @@ public class RingCertificate implements Serializable {
   public static RingCertificate getCertificate(Id ringId) {
     return (RingCertificate) CERTIFICATES.get(ringId);
   }
-  
+
   /**
    * Refreshes all of the InetAddresses based on their name, not IP address.
-   * 
+   *
    * In other words, it fixes InetAddresses that are stale from storage.  It reads
    * the "name" of the InetAddress, and then builds a new InetAddress with this name
    * which should do a proper dns lookup.
@@ -149,12 +148,12 @@ public class RingCertificate implements Serializable {
   private void refresh() {
     logServer = refreshAddress(logServer);
   }
-  
+
   /**
    * Helper function for refresh().  Returns an identical InetSocketAddress unless
    * the ip address in address is stale.  Then it returns the current one based on a
    * dns lookup.
-   * 
+   *
    * @param address
    * @return
    */
@@ -164,31 +163,31 @@ public class RingCertificate implements Serializable {
 
   // the name of this ring
   protected String name;
-  
+
   // the Id of this ring
   protected Id id;
-  
+
   // the protocol of this ring
   protected Integer protocol;
-  
+
   // the list of bootstrap nodes for this ring
   protected InetSocketAddress[] bootstraps;
-  
+
   // the preferred port for this ring
   protected Integer port;
-  
+
   // the logserver for this ring
   protected InetSocketAddress logServer;
-  
+
   // the key for the ring, used in visualization and log uploading
   protected PublicKey key;
-  
+
   // the version number of this certificate
   protected Long version;
-  
+
   // the signature of the above info
   protected byte[] signature;
-  
+
   /**
    * Builds a new RingCertificate given the appropriate info
    *
@@ -203,7 +202,7 @@ public class RingCertificate implements Serializable {
     this.version = Long.valueOf(System.currentTimeMillis());
     this.protocol = Integer.valueOf(protocol);
   }
-  
+
   /**
    * Returns the name of this ring
    *
@@ -212,7 +211,7 @@ public class RingCertificate implements Serializable {
   public String getName() {
     return name;
   }
-  
+
   /**
    * Returns the id of this ring
    *
@@ -221,7 +220,7 @@ public class RingCertificate implements Serializable {
   public Id getId() {
     return id;
   }
-  
+
   /**
     * Returns the protcol of this ring
    *
@@ -230,7 +229,7 @@ public class RingCertificate implements Serializable {
   public int getProtocol() {
     return protocol.intValue();
   }
-  
+
   /**
    * Returns the version of this ring cert
    *
@@ -239,7 +238,7 @@ public class RingCertificate implements Serializable {
   public long getVersion() {
     return version.longValue();
   }
-  
+
   /**
    * Returns the bootstraps of this ring
    *
@@ -248,7 +247,7 @@ public class RingCertificate implements Serializable {
   public InetSocketAddress[] getBootstraps() {
     return bootstraps;
   }
-  
+
   /**
    * Returns the preferred port of this ring
    *
@@ -257,7 +256,7 @@ public class RingCertificate implements Serializable {
   public int getPort() {
     return port.intValue();
   }
-  
+
   /**
    * Returns the public key which is used to authenticate
    *
@@ -266,7 +265,7 @@ public class RingCertificate implements Serializable {
   public PublicKey getKey() {
     return key;
   }
-  
+
   /**
    * Returns the log server of this ring
    *
@@ -275,9 +274,9 @@ public class RingCertificate implements Serializable {
   public InetSocketAddress getLogServer() {
     return logServer;
   }
-  
+
   /**
-   * Signs this RingCertificate, given the private key to sign 
+   * Signs this RingCertificate, given the private key to sign
    * with
    *
    * @priv The private key to sign with
@@ -285,16 +284,16 @@ public class RingCertificate implements Serializable {
   private void sign(PrivateKey priv) {
     if (signature != null)
       throw new IllegalArgumentException("Attempt to sign an already-signed RingCertificate!");
-    
+
     try {
       signature = SecurityUtils.sign(SecurityUtils.serialize(getIdentifier()), priv);
     } catch (IOException e) {
-      throw new RuntimeException(e); 
+      throw new RuntimeException(e);
     }
   }
-  
+
   /**
-   * Verifies this RingCertificate, given the public key to verify 
+   * Verifies this RingCertificate, given the public key to verify
    * with
    *
    * @pub The public key to verify with
@@ -302,16 +301,16 @@ public class RingCertificate implements Serializable {
   private boolean verify(PublicKey pub) {
     if (signature == null)
       throw new IllegalArgumentException("Attempt to verify an unsigned RingCertificate!");
-    
+
     try {
       return SecurityUtils.verify(SecurityUtils.serialize(getIdentifier()), signature, pub);
     } catch (SecurityException e) {
       return false;
     } catch (IOException e) {
-      throw new RuntimeException(e); 
+      throw new RuntimeException(e);
     }
   }
-  
+
   /**
    * Returns a string of this object
    *
@@ -320,7 +319,7 @@ public class RingCertificate implements Serializable {
   public String toString() {
     return "[Ring Certificate for ring '" + name + "' (" + id + ")]";
   }
-  
+
   /**
    * Writes this certificate to the given file
    *
@@ -328,7 +327,7 @@ public class RingCertificate implements Serializable {
    */
   private void writeToFile(File file) throws IOException {
     ObjectOutputStream oos = null;
-    
+
     try {
       oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file))));
       oos.writeObject(this);
@@ -337,7 +336,7 @@ public class RingCertificate implements Serializable {
         oos.close();
     }
   }
-    
+
   /**
    * Reads a certificate from the given stream
    *
@@ -345,7 +344,7 @@ public class RingCertificate implements Serializable {
    */
   private static RingCertificate readFromStream(InputStream stream) throws IOException {
     ObjectInputStream ois = null;
-    
+
     try {
       ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(stream)));
       return (RingCertificate) ois.readObject();
@@ -356,7 +355,7 @@ public class RingCertificate implements Serializable {
         ois.close();
     }
   }
-  
+
   /**
    * Internal method which writes out the keypair to a file, encrypted
    *
@@ -369,8 +368,8 @@ public class RingCertificate implements Serializable {
     ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(ring.toLowerCase() + ".ringkeypair.enc"))));
     oos.writeObject(cipher);
     oos.close();
-  }  
-  
+  }
+
   /**
    * Internal method which writes out the keypair to a file, encrypted
    *
@@ -383,8 +382,8 @@ public class RingCertificate implements Serializable {
     ois.close();
 
     return (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptSymmetric(cipher, SecurityUtils.hash(pass.getBytes())));
-  }    
-  
+  }
+
   /**
    * Internal method which returns the to-be signed data
    *
@@ -393,7 +392,7 @@ public class RingCertificate implements Serializable {
   private Object getIdentifier() {
     return new Object[] {name, id, bootstraps, port, key, logServer, version, protocol};
   }
-  
+
   /**
    * Main method which, as a utility, generates a RingCertificate by asking the user
    * for prompts
@@ -403,51 +402,51 @@ public class RingCertificate implements Serializable {
     Environment env = new Environment();
     BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
     BufferedWriter w = new BufferedWriter(new OutputStreamWriter(System.out));
-    
+
     // first, load the CA keypair
-    File f = new File("ca.keypair.enc");      
+    File f = new File("ca.keypair.enc");
     ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(f))));
     KeyPair caPair = (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptSymmetric((byte[]) ois.readObject(), SecurityUtils.hash(prompt(r, w, "Please enter the CA password: ").trim().getBytes())));
     ois.close();
-    
+
     // get the ring info
     String ring = prompt(r, w, "Please enter the name of the ring (rice, berkeley): ");
     String[] bootstrap = prompt(r, w, "Please enter the bootstraps (host1:port1,host2:port2...): ").trim().split(",");
     int port = Integer.parseInt(prompt(r, w, "Please enter the default port for nodes: "));
     String logServer = prompt(r, w, "Please enter the log upload server (host:port): ");
     String pass = prompt(r, w, "Please enter a password for the ring keypair: ");
-        
+
     // socket is the only protocol
     int protocolId = 0;
       protocolId = DistPastryNodeFactory.PROTOCOL_SOCKET;
-    
+
     // build the id
     Id id = generateId(ring, env);
-    
+
     // translate the InetSocketAddresses
     InetSocketAddress log = toInetSocketAddress(logServer);
     InetSocketAddress[] bootstraps = new InetSocketAddress[bootstrap.length];
     for (int i=0; i<bootstraps.length; i++)
       bootstraps[i] = toInetSocketAddress(bootstrap[i]);
-    
+
     // generate a keypair
     KeyPair pair = SecurityUtils.generateKeyAsymmetric();
 
     // now create the Ring Certificate
     RingCertificate cert = new RingCertificate(ring, id, protocolId, bootstraps, port, pair.getPublic(), log);
     cert.sign(caPair.getPrivate());
-    if (! cert.verify(caPair.getPublic())) 
+    if (! cert.verify(caPair.getPublic()))
       throw new RuntimeException("Could not verify generated certificate!");
-    
+
     cert.writeToFile(new File(ring.toLowerCase() + ".ringcert"));
-    
+
     // and finally write out the KeyPair
     writeKeyPair(pair, pass, ring.toLowerCase());
-    
+
     // exit explicitly, the Environment's threads would keep the JVM running
     System.exit(0);
   }
-  
+
   /**
    * Internal method for prompting the user
    *
@@ -461,7 +460,7 @@ public class RingCertificate implements Serializable {
     w.flush();
     return r.readLine();
   }
-  
+
   /**
    * Internal method for String -&gt; InetSocketAddress
    *
@@ -471,10 +470,10 @@ public class RingCertificate implements Serializable {
   private static InetSocketAddress toInetSocketAddress(String s) throws IOException {
     String host = s.substring(0, s.indexOf(":"));
     int port = Integer.parseInt(s.substring(s.indexOf(":") + 1));
-    
+
     return new InetSocketAddress(host, port);
   }
-  
+
   /**
    * Internal method which builds the ring id from the canonical form of the ring name
    *
@@ -484,24 +483,20 @@ public class RingCertificate implements Serializable {
    */
   private static Id generateId(String s, Environment env) {
     String ring = s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
-    
+
     PastryIdFactory pif = new PastryIdFactory(env);
-    
+
     Id ringId = pif.buildId(ring);
     byte[] ringData = ringId.toByteArray();
-    
-    for (int i=0; i<ringData.length - env.getParameters().getInt("p2p_multiring_base"); i++) 
+
+    for (int i=0; i<ringData.length - env.getParameters().getInt("p2p_multiring_base"); i++)
       ringData[i] = 0;
-    
-    
+
+
     if (s.toLowerCase().equals("global"))
-      for (int i=0; i<ringData.length; i++) 
+      for (int i=0; i<ringData.length; i++)
         ringData[i] = 0;
-    
+
     return pif.buildId(ringData);
   }
 }
-
-
-
-

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.past;
 
@@ -56,7 +56,7 @@ import rice.persistence.Cache;
  */
 @SuppressWarnings("unchecked")
 public interface PastPolicy {
-  
+
   /**
    * This method is called when Past is told to fetch a key.  This method allows the application
    * to specify how a replica is fetched and authenticated.  The client should fetch the object
@@ -65,12 +65,12 @@ public interface PastPolicy {
    * the request is lost.
    *
    * @param id The id to fetch
-   * @param past The local past instance 
+   * @param past The local past instance
    * @param backup The backup cache, where the object *might* be located
    * @param command The command to call with the replica to store
    */
   public void fetch(Id id, NodeHandle hint, Cache backup, Past past, Continuation<? super Serializable, Exception> command);
-  
+
   /**
    * This method is call before an insert() is processed on the local node.  This allows applications
    * to make a decision on whether or not to store the replica.  Unless you know what you are doing,
@@ -80,7 +80,7 @@ public interface PastPolicy {
    * @return Whether the insert should be allowed
    */
   public boolean allowInsert(PastContent content);
-  
+
   /**
    * The default policy for Past, which fetches any available copy of a replicated object and
    * always allows inserts locally.
@@ -88,14 +88,14 @@ public interface PastPolicy {
    * @author Alan Mislove
    */
   public static class DefaultPastPolicy implements PastPolicy {
-    
+
     /**
      * This method fetches the object via a lookup() call.
      *
      * @param id The id to fetch
      * @param hint A hint as to where the key might be
      * @param backup The backup cache, where the object *might* be located
-     * @param past The local past instance 
+     * @param past The local past instance
      * @param command The command to call with the replica to store
      */
     public void fetch(final Id id, final NodeHandle hint, final Cache backup, final Past past, Continuation<? super Serializable, Exception> command) {
@@ -104,12 +104,12 @@ public interface PastPolicy {
       } else {
         past.lookup(id, false, new StandardContinuation<PastContent, Serializable, Exception>(command) {
           public void receiveResult(PastContent o) {
-            if (o != null) 
+            if (o != null)
               parent.receiveResult(o);
-            else 
+            else
               past.lookupHandle(id, hint, new StandardContinuation<PastContentHandle, Serializable, Exception>(parent) {
                 public void receiveResult(PastContentHandle o) {
-                  if (o != null) 
+                  if (o != null)
                     past.fetch(o, parent);
                   else
                     parent.receiveResult(null);
@@ -119,7 +119,7 @@ public interface PastPolicy {
         });
       }
     }
-    
+
     /**
      * This method always return true;
      *
@@ -131,4 +131,3 @@ public interface PastPolicy {
     }
   }
 }
-

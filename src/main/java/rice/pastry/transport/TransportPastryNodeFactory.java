@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.transport;
 
 import java.io.IOException;
@@ -77,7 +77,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
 
   /**
    * Constructor.
-   * 
+   *
    * @param env The environment.
    */
   public TransportPastryNodeFactory(Environment env) {
@@ -86,80 +86,80 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     leafSetMaintFreq = params.getInt("pastry_leafSetMaintFreq");
     routeSetMaintFreq = params.getInt("pastry_routeSetMaintFreq");
   }
-    
+
   public PastryNode nodeHandleHelper(PastryNode pn) throws IOException {
-    
+
     NodeHandleFactory<?> handleFactory = getNodeHandleFactory(pn);
-    NodeHandle localhandle = getLocalHandle(pn, handleFactory);    
-    
+    NodeHandle localhandle = getLocalHandle(pn, handleFactory);
+
     TLDeserializer deserializer = getTLDeserializer(handleFactory,pn);
-  
+
     MessageDispatch msgDisp = new MessageDispatch(pn, deserializer);
     RoutingTable routeTable = new RoutingTable(localhandle, rtMax, rtBase,
         pn);
     LeafSet leafSet = new LeafSet(localhandle, lSetSize, routeTable);
     StandardRouter router = new RapidRerouter(pn, msgDisp, getRouterStrategy(pn));
     pn.setElements(localhandle, msgDisp, leafSet, routeTable, router);
-  
-    
+
+
     NodeHandleAdapter nha = getNodeHandleAdapter(pn, handleFactory, deserializer);
 
-    pn.setSocketElements(leafSetMaintFreq, routeSetMaintFreq, 
+    pn.setSocketElements(leafSetMaintFreq, routeSetMaintFreq,
         nha, nha, nha, handleFactory);
-    
+
     router.register();
-    
+
     registerApps(pn, leafSet, routeTable, nha, handleFactory);
-    
+
     return pn;
   }
 
   protected RouterStrategy getRouterStrategy(PastryNode pn) {
     return null; // use the default one
   }
-  
+
   protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
     ProximityNeighborSelector pns = getProximityNeighborSelector(pn);
-    
-    Bootstrapper<?> bootstrapper = getBootstrapper(pn, nha, handleFactory, pns);          
+
+    Bootstrapper<?> bootstrapper = getBootstrapper(pn, nha, handleFactory, pns);
 
     RouteSetProtocol rsProtocol = getRouteSetProtocol(pn, leafSet, routeTable);
-      
+
     LeafSetProtocol lsProtocol = getLeafSetProtocol(pn, leafSet, routeTable);
-    
+
     ReadyStrategy readyStrategy;
     if (lsProtocol instanceof ReadyStrategy) {
       readyStrategy = (ReadyStrategy)lsProtocol;
     } else {
       readyStrategy = pn.getDefaultReadyStrategy();
     }
-    
+
     JoinProtocol jProtocol = getJoinProtocol(pn, leafSet, routeTable, readyStrategy);
-    
-    pn.setJoinProtocols(bootstrapper, jProtocol, lsProtocol, rsProtocol);    
+
+    pn.setJoinProtocols(bootstrapper, jProtocol, lsProtocol, rsProtocol);
   }
-  
+
   protected RouteSetProtocol getRouteSetProtocol(PastryNode pn, LeafSet leafSet, RoutingTable routeTable) {
-    StandardRouteSetProtocol rsProtocol = new StandardRouteSetProtocol(pn, routeTable);    
+    StandardRouteSetProtocol rsProtocol = new StandardRouteSetProtocol(pn, routeTable);
     rsProtocol.register();
     return rsProtocol;
   }
-  
+
   protected LeafSetProtocol getLeafSetProtocol(PastryNode pn, LeafSet leafSet, RoutingTable routeTable) {
     PeriodicLeafSetProtocol lsProtocol = new PeriodicLeafSetProtocol(pn,
-        pn.getLocalHandle(), leafSet, routeTable);    
+        pn.getLocalHandle(), leafSet, routeTable);
     lsProtocol.register();
     return lsProtocol;
-    
+
   }
-  
+
   protected JoinProtocol getJoinProtocol(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, ReadyStrategy lsProtocol) {
     ConsistentJoinProtocol jProtocol = new ConsistentJoinProtocol(pn,
         pn.getLocalHandle(), routeTable, leafSet, lsProtocol);
     jProtocol.register();
-    return jProtocol;    
+    return jProtocol;
   }
-  
+
   protected TLDeserializer getTLDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
     TLDeserializer deserializer = new TLDeserializer(handleFactory, pn.getEnvironment());
     return deserializer;
@@ -170,29 +170,29 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
    * @param pn
    * @return
    */
-  protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {    
+  protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {
     if (environment.getParameters().getBoolean("transport_use_pns")) {
       PNSApplication pns = new PNSApplication(pn);
       pns.register();
       return pns;
     }
-  
+
     // do nothing
-    return new ProximityNeighborSelector(){    
+    return new ProximityNeighborSelector(){
       public Cancellable getNearHandles(Collection<NodeHandle> bootHandles, Continuation<Collection<NodeHandle>, Exception> deliverResultToMe) {
         deliverResultToMe.receiveResult(bootHandles);
         return null;
-      }    
+      }
     };
   }
-    
-  protected abstract NodeHandle getLocalHandle(PastryNode pn, 
+
+  protected abstract NodeHandle getLocalHandle(PastryNode pn,
       NodeHandleFactory<?> handleFactory) throws IOException;
-  protected abstract NodeHandleAdapter getNodeHandleAdapter(PastryNode pn, 
+  protected abstract NodeHandleAdapter getNodeHandleAdapter(PastryNode pn,
       NodeHandleFactory<?> handleFactory, TLDeserializer deserializer) throws IOException;
   protected abstract NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) throws IOException;
-  protected abstract Bootstrapper<?> getBootstrapper(PastryNode pn, 
-      NodeHandleAdapter tl, 
+  protected abstract Bootstrapper<?> getBootstrapper(PastryNode pn,
+      NodeHandleAdapter tl,
       NodeHandleFactory<?> handleFactory,
-      ProximityNeighborSelector pns);  
+      ProximityNeighborSelector pns);
 }

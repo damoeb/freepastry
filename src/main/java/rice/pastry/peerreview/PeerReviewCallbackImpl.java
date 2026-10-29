@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.peerreview;
 
 import java.io.IOException;
@@ -69,28 +69,28 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
     TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> {
 
   CallbackFactory nodeFactory;
-  
+
   PastryNode pn;
   TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> tl;
   TransportLayerCallback<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer>callback;
 
   FetchLeafsetApp fetchLeafSetApp;
-  
+
   Logger logger;
-  
+
   public PeerReviewCallbackImpl(PastryNode pn, TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> tl, CallbackFactory nodeFactory) {
     this(tl);
     this.pn = pn;
     this.nodeFactory = nodeFactory;
     this.logger = pn.getEnvironment().getLogManager().getLogger(getClass(), null);
-    
+
     this.fetchLeafSetApp = new FetchLeafsetApp(pn,4);
     fetchLeafSetApp.register();
   }
-  
+
   // only used in getReplayInstance
   protected PeerReviewCallbackImpl(TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> tl) {
-    this.tl = tl;    
+    this.tl = tl;
   }
 
   /**
@@ -111,7 +111,7 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
     pn.getId().serialize(buffer); // redundant, but necessary for the way a PastryNode is constructed
     pn.getLocalHandle().serialize(buffer);
   }
-  
+
   /**
    * Load rt/leafset
    */
@@ -122,7 +122,7 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
     NodeHandleFactory<?> nodeHandleFactory = nodeFactory.getNodeHandleFactory(pn);
     NodeHandle handle = nodeHandleFactory.readNodeHandle(buffer);
     // put this in the localHandleTable, where it will be read/removed in the hacked PastryNodeFactory
-    nodeFactory.localHandleTable.put(pn,handle); 
+    nodeFactory.localHandleTable.put(pn,handle);
     nodeFactory.nodeHandleHelper(pn);
 
     // load rt/leafset, liveness state
@@ -133,7 +133,7 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
 
   public Collection<TransportLayerNodeHandle<MultiInetSocketAddress>> getMyWitnessedNodes() {
     Collection<NodeHandle> foo = pn.getLeafSet().getUniqueSet(); // TODO: make this a smaller set
-    ArrayList<TransportLayerNodeHandle<MultiInetSocketAddress>> ret = 
+    ArrayList<TransportLayerNodeHandle<MultiInetSocketAddress>> ret =
       new ArrayList<TransportLayerNodeHandle<MultiInetSocketAddress>>(foo.size());
     for (NodeHandle h : foo) {
       ret.add((TransportLayerNodeHandle<MultiInetSocketAddress>)h);
@@ -141,17 +141,17 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
     logger.info("myWitnessedNodes: {}", ret);
     return ret;
   }
-  
+
   public void init() {
-    
+
   }
 
   public void destroy() {
-    
+
   }
 
   public void notifyCertificateAvailable(Id id) {
-    
+
   }
 
   public void incomingSocket(P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>> s) throws IOException {
@@ -164,22 +164,22 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
   }
 
   public void notifyStatusChange(Id id, int newStatus) {
-    
+
   }
 
   public void acceptMessages(boolean b) {
-    
+
   }
 
   public void acceptSockets(boolean b) {
-    
+
   }
 
   public void getWitnesses(
       final Id subject,
       final WitnessListener<TransportLayerNodeHandle<MultiInetSocketAddress>, Id> callback) {
     fetchLeafSetApp.getNeighbors(subject,new Continuation<Collection<NodeHandle>, Exception>() {
-    
+
       public void receiveResult(Collection<NodeHandle> result) {
         ArrayList<TransportLayerNodeHandle<MultiInetSocketAddress>> ret = new ArrayList<TransportLayerNodeHandle<MultiInetSocketAddress>>(result.size());
         for (NodeHandle nh : result) {
@@ -188,11 +188,11 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
         logger.info("returning witnesses for {} {}", subject, ret);
         callback.notifyWitnessSet(subject, ret);
       }
-    
+
       public void receiveException(Exception exception) {
         throw new RuntimeException(exception);
       }
-    
+
     });
   }
 
@@ -211,7 +211,7 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
   }
 
   public void setErrorHandler(ErrorHandler<TransportLayerNodeHandle<MultiInetSocketAddress>> handler) {
-    
+
   }
 
   public MessageRequestHandle<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> sendMessage(

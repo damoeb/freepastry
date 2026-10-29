@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.wire.magicnumber;
 
 import java.io.IOException;
@@ -65,38 +65,38 @@ import rice.selector.TimerTask;
 
 /**
  * This class eliminates random connections by dropping all messages/sockets that don't
- * correlate to a specific header.  It is the simplest example of how to add a new 
+ * correlate to a specific header.  It is the simplest example of how to add a new
  * layer into the mpisws transport layer system.
- * 
+ *
  * @author Jeff Hoye
  *
  */
-public class MagicNumberTransportLayer<Identifier> implements 
-    TransportLayer<Identifier, ByteBuffer>, 
+public class MagicNumberTransportLayer<Identifier> implements
+    TransportLayer<Identifier, ByteBuffer>,
     TransportLayerCallback<Identifier, ByteBuffer>,
     ListenableTransportLayer<Identifier> {
-  
+
   protected Logger logger;
   protected Environment environment;
-  
+
   protected TransportLayerCallback<Identifier, ByteBuffer> callback;
   protected ErrorHandler<Identifier> errorHandler;
   protected TransportLayer<Identifier, ByteBuffer> wire;
-  
+
   public byte[] HEADER;
   public int SOCKET_TIMEOUT;
-  
+
   /**
-   * 
+   *
    * @param wtl
    * @param env
    * @param errorHandler call me when there is a problem
    * @param header the header to expect from a socket/packet
    * @param timeOut how long to wait before killing a socket that is not sending (milliseconds)
    */
-  public MagicNumberTransportLayer(TransportLayer<Identifier, ByteBuffer> wtl, 
-      Environment env, 
-      ErrorHandler<Identifier> errorHandler, 
+  public MagicNumberTransportLayer(TransportLayer<Identifier, ByteBuffer> wtl,
+      Environment env,
+      ErrorHandler<Identifier> errorHandler,
       byte[] header,
       int timeOut) {
     this.logger = env.getLogManager().getLogger(MagicNumberTransportLayer.class, null);
@@ -104,15 +104,15 @@ public class MagicNumberTransportLayer<Identifier> implements
     this.wire = wtl;
     this.HEADER = header;
     this.SOCKET_TIMEOUT = timeOut;
-    
+
     this.errorHandler = errorHandler;
-    
+
     this.callback = new DefaultCallback<Identifier, ByteBuffer>(logger);
-    
+
     if (this.errorHandler == null) {
-      this.errorHandler = new DefaultErrorHandler<Identifier>(logger); 
+      this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
     }
-    
+
     wire.setCallback(this);
   }
 
@@ -141,30 +141,30 @@ public class MagicNumberTransportLayer<Identifier> implements
     return wire.getLocalIdentifier();
   }
 
-  public SocketRequestHandle<Identifier> openSocket(final Identifier i, 
-      final SocketCallback<Identifier> deliverSocketToMe, 
+  public SocketRequestHandle<Identifier> openSocket(final Identifier i,
+      final SocketCallback<Identifier> deliverSocketToMe,
       Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
     final SocketRequestHandleImpl<Identifier> cancellable = new SocketRequestHandleImpl<Identifier>(i, options, logger);
 
-    cancellable.setSubCancellable(wire.openSocket(i, new SocketCallback<Identifier>(){    
+    cancellable.setSubCancellable(wire.openSocket(i, new SocketCallback<Identifier>(){
       public void receiveResult(SocketRequestHandle<Identifier> c, final P2PSocket<Identifier> result) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
-        
-        cancellable.setSubCancellable(new Cancellable() {        
+
+        cancellable.setSubCancellable(new Cancellable() {
           public boolean cancel() {
             result.close();
             return true;
-          }        
+          }
         });
-        
-        result.register(false, true, new P2PSocketReceiver<Identifier>(){        
+
+        result.register(false, true, new P2PSocketReceiver<Identifier>(){
           ByteBuffer buf = ByteBuffer.wrap(HEADER);
           public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
             if (canRead) throw new IOException("Never asked to read!");
             if (!canWrite) throw new IOException("Can't write!");
-            long ret = socket.write(buf);            
+            long ret = socket.write(buf);
             if (ret < 0) {
               socket.close();
               return;
@@ -175,49 +175,49 @@ public class MagicNumberTransportLayer<Identifier> implements
             } else {
               deliverSocketToMe.receiveResult(cancellable, socket);
             }
-          }        
+          }
           public void receiveException(P2PSocket<Identifier> socket, Exception e) {
             deliverSocketToMe.receiveException(cancellable, e);
           }
         });
-      }    
+      }
       public void receiveException(SocketRequestHandle<Identifier> c, Exception exception) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
         deliverSocketToMe.receiveException(cancellable, exception);
-      }    
+      }
     }, options));
-    
+
     return cancellable;
   }
 
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(
-      final Identifier i, 
-      final ByteBuffer m, 
-      final MessageCallback<Identifier, ByteBuffer> deliverAckToMe, 
+      final Identifier i,
+      final ByteBuffer m,
+      final MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
-    
+
     // build a new ByteBuffer with the header
     byte[] msgWithHeader = new byte[HEADER.length+m.remaining()];
     System.arraycopy(HEADER, 0, msgWithHeader, 0, HEADER.length);
     m.get(msgWithHeader, HEADER.length, m.remaining());
-    
+
     logger.debug("sendMessage({},{})", i, m);
 
-    final MessageRequestHandleImpl<Identifier, ByteBuffer> cancellable 
+    final MessageRequestHandleImpl<Identifier, ByteBuffer> cancellable
       = new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
 
     final ByteBuffer buf = ByteBuffer.wrap(msgWithHeader);
-    cancellable.setSubCancellable(wire.sendMessage(i, 
-        buf, 
+    cancellable.setSubCancellable(wire.sendMessage(i,
+        buf,
         new MessageCallback<Identifier, ByteBuffer>() {
-        
+
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             if (cancellable.getSubCancellable() != null && msg != cancellable.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+cancellable.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(cancellable);
             notifyListenersWrite(HEADER.length, i, cancellable.getOptions(), false, false);  // non-passthrough part
             notifyListenersWrite(buf.limit()-HEADER.length, i, cancellable.getOptions(), true, false); // passthrough part
           }
-        
+
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             if (cancellable.getSubCancellable() != null && msg != cancellable.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+cancellable.getSubCancellable());
             if (deliverAckToMe == null) {
@@ -226,9 +226,9 @@ public class MagicNumberTransportLayer<Identifier> implements
               deliverAckToMe.sendFailed(cancellable, ex);
             }
           }
-        }, 
+        },
         options));
-    
+
     return cancellable;
   }
 
@@ -248,38 +248,38 @@ public class MagicNumberTransportLayer<Identifier> implements
       return;
     }
     byte[] hdr = new byte[HEADER.length];
-    
+
     m.get(hdr);
-    
+
     int remaining = m.remaining();
     if (Arrays.equals(HEADER, hdr)) {
       notifyListenersRead(HEADER.length, i, options, false, false);  // non-passthrough part
       notifyListenersRead(remaining, i, options, true, false); // passthrough part
-      callback.messageReceived(i, m, options); 
+      callback.messageReceived(i, m, options);
       return;
     }
-    
+
     notifyListenersRead(HEADER.length, i, options, false, false);  // non-passthrough part
     notifyListenersRead(remaining, i, options, true, false); // passthrough part
 
     errorHandler.receivedUnexpectedData(i, m.array(), 0, null);
   }
-  
+
   protected class VerifyHeaderReceiver extends TimerTask implements P2PSocketReceiver<Identifier> {
     ByteBuffer buf = ByteBuffer.allocate(HEADER.length);
-    
+
     P2PSocket<Identifier> socket;
-    
+
     /**
      * Set once the header timeout fired; the socket close it triggers must not be reported again
      */
     boolean stalled = false;
-    
+
     public VerifyHeaderReceiver(P2PSocket<Identifier> s) {
       this.socket = s;
-      environment.getSelectorManager().getTimer().schedule(this,SOCKET_TIMEOUT);      
+      environment.getSelectorManager().getTimer().schedule(this,SOCKET_TIMEOUT);
     }
-    
+
     public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
       if (stalled) return; // already reported as a StalledSocketException
       errorHandler.receivedException(socket.getIdentifier(), ioe);
@@ -297,15 +297,15 @@ public class MagicNumberTransportLayer<Identifier> implements
       }
       notifyListenersRead((int)bytesRead, socket.getIdentifier(), socket.getOptions(),false,true);
       if (buf.hasRemaining()) {
-        socket.register(true, false, this); 
+        socket.register(true, false, this);
       } else {
         if (Arrays.equals(HEADER, buf.array())) {
           // header matched
           cancel();
           callback.incomingSocket(socket);
-        } else {    
+        } else {
           cancel();
-          errorHandler.receivedUnexpectedData(socket.getIdentifier(), buf.array(), 0, null); 
+          errorHandler.receivedUnexpectedData(socket.getIdentifier(), buf.array(), 0, null);
         }
       }
     }
@@ -315,8 +315,8 @@ public class MagicNumberTransportLayer<Identifier> implements
       stalled = true;
       socket.close();
       errorHandler.receivedException(socket.getIdentifier(), new StalledSocketException(socket.getIdentifier(), "Timeout on incoming socket expired."));
-    }  
-    
+    }
+
     public String toString() {
       return MagicNumberTransportLayer.this+" VHR";
     }
@@ -337,7 +337,7 @@ public class MagicNumberTransportLayer<Identifier> implements
       listeners.remove(listener);
     }
   }
-  
+
   public void notifyListenersRead(int bytesRead, Identifier identifier,
       Map<String, Object> options, boolean passthrough, boolean socket) {
     Iterable<TransportLayerListener<Identifier>> i;

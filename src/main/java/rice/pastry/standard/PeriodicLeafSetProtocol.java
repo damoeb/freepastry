@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.standard;
 
 import java.io.IOException;
@@ -70,9 +70,9 @@ import rice.selector.TimerTask;
 
 /**
  * An implementation of a periodic-style leafset protocol
- * 
+ *
  * @version $Id: PeriodicLeafSetProtocol.java 4654 2009-01-08 16:33:07Z jeffh $
- * 
+ *
  * @author Alan Mislove
  */
 public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy, NodeSetListener, NodeHandleListener, PastryNodeListener, LeafSetProtocol {
@@ -98,21 +98,21 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   public final int PING_NEIGHBOR_PERIOD; // 20 sec
 
   public final int LEASE_PERIOD; // 30 sec
-  
+
   public final int BLS_THROTTLE; // 10 sec
 
   ScheduledMessage pingNeighborMessage;
 
   RandomSource random;
-  
+
   TimeSource timeSource;
-  
+
   public static class PLSPMessageDeserializer extends PJavaSerializedDeserializer {
 
     public PLSPMessageDeserializer(PastryNode pn) {
-      super(pn); 
+      super(pn);
     }
-    
+
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
       switch (type) {
         case RequestLeafSet.TYPE:
@@ -122,19 +122,19 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       }
       return null;
     }
-     
+
   }
-  
+
   /**
    * Builds a periodic leafset protocol
-   * 
+   *
    */
   public PeriodicLeafSetProtocol(PastryNode ln, NodeHandle local,
       LeafSet ls, RoutingTable rt) {
-    super(ln, null, LeafSetProtocolAddress.getCode(), new PLSPMessageDeserializer(ln));    
+    super(ln, null, LeafSetProtocolAddress.getCode(), new PLSPMessageDeserializer(ln));
     this.localNode = ln;
     ln.addPastryNodeListener(this); // to call start() if we are the seed node
-    
+
     Parameters params = ln.getEnvironment().getParameters();
     if (params.contains("pastry_periodic_leafset_protocol_use_own_random")
         && params.getBoolean("pastry_periodic_leafset_protocol_use_own_random")) {
@@ -150,15 +150,15 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     } else {
       this.random = ln.getEnvironment().getRandomSource();
     }
-    
+
     this.timeSource = ln.getEnvironment().getTimeSource();
     this.localHandle = local;
-    
+
     // make sure to register all the existing leafset entries
     this.leafSet = ls;
     Iterator<NodeHandle> i = this.leafSet.asList().iterator();
     while(i.hasNext()) {
-      NodeHandle nh = (NodeHandle)i.next(); 
+      NodeHandle nh = (NodeHandle)i.next();
       nh.addNodeHandleListener(this, 50);
     }
 
@@ -179,7 +179,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     if (time == 0) return;
     Long oldTime = (Long) lastTimeReceivedBLS.get(from);
     if ((oldTime == null) || (oldTime.longValue() < time)) {
-      lastTimeReceivedBLS.put(from, Long.valueOf(time));      
+      lastTimeReceivedBLS.put(from, Long.valueOf(time));
       long leaseTime = time+LEASE_PERIOD-timeSource.currentTimeMillis();
       if (logger.isDebugEnabled()) {
         logger.debug("PLSP.updateRecBLS("+from+","+time+"):"+leaseTime);
@@ -187,17 +187,17 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         if (leaseTime < 10 && logger.isInfoEnabled()) {
           logger.info("PLSP.updateRecBLS("+from+","+time+"):"+leaseTime);
         }
-      }              
-        
+      }
+
       // need to do this so that nodes are notified
       if (hasSetStrategy)
         isReady();
-    } 
+    }
   }
-  
+
   /**
    * Receives messages.
-   * 
+   *
    * @param msg the message.
    */
   public void receiveMessage(Message msg) {
@@ -217,7 +217,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         NodeSet set = leafSet.neighborSet(Integer.MAX_VALUE);
 
         // don't need to remove any nodes that we already found faulty, because leafset.merge does not accept them
-        
+
         // if we find any missing entries, check their liveness
         for (int i = 0; i < set.size(); i++)
           if (bls.leafSet().test(set.get(i)))
@@ -240,7 +240,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
           (bls.leafSet().get(-1) == localHandle)) {
         updateRecBLS(bls.from(), bls.getTimeStamp());
       }
-      
+
     } else if (msg instanceof RequestLeafSet) {
       // request for leaf set from a remote node
       RequestLeafSet rls = (RequestLeafSet) msg;
@@ -251,18 +251,18 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
         // it's important to put the node in the leafset so that we don't accept messages for a node that
         // we issued a lease to
-        // it's also important to record issuing the lease before putting into the leafset, so we can 
+        // it's also important to record issuing the lease before putting into the leafset, so we can
         // call removeFromLeafsetIfPossible() in leafSetChange()
         leafSet.put(rls.returnHandle());
-                
+
         // nodes were never coming back alive when we called them faulty incorrectly
         if (rls.returnHandle().getLiveness() >= NodeHandle.LIVENESS_DEAD) {
           logger.atInfo().log(() -> "Issued lease to dead node:"+rls.returnHandle()+" initiating checkLiveness()");
           rls.returnHandle().checkLiveness();
-          
+
         }
       }
-      
+
       // I don't like that we're sending the message after setting lastTimeRenewedLease, because there
       // could be a delay between here and above, but this should still be fine, because with
       // the assumption that the clocks are both advancing normally, we still should not get inconsistency
@@ -270,7 +270,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       // won't receive until 30 seconds after the lastTimeRenewedLease.put() above
       thePastryNode.send(rls.returnHandle(),
           new BroadcastLeafSet(localHandle, leafSet, BroadcastLeafSet.Update, rls.getTimeStamp()),null, options);
-      
+
     } else if (msg instanceof InitiateLeafSetMaintenance) {
       // perform leafset maintenance
       NodeSet set = leafSet.neighborSet(Integer.MAX_VALUE);
@@ -304,7 +304,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
   /**
    * Broadcast the leaf set to all members of the local leaf set.
-   * 
+   *
    */
   protected void broadcastAll() {
     BroadcastLeafSet bls = new BroadcastLeafSet(localHandle, leafSet,
@@ -328,15 +328,15 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       isReady();
     }
   }
-  
+
   public void stop() {
     if (hasSetStrategy) {
       logger.info("PLSP.start(): Removing self as ReadyStrategy");
-      hasSetStrategy = false; 
+      hasSetStrategy = false;
       localNode.deleteLeafSetListener(this);
     }
   }
-  
+
   /**
    * Called when the leafset changes
    */
@@ -354,60 +354,60 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       sendBLS(lastRight,true);
     }
   }
-  
+
   boolean ready = false;
   public void setReady(boolean r) {
     if (ready != r) {
       synchronized(thePastryNode) {
-        ready = r; 
+        ready = r;
       }
       thePastryNode.notifyReadyObservers();
     }
   }
-  
+
   /**
-   * 
+   *
    *
    */
   public boolean isReady() {
     // check to see if we've heard from the left/right neighbors recently enough
     boolean shouldBeReady = shouldBeReady(); // temp
-    
+
     if (shouldBeReady != ready) {
       thePastryNode.setReady(shouldBeReady); // will call back in to setReady() and notify the observers
     }
-    
+
     return shouldBeReady;
   }
-  
+
   public boolean shouldBeReady() {
-    
+
     NodeHandle left = leafSet.get(-1);
     NodeHandle right = leafSet.get(1);
-    
+
     // do it this way so we get going on both leases if need be
     boolean ret = true;
-    
+
     // see if received BLS within past LEASE_PERIOD seconds from left neighbor
     if (!hasLease(left)) {
       ret = false;
-      sendBLS(left, true); 
+      sendBLS(left, true);
     }
-    
+
     // see if received BLS within past LEASE_PERIOD seconds from right neighbor
     if (!hasLease(right)) {
       ret = false;
-      sendBLS(right, true); 
+      sendBLS(right, true);
     }
-    
+
     return ret;
   }
-  
+
   /**
    * Do we have a lease from this node?
-   * 
+   *
    * Returns true if nh is null.
-   * 
+   *
    * @param nh the NodeHandle we are interested if we have a lease from
    * @return if we have a lease from the NodeHandle
    */
@@ -421,13 +421,13 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
           || (time.longValue() < leaseOffset)) {
         // we don't have a lease
         return false;
-      }      
-    }     
+      }
+    }
     return true;
   }
-  
+
   /**
-   * 
+   *
    * @param sendTo
    * @return true if we sent it, false if we didn't because of throttled
    */
@@ -445,19 +445,19 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         sendTo.checkLiveness();
       }
       return true;
-    } 
+    }
     return false;
   }
-  
+
   /**
    * NodeHandle -> time
-   * 
+   *
    * Leases we have issued.  We cannot remove the node from the leafset until this expires.
-   * 
+   *
    * If this node is found faulty (and you took over the leafset), must go non-ready until lease expires
    */
   Map<NodeHandle, Long> lastTimeRenewedLease;
-  
+
   /**
    * Should not be called because we are overriding the receiveMessage()
    * interface anyway.
@@ -491,13 +491,13 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   public void leafSetChange(NodeHandle nh, boolean wasAdded) {
     super.leafSetChange(nh, wasAdded);
     if (wasAdded) {
-      nh.addNodeHandleListener(this, 50); 
+      nh.addNodeHandleListener(this, 50);
       if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
-        removeFromLeafsetIfPossible(nh); 
+        removeFromLeafsetIfPossible(nh);
       }
     } else {
       logger.debug("Removed {} from the LeafSet.", nh);
-      nh.removeNodeHandleListener(this); 
+      nh.removeNodeHandleListener(this);
     }
   }
 
@@ -506,13 +506,13 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    */
   public void nodeHandleUpdate(final rice.p2p.commonapi.NodeHandle o, final Object arg) {
     if (destroyed) return;
-    if (o instanceof NodeHandle) {      
+    if (o instanceof NodeHandle) {
       if (arg == NodeHandle.DECLARED_DEAD) {
         removeFromLeafsetIfPossible((NodeHandle)o);
       }
-    }    
+    }
   }
-    
+
   /**
    * this is if we are the "seed" node
    */
@@ -549,19 +549,19 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       if (leaseExpiration > now) {
         logger.atInfo().log(() -> "Removing "+nh+" from leafset later."+(leaseExpiration-now));
         // remove it later when lease expires
-        thePastryNode.getEnvironment().getSelectorManager().getTimer().schedule(new TimerTask() {          
+        thePastryNode.getEnvironment().getSelectorManager().getTimer().schedule(new TimerTask() {
           @Override
           public void run() {
             logger.debug("removeFromLeafsetIfPossible({})", nh);
             // do this recursively in case we issue a new lease
             removeFromLeafsetIfPossible(nh);
-          }          
+          }
         }, leaseExpiration-now);
       } else {
         // lease has expired
         leafSet.remove(nh);
-      }      
-    }            
+      }
+    }
   }
-  
+
 }

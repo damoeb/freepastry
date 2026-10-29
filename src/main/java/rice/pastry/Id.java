@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.pastry;
 
@@ -60,29 +60,29 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 public class Id implements rice.p2p.commonapi.Id, RawSerializable {
 
   public static final short TYPE = 1;
-  
+
   /**
    * Support for coalesced Ids - ensures only one copy of each Id is in memory
    */
   private static WeakHashMap<Id, WeakReference<Id>> ID_MAP = new WeakHashMap<Id, WeakReference<Id>>();
-  
+
   /**
    * The static translation array
    */
   public static final String tran[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
-  
+
   /**
    * This is the bit length of the node ids. If it is n, then there are 2^n possible different Ids.
    * We currently assume that it is divisible by 32.
    */
   public final static int IdBitLength = 160;
   public final static int nlen = IdBitLength / 32;
-  
+
   /**
    * serialver for backwards compatibility
    */
   static final long serialVersionUID = 2166868464271508935L;
-  
+
   /**
    * Distance constants
    */
@@ -90,7 +90,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public final static int[] One = {1, 0, 0, 0, 0};
   public final static int[] NegOne = {-1, -1, -1, -1, -1};
   public final static int[] Half = {0, 0, 0, 0, 0x80000000};
-  
+
   /**
    * The actual contents of this Id
    */
@@ -103,7 +103,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    */
   protected Id(int material[]) {
     Id = new int[nlen];
-    for (int i = 0; (i < nlen) && (i < material.length); i++) 
+    for (int i = 0; (i < nlen) && (i < material.length); i++)
       Id[i] = material[i];
   }
 
@@ -129,17 +129,17 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     rng.nextBytes(material);
     return build(material);
   }
-  
+
   public static Id makeRandomId(RandomSource rng) {
     byte material[] = new byte[IdBitLength / 8];
     rng.nextBytes(material);
     return build(material);
   }
-  
-  
-  
+
+
+
   // ----- SUPPORT FOR ID COALESCING -----
-  
+
   /**
    * Constructor.
    *
@@ -148,7 +148,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public static Id build(int material[]) {
     return resolve(ID_MAP, new Id(material));
   }
-  
+
   /**
    * Id (Version 0)
    * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -166,16 +166,16 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     for (int i = 0; i < material.length; i++) {
       material[i] = buf.readInt();
     }
-    return build(material);     
+    return build(material);
   }
-  
+
   public void serialize(rice.p2p.commonapi.rawserialization.OutputBuffer buf) throws IOException {
     for (int i = 0; i < Id.length; i++) {
       buf.writeInt(Id[i]);
     }
   }
 
-  
+
   /**
    * Constructor, which takes the output of a toStringFull() and converts it back
    * into an Id.  Should not normally be used.
@@ -183,12 +183,12 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @param hex The hexadecimal representation from the toStringFull()
    */
   public static Id build(String hex) {
-    while (hex.length() < IdBitLength/4) 
+    while (hex.length() < IdBitLength/4)
       hex = hex + "0";
-    
+
     return build(hex.toUpperCase().toCharArray(), 0, hex.length());
   }
-  
+
   /**
    * Constructor, which takes the output of a toStringFull() and converts it back
    * into an Id.  Should not normally be used.
@@ -197,14 +197,14 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    */
   public static Id build(char[] chars, int offset, int length) {
     int[] array = new int[nlen];
-    
-    for (int i=0; i<nlen; i++) 
-      for (int j=0; j<8; j++) 
+
+    for (int i=0; i<nlen; i++)
+      for (int j=0; j<8; j++)
         array[nlen-1-i] = (array[nlen-1-i] << 4) | trans(chars[offset + 8*i + j]);
-    
+
     return build(array);
-  }  
-  
+  }
+
   /**
    * Internal method for mapping digit -> num
    *
@@ -217,7 +217,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     else
       return (byte) (c - 'A' + 10);
   }
-  
+
   /**
    * Constructor.
    *
@@ -226,7 +226,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public static Id build(byte[] material) {
     return build(trans(material));
   }
-  
+
   /**
    * Internal method for mapping byte[] -> int[]
    *
@@ -235,22 +235,22 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    */
   protected static int[] trans(byte[] material) {
     int[] array = new int[nlen];
-    
+
     for (int j = 0; (j < IdBitLength / 8) && (j < material.length); j++) {
       int k = material[j] & 0xff;
       array[j / 4] |= k << ((j % 4) * 8);
     }
-    
+
     return array;
   }
-  
+
   /**
    * Constructor. It constructs a new Id with a value of 0 for all bits.
    */
   public static Id build() {
     return build(new int[nlen]);
   }
-  
+
   /**
    * Static method for converting the hex representation into an array of
    * ints.
@@ -260,15 +260,15 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    */
   protected static int[] trans(String hex) {
     int[] ints = new int[nlen];
-    
+
     for (int i=0; i<nlen; i++) {
       String s = hex.substring(i*8, (i+1)*8);
       ints[nlen-1-i] = new java.math.BigInteger(s, 16).intValue();
     }
-    
+
     return ints;
-  } 
-  
+  }
+
   /**
    * Method which performs the coalescing and interaction with the weak hash map
    *
@@ -279,7 +279,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     synchronized (map) {
       WeakReference<Id> ref = map.get(id);
       Id result = null;
-      
+
       if ((ref != null) && ((result = ref.get()) != null)) {
         return result;
       } else {
@@ -289,7 +289,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
       }
     }
   }
-  
+
   /**
    * Define readResolve, which will replace the deserialized object with the canonical
    * one (if one exists) to ensure Id coalescing.
@@ -299,10 +299,10 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   private Object readResolve() throws ObjectStreamException {
     return resolve(ID_MAP, this);
   }
-  
-  
+
+
   // ----- NORMAL ID METHODS -----
-  
+
   /**
    * gets the Id just clockwise from this
    *
@@ -462,7 +462,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public void blit(byte target[]) {
     blit(target, 0);
   }
-  
+
   /**
     * Blits the distance into a target array, starting at the given offset.
    *
@@ -497,7 +497,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public boolean equals(Object obj) {
     if ((obj == null) || (! (obj instanceof Id)))
       return false;
-    
+
     Id nid = (Id) obj;
 
     for (int i = 0; i < nlen; i++) {
@@ -551,7 +551,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public void toByteArray(byte[] array, int offset) {
     blit(array, offset);
   }
-  
+
   /**
     * Returns the length of the byte[] representing this Id
    *
@@ -560,7 +560,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public int getByteArrayLength() {
     return (int) IdBitLength / 8;
   }
-  
+
   /**
    * Hash codes for Ids.
    *
@@ -797,7 +797,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Returns a string representation of the Id in base 16. The string is a byte string from most to
    * least significant.
-   * 
+   *
    * This was updated by Jeff because it was becoming a performance bottleneck.
    *
    * @return A String representation of this Id, abbreviated
@@ -805,13 +805,13 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public String toString() {
     StringBuffer buffer = new StringBuffer();
     buffer.append("<0x");
-    
+
     int n = IdBitLength / 4;
-    for (int i = n-1; i >= n-6; i--) 
+    for (int i = n-1; i >= n-6; i--)
       buffer.append(tran[getDigit(i, 4)]);
-    
+
     buffer.append("..>");
-    
+
     return buffer.toString();
   }
 
@@ -821,15 +821,15 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    */
   public String toStringBare() {
     StringBuffer buffer = new StringBuffer();
-    
+
     int n = IdBitLength / 4;
-    for (int i = n-1; i >= n-6; i--) 
+    for (int i = n-1; i >= n-6; i--)
       buffer.append(tran[getDigit(i, 4)]);
-    
-    
-    return buffer.toString();    
+
+
+    return buffer.toString();
   }
-  
+
   /**
    * Returns the complete representation of this Id, in hex.
    *
@@ -839,9 +839,9 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     StringBuffer buffer = new StringBuffer();
 
     int n = IdBitLength / 4;
-    for (int i = n - 1; i >= 0; i--) 
+    for (int i = n - 1; i >= 0; i--)
       buffer.append(tran[getDigit(i, 4)]);
-    
+
     return buffer.toString();
   }
 
@@ -963,7 +963,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public static class Distance implements rice.p2p.commonapi.Id.Distance {
 
     private static final long serialVersionUID = 5464763824924998962L;
-    
+
     private int difference[];
 
     /**
@@ -1004,7 +1004,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     public void blit(byte target[]) {
       blit(target, 0);
     }
-    
+
     /**
      * Blits the distance into a target array, starting at the given offset.
      *
@@ -1200,18 +1200,17 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public short getType() {
     return TYPE;
   }
-  
+
   public static void main(String[] args) {
-    System.out.println(new Id(Half).getCCW().toStringFull());    
-    System.out.println(new Id(Half).getCW().toStringFull());    
-    System.out.println(new Id(Null).getCCW().toStringFull());    
-    System.out.println(new Id(Null).getCW().toStringFull());    
-    System.out.println(new Id(NegOne).getCCW().toStringFull());    
-    System.out.println(new Id(NegOne).getCW().toStringFull());    
-    System.out.println(new Id(One).getCCW().toStringFull());    
-    System.out.println(new Id(One).getCW().toStringFull());    
+    System.out.println(new Id(Half).getCCW().toStringFull());
+    System.out.println(new Id(Half).getCW().toStringFull());
+    System.out.println(new Id(Null).getCCW().toStringFull());
+    System.out.println(new Id(Null).getCW().toStringFull());
+    System.out.println(new Id(NegOne).getCCW().toStringFull());
+    System.out.println(new Id(NegOne).getCW().toStringFull());
+    System.out.println(new Id(One).getCCW().toStringFull());
+    System.out.println(new Id(One).getCW().toStringFull());
 
   }
 
 }
-

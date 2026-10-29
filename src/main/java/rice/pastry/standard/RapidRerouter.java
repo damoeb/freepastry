@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.standard;
 
 import java.util.Collection;
@@ -56,7 +56,7 @@ import rice.pastry.transport.PMessageReceipt;
 
 /**
  * The superclass makes the routing decisions.  This class handles the rapid-rerouting.
- * 
+ *
  * @author Jeff Hoye
  *
  */
@@ -66,20 +66,20 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
    * The max times to try to reroute a message.
    */
   public static final int MAX_RETRIES = 10;
-    
+
   /**
    * These messages should be rapidly rerouted if the node goes suspected.
    */
   Map<NodeHandle, Collection<RouterNotification>> pending;
-  
+
   public RapidRerouter(PastryNode thePastryNode, MessageDispatch dispatch, RouterStrategy strategy) {
     super(thePastryNode, dispatch, strategy);
     pending = new HashMap<NodeHandle, Collection<RouterNotification>>();
-    
+
     thePastryNode.addLivenessListener(this);
   }
-  
-  
+
+
   @Override
   protected void sendTheMessage(RouteMessage rm, NodeHandle handle) {
     if (rm.getOptions().multipleHopsAllowed() && rm.getOptions().rerouteIfSuspected()) {
@@ -88,7 +88,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         super.sendTheMessage(rm, handle);
         return;
       }
-      
+
       RouterNotification notifyMe = new RouterNotification(rm, handle);
       addToPending(notifyMe, handle);
       rm.setTLCancellable(notifyMe);
@@ -97,8 +97,8 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       super.sendTheMessage(rm, handle);
     }
   }
-  
-  protected void rerouteMe(final RouteMessage rm, NodeHandle oldDest, Exception ioe) {        
+
+  protected void rerouteMe(final RouteMessage rm, NodeHandle oldDest, Exception ioe) {
     logger.debug("rerouteMe({} oldDest:{})", rm, oldDest);
 
     rm.numRetries++;
@@ -113,7 +113,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       if (dontPrint) {
         logger.info("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.numRetries);
       } else {
-        logger.warn("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.numRetries);        
+        logger.warn("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.numRetries);
       }
       return;
     }
@@ -124,10 +124,10 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         // this is going to make forward() be called again, can prevent this with a check in getPrevNode().equals(localNode)
         rm.getOptions().setRerouteIfSuspected(SendOptions.defaultRerouteIfSuspected);
         route(rm);
-      }    
+      }
     });
   }
-  
+
   private void addToPending(RouterNotification notifyMe, NodeHandle handle) {
     logger.debug("addToPending({} to:{})", notifyMe, handle);
     synchronized(pending) {
@@ -142,7 +142,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
 
   /**
    * Return true if it was still pending.
-   * 
+   *
    * @param notifyMe
    * @param handle
    * @return true if still pending
@@ -159,17 +159,17 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         pending.remove(handle);
       }
       if (!ret) {
-        logger.debug("removeFromPending({},{}) msg was not there.", notifyMe, handle); 
+        logger.debug("removeFromPending({},{}) msg was not there.", notifyMe, handle);
       }
       return ret;
-    }    
+    }
   }
-  
+
   public void livenessChanged(NodeHandle i, int val, Map<String, Object> options) {
     if (val >= LIVENESS_SUSPECTED) {
       Collection<RouterNotification> rerouteMe;
       synchronized(pending) {
-        rerouteMe = pending.remove(i);        
+        rerouteMe = pending.remove(i);
       }
       if (rerouteMe != null) {
         logger.debug("removing all messages to:{}", i);
@@ -180,7 +180,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       }
     }
   }
-  
+
   @Override
   public void destroy() {
     super.destroy();
@@ -200,15 +200,15 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
 
     public void setCancellable(PMessageReceipt receipt) {
       if (receipt == null) logger.warn("{}.setCancellable(null)", this, new Exception("Stack Trace"));
-          
+
       this.cancellable = receipt;
     }
 
     public void sendFailed(PMessageReceipt msg, Exception reason) {
-      // what to do..., rapidly reroute? 
+      // what to do..., rapidly reroute?
       failed = true;
       cancellable = null;
-      rm.setTLCancellable(null);      
+      rm.setTLCancellable(null);
       if (reason instanceof QueueOverflowException) {
         // todo, reroute this to a node w/o a full queue
         removeFromPending(this, dest);
@@ -222,14 +222,14 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
               if (msg.getIdentifier() == null) {
                 logger.info("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier()+" "+reason+" identifier was null!!!", new Exception("Stack Trace"));
               } else {
-                logger.info("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier()+" "+reason);          
+                logger.info("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier()+" "+reason);
               }
             }
           }
         }
-        return; 
+        return;
       }
-      
+
       if (reason instanceof NodeIsFaultyException) {
         if (msg.getIdentifier().getLiveness() < NodeHandle.LIVENESS_DEAD) {
           if (logger.isWarnEnabled()) {
@@ -238,15 +238,15 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
           }
         }
       }
-      
+
       if (removeFromPending(this, dest)) {
         logger.info("Send failed on message {} to {} rerouting.{}", rm, dest, msg, reason);
         rerouteMe(rm, dest, reason);
-      } else {        
+      } else {
         if (rm.sendFailed(reason)) {
           logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);
         } else {
-          logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);          
+          logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);
         }
       }
     }
@@ -254,13 +254,13 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     boolean failed = false;
     boolean sent = false;
     boolean cancelled = false;
-    
+
     public void sent(PMessageReceipt msg) {
       logger.debug("Send success {} to:{} {}", rm, dest, msg);
       sent = true;
       cancellable = null;
       rm.setTLCancellable(null);
-      removeFromPending(this, dest);      
+      removeFromPending(this, dest);
       rm.sendSuccess(dest);
     }
 
@@ -270,8 +270,8 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       cancelled = true;
       if (cancellable != null) return cancellable.cancel();
       return true;
-    }    
-    
+    }
+
     public String toString() {
       return "RN{"+rm+"->"+dest+"}";
     }

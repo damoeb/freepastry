@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.replay.playback;
 
 import java.io.IOException;
@@ -73,7 +73,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
     super(serializer, hashProv, history, localHandle, (short)0, (short)0, 0, environment.getLogManager().getLogger(ReplayLayer.class, localHandle.toString()));
     this.environment = environment;
   }
-  
+
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     try {
       int socketId = openSocket(i);
@@ -81,7 +81,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
       socket.setDeliverSocketToMe(deliverSocketToMe);
       sockets.put(socketId, socket);
       return socket;
-    } catch (IOException ioe) {      
+    } catch (IOException ioe) {
       SocketRequestHandle<Identifier> ret = new SocketRequestHandle<Identifier>(){
 
         public Identifier getIdentifier() {
@@ -94,17 +94,17 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
 
         public boolean cancel() {
           return true;
-        }      
+        }
       };
-      
+
       deliverSocketToMe.receiveException(ret, ioe);
       return ret;
     }
   }
-  
+
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
     if (logger.isTraceEnabled()) {
-      logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));      
+      logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));
     } else logger.debug("sendMessage({},{})", i, m);
     MessageRequestHandleImpl<Identifier, ByteBuffer> ret = new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
     try {
@@ -134,7 +134,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
   public void acceptMessages(boolean b) {
   }
 
-  public void acceptSockets(boolean b) {    
+  public void acceptSockets(boolean b) {
   }
 
   Environment environment;
@@ -142,7 +142,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
   @Override
   protected void receive(final Identifier from, final ByteBuffer msg) throws IOException {
     logger.trace("receive({},{})", from, msg);
-        
+
     callback.messageReceived(from, msg, null);
   }
 
@@ -157,11 +157,11 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
     sockets.put(socketId, socket);
     callback.incomingSocket(socket);
   }
-  
+
   public static Environment generateEnvironment(String name, long startTime, long randSeed, LogManager lm2) {
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
     DirectTimeSource dts = new DirectTimeSource(startTime);
-    
+
     LogManager lm;
     if (lm2 instanceof Slf4jLogManager clm) {
       lm = clm.clone(clm.getPrefix()+"-"+name);
@@ -186,7 +186,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
   @Override
   protected void socketException(int socketId, IOException ioe) throws IOException {
     sockets.get(socketId).receiveException(ioe);
-    
+
   }
 
   public Environment getEnvironment() {

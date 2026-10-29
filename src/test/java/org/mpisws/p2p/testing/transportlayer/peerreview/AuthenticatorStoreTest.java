@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
 import java.io.IOException;
@@ -83,18 +83,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class AuthenticatorStoreTest {
   public static final int HASH_LEN = 20;
   public static final int SIGN_LEN = 28;
-  
-  
-  
+
+
+
   @Test
   public void addAndFlushAuthenticators() throws Exception {
     Environment env = new Environment();
     try {
     PeerReview<MyInetSocketAddress, MyInetSocketAddress> pr = new TestPeerReview(env, new AuthenticatorSerializerImpl(HASH_LEN, SIGN_LEN));
     TestAuthenticatorStore store = new TestAuthenticatorStore(pr,false);
-    
+
     MyInetSocketAddress id = new MyInetSocketAddress(InetAddress.getLocalHost(), 6789);
-    
+
     byte[] h1 = new byte[HASH_LEN];
     h1[2] = 5;
     byte[] s1 = new byte[SIGN_LEN];
@@ -122,13 +122,13 @@ public class AuthenticatorStoreTest {
     store.addAuthenticatorToMemory(id, new Authenticator(41,h1,s1));
     store.addAuthenticatorToMemory(id, new Authenticator(43,h1,s1));
     store.addAuthenticatorToMemory(id, new Authenticator(53,h1,s1));
-    
+
     store.addAuthenticatorToMemory(id, a1);
     store.addAuthenticatorToMemory(id, a2); // should not crash here
-    
+
     // a different authenticator with the same sequence number is rejected
     assertThrows(RuntimeException.class, () -> store.addAuthenticatorToMemory(id, a3), "Allowed duplicates");
-    
+
     store.flushAuthenticatorsFromMemory(id, 8, 42);
     assertEquals(4, store.findSubject(id).size(), () -> "flush failed! "+store.findSubject(id));
 
@@ -140,7 +140,7 @@ public class AuthenticatorStoreTest {
   }
 }
   class TestPeerReview implements PeerReview<MyInetSocketAddress, MyInetSocketAddress> {
-    
+
     Environment env;
     AuthenticatorSerializer aSer;
     public TestPeerReview(Environment env, AuthenticatorSerializer aSer) {
@@ -151,11 +151,11 @@ public class AuthenticatorStoreTest {
     public Serializer<MyInetSocketAddress> getIdSerializer() {
       return MyInetSocketAddress.serializer;
     }
-  
+
     public Environment getEnvironment() {
       return env;
     }
-  
+
     public AuthenticatorSerializer getAuthenticatorSerializer() {
       return aSer;
     }
@@ -186,7 +186,7 @@ public class AuthenticatorStoreTest {
     }
 
     public void challengeSuspectedNode(MyInetSocketAddress h) {
-      
+
     }
 
     public long getEvidenceSeq() {
@@ -195,21 +195,21 @@ public class AuthenticatorStoreTest {
 
     public void sendEvidenceToWitnesses(MyInetSocketAddress subject,
         long timestamp, Evidence evidence) {
-      
+
     }
 
     public void notifyCertificateAvailable(MyInetSocketAddress id) {
-      
+
     }
 
     public void incomingSocket(P2PSocket<MyInetSocketAddress> s)
         throws IOException {
-      
+
     }
 
     public void messageReceived(MyInetSocketAddress i, ByteBuffer m,
         Map<String, Object> options) throws IOException {
-      
+
     }
 
     public boolean hasCertificate(MyInetSocketAddress id) {
@@ -234,15 +234,15 @@ public class AuthenticatorStoreTest {
         byte[] signature, int soff, int slen) throws InvalidKeyException,
         NoSuchAlgorithmException, NoSuchProviderException, SignatureException,
         UnknownCertificateException {
-      
+
     }
 
     public void acceptMessages(boolean b) {
-      
+
     }
 
     public void acceptSockets(boolean b) {
-      
+
     }
 
     public MyInetSocketAddress getLocalIdentifier() {
@@ -265,15 +265,15 @@ public class AuthenticatorStoreTest {
 
     public void setCallback(
         TransportLayerCallback<MyInetSocketAddress, ByteBuffer> callback) {
-      
+
     }
 
     public void setErrorHandler(ErrorHandler<MyInetSocketAddress> handler) {
-      
+
     }
 
     public void destroy() {
-      
+
     }
 
     public byte[] getEmptyHash() {
@@ -342,12 +342,12 @@ public class AuthenticatorStoreTest {
     }
 
     public void init(String dirname) throws IOException {
-      
+
     }
 
     public void setApp(
         PeerReviewCallback<MyInetSocketAddress, MyInetSocketAddress> callback) {
-      
+
     }
 
     public Cancellable requestCertificate(MyInetSocketAddress source,
@@ -374,7 +374,7 @@ public class AuthenticatorStoreTest {
 
     public void sendEvidence(MyInetSocketAddress destination,
         MyInetSocketAddress evidenceAgainst) {
-      
+
     }
   }
 
@@ -384,7 +384,7 @@ public class AuthenticatorStoreTest {
         boolean allowDuplicateSeqs) {
       super(peerreview, allowDuplicateSeqs);
     }
-    
+
     @Override
     public void addAuthenticatorToMemory(MyInetSocketAddress id,
         Authenticator authenticator) {
@@ -402,5 +402,5 @@ public class AuthenticatorStoreTest {
       return super.findSubject(id);
     }
 
-    
+
   }

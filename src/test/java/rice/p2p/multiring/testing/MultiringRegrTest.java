@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.multiring.testing;
 
@@ -74,7 +74,7 @@ import rice.pastry.transport.BogusNodeHandle;
 /**
  * Provides regression testing setup for applications written on top of the
  * commonapi.  Currently is written to use Pastry nodes, but this will be abstracted
- * away. 
+ * away.
  *
  * @version $Id: MultiringRegrTest.java 4654 2009-01-08 16:33:07Z jeffh $
  *
@@ -84,25 +84,25 @@ import rice.pastry.transport.BogusNodeHandle;
 public class MultiringRegrTest {
 
   // ----- VARAIBLES -----
-  
+
   // the collection of nodes which have been created
   protected MultiringNode[] globalNodes;
-  
+
   // the collection of nodes which have been created
   protected MultiringNode[][] organizationalNodes;
-  
+
   // the test applications on the global nodes
   protected MultiringTestApp[] globalApps;
-  
+
   // the collection of apps on org nodes
   protected MultiringTestApp[][] organizationalApps;
-  
+
   // the global ring id
   protected Id globalRingId;
-  
+
   // the list of ringIds for organizations
   protected Id[] ringIds;
-  
+
   // ----- PASTRY SPECIFIC VARIABLES -----
 
   // the factory for creating pastry nodes
@@ -113,22 +113,22 @@ public class MultiringRegrTest {
 
   // the simulator, in case of direct
   protected NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
-  
+
 
   // ----- STATIC FIELDS -----
 
   // the number of nodes to create
   public static int NUM_GLOBAL_NODES = 20;
-  
+
   // the number of organizations to create
   public static int NUM_ORGANIZATIONS = 5;
-  
+
   // the number of internal nodes in each organization
   public static int NUM_INTERNAL_NODES = 3;
-  
+
   // the number gateway nodes in each org
   public static int NUM_GATEWAY_NODES = NUM_GLOBAL_NODES / NUM_ORGANIZATIONS;
-  
+
   // the number of nodes in each organization
   public static int NUM_ORGANIZATIONAL_NODES = NUM_GATEWAY_NODES + NUM_INTERNAL_NODES;
 
@@ -171,7 +171,7 @@ public class MultiringRegrTest {
 
 
   // ----- ATTEMPT TO LOAD LOCAL HOSTNAME -----
-  
+
   static {
     try {
       BOOTSTRAP_HOST = InetAddress.getLocalHost().getHostName();
@@ -179,11 +179,11 @@ public class MultiringRegrTest {
       System.out.println("Error determining local host: " + e);
     }
   }
-  
+
   public Environment environment;
-  
+
   // ----- EXTERNALLY AVAILABLE METHODS -----
-  
+
   /**
    * Constructor, which takes no arguments and sets up the
    * factories in preparation for node creation.
@@ -192,7 +192,7 @@ public class MultiringRegrTest {
 
   public MultiringRegrTest(Environment env) throws IOException {
     this.environment = env;
-    
+
     if (PROTOCOL == PROTOCOL_DIRECT) {
       if (SIMULATOR == SIMULATOR_SPHERE) {
         simulator = new SphereNetwork<DirectNodeHandle, RawMessage>(env);
@@ -206,10 +206,10 @@ public class MultiringRegrTest {
                                                  PORT,
                                                  env);
     }
-    
+
     NUM_GATEWAY_NODES = NUM_GLOBAL_NODES / NUM_ORGANIZATIONS;
     NUM_ORGANIZATIONAL_NODES = NUM_GATEWAY_NODES + NUM_INTERNAL_NODES;
-    
+
     idFactory = new PastryIdFactory(env);
     globalRingId = idFactory.buildId(new byte[20]);
     ringIds = new Id[NUM_ORGANIZATIONS];
@@ -225,40 +225,40 @@ public class MultiringRegrTest {
   public void createNodes() {
     for (int i=0; i<NUM_GLOBAL_NODES; i++) {
       globalNodes[i] = createNode(globalRingId, globalNodes[0]);
-    
+
       simulate();
-    
+
       globalApps[i] = new MultiringTestApp(globalNodes[i]);
       simulate();
-    
+
       System.out.println("Created node " + i + " in the global ring with id " + globalNodes[i].getId());
     }
-    
+
     for (int i=0; i<NUM_ORGANIZATIONS; i++) {
       ringIds[i] = generateId(16 * (i+1));
-      
+
       for (int j=0; j<NUM_GATEWAY_NODES; j++) {
         organizationalNodes[i][j] = createNode(globalNodes[i*NUM_GATEWAY_NODES + j], ringIds[i], organizationalNodes[i][0]);
         simulate();
-        
+
         organizationalApps[i][j] = new MultiringTestApp(organizationalNodes[i][j]);
         simulate();
-        
+
         System.out.println("Created gateway node " + j + " in ring " + ringIds[i] + " with id " + organizationalNodes[i][j].getId());
       }
-      
+
       for (int j=NUM_GATEWAY_NODES; j< NUM_ORGANIZATIONAL_NODES; j++) {
         organizationalNodes[i][j] = createNode(ringIds[i], organizationalNodes[i][0]);
         simulate();
-        
+
         organizationalApps[i][j] = new MultiringTestApp(organizationalNodes[i][j]);
         simulate();
-        
+
         System.out.println("Created internal node " + (j-NUM_GATEWAY_NODES) + " in ring " + ringIds[i] + " with id " + organizationalNodes[i][j].getId());
       }
     }
   }
-  
+
   /**
    * Method which starts the creation of nodes
    */
@@ -266,7 +266,7 @@ public class MultiringRegrTest {
     createNodes();
 
     System.out.println("\nTest Beginning\n");
-    
+
     runTest();
   }
 
@@ -289,29 +289,29 @@ public class MultiringRegrTest {
    */
   protected MultiringNode createNode(Id ringId, MultiringNode bootstrap) {
     MultiringNode mn;
-    
+
     if (bootstrap == null) {
       mn = new MultiringNode(ringId, newBootedNode(null, null));
     } else {
       mn = new MultiringNode(ringId, newBootedNode(getBootstrap(bootstrap.getNode()), null));
     }
-    
+
     PastryNode pn = (PastryNode)mn.getNode();
     synchronized(pn) {
       while(!pn.isReady()) {
         try {
           pn.wait(500);
         } catch (InterruptedException ie) {
-          return null; 
+          return null;
         }
-      }  
+      }
       if (!pn.isReady()) {
-        System.out.println("Still waiting for node "+pn+" in ring "+ringId+" to be ready."); 
+        System.out.println("Still waiting for node "+pn+" in ring "+ringId+" to be ready.");
       }
     }
     return mn;
   }
-  
+
   /**
    * Method which creates a gateway node
    *
@@ -323,7 +323,7 @@ public class MultiringRegrTest {
   protected MultiringNode createNode(MultiringNode existing, Id ringId, MultiringNode bootstrap) {
     if (existing == null)
       throw new IllegalArgumentException("EXISTING WAS NULL! " + ringId + " " + bootstrap);
-    
+
     if (bootstrap == null) {
       return new MultiringNode(ringId, newBootedNode(null, (rice.pastry.Id)existing.getNodeId()), existing);
     } else {
@@ -381,7 +381,7 @@ public class MultiringRegrTest {
    */
   protected void kill(int n) {
   }
-  
+
   /**
     * Private method which generates a random Id
    *
@@ -391,8 +391,8 @@ public class MultiringRegrTest {
     byte[] data = new byte[20];
     environment.getRandomSource().nextBytes(data);
     return idFactory.buildId(data);
-  }  
-  
+  }
+
   /**
    * Private method which generates a Id with a prefix
    *
@@ -422,53 +422,53 @@ public class MultiringRegrTest {
       MultiringTestApp sourceApp = organizationalApps[si][sj];
       Id source = organizationalNodes[si][sj].getId();
       Id dest = organizationalNodes[di][dj].getId();
-    
+
       System.out.println(i+" SENDING FROM " + source + " TO " + dest);
       sourceApp.send(dest);
-    
+
       try {
         Thread.sleep(500);
       } catch (Exception e) {}
     }
   }
-  
+
   public class MultiringTestApp implements Application {
-    
+
     protected Endpoint endpoint;
-    
+
     public MultiringTestApp(Node node) {
       this.endpoint = node.buildEndpoint(this, "BLAH");
       this.endpoint.register();
     }
-    
+
     public void send(Id target) {
       endpoint.route(target, new MultiringTestMessage(endpoint.getId()), null);
     }
-    
+
     public boolean forward(RouteMessage message) {
       return true;
     }
-    
+
     public void deliver(Id id, Message message) {
       System.out.println("RECEIVED MESSSAGE FROM " + ((MultiringTestMessage) message).source + " FOR TARGET " + id + " AT NODE " + endpoint.getId());
     }
-    
+
     public void update(NodeHandle handle, boolean joined) {
     }
   }
-  
+
   public static class MultiringTestMessage implements Message {
     public Id source;
-    
+
     public MultiringTestMessage(Id source) {
       this.source = source;
     }
-    
+
     public int getPriority() {
       return MEDIUM_PRIORITY;
     }
   }
-  
+
 
   // ----- TESTING UTILITY METHODS -----
 
@@ -601,10 +601,10 @@ public class MultiringRegrTest {
                "' got: " + actual + "'");
     }
   }
-  
+
 
   // ----- COMMAND LINE PARSING METHODS -----
-  
+
   /**
    * process command line args
    */
@@ -617,7 +617,7 @@ public class MultiringRegrTest {
         System.exit(1);
       }
     }
-    
+
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-globalNodes") && i+1 < args.length) {
         int p = Integer.parseInt(args[i+1]);
@@ -625,7 +625,7 @@ public class MultiringRegrTest {
         break;
       }
     }
-    
+
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-organizations") && i+1 < args.length) {
         int p = Integer.parseInt(args[i+1]);
@@ -633,7 +633,7 @@ public class MultiringRegrTest {
         break;
       }
     }
-    
+
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-internalNodes") && i+1 < args.length) {
         int p = Integer.parseInt(args[i+1]);
@@ -650,7 +650,7 @@ public class MultiringRegrTest {
       }
     }
 
-    BOOTSTRAP_PORT = PORT;  
+    BOOTSTRAP_PORT = PORT;
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-bootstrap") && i+1 < args.length) {
         String str = args[i+1];
@@ -697,7 +697,7 @@ public class MultiringRegrTest {
       }
     }
   }
-  
+
   public static void main(String[] args) throws IOException {
     parseArgs(args);
     Environment env;

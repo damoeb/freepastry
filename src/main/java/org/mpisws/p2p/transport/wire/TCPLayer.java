@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.wire;
 
 import java.io.IOException;
@@ -55,34 +55,34 @@ import rice.environment.params.Parameters;
 import rice.selector.SelectionKeyHandler;
 
 public class TCPLayer extends SelectionKeyHandler {
-  public static final Map<String, Object> OPTIONS;  
+  public static final Map<String, Object> OPTIONS;
   static {
     Map<String, Object> map = new HashMap<String, Object>();
     map.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_GUARANTEED);
-    OPTIONS = Collections.unmodifiableMap(map);    
+    OPTIONS = Collections.unmodifiableMap(map);
   }
-  
+
   // the number of sockets where we start closing other sockets
   public final int MAX_OPEN_SOCKETS;
-  
+
   // the size of the buffers for the socket
   public final int SOCKET_BUFFER_SIZE;
   public boolean TCP_NO_DELAY = false;
-  
+
   WireTransportLayerImpl wire;
-    
+
   // the key to accept from
   private SelectionKey key;
-  
+
   // the buffer used to read the header
   private ByteBuffer buffer;
-  
+
   Logger logger;
-  
+
   public TCPLayer(WireTransportLayerImpl wire, boolean enableServer) throws IOException {
     this.wire = wire;
     this.logger = wire.environment.getLogManager().getLogger(TCPLayer.class, null);
-  
+
     Parameters p = wire.environment.getParameters();
     MAX_OPEN_SOCKETS = p.getInt("pastry_socket_scm_max_open_sockets");
     SOCKET_BUFFER_SIZE = p.getInt("pastry_socket_scm_socket_buffer_size"); // 32768
@@ -90,7 +90,7 @@ public class TCPLayer extends SelectionKeyHandler {
       TCP_NO_DELAY = p.getBoolean("transport_tcp_no_delay");
     }
     ServerSocketChannel temp = null; // just to clean up after the exception
-    
+
     // bind to port
     if (enableServer) {
       final ServerSocketChannel channel = ServerSocketChannel.open();
@@ -99,13 +99,13 @@ public class TCPLayer extends SelectionKeyHandler {
       channel.socket().setReuseAddress(true);
       channel.socket().bind(wire.bindAddress);
       logger.info("TCPLayer bound to {}", wire.bindAddress);
-      
+
       this.key = wire.environment.getSelectorManager().register(channel, this, SelectionKey.OP_ACCEPT);
     }
   }
 
   public SocketRequestHandle<InetSocketAddress> openSocket(
-      InetSocketAddress destination, 
+      InetSocketAddress destination,
       SocketCallback<InetSocketAddress> deliverSocketToMe,
       Map<String, Object> options) {
     if (isDestroyed()) return null;
@@ -119,7 +119,7 @@ public class TCPLayer extends SelectionKeyHandler {
       wire.broadcastChannelOpened(destination, options, true);
 
       synchronized (sockets) {
-        SocketManager sm = new SocketManager(this, destination, deliverSocketToMe, options); 
+        SocketManager sm = new SocketManager(this, destination, deliverSocketToMe, options);
         sockets.add(sm);
         return sm;
       }
@@ -130,9 +130,9 @@ public class TCPLayer extends SelectionKeyHandler {
       return can;
     }
   }
-  
+
   Collection<SocketManager> sockets = new HashSet<SocketManager>();
-  
+
   protected void socketClosed(SocketManager sm) {
     wire.broadcastChannelClosed(sm.addr, sm.options);
     sockets.remove(sm);
@@ -144,30 +144,30 @@ public class TCPLayer extends SelectionKeyHandler {
     try {
       if (key != null) {
         key.channel().close();
-        key.cancel();    
+        key.cancel();
         key.attach(null);
       }
     } catch (IOException ioe) {
-      wire.errorHandler.receivedException(null, ioe); 
+      wire.errorHandler.receivedException(null, ioe);
     }
 
     // TODO: add a flag to disable this to simulate a silent fault
     for (SocketManager socket : new ArrayList<SocketManager>(sockets)) {
-      socket.close();      
+      socket.close();
     }
   }
 
   public void acceptSockets(final boolean b) {
-    Runnable r = new Runnable(){    
+    Runnable r = new Runnable(){
       public void run() {
         if (b) {
           key.interestOps(key.interestOps() | SelectionKey.OP_ACCEPT);
         } else {
           key.interestOps(key.interestOps() & ~SelectionKey.OP_ACCEPT);
         }
-      }    
+      }
     };
-    
+
     // thread safety
     if (wire.environment.getSelectorManager().isSelectorThread()) {
       r.run();
@@ -175,7 +175,7 @@ public class TCPLayer extends SelectionKeyHandler {
       wire.environment.getSelectorManager().invoke(r);
     }
   }
-  
+
   /**
    * Specified by the SelectionKeyHandler interface. Is called whenever a key
    * has become acceptable, representing an incoming connection. This method
@@ -187,11 +187,11 @@ public class TCPLayer extends SelectionKeyHandler {
    */
   public void accept(SelectionKey key) {
     try {
-      SocketManager sm = new SocketManager(this, key); 
+      SocketManager sm = new SocketManager(this, key);
       synchronized (sockets) {
         sockets.add(sm);
       }
-      wire.incomingSocket(sm);      
+      wire.incomingSocket(sm);
     } catch (IOException e) {
       logger.atWarn().log(() -> "ERROR (accepting connection): " + e);
       wire.errorHandler.receivedException(null, e);

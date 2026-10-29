@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.direct.proximitygenerators;
 
 import java.io.BufferedReader;
@@ -52,9 +52,9 @@ public class GenericProximityGenerator implements ProximityGenerator {
   protected RandomSource random;
 
   protected Logger logger;
-  
+
   float MIN_DIST = 2.0f;
-  
+
   // This stores the matrix stored in millis
   private float distance[][];
 
@@ -74,23 +74,23 @@ public class GenericProximityGenerator implements ProximityGenerator {
     MAXOVERLAYSIZE = env.getParameters().getInt("pastry_direct_gtitm_max_overlay_size");
     MIN_DIST = env.getParameters().getFloat("pastry_direct_min_delay");
     float delayFactor = env.getParameters().getFloat("pastry_direct_gtitm_delay_factor");// 1.0
-    
+
     inFile_Matrix = inFile;
     if (inFile_Matrix == null) {
       inFile_Matrix = new File(env.getParameters().getString("pastry_direct_gtitm_matrix_file"));
     }
-  
+
     setNodesPerStub(env.getParameters().getInt("pastry_direct_gtitm_nodes_per_stub"));// 1
-  
+
     readOverlayMatrix(delayFactor);
   }
 
 
 
   public NodeRecord generateNodeRecord() {
-    return new GNNodeRecord(); 
+    return new GNNodeRecord();
   }
-  
+
   public class GNNodeRecord implements NodeRecord {
     public int index; // index in the symmetric inter-host latency matrix
 
@@ -100,14 +100,14 @@ public class GenericProximityGenerator implements ProximityGenerator {
       while (stubIsFull(index)) {
         index = random.nextInt(MAXOVERLAYSIZE);
       }
-      
+
       incrementStub(index);
     }
 
     public float proximity(NodeRecord that) {
       return Math.round(networkDelay(that)+that.networkDelay(this));
     }
-    
+
     public float networkDelay(NodeRecord that) {
       GNNodeRecord nr = (GNNodeRecord)that;
       float res = distance[index][nr.index];
@@ -129,13 +129,13 @@ public class GenericProximityGenerator implements ProximityGenerator {
       decrementStub(index);
     }
   }
-  
+
   int nodesPerStub = 1;
 
   public void setNodesPerStub(int numPerStub) {
-    this.nodesPerStub = numPerStub; 
+    this.nodesPerStub = numPerStub;
   }
-  
+
   public void readOverlayMatrix(float delayFactor) throws IOException {
     FileReader fr = null;
     try {
@@ -155,7 +155,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
         if (distance == null) {
           if (words.length < MAXOVERLAYSIZE)
             MAXOVERLAYSIZE = words.length;
-          distance = new float[MAXOVERLAYSIZE][MAXOVERLAYSIZE]; 
+          distance = new float[MAXOVERLAYSIZE][MAXOVERLAYSIZE];
         }
         int nodeCount = 0;
         for (int i = 0; i < MAXOVERLAYSIZE; i++) {
@@ -174,17 +174,17 @@ public class GenericProximityGenerator implements ProximityGenerator {
       logger.warn("Exception reading the Generic Network matrix", e);
     }
   }
-  
+
   private boolean stubIsFull(int index) {
     if (!assignedIndices.containsKey(index)) return false;
-    return assignedIndices.get(index)>=nodesPerStub; 
+    return assignedIndices.get(index)>=nodesPerStub;
   }
 
   /**
    * The number of nodes assigned.
    */
   int numNodes = 0;
-  
+
   private void incrementStub(int index) {
     numNodes++;
 
@@ -194,14 +194,14 @@ public class GenericProximityGenerator implements ProximityGenerator {
     }
     assignedIndices.put(index, val+1);
   }
-  
+
   private void decrementStub(int index) {
     numNodes--;
 
     int val = assignedIndices.get(index);
     assignedIndices.put(index, val-1);
   }
-  
+
 
   public void setRandom(RandomSource random) {
     this.random = random;

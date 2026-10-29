@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.past.gc;
 
@@ -61,12 +61,12 @@ import rice.p2p.commonapi.NodeHandleSet;
  * @author Peter Druschel
  */
 public class GCIdFactory implements IdFactory {
-  
+
   /**
    * The underlying IdFactory
    */
   protected IdFactory factory;
-  
+
   /**
    * Constructor
    *
@@ -75,7 +75,7 @@ public class GCIdFactory implements IdFactory {
   public GCIdFactory(IdFactory factory) {
     this.factory = factory;
   }
-  
+
   /**
    * Not supported.
    *
@@ -86,7 +86,7 @@ public class GCIdFactory implements IdFactory {
   public Id buildNormalId(byte[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
-  
+
   /**
    * Not supported.
    *
@@ -97,7 +97,7 @@ public class GCIdFactory implements IdFactory {
   public Id buildId(byte[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
-  
+
   /**
    * Not supported.
    *
@@ -108,7 +108,7 @@ public class GCIdFactory implements IdFactory {
   public Id buildId(int[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
-  
+
   /**
    * Not supported.
    *
@@ -119,7 +119,7 @@ public class GCIdFactory implements IdFactory {
   public Id buildId(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
-  
+
   /**
    * Not supported.
    *
@@ -145,7 +145,7 @@ public class GCIdFactory implements IdFactory {
   public Id buildIdFromToString(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
-  
+
   /**
    * Not supported.
    *
@@ -156,9 +156,9 @@ public class GCIdFactory implements IdFactory {
    * @throws UnsupportedOperationException always
    */
   public Id buildIdFromToString(char[] chars, int offset, int length) {
-    throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");  
+    throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
-  
+
   /**
    * Not supported.
    *
@@ -167,9 +167,9 @@ public class GCIdFactory implements IdFactory {
    * @throws UnsupportedOperationException always
    */
   public IdRange buildIdRangeFromPrefix(String string) {
-    throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");  
+    throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
-  
+
   /**
    * Not supported.
    *
@@ -179,7 +179,7 @@ public class GCIdFactory implements IdFactory {
   public int getIdToStringLength() {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
-  
+
   /**
    * Not supported.
    *
@@ -189,7 +189,7 @@ public class GCIdFactory implements IdFactory {
    */
   public Id.Distance buildIdDistance(byte[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build IdDistances!");  }
-  
+
   /**
    * Creates an IdRange given the CW and CCW ids.
    *
@@ -200,7 +200,7 @@ public class GCIdFactory implements IdFactory {
   public IdRange buildIdRange(Id cw, Id ccw) {
     return new GCIdRange(factory.buildIdRange(cw, ccw));
   }
-  
+
   /**
    * Creates an empty IdSet.
    *
@@ -209,7 +209,7 @@ public class GCIdFactory implements IdFactory {
   public IdSet buildIdSet() {
     return new GCIdSet(factory);
   }
-  
+
   /**
    * Not supported.
    *
@@ -220,7 +220,7 @@ public class GCIdFactory implements IdFactory {
   public IdSet buildIdSet(SortedMap<Id, ?> map) {
     throw new UnsupportedOperationException("GCIdFactory.buildIDSet()");
   }
-  
+
   /**
    * Not supported.
    *
@@ -230,14 +230,14 @@ public class GCIdFactory implements IdFactory {
   public NodeHandleSet buildNodeHandleSet() {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build NodeHandleSets!");
   }
-  
+
   protected class GCSortedMap<V> implements SortedMap<Id, V> {
     protected SortedMap<Id, V> map;
-    
+
     public GCSortedMap(SortedMap<Id, V> map) {
       this.map = map;
     }
-    
+
     public Comparator<? super Id> comparator() { return null; }
     public Id firstKey() { throw new UnsupportedOperationException("firstKey not supported!"); }
     public SortedMap<Id, V> headMap(Id toKey) { throw new UnsupportedOperationException("headMap not supported!"); }
@@ -259,14 +259,14 @@ public class GCIdFactory implements IdFactory {
     public int size() { return map.size(); }
     public Collection<V> values() { throw new UnsupportedOperationException("values not supported!"); }
   }
-  
+
   protected class GCEntrySet<V> implements Set<Map.Entry<Id, V>> {
     protected Set<Map.Entry<Id, V>> set;
-    
+
     public GCEntrySet(Set<Map.Entry<Id, V>> set) {
       this.set = set;
     }
-    
+
     public boolean add(Map.Entry<Id, V> o) { throw new UnsupportedOperationException("add not supported!"); }
     public boolean addAll(Collection<? extends Map.Entry<Id, V>> c) { throw new UnsupportedOperationException("addAll not supported!"); }
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
@@ -289,14 +289,14 @@ public class GCIdFactory implements IdFactory {
     public Object[] toArray() { throw new UnsupportedOperationException("toArray not supported!"); }
     public <T> T[] toArray(T[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
   }
-  
+
   protected class GCMapEntry<V> implements Map.Entry<Id, V> {
     protected Map.Entry<Id, V> entry;
-    
+
     public GCMapEntry(Map.Entry<Id, V> entry) {
       this.entry = entry;
     }
-    
+
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
     public Id getKey() { return ((GCId) entry.getKey()).getId(); }
     public V getValue() { return entry.getValue(); }
@@ -304,4 +304,3 @@ public class GCIdFactory implements IdFactory {
     public V setValue(V value) { throw new UnsupportedOperationException("setValue not supported!"); }
   }
 }
-

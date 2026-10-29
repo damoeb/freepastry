@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.commonapi;
 
@@ -70,10 +70,10 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
   public static final Integer PROXIMITY_CHANGED = Integer.valueOf(1);
   public static final Integer DECLARED_DEAD = Integer.valueOf(2);
   public static final Integer DECLARED_LIVE = Integer.valueOf(3);
-  
+
   // serialver
   private static final long serialVersionUID = 4761193998848368227L;
-  
+
   /**
    * Returns this node's id.
    *
@@ -84,7 +84,7 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
   /**
    * Returns whether or not this node is currently alive
    *
-   * @deprecated use Endpoint.isAlive(NodeHandle) 
+   * @deprecated use Endpoint.isAlive(NodeHandle)
    * @return Whether or not this node is currently alive
    */
   @Deprecated
@@ -98,7 +98,7 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
    */
   @Deprecated
   public abstract int proximity();
-  
+
   /**
    * Requests that the underlying transport layer check to ensure
    * that the remote node is live.  If the node is found to be live, nothing
@@ -134,7 +134,7 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
   /**
    * Higher priority first; List.sort is stable, so equal priorities keep insertion order.
    */
-  private static final Comparator<ListenerEntry> BY_PRIORITY = 
+  private static final Comparator<ListenerEntry> BY_PRIORITY =
     (a, b) -> Integer.compare(b.priority, a.priority);
 
   private transient List<ListenerEntry> listeners = new ArrayList<ListenerEntry>();
@@ -149,7 +149,7 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
 
   /**
    * Registers a listener with priority 0.
-   * 
+   *
    * @param listener the listener to be notified of DECLARED_DEAD/DECLARED_LIVE/PROXIMITY_CHANGED events
    */
   public void addNodeHandleListener(NodeHandleListener listener) {
@@ -159,7 +159,7 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
   /**
    * Registers a listener.  If the listener is already registered with a different
    * priority, only its priority is changed.
-   * 
+   *
    * @param listener the listener
    * @param priority higher priority listeners will be called first
    */
@@ -188,7 +188,7 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
 
   /**
    * Unregisters a listener.
-   * 
+   *
    * @param listener the listener
    * @return true if the listener was registered
    */
@@ -205,9 +205,9 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
   }
 
   /**
-   * Notifies all registered listeners (highest priority first).  Listeners may 
+   * Notifies all registered listeners (highest priority first).  Listeners may
    * add or remove listeners during the notification.
-   * 
+   *
    * @param event the event
    */
   protected void notifyNodeHandleListeners(Object event) {

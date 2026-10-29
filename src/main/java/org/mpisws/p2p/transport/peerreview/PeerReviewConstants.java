@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview;
 
 public interface PeerReviewConstants extends StatusConstants {
@@ -50,26 +50,26 @@ public interface PeerReviewConstants extends StatusConstants {
   public static final short EVT_CHOOSE_RAND = 9;                        /* Choose randomness in VRF */
   public static final short EVT_MAX_RESERVED = EVT_CHOOSE_RAND;    /* User defined events start here */
 
-  public static final short EVT_SOCKET_OPEN_INCOMING = 30; 
-  public static final short EVT_SOCKET_OPEN_OUTGOING = 31; 
-  public static final short EVT_SOCKET_OPENED_OUTGOING = 32; 
-  public static final short EVT_SOCKET_EXCEPTION = 33; 
-  public static final short EVT_SOCKET_CLOSE = 34; 
-  public static final short EVT_SOCKET_SHUTDOWN_OUTPUT = 35; 
-  public static final short EVT_SOCKET_CLOSED = 36; 
-  public static final short EVT_SOCKET_CAN_READ = 37; 
-  public static final short EVT_SOCKET_CAN_WRITE = 38; 
-  public static final short EVT_SOCKET_CAN_RW = 39; 
-  public static final short EVT_SOCKET_READ = 40; 
-  public static final short EVT_SOCKET_WRITE = 41;   
-  
+  public static final short EVT_SOCKET_OPEN_INCOMING = 30;
+  public static final short EVT_SOCKET_OPEN_OUTGOING = 31;
+  public static final short EVT_SOCKET_OPENED_OUTGOING = 32;
+  public static final short EVT_SOCKET_EXCEPTION = 33;
+  public static final short EVT_SOCKET_CLOSE = 34;
+  public static final short EVT_SOCKET_SHUTDOWN_OUTPUT = 35;
+  public static final short EVT_SOCKET_CLOSED = 36;
+  public static final short EVT_SOCKET_CAN_READ = 37;
+  public static final short EVT_SOCKET_CAN_WRITE = 38;
+  public static final short EVT_SOCKET_CAN_RW = 39;
+  public static final short EVT_SOCKET_READ = 40;
+  public static final short EVT_SOCKET_WRITE = 41;
+
   public static final short EVT_MIN_SOCKET_EVT = EVT_SOCKET_OPEN_INCOMING;
   public static final short EVT_MAX_SOCKET_EVT = EVT_SOCKET_SHUTDOWN_OUTPUT;
-  
+
   public static final short EX_TYPE_IO = 1;
   public static final short EX_TYPE_ClosedChannel = 2;
   public static final short EX_TYPE_Unknown = 0;
- 
+
   /* Message types used in PeerReview */
 
   public static final short MSG_USERDATA = 16;            /* Contains data the application has sent */
@@ -83,7 +83,7 @@ public interface PeerReviewConstants extends StatusConstants {
   public static final short MSG_USERDGRAM = 24;    /* Contains a datagram from the app (not logged) */
 
   /* Evidence types (challenges and proofs) */
-  public static final byte CHAL_AUDIT = 1;    
+  public static final byte CHAL_AUDIT = 1;
   public static final byte CHAL_SEND = 2;
   public static final byte RESP_SEND = CHAL_SEND;
   public static final byte RESP_AUDIT = CHAL_AUDIT;
@@ -103,7 +103,7 @@ public interface PeerReviewConstants extends StatusConstants {
   public static final int TI_MAX_RESERVED = TI_AUTH_PUSH;
   public static final int TI_STATUS_INFO = 101;
   public static final int MAX_STATUS_INFO = 100;
-  
+
   /* Flags for AUDIT challenges */
 
   public static final byte FLAG_INCLUDE_CHECKPOINT = 1;                /* Include a full checkpoint */
@@ -126,7 +126,7 @@ public interface PeerReviewConstants extends StatusConstants {
   public static final int MAX_ACTIVE_INVESTIGATIONS = 10;
   public static final int MAX_ENTRIES_BETWEEN_CHECKPOINTS = 100;
   public static final int AUTH_CACHE_INTERVAL = 500000;
-  
+
   public static final int TI_START_AUDITS = 3;
   public static final int TI_MAKE_PROGRESS = 4;
 

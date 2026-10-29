@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry;
 
 import java.io.IOException;
@@ -49,18 +49,18 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * Represents an ordered set of NodeHandles. *
- * 
+ *
  * @version $Id: NodeSet.java 4654 2009-01-08 16:33:07Z jeffh $
- * 
+ *
  * @author Peter Druschel
  */
 
 public class NodeSet implements NodeSetI, Serializable {
 
   public static final short TYPE = 1;
-  
+
   static final long serialVersionUID = 4410658508346287677L;
-  
+
   /**
    * of NodeHandle
    */
@@ -93,7 +93,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Appends a member to the ordered set.
-   * 
+   *
    * @param handle the handle to put.
    * @return false if handle was already a member, true otherwise
    */
@@ -121,7 +121,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Finds the NodeHandle associated with a NodeId.
-   * 
+   *
    * @param nid a node id.
    * @return the handle associated with that id or null if no such handle is
    *         found.
@@ -138,7 +138,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Gets the ith element in the set.
-   * 
+   *
    * @param i an index.
    * @return the handle, or null if the position is out of bounds
    */
@@ -157,7 +157,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * test membership using Id
-   * 
+   *
    * @param id the id to test
    * @return true of NodeHandle associated with id is a member, false otherwise
    */
@@ -168,9 +168,9 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Removes a node id and its handle from the set.
-   * 
+   *
    * @param nid the node to remove.
-   * 
+   *
    * @return the node handle removed or null if nothing.
    */
 
@@ -184,7 +184,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Gets the number of elements.
-   * 
+   *
    * @return the size.
    */
 
@@ -194,7 +194,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Gets the index of the element with the given node id.
-   * 
+   *
    * @param nid the node id.
    * @return the index or -1 if no such element
    */
@@ -239,7 +239,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * insert a member at the given index
-   * 
+   *
    * @param index the position at which to insert the element into the ordered
    *          set
    * @param handle the handle to add
@@ -255,7 +255,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * remove a member
-   * 
+   *
    * @param handle the handle to remove
    */
   public NodeHandle remove(NodeHandle handle) {
@@ -267,7 +267,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * remove a member at a given position
-   * 
+   *
    * @param index the position of the member to remove
    */
   public void remove(int index) {
@@ -276,7 +276,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * determine rank of a member
-   * 
+   *
    * @param handle the handle to test
    * @return rank (index) of the handle, or -1 if handle is not a member
    */
@@ -286,7 +286,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * test membership
-   * 
+   *
    * @param handle the handle to test
    * @return true of handle is a member, false otherwise
    */
@@ -297,7 +297,7 @@ public class NodeSet implements NodeSetI, Serializable {
   /**
    * return a subset of this set, consisting of the members within a given range
    * of positions
-   * 
+   *
    * @param from the lower end of the range (inclusive)
    * @param to the upper end of the range (exclusive)
    * @return the subset, or null of the arguments were out of bounds
@@ -316,7 +316,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * return an iterator that iterates over the elements of this set
-   * 
+   *
    * @return the iterator
    */
   public Iterator<NodeHandle> getIterator() {
@@ -339,9 +339,9 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Puts a NodeHandle into the set.
-   * 
+   *
    * @param handle the handle to put.
-   * 
+   *
    * @return true if the put succeeded, false otherwise.
    */
   public boolean putHandle(rice.p2p.commonapi.NodeHandle handle) {
@@ -350,7 +350,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Finds the NodeHandle associated with the NodeId.
-   * 
+   *
    * @param id a node id.
    * @return the handle associated with that id or null if no such handle is
    *         found.
@@ -358,7 +358,7 @@ public class NodeSet implements NodeSetI, Serializable {
   public rice.p2p.commonapi.NodeHandle getHandle(rice.p2p.commonapi.Id id) {
     synchronized(set) {
       for (NodeHandle nh : set) {
-        if (nh.getId().equals(id)) return nh; 
+        if (nh.getId().equals(id)) return nh;
       }
     }
     return null;
@@ -366,7 +366,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Gets the ith element in the set.
-   * 
+   *
    * @param i an index.
    * @return the handle associated with that id or null if no such handle is
    *         found.
@@ -377,7 +377,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Verifies if the set contains this particular id.
-   * 
+   *
    * @param id a node id.
    * @return true if that node id is in the set, false otherwise.
    */
@@ -387,9 +387,9 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Removes a node id and its handle from the set.
-   * 
+   *
    * @param id the id of the node to remove.
-   * 
+   *
    * @return the node handle removed or null if nothing.
    */
   public rice.p2p.commonapi.NodeHandle removeHandle(rice.p2p.commonapi.Id id) {
@@ -398,18 +398,18 @@ public class NodeSet implements NodeSetI, Serializable {
 
   /**
    * Gets the index of the element with the given node id.
-   * 
+   *
    * @param id the id.
-   * 
+   *
    * @return the index or throws a NoSuchElementException.
    */
   public int getIndexHandle(rice.p2p.commonapi.Id id)
       throws NoSuchElementException {
     return getIndex((Id)id);
   }
-  
+
   public Iterator<NodeHandle> iterator() {
-    return set.iterator(); 
+    return set.iterator();
   }
 
   public NodeSet(InputBuffer buf, NodeHandleFactory<? extends NodeHandle> nhf) throws IOException {
@@ -417,10 +417,10 @@ public class NodeSet implements NodeSetI, Serializable {
     set = new Vector<NodeHandle>(numNodes);
 
     for (int i = 0; i < numNodes; i++) {
-      set.add(nhf.readNodeHandle(buf)); 
+      set.add(nhf.readNodeHandle(buf));
     }
   }
-  
+
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort((short)set.size());
     Iterator<NodeHandle> i = set.iterator();
@@ -428,14 +428,13 @@ public class NodeSet implements NodeSetI, Serializable {
       NodeHandle nh = (NodeHandle)i.next();
       nh.serialize(buf);
     }
-  }  
-  
-  public short getType() {
-    return TYPE; 
   }
-  
+
+  public short getType() {
+    return TYPE;
+  }
+
   public Collection<NodeHandle> getCollection()  {
     return set;
   }
 }
-

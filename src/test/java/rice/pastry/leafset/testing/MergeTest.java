@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /*
  * Created on Dec 11, 2006
  */
@@ -66,7 +66,7 @@ import rice.pastry.transport.PMessageReceipt;
 
 public class MergeTest {
 
-  
+
   /**
    * Input of the form:
    * <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..> [ <0xEA5EAF..> ] <0xEBC2BB..><0xEBD2CB..><0xEF7F43..><0xF09044..><0xF10B96..><0xF33C36..><0xF64DA9..><0xF66CD9..><0xF9E251..><0xFB7F46..><0xFC1B02..><0xFC4718..>
@@ -78,18 +78,18 @@ public class MergeTest {
     assert(a.length == 2);
     String b[] = a[1].split("]");
     assert(b.length == 2);
-    
-    String s_ccw = a[0]; // <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..> 
+
+    String s_ccw = a[0]; // <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..>
     String s_cw = b[1];
     String s_base = b[0]; //<0xEA5EAF..>
-    
+
     NodeHandle[] ccw = getHandles(s_ccw);
     flip(ccw);
     NodeHandle base = getHandles(s_base)[0];
     NodeHandle[] cw = getHandles(s_cw);
-    
+
     LeafSet ls = new LeafSet(base,24,true,cw,ccw);
-    
+
     return ls;
   }
 
@@ -101,7 +101,7 @@ public class MergeTest {
       nds[b] = temp;
     }
   }
-  
+
   /**
    * Input of the form:
    * <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..>
@@ -116,69 +116,69 @@ public class MergeTest {
         assert(a[ctr].substring(0,2).equals("0x"));
         assert(a[ctr].substring(a[ctr].length()-3,a[ctr].length()).equals("..>"));
         a[ctr] = a[ctr].substring(2,a[ctr].length()-3);
-                
+
         list.add(new TestNodeHandle(Id.build(a[ctr])));
-     
+
       }
     }
     return list.toArray(new NodeHandle[0]);
   }
-  
+
   /**
    * @param args
    */
   public static void main(String[] args) {
     Environment env = new Environment();
-    
+
 //  leafset:  [ <0xEA1020..> ]  complete:false size:0 s2:false.merge(leafset: <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..> [ <0xEA5EAF..> ] <0xEBC2BB..><0xEBD2CB..><0xEF7F43..><0xF09044..><0xF10B96..><0xF33C36..><0xF64DA9..><0xF66CD9..><0xF9E251..><0xFB7F46..><0xFC1B02..><0xFC4718..> complete:true size:24 s1:false s2:false,[SNH: <0xEA5EAF..>//128.59.20.228:21854 [-7262332366877176307]],...,false,null)
     String s_ls1 = "<0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..> [ <0xEA5EAF..> ] <0xEBC2BB..><0xEBD2CB..><0xEF7F43..><0xF09044..><0xF10B96..><0xF33C36..><0xF64DA9..><0xF66CD9..><0xF9E251..><0xFB7F46..><0xFC1B02..><0xFC4718..>";
-    
+
     LeafSet ls1 = getLeafSet(s_ls1);
-    
+
     String s_ls2 = " [ <0xEA1020..> ] ";
-    
+
     LeafSet ls2 = getLeafSet(s_ls2);
-    
+
     PastryNode pn = new PastryNode((rice.pastry.Id)ls2.get(0).getId(),env){
-    
+
       public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
         return null;
       }
-    
+
       @Override
       public PMessageReceipt send(NodeHandle handle, Message message, PMessageNotification deliverAckToMe, Map<String, Object> options) {
         return null;
       }
-    
+
       @Override
       public ScheduledMessage scheduleMsgAtFixedRate(Message msg, long delay, long period) {
         return null;
       }
-    
+
       @Override
       public ScheduledMessage scheduleMsg(Message msg, long delay) {
         return null;
       }
-    
+
       @Override
       public ScheduledMessage scheduleMsg(Message msg, long delay, long period) {
         return null;
       }
-    
+
       @Override
       public int proximity(NodeHandle nh) {
         return 0;
       }
-    
+
       public int proximity(NodeHandle nh, Map<String, Object> options) {
         return 0;
       }
-    
+
       @Override
       public SocketRequestHandle<NodeHandle> connect(NodeHandle handle, AppSocketReceiver receiver, PastryAppl appl, int timeout) {
-        return null;        
+        return null;
       }
-    
+
       @Override
       public NodeHandle coalesce(NodeHandle newHandle) {
         return null;
@@ -191,7 +191,7 @@ public class MergeTest {
       }
 
       public void addLivenessListener(LivenessListener<NodeHandle> name) {
-        
+
       }
 
       public boolean checkLiveness(NodeHandle i, Map<String, Object> options) {
@@ -207,40 +207,40 @@ public class MergeTest {
       }
 
       public void clearState(NodeHandle i) {
-        
+
       }
 
       public void addProximityListener(ProximityListener<NodeHandle> listener) {
-        
+
       }
 
       public boolean removeProximityListener(ProximityListener<NodeHandle> listener) {
         return false;
       }
-    
+
       public String printRouteState() {
         return null;
       }
     };
-    
+
     RoutingTable rt = new RoutingTable(ls2.get(0),1,(byte)4,pn);
-    
+
     ls2.addNodeSetListener(new NodeSetListener() {
-    
+
       public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource,
           NodeHandle handle, boolean added) {
         System.out.println("nodeSetUpdate("+handle+","+added+")");
-    
-      }    
+
+      }
     });
-    
+
     ls2.merge(ls1,ls1.get(0),rt,false, null);
-    
-    
+
+
     env.destroy();
-    
+
   }
-  
+
   public static class TestNodeHandle extends NodeHandle {
     private Id id;
 
@@ -292,7 +292,7 @@ public class MergeTest {
     }
 
     public void serialize(OutputBuffer buf) throws IOException {
-      throw new RuntimeException("not implemented.");        
+      throw new RuntimeException("not implemented.");
     }
   }
 

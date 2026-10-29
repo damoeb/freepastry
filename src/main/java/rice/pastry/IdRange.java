@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry;
 
 import java.io.IOException;
@@ -44,15 +44,15 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * Represents a contiguous range of Pastry ids. *
- * 
+ *
  * @version $Id: IdRange.java 3613 2007-02-15 14:45:14Z jstewart $
- * 
+ *
  * @author Peter Druschel
  */
 
 public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
   /**
-   * 
+   *
    */
   private static final long serialVersionUID = -361018850912613915L;
 
@@ -64,7 +64,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * Constructor.
-   * 
+   *
    * @param ccw the id at the counterclockwise edge of the range (inclusive)
    * @param cw the id at the clockwise edge of the range (exclusive)
    */
@@ -76,7 +76,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * Constructor, constructs an empty IdRange
-   *  
+   *
    */
   public IdRange() {
     empty = true;
@@ -86,7 +86,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /*
    * Constructs an empty/full range
-   * 
+   *
    * @param type - if type is true then constructs an empty range, else
    * constructs a full range
    */
@@ -111,10 +111,10 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
     if (isFull()) return 1;
     return ccw.hashCode()^cw.hashCode();
   }
-  
+
   /**
    * equality operator
-   * 
+   *
    * @param obj the other IdRange
    * @return true if the IdRanges are equal
    */
@@ -135,7 +135,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * return the size of the range
-   * 
+   *
    * @return the numerical distance of the range
    */
   private Id.Distance size() {
@@ -147,7 +147,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * test if the range is empty
-   * 
+   *
    * @return true if the range is empty
    */
   public boolean isEmpty() {
@@ -156,7 +156,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * test if the range is the full circle
-   * 
+   *
    * @return true if the range is full circle
    */
   public boolean isFull() {
@@ -165,7 +165,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * test if this range is adjacent to another range
-   * 
+   *
    * @param o another range
    * @return true if the range is adjacent to o
    */
@@ -176,7 +176,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * test if a given key lies within this range
-   * 
+   *
    * @param key the key
    * @return true if the key lies within this range, false otherwise
    */
@@ -189,7 +189,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * get counterclockwise edge of range
-   * 
+   *
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
   public Id getCCW() {
@@ -198,7 +198,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * get clockwise edge of range
-   * 
+   *
    * @return the id at the clockwise edge of the range (exclusive)
    */
   public Id getCW() {
@@ -208,7 +208,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
   /**
    * merge two ranges if this and other don't overlap, are not adjacent, and
    * this is not empty, then the result is this
-   * 
+   *
    * @param o the other range
    * @return the resulting range
    */
@@ -251,7 +251,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * get the complement of this range on the ring
-   * 
+   *
    * @return the complement range
    */
   public IdRange complement() {
@@ -263,11 +263,11 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * intersect two ranges returns an empty range if the ranges don't intersect
-   * 
+   *
    * two ranges may intersect in two ranges on the circle; this method produces
    * one such range of intersection if one exists the other range of
    * intersection can be computed by invoking o.intersect(this)
-   * 
+   *
    * @param o the other range
    * @return the result range
    */
@@ -313,11 +313,11 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
   /**
    * compute the difference between two ranges (exclusive or of keys in the two
    * ranges)
-   * 
+   *
    * two ranges may differ in two ranges on the circle; this method produces one
    * such range of difference if one exists the other range of difference can be
    * computed by invoking o.diff(this)
-   * 
+   *
    * @param o the other range
    * @return the result range
    */
@@ -331,10 +331,10 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
   /**
    * subtract the other range from this computes the ranges of keys that are in
    * this but not in o
-   * 
+   *
    * subtracting a range may produce two ranges on the circle; this method
    * produces one such ranges under control of the cwPart parameter
-   * 
+   *
    * @param o the other range
    * @param cwPart if true, returns the clockwise part of the range subtraction,
    *          else the counterclockwise part
@@ -349,7 +349,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * get counterclockwise half of the range
-   * 
+   *
    * @return the range corresponding to the ccw half of this range
    */
   public IdRange ccwHalf() {
@@ -364,7 +364,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * get clockwise half of the range
-   * 
+   *
    * @return the range corresponding to the cw half of this range
    */
   public IdRange cwHalf() {
@@ -392,7 +392,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * test if a given key lies within this range
-   * 
+   *
    * @param key the key
    * @return true if the key lies within this range, false otherwise
    */
@@ -402,7 +402,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * get counterclockwise edge of range
-   * 
+   *
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
   public rice.p2p.commonapi.Id getCCWId() {
@@ -411,7 +411,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * get clockwise edge of range
-   * 
+   *
    * @return the id at the clockwise edge of the range (exclusive)
    */
   public rice.p2p.commonapi.Id getCWId() {
@@ -420,7 +420,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * get the complement of this range
-   * 
+   *
    * @return This range's complement
    */
   public rice.p2p.commonapi.IdRange getComplementRange() {
@@ -429,7 +429,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * merges the given range with this range
-   * 
+   *
    * @return The merge
    */
   public rice.p2p.commonapi.IdRange mergeRange(rice.p2p.commonapi.IdRange range) {
@@ -438,7 +438,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * diffs the given range with this range
-   * 
+   *
    * @return The merge
    */
   public rice.p2p.commonapi.IdRange diffRange(rice.p2p.commonapi.IdRange range) {
@@ -447,7 +447,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
 
   /**
    * intersects the given range with this range
-   * 
+   *
    * @return The merge
    */
   public rice.p2p.commonapi.IdRange intersectRange(
@@ -455,16 +455,15 @@ public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
     return intersect((IdRange) range);
   }
 
-  public IdRange(InputBuffer buf) throws IOException {    
+  public IdRange(InputBuffer buf) throws IOException {
     cw = Id.build(buf);
     ccw = Id.build(buf);
     empty = buf.readBoolean();
   }
-  
+
   public void serialize(OutputBuffer buf) throws IOException {
     cw.serialize(buf);
     ccw.serialize(buf);
     buf.writeBoolean(empty);
   }
 }
-

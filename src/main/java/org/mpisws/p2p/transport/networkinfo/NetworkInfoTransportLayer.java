@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.networkinfo;
 
 import java.io.IOException;
@@ -71,28 +71,28 @@ import rice.p2p.util.AttachableCancellable;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
- * Can open a TCP connection to a known node, and it will return your IP address.  
- * 
+ * Can open a TCP connection to a known node, and it will return your IP address.
+ *
  * Use getMyIpAddress()
- * 
+ *
  * header = 0; // bypass
  * header = 1; // return IP
- * 
- * Also holds a "serialized id."  This is an externally specified piece of information.  It can be a NodeHandle, a PublicKey etc, 
+ *
+ * Also holds a "serialized id."  This is an externally specified piece of information.  It can be a NodeHandle, a PublicKey etc,
  * any information that any node should be able to query for and may need to do so w/o having a joined PastryNode.
- * 
- * 
+ *
+ *
  * @author Jeff Hoye
  *
  */
-public class NetworkInfoTransportLayer implements 
-    InetSocketAddressLookup, 
+public class NetworkInfoTransportLayer implements
+    InetSocketAddressLookup,
     Prober,
-    TransportLayer<InetSocketAddress, ByteBuffer>, 
+    TransportLayer<InetSocketAddress, ByteBuffer>,
     TransportLayerCallback<InetSocketAddress, ByteBuffer> {
   protected Logger logger;
   protected Environment environment;
-  
+
   protected TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
   protected ErrorHandler<InetSocketAddress> errorHandler;
   protected TransportLayer<InetSocketAddress, ByteBuffer> tl;
@@ -108,37 +108,37 @@ public class NetworkInfoTransportLayer implements
   protected static final byte[] HEADER_NODES_REQUEST = {HEADER_NODES_REQUEST_BYTE};
 
   Map<Byte, byte[]> serializedIds = new HashMap<Byte, byte[]>();
-  
-  public NetworkInfoTransportLayer(TransportLayer<InetSocketAddress, ByteBuffer> tl, 
-      Environment env, 
+
+  public NetworkInfoTransportLayer(TransportLayer<InetSocketAddress, ByteBuffer> tl,
+      Environment env,
       ErrorHandler<InetSocketAddress> errorHandler) {
     this.logger = env.getLogManager().getLogger(NetworkInfoTransportLayer.class, null);
     this.environment = env;
     this.tl= tl;
-    
+
     this.errorHandler = errorHandler;
-    
+
     if (this.errorHandler == null) {
-      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger); 
+      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
     }
-    
+
     tl.setCallback(this);
   }
-  
+
   InetSocketAddressSerializer addrSerializer = new InetSocketAddressSerializer();
-  
-  public Cancellable getMyInetAddress(InetSocketAddress bootstrap, 
+
+  public Cancellable getMyInetAddress(InetSocketAddress bootstrap,
       final Continuation<InetSocketAddress, IOException> c, Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, HEADER_IP_ADDRESS_REQUEST, new SocketCallback<InetSocketAddress>() {
-    
+
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         final SocketInputBuffer sib = new SocketInputBuffer(sock);
-        
+
         try {
           new P2PSocketReceiver<InetSocketAddress>() {
-            
+
             public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               // read IP address
@@ -151,24 +151,24 @@ public class NetworkInfoTransportLayer implements
                 c.receiveException(e);
               }
             }
-          
+
             public void receiveException(P2PSocket<InetSocketAddress> socket,
                 Exception ioe) {
               if (ioe instanceof IOException) c.receiveException((IOException)ioe);
               c.receiveException(new NetworkInfoIOException(ioe));
             }
-          
-          }.receiveSelectResult(sock, true, false);        
+
+          }.receiveSelectResult(sock, true, false);
         } catch (IOException ioe) {
           c.receiveException(ioe);
         }
       }
-    
+
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         if (ex instanceof IOException) c.receiveException((IOException)ex);
         c.receiveException(new NetworkInfoIOException(ex));
-      }    
+      }
     }, options));
     return ret;
   }
@@ -176,23 +176,23 @@ public class NetworkInfoTransportLayer implements
   public void setId(byte index, byte[] value) {
     serializedIds.put(index, value);
   }
-  
+
   public Cancellable getId(InetSocketAddress bootstrap, byte index,
       final Continuation<byte[], IOException> c, Map<String, Object> options) {
     byte[] hdr = new byte[2];
     hdr[0] = HEADER_ID_REQUEST_BYTE;
     hdr[1] = index;
-    
+
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, hdr, new SocketCallback<InetSocketAddress>() {
-    
+
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         final SocketInputBuffer sib = new SocketInputBuffer(sock);
-        
+
         try {
           new P2PSocketReceiver<InetSocketAddress>() {
-            
+
             public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               try {
@@ -207,40 +207,40 @@ public class NetworkInfoTransportLayer implements
                 c.receiveException(e);
               }
             }
-          
+
             public void receiveException(P2PSocket<InetSocketAddress> socket,
                 Exception ioe) {
               if (ioe instanceof IOException) c.receiveException((IOException)ioe);
               c.receiveException(new NetworkInfoIOException(ioe));
             }
-          
-          }.receiveSelectResult(sock, true, false);        
+
+          }.receiveSelectResult(sock, true, false);
         } catch (IOException ioe) {
           c.receiveException(ioe);
         }
       }
-    
+
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         if (ex instanceof IOException) c.receiveException((IOException)ex);
         c.receiveException(new NetworkInfoIOException(ex));
-      }    
+      }
     }, options));
     return ret;
   }
-  
-  public Cancellable getExternalNodes(InetSocketAddress bootstrap, 
+
+  public Cancellable getExternalNodes(InetSocketAddress bootstrap,
       final Continuation<Collection<InetSocketAddress>, IOException> c, Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, HEADER_NODES_REQUEST, new SocketCallback<InetSocketAddress>() {
-    
+
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         final SocketInputBuffer sib = new SocketInputBuffer(sock);
-        
+
         try {
           new P2PSocketReceiver<InetSocketAddress>() {
-            
+
             public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               // read IP address
@@ -258,28 +258,28 @@ public class NetworkInfoTransportLayer implements
                 c.receiveException(e);
               }
             }
-          
+
             public void receiveException(P2PSocket<InetSocketAddress> socket,
                 Exception ioe) {
               if (ioe instanceof IOException) c.receiveException((IOException)ioe);
               c.receiveException(new NetworkInfoIOException(ioe));
             }
-          
-          }.receiveSelectResult(sock, true, false);        
+
+          }.receiveSelectResult(sock, true, false);
         } catch (IOException ioe) {
           c.receiveException(ioe);
         }
       }
-    
+
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         if (ex instanceof IOException) c.receiveException((IOException)ex);
         c.receiveException(new NetworkInfoIOException(ex));
-      }    
+      }
     }, options));
     return ret;
   }
-  
+
   public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress i,
       SocketCallback<InetSocketAddress> deliverSocketToMe,
       Map<String, Object> options) {
@@ -287,7 +287,7 @@ public class NetworkInfoTransportLayer implements
 
     return openSocket(i,HEADER_PASSTHROUGH,deliverSocketToMe,options);
   }
-  
+
   public SocketRequestHandle<InetSocketAddress> openSocket(final InetSocketAddress i, final byte[] header,
       final SocketCallback<InetSocketAddress> deliverSocketToMe,
       Map<String, Object> options) {
@@ -300,20 +300,20 @@ public class NetworkInfoTransportLayer implements
     cancellable.setSubCancellable(tl.openSocket(i, new SocketCallback<InetSocketAddress>(){
       public void receiveResult(SocketRequestHandle<InetSocketAddress> c, final P2PSocket<InetSocketAddress> result) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
-        
-        cancellable.setSubCancellable(new Cancellable() {        
+
+        cancellable.setSubCancellable(new Cancellable() {
           public boolean cancel() {
             result.close();
             return true;
-          }        
+          }
         });
-        
-        result.register(false, true, new P2PSocketReceiver<InetSocketAddress>(){        
+
+        result.register(false, true, new P2PSocketReceiver<InetSocketAddress>(){
           ByteBuffer buf = ByteBuffer.wrap(header);
           public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
             if (canRead) throw new IOException("Never asked to read!");
             if (!canWrite) throw new IOException("Can't write!");
-            long ret = socket.write(buf);            
+            long ret = socket.write(buf);
             if (ret < 0) {
               socket.close();
               return;
@@ -325,25 +325,25 @@ public class NetworkInfoTransportLayer implements
             } else {
               deliverSocketToMe.receiveResult(cancellable, socket);
             }
-          }        
+          }
           public void receiveException(P2PSocket<InetSocketAddress> socket, Exception e) {
             deliverSocketToMe.receiveException(cancellable, e);
           }
         });
-      }    
+      }
       public void receiveException(SocketRequestHandle<InetSocketAddress> c, Exception exception) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
         deliverSocketToMe.receiveException(cancellable, exception);
-      }    
+      }
     }, options));
-    
+
     return cancellable;
   }
 
   public void incomingSocket(final P2PSocket<InetSocketAddress> s) throws IOException {
     logger.trace("incomingSocket({})", s);
     new P2PSocketReceiver<InetSocketAddress>() {
-      ByteBuffer bb = ByteBuffer.allocate(HEADER_PASSTHROUGH.length); 
+      ByteBuffer bb = ByteBuffer.allocate(HEADER_PASSTHROUGH.length);
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
           boolean canRead, boolean canWrite) throws IOException {
         long bytesRead = socket.read(bb);
@@ -353,10 +353,10 @@ public class NetworkInfoTransportLayer implements
           return;
         }
         if(bb.hasRemaining()) {
-          socket.register(true, false, this);    
+          socket.register(true, false, this);
           return;
         }
-        
+
         // read the array
         byte[] ret = bb.array();
         if (ret.length > 1) throw new RuntimeException("Make this work over the array, implementation expectes header to be 1 byte.");
@@ -384,13 +384,13 @@ public class NetworkInfoTransportLayer implements
           // header didn't match up
           errorHandler.receivedUnexpectedData(socket.getIdentifier(), ret, 0, socket.getOptions());
         }
-        
+
       }
-    
+
       public void receiveException(P2PSocket<InetSocketAddress> socket,
           Exception ioe) {
         errorHandler.receivedException(socket.getIdentifier(), ioe);
-      }    
+      }
     }.receiveSelectResult(s, true, false);
   }
 
@@ -398,9 +398,9 @@ public class NetworkInfoTransportLayer implements
     // write out the caller's ip address
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     logger.info("HEADER_IP_ADDRESS_REQUEST_BYTE serializing {}", socket.getIdentifier());
-    addrSerializer.serialize(socket.getIdentifier(), sob);          
+    addrSerializer.serialize(socket.getIdentifier(), sob);
     final ByteBuffer writeMe = sob.getByteBuffer();
-    new P2PSocketReceiver<InetSocketAddress>() {           
+    new P2PSocketReceiver<InetSocketAddress>() {
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
           boolean canRead, boolean canWrite) throws IOException {
         if (socket.write(writeMe) < 0) {
@@ -412,22 +412,22 @@ public class NetworkInfoTransportLayer implements
           socket.close();
         }
       }
-    
+
       public void receiveException(P2PSocket<InetSocketAddress> socket,
           Exception ioe) {
         // do nothing
       }
-    
+
     }.receiveSelectResult(socket, false, true);
 
   }
-  
+
   public void handleNodesRequest(final P2PSocket<InetSocketAddress> socket) throws IOException {
     // write out the caller's ip address
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     Collection<InetSocketAddress> ret = probeStrategy.getExternalAddresses();
     logger.info("serializing {} external addresses for {}", ret.size(), socket.getIdentifier());
-    
+
     // only take the first 20
     if (ret.size() > 20) {
       ArrayList<InetSocketAddress> temp = new ArrayList<InetSocketAddress>(20);
@@ -439,13 +439,13 @@ public class NetworkInfoTransportLayer implements
       }
       ret = temp;
     }
-    
+
     sob.writeByte(ret.size());
     for (InetSocketAddress foo : ret) {
-      addrSerializer.serialize(foo, sob);          
+      addrSerializer.serialize(foo, sob);
     }
     final ByteBuffer writeMe = sob.getByteBuffer();
-    new P2PSocketReceiver<InetSocketAddress>() {           
+    new P2PSocketReceiver<InetSocketAddress>() {
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
           boolean canRead, boolean canWrite) throws IOException {
         if (socket.write(writeMe) < 0) {
@@ -457,64 +457,64 @@ public class NetworkInfoTransportLayer implements
           socket.close();
         }
       }
-    
+
       public void receiveException(P2PSocket<InetSocketAddress> socket,
           Exception ioe) {
         // do nothing
       }
-    
+
     }.receiveSelectResult(socket, false, true);
   }
-  
+
   public void handleIdRequest(final P2PSocket<InetSocketAddress> socket) throws IOException {
     // read the index
     final ByteBuffer indexBuf = ByteBuffer.allocate(1);
     new BufferReader<InetSocketAddress>(socket,new Continuation<ByteBuffer, Exception>() {
-    
+
       public void receiveResult(ByteBuffer result) {
         byte index = result.get();
         if (serializedIds.get(index) == null) {
           // consider returning an error
           socket.close();
-          return;          
+          return;
         }
         new BufferWriter<InetSocketAddress>(ByteBuffer.wrap(serializedIds.get(index)),socket,null);
       }
-    
+
       public void receiveException(Exception exception) {
         socket.close();
-      }    
+      }
     },1);
   }
-  
+
   public void handleProbeRequest(final P2PSocket<InetSocketAddress> socket) {
     // read addr, uid
     try {
       new P2PSocketReceiver<InetSocketAddress>() {
         SocketInputBuffer sib = new SocketInputBuffer(socket);
-      
+
         public void receiveSelectResult(final P2PSocket<InetSocketAddress> socket,
             boolean canRead, boolean canWrite) throws IOException {
           // try to read the stuff until it works or fails
           try {
             MultiInetSocketAddress addr = MultiInetSocketAddress.build(sib);
             long uid = sib.readLong();
-            probeStrategy.requestProbe(addr, uid, new Continuation<Boolean, Exception>() {            
+            probeStrategy.requestProbe(addr, uid, new Continuation<Boolean, Exception>() {
               public void receiveResult(Boolean result) {
                 returnResult(result.booleanValue());
               }
-            
+
               public void receiveException(Exception exception) {
                 returnResult(false);
               }
-              
+
               public void returnResult(boolean ret) {
                 final ByteBuffer writeMe = ByteBuffer.allocate(1);
                 writeMe.put(ret ? (byte)1 : (byte)0);
                 writeMe.flip();
-                
+
                 try {
-                  new P2PSocketReceiver<InetSocketAddress>() {                
+                  new P2PSocketReceiver<InetSocketAddress>() {
                     public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                         boolean canRead, boolean canWrite) throws IOException {
                       long bytesWritten = socket.write(writeMe);
@@ -528,63 +528,63 @@ public class NetworkInfoTransportLayer implements
                         socket.close();
                       }
                     }
-                  
+
                     public void receiveException(P2PSocket<InetSocketAddress> socket,
                         Exception ioe) {
                       socket.close();
-                    }                
+                    }
                   }.receiveSelectResult(socket, false, true);
                 } catch (IOException ioe) {
                   socket.close();
                 }
               }
             });
-          } catch (InsufficientBytesException ibe) {    
+          } catch (InsufficientBytesException ibe) {
             socket.register(true, false, this);
           }
         }
-      
+
         public void receiveException(P2PSocket<InetSocketAddress> socket,
             Exception ioe) {
           socket.close();
         }
-      
+
       }.receiveSelectResult(socket, true, false);
     } catch (IOException ioe) {
       errorHandler.receivedException(socket.getIdentifier(), ioe);
       socket.close();
     }
   }
-  
+
   public void handleProbeResponse(final P2PSocket<InetSocketAddress> socket) {
     // read addr, uid
     try {
       new P2PSocketReceiver<InetSocketAddress>() {
         SocketInputBuffer sib = new SocketInputBuffer(socket);
-      
+
         public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
             boolean canRead, boolean canWrite) throws IOException {
           // try to read the stuff until it works or fails
           try {
             long uid = sib.readLong();
             verifyConnectionRequests.get(uid).tcpSuccess(socket.getIdentifier(), socket.getOptions());
-          } catch (InsufficientBytesException ibe) {    
+          } catch (InsufficientBytesException ibe) {
             socket.register(true, false, this);
           }
         }
-      
+
         public void receiveException(P2PSocket<InetSocketAddress> socket,
             Exception ioe) {
-      
+
         }
-      
+
       }.receiveSelectResult(socket, true, false);
     } catch (IOException ioe) {
       errorHandler.receivedException(socket.getIdentifier(), ioe);
       socket.close();
     }
   }
-  
+
   public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> callback) {
     this.callback = callback;
   }
@@ -616,14 +616,14 @@ public class NetworkInfoTransportLayer implements
       InetSocketAddress i, ByteBuffer m,
       final MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
-    
+
     final MessageRequestHandleImpl<InetSocketAddress, ByteBuffer> ret = new MessageRequestHandleImpl<InetSocketAddress, ByteBuffer>(i,m,options);
-    
+
     ByteBuffer passThrough = ByteBuffer.allocate(m.remaining()+1);
     passThrough.put(HEADER_PASSTHROUGH_BYTE);
     passThrough.put(m);
     passThrough.flip();
-    
+
     MessageCallback<InetSocketAddress, ByteBuffer> myCallback = null;
     if (deliverAckToMe != null) {
       myCallback = new MessageCallback<InetSocketAddress, ByteBuffer>() {
@@ -631,7 +631,7 @@ public class NetworkInfoTransportLayer implements
         public void ack(MessageRequestHandle<InetSocketAddress, ByteBuffer> msg) {
           deliverAckToMe.ack(ret);
         }
-        
+
         public void sendFailed(
             MessageRequestHandle<InetSocketAddress, ByteBuffer> msg,
             Exception reason) {
@@ -642,7 +642,7 @@ public class NetworkInfoTransportLayer implements
     ret.setSubCancellable(tl.sendMessage(i, passThrough, myCallback, options));
     return ret;
   }
-  
+
   public void messageReceived(InetSocketAddress i, ByteBuffer m,
       Map<String, Object> options) throws IOException {
     byte header = m.get();
@@ -659,7 +659,7 @@ public class NetworkInfoTransportLayer implements
 
   public void destroy() {
     verifyConnectionRequests.clear();
-    tl.destroy();    
+    tl.destroy();
   }
 
   /**
@@ -671,24 +671,24 @@ public class NetworkInfoTransportLayer implements
   }
 
   Map<Long, ConnectivityResult> verifyConnectionRequests = new HashMap<Long, ConnectivityResult>();
-  
+
   /**
    * ask probeAddress to call probeStrategy.requestProbe()
    */
   public Cancellable verifyConnectivity(final MultiInetSocketAddress local,
-      final InetSocketAddress probeAddress, 
+      final InetSocketAddress probeAddress,
       final ConnectivityResult deliverResultToMe,
       Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
 
     final long uid = environment.getRandomSource().nextLong();
-    
+
     logger.debug("verifyConnectivity({},{}):{}", local, probeAddress, uid);
 
     synchronized(verifyConnectionRequests) {
       verifyConnectionRequests.put(uid, deliverResultToMe);
     }
-    
+
     // header has the PROBE_REQUEST and uid
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     try {
@@ -699,29 +699,29 @@ public class NetworkInfoTransportLayer implements
       // shouldn't happen
       synchronized(verifyConnectionRequests) {
         verifyConnectionRequests.remove(uid);
-      }      
+      }
       deliverResultToMe.receiveException(ioe);
       return null;
     }
-    
+
     // if they cancel, pull it from the table
-    ret.attach(new Cancellable() {    
+    ret.attach(new Cancellable() {
       public boolean cancel() {
         synchronized(verifyConnectionRequests) {
           verifyConnectionRequests.remove(uid);
         }
         return true;
-      }    
+      }
     });
-    
-    ret.attach(openSocket(probeAddress, sob.getBytes(), new SocketCallback<InetSocketAddress>() {    
+
+    ret.attach(openSocket(probeAddress, sob.getBytes(), new SocketCallback<InetSocketAddress>() {
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         // maybe we should read a response here, but I don't think it's important, just read to close
-        
+
         sock.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
           ByteBuffer readMe = ByteBuffer.allocate(1);
-        
+
           public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
               boolean canRead, boolean canWrite) throws IOException {
             // read result
@@ -737,7 +737,7 @@ public class NetworkInfoTransportLayer implements
               socket.register(true,false,this);
               return;
             }
-            
+
             readMe.flip();
             byte ret = readMe.get();
             if (ret == 1) {
@@ -747,19 +747,19 @@ public class NetworkInfoTransportLayer implements
               return;
             }
           }
-        
+
           public void receiveException(P2PSocket<InetSocketAddress> socket,
               Exception ioe) {
             deliverResultToMe.receiveException(ioe);
-          }        
+          }
         });
-        
+
       }
-    
+
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         deliverResultToMe.receiveException(ex);
-      }    
+      }
     }, options));
     return ret;
   }
@@ -772,13 +772,13 @@ public class NetworkInfoTransportLayer implements
     msg.put(HEADER_PROBE_RESPONSE_BYTE);
     msg.putLong(uid);
     msg.flip();
-    
+
     // 0 = udp 1 = tcp
     // no need to synchronize, this should all be done on the selector
     final boolean[] success = new boolean[2];
     success[0] = false;
     success[1] = false;
-    
+
     MessageCallback<InetSocketAddress, ByteBuffer> mc = null;
     if (deliverResponseToMe != null) {
       mc = new MessageCallback<InetSocketAddress, ByteBuffer>() {
@@ -789,7 +789,7 @@ public class NetworkInfoTransportLayer implements
             deliverResponseToMe.receiveResult(uid);
           }
         }
-            
+
         public void sendFailed(
             MessageRequestHandle<InetSocketAddress, ByteBuffer> msg, Exception reason) {
           logger.trace("probe({},{},{},{}).udpFailure()", addr, uid, deliverResponseToMe, options);
@@ -797,19 +797,19 @@ public class NetworkInfoTransportLayer implements
           ret.cancel();
           deliverResponseToMe.receiveException(reason);
         }
-      
+
       };
     }
-    
+
     ret.attach(tl.sendMessage(addr, msg, mc, options));
-    
-    
+
+
     // tcp
     final ByteBuffer writeMe = ByteBuffer.allocate(9);
     writeMe.put(HEADER_PROBE_RESPONSE_BYTE);
     writeMe.putLong(uid);
     writeMe.flip();
-    ret.attach(openSocket(addr, writeMe.array(), new SocketCallback<InetSocketAddress>() {    
+    ret.attach(openSocket(addr, writeMe.array(), new SocketCallback<InetSocketAddress>() {
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         // maybe we should read a response here, but I don't think it's important, just read to close
@@ -819,15 +819,15 @@ public class NetworkInfoTransportLayer implements
           deliverResponseToMe.receiveResult(uid);
         }
         sock.close();
-        
+
       }
-    
+
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         logger.atTrace().log(() -> "probe("+addr+","+uid+","+deliverResponseToMe+","+options+").tcpFailure2() "+ex);
         if (deliverResponseToMe != null) deliverResponseToMe.receiveException(ex);
-      }    
-    }, options));    
+      }
+    }, options));
     return ret;
   }
 }

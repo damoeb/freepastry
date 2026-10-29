@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.testing;
 
 import java.io.IOException;
@@ -52,17 +52,17 @@ import rice.pastry.standard.IPNodeIdFactory;
 
 /**
  * A hello world example for pastry. This is the distributed driver.
- * 
+ *
  * For example, run with default arguments on two machines, both with args
  * -bootstrap firstmachine. Read the messages and follow the protocols.
- * 
+ *
  * Either separately or with the above, try -nodes 3 and -nodes 20. Try -msgs
  * 100. Try the two machine configuration, kill it, restart, and watch it join
  * as a different node. Do that a few times, watch LeafSet entries accumulate,
  * then in 30 seconds, watch the maintenance take over.
- * 
+ *
  * @version $Id: DistHelloWorld.java 4654 2009-01-08 16:33:07Z jeffh $
- * 
+ *
  * @author Sitaram Iyer
  * @author Peter Druschel
  */
@@ -87,7 +87,7 @@ public class DistHelloWorld {
   public static int protocol = DistPastryNodeFactory.PROTOCOL_DEFAULT;
 
   public Environment environment;
-  
+
   /**
    * Constructor
    */
@@ -96,14 +96,14 @@ public class DistHelloWorld {
     factory = DistPastryNodeFactory.getFactory(new IPNodeIdFactory(InetAddress.getLocalHost(), port, env),
         protocol, port, env);
     pastryNodes = new Vector<PastryNode>();
-    helloClients = new Vector<Object>();    
+    helloClients = new Vector<Object>();
   }
 
   /**
    * Gets a handle to a bootstrap node. First we try localhost, to see whether a
    * previous virtual node has already bound itself there. Then we try nattempts
    * times on bshost:bsport. Then we fail.
-   * 
+   *
    * @param firstNode true of the first virtual node is being bootstrapped on
    *          this host
    * @return handle to bootstrap node, or null.
@@ -130,8 +130,8 @@ public class DistHelloWorld {
    */
   private static void doIinitstuff(String args[], Environment env) {
 
-    // process command line arguments    
-    
+    // process command line arguments
+
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-help")) {
         System.out
@@ -231,14 +231,14 @@ public class DistHelloWorld {
   /**
    * Usage: DistHelloWorld [-msgs m] [-nodes n] [-port p] [-bootstrap
    * bshost[:bsport]] [-help].
-   * 
+   *
    * Ports p and bsport refer to Socket port numbers (default =
    * 5009). Without -bootstrap bshost[:bsport], only localhost:p is used for
    * bootstrap. Log levels are set in the SLF4J backend's configuration.
    */
   public static void main(String args[]) throws IOException {
-    
-    
+
+
     Environment env = new Environment();
     doIinitstuff(args, env);
     DistHelloWorld driver = new DistHelloWorld(env);
@@ -281,4 +281,3 @@ public class DistHelloWorld {
     }
   }
 }
-

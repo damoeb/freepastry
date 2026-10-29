@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,26 +16,26 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
-package rice.persistence; 
+package rice.persistence;
 
 /*
  * @(#) PersistenceManager.java
@@ -96,9 +96,9 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
  * This class was initially designed to support only Ids whose toString()
  * method returns a String of constant length.  It has been extended to
  * support variable-length toString()s, but we have the caveat that
- * not toString() can be a substring of another toString() - this 
+ * not toString() can be a substring of another toString() - this
  * will cause undefined behavior.  <b>Additionally, the toString() method on the key Ids
- * *CANNOT* have the period ('.') or exclamation point ('!') 
+ * *CANNOT* have the period ('.') or exclamation point ('!')
  * characters in them - these are used for internal purposes.<b>
  *
  * The serialized objects are stored on-disk in a GZIPed XML format,
@@ -115,19 +115,19 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
  *
  * The persistence package is set up to automatically upgrade older
  * versions of the on-disk format as new data is written under the
- * key.  
+ * key.
  *
  * Persistence also supports the metadata interface specified in the
  * Catalog interface.  All metadata is guaranteed to be stored
  * in memory, so fetching the metadata of a given key is an efficient
- * operation.  
+ * operation.
  */
 @SuppressWarnings("unchecked")
 public class PersistentStorage implements Storage {
-  
+
   /**
    * Fields for logging based on the requests we are writing.
-   */  
+   */
   private Object statLock = new Object();
   private long statsLastWritten;
   private long statsWriteInterval = 60 * 1000;
@@ -136,50 +136,50 @@ public class PersistentStorage implements Storage {
   private long numRenames = 0;
   private long numDeletes = 0;
   private long numMetadataWrites = 0;
-  
+
   /**
-   * Static variables defining the layout of the on-disk storage 
+   * Static variables defining the layout of the on-disk storage
    */
   public static final long PERSISTENCE_MAGIC_NUMBER = 8038844221L;
   public static final long PERSISTENCE_VERSION_2 = 2L;
   public static final long PERSISTENCE_REVISION_2_0 = 0L;
   public static final long PERSISTENCE_REVISION_2_1 = 1L;
-  
-  /** 
+
+  /**
    * Static variables which define the location of the storage root
    */
   public static final String BACKUP_DIRECTORY = "/FreePastry-Storage-Root/";
   public static final String LOST_AND_FOUND_DIRECTORY = "lost+found";
   public static final String METADATA_FILENAME = "metadata.cache";
-  
+
   /**
    * The splitting factor, or the number of files in one directory
    */
   public static final int MAX_FILES = 256;
-  
+
   /**
    * The maximum number of subdirectories in a directory before splitting
    */
   public static final int MAX_DIRECTORIES = 32;
-  
+
   /**
    * The amount of time before re-writing the metadata file
    */
   public static final int METADATA_SYNC_TIME = 300000;
-  
+
   /**
    * Special placeholder for the file whose name should be zero-length
    */
    public static final String ZERO_LENGTH_NAME = "!";
-  
+
   private IdFactory factory;        // the factory used for creating ids
-  
+
   private String name;              // the name of this instance
   private File rootDirectory;       // root directory to store stuff in
   private File backupDirectory;     // dir for storing persistent objs
   private File appDirectory;        // dir for storing persistent objs
   private File lostDirectory;       // dir for lost objects
-  
+
   private boolean index;            // whether or not we are indexing the objects
   private HashMap<File, File[]> directories;      // the in-memory map of directories (for efficiency)
   private HashMap<File, String> prefixes;         // an in-memory cache of the directory prefixes
@@ -189,12 +189,12 @@ public class PersistentStorage implements Storage {
 
   private String rootDir;           // rootDirectory
 
-  private long storageSize;         // The amount of storage allowed to be used 
+  private long storageSize;         // The amount of storage allowed to be used
   private long usedSize;            // The amount of storage currently in use
 
   Environment environment;
   Logger logger;
-  
+
  /**
   * Builds a PersistentStorage given a root directory in which to
   * persist the data. Uses a default instance name.
@@ -206,10 +206,10 @@ public class PersistentStorage implements Storage {
   public PersistentStorage(IdFactory factory, String rootDir, long size, Environment env) throws IOException {
     this(factory, "default", rootDir, size, env);
   }
-   
+
  /**
   * Builds a PersistentStorage given and an instance name
-  *  and a root directory in which to persist the data. 
+  *  and a root directory in which to persist the data.
   *
   * @param factory The factory to use for creating Ids.
   * @param name the name of this instance
@@ -219,10 +219,10 @@ public class PersistentStorage implements Storage {
   public PersistentStorage(IdFactory factory, String name, String rootDir, long size, Environment env) throws IOException {
     this(factory, name, rootDir, size, true, env);
   }
-  
+
   /**
    * Builds a PersistentStorage given and an instance name
-   *  and a root directory in which to persist the data. 
+   *  and a root directory in which to persist the data.
    *
    * @param factory The factory to use for creating Ids.
    * @param name the name of this instance
@@ -236,7 +236,7 @@ public class PersistentStorage implements Storage {
     this.factory = factory;
     this.name = name;
     this.rootDir = rootDir;
-    this.storageSize = size; 
+    this.storageSize = size;
     this.index = index;
     this.directories = new HashMap<File, File[]>();
     this.prefixes = new HashMap<File, String>();
@@ -245,29 +245,29 @@ public class PersistentStorage implements Storage {
       this.dirty = new HashSet<File>();
       this.metadata = new ReverseTreeMap<Id, Serializable>();
     }
-      
+
     logger.info("Launching persistent storage in {} with name {} spliting factor {}", rootDir, name, MAX_FILES);
-    
+
     init();
-  } 
-  
+  }
+
   private void printStats() {
     synchronized(statLock) {
       long now = environment.getTimeSource().currentTimeMillis();
       if ((statsLastWritten/statsWriteInterval) != (now/statsWriteInterval)) {
         logger.info("@L.PE name={} interval={}-{}", name, statsLastWritten, now);
         statsLastWritten = now;
-        
+
         logger.atInfo().log(() -> "@L.PE   objsTotal=" + (index ? "" + metadata.keySet().size() : "?") + " objsBytesTotal=" + getTotalSize());
         logger.info("@L.PE   numWrites={} numReads={} numDeletes={}", numWrites, numReads, numDeletes);
         logger.info("@L.PE   numMetadataWrites={} numRenames={}", numMetadataWrites, numRenames);
       }
     }
   }
-  
+
   /**
-   * Method which allows the persistence root to schedule an event which will tell it to 
-   * sync the metadata cached. Should be called exactly once after the persistence root is 
+   * Method which allows the persistence root to schedule an event which will tell it to
+   * sync the metadata cached. Should be called exactly once after the persistence root is
    * created.
    *
    * @param timer The timer to use to schedule the events
@@ -288,7 +288,7 @@ public class PersistentStorage implements Storage {
       }, environment.getRandomSource().nextInt(METADATA_SYNC_TIME), METADATA_SYNC_TIME);
     }
   }
-  
+
   /**
    * Renames the given object to the new id.  This method is potentially faster
    * than store/cache and unstore/uncache.
@@ -299,27 +299,27 @@ public class PersistentStorage implements Storage {
    */
   public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
     printStats();
-    
+
     environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "rename " + oldId + " " + newId; }
       public Boolean doWork() throws Exception {
         synchronized(statLock) { numRenames++; }
-        
+
         File f = getFile(oldId);
-        
+
         if ((f != null) && (f.exists())) {
           File g = getFile(newId);
           renameFile(f, g);
-          
+
           checkDirectory(g.getParentFile());
-          
+
           if (index) {
             synchronized (metadata) {
               metadata.put(newId, metadata.get(oldId));
-              metadata.remove(oldId); 
+              metadata.remove(oldId);
             }
           }
-          
+
           return Boolean.TRUE;
         } else {
           return Boolean.FALSE;
@@ -342,7 +342,7 @@ public class PersistentStorage implements Storage {
    * with the success or failure of the operation.
    *
    * @param obj The object to be made persistent.
-   * @param id The object's id. 
+   * @param id The object's id.
    * @param metadata The object's metadata
    * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
@@ -351,20 +351,20 @@ public class PersistentStorage implements Storage {
       c.receiveResult(Boolean.valueOf(false));
       return;
     }
-    
+
     printStats();
-    
-    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) { 
+
+    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "store " + id; }
       public Boolean doWork() throws Exception {
         synchronized(statLock) { numWrites++; }
-        
+
         logger.atTrace().log(() -> "Storing object " + obj + " under id " + id.toStringFull() + " in root " + appDirectory);
-        
+
         /* first, create a temporary file */
         File objFile = getFile(id);
         File transcFile = makeTemporaryFile(id);
-        
+
         logger.trace("Writing object {} to temporary file {} and renaming to {}", obj, transcFile, objFile);
 
         /* next, write out the data to a new copy of the original file */
@@ -373,7 +373,7 @@ public class PersistentStorage implements Storage {
           logger.atTrace().log(() -> "Done writing object " + obj + " under id " + id.toStringFull() + " in root " + appDirectory);
 
           /* abort if this will put us over quota */
-          if (getUsedSpace() + getFileLength(transcFile) > getStorageSize()) 
+          if (getUsedSpace() + getFileLength(transcFile) > getStorageSize())
             throw new OutofDiskSpaceException();
         } catch (Exception e) {
           /* if an IOException is thrown, delete the temporary file and abort */
@@ -381,16 +381,16 @@ public class PersistentStorage implements Storage {
           deleteFile(transcFile);
           throw e;
         }
-        
+
         logger.atTrace().log(() -> "COUNT: Storing data of class " + obj.getClass().getName() + " under " + id.toStringFull() + " of size " + transcFile.length() + " in " + name);
-        
+
         /* recalculate amount used */
-        decreaseUsedSpace(getFileLength(objFile)); 
+        decreaseUsedSpace(getFileLength(objFile));
         increaseUsedSpace(getFileLength(transcFile));
-        
+
         /* now, rename the temporary file to be the real file */
-        renameFile(transcFile, objFile); 
-        
+        renameFile(transcFile, objFile);
+
         /* mark the metadata cache of this file to be dirty */
         if (index) {
           synchronized (PersistentStorage.this.metadata) {
@@ -398,15 +398,15 @@ public class PersistentStorage implements Storage {
             dirty.add(objFile.getParentFile());
           }
         }
-                
+
         /* finally, check to see if this directory needs to be split */
         checkDirectory(objFile.getParentFile());
-        
+
         return Boolean.TRUE;
       }
     });
   }
-  
+
   /**
    * Request to remove the object from the list of persistend objects.
    * Delete the serialized image of the object from stable storage. If
@@ -424,33 +424,33 @@ public class PersistentStorage implements Storage {
    */
   public void unstore(final Id id, Continuation<? super Boolean, Exception> c) {
     printStats();
-    
-    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) { 
+
+    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "unstore " + id; }
       public Boolean doWork() throws Exception {
         synchronized(statLock) { numDeletes++; }
-        
+
         /* first get the file */
-        File objFile = getFile(id); 
-        
+        File objFile = getFile(id);
+
         logger.atTrace().log(() -> "COUNT: Unstoring data under " + id.toStringFull() + " of size " + objFile.length() + " in " + name);
-        
+
         /* remove id from stored list */
         if (index) {
-          synchronized (metadata) { 
+          synchronized (metadata) {
             metadata.remove(id);
             dirty.add(objFile.getParentFile());
           }
         }
-        
+
         /* check to make sure file exists */
         if ((objFile == null) || (! objFile.exists()))
           return Boolean.FALSE;
-        
+
         /* record the space collected and delete the file */
         decreaseUsedSpace(objFile.length());
         deleteFile(objFile);
-        
+
         return Boolean.TRUE;
       }
     });
@@ -471,10 +471,10 @@ public class PersistentStorage implements Storage {
       throw new UnsupportedOperationException("exists() not supported without indexing");
     }
   }
-  
+
   /**
    * Returns the metadata associated with the provided object, or null if
-   * no metadata exists.  The metadata must be stored in memory, so this 
+   * no metadata exists.  The metadata must be stored in memory, so this
    * operation is guaranteed to be fast and non-blocking.
    *
    * @param id The id for which the metadata is needed
@@ -489,33 +489,33 @@ public class PersistentStorage implements Storage {
       throw new UnsupportedOperationException("getMetadata() not supported without indexing");
     }
   }
-  
+
   /**
    * Updates the metadata stored under the given key to be the provided
    * value.  As this may require a disk access, the requestor must
-   * also provide a continuation to return the result to.  
+   * also provide a continuation to return the result to.
    *
-   * @param id The id for the metadata 
+   * @param id The id for the metadata
    * @param metadata The metadata to store
    * @param c The command to run once the operation is complete
    */
   public void setMetadata(final Id id, final Serializable metadata, Continuation<? super Boolean, Exception> c) {
     printStats();
-    
+
     if (! exists(id)) {
       c.receiveResult(Boolean.valueOf(false));
-    } else {    
-      environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) { 
+    } else {
+      environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
         public String toString() { return "setMetadata " + id; }
         public Boolean doWork() throws Exception {
           synchronized(statLock) { numMetadataWrites++; }
-          
+
           logger.atTrace().log(() -> "COUNT: Updating metadata for " + id.toStringFull() + " in " + name);
-          
+
           /* write the metadata to the file */
           File objFile = getFile(id);
           writeMetadata(objFile, metadata);
-                    
+
           /* then update our cache */
           if (index) {
             synchronized (PersistentStorage.this.metadata) {
@@ -523,7 +523,7 @@ public class PersistentStorage implements Storage {
               dirty.add(objFile.getParentFile());
             }
           }
-          
+
           return Boolean.TRUE;
         }
       });
@@ -538,21 +538,21 @@ public class PersistentStorage implements Storage {
    */
   public void getObject(final Id id, Continuation<? super Serializable, Exception> c) {
     printStats();
-    
+
     if (index && (! exists(id))) {
       c.receiveResult(null);
-    } else {    
-      environment.getProcessor().processBlockingIO(new WorkRequest<Serializable>(c, environment.getSelectorManager()) { 
+    } else {
+      environment.getProcessor().processBlockingIO(new WorkRequest<Serializable>(c, environment.getSelectorManager()) {
         public String toString() { return "getObject " + id; }
         public Serializable doWork() throws Exception {
           synchronized(statLock) { numReads++; }
-          
+
           /* get the file */
           File objFile = getFile(id);
-          
-          try { 
+
+          try {
             /* and make sure that it exists */
-            if ((objFile == null) || (! objFile.exists())) 
+            if ((objFile == null) || (! objFile.exists()))
               return null;
 
             logger.atTrace().log(() -> "COUNT: Fetching data under " + id.toStringFull() + " of size " + objFile.length() + " in " + name);
@@ -565,7 +565,7 @@ public class PersistentStorage implements Storage {
                 dirty.add(objFile.getParentFile());
               }
             }
-            
+
             /* if there's a problem, move the file to the lost+found */
             moveToLost(objFile);
 
@@ -577,7 +577,7 @@ public class PersistentStorage implements Storage {
   }
 
   /**
-   * Return the objects identified by the given range of ids. The IdSet 
+   * Return the objects identified by the given range of ids. The IdSet
    * returned contains the Ids of the stored objects. The range is
    * partially inclusive, the lower range is inclusive, and the upper
    * exclusive.
@@ -586,16 +586,16 @@ public class PersistentStorage implements Storage {
    * NOTE: This method blocks so if the behavior of this method changes and
    * uses the disk, this method may be deprecated.
    *
-   * @param range The range to query  
-   * @return The idset containing the keys 
+   * @param range The range to query
+   * @return The idset containing the keys
    */
   public IdSet scan(IdRange range){
     if (index) {
       if (range.isEmpty())
         return factory.buildIdSet();
-      else if (range.getCCWId().equals(range.getCWId())) 
+      else if (range.getCCWId().equals(range.getCWId()))
         return scan();
-      else 
+      else
         synchronized (metadata) {
           return factory.buildIdSet(new ImmutableSortedMap<Id, Serializable>(metadata.keySubMap(range.getCCWId(), range.getCWId())));
         }
@@ -605,7 +605,7 @@ public class PersistentStorage implements Storage {
   }
 
   /**
-   * Return the objects identified by the given range of ids. The IdSet 
+   * Return the objects identified by the given range of ids. The IdSet
    * returned contains the Ids of the stored objects. The range is
    * partially inclusive, the lower range is inclusive, and the upper
    * exclusive.
@@ -613,7 +613,7 @@ public class PersistentStorage implements Storage {
    * NOTE: This method blocks so if the behavior of this method changes and
    * uses the disk, this method may be deprecated.
    *
-   * @return The idset containing the keys 
+   * @return The idset containing the keys
    */
   public IdSet scan() {
     if (index) {
@@ -624,21 +624,21 @@ public class PersistentStorage implements Storage {
       throw new UnsupportedOperationException("scan() not supported without indexing");
     }
   }
-  
+
   /**
-   * Returns a map which contains keys mapping ids to the associated 
-   * metadata.  
+   * Returns a map which contains keys mapping ids to the associated
+   * metadata.
    *
-   * @param range The range to query  
-   * @return The map containing the keys 
+   * @param range The range to query
+   * @return The map containing the keys
    */
   public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
     if (index) {
-      if (range.isEmpty()) 
+      if (range.isEmpty())
         return new RedBlackMap<Id, Serializable>();
-      else if (range.getCCWId().equals(range.getCWId())) 
+      else if (range.getCCWId().equals(range.getCWId()))
         return scanMetadata();
-      else 
+      else
         synchronized (metadata) {
           return new ImmutableSortedMap<Id, Serializable>(metadata.keySubMap(range.getCCWId(), range.getCWId()));
         }
@@ -646,12 +646,12 @@ public class PersistentStorage implements Storage {
       throw new UnsupportedOperationException("scanMetadata() not supported without indexing");
     }
   }
-  
+
   /**
-   * Returns a map which contains keys mapping ids to the associated 
-   * metadata.  
+   * Returns a map which contains keys mapping ids to the associated
+   * metadata.
    *
-   * @return The treemap mapping ids to metadata 
+   * @return The treemap mapping ids to metadata
    */
   public SortedMap<Id, Serializable> scanMetadata() {
     if (index) {
@@ -660,12 +660,12 @@ public class PersistentStorage implements Storage {
       throw new UnsupportedOperationException("scanMetadata() not supported without indexing");
     }
   }
-  
+
   /**
    * Returns the submapping of ids which have metadata less than the provided
    * value.
    *
-   * @param value The maximal metadata value 
+   * @param value The maximal metadata value
    * @return The submapping
    */
   public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
@@ -675,7 +675,7 @@ public class PersistentStorage implements Storage {
       throw new UnsupportedOperationException("scanMetadataValuesHead() not supported without indexing");
     }
   }
-  
+
   /**
    * Returns the submapping of ids which have metadata null
    *
@@ -688,7 +688,7 @@ public class PersistentStorage implements Storage {
       throw new UnsupportedOperationException("scanMetadataValuesNull() not supported without indexing");
     }
   }
-  
+
   /**
    * Returns the total size of the stored data in bytes.
    *
@@ -697,7 +697,7 @@ public class PersistentStorage implements Storage {
   public long getTotalSize(){
     return usedSize;
   }
-  
+
   /**
    * Returns the number of Ids currently stored in the catalog
    *
@@ -709,16 +709,16 @@ public class PersistentStorage implements Storage {
     } else {
       throw new UnsupportedOperationException("getSize() not supported without indexing");
     }
-  }  
-  
+  }
+
   /**
-   * Method which is used to erase all data stored in the Catalog.  
+   * Method which is used to erase all data stored in the Catalog.
    * Use this method with care!
    *
    * @param c The command to run once done
    */
   public void flush(Continuation<? super Boolean, Exception> c) {
-    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) { 
+    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "flush"; }
       public Boolean doWork() throws Exception {
         logger.trace("COUNT: Flushing all data in {}", name);
@@ -728,7 +728,7 @@ public class PersistentStorage implements Storage {
       }
     });
   }
-                  
+
   /*****************************************************************/
   /* Functions for init/crash recovery                             */
   /*****************************************************************/
@@ -762,17 +762,17 @@ public class PersistentStorage implements Storage {
   private void initDirectories() throws IOException {
     rootDirectory = new File(rootDir);
     createDirectory(rootDirectory);
-    
+
     backupDirectory = new File(rootDirectory, BACKUP_DIRECTORY);
     createDirectory(backupDirectory);
-    
+
     appDirectory = new File(backupDirectory, getName());
     createDirectory(appDirectory);
-    
-    lostDirectory = new File(backupDirectory, LOST_AND_FOUND_DIRECTORY); 
+
+    lostDirectory = new File(backupDirectory, LOST_AND_FOUND_DIRECTORY);
     createDirectory(lostDirectory);
   }
-  
+
   /**
    * Reads in the in-memory map of directories for use.
    *
@@ -781,27 +781,27 @@ public class PersistentStorage implements Storage {
   private void initDirectoryMap(File dir) {
     File[] files = dir.listFiles(new DirectoryFilter());
     directories.put(dir, files);
-    
+
     for (int i=0; i<files.length; i++)
       initDirectoryMap(files[i]);
   }
-  
+
   /**
    * Ensures that all files are in the correct directories, and moves files which
    * are in the wrong directory.  Also checks for any temporary files and resolves
-   * any detected conflicts.  
-   * 
+   * any detected conflicts.
+   *
    * @param dir The directory to start on
    */
   private void initFiles(File dir) throws IOException {
     String[] dirs = dir.list(new DirectoryFilter());
     String[] files = dir.list(new FileFilter());
-    
+
     /* first, init any files, and relocate any files if there are dirs */
     for (int i=0; i<files.length; i++) {
       try {
         if (! initTemporaryFile(dir, files[i])) {
-          
+
           /* if there are directories in the dir, then move the file */
           if (dirs.length > 0)
             moveFileToCorrectDirectory(dir, files[i]);
@@ -809,13 +809,13 @@ public class PersistentStorage implements Storage {
       } catch (Exception e) {
         logger.warn("Got exception {} initting file {} - moving to lost+found.", e, files[i], e);
         moveToLost(new File(dir, files[i]));
-      }      
+      }
     }
-      
+
     /* next, recurse into any dirs */
-    for (int i=0; i<dirs.length; i++) 
+    for (int i=0; i<dirs.length; i++)
       initFiles(new File(dir, dirs[i]));
-    
+
     /* and delete the old metadata file, if it exists */
     if (dirs.length > 0)
       deleteFile(new File(dir, METADATA_FILENAME));
@@ -824,10 +824,10 @@ public class PersistentStorage implements Storage {
   /**
    * Method which initializes a temporary file by doing the following:
    *   1.  If this file is not a temporary file, simply returns the file
-   *   2.  If so, it simply moves this file to the lost and found and returns null 
+   *   2.  If so, it simply moves this file to the lost and found and returns null
    *
    * This is done since all temporary files are, by definition, temporary
-   * until they are renamed to an actual ID name.  Thus, if we detect a 
+   * until they are renamed to an actual ID name.  Thus, if we detect a
    * temporary file during start-up, it is likely that the file is corrupted
    * and should be deleted.
    *
@@ -836,14 +836,14 @@ public class PersistentStorage implements Storage {
   private boolean initTemporaryFile(File parent, String name) throws IOException {
     if (! isTemporaryFile(name))
       return false;
-    
+
     moveToLost(new File(parent, name));
     return true;
   }
-  
+
   /**
    * Inititializes the idSet data structure
-   * 
+   *
    * In doing this it must resolve conflicts and aborted
    * transactions. After this is run the most current stable
    * state should be restored.  Also record the total used space
@@ -853,17 +853,17 @@ public class PersistentStorage implements Storage {
    */
   private void initFileMap(File dir) throws IOException {
     logger.debug("Initting directory {}", dir);
-    
+
     /* first, see if this directory needs to be expanded */
     checkDirectory(dir);
-    
+
     /* make sure the directory was not pruned */
     if (! dir.exists())
       return;
-    
+
     /* now, read the metadata file in this directory */
     long modified = 0;
-    
+
     if (index) {
       try {
         modified = readMetadataFile(dir);
@@ -871,23 +871,23 @@ public class PersistentStorage implements Storage {
         logger.error("Got exception {} reading metadata file - regenerating", e, e);
       }
     }
-    
+
     /* next, start processing by listing the number of files and going from there */
     File[] files = dir.listFiles(new FileFilter());
-    File[] dirs = dir.listFiles(new DirectoryFilter());    
-    
+    File[] dirs = dir.listFiles(new DirectoryFilter());
+
     for (int i=0; i<files.length; i++) {
       try {
         Id id = readKey(files[i]);
         long len = getFileLength(files[i]);
-        
+
         if (id == null)
           logger.info("READING {} RETURNED NULL!", files[i]);
-        
+
         if (len > 0) {
           increaseUsedSpace(len);
-          
-          /* if the file is newer than the metadata file, update the metadata 
+
+          /* if the file is newer than the metadata file, update the metadata
           if we don't have the metadata for this file, update it */
           if (index && ((! metadata.containsKey(id)) || (files[i].lastModified() > modified))) {
             if (logger.isTraceEnabled()) logger.trace("Reading newer metadata out of file " + files[i] + " id " + id.toStringFull() + " " + files[i].lastModified() + " " + modified + " " + metadata.containsKey(id));
@@ -896,7 +896,7 @@ public class PersistentStorage implements Storage {
           }
         } else {
           moveToLost(files[i]);
-          
+
           if (index && metadata.containsKey(id)) {
             metadata.remove(id);
             dirty.add(dir);
@@ -907,11 +907,11 @@ public class PersistentStorage implements Storage {
         moveToLost(files[i]);
       }
     }
-    
+
     /* now recurse and check all of the children */
-    for (int i=0; i<dirs.length; i++) 
+    for (int i=0; i<dirs.length; i++)
       initFileMap(dirs[i]);
-      
+
     /* and finally see if this directory needs to be pruned or expanded */
     checkDirectory(dir);
   }
@@ -933,7 +933,7 @@ public class PersistentStorage implements Storage {
       renameFile(file1, output);
     } else {
       logger.debug("resolving conflict between {} and {}", file1, file2);
-      
+
       if (readVersion(file1) < readVersion(file2)) {
         moveToLost(file1);
         renameFile(file2, output);
@@ -949,17 +949,17 @@ public class PersistentStorage implements Storage {
    *
    * @param file the file to be moved
    *
-   */ 
+   */
   private void moveToLost(File file) throws IOException {
     renameFile(file, new File(lostDirectory, getPrefix(file.getParentFile()) + file.getName()));
   }
- 
+
   /*****************************************************************/
   /* Helper functions for Directory Splitting Management           */
   /*****************************************************************/
-  
+
   /**
-   * Method which checks to see if a directory has too many files, and if so, 
+   * Method which checks to see if a directory has too many files, and if so,
    * expands the directory in order to bring it to the correct size
    *
    * @param directory The directory to check
@@ -981,10 +981,10 @@ public class PersistentStorage implements Storage {
       pruneDirectory(directory);
       return true;
     }
-    
+
     return false;
   }
-  
+
   /**
    * This method removes an empty directory from the storage root, and updates
    * all of the associated metadata.
@@ -996,26 +996,26 @@ public class PersistentStorage implements Storage {
 
     /* First delete the metadata file, if it exists */
     deleteFile(new File(dir, METADATA_FILENAME));
-    
+
     /* Then remove the directory */
     deleteDirectory(dir);
-    
+
     /* Finally update the metadata */
     directories.remove(dir);
     prefixes.remove(dir);
     this.directories.put(dir.getParentFile(), dir.getParentFile().listFiles(new DirectoryFilter()));
   }
-  
+
   /**
    * This method expands the directory when there are too many subdirectories
    * in one directory.  Basically uses the same logic as expandDirectory(), but also
    * updates the metadata.
-   * 
+   *
    * This is used to keep less then NUM_FILES in any directory
    * at one time. This speeds up look up time in a particular directory
    * under certain circumstances.
    *
-   * @param dir The directory to expand 
+   * @param dir The directory to expand
    */
   private void reformatDirectory(File dir) throws IOException {
     logger.debug("Expanding directory {} due to too many subdirectories", dir);
@@ -1024,18 +1024,18 @@ public class PersistentStorage implements Storage {
     reformatDirectory(dir, newDirNames);
     logger.debug("Done expanding directory {}", dir);
   }
-    
+
   /**
    * This method performs a directory expansion, given the names of the
-   * subdirectories to create.  
+   * subdirectories to create.
    *
-   * @param dir The directory to expand 
+   * @param dir The directory to expand
    * @param newDirNames The array containing the names of the new directories
    */
   private void reformatDirectory(File dir, String[] newDirNames) throws IOException {
     String[] dirNames = dir.list(new DirectoryFilter());
     File[] newDirs = new File[newDirNames.length];
-    
+
     /* create the new directories, move the old ones */
     for (int i=0; i<newDirNames.length; i++) {
       newDirs[i] = new File(dir, newDirNames[i]);
@@ -1045,7 +1045,7 @@ public class PersistentStorage implements Storage {
       /* now look through the original directory and move any matching dirs */
       String[] subDirNames = getMatchingDirectories(newDirNames[i], dirNames);
       File[] newSubDirs = new File[subDirNames.length];
-      
+
       for (int j=0; j<subDirNames.length; j++) {
         /* move the directory */
         File oldDir = new File(dir, subDirNames[j]);
@@ -1053,20 +1053,20 @@ public class PersistentStorage implements Storage {
         logger.debug("Moving the old direcotry {} to {}", oldDir, newSubDirs[j]);
         renameFile(oldDir, newSubDirs[j]);
 
-        /* remove the stale entry, add the new one */        
-        this.directories.remove(oldDir); 
+        /* remove the stale entry, add the new one */
+        this.directories.remove(oldDir);
         this.directories.put(newSubDirs[j], new File[0]);
       }
-      
+
       this.directories.put(newDirs[i], newSubDirs);
     }
-    
+
     /* lastly, update the root directory */
     this.directories.put(dir, newDirs);
-  } 
-  
+  }
+
   /**
-   * Returns the sublist of the provided list which starts with the 
+   * Returns the sublist of the provided list which starts with the
    * given prefix.
    *
    * @param prefix The prefix to look for
@@ -1075,23 +1075,23 @@ public class PersistentStorage implements Storage {
    */
   private String[] getMatchingDirectories(String prefix, String[] dirNames) {
     List<String> result = new ArrayList<String>();
-    
-    for (int i=0; i<dirNames.length; i++) 
+
+    for (int i=0; i<dirNames.length; i++)
       if (dirNames[i].startsWith(prefix))
         result.add(dirNames[i]);
-    
+
     return (String[]) result.toArray(new String[0]);
   }
 
   /**
    * This method expands the directory in to a subdirectory
    * for each prefix, contained in the directory
-   * 
+   *
    * This is used to keep less then NUM_FILES in any directory
    * at one time. This speeds up look up time in a particular directory
    * under certain circumstances.
    *
-   * @param dir The directory to expand 
+   * @param dir The directory to expand
    */
   private void expandDirectory(File dir) throws IOException {
     logger.debug("Expanding directory {} due to too many files", dir);
@@ -1099,26 +1099,26 @@ public class PersistentStorage implements Storage {
     String[] fileNames = dir.list(new FileFilter());
     String[] dirNames = getDirectories(fileNames);
     File[] dirs = new File[dirNames.length];
-    
+
     /* create the directories */
     for (int i=0; i<dirNames.length; i++) {
       dirs[i] = new File(dir, dirNames[i]);
       directories.put(dirs[i], new File[0]);
-      
+
       if (dirs[i].exists() && dirs[i].isFile())
         renameFile(dirs[i], new File(dir, dirs[i].getName() + ZERO_LENGTH_NAME));
-      
+
       createDirectory(dirs[i]);
       logger.debug("Creating directory {}", dirNames[i]);
-      
+
       /* mark this directory for metadata syncing */
-      if (index) 
+      if (index)
         dirty.add(dirs[i]);
     }
-    
+
     /* add the list of directories to the map */
     directories.put(dir, dirs);
-    
+
     /* last, move the files into the correct directory */
     File[] files = dir.listFiles(new FileFilter());
     for (int i = 0; i < files.length; i++) {
@@ -1130,13 +1130,13 @@ public class PersistentStorage implements Storage {
         }
       }
     }
-    
+
     /* and remove the metadata file */
     deleteFile(new File(dir, METADATA_FILENAME));
-    
+
     logger.debug("Done expanding directory {}", dir);
   }
-  
+
   /**
    * This method takes in a list of the file names in a given directory which
    * needs to be expanded, and returns the lists of directories which should
@@ -1149,21 +1149,21 @@ public class PersistentStorage implements Storage {
     int length = getPrefixLength(names);
     String prefix = names[0].substring(0, length);
     CharacterHashSet set = new CharacterHashSet();
-    
+
     for (int i=0; i<names.length; i++) {
       if (names[i].length() > length)
         set.put(names[i].charAt(length));
     }
-    
+
     char[] splits = set.get();
     String[] result = new String[splits.length];
-    
-    for (int i=0; i<result.length; i++) 
+
+    for (int i=0; i<result.length; i++)
       result[i] = prefix + splits[i];
-    
+
     return result;
   }
-  
+
   /**
    * This method takes in the list of file names in a given directory and
    * returns the longest common prefix of all of the names.
@@ -1173,13 +1173,13 @@ public class PersistentStorage implements Storage {
    */
   private int getPrefixLength(String[] names) {
     int length = names[0].length()-1;
-    
+
     for (int i=0; i<names.length; i++)
       length = getPrefixLength(names[0], names[i], length);
-      
+
     return length;
   }
-  
+
   /**
    * Method which takes in two strings and returns the length of the
    * shared prefix, or a predefined maximum.
@@ -1190,14 +1190,14 @@ public class PersistentStorage implements Storage {
    */
   private int getPrefixLength(String a, String b, int max) {
     int i=0;
-    
-    for (; (i<a.length()-1) && (i<b.length()-1) && (i<max); i++) 
+
+    for (; (i<a.length()-1) && (i<b.length()-1) && (i<max); i++)
       if (a.charAt(i) != b.charAt(i))
         return i;
-    
+
     return i;
   }
-      
+
   /**
    * Takes a file and moves it to the correct directory
    * this is used in conjunction with expand to move files to their correct
@@ -1206,20 +1206,20 @@ public class PersistentStorage implements Storage {
    * @param parent The directory the file is in
    * @param name The name of the file to be moved
    */
-  private void moveFileToCorrectDirectory(File parent, String name) throws IOException { 
+  private void moveFileToCorrectDirectory(File parent, String name) throws IOException {
     File file = new File(parent, name);
     Id id = readKeyFromFile(file);
     File dest = getDirectoryForId(id);
-    
+
     /* if it's in the wrong directory, then move it and resolve the conflict if necessary */
     if (! dest.equals(parent)) {
       logger.debug("moving file {} to correct directory {} from {}", file, dest, parent);
       File other = new File(dest, id.toStringFull().substring(getPrefix(dest).length()));
       resolveConflict(file, other, other);
       checkDirectory(dest);
-    } 
+    }
   }
-  
+
   /**
    * Method which recursively flushes a directory hierarchy, removing all data.  Be careful!
    *
@@ -1230,34 +1230,34 @@ public class PersistentStorage implements Storage {
 
     if (! dir.isDirectory()) {
       Id id = readKey(dir);
-      
+
       /* remove id from stored list */
       if (index) {
-        synchronized (metadata) { 
+        synchronized (metadata) {
           metadata.remove(id);
         }
       }
-      
+
       /* record the space collected and delete the file */
       decreaseUsedSpace(dir.length());
       deleteFile(dir);
     } else {
       File[] dirs = dir.listFiles();
-      
+
       /* remove all subdirectories */
       for (int i=0; i<dirs.length; i++) {
         flushDirectory(dirs[i]);
 
         /* update the metadata */
         directories.remove(dirs[i]);
-        prefixes.remove(dirs[i]);      
+        prefixes.remove(dirs[i]);
 
         /* delete the dir */
         deleteFile(dirs[i]);
-      }      
+      }
     }
   }
-   
+
   /*****************************************************************/
   /* Helper functions for File Management                          */
   /*****************************************************************/
@@ -1272,7 +1272,7 @@ public class PersistentStorage implements Storage {
     if ((directory == null) || (directory.exists() && directory.isFile()) || (! (directory.exists()) && (! directory.mkdirs())))
       throw new IOException("Creation of directory " + directory + " failed!");
   }
-  
+
   /**
    * Removes an empty directory given its name
    *
@@ -1288,7 +1288,7 @@ public class PersistentStorage implements Storage {
         throw new IOException("Deletion of directory " + directory + " failed!");
     }
   }
-  
+
   /**
    *
    * Returns the length of a file in bytes
@@ -1298,9 +1298,9 @@ public class PersistentStorage implements Storage {
   private static long getFileLength(File file) {
     return (((file != null) && file.exists()) ? file.length() : 0);
   }
-  
+
   /**
-   * Renames a given file on disk. 
+   * Renames a given file on disk.
    *
    * @param oldFile The old name
    * @param newFile The new name
@@ -1308,7 +1308,7 @@ public class PersistentStorage implements Storage {
   private static void renameFile(File oldFile, File newFile) throws IOException {
     if ((oldFile != null) && oldFile.exists() && (! oldFile.equals(newFile))) {
       deleteFile(newFile);
-        
+
       if (! oldFile.renameTo(newFile))
         throw new IOException("Rename of " + oldFile + " to " + newFile + " failed!");
     }
@@ -1322,16 +1322,16 @@ public class PersistentStorage implements Storage {
    */
   private static void deleteFile(File file) throws IOException {
     if ((file != null) && file.exists() && (! file.delete()))
-      throw new IOException("Delete of " + file + " failed!");         
+      throw new IOException("Delete of " + file + " failed!");
   }
-  
+
   /**
    * Returns whether or not the given file is a temporary file.
-   * 
+   *
    * @param name The name of the file
    * @return Whether or not it is temporary
-   */ 
-  private boolean isTemporaryFile(String name) {    
+   */
+  private boolean isTemporaryFile(String name) {
     return (name.indexOf(".") >= 0);
   }
 
@@ -1344,18 +1344,18 @@ public class PersistentStorage implements Storage {
    * @param id the id to generate a name for
    * @return the new File
    */
-  private File makeTemporaryFile(Id id) throws IOException {    
+  private File makeTemporaryFile(Id id) throws IOException {
     File directory = getDirectoryForId(id);
     File file = new File(directory, id.toStringFull().substring(getPrefix(directory).length()) + "." + environment.getRandomSource().nextInt() % 100);
-    
-    while (file.exists()) 
+
+    while (file.exists())
       file = new File(directory, id.toStringFull().substring(getPrefix(directory).length()) + "." + environment.getRandomSource().nextInt() % 100);
-    
+
     return file;
   }
-  
+
   /**
-   * Returns whether or not the provided file is an acestor of the other file.  
+   * Returns whether or not the provided file is an acestor of the other file.
    *
    * @param file The file to check
    * @param ancestor The potential ancestor
@@ -1377,9 +1377,9 @@ public class PersistentStorage implements Storage {
    */
   private File getFile(Id id) throws IOException {
     File dir = getDirectoryForId(id);
-    String name = id.toStringFull().substring(getPrefix(dir).length());    
+    String name = id.toStringFull().substring(getPrefix(dir).length());
     if (name.equals("")) name = ZERO_LENGTH_NAME;
-    
+
     // check for ! directory
     File file = new File(dir, name);
     if (file.exists() && file.isDirectory())
@@ -1397,7 +1397,7 @@ public class PersistentStorage implements Storage {
   private File getDirectoryForId(Id id) throws IOException {
     return getDirectoryForName(id.toStringFull());
   }
-  
+
   /**
    * Gets the directory a given file should be stored in
    *
@@ -1407,9 +1407,9 @@ public class PersistentStorage implements Storage {
   private File getDirectoryForName(String name) throws IOException {
     return getDirectoryForName(name, appDirectory);
   }
-  
+
   /**
-   * Gets the best directory for the given name 
+   * Gets the best directory for the given name
    *
    * @param name The name to serach for
    * @param dir The directory to start at
@@ -1417,11 +1417,11 @@ public class PersistentStorage implements Storage {
    */
   private File getDirectoryForName(String name, File dir) throws IOException {
     File[] subDirs = (File[]) directories.get(dir);
-    
+
     if (subDirs.length == 0) {
       return dir;
     } else {
-      for (int i=0; i<subDirs.length; i++) 
+      for (int i=0; i<subDirs.length; i++)
         if (name.startsWith(subDirs[i].getName()))
           return getDirectoryForName(name.substring(subDirs[i].getName().length()), subDirs[i]);
         else if ((name.length() == 0) && subDirs[i].getName().equals(ZERO_LENGTH_NAME))
@@ -1434,7 +1434,7 @@ public class PersistentStorage implements Storage {
         createDirectory(newDir);
         this.directories.put(dir, append(subDirs, newDir));
         this.directories.put(newDir, new File[0]);
-      
+
         /* finally, we must check if this caused too many dirs in one dir.  If so, we
            simply rerun the algorithm which will reflect the new dir */
         if (checkDirectory(dir)) {
@@ -1447,20 +1447,20 @@ public class PersistentStorage implements Storage {
         an existing directory.  To handle this, we pretend like we're doing a directory
         split, and create new subdirs so we can accommodate everything. */
         String[] dirs = new String[subDirs.length + 1];
-        
+
         for (int i=0; i<subDirs.length; i++)
           dirs[i] = subDirs[i].getName();
         dirs[subDirs.length] = (name.length() == 0 ? ZERO_LENGTH_NAME : name);
-        
+
         /* now reformat the directory, creating an entry for this name */
         reformatDirectory(dir, getDirectories(dirs));
-        
+
         /* and finally, recurse, which should find a directory for this name */
         return getDirectoryForName(name, dir);
       }
     }
   }
-  
+
   /**
    * Internal method which returns the postfix for a given id
    *
@@ -1471,7 +1471,7 @@ public class PersistentStorage implements Storage {
   private String getPostfix(Id id, File file) {
     return id.toStringFull().substring(getPrefix(file).length());
   }
-  
+
   /**
    * Internal method which returns the prefix of a given directory
    *
@@ -1481,17 +1481,17 @@ public class PersistentStorage implements Storage {
   private String getPrefix(File file) {
     if (prefixes.get(file) != null)
       return (String) prefixes.get(file);
-    
+
     StringBuffer buffer = new StringBuffer();
     while (! file.equals(appDirectory)) {
       buffer.insert(0, file.getName().replaceAll(ZERO_LENGTH_NAME, ""));
       file = file.getParentFile();
     }
     prefixes.put(file, buffer.toString());
-    
+
     return getPrefix(file);
   }
-  
+
   /**
    * Method which appends the given file to the list of files
    *
@@ -1501,14 +1501,14 @@ public class PersistentStorage implements Storage {
    */
   private File[] append(File[] files, File file) {
     File[] result = new File[files.length + 1];
-    
-    for (int i=0; i<files.length; i++) 
+
+    for (int i=0; i<files.length; i++)
       result[i] = files[i];
-    
+
     result[files.length] = file;
     return result;
   }
-  
+
   /**
    * Gets the number of subdirectories in directory
    *
@@ -1528,7 +1528,7 @@ public class PersistentStorage implements Storage {
   private int numFilesDir(File dir) {
      return dir.listFiles(new FileFilter()).length;
   }
-  
+
   /**
    * Returns whether or not the given filename represents a stored file
    *
@@ -1539,7 +1539,7 @@ public class PersistentStorage implements Storage {
   private boolean isFile(File parent, String name) {
     return ((! new File(parent, name).isDirectory()) && (! name.equals(METADATA_FILENAME)));
   }
-  
+
   /**
    * Returns whether or not the given filename represents a directory
    *
@@ -1550,9 +1550,9 @@ public class PersistentStorage implements Storage {
   private boolean isDirectory(File parent, String name) {
     return (new File(parent, name)).isDirectory();
   }
-  
+
   /**
-   * Returns whether a directory contains subdirectories 
+   * Returns whether a directory contains subdirectories
    *
    * @param dir the directory to check
    * @return boolean whether directory contains subdirectories
@@ -1561,37 +1561,37 @@ public class PersistentStorage implements Storage {
   private boolean containsDir(File dir) {
     return (dir.listFiles(new DirectoryFilter()).length != 0);
   }
-    
-  
+
+
   /*****************************************************************/
   /* Helper functions for Metadata Storage                         */
   /*****************************************************************/
-  
+
   /**
    * Function which writes out all of the dirty metadata files and marks
    * them as clean.
    */
   protected void writeDirty() {
     File[] files = (File[]) dirty.toArray(new File[0]);
-    
+
     for (int i=0; i<files.length; i++) {
       HashMap<Id, Serializable> map = new HashMap<Id, Serializable>();
       IdRange range = getRangeForDirectory(files[i]);
       Iterator<Id> keys = null;
-      
+
       if (range.getCCWId().compareTo(range.getCWId()) <= 0)
         keys = metadata.keySubMap(range.getCCWId(), range.getCWId()).keySet().iterator();
       else
         keys = metadata.keyTailMap(range.getCCWId()).keySet().iterator();
-      
+
       while (keys.hasNext()) {
         Id next = keys.next();
         map.put(next, (Serializable) metadata.get(next));
       }
-      
+
       try {
         writeMetadataFile(files[i], map);
-        
+
         synchronized (metadata) {
           dirty.remove(files[i]);
         }
@@ -1600,7 +1600,7 @@ public class PersistentStorage implements Storage {
           synchronized (metadata) {
             dirty.remove(files[i]);
           }
-          
+
           logger.warn("ERROR: Could not find directory while writing out metadata in '{}' - removing from dirty list and continuing!", files[i].getCanonicalPath(), f);
         } catch (IOException g) {
           logger.error("PANIC: Got IOException {} trying to detail FNF exception {} while writing out file {}", g, f, files[i], g);
@@ -1623,12 +1623,12 @@ public class PersistentStorage implements Storage {
    */
   private long readMetadataFile(File file) throws IOException {
     File metadata = new File(file, METADATA_FILENAME);
-    
+
     if (! metadata.exists())
       return -1L;
 
     FileInputStream fin = null;
-    
+
     try {
       fin = new FileInputStream(metadata);
       ObjectInputStream objin = new ObjectInputStream(new BufferedInputStream(fin));
@@ -1636,20 +1636,20 @@ public class PersistentStorage implements Storage {
       JavaSerializationFilter.install(objin, environment);
 
       IdRange range = getRangeForDirectory(file);
-      
+
       try {
         HashMap<?, ?> map = (HashMap<?, ?>) objin.readObject();
         Iterator<?> keys = map.keySet().iterator();
-        
+
         while (keys.hasNext()) {
           Id id = (Id) keys.next();
-          
+
           if ((range.containsId(id)) && (new File(file, id.toStringFull().substring(getPrefix(file).length())).exists()))
             this.metadata.put(id, (Serializable)map.get(id));
           else
             dirty.add(file);
         }
-        
+
         return metadata.lastModified();
       } catch (ClassNotFoundException e) {
         logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
@@ -1664,16 +1664,16 @@ public class PersistentStorage implements Storage {
       fin.close();
     }
   }
-  
+
   /**
    * Utility function which writes the metadata file out to disk.
    *
    * @param file The directory to write the file to
    * @param map The data to write
    */
-  private static void writeMetadataFile(File file, HashMap<Id, Serializable> map) throws IOException {    
+  private static void writeMetadataFile(File file, HashMap<Id, Serializable> map) throws IOException {
     FileOutputStream fout = null;
-    
+
     try {
       fout = new FileOutputStream(new File(file, METADATA_FILENAME));
       ObjectOutputStream objout = new ObjectOutputStream(new BufferedOutputStream(fout));
@@ -1686,29 +1686,29 @@ public class PersistentStorage implements Storage {
         fout.close();
     }
   }
-  
+
   /**
-   * Utility function which returns the range of keys which a directory 
+   * Utility function which returns the range of keys which a directory
    * corresponds to.
    *
    * @param dir The directory
    */
   protected IdRange getRangeForDirectory(File dir) {
     String result = "";
-    
+
     while (! dir.equals(appDirectory)) {
       result = dir.getName() + result;
       dir = dir.getParentFile();
     }
-        
+
     return factory.buildIdRangeFromPrefix(result);
   }
 
-  
+
   /*****************************************************************/
   /* Helper functions for Object Input/Output                      */
   /*****************************************************************/
-  
+
   /**
    * Basic function to read an object from the persisted file.
    *
@@ -1717,18 +1717,18 @@ public class PersistentStorage implements Storage {
    * @return Serializable the data stored at the offset in the file
    *
    */
-  private static Serializable readObject(File file, int offset) throws IOException {    
+  private static Serializable readObject(File file, int offset) throws IOException {
     FileInputStream fin = null;
-    
+
     try {
       try {
         fin = new FileInputStream(file);
         ObjectInputStream objin = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(fin)));
-        
+
         /* skip objects */
         for (int i=0; i<offset; i++)
-          objin.readObject(); 
-        
+          objin.readObject();
+
         return (Serializable) objin.readObject();
       } catch (ClassNotFoundException e) {
         throw new IOException(e.getMessage());
@@ -1748,19 +1748,19 @@ public class PersistentStorage implements Storage {
   private static Serializable readData(File file) throws IOException {
      return readObject(file, 1);
   }
-  
+
   /**
-   * Reads in the metadata from the provided file, or returns null if 
+   * Reads in the metadata from the provided file, or returns null if
    * no metadata was found
-   * 
+   *
    * @param file The file which should be read for the metadata
    */
-  private Serializable readMetadata(File file) throws IOException {  
-    if (file.length() < 32) 
+  private Serializable readMetadata(File file) throws IOException {
+    if (file.length() < 32)
       return null;
-        
+
     RandomAccessFile ras = null;
-    
+
     try {
       ras = new RandomAccessFile(file, "r");
       ras.seek(file.length() - 32);
@@ -1774,12 +1774,12 @@ public class PersistentStorage implements Storage {
         logger.warn("Persistence revision did not match - exiting!");
         return null;
       }
-      
+
       long length = ras.readLong();
       ras.seek(file.length() - 32 - length);
-      
+
       FileInputStream fis = null;
-      
+
       try {
         fis = new FileInputStream(ras.getFD());
         ObjectInputStream objin = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(fis)));
@@ -1796,7 +1796,7 @@ public class PersistentStorage implements Storage {
       ras.close();
     }
   }
-  
+
   /**
    * Abstract over reading a single key from a file using Java
    * serialization.
@@ -1806,14 +1806,14 @@ public class PersistentStorage implements Storage {
    */
   private Id readKey(File file) {
     String s = getPrefix(file.getParentFile()) + file.getName().replaceAll(ZERO_LENGTH_NAME, "");
-    
+
     if (s.indexOf(".") >= 0) {
       return factory.buildIdFromToString(s.toCharArray(), 0, s.indexOf("."));
     } else {
       return factory.buildIdFromToString(s.toCharArray(), 0, s.length());
     }
   }
-  
+
   /**
    * Abstract over reading a single key from a file using Java
    * serialization.
@@ -1824,7 +1824,7 @@ public class PersistentStorage implements Storage {
   private Id readKeyFromFile(File file) throws IOException {
     return (Id) readObject(file, 0);
   }
-    
+
   /**
    * Abstract over reading a version from a file using Java
    * serialization.
@@ -1834,9 +1834,9 @@ public class PersistentStorage implements Storage {
    */
   private static long readVersion(File file) throws IOException {
     Long temp = (Long) readObject(file, 2);
-    
+
     return (temp == null ? 0 : temp.longValue());
-  } 
+  }
 
   /**
    * Abstract over writing a single object to a file using Java
@@ -1848,7 +1848,7 @@ public class PersistentStorage implements Storage {
    */
   private static long writeObject(Serializable obj, Serializable metadata, Id key, long version, File file) throws IOException {
     FileOutputStream fout = null;
-    
+
     try {
       fout = new FileOutputStream(file);
       ObjectOutputStream objout = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(fout)));
@@ -1860,9 +1860,9 @@ public class PersistentStorage implements Storage {
       if (fout != null)
         fout.close();
     }
-    
+
     long len1 = file.length();
-    
+
     try {
       fout = new FileOutputStream(file, true);
       ObjectOutputStream objout = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(fout)));
@@ -1871,9 +1871,9 @@ public class PersistentStorage implements Storage {
     } finally {
       fout.close();
     }
-    
+
     long len2 = file.length();
-    
+
     try {
       fout = new FileOutputStream(file, true);
       DataOutputStream dos = new DataOutputStream(fout);
@@ -1885,39 +1885,39 @@ public class PersistentStorage implements Storage {
     } finally {
       fout.close();
     }
-    
+
     return file.length();
   }
-  
-  
+
+
   /**
    * Re-writes the metadata stored in the provided file.
-   * 
+   *
    * @param file The file to which the metadata should be written
    * @param metadata The metadata to write
    */
   private static void writeMetadata(File file, Serializable metadata) throws IOException {
     RandomAccessFile ras = null;
     FileOutputStream fout = null;
-    
+
     if (file.length() > 32) {
       try {
         ras = new RandomAccessFile(file, "rw");
         ras.seek(file.length() - 32);
-      
-        if ((ras.readLong() == PERSISTENCE_MAGIC_NUMBER) && 
+
+        if ((ras.readLong() == PERSISTENCE_MAGIC_NUMBER) &&
             (ras.readLong() == PERSISTENCE_VERSION_2) &&
             (ras.readLong() <= PERSISTENCE_REVISION_2_1)) {
           long length = ras.readLong();
           ras.setLength(file.length() - 32 - length);
-        } 
+        }
       } finally {
         ras.close();
       }
     }
-    
+
     long len1 = file.length();
-    
+
     try {
       fout = new FileOutputStream(file, true);
       ObjectOutputStream objout = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(fout)));
@@ -1926,9 +1926,9 @@ public class PersistentStorage implements Storage {
     } finally {
       fout.close();
     }
-    
+
     long len2 = file.length();
-    
+
     try {
       fout = new FileOutputStream(file, true);
       DataOutputStream dos = new DataOutputStream(fout);
@@ -1999,29 +1999,29 @@ public class PersistentStorage implements Storage {
        return false;
     }
   }
-  
+
   /**
-   * 
-   * Increases the amount of storage recorded as used 
    *
-   * @param i the amount to increase usage by 
+   * Increases the amount of storage recorded as used
+   *
+   * @param i the amount to increase usage by
    */
   private void increaseUsedSpace(long i){
      usedSize = usedSize + i;
   }
 
   /**
-   * 
-   * decreases the amount of storage recorded as used 
    *
-   * @param i the amount to decrease usage by 
+   * decreases the amount of storage recorded as used
+   *
+   * @param i the amount to decrease usage by
    */
   private void decreaseUsedSpace(long i){
      usedSize = usedSize - i;
   }
 
   /**
-   * 
+   *
    * Gets the amount of space currently being used on disk
    *
    * @return long the amount of space being used
@@ -2033,7 +2033,7 @@ public class PersistentStorage implements Storage {
 
   /**
    * Gets the name of this instance
-   * 
+   *
    * @return String the name of the instance
    *
    */
@@ -2048,13 +2048,13 @@ public class PersistentStorage implements Storage {
   /**
    * A class that filters out the files in a directory to return
    * only subdirectories.
-   */ 
+   */
   private class DirectoryFilter implements FilenameFilter {
     public boolean accept(File dir, String name) {
       return isDirectory(dir, name);
     }
   }
-  
+
   /**
    * A class that filters out the files in a directory to return
    * only files ( no directories )
@@ -2064,81 +2064,81 @@ public class PersistentStorage implements Storage {
       return isFile(dir, name);
     }
   }
-  
+
   /**
    * Class for a hashtable of primitive characters
    */
   private class CharacterHashSet {
     protected boolean[] bitMap = new boolean[256];
-    
+
     public void put(char a) {
       bitMap[(int) a] = true;
     }
-    
+
     public boolean contains(char a) {
       return bitMap[(int) a];
     }
-    
+
     public void remove(char a) {
       bitMap[(int) a] = false;
     }
-    
+
     public char[] get() {
       int[] nums = getOffsets();
       char[] result = new char[nums.length];
-      
+
       for (int i=0; i<result.length; i++)
         result[i] = (char) nums[i];
-      
+
       return result;
     }
-    
+
     private int[] getOffsets() {
       int[] result = new int[count()];
       int index = 0;
-      
-      for (int i=0; i<result.length; i++) 
+
+      for (int i=0; i<result.length; i++)
         result[i] = getOffset(i);
-      
+
       return result;
     }
-    
+
     private int getOffset(int index) {
       int location = 0;
-      
+
       /* skip the first index-1 values */
       while (index > 0) {
         if (bitMap[location])
           index--;
-        
+
         location++;
       }
-      
+
       /* find the next true value */
       while (! bitMap[location])
         location++;
-        
+
       return location;
     }
-    
+
     private int count() {
       int total = 0;
-      
+
       for (int i=0; i<bitMap.length; i++)
         if (bitMap[i])
           total++;
-      
+
       return total;
     }
   }
-  
+
   /*****************************************************************/
   /* Inner Classes for Worker Thread                               */
   /*****************************************************************/
 
   private static class PersistenceException extends Exception {
   }
-  
+
   private static class OutofDiskSpaceException extends PersistenceException {
-  }  
+  }
 }

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.ssl;
 
 import java.io.IOException;
@@ -63,8 +63,8 @@ import rice.environment.Environment;
 /**
  * Does not encrypt UDP messages
  * The server authenticates to the client via a CACert
- * 
- * 
+ *
+ *
  * @author Jeff Hoye
  *
  * @param <Identifier>
@@ -77,16 +77,16 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
   protected Environment environment;
 
   protected SSLContext context;
-  
+
   KeyPair keyPair;
   private int clientAuth;
-  
+
   public SSLTransportLayerImpl(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, Environment env) throws IOException {
     this(tl,keyStore,trustStore,CLIENT_AUTH_REQUIRED,env);
   }
-  
+
   /**
-   * 
+   *
    * @param tl
    * @param keyStore this node's keypair and certificate
    * @param trustStore the certificates to trust
@@ -96,7 +96,7 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
    */
   public SSLTransportLayerImpl(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, int clientAuth, Environment env) throws IOException {
     if (clientAuth != CLIENT_AUTH_NONE && clientAuth != CLIENT_AUTH_REQUIRED) throw new IllegalArgumentException("clientAuth type:"+clientAuth+" not supported.");
-    
+
     this.environment = env;
     this.logger = env.getLogManager().getLogger(SSLTransportLayerImpl.class, null);
     this.tl = tl;
@@ -106,13 +106,13 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
     try {
       this.context = SSLContext.getInstance("TLS");
     char[] passphrase = "".toCharArray();
-    
+
     KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
     kmf.init(keyStore, passphrase);
 
     TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-    tmf.init(trustStore);    
-    
+    tmf.init(trustStore);
+
     TrustManager[] tms = tmf.getTrustManagers();
     if (clientAuth == CLIENT_AUTH_NONE) tms = null;
     context.init(kmf.getKeyManagers(), tms, null);
@@ -123,9 +123,9 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
     } catch (Exception nsae) {
       throw new RuntimeException(nsae);
     }
-    
+
   }
-  
+
   public SocketRequestHandle<Identifier> openSocket(Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
@@ -148,7 +148,7 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
             deliverSocketToMe.receiveResult(ret, result);
           }}, false, clientAuth != CLIENT_AUTH_NONE);
       }
-    
+
     }, options));
     return ret;
   }
@@ -213,5 +213,5 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
       Continuation<SSLSocketManager<Identifier>, Exception> c, boolean server, boolean useClientAuth) {
     return new SSLSocketManager<Identifier>(sslTL,s,c,server,useClientAuth);
   }
-  
+
 }

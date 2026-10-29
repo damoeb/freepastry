@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,26 +16,26 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /**
- * 
+ *
  */
 package org.mpisws.p2p.transport.sourceroute;
 
@@ -67,20 +67,20 @@ import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
- * This layer can only send/receive messages from a SourceRoute and determine liveness.  
+ * This layer can only send/receive messages from a SourceRoute and determine liveness.
  * It does not manage current routes to nodes.
- * 
+ *
  * @author Jeff Hoye
  *
  */
-public class SourceRouteTransportLayerImpl<Identifier> implements 
-    SourceRouteTransportLayer<Identifier>, 
+public class SourceRouteTransportLayerImpl<Identifier> implements
+    SourceRouteTransportLayer<Identifier>,
     TransportLayerCallback<Identifier, ByteBuffer> {
   /**
    * The max hops in a source route
    */
   int MAX_NUM_HOPS;
-  
+
   TransportLayerCallback<SourceRoute<Identifier>, ByteBuffer> callback;
   ErrorHandler<SourceRoute<Identifier>> errorHandler;
   TransportLayer<Identifier, ByteBuffer> etl;
@@ -90,10 +90,10 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   Collection<SourceRouteTap<Identifier>> taps;
   SourceRouteFactory<Identifier> srFactory;
   SourceRouteForwardStrategy<Identifier> forwardSourceRouteStrategy;
-  
+
   public SourceRouteTransportLayerImpl(
       SourceRouteFactory<Identifier> srFactory,
-      TransportLayer<Identifier, ByteBuffer> etl, 
+      TransportLayer<Identifier, ByteBuffer> etl,
       SourceRouteForwardStrategy<Identifier> fSRs,
       Environment env,
       ErrorHandler<SourceRoute<Identifier>> errorHandler) {
@@ -103,43 +103,43 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     this.srFactory = srFactory;
     this.errorHandler = errorHandler;
     localIdentifier = this.srFactory.getSourceRoute(etl.getLocalIdentifier());
-    taps = new ArrayList<SourceRouteTap<Identifier>>();    
+    taps = new ArrayList<SourceRouteTap<Identifier>>();
     MAX_NUM_HOPS = env.getParameters().getInt("transport_sr_max_num_hops");
-    
+
     this.forwardSourceRouteStrategy = fSRs;
 
     if (this.forwardSourceRouteStrategy == null) {
       this.forwardSourceRouteStrategy = new DefaultForwardSourceRouteStrategy<Identifier>();
     }
-    
+
     if (this.errorHandler == null) {
-      this.errorHandler = new DefaultErrorHandler<SourceRoute<Identifier>>(logger); 
+      this.errorHandler = new DefaultErrorHandler<SourceRoute<Identifier>>(logger);
     }
 
     etl.setCallback(this);
   }
-  
+
   public SocketRequestHandle<SourceRoute<Identifier>> openSocket(
       final SourceRoute<Identifier> i,
       final SocketCallback<SourceRoute<Identifier>> deliverSocketToMe,
       Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
-    
+
     logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
 
     // invariants
     if (i.getNumHops() <= 1) {
       throw new IllegalArgumentException("SourceRoute must have more than 1 hop! sr:"+i);
     }
-    
+
     if (!i.getFirstHop().equals(etl.getLocalIdentifier())) {
       throw new IllegalArgumentException("SourceRoute must start with self! sr:"+i+" self:"+etl.getLocalIdentifier());
     }
-        
-    logger.debug("openSocket({})", i);    
-    
+
+    logger.debug("openSocket({})", i);
+
     final SocketRequestHandleImpl<SourceRoute<Identifier>> handle = new SocketRequestHandleImpl<SourceRoute<Identifier>>(i, options, logger);
-    
+
     SimpleOutputBuffer sob = new SimpleOutputBuffer(i.getSerializedLength());
     try {
       i.serialize(sob);
@@ -148,69 +148,69 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
       return handle;
     }
     final ByteBuffer b = ByteBuffer.wrap(sob.getBytes());
-    
-    handle.setSubCancellable(etl.openSocket(i.getHop(1), new SocketCallback<Identifier>(){    
+
+    handle.setSubCancellable(etl.openSocket(i.getHop(1), new SocketCallback<Identifier>(){
       public void receiveResult(
-          SocketRequestHandle<Identifier> c, 
+          SocketRequestHandle<Identifier> c,
           final P2PSocket<Identifier> result) {
         if (handle.getSubCancellable() != null && c != handle.getSubCancellable()) throw new RuntimeException("c != handle.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
-        
-        handle.setSubCancellable(new Cancellable() {        
+
+        handle.setSubCancellable(new Cancellable() {
           public boolean cancel() {
             result.close();
             return true;
-          }        
+          }
         });
 
         logger.trace("openSocket({}):receiveResult({})", i, result);
-        result.register(false, true, new P2PSocketReceiver<Identifier>() {        
+        result.register(false, true, new P2PSocketReceiver<Identifier>() {
           public void receiveSelectResult(P2PSocket<Identifier> socket,
               boolean canRead, boolean canWrite) throws IOException {
             if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
-            
+
             // do the work
             socket.write(b);
-            
+
             // keep working or pass up the new socket
             if (b.hasRemaining()) {
-              socket.register(false, true, this); 
+              socket.register(false, true, this);
             } else {
               openSocketHelper(deliverSocketToMe, handle, socket, i);
             }
           }
-        
+
           public void receiveException(P2PSocket<Identifier> socket,
               Exception e) {
             deliverSocketToMe.receiveException(handle, e);
-          }        
-        }); 
-      }    
+          }
+        });
+      }
       public void receiveException(SocketRequestHandle<Identifier> c, Exception exception) {
         deliverSocketToMe.receiveException(handle, exception);
-      }    
-    }, options));      
-    
+      }
+    }, options));
+
     return handle;
   }
-  
+
   protected void openSocketHelper(
-      SocketCallback<SourceRoute<Identifier>> deliverSocketToMe, 
-      SocketRequestHandleImpl<SourceRoute<Identifier>> handle, 
-      P2PSocket<Identifier> socket, 
+      SocketCallback<SourceRoute<Identifier>> deliverSocketToMe,
+      SocketRequestHandleImpl<SourceRoute<Identifier>> handle,
+      P2PSocket<Identifier> socket,
       SourceRoute<Identifier> i) {
-    
-    deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<SourceRoute<Identifier>, Identifier>(i, socket, logger, errorHandler, socket.getOptions()));     
+
+    deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<SourceRoute<Identifier>, Identifier>(i, socket, logger, errorHandler, socket.getOptions()));
   }
-  
+
   /**
    * To override this behavior if needed.
-   * 
+   *
    * @param socket
    * @param sr
    * @throws IOException
    */
   protected void incomingSocketHelper(P2PSocket<Identifier> socket, SourceRoute<Identifier> sr) throws IOException {
-    callback.incomingSocket(new SocketWrapperSocket<SourceRoute<Identifier>, Identifier>(sr, socket, logger, errorHandler, socket.getOptions())); 
+    callback.incomingSocket(new SocketWrapperSocket<SourceRoute<Identifier>, Identifier>(sr, socket, logger, errorHandler, socket.getOptions()));
   }
 
   public void incomingSocket(final P2PSocket<Identifier> socka) throws IOException {
@@ -219,22 +219,22 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
 
     final SocketInputBuffer sib = new SocketInputBuffer(socka,1024);
     socka.register(true, false, new P2PSocketReceiver<Identifier>() {
-    
+
       public void receiveSelectResult(P2PSocket<Identifier> socket,
           boolean canRead, boolean canWrite) throws IOException {
         logger.trace("incomingSocket({}):receiveSelectResult()", socket);
         if (canWrite || !canRead) throw new IOException("Expected to read! "+canRead+","+canWrite);
         try {
           final SourceRoute<Identifier> sr = srFactory.build(sib, etl.getLocalIdentifier(), socka.getIdentifier());
-          
+
           logger.trace("Read socket {}", sr);
-          if (sr.getLastHop().equals(etl.getLocalIdentifier())) {    
+          if (sr.getLastHop().equals(etl.getLocalIdentifier())) {
             // last hop
             incomingSocketHelper(socket, srFactory.reverse(sr));
           } else {
             // sr hop
             int hopNum = sr.getHop(etl.getLocalIdentifier());
-            
+
             if (hopNum < 1) {
               // error, this is back to me!
               sib.reset();
@@ -244,33 +244,33 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
               socka.close();
               return;
             }
-            
+
             sib.reset();
             byte[] srbytes = new byte[sib.size()];
             sib.read(srbytes);
             final ByteBuffer b = ByteBuffer.wrap(srbytes);
-                
+
             logger.trace("I'm hop {} in {}", hopNum, sr);
             // we're an intermediate node, open next socket
             Identifier nextHop = sr.getHop(hopNum+1);
             if (forwardSourceRouteStrategy.forward(nextHop, sr, true, socka.getOptions())) {
               logger.trace("Attempting to open next hop {} <{}> in {}", nextHop, hopNum, sr);
-              
+
               etl.openSocket(nextHop, new SocketCallback<Identifier>() {
-              
+
                 public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sockb) {
                   sockb.register(false, true, new P2PSocketReceiver<Identifier>() {
-                  
+
                     public void receiveSelectResult(P2PSocket<Identifier> socket,
                         boolean canRead, boolean canWrite) throws IOException {
                       if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
-                      
+
                       // do the work
                       socket.write(b);
-                      
+
                       // keep working or pass up the new socket
                       if (b.hasRemaining()) {
-                        socket.register(false, true, this); 
+                        socket.register(false, true, this);
                       } else {
                         for (SourceRouteTap<Identifier> tap : taps) {
                           tap.socketOpened(sr, socka, sockb);
@@ -278,17 +278,17 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
                         new Forwarder<Identifier>(sr, socka, sockb, logger, taps);
                       }
                     }
-                  
+
                     public void receiveException(P2PSocket<Identifier> socket,
                         Exception e) {
                       errorHandler.receivedException(sr, e);
                       socka.close();
                       sockb.close();
-                    }                
+                    }
                   });
-                  
+
                 }
-              
+
                 /**
                  * Couldn't open the socket, the next hop was dead.
                  */
@@ -301,45 +301,45 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
               // don't even bother opening to the next hop
               logger.info("Rejecting opening next hop {} <{}> in {}", nextHop, hopNum, sr);
               socka.close();
-            }            
+            }
           }
 
         } catch (InsufficientBytesException ibe) {
-          socket.register(true, false, this); 
+          socket.register(true, false, this);
         } catch (IOException e) {
           if (logger.isInfoEnabled()) errorHandler.receivedException(srFactory.getSourceRoute(etl.getLocalIdentifier(), socket.getIdentifier()), e);
           socka.close();
         }
       }
-    
+
       public void receiveException(P2PSocket<Identifier> socket,Exception e) {
         errorHandler.receivedException(srFactory.getSourceRoute(etl.getLocalIdentifier(), socket.getIdentifier()), e);
-      }          
+      }
     });
 
   }
-  
+
 
   public MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> sendMessage(final SourceRoute<Identifier> i, final ByteBuffer m,
       final MessageCallback<SourceRoute<Identifier>, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
-    logger.debug("sendMessage({},{})", i, m);    
-    
+    logger.debug("sendMessage({},{})", i, m);
+
     // invariants
     if (i.getNumHops() <= 1) {
       throw new IllegalArgumentException("SourceRoute must have more than 1 hop! sr:"+i);
     }
-    
+
     if (!i.getFirstHop().equals(etl.getLocalIdentifier())) {
       throw new IllegalArgumentException("SourceRoute must start with self! sr:"+i+" self:"+etl.getLocalIdentifier());
     }
-    
+
     final ByteBuffer buf;
-    
-    final MessageRequestHandleImpl<SourceRoute<Identifier>, ByteBuffer> handle 
+
+    final MessageRequestHandleImpl<SourceRoute<Identifier>, ByteBuffer> handle
       = new MessageRequestHandleImpl<SourceRoute<Identifier>, ByteBuffer>(i, m, options);
 
-    
+
     SimpleOutputBuffer sob = new SimpleOutputBuffer(m.remaining() + i.getSerializedLength());
     try {
       i.serialize(sob);
@@ -353,10 +353,10 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
       return null;
     }
     buf = ByteBuffer.wrap(sob.getBytes());
-    
+
     handle.setSubCancellable(etl.sendMessage(
-        i.getHop(1), 
-        buf, 
+        i.getHop(1),
+        buf,
         new MessageCallback<Identifier, ByteBuffer>() {
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != handle.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
@@ -367,10 +367,10 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
             if (deliverAckToMe == null) {
               errorHandler.receivedException(i, ex);
             } else {
-              deliverAckToMe.sendFailed(handle, ex);            
+              deliverAckToMe.sendFailed(handle, ex);
             }
           }
-        }, 
+        },
         options));
     return handle;
   }
@@ -379,7 +379,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     if (!m.hasRemaining()) {
       errorHandler.receivedUnexpectedData(srFactory.getSourceRoute(etl.getLocalIdentifier(), i), m.array(), m.position(), null);
     }
-    
+
     int pos = m.position(); // need to reset to this spot if we forward the message
     SimpleInputBuffer sib = new SimpleInputBuffer(m.array(), pos);
 
@@ -391,13 +391,13 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
       errorHandler.receivedException(srFactory.getSourceRoute(etl.getLocalIdentifier(), i), e);
       return;
     }
-    
+
     final SourceRoute<Identifier> sr = tempSr;
-    
+
     // advance m properly
     m.position(m.array().length - sib.bytesRemaining());
-        
-    if (sr.getLastHop().equals(etl.getLocalIdentifier())) {    
+
+    if (sr.getLastHop().equals(etl.getLocalIdentifier())) {
       // last hop
       callback.messageReceived(srFactory.reverse(sr), m, options);
     } else {
@@ -416,13 +416,13 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
         ret.position(m.position());
         tap.receivedMessage(ret, sr);
       }
-      
+
       // forward
       m.position(pos);
       etl.sendMessage(
-          sr.getHop(hopNum+1), 
-          m, 
-          null, // think about this 
+          sr.getHop(hopNum+1),
+          m,
+          null, // think about this
           null); // it's important to the rendezvous layer to _not_ reuse the options
     }
   }
@@ -448,7 +448,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   public SourceRoute<Identifier> getLocalIdentifier() {
     return localIdentifier;
   }
-  
+
   public void destroy() {
     etl.destroy();
   }

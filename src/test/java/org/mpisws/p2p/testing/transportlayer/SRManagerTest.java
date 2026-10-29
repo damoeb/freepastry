@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer;
 
 import java.io.IOException;
@@ -97,17 +97,17 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
   static Timer timer;
 
   static MultiInetSocketAddress alice_addr, bob_addr;
-  
+
   @BeforeAll
   public static void setUpBeforeClass() throws Exception {
     srFactory = new MultiAddressSourceRouteFactory();
     TLTest.setUpBeforeClass();
     int startPort = START_PORT;
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
-    InetAddress addr = InetAddress.getLocalHost();    
+    InetAddress addr = InetAddress.getLocalHost();
     Parameters p = env.getParameters();
     timer = env.getSelectorManager().getTimer();
-    
+
     // this makes the liveness check super fast
       p.setInt("pastry_socket_scm_num_ping_tries", 2);
       p.setInt("pastry_socket_srm_default_rto", 400); // 3000 // 3 seconds
@@ -119,14 +119,14 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     dave = buildTL("dave", addr, startPort+3, env);
     otherTLs.add(carol);
     otherTLs.add(dave);
-    
+
     waitForAliceBobRoute();
   }
-  
+
   /**
-   * The direct link between alice and bob is blackholed (see connectionAllowed()), which can only be detected 
+   * The direct link between alice and bob is blackholed (see connectionAllowed()), which can only be detected
    * by liveness checks.  Until the SourceRouteManagers have detected that and switched to the route through carol,
-   * sockets/messages between alice and bob would silently go nowhere.  So do the liveness checks up front instead 
+   * sockets/messages between alice and bob would silently go nowhere.  So do the liveness checks up front instead
    * of depending on another test (e.g. testProximity) to have run first.
    */
   @SuppressWarnings("unchecked")
@@ -149,10 +149,10 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     bobLP.checkLiveness(aliceId, null);
     long timeout = env.getTimeSource().currentTimeMillis()+10000;
     synchronized(lock) {
-      while((env.getTimeSource().currentTimeMillis()<timeout) && 
-          (aliceLP.getLiveness(bobId, null) != LivenessListener.LIVENESS_ALIVE || 
+      while((env.getTimeSource().currentTimeMillis()<timeout) &&
+          (aliceLP.getLiveness(bobId, null) != LivenessListener.LIVENESS_ALIVE ||
            bobLP.getLiveness(aliceId, null) != LivenessListener.LIVENESS_ALIVE)) {
-        lock.wait(500); 
+        lock.wait(500);
       }
     }
     aliceLP.removeLivenessListener(ll);
@@ -163,14 +163,14 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
 
   private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
-        env.getSelectorManager(), 
-        env.getProcessor(), 
-        env.getRandomSource(), 
-        env.getTimeSource(), 
+        env.getSelectorManager(),
+        env.getProcessor(),
+        env.getRandomSource(),
+        env.getTimeSource(),
         ((Slf4jLogManager) env.getLogManager()).clone(name),
-        env.getParameters(), 
-        env.getExceptionStrategy());    
-    env.addDestructable(env_a);    
+        env.getParameters(),
+        env.getExceptionStrategy());
+    env.addDestructable(env_a);
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
     MultiInetAddressTransportLayer myEpochLayer = new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr_a),
         new MagicNumberTransportLayer<InetSocketAddress>(
@@ -180,9 +180,9 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     final MultiInetSocketAddress myAddr = myEpochLayer.getLocalIdentifier();
     if (name.equals("alice")) alice_addr = myAddr;
     if (name.equals("bob")) bob_addr = myAddr;
-    
+
     // don't allow direct connections from alice <-> bob
-    SourceRouteTransportLayer<MultiInetSocketAddress> srtl = 
+    SourceRouteTransportLayer<MultiInetSocketAddress> srtl =
         new SourceRouteTransportLayerImpl<MultiInetSocketAddress>(
             srFactory,
             myEpochLayer,
@@ -201,39 +201,39 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
               super.messageReceived(i, m, options);
             }
           }
-          
+
         };
     if (name.equals("carol")) carol_tap = srtl;
 
     TestLivenessTransportLayerImpl temp = new TestLivenessTransportLayerImpl(srtl,env_a, null);
-    MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>> prox = 
+    MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>> prox =
       new MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>>(temp, env_a);
     if (name.equals("bob")) {
       bob_prox = prox;
       bob_pinger = temp;
     }
-    
-    return new SourceRouteManagerImpl<MultiInetSocketAddress>(srFactory, temp, temp, prox, env_a, 
+
+    return new SourceRouteManagerImpl<MultiInetSocketAddress>(srFactory, temp, temp, prox, env_a,
         new TestSRS(temp.getLocalIdentifier().getLastHop()));
   }
-  
+
   static boolean connectionAllowed(MultiInetSocketAddress a, MultiInetSocketAddress b, String context) {
     if (a.equals(alice_addr)) {
       if (b.equals(bob_addr)) {
         return false;
-      }      
+      }
     }
     if (b.equals(alice_addr)) {
       if (a.equals(bob_addr)) {
         return false;
-      }      
+      }
     }
-    return true; 
+    return true;
   }
-  
+
   static class TestSRS implements SourceRouteStrategy<MultiInetSocketAddress> {
     MultiInetSocketAddress local;
-    
+
     public TestSRS(MultiInetSocketAddress local) {
       this.local = local;
     }
@@ -243,16 +243,16 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
       eList.add((MultiInetSocketAddress)alice.getLocalIdentifier());
       eList.add((MultiInetSocketAddress)bob.getLocalIdentifier());
       eList.add((MultiInetSocketAddress)carol.getLocalIdentifier());
-      
+
       eList.remove(local);
       eList.remove(destination);
-      
+
       ArrayList<SourceRoute<MultiInetSocketAddress>> srList = new ArrayList<SourceRoute<MultiInetSocketAddress>>();
       ArrayList<MultiInetSocketAddress> path = new ArrayList<MultiInetSocketAddress>(2);
       path.add(local);
       path.add(destination);
       srList.add(srFactory.getSourceRoute(path));
-      
+
       for (MultiInetSocketAddress eAddr : eList) {
         path = new ArrayList<MultiInetSocketAddress>(3);
         path.add(local);
@@ -260,27 +260,27 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         path.add(destination);
         srList.add(srFactory.getSourceRoute(path));
       }
-      
+
       return srList;
-    }    
+    }
   }
-  
-  static class TestLivenessTransportLayerImpl extends LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>> {    
+
+  static class TestLivenessTransportLayerImpl extends LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>> {
     public TestLivenessTransportLayerImpl(TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl, Environment env, ErrorHandler<SourceRoute<MultiInetSocketAddress>> errorHandler) {
       super(tl, env, errorHandler, 5000);
     }
-    
+
     @Override
     public void pong(final SourceRoute<MultiInetSocketAddress> i, final long senderTime, final Map<String, Object> options) {
-      timer.schedule(new TimerTask() {      
+      timer.schedule(new TimerTask() {
         @Override
         public void run() {
-          TestLivenessTransportLayerImpl.super.pong(i, senderTime, options);      
-        }      
+          TestLivenessTransportLayerImpl.super.pong(i, senderTime, options);
+        }
       }, getDelay(getLocalIdentifier(), i));
     }
   }
-  
+
   public static int getDelay(SourceRoute<MultiInetSocketAddress> a, SourceRoute<MultiInetSocketAddress> b) {
     if (b.getLastHop().equals(bob.getLocalIdentifier()) &&
         b.getFirstHop().equals(alice.getLocalIdentifier())) {
@@ -288,25 +288,25 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     }
     return 2;
   }
-  
+
   @Test
   public void testProximity() throws Exception {
     final Map<MultiInetSocketAddress, Tupel> pingResponse = new HashMap<MultiInetSocketAddress, Tupel>();
     final Object lock = new Object();
-    
-    PingListener<SourceRoute<MultiInetSocketAddress>> pl = new PingListener<SourceRoute<MultiInetSocketAddress>>() {    
+
+    PingListener<SourceRoute<MultiInetSocketAddress>> pl = new PingListener<SourceRoute<MultiInetSocketAddress>>() {
       public void pingResponse(SourceRoute<MultiInetSocketAddress> i, int rtt, Map<String, Object> options) {
         synchronized(lock) {
           pingResponse.put(i.getLastHop(), new Tupel(i.getLastHop(), rtt));
           lock.notify();
         }
       }
-      
+
       public void pingReceived(SourceRoute<MultiInetSocketAddress> i, Map<String, Object> options) {
 
       }
     };
-    
+
     bob_pinger.addPingListener(pl);
 
     ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(alice().getLocalIdentifier(), options); // initial check, causes ping if no data
@@ -314,57 +314,57 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
 
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
-      while( (env.getTimeSource().currentTimeMillis()<timeout) && 
+      while( (env.getTimeSource().currentTimeMillis()<timeout) &&
          (!pingResponse.containsKey((MultiInetSocketAddress)alice.getLocalIdentifier()) ||
           !pingResponse.containsKey((MultiInetSocketAddress)carol.getLocalIdentifier()))) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
     bob_pinger.removePingListener(pl);
-    
+
     int aliceProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(alice().getLocalIdentifier(), options);
     int carolProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(carol.getLocalIdentifier(), options);
 
     assertTrue(aliceProx > carolProx+100, "aliceProx:"+aliceProx+" carolProx:"+carolProx);
   }
-  
+
   class Tupel {
     MultiInetSocketAddress sr;
     int val;
-    
+
     public Tupel(MultiInetSocketAddress i, int val) {
       this.sr = i;
       this.val = val;
     }
   }
-  
+
   @Test
-  public void testLiveness() throws Exception {    
+  public void testLiveness() throws Exception {
     LivenessProvider<MultiInetSocketAddress> alice = (LivenessProvider<MultiInetSocketAddress>)SRManagerTest.alice;
     MultiInetSocketAddress daveAddress = (MultiInetSocketAddress)dave.getLocalIdentifier();
     final List<Tupel> tupels = new ArrayList<Tupel>(3);
     final Object lock = new Object();
-    
-    alice.addLivenessListener(new LivenessListener<MultiInetSocketAddress>() {    
+
+    alice.addLivenessListener(new LivenessListener<MultiInetSocketAddress>() {
       public void livenessChanged(MultiInetSocketAddress i, int val, Map<String, Object> options) {
         synchronized(lock) {
-          tupels.add(new Tupel(i,val));        
+          tupels.add(new Tupel(i,val));
           lock.notify();
         }
-      }    
+      }
     });
-    
+
     // starts out suspected
     assertTrue(
-        alice.getLiveness(daveAddress, null) == 
+        alice.getLiveness(daveAddress, null) ==
         LivenessListener.LIVENESS_SUSPECTED);
-    
+
     // becomes alive
 
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
       while( (env.getTimeSource().currentTimeMillis()<timeout) && tupels.isEmpty()) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
 
@@ -372,27 +372,27 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     assertTrue(result == LivenessListener.LIVENESS_ALIVE, "result = "+result);
     assertTrue(tupels.size() == 1);
 
-    
-    dave.destroy();    
-    
+
+    dave.destroy();
+
     try { Thread.sleep(500); } catch (InterruptedException ie) {return;}
 
     // becomes alive
     assertTrue(alice.checkLiveness(daveAddress, null));
-    
+
     timeout = env.getTimeSource().currentTimeMillis()+5000;
     synchronized(lock) {
       while( (env.getTimeSource().currentTimeMillis()<timeout) && tupels.size() <= 2) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
-    
+
     result = alice.getLiveness(daveAddress, null);
     assertTrue(result == LivenessListener.LIVENESS_DEAD, "result = "+result);
     // suspected/dead
     assertTrue(tupels.size() == 3);
   }
-  
+
   @Override
   public MultiInetSocketAddress getBogusIdentifier(MultiInetSocketAddress local) throws IOException {
     return new MultiInetSocketAddress(new InetSocketAddress(InetAddress.getLocalHost(), START_PORT-2));

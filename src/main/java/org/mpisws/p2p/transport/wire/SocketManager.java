@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.wire;
 
 import java.io.IOException;
@@ -57,7 +57,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
 
   // the key to read from
   protected SelectionKey key;
-  
+
   // the channel we are associated with
   protected SocketChannel channel;
 
@@ -67,18 +67,18 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   protected TCPLayer tcp;
 
   Logger logger;
-  
+
   InetSocketAddress addr;
-  
+
   Map<String, Object> options;
-  
+
   protected P2PSocketReceiver<InetSocketAddress> reader, writer;
 
   /**
    * becomes true before we deliver this to the SocketCallback, this invalidates the cancel() operation
    */
   boolean delivered = false;
-  
+
   /**
    * Constructor which accepts an incoming connection, represented by the
    * selection key. This constructor builds a new SocketManager, and waits
@@ -93,20 +93,20 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   public SocketManager(TCPLayer tcp, SelectionKey serverKey) throws IOException {
     this.tcp = tcp;
     logger = tcp.logger;
-    
+
     channel = (SocketChannel) ((ServerSocketChannel) serverKey.channel()).accept();
     channel.socket().setSendBufferSize(tcp.SOCKET_BUFFER_SIZE);
     channel.socket().setReceiveBufferSize(tcp.SOCKET_BUFFER_SIZE);
     channel.socket().setTcpNoDelay(tcp.TCP_NO_DELAY);
 
-    channel.configureBlocking(false);    
+    channel.configureBlocking(false);
     addr = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
-    
+
     logger.debug("(SA) Accepted incoming connection from {}", addr);
 
     key = tcp.wire.environment.getSelectorManager().register(channel, this, 0);
   }
-  
+
   /**
    * Constructor which creates an outgoing connection to the given address.
    * This creates the connection by building the socket and sending
@@ -124,15 +124,15 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     this.options = options;
     logger = tcp.logger;
     this.addr = addr;
-    
+
     channel = SocketChannel.open();
     channel.socket().setSendBufferSize(tcp.SOCKET_BUFFER_SIZE);
     channel.socket().setReceiveBufferSize(tcp.SOCKET_BUFFER_SIZE);
     if (tcp.wire.forceBindAddress && tcp.wire.bindAddress != null) channel.socket().bind(new InetSocketAddress(tcp.wire.bindAddress.getAddress(),0));
     channel.configureBlocking(false);
-    
+
     logger.debug("(SM) Initiating socket connection to {}", addr);
-    
+
     if (channel.connect(addr)) {
       key = tcp.wire.environment.getSelectorManager().register(channel, this, 0);
       delivered = true;
@@ -140,19 +140,19 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       c.receiveResult(SocketManager.this, SocketManager.this);
     } else {
       key = tcp.wire.environment.getSelectorManager().register(channel, new SelectionKeyHandler(){
-      
+
         @Override
         public void write(SelectionKey key) {
           SocketManager.this.write(key);
-        }      
+        }
         @Override
         public void read(SelectionKey key) {
           SocketManager.this.read(key);
-        }      
+        }
         @Override
         public void modifyKey(SelectionKey key) {
           SocketManager.this.modifyKey(key);
-        }      
+        }
         /**
          * Specified by the SelectionKeyHandler interface - calling this tells this
          * socket manager that the connection has completed and we can now
@@ -172,7 +172,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
             }
           } catch (IOException e) {
             if (c == null) {
-              tcp.wire.errorHandler.receivedException(addr, e);              
+              tcp.wire.errorHandler.receivedException(addr, e);
             } else {
               c.receiveException(SocketManager.this, e);
             }
@@ -182,11 +182,11 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       }, SelectionKey.OP_CONNECT);
     }
   }
-  
+
   public String toString() {
-    return "SM "+addr+" "+channel; 
+    return "SM "+addr+" "+channel;
   }
-  
+
   /**
    * Method which closes down this socket manager, by closing the socket,
    * cancelling the key and setting the key to be interested in nothing
@@ -196,7 +196,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       if (logger.isDebugEnabled()) {
         logger.debug("Closing " + this +" r:"+reader+" w:"+writer);
       }
-      
+
       if (key != null) {
         key.cancel();
         key.attach(null);
@@ -205,13 +205,13 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
         // we were already closed
         return;
       }
-      
+
       if (channel != null) {
         channel.close();
       }
       tcp.socketClosed(this);
-      
-      
+
+
       tcp.wire.environment.getSelectorManager().invoke(new Runnable() {
         public void run() {
       // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
@@ -227,7 +227,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
           temp.receiveException(SocketManager.this, new ClosedChannelException("Channel closed. "+SocketManager.this));
         }
       }
-      
+
       if (reader != null) {
         if (tcp.isDestroyed()) return;
         P2PSocketReceiver<InetSocketAddress> temp = reader;
@@ -317,8 +317,8 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     // so don't put this check down below!
     if (wantToWrite) {
       if (channel.socket().isOutputShutdown()) {
-        receiver.receiveException(this, 
-            new ClosedChannelException("Socket "+addr+" "+SocketManager.this+" already shut down output."));        
+        receiver.receiveException(this,
+            new ClosedChannelException("Socket "+addr+" "+SocketManager.this+" already shut down output."));
         return;
       }
       if (writer != null) {
@@ -327,42 +327,42 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
         }
       }
     }
-    
+
     if (wantToRead) {
       if (reader != null) {
-        if (reader != receiver) throw new IllegalStateException("Already registered "+reader+" for reading, you can't register "+receiver+" for reading as well!"); 
+        if (reader != receiver) throw new IllegalStateException("Already registered "+reader+" for reading, you can't register "+receiver+" for reading as well!");
       }
-      reader = receiver; 
+      reader = receiver;
     }
-    
+
     if (wantToWrite) {
-      writer = receiver; 
+      writer = receiver;
     }
-    tcp.wire.environment.getSelectorManager().modifyKey(key);        
+    tcp.wire.environment.getSelectorManager().modifyKey(key);
   }
-  
+
   /**
-   * Method which initiates a shutdown of this socket by calling 
+   * Method which initiates a shutdown of this socket by calling
    * shutdownOutput().  This has the effect of removing the manager from
    * the open list.
    */
-  public void shutdownOutput() {    
+  public void shutdownOutput() {
     boolean closeMe = false;
     synchronized(this) {
       if (key == null) {
         throw new IllegalStateException("Socket already closed.");
       }
-      
+
       if (channel.socket().isClosed()) {
       }
 
       try {
         logger.debug("Shutting down output on app connection {}", this);
-        
+
         // do we need to do this?  or does this happen twice now?
-        
+
             channel.socket().shutdownOutput();
-            
+
             tcp.wire.environment.getSelectorManager().invoke(new Runnable() {
               public void run() {
                 // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
@@ -379,7 +379,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       }
     } // synchronized(this)
     tcp.wire.environment.getSelectorManager().modifyKey(key);
-    
+
     // close has it's own synchronization semantics, don't want to be holding a lock when calling
     if (closeMe) {
       close();
@@ -392,7 +392,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       long ret = channel.read(dst);
       if (logger.isTraceEnabled()) {
         logger.trace(this+"read("+ret+"):"+Arrays.toString(dst.array()));
-      }    
+      }
       return ret;
     } catch (IOException ioe) {
       if (logger.isDebugEnabled()) {
@@ -413,11 +413,11 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       return ret;
     } catch (IOException ioe) {
       if (logger.isTraceEnabled()) {
-        logger.trace(this+" error writing", ioe);        
+        logger.trace(this+" error writing", ioe);
       } else logger.debug("{} error writing", this);
       close();
       throw ioe;
-    }      
+    }
   }
 
   public boolean cancel() {
@@ -426,9 +426,9 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     close();
     return true;
   }
-  
+
   private void exceptionAndClose(IOException e) {
-    tcp.wire.errorHandler.receivedException(addr, e);    
+    tcp.wire.errorHandler.receivedException(addr, e);
     close();
   }
 

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.p2p.aggregation;
 
 import java.io.IOException;
@@ -124,14 +124,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
   private final boolean logStatistics;
 
-  private final long flushDelayAfterJoin; 
+  private final long flushDelayAfterJoin;
   private final long flushStressInterval;
   private long flushInterval;
 
   private int maxAggregateSize;
   private int maxObjectsInAggregate;
   private int maxAggregatesPerRun;
-  
+
   private final boolean addMissingAfterRefresh;
   private final int maxReaggregationPerRefresh;
   private final int nominalReferenceCount;
@@ -164,12 +164,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
   private Environment environment;
   protected Logger logger;
-  
+
   protected PastContentDeserializer contentDeserializer;
   protected PastContentHandleDeserializer contentHandleDeserializer;
-  
+
   protected AggregateFactory aggregateFactory;
-  
+
   public AggregationImpl(Node node, Past aggregateStore, Past objectStore, StorageManager waitingList, String configFileName, IdFactory factory, String instance) throws IOException {
     this(node, aggregateStore, objectStore, waitingList, configFileName, factory, instance, null, null);
   }
@@ -177,9 +177,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public AggregationImpl(Node node, Past aggregateStore, Past objectStore, StorageManager waitingList, String configFileName, IdFactory factory, String instance, AggregationPolicy policy, AggregateFactory aggregateFactory) throws IOException {
     this.environment = node.getEnvironment();
     logger = environment.getLogManager().getLogger(AggregationImpl.class, instance);
-    
+
     Parameters p = environment.getParameters();
-    
+
     logStatistics = p.getBoolean("p2p_aggregation_logStatistics");
 
     flushDelayAfterJoin = p.getLong("p2p_aggregation_flushDelayAfterJoin");
@@ -189,7 +189,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     maxAggregateSize = p.getInt("p2p_aggregation_maxAggregateSize");
     maxObjectsInAggregate = p.getInt("p2p_aggregation_maxObjectsInAggregate");
     maxAggregatesPerRun = p.getInt("p2p_aggregation_maxAggregatesPerRun");
-    
+
     addMissingAfterRefresh = p.getBoolean("p2p_aggregation_addMissingAfterRefresh");
     maxReaggregationPerRefresh = p.getInt("p2p_aggregation_maxReaggregationPerRefresh");
     nominalReferenceCount = p.getInt("p2p_aggregation_nominalReferenceCount");
@@ -226,59 +226,59 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     this.endpoint = node.buildEndpoint(this, instance);
-    this.endpoint.setDeserializer(new MessageDeserializer() {    
+    this.endpoint.setDeserializer(new MessageDeserializer() {
       public Message deserialize(InputBuffer buf, short type, int priority,
           NodeHandle sender) throws IOException {
         // the only message type, AggregationTimeoutMessage, is scheduled locally and never deserialized
         switch(type) {
         }
         return null;
-      }    
+      }
     });
-    
+
     this.waitingList = waitingList;
     this.instance = instance;
-    
+
     this.contentDeserializer = new JavaPastContentDeserializer();
     this.contentHandleDeserializer = new JavaPastContentHandleDeserializer();
 
     this.aggregateStore = aggregateStore;
-    this.aggregateStore.setContentDeserializer(new PastContentDeserializer() {    
+    this.aggregateStore.setContentDeserializer(new PastContentDeserializer() {
       public PastContent deserializePastContent(InputBuffer buf, Endpoint endpoint,
           short contentType) throws IOException {
         switch(contentType) {
           case RawAggregate.TYPE:
-            return new RawAggregate(buf, endpoint, contentDeserializer);  
+            return new RawAggregate(buf, endpoint, contentDeserializer);
           case NonAggregate.TYPE:
             short subType = buf.readShort();
             return contentDeserializer.deserializePastContent(buf, endpoint, subType);
         }
         throw new IllegalArgumentException("Unknown Type:"+contentType);
-      }    
+      }
     });
-    
-    this.aggregateStore.setContentHandleDeserializer(new PastContentHandleDeserializer() {    
+
+    this.aggregateStore.setContentHandleDeserializer(new PastContentHandleDeserializer() {
       public PastContentHandle deserializePastContentHandle(InputBuffer buf, Endpoint endpoint,
           short contentType) throws IOException {
         switch(contentType) {
           case AggregateHandle.TYPE:
-            return new AggregateHandle(buf, endpoint);          
+            return new AggregateHandle(buf, endpoint);
         }
         throw new IllegalArgumentException("Unknown Type:"+contentType);
-      }    
+      }
     });
-    
+
     this.objectStore = objectStore;
     this.node = node;
     this.timers = new Hashtable<Integer, CancellableTask>();
     this.aggregateList = new AggregateList(configFileName, getLocalNodeHandle().getId().toString(), factory, aggregateLogEnabled, instance, environment);
     this.stats = aggregateList.getStatistics(statsGranularity, statsRange, nominalReferenceCount);
     if (policy == null) {
-      this.policy = getDefaultPolicy();      
+      this.policy = getDefaultPolicy();
     } else {
       this.policy = policy;
     }
-    
+
     this.factory = factory;
     this.flushWait = null;
     this.rebuildInProgress = false;
@@ -306,9 +306,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   private static AggregateFactory getDefaultAggregateFactory() {
-    return new RawAggregateFactory(); 
+    return new RawAggregateFactory();
   }
-  
+
   private long jitterTerm(long basis) {
     return (long)((1-jitterRange)*basis) + environment.getRandomSource().nextInt((int)(2*jitterRange*basis));
   }
@@ -360,11 +360,11 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public String handleDebugCommand(String command) {
     if (command.indexOf(" ") < 0)
       return null;
-  
+
     String requestedInstance = command.substring(0, command.indexOf(" "));
     String myInstance = "aggr."+instance.substring(instance.lastIndexOf("-") + 1);
     String cmd = command.substring(requestedInstance.length() + 1);
-    
+
     if (!requestedInstance.equals(myInstance) && !requestedInstance.equals("a")) {
       String subResult = null;
 
@@ -375,9 +375,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
       return subResult;
     }
-  
+
     logger.info("Debug command: {}", cmd);
-  
+
     if (cmd.startsWith("status")) {
       return stats.numObjectsTotal+" objects total\n"+stats.numObjectsAlive+" objects alive\n"+
              stats.numAggregatesTotal+" aggregates total\n"+stats.numPointerArrays+" pointer arrays\n"+
@@ -387,7 +387,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     if (cmd.startsWith("insert")) {
       int numObjects = Integer.parseInt(cmd.substring(7));
       String result = "";
-      
+
       for (int i=0; i<numObjects; i++) {
         Id randomID = factory.buildRandomId(environment.getRandomSource());
         result = result + randomID.toStringFull() + "\n";
@@ -402,12 +402,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           }
         );
       }
-      
+
       return result + numObjects + " object(s) created\n";
     }
 
     if (cmd.startsWith("show config")) {
-      return 
+      return
         "flushDelayAfterJoin = " + (int)(flushDelayAfterJoin / SECONDS) + " sec\n" +
         "flushInterval = " + (int)(flushInterval / SECONDS) + " sec\n" +
         "maxAggregateSize = " + maxAggregateSize + " bytes\n" +
@@ -425,7 +425,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         "consolidationThreshold = " + (int)(consolidationThreshold / HOURS) + " hrs\n" +
         "consolidationMinObjectsInAggregate = " + consolidationMinObjectsInAggregate + "\n" +
         "consolidationMinComponentsAlive = " + consolidationMinComponentsAlive + "\n";
-    }    
+    }
 
     if (cmd.startsWith("ls")) {
       Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
@@ -441,8 +441,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       while (enumeration.hasMoreElements()) {
         AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
         if (!aggr.marker) {
-          result.append("***" + aggr.key.toStringFull() + " (" + aggr.objects.length + " obj, " + 
-                   aggr.pointers.length + " ptr, " + aggr.referenceCount + " ref, exp=" + 
+          result.append("***" + aggr.key.toStringFull() + " (" + aggr.objects.length + " obj, " +
+                   aggr.pointers.length + " ptr, " + aggr.referenceCount + " ref, exp=" +
                    (aggr.currentLifetime - now) + ")\n");
           for (int i=0; i<aggr.objects.length; i++)
             result.append("    #"+i+" "+
@@ -450,7 +450,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               ", lt=" + (aggr.objects[i].currentLifetime-now) +
               ", rt=" + (aggr.objects[i].refreshedLifetime-now) +
               ", size=" + aggr.objects[i].size + " bytes\n");
-          for (int i=0; i<aggr.pointers.length; i++) 
+          for (int i=0; i<aggr.pointers.length; i++)
             result.append("    Ref "+aggr.pointers[i].toStringFull()+"\n");
           result.append("\n");
           aggr.marker = true;
@@ -460,7 +460,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       }
 
       result.append(numAggr + " aggregate(s), " + numObj + " object(s)");
-      
+
       return result.toString();
     }
 
@@ -480,7 +480,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ret.complete("exception("+e+")");
         }
       });
-        
+
       return awaitDebugResult(ret);
     }
 
@@ -495,10 +495,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ret.complete("exception("+e+")");
         }
       });
-        
+
       return awaitDebugResult(ret);
     }
-    
+
     if (cmd.startsWith("get root")) {
       return "root="+((aggregateList.getRoot()==null) ? "null" : aggregateList.getRoot().toStringFull());
     }
@@ -513,7 +513,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ret.complete("exception("+e+")");
         }
       });
-        
+
       return awaitDebugResult(ret);
     }
 
@@ -529,7 +529,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ret.complete("exception("+e+")");
         }
       });
-      
+
       return "lookup("+id+")="+awaitDebugResult(ret);
     }
 
@@ -553,15 +553,15 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ret.complete("exception("+e+")");
         }
       });
-      
+
       return "Handles("+max+","+id+"):\n"+awaitDebugResult(ret);
     }
-      
+
     if (cmd.startsWith("refresh all")) {
       long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(cmd.substring(12));
       TreeSet<Id> ids = new TreeSet<Id>();
       String result;
-      
+
       aggregateList.resetMarkers();
 
       Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
@@ -573,14 +573,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             ids.add(aggr.objects[i].key);
         }
       }
-      
+
       if (!ids.isEmpty()) {
         Id[] allIds = (Id[]) ids.toArray(new Id[] {});
         result = "Refreshing " + allIds.length + " keys...\n";
 
         for (int i=0; i<allIds.length; i++)
           result = result + "#" + i + " " + allIds[i].toStringFull() + "\n";
-      
+
         final CompletableFuture<String> ret = new CompletableFuture<String>();
         refresh(allIds, expiration, new Continuation<Object[], Exception>() {
           public void receiveResult(Object[] o) {
@@ -593,10 +593,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
         result = result + awaitDebugResult(ret);
       } else result = "Aggregate list is empty; nothing to refresh!";
-      
+
       return result;
     }
-      
+
     if (cmd.startsWith("refresh")) {
       String args = cmd.substring(8);
       String expirationArg = args.substring(args.lastIndexOf(' ') + 1);
@@ -614,21 +614,21 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ret.complete("exception("+e+")");
         }
       });
-      
+
       return "refresh("+id+", "+expiration+")="+awaitDebugResult(ret);
     }
 
     if (cmd.startsWith("monitor remove") && monitorEnabled) {
       String[] args = cmd.substring(15).split(" ");
-      if (args.length == 1) {        
+      if (args.length == 1) {
         int howMany = Integer.parseInt(args[0]);
-        
+
         if (howMany > monitorIDs.size())
           howMany = monitorIDs.size();
-        
+
         for (int i=0; i<howMany; i++)
           monitorIDs.removeElementAt(environment.getRandomSource().nextInt(monitorIDs.size()));
-          
+
         return "Removed "+howMany+" elements; "+monitorIDs.size()+" elements left";
       } else return "Syntax: monitor remove <howMany>";
     }
@@ -640,10 +640,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     if (cmd.startsWith("monitor ls") && monitorEnabled) {
       StringBuffer result = new StringBuffer();
       Enumeration<Id> enumeration = monitorIDs.elements();
-      
+
       while (enumeration.hasMoreElements())
         result.append(((Id)enumeration.nextElement()).toStringFull() + "\n");
-        
+
       result.append(monitorIDs.size() + " object(s)");
       return result.toString();
     }
@@ -651,35 +651,35 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     if (cmd.startsWith("monitor check") && monitorEnabled) {
       final StringBuffer result = new StringBuffer();
       final CompletableFuture<String> ret = new CompletableFuture<String>();
-      
+
       if (monitorIDs.isEmpty())
         return "Add objects first!";
 
       final long now = environment.getTimeSource().currentTimeMillis();
-            
+
       Continuation<PastContentHandle[], Exception> c = new Continuation<PastContentHandle[], Exception>() {
         int currentLookup = 0;
         boolean lookupInAggrStore = false;
-        
+
         public void receiveResult(PastContentHandle[] o) {
           logger.debug("Monitor: Retr {} a={} got {}", currentLookup, lookupInAggrStore, o);
           Id currentId = (Id) monitorIDs.elementAt(currentLookup);
           PastContentHandle[] handles = (PastContentHandle[]) o;
           GCPastContentHandle handle = null;
           boolean skipToNext = true;
-          
+
           for (int i=0; i<handles.length; i++)
             if (handles[i] != null)
               handle = (GCPastContentHandle) handles[i];
-          
+
           if (!lookupInAggrStore) {
             result.append(currentId.toStringFull() + " - OS ");
             result.append((handle==null) ? "--" : ""+(handle.getExpiration()-now));
-            
+
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(currentId);
             if (adc != null) {
               result.append(" AD " + (adc.currentLifetime - now));
-              
+
               int objDescIndex = adc.lookupNewest(currentId);
               if (objDescIndex >= 0) {
                 ObjectDescriptor odc = adc.objects[objDescIndex];
@@ -697,7 +697,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             result.append(" AS " + ((handle==null) ? "--\n" : ""+(handle.getExpiration()-now) + "\n"));
             lookupInAggrStore = false;
           }
-          
+
           if (skipToNext) {
             currentLookup++;
             if (currentLookup < monitorIDs.size()) {
@@ -714,7 +714,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ret.complete("done");
         }
       };
-      
+
       objectStore.lookupHandles((Id) monitorIDs.elementAt(0), 1, c);
       String outcome = awaitDebugResult(ret);
       // the StringBuffer is synchronized, and complete() happens-after the last append
@@ -730,7 +730,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         final int smallSize = Integer.parseInt(args[3]);
         final int largeSize = Integer.parseInt(args[4]);
         final long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(args[5]);
-        
+
         Continuation<Object, Exception> c = new Continuation<Object, Exception>() {
           int remainingTotal = numFiles;
           public void receiveResult(Object o) {
@@ -760,25 +760,25 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                   receiveResult(e);
                 }
               };
-              
+
               c2.receiveResult(Boolean.valueOf(true));
             } else {
               logger.info("Monitor add completed, {} objects created successfully", numFiles);
-            }            
+            }
           }
           public void receiveException(Exception e) {
             logger.warn("Monitor.add aggregate insertion failed: ", e);
             receiveResult(e);
           }
         };
-        
+
         c.receiveResult(Boolean.valueOf(true));
         return "In progress...";
       }
-      
+
       return "Syntax: monitor add <#files> <avgBurstSize> <sizeSkew> <smallSize> <largeSize> <lifetime>";
     }
-      
+
     if (cmd.startsWith("killall")) {
       String args = cmd.substring(8);
       String expirationArg = args.substring(args.lastIndexOf(' ') + 1);
@@ -796,7 +796,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         }
         return "OK";
       }
-      
+
       return "Aggregate "+id+" not found in aggregate list";
     }
 
@@ -805,15 +805,15 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       String result = "";
 
       result = result + waitingList.scan().numElements()+ " object(s) waiting\n";
-      
+
       while (iter.hasNext()) {
         Id thisId = (Id) iter.next();
         result = result + thisId.toStringFull()+" "+waitingList.getMetadata(thisId)+"\n";
       }
-        
+
       return result;
     }
-      
+
     if (cmd.startsWith("vlookup")) {
       String[] vkeyS = cmd.substring(8).split("v");
       Id key = factory.buildIdFromToString(vkeyS[0]);
@@ -828,10 +828,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ret.complete("exception("+e+")");
         }
       });
-      
+
       return "vlookup("+key+"v"+version+")="+awaitDebugResult(ret);
     }
-    
+
     return null;
   }
 
@@ -839,10 +839,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     List<AggregateDescriptor> toRemove = new ArrayList<AggregateDescriptor>();
     Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
     long now = environment.getTimeSource().currentTimeMillis();
-  
+
     /* Note: Multiple keys are mapped to a single aggregate descriptor, so the same ADC
        may be returned multiple times - but we must delete it only once! */
-    
+
     while (enumeration.hasMoreElements()) {
       AggregateDescriptor adc = (AggregateDescriptor) enumeration.nextElement();
       if (adc.currentLifetime < (now - aggregateGracePeriod)) {
@@ -851,10 +851,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         logger.atWarn().log(() -> "Scheduling dead aggregate for removal: "+adc.key.toStringFull()+"(expired "+adc.currentLifetime+")");
       }
     }
-    
+
     if (toRemove.size() > 0) {
       logger.info("Removing {} dead aggregates...", toRemove.size());
-      
+
       for (AggregateDescriptor adc : toRemove)
         aggregateList.removeAggregateDescriptor(adc);
     }
@@ -899,8 +899,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               command.receiveException(e);
             }
           };
-    
-          if (aggregateStore instanceof GCPast) 
+
+          if (aggregateStore instanceof GCPast)
             ((GCPast)aggregateStore).insert(aggr, expiration, c);
           else
             aggregateStore.insert(aggr, c);
@@ -920,9 +920,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     if (flushWait != null) {
       Continuation<? super Boolean, Exception> c = flushWait;
       flushWait = null;
-      if (o instanceof Exception) 
+      if (o instanceof Exception)
         c.receiveException((Exception) o);
-      else 
+      else
         c.receiveResult((Boolean) o);
     }
   }
@@ -947,14 +947,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     flushWait = command;
-      
+
     IdSet waitingKeys = waitingList.scan();
     if (waitingKeys.numElements() == 0) {
       logger.info("NO BINS TO PACK");
       flushComplete(Boolean.valueOf(true));
       return;
     }
-  
+
     logger.info("BIN PACKING STARTED");
 
     List<ObjectDescriptor> currentAggregate = new ArrayList<ObjectDescriptor>();
@@ -963,14 +963,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     Iterator<Id> iter = waitingKeys.getIterator();
     long currentAggregateSize = 0;
     int currentObjectsInAggregate = 0;
-    
+
     while (true) {
       ObjectDescriptor thisObject = null;
       boolean mustAddObject = false;
 
       if (aggregates.size() >= maxAggregatesPerRun)
         break;
-      
+
       while (iter.hasNext()) {
         Id thisId = (Id) iter.next();
         thisObject = (ObjectDescriptor) waitingList.getMetadata(thisId);
@@ -992,7 +992,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           deletionVector.add(thisId);
         }
       }
-      
+
       int numObjectsInAggregate = currentAggregate.size();
       if (numObjectsInAggregate < 1) {
         logger.warn("Waiting list seems to consist entirely of damaged objects -- please remove!");
@@ -1010,7 +1010,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       currentAggregate.clear();
       currentObjectsInAggregate = 0;
       currentAggregateSize = 0;
-        
+
       if (mustAddObject) {
         currentAggregate.add(thisObject);
         currentAggregateSize += thisObject.size;
@@ -1031,7 +1031,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         }
       });
     }
-  
+
     Continuation.MultiContinuation<Object[]> c = new Continuation.MultiContinuation<Object[]>(new Continuation<Object[], Exception>() {
       public void receiveResult(Object[] o) {
         flushComplete(Boolean.valueOf(true));
@@ -1040,14 +1040,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         flushComplete(e);
       }
     }, aggregates.size());
-      
+
     for (int i=0; i<aggregates.size(); i++) {
       final ObjectDescriptor[] desc = aggregates.get(i);
       final GCPastContent[] obj = new GCPastContent[desc.length];
       final long aggrExpirationF = chooseAggregateLifetime(desc, environment.getTimeSource().currentTimeMillis(), 0);
       final Continuation<Object, Exception> thisContinuation = c.getSubContinuation(i);
       final int iF = i;
-      
+
       logger.debug("Retrieving #{}.0: {}", i, desc[0].key);
       waitingList.getObject(new VersionKey(desc[0].key, desc[0].version), new Continuation<Serializable, Exception>() {
         int currentQuery = 0;
@@ -1081,7 +1081,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                 }
               });
             }
-          } else { 
+          } else {
             logger.warn("Aggregation cannot retrieve {} (found o={})", desc[currentQuery].key, o);
             thisContinuation.receiveException(new AggregationException("Cannot retrieve object from waiting list: "+desc[currentQuery].key));
           }
@@ -1119,19 +1119,19 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
       if (!aggr.marker) {
         aggr.marker = true;
-        
+
         boolean isBeingRefreshed = false;
         if (aggr.currentLifetime < (now + expirationRenewThreshold)) {
           long newLifetime = chooseAggregateLifetime(aggr.objects, now, aggr.currentLifetime);
           if (newLifetime > aggr.currentLifetime) {
             logger.atInfo().log(() -> "Refreshing aggregate "+aggr.key.toStringFull()+", new expiration is "+newLifetime);
             isBeingRefreshed = true;
-            
+
             refreshAggregateList.add(aggr);
             refreshLifetimeList.add(Long.valueOf(newLifetime));
           }
         }
-            
+
         if ((aggr.currentLifetime < now) && !isBeingRefreshed) {
           logger.debug("Adding expired aggregate {} to remove list", aggr.key);
           removeList.add(aggr);
@@ -1146,7 +1146,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       deletedOne = true;
       aggregateList.removeAggregateDescriptor(aggr);
     }
-    
+
     if (deletedOne)
       aggregateList.writeToDisk();
 
@@ -1159,13 +1159,13 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           ids[i] = refreshAggregateList.get(i).key;
           lifetimes[i] = refreshLifetimeList.get(i).longValue();
         }
-        
+
         ((GCPast)aggregateStore).refresh(ids, lifetimes, new Continuation<Object[], Exception>() {
           public void receiveResult(Object[] o) {
             Object[] results = (Object[]) o;
             logger.debug("Received refresh results for {} aggregates", results.length);
             int numOk = 0;
-            
+
             for (int i=0; i<results.length; i++) {
               if (results[i] instanceof Boolean) {
                 AggregateDescriptor aggr = refreshAggregateList.get(i);
@@ -1179,7 +1179,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                 if (logger.isWarnEnabled()) logger.warn("Aggregate #"+i+" ("+aggr.key.toStringFull()+"): Refresh failed, e=", e);
               }
             }
-            
+
             aggregateList.writeToDisk();
             logger.info("Refresh complete, {}/{} aggregates refreshed OK", numOk, results.length);
           }
@@ -1204,13 +1204,13 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     List<AggregateDescriptor> candidateList = new ArrayList<AggregateDescriptor>();
 
     logger.info("Looking for aggregates to consolidate");
-    
+
     aggregateList.resetMarkers();
     while (enumeration.hasMoreElements()) {
       AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
       if (!aggr.marker) {
         aggr.marker = true;
-        
+
         /* An aggregate is a candidate for consolidation iff
               - it does not need to be refreshed yet, but has reached a certain age
                 (to prevent consolidation of 'garbage'),
@@ -1218,7 +1218,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               - it does not contain enough objects, or too many of them are dead
            Pointer arrays are never consolidated; they expire after some time.
         */
-        
+
         if ((aggr.currentLifetime > (now + expirationRenewThreshold)) &&
             (aggr.currentLifetime < (now + consolidationThreshold)) &&
             (aggr.objectsAliveAt(now) > 0)) {
@@ -1236,20 +1236,20 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       logger.info("No candidates for consolidation");
       return;
     }
-    
+
     logger.debug("{} candidate(s) for consolidation", candidateList.size());
-    
+
     final List<AggregateDescriptor> componentList = new ArrayList<AggregateDescriptor>();
     int objectsSoFar = 0;
     int bytesSoFar = 0;
-    
+
     while (!candidateList.isEmpty()) {
       AggregateDescriptor adc = candidateList.remove(environment.getRandomSource().nextInt(candidateList.size()));
       componentList.add(adc);
       logger.atDebug().log(() -> "Picked candidate "+adc.key.toStringFull()+" ("+adc.objectsAliveAt(now)+"/"+adc.objects.length+" objects, "+adc.bytesAliveAt(now)+" bytes alive)");
       objectsSoFar += adc.objectsAliveAt(now);
       bytesSoFar += adc.bytesAliveAt(now);
-      
+
       int p = 0;
       while (p < candidateList.size()) {
         AggregateDescriptor adx = candidateList.get(p);
@@ -1260,14 +1260,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           p++;
       }
     }
-    
+
     if (componentList.isEmpty() || (objectsSoFar < consolidationMinObjectsInAggregate)) {
       logger.info("Not enough objects ({} found, {} required), postponing...", objectsSoFar, consolidationMinObjectsInAggregate);
       return;
     }
 
     logger.debug("Consolidation: Decided to consolidate {} objects from {} aggregates ({} bytes)", objectsSoFar, componentList.size(), bytesSoFar);
-    
+
     final AggregateDescriptor[] adc = (AggregateDescriptor[]) componentList.toArray(new AggregateDescriptor[] {});
     final Aggregate[] aggr = new Aggregate[adc.length];
     final int objectsTotal = objectsSoFar;
@@ -1290,9 +1290,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             for (int i=0; i<adc.length; i++) {
               for (int j=0; j<adc[i].objects.length; j++) {
                 if (adc[i].objects[j].isAliveAt(now)) {
-                  
+
                   GCPastContent temp = aggr[i].getComponent(j);
-                  
+
                   components[componentIndex] = (RawGCPastContent)temp;
                   desc[componentIndex] = adc[i].objects[j];
                   if (logger.isDebugEnabled()) logger.debug("  #"+componentIndex+": "+adc[i].objects[j].key.toStringFull());
@@ -1317,7 +1317,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                   if (logger.isDebugEnabled()) logger.debug("Removing "+adc[i].key.toStringFull()+" ...");
                   aggregateList.removeAggregateDescriptor(adc[i]);
                 }
-                
+
                 aggregateList.writeToDisk();
                 logger.info("Consolidation completed, {} objects from {} aggregates consolidated", objectsTotal, aggr.length);
               }
@@ -1338,29 +1338,29 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   private void reconnectTree() {
-  
+
     if (rebuildInProgress) {
       logger.info("Skipping connectivity check (rebuild in progress)");
       return;
     }
-  
+
     logger.info("Checking for disconnections");
-    
+
     Id[] disconnected = aggregateList.getSomePointers(1, maxPointersPerAggregate, null);
     if (disconnected.length < 2) {
       Id newRoot = (disconnected.length == 1) ? disconnected[0] : null;
       Id currentRoot = aggregateList.getRoot();
-      if (((newRoot == null) && (currentRoot != null)) || ((newRoot != null) && (currentRoot == null)) || 
+      if (((newRoot == null) && (currentRoot != null)) || ((newRoot != null) && (currentRoot == null)) ||
           ((newRoot != null) && (currentRoot != null) && !newRoot.equals(currentRoot)))
         aggregateList.setRoot(newRoot);
       logger.info("No aggregates disconnected (n={})", disconnected.length);
       logger.atDebug().log(() -> "root="+((aggregateList.getRoot() == null) ? "null" : aggregateList.getRoot().toStringFull()));
       return;
     }
-    
+
     logger.info("Found {} disconnected aggregates; inserting pointer array", disconnected.length);
     storeAggregate(
-      aggregateFactory.buildAggregate(new GCPastContent[] {}, disconnected), 
+      aggregateFactory.buildAggregate(new GCPastContent[] {}, disconnected),
       environment.getTimeSource().currentTimeMillis() + pointerArrayLifetime,
       new ObjectDescriptor[] {},
       disconnected,
@@ -1382,18 +1382,18 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       case tiFlush :
       {
         logger.info("Scheduled flush, waiting list: {}", waitingList.getSize());
-        
+
         formAggregates(new Continuation<Boolean, Exception>() {
-          public void receiveResult(Boolean o) { 
+          public void receiveResult(Boolean o) {
             logger.debug("Scheduled flush: Success (o={})", o);
           }
           public void receiveException(Exception e) {
             logger.warn("Scheduled flush: Failure (e={})", e, e);
           }
         });
-        
+
         logger.atInfo().log(() -> "Waiting list: "+waitingList.getSize()+" Scan: "+getNumObjectsWaiting()+" Max: "+(maxObjectsInAggregate * maxAggregatesPerRun));
-        
+
         if (getNumObjectsWaiting() >= (maxObjectsInAggregate * maxAggregatesPerRun)) {
           logger.info("Retrying later");
           addTimer(jitterTerm(flushStressInterval), tiFlush);
@@ -1401,7 +1401,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           logger.info("OK, waiting for next deadline");
           addTimer(jitterTerm(flushInterval), tiFlush);
         }
-        
+
         break;
       }
       case tiExpire :
@@ -1429,7 +1429,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             logger.debug("Monitor: Refresh failed, exception=", e);
           }
         });
-      
+
         addTimer(monitorRefreshInterval, tiMonitor);
         break;
       }
@@ -1457,13 +1457,13 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       command.receiveResult(result);
     }
   }
-  
+
   public void refresh(Id[] ids, long expiration, Continuation<? super Object[], Exception> command) {
     long[] expirations = new long[ids.length];
     Arrays.fill(expirations, expiration);
     refresh(ids, expirations, command);
   }
-  
+
   public void refresh(final Id[] ids, final long[] expirations, final Continuation<? super Object[], Exception> command) {
     if (ids.length < 1) {
       command.receiveResult(new Boolean[] {});
@@ -1474,7 +1474,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
     refreshInObjectStore(ids, expirations, new Continuation<Object, Exception>() {
       Object[] result;
-      
+
       public void receiveResult(Object o) {
         if (o instanceof Object[]) {
           result = (Object[]) o;
@@ -1497,7 +1497,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       private void refreshInAggregates() {
         Continuation<Object[], Exception> c = new Continuation<Object[], Exception>() {
           public void receiveResult(Object[] o) {
-            aggregateList.writeToDisk(); 
+            aggregateList.writeToDisk();
             command.receiveResult(o);
           }
           public void receiveException(Exception e) {
@@ -1510,10 +1510,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       }
     });
   }
-  
+
   public void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
     final Object result[] = new Object[ids.length];
-    
+
     for (int i=0; i<ids.length; i++) {
       logger.info("Refresh({}v{}, expiration={})", ids[i], versions[i], expirations[i]);
 
@@ -1530,7 +1530,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         }
       } else result[i] = new AggregationException("Not found");
     }
-      
+
     if (objectStore instanceof VersioningPast) {
       ((VersioningPast)objectStore).refresh(ids, versions, expirations, new Continuation<Object[], Exception>() {
         public void receiveResult(Object[] o) {
@@ -1544,7 +1544,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             for (int i=0; i<result.length; i++)
               result[i] = e;
           }
-          
+
           command.receiveResult(result);
         }
         public void receiveException(Exception e) {
@@ -1558,7 +1558,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
   private void refreshInternal(final Id[] ids, final long[] expirations, final Object[] result, final Continuation<? super Object[], Exception> command) {
     logger.info("refreshInternal: Accepted {} keys, starting with first key...", ids.length);
-    
+
     final Continuation<Object, Exception> theContinuation = new Continuation<Object, Exception>() {
       int objectsMissing = 0;
       int objectsFetched = 0;
@@ -1577,28 +1577,28 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
           currentIndex ++;
           if (currentIndex >= ids.length) {
-            if (objectsMissing > 0) 
+            if (objectsMissing > 0)
               logger.warn("refresh: {}/{} objects not in aggregate list, fetched {} (max {})", objectsMissing, ids.length, objectsFetched, maxReaggregationPerRefresh);
-            
+
             int nOK = 0;
             for (int i=0; i<ids.length; i++)
               if (result[i] instanceof Boolean)
                 nOK ++;
-              
+
             logger.info("refreshInternal: Processed {} keys, completed {}", ids.length, nOK);
               for (int i=0; i<ids.length; i++)
                 if (logger.isTraceEnabled()) logger.trace(" - "+ids[i].toStringFull()+": "+result[i]);
-            
+
             command.receiveResult(result);
             return;
           }
-        
+
           final Id id = ids[currentIndex];
           final long expiration = expirations[currentIndex];
           logger.atInfo().log(() -> "Refresh("+id.toStringFull()+", expiration="+expiration+") started");
-        
+
           /* In the common case, the aggregate is in the list, and we can simply update its lifetime there */
-          
+
           AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(id);
           if (adc!=null) {
             int objDescIndex = adc.lookupNewest(id);
@@ -1618,18 +1618,18 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             lastResult = Boolean.valueOf(true);
             continue;
           } else {
-  
+
             /* If the aggregate is not in the list, check whether it is still in the waiting list */
-          
+
             IdSet waitingIds = waitingList.scan();
             Iterator<Id> iter = waitingIds.getIterator();
-      
+
             while (iter.hasNext()) {
               final VersionKey vkey = (VersionKey) iter.next();
               if (vkey.getId().equals(id)) {
                 ObjectDescriptor thisObject = (ObjectDescriptor) waitingList.getMetadata(vkey);
                 logger.atInfo().log(() -> "Refreshing in waiting list: " + vkey.toStringFull());
-          
+
                 if (thisObject == null) {
                   logger.atWarn().log(() -> "Broken object in waiting list: " + vkey.toStringFull() + ", removing...");
                   final Continuation<Object, Exception> myParent = this;
@@ -1645,10 +1645,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                   });
                   return;
                 }
-  
+
                 if (thisObject.refreshedLifetime < expiration) {
                   ObjectDescriptor newDescriptor = new ObjectDescriptor(
-                    thisObject.key, thisObject.version, thisObject.currentLifetime, 
+                    thisObject.key, thisObject.version, thisObject.currentLifetime,
                     expiration, thisObject.size
                   );
 
@@ -1671,10 +1671,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                 }
               }
             }
-          
+
             /* If the object is neither in the aggregate list nor in the waiting list, there must have
                been a failure, and we need to reaggregate this object. */
-    
+
             objectsMissing ++;
             if (addMissingAfterRefresh) {
               if (objectsFetched < maxReaggregationPerRefresh) {
@@ -1685,13 +1685,13 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                     if (o instanceof PastContent) {
                       final PastContent obj = (PastContent) o;
                       logger.atWarn().log(() -> "Refresh: Found in PAST, but not in aggregate list: "+id.toStringFull());
-            
+
                       long theVersion;
                       if (o instanceof GCPastContent) {
                         theVersion = ((GCPastContent)obj).getVersion();
                       } else {
                         theVersion = 0;
-                      } 
+                      }
 
                       final VersionKey vkey = new VersionKey(obj.getId(), theVersion);
                       final long theVersionF = theVersion;
@@ -1700,7 +1700,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                       if (policy.shouldBeAggregated(obj, theSize)) {
                         if (!waitingList.exists(vkey)) {
                           logger.debug("ADDING MISSING OBJECT AFTER REFRESH: {}", obj.getId());
-  
+
                           waitingList.store(vkey, new ObjectDescriptor(obj.getId(), theVersionF, expiration, expiration, theSize), obj, new Continuation<Boolean, Exception>() {
                             public void receiveResult(Boolean o) {
                               ((PastImpl) objectStore).cache(obj, new Continuation<Boolean, Exception>() {
@@ -1714,7 +1714,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                                 }
                               });
                             }
-                            public void receiveException(Exception e) { 
+                            public void receiveException(Exception e) {
                               logger.atWarn().setCause(e).log(() -> "Refresh: Exception while refreshing aggregate: "+id.toStringFull()+" (e="+e+")");
                               myParent.receiveResult(new AggregationException("Cannot store reaggregated object in waiting list: "+id.toStringFull()));
                             }
@@ -1727,7 +1727,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                           return;
                         }
                       }
-                    
+
                       logger.atDebug().log(() -> "Refresh: Missing object should not be aggregated: "+id.toStringFull());
                       myParent.receiveResult(Boolean.valueOf(true));
                       return;
@@ -1762,7 +1762,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         receiveResult(e);
       }
     };
-    
+
     theContinuation.receiveResult(null);
   }
 
@@ -1781,35 +1781,35 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     } catch (IOException ioe) {
       logger.atWarn().log(() -> "Cannot serialize object, size unknown: "+ioe);
     }
-    
+
     return 0;
   }
 
   public Serializable getHandle() {
     return aggregateList.getRoot();
   }
-  
+
   public void setHandle(Serializable handle, Continuation<? super Boolean, Exception> command) {
     logger.info("setHandle({})", handle);
-  
+
     if (!(handle instanceof Id)) {
       command.receiveException(new AggregationException("Illegal handle"));
       return;
     }
-    
+
     if (aggregateList.getADC((Id) handle) != null) {
       logger.info("Rebuild: Handle {} is already covered by current root", handle);
       command.receiveResult(Boolean.valueOf(true));
       return;
     }
-      
+
     aggregateList.setRoot((Id) handle);
     rebuildAggregateList(command);
   }
 
   private void rebuildRecursive(final Id fromKey, final List<Id> keysInProgress, final List<Id> keysPostponed, final List<Id> keysDone, final Continuation<? super Boolean, Exception> command) {
     keysInProgress.add(fromKey);
-    
+
     logger.atInfo().log(() -> "Rebuild: Fetching handles for aggregate " + fromKey.toStringFull());
     aggregateStore.lookupHandles(fromKey, 999, new Continuation<PastContentHandle[], Exception>() {
       public void receiveResult(PastContentHandle[] o) {
@@ -1822,11 +1822,11 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           for (int i=0; i<pch.length; i++) {
             if ((pch[i] == null) || ((pch[i] instanceof GCPastContentHandle) && (((GCPastContentHandle)pch[i]).getVersion() != 0)))
               continue;
-              
+
             if (bestHandle == null)
               bestHandle = pch[i];
           }
-          
+
           if (bestHandle != null) {
             final PastContentHandle thisHandle = bestHandle;
             final Continuation<PastContentHandle[], Exception> outerContinuation = this;
@@ -1843,16 +1843,16 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                   Aggregate aggr = (Aggregate) o;
                   ObjectDescriptor[] objects = new ObjectDescriptor[aggr.numComponents()];
                   long aggregateExpiration = (thisHandle instanceof GCPastContentHandle) ? ((GCPastContentHandle)thisHandle).getExpiration() : GCPast.INFINITY_EXPIRATION;
-          
+
                   for (int i=0; i<aggr.numComponents(); i++) {
                     objects[i] = new ObjectDescriptor(
-                      aggr.getComponent(i).getId(), 
+                      aggr.getComponent(i).getId(),
                       aggr.getComponent(i).getVersion(),
                       aggregateExpiration,
                       aggregateExpiration,
                       getSize(aggr.getComponent(i))
                     );
-                    
+
                     final GCPastContent objData = aggr.getComponent(i);
                     logger.debug("Checking whether {}v{} is in object store...", objData.getId(), objData.getVersion());
                     objectStore.lookupHandles(objData.getId(), 1, new Continuation<PastContentHandle[], Exception>() {
@@ -1867,7 +1867,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                               gotOne = true;
                           }
                         }
-                        
+
                         if (gotOne) {
                           logger.debug("Got it");
                         } else {
@@ -1887,9 +1887,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                       }
                     });
                   }
-            
+
                   aggregateList.addAggregateDescriptor(new AggregateDescriptor(fromKey, aggregateExpiration, objects, aggr.getPointers()));
-          
+
                   Id[] pointers = aggr.getPointers();
                   int numAdded = 0;
                   if (pointers != null) {
@@ -1897,22 +1897,22 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                       if (pointers[i] instanceof Id) {
                         Id thisPointer = pointers[i];
                         if (!keysDone.contains(thisPointer) && !keysPostponed.contains(thisPointer) && !keysInProgress.contains(thisPointer)) {
-                          if (keysInProgress.size() >= reconstructionMaxConcurrentLookups)  
+                          if (keysInProgress.size() >= reconstructionMaxConcurrentLookups)
                             keysPostponed.add(thisPointer);
                           else
                             rebuildRecursive(thisPointer, keysInProgress, keysPostponed, keysDone, command);
-                            
+
                           numAdded ++;
                         }
                       }
                     }
                   }
-                  
+
                   logger.debug("Rebuild: Added {} keys, now {} in progress, {} postponed and {} done", numAdded, keysInProgress.size(), keysPostponed.size(), keysDone.size());
-          
+
                   if (!keysInProgress.isEmpty() || !keysPostponed.isEmpty()) {
                     logger.info("Rebuild: {} keys in progress, {} postponed, {} done", keysInProgress.size(), keysPostponed.size(), keysDone.size());
-                    
+
                     while ((keysInProgress.size() < reconstructionMaxConcurrentLookups) && (keysPostponed.size() > 0)) {
                       Id nextKey = keysPostponed.get(0);
                       logger.atDebug().log(() -> "Rebuild: Resuming lookup for postponed key "+nextKey.toStringFull());
@@ -1944,7 +1944,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         logger.warn("Rebuild: Exception ", e);
         keysInProgress.remove(fromKey);
         keysDone.add(fromKey);
-        
+
         if (keysInProgress.isEmpty() && keysPostponed.isEmpty()) {
           rebuildInProgress = false;
           if (aggregateList.isEmpty()) {
@@ -1954,7 +1954,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             command.receiveResult(Boolean.valueOf(true));
           }
         }
-        
+
         while ((keysInProgress.size() < reconstructionMaxConcurrentLookups) && (keysPostponed.size() > 0)) {
           Id nextKey = keysPostponed.get(0);
           logger.atDebug().log(() -> "Rebuild: Resuming lookup for postponed key "+nextKey.toStringFull());
@@ -1978,11 +1978,11 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       command.receiveException(new AggregationException("Set handle first!"));
       return;
     }
-    
+
     rebuildInProgress = true;
     rebuildRecursive(aggregateList.getRoot(), keysInProgress, keysPostponed, keysDone, command);
   }
-  
+
   public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
     insert(obj, INFINITY_EXPIRATION, command);
   }
@@ -2005,19 +2005,19 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
       if (objectStore instanceof GCPast)
         ((GCPast)objectStore).insert(obj, lifetime, command);
-      else 
+      else
         objectStore.insert(obj, command);
-        
+
       waitingList.store(vkey, new ObjectDescriptor(obj.getId(), theVersionF, lifetime, lifetime, theSize), obj, new Continuation<Boolean, Exception>() {
         public void receiveResult(Boolean o) {
         }
-        public void receiveException(Exception e) { 
+        public void receiveException(Exception e) {
           logger.warn("Exception while storing aggregate: {} (e={})", obj.getId(), e, e);
         }
       });
     } else {
       logger.info("INSERT WITHOUT AGGREGATION: {} version={} size={} class={}", obj.getId(), theVersionF, theSize, obj.getClass().getName());
-      
+
       Continuation<Boolean[], Exception> c = new Continuation<Boolean[], Exception>() {
         boolean otherSucceeded = false;
         boolean otherFailed = false;
@@ -2040,19 +2040,19 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           otherFailed = true;
         }
       };
-      
-      if (objectStore instanceof GCPast) 
+
+      if (objectStore instanceof GCPast)
         ((GCPast)objectStore).insert(obj, lifetime, c);
-      else 
+      else
         objectStore.insert(obj, c);
-        
+
       if (aggregateStore instanceof GCPast)
         ((GCPast)aggregateStore).insert(new NonAggregate(obj), lifetime, c);
       else
         aggregateStore.insert(new NonAggregate(obj), c);
     }
   }
-  
+
   private void retrieveObjectFromAggregate(final AggregateDescriptor adc, final int objDescIndex, final Continuation<? super GCPastContent, Exception> command) {
     aggregateStore.lookup(adc.key, new Continuation<PastContent, Exception>() {
       public void receiveResult(PastContent o) {
@@ -2072,7 +2072,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                   command.receiveException(new AggregationException("Cannot validate aggregate -- retry?"));
                   return;
                 }
-            
+
                 logger.debug("Object {} (#{}) successfully retrieved from {}", adc.objects[objDescIndex].key, objDescIndex, adc.key);
 
                 objectStore.insert(aggr.getComponent(objDescIndex), new Continuation<Boolean[], Exception>() {
@@ -2102,10 +2102,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       }
     });
   }
-  
+
   public void lookup(final Id id, boolean cache, final Continuation<? super PastContent, Exception> command) {
     logger.info("lookup({}, cache={})", id, cache);
-    
+
     objectStore.lookup(id, cache, new Continuation<PastContent, Exception>() {
       public void receiveResult(PastContent o) {
         if (o != null) {
@@ -2122,7 +2122,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
               return;
             }
-        
+
             retrieveObjectFromAggregate(adc, objDescIndex, command);
 
           } else {
@@ -2150,7 +2150,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
         return;
       }
-        
+
       retrieveObjectFromAggregate(adc, objDescIndex, command);
     } else {
       logger.debug("VL: Not found in aggregate list: {}v{}", id, version);
@@ -2182,7 +2182,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               } else {
                 logger.debug("VL: Object store does not support versioning");
                 command.receiveException(new AggregationException("Cannot find "+id+"v"+version+" -- try rebuilding aggregate list?"));
-              }   
+              }
             }
           }
           public void receiveException(Exception e) {
@@ -2215,26 +2215,26 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       }
     }
   }
-  
+
   public void lookup(Id id, Continuation<? super PastContent, Exception> command) {
     lookup(id, true, command);
   }
-  
+
   public void lookupHandles(final Id id, final long version, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
     ((VersioningPast)aggregateStore).lookupHandles(id, version, max, command);
   }
-  
+
   public void lookupHandle(final Id id, final NodeHandle handle, final Continuation<? super PastContentHandle, Exception> command) {
     command.receiveException(new UnsupportedOperationException("LookupHandle() is not supported on Aggregation"));
   }
-  
+
   public void lookupHandles(final Id id, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
     logger.info("lookupHandles({},{})", id, max);
     objectStore.lookupHandles(id, max, new Continuation<PastContentHandle[], Exception>() {
       public void receiveResult(PastContentHandle[] o) {
         PastContentHandle[] result = (o instanceof PastContentHandle[]) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
         boolean foundHandle = false;
-        
+
         for (int i=0; i<result.length; i++)
           if (result[i] != null)
             foundHandle = true;
@@ -2255,13 +2255,13 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
               return;
             }
-          
+
             if (adc.objects[objDescIndex].refreshedLifetime < environment.getTimeSource().currentTimeMillis()) {
               logger.debug("Object {} exists, but has expired -- ignoring", id);
               command.receiveResult(new PastContentHandle[] { null });
               return;
             }
-        
+
             retrieveObjectFromAggregate(adc, objDescIndex, new Continuation<GCPastContent, Exception>() {
               public void receiveResult(GCPastContent o) {
                 logger.debug("lookupHandles: Retrieved from aggregate: {}, result={}", id, o);
@@ -2275,7 +2275,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             });
           } else {
             logger.info("lookupHandles: {} is neither in object store nor in aggregate list", id);
-            /* Note that we have to give up here... even if the object has not been 
+            /* Note that we have to give up here... even if the object has not been
                aggregated, there is no efficient way to find out its version number.
                The user must call lookupVersion in this case. */
             command.receiveResult(new PastContentHandle[] { null });
@@ -2288,7 +2288,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       }
     });
   }
-  
+
   public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command) {
 
     /* Note that we never give out any handles from the aggregate store, so this must
@@ -2304,7 +2304,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     boolean objectIsWaiting = false;
 
     logger.info("flush({}) invoked", id);
-    
+
     while (iter.hasNext()) {
       VersionKey thisKey = (VersionKey) iter.next();
       if (thisKey.getId().equals(id)) {
@@ -2312,17 +2312,17 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         break;
       }
     }
-    
+
     if (objectIsWaiting)
       formAggregates(command);
     else
       command.receiveResult(Boolean.valueOf(true));
   }
-  
+
   public void flush(final Continuation<? super Boolean, Exception> command) {
     formAggregates(command);
   }
-  
+
   public void rollback(Id id, Continuation<? super PastContent, Exception> command) {
     AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(id);
 
@@ -2333,16 +2333,16 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
         return;
       }
-      
+
       logger.debug("Rollback: Found {}v{}", adc.objects[objDescIndex].key, adc.objects[objDescIndex].version);
       retrieveObjectFromAggregate(adc, objDescIndex, command);
       return;
     }
 
-    logger.debug("Rollback: No version of {} found", id);    
+    logger.debug("Rollback: No version of {} found", id);
     command.receiveResult(null);
   }
-  
+
   public void reset(Continuation<? super Boolean, Exception> command) {
     aggregateList.clear();
 
@@ -2361,7 +2361,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public NodeHandle getLocalNodeHandle() {
     return objectStore.getLocalNodeHandle();
   }
-  
+
   public int getReplicationFactor() {
     return objectStore.getReplicationFactor();
   }
@@ -2369,7 +2369,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public boolean forward(RouteMessage message) {
     return true;
   }
-  
+
   public void update(NodeHandle handle, boolean joined) {
   }
 
@@ -2379,10 +2379,10 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     logger.debug("Received message {} with destination {} from {}", msg, id, msg.getSource().getId());
 
     if (msg instanceof AggregationTimeoutMessage) {
-    
-      /* TimeoutMessages are generated by the local node when a 
+
+      /* TimeoutMessages are generated by the local node when a
          timeout expires. */
-    
+
       AggregationTimeoutMessage gtm = (AggregationTimeoutMessage) msg;
       timerExpired((char) gtm.getUID());
       return;
@@ -2394,7 +2394,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public void setFlushInterval(int flushIntervalSec) {
     flushInterval = flushIntervalSec * SECONDS;
   }
-  
+
   public void setMaxAggregateSize(int maxAggregateSize) {
     this.maxAggregateSize = maxAggregateSize;
   }
@@ -2406,19 +2406,19 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public void setRenewThreshold(int expirationRenewThresholdHrs) {
     this.expirationRenewThreshold = expirationRenewThresholdHrs * HOURS;
   }
-  
+
   public void setConsolidationInterval(long consolidationIntervalSec) {
     this.consolidationInterval = consolidationIntervalSec * SECONDS;
   }
-  
+
   public void setConsolidationThreshold(long consolidationThresholdSec) {
     this.consolidationThreshold = consolidationThresholdSec * SECONDS;
   }
-  
+
   public void setConsolidationMinObjectsPerAggregate(int minObjectsInAggregateArg) {
     this.consolidationMinObjectsInAggregate = minObjectsInAggregateArg;
   }
-  
+
   public void setConsolidationMinUtilization(double minUtilization) {
     this.consolidationMinComponentsAlive = minUtilization;
   }
@@ -2426,15 +2426,15 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public Past getAggregateStore() {
     return aggregateStore;
   }
-  
+
   public Past getObjectStore() {
     return objectStore;
   }
-  
+
   public int getNumObjectsWaiting() {
     return waitingList.scan().numElements();
   }
-  
+
   public AggregationStatistics getStatistics() {
     return stats;
   }
@@ -2442,12 +2442,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public String getInstance() {
     return instance;
   }
-  
+
   public Environment getEnvironment() {
     return environment;
   }
 
-  public void setContentDeserializer(PastContentDeserializer deserializer) {    
+  public void setContentDeserializer(PastContentDeserializer deserializer) {
     contentDeserializer = deserializer;
     objectStore.setContentDeserializer(contentDeserializer);
   }

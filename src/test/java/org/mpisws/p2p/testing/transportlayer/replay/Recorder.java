@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer.replay;
 
 import java.io.IOException;
@@ -75,7 +75,7 @@ import rice.pastry.transport.NodeHandleAdapter;
 
 /**
  * This tutorial shows how to use Scribe.
- * 
+ *
  * @author Jeff Hoye
  */
 public class Recorder implements MyEvents {
@@ -91,11 +91,11 @@ public class Recorder implements MyEvents {
 
   /**
    * Based on the rice.tutorial.lesson4.DistTutorial
-   * 
+   *
    * This constructor launches numNodes PastryNodes. They will bootstrap to an
    * existing ring if one exists at the specified location, otherwise it will
    * start a new ring.
-   * 
+   *
    * @param bindport the local port to bind to
    * @param bootaddress the IP:port of the node to boot from
    * @param numNodes the number of nodes to create in this JVM
@@ -103,48 +103,48 @@ public class Recorder implements MyEvents {
    */
   public Recorder(int bindport, final InetSocketAddress bootaddress,
       int numNodes, Environment env) throws Exception {
-    
+
     final Parameters params = env.getParameters();
-    
+
     // Generate the NodeIds Randomly
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
-    
+
     // construct the PastryNodeFactory, this is how we use rice.pastry.socket
     final SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
-      
+
       @Override
       public rice.pastry.NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
         SocketNodeHandle ret = (SocketNodeHandle)super.getLocalHandle(pn, nhf);
         logger.atDebug().log(() -> "getLocalHandle():"+ret.toStringFull());
         return ret;
       }
-      
+
       @Override
       protected RandomSource cloneRandomSource(Environment rootEnvironment, Id nodeId, LogManager lman) {
         long randSeed = rootEnvironment.getRandomSource().nextLong();
         logger.debug("RandSeed for {} {}", nodeId, randSeed);
-        
-        storedRandSeed.put(nodeId, randSeed); 
-        
-        return new SimpleRandomSource(randSeed, lman);    
+
+        storedRandSeed.put(nodeId, randSeed);
+
+        return new SimpleRandomSource(randSeed, lman);
       }
 
       @Override
       protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         // record here
-        
+
         RecordLayer<InetSocketAddress> ret = new RecordLayer<InetSocketAddress>(
-            super.getWireTransportLayer(innermostAddress, pn), "0x"+pn.getNodeId().toStringBare(), 
+            super.getWireTransportLayer(innermostAddress, pn), "0x"+pn.getNodeId().toStringBare(),
             new InetSocketAddressSerializer(), pn.getEnvironment());
         recorders.put(pn, ret);
         return ret;
       }
-      
+
       @Override
       @SuppressWarnings("unchecked")
       protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, ProximityNeighborSelector pns) {
         final Bootstrapper<InetSocketAddress> internal = super.getBootstrapper(pn, tl, handleFactory, pns);
-        Bootstrapper<InetSocketAddress> ret = new Bootstrapper<InetSocketAddress>() {        
+        Bootstrapper<InetSocketAddress> ret = new Bootstrapper<InetSocketAddress>() {
           public void boot(Collection<InetSocketAddress> bootaddresses) {
             try {
               recorders.get(pn).logEvent(EVT_BOOT);
@@ -152,21 +152,21 @@ public class Recorder implements MyEvents {
               pn.getEnvironment().getLogManager().getLogger(Bootstrapper.class, null).warn("Error recording EVT_BOOT", ioe);
             }
             internal.boot(bootaddresses);
-          }        
+          }
         };
-        
+
         return ret;
-      }      
+      }
     };
-    
+
     // loop to construct the nodes/apps
     for (int curNode = 0; curNode < numNodes; curNode++) {
-      
+
       // construct a node, passing the null boothandle on the first loop will
       // cause the node to start its own ring
-      final ArrayList<PastryNode> nodeContainer = new ArrayList<PastryNode>(1); 
+      final ArrayList<PastryNode> nodeContainer = new ArrayList<PastryNode>(1);
       env.getSelectorManager().invoke(new Runnable() {
-      
+
         public void run() {
           PastryNode node = (PastryNode)factory.newNode();
           nodeContainer.add(node);
@@ -175,9 +175,9 @@ public class Recorder implements MyEvents {
           apps.add(app);
 
           node.getBootstrapper().boot(Collections.singleton(bootaddress));
-        }      
+        }
       });
-      
+
       // the node may require sending several messages to fully boot into the ring
       synchronized(nodeContainer) {
         while(nodeContainer.isEmpty()) {
@@ -185,21 +185,21 @@ public class Recorder implements MyEvents {
           nodeContainer.wait(500);
         }
       }
-      
+
       PastryNode node = nodeContainer.get(0);
 
       synchronized(node) {
         while (!node.isReady() && !node.joinFailed()) {
           // delay so we don't busy-wait
           node.wait(500);
-          
+
           // abort if can't join
           if (node.joinFailed()) {
-            throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason()); 
+            throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
           }
-        }       
+        }
       }
-      
+
       System.out.println("Finished creating new node: " + node);
     }
 
@@ -221,7 +221,7 @@ public class Recorder implements MyEvents {
     env.getTimeSource().sleep(15000);
 
     env.destroy();
-    
+
     System.out.println("done recording");
     Thread.sleep(1000);
 
@@ -230,24 +230,24 @@ public class Recorder implements MyEvents {
     while(playbackCtr < params.getInt("org.mpisws.p2p.testing.transportlayer.replay.num_playbacks") && mscI.hasNext()) {
       app = mscI.next();
       Endpoint endpoint = app.endpoint;
-      
+
       System.out.println("playing back "+app.node);
 
-      
-      if (params.getBoolean("org.mpisws.p2p.testing.transportlayer.replay.Recorder_printlog")) 
+
+      if (params.getBoolean("org.mpisws.p2p.testing.transportlayer.replay.Recorder_printlog"))
         printLog("0x"+endpoint.getId().toStringFull().substring(0,6), new Environment());
-      
+
       SocketNodeHandle snh = (SocketNodeHandle)endpoint.getLocalNodeHandle();
       try {
         Replayer.replayNode((rice.pastry.Id)snh.getId(), snh.getInetSocketAddress(), bootaddress, snh.getEpoch(), storedRandSeed.get(snh.getId()));
       } catch (InterruptedException ie) {
-       
+
       }
       System.out.println("finished playing "+app.node);
       playbackCtr++;
     }
   }
-  
+
   public abstract class AppInvokation implements Runnable {
     MyScribeClient app;
     public AppInvokation(MyScribeClient app) {
@@ -255,16 +255,16 @@ public class Recorder implements MyEvents {
     }
 
     public abstract void doIt() throws IOException;
-    
+
     public void run() {
       try {
         doIt();
       } catch (IOException ioe) {
         app.node.getEnvironment().getLogManager().getLogger(Bootstrapper.class, null).warn("Error recording event", ioe);
-      }      
-    }        
+      }
+    }
   }
-  
+
   public class SubscribeInvokation extends AppInvokation {
     public SubscribeInvokation(MyScribeClient app) {
       super(app);
@@ -274,7 +274,7 @@ public class Recorder implements MyEvents {
     public void doIt() throws IOException {
       recorders.get(app.node).logEvent(EVT_SUBSCRIBE);
       app.subscribe();
-    }    
+    }
   }
 
   public class PublishInvokation extends AppInvokation {
@@ -286,17 +286,17 @@ public class Recorder implements MyEvents {
     public void doIt() throws IOException {
       recorders.get(app.node).logEvent(EVT_PUBLISH);
       app.startPublishTask();
-    }    
+    }
   }
 
   public void printLog(String arg, Environment env) throws IOException {
-    BasicEntryDeserializer.printLog(arg, new MyEntryDeserializer(new InetSocketAddressSerializer()), env); 
+    BasicEntryDeserializer.printLog(arg, new MyEntryDeserializer(new InetSocketAddressSerializer()), env);
   }
-    
+
   /**
    * Note that this function only works because we have global knowledge. Doing
    * this in an actual distributed environment will take some more work.
-   * 
+   *
    * @param apps Vector of the applications.
    */
   public static void printTree(ArrayList<MyScribeClient> apps) {
@@ -361,19 +361,19 @@ public class Recorder implements MyEvents {
       System.setOut(new PrintStream("replay.txt"));
       System.setErr(System.out);
     }
-    
+
     // Loads pastry configurations
     Environment env = RecordLayer.generateEnvironment();
     params = env.getParameters();
-    
-    
+
+
     params.setInt("pastry_socket_scm_max_open_sockets", params.getInt("org.mpisws.p2p.testing.transportlayer.replay_pastry_socket_scm_max_open_sockets"));
 
     params.setBoolean("pastry_socket_use_own_random",false);
 
     // disable the UPnP setting (in case you are testing this on a NATted LAN)
     params.setString("nat_search_policy","never");
-    
+
     try {
       // the port to use locally
       int bindport = Integer.parseInt(args[0]);

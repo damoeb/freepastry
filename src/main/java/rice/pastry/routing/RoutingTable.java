@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.routing;
 
 import java.util.ArrayList;
@@ -52,7 +52,6 @@ import rice.pastry.NodeSetEventSource;
 import rice.pastry.NodeSetListener;
 import rice.pastry.NodeSetUpdate;
 import rice.pastry.PastryNode;
-import rice.pastry.Id.Distance;
 
 /**
  * The Pastry routing table.
@@ -75,9 +74,9 @@ import rice.pastry.Id.Distance;
  * table routes for at the <EM>index</EM> th digit and the differing digit is
  * <EM>digit</EM>. An <EM>index</EM> of <EM>0</EM> is the least
  * significant digit.
- * 
+ *
  * @version $Id: RoutingTable.java 4654 2009-01-08 16:33:07Z jeffh $
- * 
+ *
  * @author Andrew Ladd
  * @author Peter Druschel
  */
@@ -95,18 +94,18 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   public NodeHandle myNodeHandle;
 
   protected PastryNode pn;
-  
+
   private RouteSet routingTable[][];
 
   private int maxEntries;
 
   Logger logger;
-  
+
   final int cols, rows;
-  
+
   /**
    * Constructor.
-   * 
+   *
    * @param me the node id for this routing table.
    * @param max the maximum number of entries at each table slot.
    */
@@ -134,7 +133,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
   /**
    * return ths number of columns in the routing table
-   * 
+   *
    * @return number of columns
    */
 
@@ -144,7 +143,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
   /**
    * return the number of rows in the routing table
-   * 
+   *
    * @return number of rows
    */
 
@@ -154,7 +153,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
   /**
    * return the bit length of the base
-   * 
+   *
    * @return baseBitLength
    */
 
@@ -166,7 +165,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    * Determines an alternate hop numerically closer to the key than the one we
    * are at. This assumes that bestEntry did not produce a live nodeHandle that
    * matches the next digit of the key.
-   * 
+   *
    * @param key the key
    * @return a nodeHandle of a numerically closer node, relative to the key
    */
@@ -179,7 +178,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    * Determines an alternate hop numerically closer to the key than the one we
    * are at. This assumes that bestEntry did not produce a live nodeHandle that
    * matches the next digit of the key.
-   * 
+   *
    * @param key the key
    * @return a nodeHandle of a numerically closer node, relative to the key
    */
@@ -223,7 +222,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
   /**
    * Determines a set of alternate hops towards a given key.
-   * 
+   *
    * @param key the key
    * @param max the maximal number of alternate hops requested
    * @return a set of nodehandles, or null if no alternate hops exist
@@ -239,11 +238,11 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
     boolean finished = false;
     int count = 0;
 
-    
+
     // this loop starts on the next hop's key, and moves out left and right until finished
     for (int i = 0; !finished; i++) {
       for (int j = 0; j < 2; j++) { // alternate left/right
-        int digit = (j == 0) ? 
+        int digit = (j == 0) ?
               (keyDigit + i) & (cols - 1) // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
             : (keyDigit + cols - i) & (cols - 1);
 
@@ -258,9 +257,9 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
               set.put(n);
               count++;
             }
-            
+
             if (count >= max) {
-              return set; 
+              return set;
             }
           }
         }
@@ -283,12 +282,12 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
     if (diffDigit < 0)
       return Collections.EMPTY_LIST.iterator(); // return an empty iterator
     final Id.Distance myDistance = myNodeId.distance(key);
-     
-    return new Iterator<NodeHandle>() { 
+
+    return new Iterator<NodeHandle>() {
       int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
       int myDigit = myNodeId.getDigit(diffDigit, idBaseBitLength);
       // the distance from keyDigit
-      int i = 0; 
+      int i = 0;
       // alternates between 0 and 1
       int j = 1; // no need to alternate when i = 0
       int k = 0;
@@ -297,22 +296,22 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
       int digit;
       {
         // initialize rs
-        digit = (j == 0) ? 
+        digit = (j == 0) ?
             (keyDigit + i) & (cols - 1) // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
           : (keyDigit + cols - i) & (cols - 1);
 
         rs = getRouteSet(diffDigit, digit);
       }
-      
+
       protected NodeHandle findNext() {
-              
+
               // start, assume good initialized state
               if (rs != null && k < rs.size()) {
                 NodeHandle n = rs.get(k);
-      
+
                 if (n.getLiveness() < NodeHandle.LIVENESS_DEAD) {
                   Id.Distance nDist = n.getNodeId().distance(key);
-      
+
                   k++;
                   if (myDistance.compareTo(nDist) > 0) {
                     return n;
@@ -326,17 +325,17 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
                 k = 0;
                 j++;
                 if (j < 2) {
-                  digit = (j == 0) ? 
+                  digit = (j == 0) ?
                       (keyDigit + i) & (cols - 1) // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
                     : (keyDigit + cols - i) & (cols - 1);
                   if (digit == myDigit)
-                    return null; 
+                    return null;
                   rs = getRouteSet(diffDigit, digit);
                   return findNext();
                 } else {
                   i++;
                   j = 0;
-                  int digit = (j == 0) ? 
+                  int digit = (j == 0) ?
                       (keyDigit + i) & (cols - 1) // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
                     : (keyDigit + cols - i) & (cols - 1);
 
@@ -346,13 +345,13 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
                   return findNext();
                 }
               }
-            
-    
-    
+
+
+
         return null;
       }
 
-      
+
       public boolean hasNext() {
         if (next == null) next = findNext();
         return (next != null);
@@ -376,12 +375,12 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
   /**
    * Gets the set of handles at a particular entry in the table.
-   * 
+   *
    * @param index the index of the digit in base <EM>2 <SUP>idBaseBitLength
    *          </SUP></EM>.<EM>0</EM> is the least significant.
    * @param digit ranges from <EM>0... 2 <SUP>idBaseBitLength - 1 </SUP></EM>.
    *          Selects which digit to use.
-   * 
+   *
    * @return a read-only set of possible handles located at that position in the
    *         routing table, or null if none are known
    */
@@ -395,9 +394,9 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   /**
    * Gets the set of handles that match at least one more digit of the key than
    * the local Id.
-   * 
+   *
    * @param key the key
-   * 
+   *
    * @return a read-only set of possible handles, or null if none are known
    */
 
@@ -412,9 +411,9 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
   /**
    * Like getBestEntry, but creates an entry if none currently exists.
-   * 
+   *
    * @param key the key
-   * 
+   *
    * @return a read-only set of possible handles
    */
 
@@ -435,29 +434,29 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
   /**
    * Puts a handle into the routing table.
-   * 
+   *
    * @param handle the handle to put.
    */
 
   public synchronized boolean put(NodeHandle handle) {
-    logger.trace("RT: put({})", handle);        
+    logger.trace("RT: put({})", handle);
     Id nid = handle.getNodeId();
     RouteSet ns = makeBestEntry(nid);
-    
+
     if (ns != null) {
-      return ns.put(handle);          
+      return ns.put(handle);
     }
-    
+
     return false;
   }
-  
-  public static final int TEST_FAIL_NO_PREFIX_MATCH = -1;  
-  public static final int TEST_FAIL_EXISTING_ARE_BETTER = 0;    
+
+  public static final int TEST_FAIL_NO_PREFIX_MATCH = -1;
+  public static final int TEST_FAIL_EXISTING_ARE_BETTER = 0;
   public static final int TEST_SUCCESS_BETTER_PROXIMITY = 1;
   public static final int TEST_SUCCESS_ENTRY_WAS_DEAD = 2;
   public static final int TEST_SUCCESS_AVAILABLE_SPACE = 3;
   public static final int TEST_SUCCESS_NO_ENTRIES = 4;
-  
+
   public synchronized int test(NodeHandle handle) {
     // get the location in the RT
     Id key = handle.getNodeId();
@@ -465,34 +464,34 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
     // it matches us
     if (diffDigit < 0) return TEST_FAIL_NO_PREFIX_MATCH;
     int digit = key.getDigit(diffDigit, idBaseBitLength);
-    
+
     // there is no RouteSet for that entry
     if (routingTable[diffDigit][digit] == null) {
-      return TEST_SUCCESS_NO_ENTRIES; 
+      return TEST_SUCCESS_NO_ENTRIES;
     }
-    
+
     RouteSet rs = routingTable[diffDigit][digit];
-    
+
     // the RouteSet for that entry is empty
-    if (rs.size() == 0) return TEST_SUCCESS_NO_ENTRIES;    
-    
+    if (rs.size() == 0) return TEST_SUCCESS_NO_ENTRIES;
+
     // the RouteSet for that entry has room
     if (rs.size() < rs.capacity()) return TEST_SUCCESS_AVAILABLE_SPACE;
-    
+
     int prox = pn.proximity(handle);
     if (prox == Integer.MAX_VALUE) return TEST_FAIL_EXISTING_ARE_BETTER;
-    
+
     for (int i = 0; i < rs.size(); i++) {
       NodeHandle nh = rs.get(i);
       if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) return TEST_SUCCESS_ENTRY_WAS_DEAD;
-      if (pn.proximity(nh) > prox) return TEST_SUCCESS_BETTER_PROXIMITY;      
-    }   
+      if (pn.proximity(nh) > prox) return TEST_SUCCESS_BETTER_PROXIMITY;
+    }
     return TEST_FAIL_EXISTING_ARE_BETTER;
   }
 
   /**
    * Gets the node handle associated with a given id.
-   * 
+   *
    * @param nid a node id
    * @return the handle associated with that id, or null if none is known.
    */
@@ -508,7 +507,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
   /**
    * Get a row from the routing table.
-   * 
+   *
    * @param i which row
    * @return an array which is the ith row.
    */
@@ -517,20 +516,20 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
     try {
       return routingTable[i];
     } catch (ArrayIndexOutOfBoundsException aioobe) {
-      logger.atWarn().log(() -> "Warning, call to RoutingTable.getRow("+i+") max should be "+(routingTable.length-1)); 
+      logger.atWarn().log(() -> "Warning, call to RoutingTable.getRow("+i+") max should be "+(routingTable.length-1));
       return null;
     }
   }
 
   /**
    * Removes a node id from the table.
-   * 
+   *
    * @param nh the node to remove.
    * @return the handle that was removed, or null if it did not exist.
    */
 
   public synchronized NodeHandle remove(NodeHandle nh) {
-    logger.trace("RT: remove({})", nh); 
+    logger.trace("RT: remove({})", nh);
     RouteSet ns = getBestEntry(nh.getNodeId());
 
     if (ns == null)
@@ -542,7 +541,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   /**
    * Is called by the Observer pattern whenever a RouteSet in this table has
    * changed.
-   * 
+   *
    * @param o the RouteSet
    * @param handle the handle that was added or removed
    * @param added true if the handle was added
@@ -554,14 +553,14 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
       if (added) {
         logger.debug("RT: added("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
       } else {
-        logger.debug("RT: removed("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");        
+        logger.debug("RT: removed("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
       }
     }
-    
+
     // pass the event to the Observers of this RoutingTable
     synchronized (listeners) {
       for (int i = 0; i < listeners.size(); i++) {
-        ((NodeSetListener)listeners.get(i)).nodeSetUpdate(this,handle,added); 
+        ((NodeSetListener)listeners.get(i)).nodeSetUpdate(this,handle,added);
       }
     }
     // handle deprecated interface
@@ -574,7 +573,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   /**
    * produces a String representation of the routing table, showing the number
    * of node handles in each entry
-   *  
+   *
    */
 
   public String toString() {
@@ -597,7 +596,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
     String s = "routing table for "+this.myNodeId+"\n";
 
     // don't print the bottom rows, they are uninteresting
-    
+
     // find depth to print
     int depthToPrint = 0;
     for (int i = 0; i < routingTable.length; i++) {
@@ -610,7 +609,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
         break;
       }
     }
-    
+
     for (int i = routingTable.length - 1; i >= depthToPrint; i--) {
       for (int j = 0; j < routingTable[i].length; j++) {
         RouteSet rs = routingTable[i][j];
@@ -633,7 +632,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
 
     return s;
   }
-  
+
 
   public int numEntries() {
     int count = 0;
@@ -659,7 +658,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
         RouteSet rs = routingTable[r][c];
         if (rs != null) {
           for (int i = 0; i < rs.size(); i++) {
-            set.add(rs.get(i)); 
+            set.add(rs.get(i));
           }
         }
       }
@@ -668,7 +667,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   }
 
   ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
-  
+
   /**
    * Generates too many objects to use this interface
    * @deprecated use addNodeSetListener
@@ -676,9 +675,9 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   @Deprecated
   public void addObserver(Observer o) {
     logger.warn("WARNING: Observer on RoutingTable is deprecated", new Exception("Stack Trace"));
-    super.addObserver(o); 
+    super.addObserver(o);
   }
-  
+
   /**
    * Generates too many objects to use this interface
    * @deprecated use deleteNodeSetListener
@@ -686,9 +685,9 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   @Deprecated
   public void deleteObserver(Observer o) {
     logger.warn("WARNING: Observer on RoutingTable is deprecated");
-    super.deleteObserver(o); 
+    super.deleteObserver(o);
   }
-  
+
   public void addNodeSetListener(NodeSetListener listener) {
     synchronized (listeners) {
       listeners.add(listener);
@@ -702,9 +701,9 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   }
 
   /**
-   * 
+   *
    * Does not return self
-   * 
+   *
    * @return list of NodeHandle
    */
   public synchronized List<NodeHandle> asList() {
@@ -738,7 +737,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
           routingTable[r][c].destroy();
           routingTable[r][c] = null;
         }
-      }      
+      }
     }
   }
 }

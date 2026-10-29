@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.scribe;
 
@@ -65,9 +65,9 @@ public interface ScribePolicy {
    * subscribing this node the the given topic.
    *
    * Return the topics that you are willing to accept, for example by removing the others from topics.
-   * 
+   *
    * Here is some example code:
-   * 
+   *
    * <pre>
    * Iterator<Topic> i = topics.iterator();
    * while (i.hasNext()) {
@@ -78,19 +78,19 @@ public interface ScribePolicy {
    * }
    * return topics;
    * </pre>
-   * 
+   *
    * Or, to accept all:
    * <pre>
    * return topics;
    * </pre>
    *
-   * Some calls that are likely useful are: 
-   * <ul> 
+   * Some calls that are likely useful are:
+   * <ul>
    *   <li>scribe.getChildrenOfTopic(topic)</li>
    *   <li>scribe.getClientsByTopic(topic)</li>
    * </ul>
    *
-   * If only some of the topics are accepted, the content may need to be modified.  
+   * If only some of the topics are accepted, the content may need to be modified.
    * This method <i>is</i> allowed to modify the content.
    *
    * @param scribe the Scribe that is making the request
@@ -112,7 +112,7 @@ public interface ScribePolicy {
    * @param children Our current children for this message's topic
    */
   public void directAnycast(AnycastMessage message, NodeHandle parent, Collection<NodeHandle> children);
-  
+
   /**
    * Informs this policy that a child was added to a topic - the topic is free to ignore this
    * upcall if it doesn't care.
@@ -121,7 +121,7 @@ public interface ScribePolicy {
    * @param child The child that was added
    */
   public void childAdded(Topic topic, NodeHandle child);
-  
+
   /**
    * Informs this policy that a child was removed from a topic - the topic is free to ignore this
    * upcall if it doesn't care.
@@ -130,7 +130,7 @@ public interface ScribePolicy {
    * @param child The child that was removed
    */
   public void childRemoved(Topic topic, NodeHandle child);
-  
+
   /**
    * This notifies us when we receive a failure for a anycast
    */
@@ -143,12 +143,12 @@ public interface ScribePolicy {
   public void intermediateNode(ScribeMessage message);
 
   /**
-   * This method is called when the ScribeImpl splits a SubscribeMessage into multiple parts.  
-   * 
+   * This method is called when the ScribeImpl splits a SubscribeMessage into multiple parts.
+   *
    * If you modify the content, you must make a copy, as the same content will be passed in for the other
-   * divisions of the SubscribeMessage.  ScribeContent's are not naturally copyable, so Scribe cannot 
+   * divisions of the SubscribeMessage.  ScribeContent's are not naturally copyable, so Scribe cannot
    * make a copy apriori.
-   * 
+   *
    * @param theTopics topics going to a particular location
    * @param content the content that may need to be divided
    * @return the content if not changed, a new ScribeContent if changed
@@ -184,10 +184,10 @@ public interface ScribePolicy {
     public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
       Iterator<Topic> i = topics.iterator();
       while(i.hasNext()) {
-        Topic topic = i.next();        
+        Topic topic = i.next();
         if (!allowSubscribe(
             new BogusSubscribeMessage(source, topic, 0, content),
-            scribe.getClients(topic).toArray(new ScribeClient[0]), 
+            scribe.getClients(topic).toArray(new ScribeClient[0]),
             scribe.getChildrenOfTopic(topic).toArray(new NodeHandle[0]))) {
           i.remove();
         }
@@ -197,23 +197,23 @@ public interface ScribePolicy {
 
     class BogusSubscribeMessage extends SubscribeMessage {
       ScribeContent theContent;
-      
+
       public BogusSubscribeMessage(NodeHandle source, Topic topic, int i, ScribeContent content) {
         super(source, topic, i, null);
         theContent = content;
       }
-      
-      
+
+
       public ScribeContent getContent() {
         return theContent;
       }
     }
-    
+
     /**
-     * This method should be deprecated, but is here for reverse compatibility.  We changed the 
+     * This method should be deprecated, but is here for reverse compatibility.  We changed the
      * allowSubscribe() method, but classes that extend DefaultScribePolicy object could make a mistake
      * and not override the new one.
-     * 
+     *
      * @deprecated override allowSubscribe(Scribe, NodeHandle, List, ScribeContent) instead
      * @param message
      * @param clients
@@ -224,7 +224,7 @@ public interface ScribePolicy {
     public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
       return true;
     }
-    
+
     /**
      * Adds the children in random order at the front of the to-search list and the parent at the
      * end, which implements a randomized depth-first search.
@@ -237,9 +237,9 @@ public interface ScribePolicy {
       if (parent != null) {
         message.addLast(parent);
       }
-      
+
       ArrayList<NodeHandle> children = new ArrayList<NodeHandle>(theChildren);
-      
+
       // now randomize the children list
       while (!children.isEmpty()) {
         message.addFirst(
@@ -248,8 +248,8 @@ public interface ScribePolicy {
                     children.size())));
       }
     }
-    
-    
+
+
     /**
      * Informs this policy that a child was added to a topic - the topic is free to ignore this
      * upcall if it doesn't care.
@@ -259,7 +259,7 @@ public interface ScribePolicy {
      */
     public void childAdded(Topic topic, NodeHandle child) {
     }
-    
+
     /**
      * Informs this policy that a child was removed from a topic - the topic is free to ignore this
      * upcall if it doesn't care.
@@ -315,4 +315,3 @@ public interface ScribePolicy {
     }
   }
 }
-

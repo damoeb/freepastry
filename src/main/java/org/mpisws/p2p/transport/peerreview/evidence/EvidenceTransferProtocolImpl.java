@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.evidence;
 
 import java.io.IOException;
@@ -59,10 +59,10 @@ import rice.Continuation;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /**
- *  This protocol transfers evidence to the witnesses 
+ *  This protocol transfers evidence to the witnesses
  */
 
-public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> 
+public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable>
     implements EvidenceTransferProtocol<Handle, Identifier>, PeerReviewConstants {
   static final int MAX_CACHE_ENTRIES = 500;
   static final int MAX_PENDING_MESSAGES = 100;
@@ -78,20 +78,20 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   Collection<QueryInfo> pendingQuery = new HashSet<QueryInfo>();
 
   Logger logger;
-  
+
   public EvidenceTransferProtocolImpl(PeerReview<Handle, Identifier> peerreview, IdentityTransport<Handle, Identifier> transport, PeerInfoStore<Handle, Identifier> infoStore) {
     this.peerreview = peerreview;
     this.transport = transport;
     this.infoStore = infoStore;
-    
+
     logger = peerreview.getEnvironment().getLogManager().getLogger(EvidenceTransferProtocolImpl.class, null);
   }
 
   /**
    *  Called when the local node learns about the members of another node's witness set.
-   *  
+   *
    *  1) Send any pending messages to the witnesses
-   *  
+   *
    *  2) Try to fill in any pending queries, (there is usually only going to be 1 or zero)
    */
   public void notifyWitnessSet(Identifier subject, Collection<Handle> witnesses) {
@@ -104,15 +104,15 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
       witnessCache.put(subject,idx);
     }
     idx.updateWitnesses(witnesses);
-    
+
     Collection<MessageInfo> sendMe = pendingMessage.remove(subject);
     if (sendMe != null) {
       for (MessageInfo m : sendMe) {
         doSendMessageToWitnesses(idx.witness,m);
       }
-    }        
+    }
     /**
-     *  If this witness set was part of a query, we update the results and answer if possible 
+     *  If this witness set was part of a query, we update the results and answer if possible
      */
     for (QueryInfo qi : pendingQuery) {
       qi.updateWitnesses(idx);
@@ -120,7 +120,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   }
 
   void doSendMessageToWitnesses(Collection<Handle> witnesses, MessageInfo m) {
-    
+
     for (Handle h : witnesses) {
       peerreview.transmit(h,m.message,m.deliverAckToMe,m.options);
     }
@@ -149,19 +149,19 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
       doSendMessageToWitnesses(witnesses, m);
     }
   }
-  
+
   /* Requests witness sets for several nodes */
   public void requestWitnesses(Collection<Identifier> subjectList, Continuation<Map<Identifier,Collection<Handle>>, Exception> c) {
     new QueryInfo(subjectList,c);
   }
-  
+
   /**
    * Either returns the valid cached value, or returns null
-   * 
+   *
    * Often requestWitnesses() is called next
-   * 
+   *
    * If it returns null, then notifyWitnessSet() will be called later
-   * 
+   *
    * @param subject
    * @return
    */
@@ -172,7 +172,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     }
     return foo.witness;
   }
-  
+
   /**
    * Only call me if there isn't already a valid witness set
    * @param subject
@@ -180,12 +180,12 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   protected void requestWitnesses(Identifier subject) {
     CacheInfo foo = witnessCache.get(subject);
     if (foo != null && foo.witnessesRequested) return;
-    
+
     foo = new CacheInfo(subject);
     witnessCache.put(subject, foo);
     peerreview.getApp().getWitnesses(subject,this);
   }
-  
+
   /**
    * Since applications like ePOST must communicate to determine the current
    * witness set of a node (which is expensive), we cache witness sets for a
@@ -204,18 +204,18 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
       validUntil = 0;
       witnessesRequested = true;
     }
-    
+
     public void updateWitnesses(Collection<Handle> witnesses) {
       /* Store the witnesses in the cache entry and make it valid */
       witnessesRequested = false;
       this.witness = witnesses;
-      validUntil = peerreview.getTime() + WITNESS_SET_VALID_MICROS;      
+      validUntil = peerreview.getTime() + WITNESS_SET_VALID_MICROS;
     }
-    
+
     public boolean isValid() {
-      return validUntil > peerreview.getTime(); 
+      return validUntil > peerreview.getTime();
     }
-  } 
+  }
 
 
 
@@ -225,10 +225,10 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    */
   public class MessageInfo {
     public Identifier subject; // deliver to my witnesses
-    public PeerReviewMessage message; 
+    public PeerReviewMessage message;
     public MessageCallback<Handle, ByteBuffer> deliverAckToMe;
     public Map<String, Object> options;
-    
+
     public MessageInfo(Identifier subject, PeerReviewMessage message,
         MessageCallback<Handle, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
@@ -236,7 +236,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
       this.message = message;
       this.deliverAckToMe = deliverAckToMe;
       this.options = options;
-    }    
+    }
   }
 
   /**
@@ -250,28 +250,28 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     int numWitnessesWaitingFor = 0;
     boolean done = false;
 
-    public QueryInfo(Collection<Identifier> subjects, Continuation<Map<Identifier, Collection<Handle>>, Exception> c) {      
+    public QueryInfo(Collection<Identifier> subjects, Continuation<Map<Identifier, Collection<Handle>>, Exception> c) {
       subjectList = new HashMap<Identifier, Collection<Handle>>();
       numWitnessesWaitingFor = subjects.size();
       this.c = c;
 
-      pendingQuery.add(this); 
+      pendingQuery.add(this);
 
-      for (Identifier s : subjects) {        
+      for (Identifier s : subjects) {
         Collection<Handle> foo = getWitnesses(s);
         subjectList.put(s, foo);
         if (foo == null) {
           requestWitnesses(s);
         } else {
-          numWitnessesWaitingFor--;          
+          numWitnessesWaitingFor--;
         }
       }
-      
+
       if (numWitnessesWaitingFor == 0) {
         done();
       }
     }
-    
+
     public void updateWitnesses(CacheInfo idx) {
       if (subjectList.containsKey(idx.subject)) {
         Collection<Handle> ret = subjectList.put(idx.subject, idx.witness);
@@ -280,18 +280,18 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
           if (numWitnessesWaitingFor == 0) {
             done();
           }
-        }        
-      } 
+        }
+      }
     }
-    
+
     public void done() {
       if (done) return;
       done = true;
       pendingQuery.remove(this);
-      c.receiveResult(subjectList);       
+      c.receiveResult(subjectList);
     }
   }
-  
+
   /**
    * When this is called, some node has asked us for evidence about another
    * node, and we have found either (a) an unanswered challenge, or (b) a proof
@@ -319,11 +319,11 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     try {
       /* Put together an ACCUSATION message */
       Evidence evidence = infoStore.getEvidence(evidenceRecord.getOriginator(),subject, evidenceRecord.getTimeStamp());
-      AccusationMessage<Identifier> accusation = 
+      AccusationMessage<Identifier> accusation =
         new AccusationMessage<Identifier>(subject, evidenceRecord, evidence);
-  
+
       /* ... and send it */
-  
+
       logger.atTrace().log(() -> "Sending "+accusation+" "+((status == STATUS_EXPOSED) ? "proof" : "challenge")+" to "+target);
       peerreview.transmit(target, accusation, null, null);
     } catch (IOException ioe) {

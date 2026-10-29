@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.socket;
 
 import java.io.IOException;
@@ -55,11 +55,11 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 
   public MultiInetSocketAddress eaddress;
   protected long epoch;
-  
+
   protected SocketNodeHandle(MultiInetSocketAddress eisa, long epoch, Id id, PastryNode node) {
     super(id);
     this.eaddress = eisa;
-    this.epoch = epoch;    
+    this.epoch = epoch;
     setLocalNode(node);
   }
 
@@ -71,7 +71,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
   public void setLocalNode(PastryNode pn) {
     localnode = pn;
     this.logger = localnode.getEnvironment().getLogManager().getLogger(getClass(),null);
-  }  
+  }
 
   public MultiInetSocketAddress getIdentifier() {
     return eaddress;
@@ -91,24 +91,24 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
       return ((PastryNode)localnode).getLivenessProvider().getLiveness(this, null);
     }
   }
-  
+
   /**
    * Returns the InetSocketAddress that should be used to contact the node
-   * 
+   *
    * @return the address of the node
    */
-  
+
   public MultiInetSocketAddress getAddress() {
     return eaddress;
   }
-    
+
   public InetSocketAddress getInetSocketAddress() {
     return eaddress.getAddress(0);
   }
-    
+
   /**
    * Method which FORCES a check of liveness of the remote node.  Note that
-   * this method should ONLY be called by internal Pastry maintenance algorithms - 
+   * this method should ONLY be called by internal Pastry maintenance algorithms -
    * this is NOT to be used by applications.  Doing so will likely cause a
    * blowup of liveness traffic.
    *
@@ -130,7 +130,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
     assertLocalNode();
     return getLocalNode().getLocalHandle().equals(this);
   }
-  
+
   /**
    * Called to send a message to the node corresponding to this handle.
    *
@@ -144,7 +144,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
     options.put(PriorityTransportLayer.OPTION_PRIORITY, msg.getPriority());
     getLocalNode().send(this, msg,null, options);
   }
-  
+
   /**
    * Returns a String representation of this DistNodeHandle. This method is
    * designed to be called by clients using the node handle, and is provided in
@@ -168,12 +168,12 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
    * @return true if they are equal, false otherwise.
    */
   public boolean equals(Object obj) {
-    if (! (obj instanceof SocketNodeHandle)) 
+    if (! (obj instanceof SocketNodeHandle))
       return false;
 
     SocketNodeHandle other = (SocketNodeHandle) obj;
-    
-    
+
+
     boolean ret = (epoch == other.epoch && other.getNodeId().equals(getNodeId()) && other.eaddress.equals(eaddress));
 
     return ret;
@@ -215,7 +215,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
     if (localnode.getLocalHandle().equals(this)) return false;
     ((PastryNode)localnode).getLivenessProvider().checkLiveness(this, null);
     return getLiveness() < LIVENESS_DEAD;
-  }  
+  }
 
   /**
    * @param o ignored
@@ -227,8 +227,8 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
   }
 
 
-/*********************** Serialization ***********************/  
-  
+/*********************** Serialization ***********************/
+
   /**
    * Note, this SNH needs to be coalesced!!!
    * @param buf
@@ -238,9 +238,9 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 //    NodeHandle (Version 0)
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //    + Epoch InetSocketAddress                                       +
-//    +                                                               +           
-//    +                                                               +           
-//    +                                                               +           
+//    +                                                               +
+//    +                                                               +
+//    +                                                               +
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //    +   Id                                                          +
 //    +                                                               +

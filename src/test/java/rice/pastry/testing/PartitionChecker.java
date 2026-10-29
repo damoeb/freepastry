@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /*
  * Created on Jul 5, 2005
  */
@@ -58,11 +58,11 @@ import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketPastryNodeFactory;
 
 /**
- * Pass in a certificate which contains bootstrap nodes.  
- * 
- * Output is an ordered list of independent rings, and which bootstrap nodes belong 
+ * Pass in a certificate which contains bootstrap nodes.
+ *
+ * Output is an ordered list of independent rings, and which bootstrap nodes belong
  * to each.
- * 
+ *
  * @author Jeff Hoye
  */
 public class PartitionChecker {
@@ -72,15 +72,15 @@ public class PartitionChecker {
   int numThreads = 0;
 
   /**
-   * Set of InetSocketAddress 
-   * 
-   * The set of bootstrap nodes that need to be checked.  
+   * Set of InetSocketAddress
+   *
+   * The set of bootstrap nodes that need to be checked.
    * Gained from the certificate.
-   * 
+   *
    * This list is reduced each time a node from this ring is identified
    */
   HashSet<InetSocketAddress> unmatchedBootstraps;
-  
+
   /**
    * of InetSocketAddress.  This list is kept around.
    */
@@ -88,113 +88,113 @@ public class PartitionChecker {
 
   final PrintStream ps = new PrintStream(new FileOutputStream("response.txt"));
 
-  
+
   /**
    * A list of Ring.  Increased whenever a new one is found.
    */
   ArrayList<Ring> rings;
-  
+
   Environment environment;
 
-  HashSet<NodeHandle> dead = new HashSet<NodeHandle>();    
+  HashSet<NodeHandle> dead = new HashSet<NodeHandle>();
 
   public PartitionChecker(String ringIdString) throws Exception {
     environment = new Environment();
-    buildBootstrapSetFromCert(ringIdString); 
+    buildBootstrapSetFromCert(ringIdString);
     rings = new ArrayList<Ring>();
-    
+
     SocketPastryNodeFactory factory = new SocketPastryNodeFactory(null, 1, environment);
-    
-    
+
+
     while(unmatchedBootstraps.size() > 0) {
-      rings.add(buildRing(factory, (InetSocketAddress)(unmatchedBootstraps.iterator().next()))); 
+      rings.add(buildRing(factory, (InetSocketAddress)(unmatchedBootstraps.iterator().next())));
     }
     Collections.sort(rings);
     Iterator<Ring> i = rings.iterator();
     while(i.hasNext()) {
-      System.out.println(i.next()); 
+      System.out.println(i.next());
     }
   }
-  
-  
-  
+
+
+
   protected void buildBootstrapSetFromCert(String ringIdString) throws Exception {
-    unmatchedBootstraps = new HashSet<InetSocketAddress>(); 
-    bootstraps = new HashSet<InetSocketAddress>(); 
-    
-    
-       
+    unmatchedBootstraps = new HashSet<InetSocketAddress>();
+    bootstraps = new HashSet<InetSocketAddress>();
+
+
+
     BufferedReader in = new BufferedReader(new FileReader(ringIdString));
 
     String line;
-    
+
     while(in.ready()) {
       line = in.readLine();
       String[] parts = line.split(":");
-      
+
       int port = 10003;
       if (parts.length > 1) {
         port = Integer.parseInt(parts[1]);
       }
       InetSocketAddress addr = new InetSocketAddress(parts[0], port);
-      
+
       unmatchedBootstraps.add(addr);
       bootstraps.add(addr);
     }
   }
-  
+
   protected LeafSet getLeafSet(NodeHandle nh) throws IOException {
     // TODO: implement, need to make this an application and have a message to fetch this info
-    
+
     return null;
   }
-  
+
   protected Ring buildRing(final SocketPastryNodeFactory factory, InetSocketAddress bootstrap) throws Exception {
     unmatchedBootstraps.remove(bootstrap);
     numThreads = 0;
     final Ring ring = new Ring(bootstrap);
 
     final HashSet<NodeHandle> unseen = new HashSet<NodeHandle>();
-    
-    
+
+
     unseen.add(factory.getNodeHandle(bootstrap, 20000));
 
     synchronized (unseen) {
       while (true) {
-        if (numThreads >= MAX_THREADS) 
+        if (numThreads >= MAX_THREADS)
           unseen.wait();
-        
+
         if (unseen.size() > 0) {
           numThreads++;
-          
-          final SocketNodeHandle handle = (SocketNodeHandle) unseen.iterator().next();          
+
+          final SocketNodeHandle handle = (SocketNodeHandle) unseen.iterator().next();
           if (handle == null) {
             break;
           }
             unseen.remove(handle);
             ring.addNode(handle);
-            
+
             Thread t = new Thread() {
-              public void run() {  
+              public void run() {
                 try {
                   LeafSet ls = getLeafSet(handle);
-                  
+
                   ps.println(handle.getInetSocketAddress().getAddress().getHostAddress()+":"+
                       handle.getInetSocketAddress().getPort());
-                  
-                  
+
+
                   NodeSet ns = ls.neighborSet(Integer.MAX_VALUE);
-                  
+
                   if (! ns.get(0).equals(handle)) {
-                    ring.addFailure(handle, new Exception("Node is now "+ns.get(0))); 
+                    ring.addFailure(handle, new Exception("Node is now "+ns.get(0)));
                   }
-                  
+
                   synchronized (unseen) {
-                    for (int i=1; i<ns.size(); i++) 
+                    for (int i=1; i<ns.size(); i++)
                       if ((! ring.contains(ns.get(i))) && (! dead.contains(ns.get(i))))
                         unseen.add(ns.get(i));
                   }
-                
+
                 } catch (java.net.ConnectException e) {
                   ring.addFailure(handle,e);
                   dead.add(handle);
@@ -210,7 +210,7 @@ public class PartitionChecker {
                 }
               }
             };
-            
+
             t.start();
           } else if (numThreads > 0) {
             unseen.wait();
@@ -219,12 +219,12 @@ public class PartitionChecker {
           }
         }
       }
-        
+
     System.out.println("buildRing() complete:"+ring);
     return ring;
   }
 
-  
+
   class Ring implements Comparable<Ring> {
     /**
      * of InetSocketAddress
@@ -234,16 +234,16 @@ public class PartitionChecker {
      * of NodeHandle
      */
     HashSet<NodeHandle> nodes;
-    
+
     String name;
-    
+
     public Ring(InetSocketAddress bootAddr) {
       name = bootAddr.toString();
       myBootstraps = new HashSet<InetSocketAddress>();
       myBootstraps.add(bootAddr);
       nodes = new HashSet<NodeHandle>();
     }
-    
+
     /**
      * @param handle
      * @return
@@ -267,20 +267,20 @@ public class PartitionChecker {
     }
 
     public synchronized void addNode(SocketNodeHandle snh) {
-      
+
       InetSocketAddress newAddr = snh.getInetSocketAddress();
       synchronized(unmatchedBootstraps) {
         if (unmatchedBootstraps.contains(newAddr)) {
           unmatchedBootstraps.remove(newAddr);
         }
-      }      
+      }
 
       if (bootstraps.contains(newAddr)) {
-        myBootstraps.add(newAddr); 
+        myBootstraps.add(newAddr);
       }
       nodes.add(snh);
     }
-    
+
     public String toString() {
       String s = nodes.size()+":"+myBootstraps.size()+": boots:";
       synchronized(myBootstraps) {
@@ -298,7 +298,7 @@ public class PartitionChecker {
           if (!bootstraps.contains(nxt))
             s+=","+nxt;
         }
-      }      
+      }
       return s;
     }
 
@@ -306,12 +306,12 @@ public class PartitionChecker {
       Ring that = (Ring)arg0;
       return this.size() - that.size();
     }
-    
+
     public int size() {
-      return nodes.size(); 
+      return nodes.size();
     }
   }
-  
+
   public static void main(String[] args) throws Exception {
     new PartitionChecker(args[0]);
     System.exit(0);

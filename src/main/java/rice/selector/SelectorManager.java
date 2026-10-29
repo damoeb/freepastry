@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.selector;
 
 import java.io.IOException;
@@ -65,7 +65,7 @@ import rice.environment.time.TimeSource;
  * This class is the class which handles the selector, and listens for activity.
  * When activity occurs, it figures out who is interested in what has happened,
  * and hands off to that object.
- * 
+ *
  * @version $Id: SelectorManager.java 4675 2009-03-11 15:54:34Z jeffh $
  * @author Alan Mislove
  */
@@ -97,7 +97,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   long lastTime = 0;
 
   protected Logger logger;
-  
+
   protected String instance;
 
   // written by destroy() on any thread, read by the selector thread
@@ -108,20 +108,20 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * run in the next round. (An invocation that reschedules itself, such as a simulator loop, runs only once.)
    */
   protected static final int MAX_SHUTDOWN_ROUNDS = 64;
-  
+
   /**
    * Can be disabled for the simulator to improve performance, only do this
    * if you know you don't need to select on anything
    */
   protected boolean select = true;
-  
+
   protected RandomSource random;
-  
+
   /**
    * Constructor.
    */
   public SelectorManager(String instance,
-      TimeSource timeSource, LogManager log, RandomSource random) {    
+      TimeSource timeSource, LogManager log, RandomSource random) {
     super(instance == null ? "Selector Thread" : "Selector Thread -- "
         + instance);
     this.random = random;
@@ -143,17 +143,17 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   public SelectorManager(String instance,
-      TimeSource timeSource, LogManager log) {    
+      TimeSource timeSource, LogManager log) {
     this(instance,timeSource,log,new SimpleRandomSource(log));
   }
-  
+
   protected Environment environment;
-  
+
   /**
    * Can only be called once.  The rest of the time the argument is rejected.
    * This is needed so that when the NodeFactory clones the Environment, it doesn't
    * get restarted/have multiple different environments etc...
-   * 
+   *
    * @param env the environment; also starts this thread on the first call
    */
   public void setEnvironment(Environment env) {
@@ -163,13 +163,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     environment.addDestructable(this);
     start();
   }
-  
+
   /**
    * Method which asks the Selector Manager to add the given key to the
    * cancelled set. If no one calls register on this key during the rest of this
    * select() operation, the key will be cancelled. Otherwise, it will be
    * returned as a result of the register operation.
-   * 
+   *
    * @param key The key to cancel
    */
   public void cancel(SelectionKey key) {
@@ -189,7 +189,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Utility method which returns the SelectionKey attached to the given
    * channel, if one exists
-   * 
+   *
    * @param channel The channel to return the key for
    * @return The key
    */
@@ -201,7 +201,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * Registers a new channel with the selector, and attaches the given
    * SelectionKeyHandler as the handler for the newly created key. Operations
    * which the handler is interested in will be called as available.
-   * 
+   *
    * @param channel The channel to register with the selector
    * @param handler The handler to use for the callbacks
    * @param ops The initial interest operations
@@ -217,13 +217,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
     return key;
   }
-  
+
   /**
    * This method schedules a runnable task to be done by the selector thread
    * during the next select() call. All operations which modify the selector
    * should be done using this method, as they must be done in the selector
    * thread.
-   * 
+   *
    * @param d The runnable task to invoke
    */
   public synchronized void invoke(Runnable d) {
@@ -239,7 +239,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   /**
    * Debug method which returns the number of pending invocations
-   * 
+   *
    * @return The number of pending invocations
    */
   public synchronized int getNumInvocations() {
@@ -250,7 +250,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * Adds a selectionkey handler into the list of handlers which wish to change
    * their keys. Thus, modifyKeys() will be called on the next selection
    * operation
-   * 
+   *
    * @param key The key which is to be changed
    */
   public synchronized void modifyKey(SelectionKey key) {
@@ -297,7 +297,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           }
 
           select(selectTime);
-          
+
           if (cancelledKeys.size() > 0) {
             Iterator<SelectionKey> i = cancelledKeys.iterator();
 
@@ -319,11 +319,11 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     shutdown();
     logger.info("Selector {} shutting down.", instance);
   }
-  
+
   /**
-   * Called on the selector thread once the loop has stopped. Runs the invocations that are still pending, 
-   * because they typically release resources (such as Destructables queued by Environment.destroy(), or 
-   * transport layers closing their sockets), then drops the timer tasks, closes the channels of all keys 
+   * Called on the selector thread once the loop has stopped. Runs the invocations that are still pending,
+   * because they typically release resources (such as Destructables queued by Environment.destroy(), or
+   * transport layers closing their sockets), then drops the timer tasks, closes the channels of all keys
    * that are still registered (so that no bound port outlives the selector) and finally the selector itself.
    */
   protected void shutdown() {
@@ -351,7 +351,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         }
       }
     }
-    
+
     int droppedInvocations;
     int droppedTasks;
     synchronized (this) {
@@ -394,7 +394,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       }
     }
   }
-  
+
   /**
    * Stops the selector. This may be called on any thread, also by an invocation on the selector thread.
    * The selector thread finishes its current loop, runs the invocations that are still pending, and closes
@@ -404,18 +404,18 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     if (logger.isDebugEnabled()) {
       logger.debug("destroying SelectorManager", new Exception("Stack Trace"));
     } else logger.info("destroying SelectorManager");
-    running = false; 
+    running = false;
     // don't wait for the select() timeout; Selector.wakeup() is thread safe, and sticky if not selecting yet
     if (selector != null) selector.wakeup();
   }
-  
+
   /**
    * LoopListeners is used in case you are worried that your process may not get scheduled for a while
-   * such as on an overloaded planetlab node, or if you hibernate your laptop, this is not needed 
+   * such as on an overloaded planetlab node, or if you hibernate your laptop, this is not needed
    * for the simulator
    */
   protected boolean useLoopListeners = true;
-  
+
   /**
    * Set this to false when using the simulator, because you don't need to notify loop observers.
    * @param val true to notify the loop observers on each loop
@@ -423,7 +423,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   public void useLoopListeners(boolean val) {
     useLoopListeners = val;
   }
-  
+
   protected void notifyLoopListeners() {
     long now = timeSource.currentTimeMillis();
     long diff = now - lastTime;
@@ -456,7 +456,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   protected void doSelections() throws IOException {
     SelectionKey[] keys = selectedKeys();
-    
+
     // to debug weird selection bug
     if (keys.length > 1000 && logger.isDebugEnabled()) {
       logger.debug("lots of selection keys!");
@@ -479,7 +479,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     }
 
     for (int i = 0; i < keys.length; i++) {
-      selector.selectedKeys().remove(keys[i]);      
+      selector.selectedKeys().remove(keys[i]);
 
       synchronized (keys[i]) {
         SelectionKeyHandler skh = (SelectionKeyHandler) keys[i].attachment();
@@ -536,7 +536,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
             invocations.add(ctr,i.next());
             ctr++;
           }
-        }        
+        }
         throw e;
       }
     }
@@ -557,7 +557,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Method which synchronously returns the first element off of the
    * invocations list.
-   * 
+   *
    * @return An item from the invocations list
    */
   protected synchronized Runnable getInvocation() {
@@ -569,7 +569,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   /**
    * Method which synchronously returns one element off of the modifyKeys set
-   * 
+   *
    * @return A key from the modifyKeys set, or null if it is empty
    */
   protected synchronized SelectionKey getModifyKey() {
@@ -585,7 +585,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Selects on the selector, and returns the result. Selects without blocking if
    * time is not positive or invocations or key modifications are pending.
-   * 
+   *
    * @param time the maximum time to wait in millis, capped at TIMEOUT
    * @return the number of selected keys (1 after an interrupted system call)
    * @exception IOException if the select fails
@@ -618,7 +618,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Returns the currently selected keys of the selector as an array of keys,
    * in random order.
-   * 
+   *
    * @return The array of keys
    */
   protected SelectionKey[] selectedKeys() throws IOException {
@@ -631,13 +631,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       k[c] = k[swapIndex];
       k[swapIndex] = temp;
     }
-    
+
     return k;
   }
 
   /**
    * Returns whether or not this thread of execution is the selector thread
-   * 
+   *
    * @return Whether or not this is the selector thread
    */
   public boolean isSelectorThread() {
@@ -646,7 +646,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   /**
    * Method which schedules a task to run at its own next execution time, which must already be set
-   * 
+   *
    * @param task The task to run
    * @return the task
    */
@@ -654,7 +654,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     addTask(task);
     return task;
   }
-  
+
   public TimerTask schedule(TimerTask task, long delay) {
     task.setNextExecutionTime(timeSource.currentTimeMillis() + delay);
     addTask(task);
@@ -664,7 +664,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Method which schedules a task to run repeatedly after a specified delay and
    * period
-   * 
+   *
    * @param task The task to run
    * @param delay The delay before first running, in milliseconds
    * @param period The period with which to run in milliseconds
@@ -679,7 +679,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Method which schedules a task to run repeatedly (at a fixed rate) after a
    * specified delay and period
-   * 
+   *
    * @param task The task to run
    * @param delay The delay before first running in milliseconds
    * @param period The period with which to run in milliseconds
@@ -698,7 +698,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Internal method which adds a task to the task queue, waking up the selector
    * if necessary to recalculate the sleep time
-   * 
+   *
    * @param task The task to add
    */
   protected synchronized void addTask(TimerTask task) {
@@ -715,7 +715,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         logger.warn("ERROR: Got false while enqueueing task {}!", task);
         Thread.dumpStack();
       } else {
-        task.setSelectorManager(this); 
+        task.setSelectorManager(this);
       }
 
     // need to interrupt thread if waiting too long in selector
@@ -728,13 +728,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     } else {
       // using the simulator
       if (task.scheduledExecutionTime() == getNextTaskExecutionTime()) {
-        // we need to wake up the selector because we are now the newest 
+        // we need to wake up the selector because we are now the newest
         // shortest wait, and may be delaying because of a later event
         wakeup();
       }
     }
   }
-  
+
   public synchronized void removeTask(TimerTask task) {
     logger.atTrace().log(() -> "removeTask("+task+") scheduled for "+task.scheduledExecutionTime());
     timerQueue.remove(task);
@@ -754,16 +754,16 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       TimerTask next = (TimerTask) timerQueue.peek();
       return next.scheduledExecutionTime();
     }
-    return -1;    
+    return -1;
   }
-  
+
   /**
    * Internal method which finds all due tasks and executes them.
    */
   protected void executeDueTasks() {
     long now = timeSource.currentTimeMillis();
     logger.trace("SM.executeDueTasks() {}", now);
-    
+
     ArrayList<TimerTask> executeNow = new ArrayList<TimerTask>();
 
     // step 1, fetch all due timers
@@ -792,7 +792,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       TimerTask next = i.next();
       try {
         logger.trace("executing task {}", next);
-        
+
         if (executeTask(next)) {
           addBack.add(next);
         }
@@ -808,7 +808,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
             timerQueue.add(tt);
           }
         }
-        
+
         throw e;
       }
     }
@@ -826,19 +826,19 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   protected boolean executeTask(TimerTask next) {
     return next.execute(timeSource);
   }
-  
+
   /**
    * Returns the timer associated with this SelectorManager (in this case, it is
    * this).
-   * 
+   *
    * @return The associated timer
    */
   public Timer getTimer() {
     return this;
   }
-  
+
   public Selector getSelector() {
-    return selector; 
+    return selector;
   }
 
   public void setSelect(boolean b) {
@@ -849,7 +849,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     return environment;
   }
 
-  
+
   public static void main(String[] args) {
     new Environment();
     new Environment();

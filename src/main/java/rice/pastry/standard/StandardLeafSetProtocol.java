@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.standard;
 
 import java.util.ArrayList;
@@ -58,9 +58,9 @@ import rice.pastry.routing.RoutingTable;
 
 /**
  * An implementation of a simple leaf set protocol.
- * 
+ *
  * @version $Id: StandardLeafSetProtocol.java 4654 2009-01-08 16:33:07Z jeffh $
- * 
+ *
  * @author Peter Druschel
  * @author Andrew Ladd
  */
@@ -82,17 +82,17 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     leafSet = ls;
     Iterator<NodeHandle> i = leafSet.asList().iterator();
     while(i.hasNext()) {
-      NodeHandle nh = (NodeHandle)i.next(); 
+      NodeHandle nh = (NodeHandle)i.next();
       nh.addNodeHandleListener(this);
-    }    
-    cachedSet = new HashSet<NodeHandle>(leafSet.maxSize() * 2);  
+    }
+    cachedSet = new HashSet<NodeHandle>(leafSet.maxSize() * 2);
     routeTable = rt;
     logger = ln.getEnvironment().getLogManager().getLogger(getClass(), null);
   }
 
   /**
    * Receives messages.
-   * 
+   *
    * @param msg the message.
    */
   public void messageForAppl(Message msg) {
@@ -163,14 +163,14 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
 
   /**
-   * Optimization. 
+   * Optimization.
    * gc was thrashing due to all of these HashSets being created.  So, now we just reuse one.
    */
   HashSet<NodeHandle> cachedSet = null;
-  
+
   /**
    * Checks a received leafset advertisement for missing nodes
-   * 
+   *
    * @param remotels the remote leafset
    * @param from the node from which we received the leafset
    * @param notifyMissing if true, notify missing nodes
@@ -190,7 +190,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     HashSet<NodeHandle> insertedHandles;
     if (notifyMissing) {
       cachedSet.clear();
-      insertedHandles = cachedSet;      
+      insertedHandles = cachedSet;
     } else
       insertedHandles = null;
 
@@ -220,7 +220,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
   /**
    * Merge a remote leafset into our own
-   * 
+   *
    * @param remotels the remote leafset
    * @param from the node from which we received the leafset
    * @return true if the leafset changed
@@ -240,7 +240,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
   /**
    * Broadcast the leaf set to all members of the local leaf set.
-   * 
+   *
    * @param type the type of broadcast message used
    */
 
@@ -269,7 +269,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
   /**
    * Broadcast the local leaf set to all members of the given leaf set, plus the
    * node from which the leaf set was received.
-   * 
+   *
    * @param ls the leafset whose members we send to local leaf set
    * @param from the node from which ls was received
    */
@@ -384,16 +384,16 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
   /**
    * We manage the leafset now.  Implementation is simple, remove items that die.
-   * 
+   *
    * We should be observers on everything in the leafset, and nothing else.
    */
   @Override
   public void leafSetChange(NodeHandle nh, boolean wasAdded) {
     super.leafSetChange(nh, wasAdded);
     if (wasAdded) {
-      nh.addNodeHandleListener(this); 
+      nh.addNodeHandleListener(this);
     } else {
-      nh.removeNodeHandleListener(this); 
+      nh.removeNodeHandleListener(this);
     }
   }
 

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.p2p.splitstream;
 
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * A reference to this policy's splitstream object
    */
   protected SplitStream splitStream;
-  
+
   /**
    * A reference to this policy's scribe object
    */
@@ -128,13 +128,13 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
   }
 
   /**
-   * This method implements the "locating parent" algorithm of SplitStream. Whenever a node receives 
+   * This method implements the "locating parent" algorithm of SplitStream. Whenever a node receives
    * subscription request, it executes following algorithm :
-   * 
-   * 1) Checks if it has available capacity, 
+   *
+   * 1) Checks if it has available capacity,
    *    if yes, take it
    *    if no, go to step 2
-   * 
+   *
    * 2) If subscription is for primary stripe,
    *    if no, dont take it, return false
    *    if yes, need to drop someone
@@ -147,11 +147,11 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    *                  a) primary stripe
    *                  b) we are not the root for the stripe (may happen in very small networks)
    *                  c) we have non-zero children for this stripe
-   *                  if found such a stripe, we drop a random child from that stripe and accept the new 
+   *                  if found such a stripe, we drop a random child from that stripe and accept the new
    *                     subscriber, return true.
    *
    * 3) Checks if one of our child for a stripe sent us a request message for dropping it and taking
-   *    the new subscriber (STAGE_3), then we drop the child and return true to accept the subscriber.    
+   *    the new subscriber (STAGE_3), then we drop the child and return true to accept the subscriber.
    *
    *
    * @param scribe the Scribe that is making the request
@@ -165,7 +165,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     while(i.hasNext()) {
       Topic topic = i.next();
       // the subscriber is also the source of the request here
-      if (!allowSubscribe(topic, source, source, content, 
+      if (!allowSubscribe(topic, source, source, content,
           new ArrayList<NodeHandle>(scribe.getChildrenOfTopic(topic)))) {
         i.remove();
       }
@@ -182,7 +182,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    */
   @Deprecated
   public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
-    return allowSubscribe(message.getTopic(), message.getSubscriber(), message.getSource(), 
+    return allowSubscribe(message.getTopic(), message.getSubscriber(), message.getSource(),
         message.getContent(), Arrays.asList(children));
   }
 
@@ -196,18 +196,18 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @param children The children who are currently subscribed to this topic
    * @return Whether or not this child should be allowed add.
    */
-  private boolean allowSubscribe(Topic topic, NodeHandle newChild, NodeHandle source, 
+  private boolean allowSubscribe(Topic topic, NodeHandle newChild, NodeHandle source,
       ScribeContent content, Collection<NodeHandle> children) {
 
     Channel channel = getChannel(topic);
 
     if (channel == null) {
-      // If the channel is null, return false *unless you are root*, in which case you 
-      // return true.  This is a weird case.  We have to accept here if we are the root, even 
+      // If the channel is null, return false *unless you are root*, in which case you
+      // return true.  This is a weird case.  We have to accept here if we are the root, even
       // if we are not attached to the channel (it's a bootstrapping issue)
       return scribe.isRoot(topic);
     }
-    
+
     /* do not accept self - wierd case, should not happen */
     if(newChild.getId().equals(channel.getLocalId()))
       return false;
@@ -338,7 +338,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       }
     }
   }
-    
+
   /**
    * Liveness check via the scribe's endpoint (replaces the deprecated NodeHandle.isAlive()).
    */
@@ -447,7 +447,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
 
     return null;
   }
-  
+
   /**
    * This method attempts to free bandwidth from our primary stripe.
    * It selects a child whose prefix match with the stripe is minimum, and drops it.
@@ -495,8 +495,8 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     int numDigits = rice.pastry.Id.IdBitLength / digitLength - 1;
 
     return (numDigits - ((rice.pastry.Id)target).indexOfMSDD((rice.pastry.Id)sample, digitLength));
-  }  
-  
+  }
+
   /**
    * Informs this policy that a child was added to a topic - the topic is free to ignore this
    * upcall if it doesn't care.
@@ -506,7 +506,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    */
   public void childAdded(Topic topic, NodeHandle child) {
   }
-  
+
   /**
    * Informs this policy that a child was removed from a topic - the topic is free to ignore this
    * upcall if it doesn't care.
@@ -516,14 +516,9 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    */
   public void childRemoved(Topic topic, NodeHandle child) {
   }
-  
+
   public void intermediateNode(ScribeMessage message) {
   }
   public void recvAnycastFail(Topic topic, NodeHandle failedAtNode, ScribeContent content) {
   }
 }
-
-
-
-
-

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.pastry;
 
@@ -54,17 +54,17 @@ import rice.pastry.messaging.Message;
  *
  * @author Andrew Ladd
  */
-public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implements RawSerializable 
+public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implements RawSerializable
 {
 
   public static final int LIVENESS_ALIVE = 1;
   public static final int LIVENESS_SUSPECTED = 2;
   public static final int LIVENESS_DEAD = 3;
-    
+
   // the local pastry node
   protected transient PastryNode localnode;
   protected transient Logger logger;
-  
+
   static final long serialVersionUID = 987479397660721015L;
   /**
    * Gets the nodeId of this Pastry node.
@@ -82,24 +82,24 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    * Invoking this method does not cause network activity.
    *
    * @return true if the node is alive, false otherwise.
-   * 
-   * @deprecated use PastryNode.isAlive(NodeHandle) 
+   *
+   * @deprecated use PastryNode.isAlive(NodeHandle)
    */
   @Deprecated
   public final boolean isAlive() {
-    return getLiveness() < LIVENESS_DEAD; 
+    return getLiveness() < LIVENESS_DEAD;
   }
 
   /**
    * A more detailed version of isAlive().  This can return 3 states:
-   * 
+   *
    * @return LIVENESS_ALIVE, LIVENESS_SUSPECTED, LIVENESS_DEAD
    */
   public abstract int getLiveness();
-  
+
   /**
    * Method which FORCES a check of liveness of the remote node.  Note that
-   * this method should ONLY be called by internal Pastry maintenance algorithms - 
+   * this method should ONLY be called by internal Pastry maintenance algorithms -
    * this is NOT to be used by applications.  Doing so will likely cause a
    * blowup of liveness traffic.
    *
@@ -157,14 +157,14 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   public abstract boolean equals(Object obj);
 
   /**
-   * Method which is used by Pastry to start the bootstrapping process on the 
+   * Method which is used by Pastry to start the bootstrapping process on the
    * local node using this handle as the bootstrap handle.  Default behavior is
    * simply to call receiveMessage(msg), but transport layer implementations may
    * care to perform other tasks by overriding this method, since the node is
    * not technically part of the ring yet.
    *
    * @param msg the bootstrap message.
-   * @throws IOException 
+   * @throws IOException
    */
   public void bootstrap(Message msg) throws IOException {
     receiveMessage(msg);
@@ -176,7 +176,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    * @return a hash code.
    */
   public abstract int hashCode();
-  
+
   /**
    * @deprecated use PastryNode.send() or Endpoint.send()
    * @param msg
@@ -185,20 +185,20 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   public abstract void receiveMessage(Message msg);
 
   public abstract void serialize(OutputBuffer buf) throws IOException;
-  
+
   /****************** Observer pattern with priority, see rice.p2p.commonapi.NodeHandleListener **********/
-  
+
   /**
    * @deprecated use addNodeHandleListener(NodeHandleListener)
    */
   @Deprecated
   @Override
   public void addObserver(Observer o) {
-    addObserver(o, 0);  
+    addObserver(o, 0);
   }
-  
+
   /**
-   * 
+   *
    * @param o
    * @param priority higher priority observers will be called first
    * @deprecated use addNodeHandleListener(NodeHandleListener, int)
@@ -207,7 +207,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   public void addObserver(Observer o, int priority) {
     addNodeHandleListener(observerListener(o), priority);
   }
-  
+
   /**
    * @deprecated use removeNodeHandleListener(NodeHandleListener)
    */
@@ -216,19 +216,19 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   public void deleteObserver(Observer o) {
     removeNodeHandleListener(observerListener(o));
   }
-  
+
   @Override
   public void addNodeHandleListener(NodeHandleListener listener, int priority) {
     logger.trace("{}.addNodeHandleListener({})", this, listener);
     super.addNodeHandleListener(listener, priority);
   }
-  
+
   @Override
   protected void nodeHandleListenerPriorityChanged(NodeHandleListener listener, int oldPriority, int newPriority) {
     // Should we warn?  Hopefully this won't happen very often...
-    logger.atWarn().log(() -> this+".addNodeHandleListener("+listener+","+newPriority+") changed priority, was:"+listener+":"+oldPriority);      
+    logger.atWarn().log(() -> this+".addNodeHandleListener("+listener+","+newPriority+") changed priority, was:"+listener+":"+oldPriority);
   }
-  
+
   @Override
   public boolean removeNodeHandleListener(NodeHandleListener listener) {
     logger.trace("{}.removeNodeHandleListener({})", this, listener);
@@ -236,21 +236,21 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
     if (ret) {
       logger.trace("{}.removeNodeHandleListener({}):success", this, listener);
     } else {
-      logger.info("{}.removeNodeHandleListener({}):failure {} was not a listener.", this, listener, listener);      
+      logger.info("{}.removeNodeHandleListener({}):failure {} was not a listener.", this, listener, listener);
     }
     return ret;
   }
-  
+
   /**
    * Notifies all listeners, regardless of setChanged().
    */
   @Override
   public void notifyObservers(Object arg) {
-    logger.atTrace().log(() -> this+".notifyObservers("+arg+"):notifying "+countObservers()+" listeners");            
-    notifyNodeHandleListeners(arg); 
+    logger.atTrace().log(() -> this+".notifyObservers("+arg+"):notifying "+countObservers()+" listeners");
+    notifyNodeHandleListeners(arg);
   }
 
-  
+
   /**
    * Method which allows the observers of this socket node handle to be updated.
    * This method sets this object as changed, and then sends out the update.
@@ -265,8 +265,5 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
     if (logger != null) {
       logger.atTrace().log(() -> this+".update("+update+")"+countObservers()+" done");
     }
-  }  
+  }
 }
-
-
-

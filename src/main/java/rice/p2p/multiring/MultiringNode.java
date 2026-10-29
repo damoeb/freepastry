@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.multiring;
 
@@ -71,7 +71,7 @@ import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
  *
  * Node test = factory.newNode(...);
  *
- * to 
+ * to
  *
  * Node test = new MultiringNode(ringId, factory.newNode(...));
  *
@@ -83,44 +83,44 @@ import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
  * @author Alan Mislove
  */
 public class MultiringNode implements Node, ScribeMultiClient {
-  
+
   /**
    * The node which this multiring node is wrapping
    */
   protected Node node;
-  
+
   /**
    * The Id which represents the current ring this node is a member of
    */
   protected Id ringId;
-  
+
   /**
    * The Scribe application which the node uses to do routing
    */
   protected Scribe scribe;
-  
+
   /**
    * The collection, which keeps track of the other nodes on the ring node
    */
   protected MultiringNodeCollection collection;
-  
+
   /**
    * The list of all of the endpoints connected to this node
    */
   protected Hashtable<String, Endpoint> endpoints;
-  
+
   /**
    * A cached IdFactory for internal use
    */
   protected MultiringIdFactory factory;
-  
+
   /**
    * The environment
    */
   protected Environment environment;
-  
+
   protected Logger logger;
-  
+
   /**
    * Constructor
    *
@@ -135,7 +135,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
     this.endpoints = new Hashtable<String, Endpoint>();
     this.scribe = new ScribeImpl(this, "Multiring");
     scribe.setContentDeserializer(new ScribeContentDeserializer() {
-      
+
       public ScribeContent deserializeScribeContent(InputBuffer buf, Endpoint endpoint, short type) throws IOException {
         switch (type) {
           case RingMessage.TYPE:
@@ -143,13 +143,13 @@ public class MultiringNode implements Node, ScribeMultiClient {
         }
         throw new IllegalArgumentException("Invalid type:"+type);
       }
-    
+
     });
 
     this.collection = new MultiringNodeCollection(this, environment.getParameters().getInt("p2p_multiring_base"));
     this.factory = (MultiringIdFactory) getIdFactory();
   }
-  
+
   /**
    * Constructor
    *
@@ -160,14 +160,14 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public MultiringNode(Id ringId, Node node, MultiringNode existing) {
     this(ringId, node);
     this.collection = existing.getCollection();
-    
+
     this.collection.addNode(this);
   }
-  
+
   public NodeHandle getLocalNodeHandle() {
     return new MultiringNodeHandle(getRingId(), node.getLocalNodeHandle());
   }
-  
+
   /**
    * This returns a VirtualizedNode specific to the given application and
    * instance name to the application, which the application can then use
@@ -186,14 +186,14 @@ public class MultiringNode implements Node, ScribeMultiClient {
     endpoint.register();
     return endpoint;
   }
-  
+
   public Endpoint buildEndpoint(Application application, String instance) {
     Endpoint endpoint = new MultiringEndpoint(this, node.buildEndpoint(new MultiringApplication(getRingId(), application), application.getClass() + "-" + instance), application);
     endpoints.put(endpoint.getInstance(), endpoint);
-    
+
     return endpoint;
   }
-  
+
   /**
    * Returns the Id of this node
    *
@@ -202,7 +202,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public Id getId() {
     return RingId.build(ringId, node.getId());
   }
-  
+
   /**
    * Returns the ringId of this node
    *
@@ -211,7 +211,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public Id getRingId() {
     return ringId;
   }
-  
+
   /**
    * Returns the underlying id of this node
    *
@@ -220,7 +220,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public Id getNodeId() {
     return node.getId();
   }
-  
+
   /**
    * Returns this mutliring node's internal node
    *
@@ -229,7 +229,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public Node getNode() {
     return node;
   }
-  
+
   /**
    * Returns the collection this node is a member of
    *
@@ -238,7 +238,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public MultiringNodeCollection getCollection() {
     return collection;
   }
-  
+
   /**
    * Returns a factory for Ids specific to this node's protocol.
    *
@@ -247,7 +247,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public IdFactory getIdFactory() {
     return new MultiringIdFactory(ringId, node.getIdFactory());
   }
-  
+
   /**
    * Method which is used to inform the node that another node has been added to
    * the collection.  This node then joins the appropriate Scribe group to advertise
@@ -258,7 +258,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   protected void nodeAdded(Id otherRingId) {
     scribe.subscribe(new Topic(RingId.build(ringId, otherRingId)), this, (RawScribeContent) null, null);
   }
-  
+
   /**
    * This method implements the ring routing algortihm attempting to find a suitable
    * nextHop for the message.  First, this method checks to see if there is a local node
@@ -272,31 +272,31 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * @param options Transport options, may be null
    * @return The receipt of the message
    */
-  MessageReceipt route(final RingId id, final RawMessage message, String application, 
+  MessageReceipt route(final RingId id, final RawMessage message, String application,
       DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    
+
     if (id.getRingId().equals(ringId)) {
       MultiringEndpoint endpoint = (MultiringEndpoint) endpoints.get(application);
       return endpoint.route(id, message, null, deliverAckToMe, options);
     } else {
       scribe.anycast(new Topic(RingId.build(ringId, getTarget(id))), new RingMessage(id, message, application));
       MessageReceipt ret = new MessageReceipt(){
-      
+
         public boolean cancel() {
           return false;
         }
-      
+
         public Message getMessage() {
           return message;
         }
-      
+
         public Id getId() {
           return id;
         }
-        
+
         public NodeHandle getHint() {
           return null;
-        }      
+        }
       };
       if (deliverAckToMe != null) {
         deliverAckToMe.sent(ret);
@@ -304,10 +304,10 @@ public class MultiringNode implements Node, ScribeMultiClient {
       return ret;
     }
   }
-  
+
   /**
    * Implements the ring routing mechanism at the local node.  Thus, if the target ringId has
-   * our ringId as a prefix, we route to substring(id, length+1).  Otherwise, we route to 
+   * our ringId as a prefix, we route to substring(id, length+1).  Otherwise, we route to
    * substring(getId(), length-1).
    *
    * @param id The target
@@ -317,13 +317,13 @@ public class MultiringNode implements Node, ScribeMultiClient {
     int shared = collection.getLengthOfSharedPrefix((RingId) getId(), id);
     int thisLength = collection.getLength((RingId) getId());
     int targetLength = collection.getLength(id);
-    
+
     if (shared == thisLength)
       return makeTarget(id, thisLength + 1);
     else
       return makeTarget((RingId) getId(), thisLength - 1);
   }
-  
+
   /**
    * Utility method for building a target id of specified length - all remaining bytes
    * are zeroed out
@@ -335,13 +335,13 @@ public class MultiringNode implements Node, ScribeMultiClient {
   private Id makeTarget(RingId id, int length) {
     byte[] current = id.getRingId().toByteArray();
     byte[] bytes = new byte[current.length];
-    
-    for (int j=0; j<collection.BASE * length; j++) 
+
+    for (int j=0; j<collection.BASE * length; j++)
       bytes[bytes.length - 1 - j] = current[bytes.length - 1 - j];
-    
+
     return factory.buildNormalId(bytes);
   }
-  
+
   /**
    * This method is invoked when an anycast is received for a topic
    * which this client is interested in.  The client should return
@@ -360,7 +360,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
     }
     return true;
   }
-  
+
   /**
    * This method is invoked when a message is delivered for a topic this
    * client is interested in.
@@ -371,7 +371,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   public void deliver(Topic topic, ScribeContent content) {
     logger.trace("Received unexpected delivery on topic {} of {}", topic, content);
   }
-  
+
   /**
    * Informs this client that a child was added to a topic in
    * which it was interested in.
@@ -381,7 +381,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    */
   public void childAdded(Topic topic, NodeHandle child) {
   }
-  
+
   /**
    * Informs this client that a child was removed from a topic in
    * which it was interested in.
@@ -391,7 +391,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    */
   public void childRemoved(Topic topic, NodeHandle child) {
   }
-  
+
   /**
    * Informs the client that a subscribe on the given topic failed
    * - the client should retry the subscribe or take appropriate
@@ -435,7 +435,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
     logger.warn("{}: Received error joining ringId topic {} - trying again.", getId(), topic);
     nodeAdded(((RingId) topic.getId()).getId());
   }
-  
+
   /**
    * Prints out the string
    *
@@ -447,18 +447,14 @@ public class MultiringNode implements Node, ScribeMultiClient {
 
   /**
    * Getter for the environment.
-   * 
+   *
    * @return the environment
    */
   public Environment getEnvironment() {
     return environment;
   }
-  
+
   public String printRouteState() {
     return node.printRouteState();
   }
 }
-
-
-
-

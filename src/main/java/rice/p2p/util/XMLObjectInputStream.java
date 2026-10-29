@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.util;
 
@@ -67,17 +67,17 @@ import org.slf4j.LoggerFactory;
 /**
  * XMLObjectInputStream is an extension of ObjectInputStream which provides
  * for deserialization for objects which have been converted to XML via a
- * XMLObjectOutputStream.  This class supports all of the features of 
- * the ObjectInputStream, including serialization support for any Java 
- * object graph implementing the Serializable interface, support for 
- * Externalizable classes, custom deserialization via the readObject() method, 
+ * XMLObjectOutputStream.  This class supports all of the features of
+ * the ObjectInputStream, including serialization support for any Java
+ * object graph implementing the Serializable interface, support for
+ * Externalizable classes, custom deserialization via the readObject() method,
  * class evolution via the readObjectNoData() method, alternate field
- * reading mechanisms via the readFields() method, support for the 
- * readUnshared method, and dynamic object replacement via the readResolve() 
+ * reading mechanisms via the readFields() method, support for the
+ * readUnshared method, and dynamic object replacement via the readResolve()
  * method.
  *
- * The format of the XML data to be read in should conform to the JSX XML 
- * Schema, available online at http://www.jsx.org/jsx.xsd.  This class is 
+ * The format of the XML data to be read in should conform to the JSX XML
+ * Schema, available online at http://www.jsx.org/jsx.xsd.  This class is
  * designed to be able to read objects serialized using JSX, however, this
  * has not been fully tested and bugs may be encountered.
  *
@@ -89,43 +89,43 @@ import org.slf4j.LoggerFactory;
 public class XMLObjectInputStream extends ObjectInputStream {
   private static final Logger LOG = LoggerFactory.getLogger(XMLObjectInputStream.class);
 
-  
+
   /**
    * The hashmap of readResolve methods, mapping Class->Method
    */
   protected static SoftHashMap<Class<?>, Method> READ_RESOLVES = new SoftHashMap<Class<?>, Method>();
-  
+
   /**
    * The hashmap of readObject methods, mapping Class->Method
    */
   protected static SoftHashMap<Class<?>, Method> READ_OBJECTS = new SoftHashMap<Class<?>, Method>();
-  
+
   /**
    * A cache of constructors, mapping classes to serialization constructors
    */
   protected static SoftHashMap<Class<?>, Constructor<?>> CONSTRUCTORS = new SoftHashMap<Class<?>, Constructor<?>>();
-  
+
   /**
    * The underlying reader, which parses the XML
    */
   protected XMLReader reader;
-  
+
   /**
-   * The hashtable of references, which is updated each time a new object is 
+   * The hashtable of references, which is updated each time a new object is
    * read off of the stream.
    */
   protected Hashtable<String, Object> references;
-   
+
   /**
    * The stack of objects which are currently being read off of the stream
    */
   protected Stack<Object> currentObjects;
-  
+
   /**
    * The stack of class types which are being read off of the stream
    */
   protected Stack<Class<?>> currentClasses;
-  
+
   /**
    * The ReflectionFactory (jdk.unsupported), which allows for privileged construction of
    * objects.  Looked up reflectively so the build does not depend on internal API at
@@ -152,15 +152,15 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * The list of validation objects waiting for the entire object graph to be read in
    */
   protected ValidationList vlist;
-  
+
   /**
    * The depth at which we are currently at in the object tree
    */
   protected int depth;
-  
+
   /**
    * Constructor which reads data from the given input stream in order
-   * deserialize objects.  This constructor also reads the header from the 
+   * deserialize objects.  This constructor also reads the header from the
    * stream, and throws an IOException if the correct header is not seen.
    *
    * @param in The input stream to read data from
@@ -168,20 +168,20 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   public XMLObjectInputStream(InputStream in) throws IOException {
     super();
-    
+
     this.reader = new XMLReader(new InputStreamReader(in));
     this.currentObjects = new Stack<Object>();
     this.currentClasses = new Stack<Class<?>>();
     this.references = new Hashtable<String, Object>();
     this.vlist = new ValidationList();
     this.depth = 0;
-        
+
     readStreamHeader();
   }
-  
-  
+
+
   // ----- ObjectInputStream Overriding Methods -----
-  
+
   /**
    * Method which reads the XML header off of the stream.  Usually, this is the
    * <?xml version="1.0"?> tag, but it may include processing instructions.
@@ -191,17 +191,17 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected void readStreamHeader() throws IOException {
     reader.readHeader();
   }
-  
+
   /**
-   * Method which closes the underlying input stream for reading.  Any subsequent 
+   * Method which closes the underlying input stream for reading.  Any subsequent
    * reads will throw an IOException.
    *
    * @throws IOException If an error occurs
    */
   public void close() throws IOException {
     reader.close();
-  } 
-  
+  }
+
   /**
    * Method which resets the input stream, which removes the binding of all previously
    * stored references.
@@ -209,10 +209,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws IOException If an error occurs
    */
   public void reset() throws IOException {
-    references = new Hashtable<String, Object>(); 
+    references = new Hashtable<String, Object>();
     vlist.clear();
   }
-  
+
   /**
    * Method which reads a byte from the underlying output stream.  Simply calls
    * readByte()
@@ -222,7 +222,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   public int read() throws IOException {
     return readByte();
   }
-  
+
   /**
    * Method which reads a array of bytes from the underlying output stream.  Simply calls
    * b[x] = readByte() on each of the array elements.
@@ -232,13 +232,13 @@ public class XMLObjectInputStream extends ObjectInputStream {
   public int read(byte[] b, int offset, int length) throws IOException {
     reader.readStartTag("base64");
     byte[] bytes = reader.readBase64();
-    
+
     int written = (length < bytes.length ? length : bytes.length);
     System.arraycopy(bytes, 0, b, offset, written);
-    
+
     return written;
   }
-  
+
   /**
    * Method which reads a byte from the underlying output stream.  Simply calls
    * read()
@@ -248,7 +248,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   public void readFully(byte[] b) throws IOException {
     readFully(b, 0, b.length);
   }
-  
+
   /**
    * Method which reads a byte from the underlying output stream.  Simply calls
    * read()
@@ -258,7 +258,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   public void readFully(byte[] b, int offset, int length) throws IOException {
     read(b, offset, length);
   }
-  
+
   /**
    * Method which reads an unsigned byte from the underlying output stream.  Simply calls
    * readByte()
@@ -268,7 +268,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   public int readUnsignedByte() throws IOException {
     return readByte();
   }
-  
+
   /**
    * Method which reads an unsigned short from the underlying output stream.  Simply calls
    * readShort()
@@ -278,7 +278,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   public int readUnsignedShort() throws IOException {
     return readShort();
   }
-  
+
   /**
    * Method which reads an int from the stream and returns the result.
    *
@@ -289,7 +289,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.readStartTag("primitive");
     return readIntHelper();
   }
-  
+
   /**
    * Method which reads a boolean from the stream and returns the result.
    *
@@ -300,18 +300,18 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.readStartTag("primitive");
     return readBooleanHelper();
   }
-  
+
   /**
    * Method which reads a byte from the stream and returns the result.
    *
    * @return The value from the stream
    * @throws IOException If an error occurs
-   */  
+   */
   public byte readByte() throws IOException {
     reader.readStartTag("primitive");
     return readByteHelper();
   }
-  
+
   /**
    * Method which reads a char from the stream and returns the result.
    *
@@ -322,7 +322,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.readStartTag("primitive");
     return readCharHelper();
   }
-  
+
   /**
    * Method which reads a double from the stream and returns the result.
    *
@@ -333,7 +333,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.readStartTag("primitive");
     return readDoubleHelper();
   }
-  
+
   /**
    * Method which reads a float from the stream and returns the result.
    *
@@ -344,7 +344,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.readStartTag("primitive");
     return readFloatHelper();
   }
-  
+
   /**
    * Method which reads a long from the stream and returns the result.
    *
@@ -355,7 +355,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.readStartTag("primitive");
     return readLongHelper();
   }
-  
+
   /**
    * Method which reads a short from the stream and returns the result.
    *
@@ -366,7 +366,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.readStartTag("primitive");
     return readShortHelper();
   }
-  
+
   /**
    * Method which reads a UTF-encoded String from the stream and returns the
    * result.  This method simply calls readObject(), as all strings are
@@ -382,7 +382,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
       throw new IOException("ReadUTF caused " + e);
     }
   }
-  
+
   /**
    * Method which is called by ObjectInputStream.readObject(), and reads
    * the next object from the stream, and returns the result.  If the object
@@ -395,18 +395,18 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   protected Object readObjectOverride() throws IOException, ClassNotFoundException {
     reader.readStartTag();
-    
+
     Object result = readObjectHelper();
-    
+
     if (depth == 0) {
       vlist.doCallbacks();
     }
-    
+
     return result;
   }
-  
+
   /**
-   * Method which reads the next object from the stream and does not record a 
+   * Method which reads the next object from the stream and does not record a
    * reference to the object.  This guarantees that in future references to this
    * object in the stream will throw an IOException.
    *
@@ -416,18 +416,18 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   public Object readUnshared() throws IOException, ClassNotFoundException {
     reader.readStartTag();
-    
+
     Object result = readUnsharedHelper(false);
-    
+
     if (depth == 0) {
       vlist.doCallbacks();
     }
-    
+
     return result;
   }
-  
+
   /**
-   * Method which can be called by objects if they have a readObject() method.  
+   * Method which can be called by objects if they have a readObject() method.
    * This method initiates the default field deserialization mechanism, and
    * sets all of the object's fields from the stream.  If this method is called,
    * the readFields() method CANNOT be called by the same object.  However, one
@@ -443,14 +443,14 @@ public class XMLObjectInputStream extends ObjectInputStream {
     else
       throw new NotActiveException("defaultReadObject called with empty stack!");
   }
-  
+
   /**
-   * Method which can be called by objects if they have a readObject() method.  
+   * Method which can be called by objects if they have a readObject() method.
    * This method initiates the default field deserialization mechanism, and reads
    * all of the default fields in the stream.  It does NOT set the field values of
    * the object, however, but instead returns the result to the Object as a GetField
    * object.  It is explicitly the responsibility of the object to set its fields
-   * appropriately.  If this method is called, the defaultReadObject() method CANNOT 
+   * appropriately.  If this method is called, the defaultReadObject() method CANNOT
    * be called by the same object.  However, one of these two methods MUST be called
    * in the context of a readObject().
    *
@@ -465,7 +465,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     else
       throw new NotActiveException("readFields called with empty stack!");
   }
-  
+
   /**
    * Register an object to be validated before the graph is returned.  While
    * similar to resolveObject these validations are called after the entire
@@ -480,17 +480,17 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * @throws  InvalidObjectException The validation object is null.
    */
   public void registerValidation(ObjectInputValidation obj, int prio) throws NotActiveException, InvalidObjectException {
-    if (currentObjects.peek() == null) 
+    if (currentObjects.peek() == null)
       throw new NotActiveException("registerValidation called with empty stack!");
-    
+
     vlist.register(obj, prio);
   }
-  
+
   // ----- Internal helper methods -----
- 
-  
+
+
   /**
-   * This method returns the readResolve() method of a given class, if such a method 
+   * This method returns the readResolve() method of a given class, if such a method
    * exists.  This method searches the class's hierarchy for a readResolve() method
    * which is assessible by the given class.  If no such method is found, null is returned.
    *
@@ -499,9 +499,9 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   private static Method getReadResolve(Class<?> cl) {
     synchronized (READ_RESOLVES) {
-      if (READ_RESOLVES.containsKey(cl)) 
+      if (READ_RESOLVES.containsKey(cl))
         return (Method) READ_RESOLVES.get(cl);
-            
+
       Method meth = null;
       Class<?> defCl = cl;
       while (defCl != null) {
@@ -512,12 +512,12 @@ public class XMLObjectInputStream extends ObjectInputStream {
           defCl = defCl.getSuperclass();
         }
       }
-      
+
       if (meth == null) {
         READ_RESOLVES.put(cl, null);
         return null;
       }
-      
+
       meth.setAccessible(true);
       int mods = meth.getModifiers();
       if ((mods & (Modifier.STATIC | Modifier.ABSTRACT)) != 0) {
@@ -540,9 +540,9 @@ public class XMLObjectInputStream extends ObjectInputStream {
       }
     }
   }
-  
+
   /**
-   * This method returns the readResolve() method of a given class, if such a method 
+   * This method returns the readResolve() method of a given class, if such a method
    * exists.  This method searches the class's hierarchy for a readResolve() method
    * which is assessible by the given class.  If no such method is found, null is returned.
    *
@@ -551,13 +551,13 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   private static Method getReadObject(Class<?> cl) {
     synchronized (READ_OBJECTS) {
-      if (READ_OBJECTS.containsKey(cl)) 
+      if (READ_OBJECTS.containsKey(cl))
         return (Method) READ_OBJECTS.get(cl);
-      
+
       try {
         Method method = cl.getDeclaredMethod("readObject", new Class<?>[] {ObjectInputStream.class});
         method.setAccessible(true);
-      
+
         READ_OBJECTS.put(cl, method);
         return method;
       } catch (NoSuchMethodException e) {
@@ -566,7 +566,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
       }
     }
   }
-  
+
   /**
    * Method which returns the Serializable constructor for the provided class.  This
    * Constructor is the no-arg Constructor for the first non-Serializable class
@@ -576,12 +576,12 @@ public class XMLObjectInputStream extends ObjectInputStream {
    *
    * @param c The class to fetch the constructor for
    * @throws IOException If an error occurs
-   * @throws NoSuchMethodException If the first non-Serializable class does not have a no-arg 
+   * @throws NoSuchMethodException If the first non-Serializable class does not have a no-arg
    *   Constructor
    */
   protected Constructor<?> getSerializableConstructor(Class<?> c) throws IOException, NoSuchMethodException {
     Class<?> initCl = c;
-    
+
     while (Serializable.class.isAssignableFrom(initCl))
       initCl = initCl.getSuperclass();
 
@@ -596,7 +596,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   }
 
   /**
-   * Method which returns a new instance of the provided class.  It does this by 
+   * Method which returns a new instance of the provided class.  It does this by
    * getting the class's serializable constructor (described in getSerializableConstructor())
    * and using it to create a new object.  Thus, all of the Serializable superclasses
    * of the object must be initialized from the stream.
@@ -607,14 +607,14 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected Object newInstance(Class<?> c) throws IOException {
     try {
       Constructor<?> cons = CONSTRUCTORS.get(c);
-    
+
       if (cons == null) {
         if (Externalizable.class.isAssignableFrom(c)) {
           cons = c.getDeclaredConstructor(new Class<?>[0]);
         } else {
           cons = getSerializableConstructor(c);
         }
-          
+
         cons.setAccessible(true);
         CONSTRUCTORS.put(c, cons);
       }
@@ -630,7 +630,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
       throw new IOException("Could not instanciate new class " + c);
     }
   }
-  
+
   /**
    * Method which returns the class object for class names written to the
    * stream.  If the name represents a primitive, the the X.TYPE class is
@@ -659,10 +659,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
     else
       return Class.forName(name);
   }
-  
-  
+
+
   // ----- ObjectInputStream Referencing Methods -----
-  
+
   /**
    * Method which adds a reference in the hashtable of references.
    * Multiple calls to this method will replace prior objects.
@@ -673,7 +673,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected void putReference(String reference, Object o) {
     references.put(reference, o);
   }
-  
+
   /**
    * Method which returns a previously stored reference.  If the
    * reference cannot be found, null is returned.
@@ -684,13 +684,13 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected Object getReference(String reference) {
     return references.get(reference);
   }
-  
+
   // ----- Internal readX methods -----
 
   /**
-   * Method which reads a primitive value from the stream and 
+   * Method which reads a primitive value from the stream and
    * returns the String representation to the callee for processing.
-   * This method assumes that the XML reader is currently on a 
+   * This method assumes that the XML reader is currently on a
    * primitive tag, and does consume the end primitive tag.
    *
    * @param type The type of primitive which should be next
@@ -702,13 +702,13 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.assertAttribute("type", type);
     String value = reader.getAttribute("value");
     reader.readEndTag("primitive");
-    
+
     return value;
   }
-  
+
   /**
-   * Method which reads an int from the stream.  This method assumes 
-   * that the XML reader is currently on a primitive tag, and does 
+   * Method which reads an int from the stream.  This method assumes
+   * that the XML reader is currently on a primitive tag, and does
    * consume the end primitive tag.
    *
    * @return The int read from the stream
@@ -717,10 +717,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected int readIntHelper() throws IOException {
     return Integer.parseInt(readPrimitive("int"));
   }
-  
+
   /**
-   * Method which reads an boolean from the stream.  This method assumes 
-   * that the XML reader is currently on a primitive tag, and does 
+   * Method which reads an boolean from the stream.  This method assumes
+   * that the XML reader is currently on a primitive tag, and does
    * consume the end primitive tag.
    *
    * @return The boolean read from the stream
@@ -729,10 +729,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected boolean readBooleanHelper() throws IOException {
     return readPrimitive("boolean").equals("true");
   }
-  
+
   /**
-   * Method which reads an byte from the stream.  This method assumes 
-   * that the XML reader is currently on a primitive tag, and does 
+   * Method which reads an byte from the stream.  This method assumes
+   * that the XML reader is currently on a primitive tag, and does
    * consume the end primitive tag.
    *
    * @return The byte read from the stream
@@ -741,10 +741,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected byte readByteHelper() throws IOException {
     return Byte.parseByte(readPrimitive("byte"));
   }
-  
+
   /**
-   * Method which reads an char from the stream.  This method assumes 
-   * that the XML reader is currently on a primitive tag, and does 
+   * Method which reads an char from the stream.  This method assumes
+   * that the XML reader is currently on a primitive tag, and does
    * consume the end primitive tag.
    *
    * @return The char read from the stream
@@ -753,10 +753,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected char readCharHelper() throws IOException {
     return readPrimitive("char").charAt(0);
   }
-  
+
   /**
-   * Method which reads an double from the stream.  This method assumes 
-   * that the XML reader is currently on a primitive tag, and does 
+   * Method which reads an double from the stream.  This method assumes
+   * that the XML reader is currently on a primitive tag, and does
    * consume the end primitive tag.
    *
    * @return The double read from the stream
@@ -765,10 +765,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected double readDoubleHelper() throws IOException {
     return Double.parseDouble(readPrimitive("double"));
   }
-  
+
   /**
-   * Method which reads an float from the stream.  This method assumes 
-   * that the XML reader is currently on a primitive tag, and does 
+   * Method which reads an float from the stream.  This method assumes
+   * that the XML reader is currently on a primitive tag, and does
    * consume the end primitive tag.
    *
    * @return The float read from the stream
@@ -777,10 +777,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected float readFloatHelper() throws IOException {
     return Float.parseFloat(readPrimitive("float"));
   }
-  
+
   /**
-   * Method which reads an long from the stream.  This method assumes 
-   * that the XML reader is currently on a primitive tag, and does 
+   * Method which reads an long from the stream.  This method assumes
+   * that the XML reader is currently on a primitive tag, and does
    * consume the end primitive tag.
    *
    * @return The long read from the stream
@@ -789,10 +789,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected long readLongHelper() throws IOException {
     return Long.parseLong(readPrimitive("long"));
   }
-  
+
   /**
-   * Method which reads an short from the stream.  This method assumes 
-   * that the XML reader is currently on a primitive tag, and does 
+   * Method which reads an short from the stream.  This method assumes
+   * that the XML reader is currently on a primitive tag, and does
    * consume the end primitive tag.
    *
    * @return The short read from the stream
@@ -800,13 +800,13 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   protected short readShortHelper() throws IOException {
     return Short.parseShort(readPrimitive("short"));
-  }  
-    
+  }
+
   /**
-   * Method which reads an object from the stream.  This method assumes 
-   * that the XML reader is currently on a start tag, and does 
+   * Method which reads an object from the stream.  This method assumes
+   * that the XML reader is currently on a start tag, and does
    * consume the corresponding end tag.  If the next object represents a
-   * reference or null, then the appropriate helper is called.  Otherwise, 
+   * reference or null, then the appropriate helper is called.  Otherwise,
    * readObjectUnshared() is called to process the object.
    *
    * @return The object read from the stream
@@ -817,22 +817,22 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.assertStartTag();
     depth++;
     Object result = null;
-    
+
     if (reader.getStartTag().equals("reference")) {
       result = readReference();
     } else if (reader.getStartTag().equals("null")) {
       result = readNull();
     } else {
-      result = readUnsharedHelper(true); 
-    } 
-    
+      result = readUnsharedHelper(true);
+    }
+
     depth--;
     return result;
   }
-  
+
   /**
-   * Method which reads an object from the stream.  This method assumes 
-   * that the XML reader is currently on a start tag, and does 
+   * Method which reads an object from the stream.  This method assumes
+   * that the XML reader is currently on a start tag, and does
    * consume the corresponding end tag.  This method also assumes that
    * the type of object which is being read is *sharable*, even if it is
    * not going to be shared.  Thus, this method can read objects of type
@@ -845,7 +845,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   protected Object readUnsharedHelper(boolean shared) throws IOException, ClassNotFoundException {
     reader.assertStartTag();
-    
+
     if (reader.getStartTag().equals("string")) {
       return readString(shared);
     } else if (reader.getStartTag().equals("array")) {
@@ -857,8 +857,8 @@ public class XMLObjectInputStream extends ObjectInputStream {
     } else {
       throw new IOException("Unknown element name " + reader.getStartTag());
     }
-  }  
-  
+  }
+
   /**
    * Method which reads a reference off of the stream, and looks the reference up
    * in the references table.  If not corresponding object is found, an IOException
@@ -867,60 +867,60 @@ public class XMLObjectInputStream extends ObjectInputStream {
    *
    * @throws IOException If an error occurs or if a reference is not found
    * @throws ClassNotFoundException If the class cannot be found
-   */  
+   */
   protected Object readReference() throws IOException, ClassNotFoundException {
     reader.assertStartTag("reference");
-    
+
     Object result = getReference(reader.getAttribute("idref"));
-    
+
     if (result == null)
       throw new IOException("Invalid reference " + reader.getAttribute("idref") + " found.");
-    
+
     reader.readEndTag("reference");
-    
+
     return result;
   }
-  
+
   /**
    * Method which reads a null item off of the stream. This method expected that a
    * null tag has just been read, and it does consume the end null tag.
    *
    * @throws IOException If an error occurs
    * @throws ClassNotFoundException If the class cannot be found
-   */  
+   */
   protected Object readNull() throws IOException, ClassNotFoundException {
     reader.assertStartTag("null");
     reader.readEndTag("null");
-    
+
     return null;
   }
-  
+
   /**
    * Method which reads a string item off of the stream. This method expects that
-   * a start string tag has just been read, an it does consume the end start tag. 
+   * a start string tag has just been read, an it does consume the end start tag.
    * If this string is to be shared, a reference is added to the references tag.
    *
    * @param shared Whether or not to add this string to the references table
    * @throws IOException If an error occurs
    * @throws ClassNotFoundException If the class cannot be found
-   */  
+   */
   protected Object readString(boolean shared) throws IOException, ClassNotFoundException {
     reader.assertStartTag("string");
-    
+
     String result = new String(reader.getAttribute("value"));
-    
-    if (shared && (reader.getAttribute("id") != null)) 
+
+    if (shared && (reader.getAttribute("id") != null))
       putReference(reader.getAttribute("id"), result);
-    
+
     reader.readEndTag("string");
-    
+
     return result;
   }
-  
+
   /**
    * Method which reads an ordinary object from the stream (not a String or Array).
-   * This method assumes that the XML reader is currently on a start tag, and does 
-   * consume the corresponding end tag.  This method first reads the class type, 
+   * This method assumes that the XML reader is currently on a start tag, and does
+   * consume the corresponding end tag.  This method first reads the class type,
    * and if it is Serializable, it constructs a new instance.  Then, if the object
    * is shared and the id field is not null, it records a reference to the object.
    * If the object is Externalizable, the readExternal() method is called and the
@@ -936,42 +936,42 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   protected Object readOrdinaryObject(boolean shared) throws IOException, ClassNotFoundException {
     reader.assertStartTag("object");
-    
+
     Class<?> c = Class.forName(reader.getAttribute("class"));
     String id = reader.getAttribute("id");
 
     if (! Serializable.class.isAssignableFrom(c))
       throw new NotSerializableException(c.getName());
-    
+
     if (XMLObjectOutputStream.BOXED_VALUE_TYPES.containsKey(c))
       return readBoxedValue(c, id, shared);
-        
+
     Object o = newInstance(c);
 
-    if (shared && (id != null)) 
+    if (shared && (id != null))
       putReference(id, o);
-      
+
     if (Externalizable.class.isAssignableFrom(c)) {
       ((Externalizable) o).readExternal(this);
       reader.step();
     } else {
       reader.step();
-    
+
       while (! reader.isEndTag()) {
         readClass(o);
         reader.step();
       }
     }
-    
+
     reader.assertEndTag("object");
-    
+
     Method method = getReadResolve(c);
-      
+
     try {
       if (method != null) {
         o = method.invoke(o, new Object[0]);
-      
-        if (shared && (id != null)) 
+
+        if (shared && (id != null))
           putReference(id, o);
       }
     } catch (IllegalAccessException e) {
@@ -979,10 +979,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
     } catch (InvocationTargetException e) {
       throw new IOException("ReadResolve caused " + e);
     }
-    
+
     return o;
-  } 
-  
+  }
+
   /**
    * Method which reads a boxed primitive (Integer, Long, ...) which was written in
    * default field format, i.e. as an object with a single "value" field.  The value
@@ -1000,12 +1000,12 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected Object readBoxedValue(Class<?> c, String id, boolean shared) throws IOException, ClassNotFoundException {
     Object result = null;
     reader.step();
-    
+
     while (! reader.isEndTag()) {
       reader.assertStartTag("declaredClass");
       reader.readStartTag("default");
       reader.step();
-      
+
       while (! reader.isEndTag()) {
         if (reader.getStartTag().equals("primitive") && "value".equals(reader.getAttribute("field"))) {
           result = readBoxedPrimitive(c);
@@ -1014,30 +1014,30 @@ public class XMLObjectInputStream extends ObjectInputStream {
         } else {
           readObjectHelper();
         }
-        
+
         reader.step();
       }
-      
+
       reader.assertEndTag("default");
       readUnreadOptionalData();
       reader.assertEndTag("declaredClass");
       reader.step();
     }
-    
+
     reader.assertEndTag("object");
-    
+
     if (result == null)
       throw new IOException("No value found for " + c.getName());
-    
-    if (shared && (id != null)) 
+
+    if (shared && (id != null))
       putReference(id, result);
-    
+
     return result;
   }
-  
+
   /**
-   * Method which reads the primitive value of the given boxed class from the stream. This 
-   * method assumes that the XML reader is currently on a primitive tag, and does consume 
+   * Method which reads the primitive value of the given boxed class from the stream. This
+   * method assumes that the XML reader is currently on a primitive tag, and does consume
    * the end primitive tag.
    *
    * @param c The boxed class
@@ -1065,13 +1065,13 @@ public class XMLObjectInputStream extends ObjectInputStream {
       throw new IllegalArgumentException("Class " + c + " is not a boxed primitive!");
     }
   }
-  
+
   /**
-   * Method which reads an object written by XMLObjectOutputStream.writeJavaSerialized(), 
+   * Method which reads an object written by XMLObjectOutputStream.writeJavaSerialized(),
    * i.e. an object whose class is not open to deep reflection.  This method assumes that
-   * the XML reader is currently on the start jserial tag, and does consume the corresponding 
-   * end tag.  It first reads the Java serialization data and the child objects, and then 
-   * deserializes the data with a standard ObjectInputStream, substituting the children for 
+   * the XML reader is currently on the start jserial tag, and does consume the corresponding
+   * end tag.  It first reads the Java serialization data and the child objects, and then
+   * deserializes the data with a standard ObjectInputStream, substituting the children for
    * their placeholders.
    *
    * @param shared Whether or not to record a reference to this object
@@ -1082,54 +1082,54 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected Object readJavaSerialized(boolean shared) throws IOException, ClassNotFoundException {
     reader.assertStartTag("jserial");
     String id = reader.getAttribute("id");
-    
+
     reader.readStartTag("base64");
     byte[] data = reader.readBase64();
-    
+
     final ArrayList<Object> children = new ArrayList<Object>();
     reader.step();
-    
+
     while (! reader.isEndTag()) {
       children.add(readObjectHelper());
       reader.step();
     }
-    
+
     reader.assertEndTag("jserial");
-    
+
     ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data)) {
       {
         enableResolveObject(true);
       }
-      
+
       protected Object resolveObject(Object obj) throws IOException {
         if (obj instanceof XMLObjectOutputStream.JavaSerializedChild) {
           int index = ((XMLObjectOutputStream.JavaSerializedChild) obj).index;
-          
+
           if ((index < 0) || (index >= children.size()))
             throw new StreamCorruptedException("Invalid child reference " + index);
-          
+
           return children.get(index);
         }
-        
+
         return obj;
       }
     };
-    
+
     Object result = ois.readObject();
     ois.close();
-    
-    if (shared && (id != null)) 
+
+    if (shared && (id != null))
       putReference(id, result);
-    
+
     return result;
   }
-  
+
   /**
-   * Method which reads the information for one class for a given object from the 
-   * stream. This method assumes that the XML reader is currently on a start declaredClass tag, 
-   * and does consume the corresponding end declaredClass tag.  This method first reads the class type, 
+   * Method which reads the information for one class for a given object from the
+   * stream. This method assumes that the XML reader is currently on a start declaredClass tag,
+   * and does consume the corresponding end declaredClass tag.  This method first reads the class type,
    * and if it defines a readObject() method, it is called.  Otherwise, the fields are
-   * read in a default manner.  Any extra data not read in the stream is read and 
+   * read in a default manner.  Any extra data not read in the stream is read and
    * ignored.
    *
    * @param o The object we are reading the the class for
@@ -1141,9 +1141,9 @@ public class XMLObjectInputStream extends ObjectInputStream {
     reader.assertStartTag("declaredClass");
 
     Class<?> c = Class.forName(reader.getAttribute("class"));
-    
+
     Method method = getReadObject(c);
-    
+
     if (method != null) {
       try {
         currentObjects.push(o);
@@ -1162,16 +1162,16 @@ public class XMLObjectInputStream extends ObjectInputStream {
     } else {
       readFields(o, c);
       readUnreadOptionalData();
-    } 
-    
+    }
+
     reader.assertEndTag("declaredClass");
-    
+
     return o;
   }
-  
+
   /**
-   * Method which reads any extra data from the stream which was not read by the object.  
-   * This method simply loops until it hits the appropriate end declaredClass tag, and 
+   * Method which reads any extra data from the stream which was not read by the object.
+   * This method simply loops until it hits the appropriate end declaredClass tag, and
    * then returns.  Thus, any data read by this method is ignored.  However, the objects
    * here are deserialized as the stream may reference them in the future.
    *
@@ -1180,7 +1180,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   protected void readUnreadOptionalData() throws IOException, ClassNotFoundException {
     reader.step();
-    
+
     while (! reader.isEndTag()) {
       if (reader.getStartTag().equals("primitive")) {
         reader.readEndTag("primitive");
@@ -1193,11 +1193,11 @@ public class XMLObjectInputStream extends ObjectInputStream {
       reader.step();
     }
   }
-  
+
   /**
-   * Method which reads all of the field data from the stream, as readFields() does, 
+   * Method which reads all of the field data from the stream, as readFields() does,
    * but instead of assigning the fields to the object, it returns them as a GetField
-   * object.  In this manner, the object itself can perform field inititalization.  
+   * object.  In this manner, the object itself can perform field inititalization.
    *
    * @return The fields read from the stream
    * @throws IOException If an error occurs
@@ -1205,20 +1205,20 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   protected GetField readGetFields() throws IOException, ClassNotFoundException {
     reader.readStartTag("default");
-    
+
     GetField g = new GetField();
     reader.step();
-    
+
     while (! reader.isEndTag()) {
       readGetField(g);
       reader.step();
     }
-    
-    reader.assertEndTag("default"); 
-    
+
+    reader.assertEndTag("default");
+
     return g;
   }
-  
+
   /**
    * Method which read a single field from the stream and places it in the provided
    * GetField object.  This method assumes that the XML reader is on a start tag, and
@@ -1230,21 +1230,21 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   protected void readGetField(GetField g) throws IOException, ClassNotFoundException {
     reader.assertStartTag();
-    
+
     String name = reader.getAttribute("field");
-    
+
     if (name == null)
       throw new IOException("Could not read field " + reader.getStartTag() + ", as field attribute was null!");
-    
+
     if (reader.getStartTag().equals("primitive")) {
       readPrimitiveGetField(g);
     } else {
       g.put(name, readObjectHelper());
-    } 
+    }
   }
-  
+
   /**
-   * Method which reads a primitive field from the stream, and places it in the 
+   * Method which reads a primitive field from the stream, and places it in the
    * provided GetField object.  This method assumes that the XML parser has just
    * read a primitive start tag, and that the tag has a field attribute.  This method
    * does consume that end primitive tag.
@@ -1255,12 +1255,12 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected void readPrimitiveGetField(GetField g) throws IOException, ClassNotFoundException {
     reader.assertStartTag("primitive");
     String name = reader.getAttribute("field");
-    
+
     if (name == null)
       throw new IOException("Could not read primitive field " + reader.getAttribute("type") + ", as field attribute was null!");
-    
+
     Class<?> c = getClass(reader.getAttribute("type"));
-    
+
     if (c.equals(Integer.TYPE)) {
       g.put(name, readIntHelper());
     } else if (c.equals(Boolean.TYPE)) {
@@ -1281,11 +1281,11 @@ public class XMLObjectInputStream extends ObjectInputStream {
       throw new IllegalArgumentException("Field " + name + " is not primitive!");
     }
   }
-  
+
   /**
    * Method which initiates the default field reading mechanism for the given
    * object's class.  This method reads the start default tag, all of the fields,
-   * and then reads the end default tag.  It reads all of the fields using the 
+   * and then reads the end default tag.  It reads all of the fields using the
    * readField() method.
    *
    * @param o The object which is currently being read in
@@ -1296,19 +1296,19 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected void readFields(Object o, Class<?> c) throws IOException, ClassNotFoundException {
     reader.readStartTag("default");
     reader.step();
-    
+
     while (! reader.isEndTag()) {
       readField(o, c);
       reader.step();
     }
-    
-    reader.assertEndTag("default"); 
+
+    reader.assertEndTag("default");
   }
-  
+
   /**
    * Method which reads a single field from the stream, and assignes it to
-   * the provided object.  If the field cannot be found in the given class, 
-   * it is deserialized and then ignored, in case it is referenced later in 
+   * the provided object.  If the field cannot be found in the given class,
+   * it is deserialized and then ignored, in case it is referenced later in
    * the stream.
    *
    * @param o The object which is currently being read in
@@ -1319,7 +1319,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
   protected void readField(Object o, Class<?> c) throws IOException, ClassNotFoundException {
     reader.assertStartTag();
     String field = reader.getAttribute("field");
-        
+
     try {
       Field f = c.getDeclaredField(reader.getAttribute("field"));
       f.setAccessible(true);
@@ -1338,27 +1338,27 @@ public class XMLObjectInputStream extends ObjectInputStream {
         reader.readEndTag("primitive");
       } else {
         readObjectHelper();
-      }    
+      }
     } catch (IllegalAccessException e) {
       // skip IAE, which is very likely caused by setting a final field on < JVM 1.5
     } catch (IllegalArgumentException e) {
       LOG.error("Could not set field {} of {} - skipping. This should not happen!", field, o.getClass().getName(), e);
     }
   }
-  
+
   /**
-   * Method which reads a primitive field from the stream, and places it in the 
-   * given object.  This method assumes that the XML parser has just read a primitive 
-   * start tag, and that the tag has a field attribute.  This method does consume 
+   * Method which reads a primitive field from the stream, and places it in the
+   * given object.  This method assumes that the XML parser has just read a primitive
+   * start tag, and that the tag has a field attribute.  This method does consume
    * that end primitive tag.
    *
    * @param o The object to put the primitive in
    * @param f The field representing the primitive about to be read
    * @throws IOException If an error occurs
-   */  
+   */
   protected void readPrimitiveField(Object o, Field f) throws IOException, IllegalAccessException {
     reader.assertStartTag("primitive");
-    
+
     if (f.getType().equals(Integer.TYPE)) {
       f.setInt(o, readIntHelper());
     } else if (f.getType().equals(Boolean.TYPE)) {
@@ -1379,29 +1379,29 @@ public class XMLObjectInputStream extends ObjectInputStream {
       throw new IllegalArgumentException("Field " + f + " is not primitive!");
     }
   }
-  
+
   /**
-   * Method which reads an array off of the stream.  This method expects that a 
+   * Method which reads an array off of the stream.  This method expects that a
    * start array tag has just been read, and does consume the end array tag.  This
    * method constructs an array of the provided base type, and then recursively
    * reads in all of the objects for the array.
-   *  
+   *
    * @param shared Whether or not to add this array to the references table
    * @throws IOException If an error occurs
    * @throws ClassNotFoundException If the class cannot be found
-   */  
+   */
   protected Object readArray(boolean shared) throws IOException, ClassNotFoundException {
     reader.assertStartTag("array");
-    
+
     Class<?> c = getClass(reader.getAttribute("base"));
-    
+
     int length = Integer.valueOf(reader.getAttribute("length")).intValue();
     int dim = Integer.valueOf(reader.getAttribute("dim")).intValue();
     Object result = Array.newInstance(c, length);
-    
-    if (shared && (reader.getAttribute("id") != null)) 
+
+    if (shared && (reader.getAttribute("id") != null))
       putReference(reader.getAttribute("id"), result);
-    
+
     for (int i=0; i<length; i++) {
       if (c.equals(Integer.TYPE))
         Array.setInt(result, i, readInt());
@@ -1419,166 +1419,166 @@ public class XMLObjectInputStream extends ObjectInputStream {
         Array.setLong(result, i, readLong());
       else if (c.equals(Short.TYPE))
         Array.setShort(result, i, readShort());
-      else 
+      else
         Array.set(result, i, readObject());
     }
-    
+
     reader.readEndTag("array");
-    
+
     return result;
   }
 
-  
+
   // ----- Implementation of GetField -----
-  
+
   /**
-   * This class is an implementation of GetField which is compatible with 
-   * the XMLObjectInputStream.  It works in the same manner as the 
+   * This class is an implementation of GetField which is compatible with
+   * the XMLObjectInputStream.  It works in the same manner as the
    * ObjectInputStream.GetField.
    */
   public class GetField extends ObjectInputStream.GetField {
-    
+
     protected HashMap<String, Object> primitives = new HashMap<String, Object>();
-    
+
     protected HashMap<String, Object> objects = new HashMap<String, Object>();
-    
+
     public boolean defaulted(String name) {
       return (! (primitives.containsKey(name) || objects.containsKey(name)));
     }
-    
+
     public boolean get(String name, boolean value) {
       if (primitives.get(name) == null)
         return value;
-          
+
       return ((Boolean) primitives.get(name)).booleanValue();
     }
-    
+
     public byte get(String name, byte value) {
       if (primitives.get(name) == null)
         return value;
-      
+
       return ((Byte) primitives.get(name)).byteValue();
     }
-    
+
     public char get(String name, char value) {
       if (primitives.get(name) == null)
         return value;
-      
+
       return ((Character) primitives.get(name)).charValue();
     }
-    
+
     public double get(String name, double value) {
       if (primitives.get(name) == null)
         return value;
-      
+
       return ((Double) primitives.get(name)).doubleValue();
     }
-    
+
     public float get(String name, float value) {
       if (primitives.get(name) == null)
         return value;
-      
+
       return ((Float) primitives.get(name)).floatValue();
     }
-    
+
     public int get(String name, int value) {
       if (primitives.get(name) == null)
         return value;
-      
+
       return ((Integer) primitives.get(name)).intValue();
     }
-    
+
     public long get(String name, long value) {
       if (primitives.get(name) == null)
         return value;
-      
+
       return ((Long) primitives.get(name)).longValue();
     }
-    
+
     public short get(String name, short value) {
       if (primitives.get(name) == null)
         return value;
-      
+
       return ((Short) primitives.get(name)).shortValue();
     }
-    
+
     public Object get(String name, Object value) {
       if (objects.get(name) == null)
         return value;
-      
+
       return objects.get(name);
     }
-    
+
     protected void put(String name, boolean value) {
       primitives.put(name, Boolean.valueOf(value));
     }
-    
+
     protected void put(String name, byte value) {
       primitives.put(name, Byte.valueOf(value));
     }
-    
+
     protected void put(String name, char value) {
       primitives.put(name, Character.valueOf(value));
     }
-    
+
     protected void put(String name, double value) {
       primitives.put(name, Double.valueOf(value));
     }
-    
+
     protected void put(String name, float value) {
       primitives.put(name, Float.valueOf(value));
     }
-    
+
     protected void put(String name, int value) {
       primitives.put(name, Integer.valueOf(value));
     }
-    
+
     protected void put(String name, long value) {
       primitives.put(name, Long.valueOf(value));
     }
-    
+
     protected void put(String name, short value) {
       primitives.put(name, Short.valueOf(value));
     }
-    
+
     protected void put(String name, Object value) {
       objects.put(name, value);
     }
-    
+
     public ObjectStreamClass getObjectStreamClass() {
       throw new UnsupportedOperationException("CANNOT GET THE OBJECT STREAM CLASS!");
     }
   }
-  
+
   // ----- VALIDATION LIST IMPLEMENTATION ----
-  
+
   /**
    * Prioritized list of callbacks to be performed once object graph has been
    * completely deserialized.
    */
   private static class ValidationList {
-    
+
     private static class Callback {
       final ObjectInputValidation obj;
       final int priority;
       Callback next;
-      
+
       Callback(ObjectInputValidation obj, int priority, Callback next) {
         this.obj = obj;
         this.priority = priority;
         this.next = next;
       }
     }
-    
+
     /** linked list of callbacks */
     private Callback list;
-    
+
     /**
      * Creates new (empty) ValidationList.
      */
     ValidationList() {
     }
-    
+
     /**
      * Registers callback.  Throws InvalidObjectException if callback
      * object is null.
@@ -1587,7 +1587,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
       if (obj == null) {
         throw new InvalidObjectException("null callback");
       }
-      
+
       Callback prev = null, cur = list;
       while (cur != null && priority < cur.priority) {
         prev = cur;
@@ -1599,7 +1599,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
         list = new Callback(obj, priority, list);
       }
     }
-    
+
     /**
      * Invokes all registered callbacks and clears the callback list.
      * Callbacks with higher priorities are called first; those with equal
@@ -1618,7 +1618,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
         throw ex;
       }
     }
-    
+
     /**
      * Resets the callback list to its initial (empty) state.
      */

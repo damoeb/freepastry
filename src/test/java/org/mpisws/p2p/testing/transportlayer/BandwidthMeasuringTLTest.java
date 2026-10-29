@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer;
 
 import java.io.IOException;
@@ -65,9 +65,9 @@ public class BandwidthMeasuringTLTest implements Application {
     public int getPriority() {
       return 0;
     }
-    
+
   }
-  
+
   public void deliver(Id id, Message message) {
   }
 
@@ -76,10 +76,10 @@ public class BandwidthMeasuringTLTest implements Application {
   }
 
   public void update(NodeHandle handle, boolean joined) {
-    
+
   }
 
-  
+
 
   /**
    * @param args
@@ -87,10 +87,10 @@ public class BandwidthMeasuringTLTest implements Application {
   public static void main(String[] args) throws Exception {
     int bindPort = 9001;
     Environment env = new Environment();
-    
+
     // Generate the NodeIds Randomly
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
-    
+
     // construct the PastryNodeFactory, this is how we use rice.pastry.socket
     SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindPort, env) {
 
@@ -98,13 +98,13 @@ public class BandwidthMeasuringTLTest implements Application {
       protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(
           InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         TransportLayer<InetSocketAddress, ByteBuffer> wtl = super.getWireTransportLayer(innermostAddress, pn);
-        
+
         final BandwidthLimitingTransportLayer<InetSocketAddress> ret = new BandwidthLimitingTransportLayer<InetSocketAddress>(wtl,40000,1000,pn.getEnvironment());
-        
+
         final BandwidthMeasuringTransportLayer<InetSocketAddress> ret2 = new BandwidthMeasuringTransportLayer<InetSocketAddress>(5000,ret,pn.getEnvironment());
-        
+
         pn.getEnvironment().getSelectorManager().schedule(new TimerTask() {
-        
+
           @Override
           public void run() {
             Map<InetSocketAddress, Tuple3<Integer, Integer, Boolean>> map = ret2.getBandwidthUsed();
@@ -112,12 +112,12 @@ public class BandwidthMeasuringTLTest implements Application {
               Tuple3<Integer, Integer, Boolean> t = map.get(addr);
               System.out.println("Bandwidth for "+addr+" d:"+t.a()+" u:"+t.b()+" saturated:"+t.c());
             }
-          }        
+          }
         }, 3000, 3000);
-        
-        
+
+
         return ret2;
-      }      
+      }
     };
 
     PastryNode node1 = factory.newNode();
@@ -125,16 +125,16 @@ public class BandwidthMeasuringTLTest implements Application {
     PastryEndpoint ep1 = (PastryEndpoint)node1.buildEndpoint(app1, null);
     ep1.register();
     node1.boot((Object)null);
-    
+
     PastryNode node2 = factory.newNode();
     BandwidthMeasuringTLTest app2 = new BandwidthMeasuringTLTest();
     PastryEndpoint ep2 = (PastryEndpoint)node2.buildEndpoint(app2, null);
     ep2.register();
     node2.boot(new InetSocketAddress(factory.getBindAddress(), bindPort));
-    
+
     Thread.sleep(5000);
     System.out.println("Spamming messages.");
-    
+
     long startTime = System.currentTimeMillis();
     while(System.currentTimeMillis() < startTime+5000) {
       for (int ctr = 0; ctr < 100; ctr++) {
@@ -142,7 +142,7 @@ public class BandwidthMeasuringTLTest implements Application {
       }
       Thread.sleep(10);
     }
-    
+
     System.out.println("Done spamming messages.");
   }
 

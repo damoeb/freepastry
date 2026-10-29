@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /*
  * Created on Jul 27, 2004
  *
@@ -76,16 +76,16 @@ public class ProfileSelector extends SelectorManager {
 
   int numInvocationsScheduled = 0;
   int numInvocationsExecuted = 0;
-  
+
   public ProfileSelector(String instance,
-      TimeSource timeSource, LogManager log) {    
+      TimeSource timeSource, LogManager log) {
     this(instance,timeSource,log,null);
   }
 
   public ProfileSelector(String instance, TimeSource timeSource, LogManager log, RandomSource rand) {
     this(instance, timeSource,log, null, 60000);
   }
-  
+
   /**
    * Also starts a watchdog thread that prints the last task every lastTaskTime millis.
    */
@@ -106,12 +106,12 @@ public class ProfileSelector extends SelectorManager {
   }
 
   protected void onLoop() {
-    if (!useHeartbeat) return;  
+    if (!useHeartbeat) return;
     long curTime = timeSource.currentTimeMillis();
     if ((curTime - lastHeartBeat) > HEART_BEAT_INTERVAL) {
       System.out.println("selector heartbeat "+new Date()+" maxInvokes:"+maxInvokes+" invokesSched:"+numInvocationsScheduled+" invokesExe:"+numInvocationsExecuted+" CurrentThread:"+Thread.currentThread()+"@"+System.identityHashCode(Thread.currentThread()));
       printStats();
-      lastHeartBeat = curTime;          
+      lastHeartBeat = curTime;
     }
   }
 
@@ -133,7 +133,7 @@ public class ProfileSelector extends SelectorManager {
    * Written by the selector thread, but printStats() may be called from any thread, so it must be concurrent.
    */
   private final ConcurrentHashMap<String, Stat> stats = new ConcurrentHashMap<String, Stat>();
-  
+
   public void addStat(String s, long time) {
     if (!recordStats) return;
     stats.computeIfAbsent(s, Stat::new).addTime(time);
@@ -144,7 +144,7 @@ public class ProfileSelector extends SelectorManager {
 
     // a weakly consistent snapshot, no lock needed
     ArrayList<Stat> list = new ArrayList<Stat>(stats.values());
-    
+
     Collections.sort(list,new Comparator<Stat>() {
       public boolean equals(Object arg0) {
         return false;
@@ -153,13 +153,13 @@ public class ProfileSelector extends SelectorManager {
       public int compare(Stat arg0, Stat arg1) {
         Stat stat1 = (Stat)arg0;
         Stat stat2 = (Stat)arg1;
-        
+
         return (int)(stat2.totalTime-stat1.totalTime);
       }
     });
     Iterator<Stat> i = list.iterator();
     while(i.hasNext()) {
-      System.out.println("  "+i.next()); 
+      System.out.println("  "+i.next());
     }
   }
 
@@ -169,7 +169,7 @@ public class ProfileSelector extends SelectorManager {
     boolean ret = super.executeTask(next);
     int time = (int)(timeSource.currentTimeMillis() - startTime);
     lastTaskType = "Executing "+next+" Complete";
-    addStat("executing "+next.getClass(),time);   
+    addStat("executing "+next.getClass(),time);
     return ret;
   }
 
@@ -192,7 +192,7 @@ public class ProfileSelector extends SelectorManager {
           skh.accept(keys[i]);
           int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Accept Complete";
-          addStat("accepting",time);   
+          addStat("accepting",time);
         }
 
         // connect
@@ -205,7 +205,7 @@ public class ProfileSelector extends SelectorManager {
           skh.connect(keys[i]);
           int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Connect Complete";
-          addStat("connecting",time);   
+          addStat("connecting",time);
         }
 
         // read
@@ -243,7 +243,7 @@ public class ProfileSelector extends SelectorManager {
    * Method which invokes all pending invocations. This method should *only* be
    * called by the selector thread.
    */
-  protected void doInvocations() {    
+  protected void doInvocations() {
     Iterator<Runnable> i;
     synchronized(this) {
       i = new ArrayList<Runnable>(invocations).iterator();
@@ -279,7 +279,7 @@ public class ProfileSelector extends SelectorManager {
         lastTaskType = "ModifyKey";
         lastTaskClass = skh.getClass().getName();
         lastTaskHash = System.identityHashCode(skh);
-        lastTaskToString = skh.toString();        
+        lastTaskToString = skh.toString();
         skh.modifyKey(key);
         lastTaskType = "ModifyKey Complete";
       }
@@ -298,12 +298,12 @@ public class ProfileSelector extends SelectorManager {
         long startTime = timeSource.currentTimeMillis();
         run.run();
         int time = (int)(timeSource.currentTimeMillis() - startTime);
-        addStat(run.getClass().getName(),time);        
+        addStat(run.getClass().getName(),time);
         lastTaskType = "Invocation Complete";
       } catch (Exception e) {
         logger.error("Invoking runnable caused exception {} - continuing", e, e);
       }
-      
+
       run = getInvocation();
     }
 
@@ -314,7 +314,7 @@ public class ProfileSelector extends SelectorManager {
         lastTaskType = "ModifyKey";
         lastTaskClass = skh.getClass().getName();
         lastTaskHash = System.identityHashCode(skh);
-        lastTaskToString = skh.toString();        
+        lastTaskToString = skh.toString();
         skh.modifyKey(key);
         lastTaskType = "ModifyKey Complete";
       }
@@ -323,11 +323,11 @@ public class ProfileSelector extends SelectorManager {
     }
   }
 
-  
-  
+
+
   /**
    * A statistic as to how long user code is taking to process a particular message.
-   * 
+   *
    * @author Jeff Hoye
    */
   class Stat {
@@ -335,19 +335,19 @@ public class ProfileSelector extends SelectorManager {
     String name = null;
     long totalTime = 0;
     long maxTime = 0;
-    
+
     public Stat(String name) {
       this.name = name;
     }
-    
+
     public void addTime(long t) {
       num++;
       totalTime+=t;
       if (t > maxTime) {
-        maxTime = t;  
+        maxTime = t;
       }
     }
-    
+
     public String toString() {
       long avgTime = totalTime/num;
       return name+"\t maxTime:"+maxTime+"\t avgTime:"+avgTime+"\t numInstances:"+num+"\t totalTime:"+totalTime;

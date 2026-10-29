@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /*
  * Created on Aug 9, 2005
  */
@@ -63,7 +63,7 @@ public class SimpleProcessor implements Processor {
   // for blocking IO WorkRequests
   protected WorkQueue workQueue;
   protected BlockingIOThread bioThread;
-  
+
   long seq = Long.MIN_VALUE;
 
   public SimpleProcessor(String name) {
@@ -81,7 +81,7 @@ public class SimpleProcessor implements Processor {
    * intensive jobs, such as encryption, erasure encoding, or bloom filter
    * creation should never be done in the context of the underlying node's
    * thread, and should only be done via this method.
-   * 
+   *
    * @param task
    *          The task to run on the processing thread
    * @param command
@@ -122,7 +122,7 @@ public class SimpleProcessor implements Processor {
   public WorkQueue getIOQueue() {
     return workQueue;
   }
-  
+
   /**
    * This is a test to make sure the order is correct.
    */
@@ -130,43 +130,43 @@ public class SimpleProcessor implements Processor {
     Environment env = new Environment();
     Processor p = env.getProcessor();
     // block the processor for 1 second while we schedule some more stuff
-    p.process(new Executable<Object, Exception>() {    
+    p.process(new Executable<Object, Exception>() {
       public Object execute() {
         try { Thread.sleep(1000); } catch (InterruptedException ie) {}
         return null;
       }
-    
+
     }, new Continuation<Object, Exception>() {
-    
+
       public void receiveResult(Object result) {
         System.out.println("Done blocking.");
       }
-    
+
       public void receiveException(Exception exception) {
         exception.printStackTrace();
       }
-    
+
     }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager());
-    
+
     for (int seq = 0; seq < 10; seq++) {
       final int mySeq = seq;
-      p.process(new Executable<Object, Exception>() {    
+      p.process(new Executable<Object, Exception>() {
         public Object execute() {
           System.out.println("Executed Seq: "+mySeq);
           return null;
         }
-      
-      }, new Continuation<Object, Exception>() {      
+
+      }, new Continuation<Object, Exception>() {
         public void receiveResult(Object result) {
           System.out.println("Received Seq: "+mySeq);
         }
-      
+
         public void receiveException(Exception exception) {
           exception.printStackTrace();
         }
-      
-      }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager());      
-      System.out.println("Done scheduling "+mySeq);    
+
+      }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager());
+      System.out.println("Done scheduling "+mySeq);
     }
   }
 }

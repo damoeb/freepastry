@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.past.messaging;
 
@@ -58,7 +58,7 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  * @author Peter Druschel
  */
 public abstract class PastMessage implements RawMessage {
-  
+
   // serialver for backward compatibility
   private static final long serialVersionUID = -7195054010358285316L;
 
@@ -70,7 +70,7 @@ public abstract class PastMessage implements RawMessage {
 
   // the destination of this message
   protected Id dest;
-  
+
   // whether or not this message is a response
   protected boolean isResponse;
 
@@ -88,7 +88,7 @@ public abstract class PastMessage implements RawMessage {
 
     isResponse = false;
   }
-  
+
   /**
    * Method which should return the priority level of this message.  The messages
    * can range in priority from 0 (highest priority) to Integer.MAX_VALUE (lowest) -
@@ -155,7 +155,7 @@ public abstract class PastMessage implements RawMessage {
    * @param c The continuation to return the reponse to.
    */
   public abstract void returnResponse(Continuation<Object, Exception> c, Environment env, String instance);
-  
+
   /**
    * Method which is designed to be overridden by subclasses if they need
    * to keep track of where they've been.
@@ -164,7 +164,7 @@ public abstract class PastMessage implements RawMessage {
    */
   public void addHop(NodeHandle handle) {
   }
-  
+
   public PastMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     id = buf.readInt();
     dest = endpoint.readId(buf, buf.readShort());
@@ -179,6 +179,5 @@ public abstract class PastMessage implements RawMessage {
     source.serialize(buf);
     buf.writeBoolean(isResponse);
   }
-  
-}
 
+}

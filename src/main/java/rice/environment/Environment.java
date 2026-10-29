@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /*
  * Created on Apr 6, 2005
  */
@@ -66,12 +66,12 @@ import rice.selector.SelectorManager;
 /**
  * Used to provide properties, timesource, loggers etc to the FreePastry
  * apps and components.
- * 
+ *
  * @author Jeff Hoye
  */
 public class Environment implements Destructable {
   public static final String[] defaultParamFileArray = {"freepastry"};
-   
+
   private SelectorManager selectorManager;
   private Processor processor;
   private RandomSource randomSource;
@@ -82,12 +82,12 @@ public class Environment implements Destructable {
   private ExceptionStrategy exceptionStrategy;
 
   private HashSet<Destructable> destructables = new HashSet<Destructable>();
-  
+
   /**
    * Constructor.  You can provide null values for all parameters except params, which will result
    * in a default choice.  If you want different defaults, consider extending Environment
    * and providing your own chooseDefaults() method.
-   * 
+   *
    * @param sm the SelectorManager.  Default: rice.selector.SelectorManager
    * @param proc the Processor.  Default: rice.environment.processing.simple.SimpleProcessor,
    *   or rice.environment.processing.sim.SimProcessor if environment_use_sim_processor is set
@@ -99,49 +99,49 @@ public class Environment implements Destructable {
    * @throws IllegalArgumentException if params is null
    */
   public Environment(SelectorManager sm, Processor proc, RandomSource rs, TimeSource time, LogManager lm, Parameters params, ExceptionStrategy strategy) {
-    this.selectorManager = sm;    
+    this.selectorManager = sm;
     this.randomSource = rs;
-    this.time = time; 
+    this.time = time;
     this.logManager = lm;
     this.params = params;
     this.processor = proc;
     this.exceptionStrategy = strategy;
-    
+
     if (params == null) {
-      throw new IllegalArgumentException("params cannot be null"); 
+      throw new IllegalArgumentException("params cannot be null");
     }
-    
+
     // choose defaults for all non-specified parameters
     chooseDefaults();
     logger = this.logManager.getLogger(getClass(), null);
-    
-    
+
+
     this.selectorManager.setEnvironment(this);
-    
+
     addDestructable(this.time);
   }
-  
+
   /**
    * Convenience for defaults.
-   * 
+   *
    * @param orderedDefaultFiles the parameter files to load from the classpath, in order
    * @param paramFileName the file where parameters are saved
    */
   public Environment(String[] orderedDefaultFiles, String paramFileName) {
     this(null,null,null,null,null,new SimpleParameters(orderedDefaultFiles,paramFileName), null);
   }
-  
+
   public static Environment directEnvironment(int randomSeed) {
     SimpleRandomSource srs = new SimpleRandomSource(randomSeed, null);
     Environment env = directEnvironment(srs);
     srs.setLogManager(env.getLogManager());
     return env;
   }
-  
+
   public static Environment directEnvironment() {
     return directEnvironment(null);
   }
-  
+
   public static Environment directEnvironment(RandomSource rs) {
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
     DirectTimeSource dts = new DirectTimeSource(params);
@@ -154,7 +154,7 @@ public class Environment implements Destructable {
         params, generateDefaultExceptionStrategy(lm));
     return ret;
   }
-  
+
   public Environment(String paramFileName) {
     this(defaultParamFileArray,paramFileName);
   }
@@ -172,85 +172,85 @@ public class Environment implements Destructable {
   protected void chooseDefaults() {
     // choose defaults for all non-specified parameters
     if (time == null) {
-      time = generateDefaultTimeSource(); 
+      time = generateDefaultTimeSource();
     }
     if (logManager == null) {
       logManager = generateDefaultLogManager();
     }
     if (randomSource == null) {
       randomSource = generateDefaultRandomSource(params,logManager);
-    }    
-    if (selectorManager == null) {      
-      selectorManager = generateDefaultSelectorManager(time, logManager, randomSource); 
     }
-    if (processor == null) {    
+    if (selectorManager == null) {
+      selectorManager = generateDefaultSelectorManager(time, logManager, randomSource);
+    }
+    if (processor == null) {
       if (params.contains("environment_use_sim_processor") &&
           params.getBoolean("environment_use_sim_processor")) {
         processor = new SimProcessor(selectorManager);
       } else {
-        processor = generateDefaultProcessor(); 
+        processor = generateDefaultProcessor();
       }
     }
-    
+
     if (exceptionStrategy == null) {
-      exceptionStrategy = generateDefaultExceptionStrategy(logManager); 
+      exceptionStrategy = generateDefaultExceptionStrategy(logManager);
     }
   }
 
   public static ExceptionStrategy generateDefaultExceptionStrategy(LogManager manager) {
     return new SimpleExceptionStrategy(manager);
   }
-  
+
   public static RandomSource generateDefaultRandomSource(Parameters params, LogManager logging) {
     RandomSource randomSource;
     if (params.getString("random_seed").equalsIgnoreCase("clock")) {
       randomSource = new SimpleRandomSource(logging);
     } else {
-      randomSource = new SimpleRandomSource(params.getLong("random_seed"), logging);      
+      randomSource = new SimpleRandomSource(params.getLong("random_seed"), logging);
     }
-      
+
     return randomSource;
   }
-  
+
   public static TimeSource generateDefaultTimeSource() {
     return new SimpleTimeSource();
   }
-  
+
   /**
    * @return the default LogManager, which hands out SLF4J loggers
    */
   public static LogManager generateDefaultLogManager() {
     return new Slf4jLogManager();
   }
-  
+
   public static SelectorManager generateDefaultSelectorManager(TimeSource time, LogManager logging, RandomSource randomSource) {
     return new SelectorManager("Default", time, logging, randomSource);
   }
-  
+
   public static Processor generateDefaultProcessor() {
     return new SimpleProcessor("Default");
   }
-  
+
   // Accessors
   public SelectorManager getSelectorManager() {
-    return selectorManager; 
+    return selectorManager;
   }
   public Processor getProcessor() {
-    return processor; 
+    return processor;
   }
   public RandomSource getRandomSource() {
-    return randomSource; 
+    return randomSource;
   }
   public TimeSource getTimeSource() {
-    return time; 
+    return time;
   }
   public LogManager getLogManager() {
-    return logManager; 
+    return logManager;
   }
   public Parameters getParameters() {
-    return params; 
+    return params;
   }
-  
+
   /**
    * Tears down the environment.  Calls params.store(), selectorManager.destroy().
    *
@@ -258,7 +258,7 @@ public class Environment implements Destructable {
   public void destroy() {
     try {
       params.store();
-    } catch (IOException ioe) {      
+    } catch (IOException ioe) {
       logger.warn("Error during shutdown", ioe);
     }
     if (getSelectorManager().isSelectorThread()) {
@@ -271,7 +271,7 @@ public class Environment implements Destructable {
       });
     }
   }
-  
+
   private void callDestroyOnDestructables() {
     Iterator<Destructable> i = new ArrayList<Destructable>(destructables).iterator();
     while(i.hasNext()) {
@@ -279,7 +279,7 @@ public class Environment implements Destructable {
       d.destroy();
     }
     selectorManager.destroy();
-    processor.destroy();    
+    processor.destroy();
   }
 
   public void addDestructable(Destructable destructable) {
@@ -288,9 +288,9 @@ public class Environment implements Destructable {
       return;
     }
     destructables.add(destructable);
-    
+
   }
-  
+
   public void removeDestructable(Destructable destructable) {
     if (destructable == null) {
       logger.warn("addDestructable(null)", new Exception("Stack Trace"));
@@ -302,7 +302,7 @@ public class Environment implements Destructable {
   public ExceptionStrategy getExceptionStrategy() {
     return exceptionStrategy;
   }
-  
+
   public ExceptionStrategy setExceptionStrategy(ExceptionStrategy newStrategy) {
     ExceptionStrategy ret = exceptionStrategy;
     exceptionStrategy = newStrategy;
@@ -311,36 +311,36 @@ public class Environment implements Destructable {
   public Environment cloneEnvironment(String prefix) {
     return cloneEnvironment(prefix, false, false);
   }
-  
+
   public Environment cloneEnvironment(String prefix, boolean cloneSelector, boolean cloneProcessor) {
     // new logManager
     LogManager lman = cloneLogManager(prefix);
 
     TimeSource ts = cloneTimeSource(lman);
-    
+
     // new random source
     RandomSource rand = cloneRandomSource(lman);
-    
+
     // new selector
     SelectorManager sman = cloneSelectorManager(prefix, ts, rand, lman, cloneSelector);
-    
+
     // new processor
     Processor proc = cloneProcessor(prefix, lman, cloneProcessor);
-        
+
     // build the environment
     Environment ret = new Environment(sman, proc, rand, getTimeSource(), lman,
         getParameters(), getExceptionStrategy());
-  
+
     // gain shared fate with the rootEnvironment
-    addDestructable(ret);     
-      
+    addDestructable(ret);
+
     return ret;
   }
 
   protected TimeSource cloneTimeSource(LogManager lman) {
     return getTimeSource();
   }
-  
+
   protected LogManager cloneLogManager(String prefix) {
     LogManager lman = getLogManager();
     if (lman instanceof Slf4jLogManager slm) {
@@ -348,7 +348,7 @@ public class Environment implements Destructable {
     }
     return lman;
   }
-  
+
   protected SelectorManager cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
     SelectorManager sman = getSelectorManager();
     if (cloneSelector) {
@@ -357,7 +357,7 @@ public class Environment implements Destructable {
     }
     return sman;
   }
-  
+
   protected Processor cloneProcessor(String prefix, LogManager lman, boolean cloneProcessor) {
     Processor proc = getProcessor();
     if (cloneProcessor) {
@@ -366,10 +366,9 @@ public class Environment implements Destructable {
 
     return proc;
   }
-  
+
   protected RandomSource cloneRandomSource(LogManager lman) {
     long randSeed = getRandomSource().nextLong();
-    return new SimpleRandomSource(randSeed, lman);    
+    return new SimpleRandomSource(randSeed, lman);
   }
 }
-

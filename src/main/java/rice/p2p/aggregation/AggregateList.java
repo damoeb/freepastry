@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.p2p.aggregation;
 
 import java.io.BufferedReader;
@@ -85,13 +85,13 @@ public class AggregateList {
     this.wasReadOK = readFromDisk();
     this.loggingEnabled = loggingEnabled;
     this.logFileName = configFileName + ".log";
-    
+
     if (loggingEnabled) {
       recoverLog();
       this.logFile = new PrintStream(new FileOutputStream(logFileName, true));
     } else {
       this.logFile = null;
-    }  
+    }
   }
 
   public boolean readOK() {
@@ -101,7 +101,7 @@ public class AggregateList {
   public Enumeration<AggregateDescriptor> elements() {
     return aggregateList.elements();
   }
-  
+
   public void recoverLog() {
     BufferedReader logFile = null;
     long expectedSerial = -1;
@@ -116,7 +116,7 @@ public class AggregateList {
           logFile.close();
           break;
         }
-        
+
         if (!line.startsWith("$") || !line.endsWith("@"))
           throw new AggregationException("Malformed log entry (expected $...@): "+line);
 
@@ -124,20 +124,20 @@ public class AggregateList {
           throw new AggregationException("Overlapping log entries: "+line);
 
         String[] parts = line.split("\\|");
-        
+
         long thisSerial = Long.parseLong(parts[1]);
         if ((expectedSerial >= 0) && (thisSerial != expectedSerial))
           throw new AggregationException("Malformed log entry (expected serial #"+expectedSerial+"): "+line);
-          
+
         expectedSerial = thisSerial + 1;
-        
+
         if (thisSerial > nextSerial)
           throw new AggregationException("Entries "+nextSerial+".."+(thisSerial-1)+" missing from log... cannot recover!");
-        
+
         if (thisSerial == nextSerial) {
           logger.debug("Replaying log entry #{}", thisSerial);
           entriesReplayed ++;
-        
+
           if (parts[3].equals("setRoot")) {
             if (parts[4].equals("null")) {
               rootKey = null;
@@ -146,7 +146,7 @@ public class AggregateList {
               rootKey = factory.buildIdFromToString(parts[4]);
               logger.atDebug().log(() -> "  - rootKey = "+rootKey.toStringFull());
             }
-            
+
           } else if (parts[3].equals("setAL")) {
             Id adcKey = factory.buildIdFromToString(parts[4]);
             long lifetime = Long.parseLong(parts[5]);
@@ -155,7 +155,7 @@ public class AggregateList {
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
             adc.currentLifetime = lifetime;
             logger.atTrace().log(() -> "  - lifetime="+lifetime+" in ADC "+adcKey.toStringFull());
-            
+
           } else if (parts[3].equals("setOCL")) {
             Id adcKey = factory.buildIdFromToString(parts[4]);
             int index = Integer.parseInt(parts[5]);
@@ -167,7 +167,7 @@ public class AggregateList {
               throw new AggregationException("Object index mismatch ("+index+"/"+adc.objects.length+"): "+line);
             adc.objects[index].currentLifetime = lifetime;
             logger.atTrace().log(() -> "  - currentLifetime="+lifetime+" in ADC "+adcKey.toStringFull()+" index "+index);
-            
+
           } else if (parts[3].equals("setORL")) {
             Id adcKey = factory.buildIdFromToString(parts[4]);
             int index = Integer.parseInt(parts[5]);
@@ -179,64 +179,64 @@ public class AggregateList {
               throw new AggregationException("Object index mismatch ("+index+"/"+adc.objects.length+"): "+line);
             adc.objects[index].refreshedLifetime = lifetime;
             logger.atTrace().log(() -> "  - refreshedLifetime="+lifetime+" in ADC "+adcKey.toStringFull()+" index "+index);
-            
+
           } else if (parts[3].equals("refresh")) {
             Id adcKey = factory.buildIdFromToString(parts[4]);
             long lifetime = Long.parseLong(parts[5]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
             if (adc == null)
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
-            
+
             adc.currentLifetime = lifetime;
-            for (int i=0; i<adc.objects.length; i++) 
+            for (int i=0; i<adc.objects.length; i++)
               adc.objects[i].currentLifetime = adc.objects[i].refreshedLifetime;
             logger.atTrace().log(() -> " - refresh="+lifetime+" in ADC "+adcKey.toStringFull());
-          
+
           } else if (parts[3].equals("removeAggregate")) {
             Id adcKey = factory.buildIdFromToString(parts[4]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
             if (adc == null)
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
-            
+
             removeAggregateDescriptor(adc, false);
             logger.atTrace().log(() -> " - remove ADC "+adcKey.toStringFull());
-          
+
           } else if (parts[3].equals("addAggregate")) {
             Id adcKey = factory.buildIdFromToString(parts[4]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
             if (adc != null)
               throw new AggregationException("Aggregate already present ("+adcKey.toStringFull()+": "+line);
-            
+
             adc = readAggregate(logFile, adcKey);
             addAggregateDescriptor(adc, false);
             logger.atTrace().log(() -> " - add ADC "+adcKey.toStringFull());
           } else {
             throw new AggregationException("Unknown command ("+parts[3]+"): "+line);
-          } 
-          
+          }
+
           nextSerial ++;
         } else {
           /* skip addAggregate if necessary */
-          
+
           if (parts[3].equals("addAggregate")) {
             readAggregate(logFile, factory.buildIdFromToString(parts[4]));
           }
         }
       }
-          
+
     } catch (FileNotFoundException fnfe) {
       logger.warn("No aggregate log found; using configuration file only");
     } catch (Exception e) {
-      logger.warn("Exception while recovering aggregate log: ", e);      
+      logger.warn("Exception while recovering aggregate log: ", e);
       System.exit(1);
     }
-    
+
     if (entriesReplayed > 0) {
       writeToDisk();
       logger.warn("{} entries replayed from aggregate log", entriesReplayed);
-    } 
+    }
   }
-  
+
   public Id getRoot() {
     return rootKey;
   }
@@ -256,25 +256,25 @@ public class AggregateList {
     rootKey = root;
     logEntry("setRoot|"+((root == null) ? "null" : root.toStringFull()));
   }
-  
+
   public boolean isEmpty() {
     return aggregateList.isEmpty();
   }
-  
+
   public void clear() {
     aggregateList.clear();
     rootKey = null;
   }
-  
+
   public AggregateDescriptor getADC(Id id) {
     return (AggregateDescriptor) aggregateList.get(id);
   }
-  
+
   public void setAggregateLifetime(AggregateDescriptor adc, long lifetime) {
     logEntry("setAL|"+adc.key.toStringFull()+"|"+lifetime);
     adc.currentLifetime = lifetime;
   }
-  
+
   public void setObjectCurrentLifetime(AggregateDescriptor adc, int index, long lifetime) {
     logEntry("setOCL|"+adc.key.toStringFull()+"|"+index+"|"+lifetime);
     adc.objects[index].currentLifetime = lifetime;
@@ -284,7 +284,7 @@ public class AggregateList {
     logEntry("setORL|"+adc.key.toStringFull()+"|"+index+"|"+lifetime);
     adc.objects[index].refreshedLifetime = lifetime;
   }
-  
+
   public void resetMarkers() {
     Enumeration<AggregateDescriptor> enumerationeration = aggregateList.elements();
     while (enumerationeration.hasMoreElements()) {
@@ -296,21 +296,21 @@ public class AggregateList {
   public void refreshAggregate(AggregateDescriptor adc, long lifetime) {
     logEntry("refresh|"+adc.key.toStringFull()+"|"+lifetime);
     adc.currentLifetime = lifetime;
-    for (int i=0; i<adc.objects.length; i++) 
+    for (int i=0; i<adc.objects.length; i++)
       adc.objects[i].currentLifetime = adc.objects[i].refreshedLifetime;
   }
 
   public void addAggregateDescriptor(AggregateDescriptor aggr) {
     addAggregateDescriptor(aggr, true);
   }
-  
+
   private void addAggregateDescriptor(AggregateDescriptor aggr, boolean logThis) {
     if ((logFile != null) && logThis && loggingEnabled) {
       logEntry("addAggregate|"+aggr.key.toStringFull());
       writeAggregate(logFile, aggr);
       logFile.flush();
     }
-    
+
     aggregateList.put(aggr.key, aggr);
 
     for (int i=0; i<aggr.objects.length; i++) {
@@ -336,9 +336,9 @@ public class AggregateList {
   private void removeAggregateDescriptor(AggregateDescriptor aggr, boolean logThis) {
     if (logThis)
       logEntry("removeAggregate|"+aggr.key.toStringFull());
-    
+
     aggregateList.remove(aggr.key);
-    
+
     for (int i=0; i<aggr.objects.length; i++) {
       VersionKey vkey = new VersionKey(aggr.objects[i].key, aggr.objects[i].version);
       AggregateDescriptor prevDesc1 = (AggregateDescriptor) aggregateList.get(vkey);
@@ -348,26 +348,26 @@ public class AggregateList {
       if ((prevDesc2 != null) && prevDesc2.key.equals(aggr.key))
         aggregateList.remove(aggr.objects[i].key);
     }
-    
+
     if (aggregateList.containsValue(aggr))
       logger.atWarn().log(() -> "Removal from aggregate list incomplete: "+aggr.key.toStringFull());
   }
-  
+
   public void recalculateReferenceCounts(Id[] excludes) {
     Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
     while (enumeration.hasMoreElements()) {
       AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
       aggr.referenceCount = 0;
       aggr.marker = false;
-      
+
       /* References from excluded aggregates don't count */
-      
+
       if (excludes != null)
         for (int i=0; i<excludes.length; i++)
           if (excludes[i].equals(aggr.key))
             aggr.marker = true;
     }
-    
+
     enumeration = aggregateList.elements();
     while (enumeration.hasMoreElements()) {
       AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
@@ -396,12 +396,12 @@ public class AggregateList {
     if (!expiresS[0].equals("expires"))
       throw new AggregationException("Cannot find expiration date: "+expiresS[0]);
     long expires = Long.parseLong(expiresS[1]);
-        
+
     String[] objectNumS = readLineSkipComments(reader).split("=");
     if (!objectNumS[0].equals("objects"))
       throw new AggregationException("Cannot find number of objects: "+objectNumS[0]);
     int numObjects = Integer.parseInt(objectNumS[1]);
-        
+
     ObjectDescriptor[] objects = new ObjectDescriptor[numObjects];
     for (int i=0; i<numObjects; i++) {
       String[] objS = readLineSkipComments(reader).split("=");
@@ -415,25 +415,25 @@ public class AggregateList {
         Integer.parseInt(objArgS[3])
       );
     }
-        
+
     String[] pointerNumS = readLineSkipComments(reader).split("=");
     if (!pointerNumS[0].equals("pointers"))
       throw new AggregationException("Cannot find number of pointers: "+pointerNumS[0]);
     int numPointers = Integer.parseInt(pointerNumS[1]);
-    
+
     Id[] pointers = new Id[numPointers];
     for (int i=0; i<numPointers; i++) {
       String[] ptrS = readLineSkipComments(reader).split("=");
       pointers[i] = factory.buildIdFromToString(ptrS[1]);
     }
-        
+
     return new AggregateDescriptor(aggrKey, expires, objects, pointers);
   }
 
   public boolean readFromDisk() {
     rootKey = null;
     aggregateList.clear();
-  
+
     String fileName;
     if ((new File(configFileName)).exists())
       fileName = configFileName;
@@ -445,10 +445,10 @@ public class AggregateList {
 
     BufferedReader configFile = null;
     boolean readSuccessful = false;
-  
+
     try {
       configFile = new BufferedReader(new FileReader(fileName));
-      
+
       String[] root = readLineSkipComments(configFile).split("=");
       if (root[0].equals("nextid")) {
         nextSerial = Long.parseLong(root[1]);
@@ -457,7 +457,7 @@ public class AggregateList {
       if (!root[0].equals("root"))
         throw new AggregationException("Cannot read root key: "+root[0]);
       rootKey = factory.buildIdFromToString(root[1]);
-      
+
       while (true) {
         String aggrKeyLine = readLineSkipComments(configFile);
         if (aggrKeyLine == null) {
@@ -481,12 +481,12 @@ public class AggregateList {
       } catch (Exception e) {
       }
     }
-    
+
     if (!readSuccessful) {
       rootKey = null;
       aggregateList.clear();
     }
-    
+
     return readSuccessful;
   }
 
@@ -509,7 +509,7 @@ public class AggregateList {
   public void writeToDisk() {
     if (rootKey == null)
       return;
-  
+
     try {
       PrintStream configFile = new PrintStream(new FileOutputStream(configFileName + ".new"));
       Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
@@ -520,7 +520,7 @@ public class AggregateList {
       configFile.println("nextid="+nextSerial);
       configFile.println("root="+rootKey.toStringFull());
       configFile.println();
-      
+
       while (enumeration.hasMoreElements()) {
         AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
         if (!aggr.marker) {
@@ -543,10 +543,10 @@ public class AggregateList {
   public Id[] getSomePointers(int referenceThreshold, int max, Id[] excludes) {
     if (rootKey == null)
       return new Id[] {};
-      
+
     if (excludes != null)
       recalculateReferenceCounts(excludes);
-  
+
     List<Id> pointers = new ArrayList<Id>();
     Enumeration<AggregateDescriptor> enumeration = elements();
 
@@ -555,18 +555,18 @@ public class AggregateList {
       AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
       if (!aggr.marker) {
         aggr.marker = true;
-        
+
         boolean isExcluded = false;
         if (excludes != null)
           for (int i=0; i<excludes.length; i++)
             if (excludes[i].equals(aggr.key))
               isExcluded = true;
-              
+
         if ((aggr.referenceCount < referenceThreshold) && (pointers.size() < max) && !isExcluded)
           pointers.add(aggr.key);
       }
     }
-    
+
     return (Id[]) pointers.toArray(new Id[] {});
   }
 
@@ -575,15 +575,15 @@ public class AggregateList {
     final long now = environment.getTimeSource().currentTimeMillis();
     AggregationStatistics stats = new AggregationStatistics(1+maxHistoIndex, granularity, environment);
     Enumeration<AggregateDescriptor> enumeration = elements();
-    
+
     recalculateReferenceCounts(null);
     resetMarkers();
-    
+
     while (enumeration.hasMoreElements()) {
       AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
       if (!aggr.marker) {
         aggr.marker = true;
-    
+
         stats.numAggregatesTotal ++;
         stats.numObjectsTotal += aggr.objects.length;
         if (aggr.objects.length == 0)
@@ -592,14 +592,14 @@ public class AggregateList {
           stats.criticalAggregates ++;
         if (aggr.referenceCount < 1)
           stats.orphanedAggregates ++;
-          
+
         int aggrPos = (int)((aggr.currentLifetime - now) / granularity);
-        if (aggrPos < 0) 
+        if (aggrPos < 0)
           aggrPos = 0;
         if (aggrPos > maxHistoIndex)
           aggrPos = maxHistoIndex;
         stats.aggregateLifetimeHisto[aggrPos] ++;
-        
+
         for (int i=0; i<aggr.objects.length; i++) {
           stats.totalObjectsSize += aggr.objects[i].size;
           if (aggr.objects[i].isAliveAt(now)) {
@@ -615,7 +615,7 @@ public class AggregateList {
         }
       }
     }
-    
+
     return stats;
   }
 

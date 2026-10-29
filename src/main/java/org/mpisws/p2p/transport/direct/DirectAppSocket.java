@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /*
  * Created on Jan 30, 2006
  */
@@ -56,23 +56,23 @@ import rice.environment.Environment;
 
 public class DirectAppSocket<Identifier, MessageType> {
   public static final byte[] EOF = new byte[0];
-  
+
   /**
    * The sum the simulated read/write buffers for one direction of a socket
    */
   private static final int MAX_BYTES_IN_FLIGHT = 10000;
-  
+
   Identifier acceptor, connector;
-  
+
   SocketCallback<Identifier> connectorReceiver;
-  
+
   GenericNetworkSimulator<Identifier, MessageType> simulator;
-  
+
   DirectAppSocketEndpoint acceptorEndpoint;
   DirectAppSocketEndpoint connectorEndpoint;
-  
-  SocketRequestHandle<Identifier> connectorHandle; 
-  
+
+  SocketRequestHandle<Identifier> connectorHandle;
+
   /**
    * So they show up with the correct prefixes/files of the logs
    */
@@ -80,8 +80,8 @@ public class DirectAppSocket<Identifier, MessageType> {
   Logger connectorLogger;
 
   Map<String, Object> options;
-  
-  public DirectAppSocket(Identifier acceptor, Identifier connector, SocketCallback<Identifier> connectorCallback, 
+
+  public DirectAppSocket(Identifier acceptor, Identifier connector, SocketCallback<Identifier> connectorCallback,
       GenericNetworkSimulator<Identifier, MessageType> simulator, SocketRequestHandle<Identifier> handle, Map<String, Object> options) {
     this.options = options;
     this.acceptor = acceptor;
@@ -93,25 +93,25 @@ public class DirectAppSocket<Identifier, MessageType> {
     Environment cEnv = simulator.getEnvironment(connector);
     acceptorLogger = aEnv.getLogManager().getLogger(DirectAppSocket.class,"");
     connectorLogger = cEnv.getLogManager().getLogger(DirectAppSocket.class,"");
-    
-    
+
+
     acceptorEndpoint = new DirectAppSocketEndpoint(acceptor, acceptorLogger);
     connectorEndpoint = new DirectAppSocketEndpoint(connector, connectorLogger);
     acceptorEndpoint.setCounterpart(connectorEndpoint);
     connectorEndpoint.setCounterpart(acceptorEndpoint);
   }
-  
+
   class DirectAppSocketEndpoint implements P2PSocket<Identifier> {
     Logger logger;
     DirectAppSocketEndpoint counterpart;
-    
+
     P2PSocketReceiver<Identifier> reader;
     P2PSocketReceiver<Identifier> writer;
     Identifier localNodeHandle;
     int seq = 0;
-    
+
     boolean outputClosed;
-    
+
     // these three are tightly related, and should only be modified in synchronized methods on DirectAppSocketEndpoint.this
     // bytes that are either in deliveries, or in the local buffer
     int bytesInFlight = 0;
@@ -123,13 +123,13 @@ public class DirectAppSocket<Identifier, MessageType> {
      * The offset of the first delivery, in case the reader didn't have enough space to read everything available.
      */
     int firstOffset = 0;
- 
-    
+
+
     public DirectAppSocketEndpoint(Identifier localNodeHandle, Logger logger) {
       this.localNodeHandle = localNodeHandle;
       this.logger = logger;
     }
-    
+
     public void setCounterpart(DirectAppSocketEndpoint counterpart) {
       this.counterpart = counterpart;
     }
@@ -137,37 +137,37 @@ public class DirectAppSocket<Identifier, MessageType> {
     public Identifier getRemoteNodeHandle() {
       return counterpart.localNodeHandle;
     }
-  
+
     public long read(ByteBuffer dsts) throws IOException {
       int lengthRead = 0;
-      
+
       synchronized(this) {
         if (byteDeliveries.isEmpty()) {
           return 0;
         }
         if (byteDeliveries.getFirst() == EOF) {
-          return -1;          
+          return -1;
         }
         Iterator<byte[]> i = byteDeliveries.iterator();
         // loop over all messages to be delivered
         while(i.hasNext()) {
-          byte[] msg = (byte[])i.next();          
-          
+          byte[] msg = (byte[])i.next();
+
           // loop through all the dsts, and fill them with the current message if possible
             ByteBuffer curBuffer = dsts;
             int lengthToPut = curBuffer.remaining();
             if (lengthToPut > (msg.length-firstOffset)) {
               lengthToPut = msg.length-firstOffset;
             }
-            
+
             curBuffer.put(msg,firstOffset,lengthToPut);
             firstOffset+=lengthToPut;
             lengthRead+=lengthToPut;
-            
+
             // we finished a message
-            
+
             // optimization: if we are here then there must be no more remaining in curBuffer
-          
+
           // see if we finished a message
           if (firstOffset == msg.length) {
             i.remove();
@@ -175,35 +175,35 @@ public class DirectAppSocket<Identifier, MessageType> {
           } else {
             break; // i.hasNext() loop
           }
-        }   
+        }
       } // synchronized(this)
 
       bytesInFlight-=lengthRead;
       logger.trace("{}.write({}) len:{} inFlight:{}", this, dsts, lengthRead, bytesInFlight);
 
-      simulator.enqueueDelivery(new Delivery() {              
+      simulator.enqueueDelivery(new Delivery() {
         public void deliver() {
-          counterpart.notifyCanWrite();            
-        }            
+          counterpart.notifyCanWrite();
+        }
         public int getSeq() {
-          return 0;            
+          return 0;
         }
         public String toString() {
           return DirectAppSocketEndpoint.this.toString()+" counterpart notifyCanWrite()";
         }
-      }, 0);            
+      }, 0);
       return lengthRead;
     }
 
     public long write(ByteBuffer srcs) throws IOException {
       if (outputClosed) return -1;
-      
+
       if (!simulator.isAlive(counterpart.localNodeHandle)) {
         return -1; // TODO: Eventually simulate a socket reset.
       }
-      
+
       int availableToWrite = srcs.remaining();
-      
+
       int lengthToWrite;
       synchronized(counterpart) {
         lengthToWrite = MAX_BYTES_IN_FLIGHT - counterpart.bytesInFlight;
@@ -211,7 +211,7 @@ public class DirectAppSocket<Identifier, MessageType> {
         counterpart.bytesInFlight+=lengthToWrite;
       }
 
-      final byte[] msg = new byte[lengthToWrite]; 
+      final byte[] msg = new byte[lengthToWrite];
       int remaining = lengthToWrite;
       while(remaining > 0) {
         int lengthToReadFromBuffer = srcs.remaining();
@@ -219,23 +219,23 @@ public class DirectAppSocket<Identifier, MessageType> {
         srcs.get(msg,lengthToWrite-remaining,lengthToReadFromBuffer);
         remaining-=lengthToReadFromBuffer;
       }
-      
+
       logger.trace("{}.write({}) len:{} inFlight:{}", this, srcs, lengthToWrite, counterpart.bytesInFlight);
-      simulator.enqueueDelivery(new Delivery() {      
+      simulator.enqueueDelivery(new Delivery() {
         int mySeq = seq++;
         public void deliver() {
-          counterpart.addToReadQueue(msg);      
+          counterpart.addToReadQueue(msg);
         }
         public int getSeq() {
-          return mySeq; 
+          return mySeq;
         }
         public String toString() {
           return DirectAppSocketEndpoint.this.toString()+" deliver msg "+msg;
         }
-      }, (int)Math.round(simulator.networkDelay(localNodeHandle, counterpart.localNodeHandle)));      
+      }, (int)Math.round(simulator.networkDelay(localNodeHandle, counterpart.localNodeHandle)));
       return lengthToWrite;
     }
-  
+
     /**
      * only called on simulator thread
      * @param msg the bytes to queue, or EOF
@@ -246,14 +246,14 @@ public class DirectAppSocket<Identifier, MessageType> {
           if (msg == EOF) {
             logger.debug(this+": addToReadQueue(EOF)");
           } else {
-            logger.debug(this+": addToReadQueue("+msg.length+")");            
+            logger.debug(this+": addToReadQueue("+msg.length+")");
           }
         }
         byteDeliveries.addLast(msg);
       }
       notifyCanRead();
-    }    
-    
+    }
+
     /**
      * must be called on the simulator thread
      */
@@ -286,17 +286,17 @@ public class DirectAppSocket<Identifier, MessageType> {
           logger.warn("Error in {}", temp, ioe);
         }
       }
-    }    
+    }
 
     /**
      * Can be called on any thread
      */
-    public void register(boolean wantToRead, boolean wantToWrite, 
+    public void register(boolean wantToRead, boolean wantToWrite,
         P2PSocketReceiver<Identifier> receiver) {
       if (wantToWrite) {
-        writer = receiver; 
-        
-        simulator.enqueueDelivery(new Delivery() {              
+        writer = receiver;
+
+        simulator.enqueueDelivery(new Delivery() {
           public void deliver() {
             if (!simulator.isAlive(localNodeHandle)) return;
             notifyCanWrite(); // only actually notifies if proper at the time
@@ -309,17 +309,17 @@ public class DirectAppSocket<Identifier, MessageType> {
             return DirectAppSocketEndpoint.this.toString()+" notifyCanWrite()";
           }
 
-        }, 0); // I dont think this needs a delay, but I could be wrong            
+        }, 0); // I dont think this needs a delay, but I could be wrong
       }
-      
+
       if (wantToRead) {
         reader = receiver;
-        
-        simulator.enqueueDelivery(new Delivery() {              
+
+        simulator.enqueueDelivery(new Delivery() {
           public void deliver() {
             if (!simulator.isAlive(localNodeHandle)) return;
-            notifyCanRead(); // only actually notifies if proper at the time           
-          }            
+            notifyCanRead(); // only actually notifies if proper at the time
+          }
           // I don't think this needs a sequence number, but I may be wrong
           public int getSeq() {
             return 0;
@@ -327,18 +327,18 @@ public class DirectAppSocket<Identifier, MessageType> {
           public String toString() {
             return DirectAppSocketEndpoint.this.toString()+" notifyCanRead()";
           }
-        }, 0); // I dont think this needs a delay, but I could be wrong            
-      }        
+        }, 0); // I dont think this needs a delay, but I could be wrong
+      }
     }
-  
+
     public void shutdownOutput() {
       logger.trace("{}.shutdownOutput()", this);
       outputClosed = true;
       if (!simulator.isAlive(counterpart.localNodeHandle)) return; // do nothing
-      simulator.enqueueDelivery(new Delivery() {      
+      simulator.enqueueDelivery(new Delivery() {
         int mySeq = seq++;
         public void deliver() {
-          counterpart.addToReadQueue(EOF);      
+          counterpart.addToReadQueue(EOF);
         }
         public int getSeq() {
           return mySeq;
@@ -346,19 +346,19 @@ public class DirectAppSocket<Identifier, MessageType> {
         public String toString() {
           return DirectAppSocketEndpoint.this.toString()+" counterpart shutDownOutput()";
         }
-      }, (int)Math.round(simulator.networkDelay(localNodeHandle, counterpart.localNodeHandle))); // I dont think this needs a delay, but I could be wrong            
+      }, (int)Math.round(simulator.networkDelay(localNodeHandle, counterpart.localNodeHandle))); // I dont think this needs a delay, but I could be wrong
     }
-  
+
     public void shutdownInput() {
     }
-  
+
     public void close() {
       shutdownOutput();
       shutdownInput();
     }
-    
+
     public String toString() {
-      return "DAS{"+localNodeHandle+":"+simulator.isAlive(localNodeHandle)+"->"+counterpart.localNodeHandle+":"+simulator.isAlive(counterpart.localNodeHandle)+" w:"+writer+" r:"+reader+"}"; 
+      return "DAS{"+localNodeHandle+":"+simulator.isAlive(localNodeHandle)+"->"+counterpart.localNodeHandle+":"+simulator.isAlive(counterpart.localNodeHandle)+" w:"+writer+" r:"+reader+"}";
     }
 
     public Identifier getIdentifier() {
@@ -368,14 +368,14 @@ public class DirectAppSocket<Identifier, MessageType> {
     public Map<String, Object> getOptions() {
       return options;
     }
-  }  
+  }
 
-  
+
   /**
    * This is how the Acceptor Responds, success is the ConnectorDelivery, failure is the ConnectorExceptionDelivery.
-   * 
+   *
    * When connect() this is sent to the Acceptor, then it responds with a ConnectorDelivery
-   * 
+   *
    * @author Jeff Hoye
    */
   class AcceptorDelivery implements Delivery {
@@ -385,10 +385,10 @@ public class DirectAppSocket<Identifier, MessageType> {
         if (acceptorTL.canReceiveSocket()) {
           acceptorTL.finishReceiveSocket(acceptorEndpoint);
           simulator.enqueueDelivery(new ConnectorDelivery(),
-              (int)Math.round(simulator.networkDelay(acceptor, connector))); 
+              (int)Math.round(simulator.networkDelay(acceptor, connector)));
         } else {
           simulator.enqueueDelivery(new ConnectorExceptionDelivery<Identifier>(connectorReceiver,connectorHandle,new SocketTimeoutException()),
-              (int)Math.round(simulator.networkDelay(acceptor, connector))); 
+              (int)Math.round(simulator.networkDelay(acceptor, connector)));
         }
       } else {
         simulator.enqueueDelivery(new ConnectorExceptionDelivery<Identifier>(connectorReceiver,connectorHandle,new NodeIsFaultyException(acceptor)),0);
@@ -396,12 +396,12 @@ public class DirectAppSocket<Identifier, MessageType> {
       }
     }
     public int getSeq() {
-      return -1; 
+      return -1;
     }
   }
-  
+
   class ConnectorDelivery implements Delivery {
-    public void deliver() {      
+    public void deliver() {
       if (simulator.isAlive(connector)) {
         connectorReceiver.receiveResult(connectorHandle, connectorEndpoint);
       } else {
@@ -410,15 +410,15 @@ public class DirectAppSocket<Identifier, MessageType> {
     }
     // out of band, needs to get in front of any other message
     public int getSeq() {
-      return -1; 
+      return -1;
     }
   }
-  
+
   public Delivery getAcceptorDelivery() {
     return new AcceptorDelivery();
   }
-  
+
   public String toString() {
-    return "DAS{"+connector+"["+connectorReceiver+"]->"+acceptor+"}"; 
+    return "DAS{"+connector+"["+connectorReceiver+"]->"+acceptor+"}";
   }
 }

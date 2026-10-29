@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.sourceroute;
 
 import java.io.IOException;
@@ -61,11 +61,11 @@ public class Forwarder<Identifier> {
    */
   int numShutdown = 0;
   boolean closed = false;
-  
+
   public Forwarder(SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger) {
     this(sr, socka, sockb, logger, Collections.<SourceRouteTap<Identifier>>emptyList());
   }
-  
+
   /**
    * @param taps notified via {@link SourceRouteTap#receivedBytes} and {@link SourceRouteTap#socketClosed};
    * the collection is read live, so taps added/removed later are honored
@@ -76,11 +76,11 @@ public class Forwarder<Identifier> {
     this.sockb = sockb;
     this.logger = logger;
     this.taps = taps;
-    
+
     new HalfPipe(socka,sockb);
     new HalfPipe(sockb,socka);
   }
-  
+
   /**
    * Called when one direction has been fully forwarded and its output shut down.  When both are done, close both sockets.
    */
@@ -91,7 +91,7 @@ public class Forwarder<Identifier> {
     }
     close();
   }
-  
+
   private void close() {
     synchronized(this) {
       if (closed) return;
@@ -103,21 +103,21 @@ public class Forwarder<Identifier> {
       tap.socketClosed(sr, socka, sockb);
     }
   }
-    
+
   private class HalfPipe implements P2PSocketReceiver<Identifier> {
     P2PSocket<Identifier> from;
     P2PSocket<Identifier> to;
     ByteBuffer buf;
-    
+
     public HalfPipe(P2PSocket<Identifier> from, P2PSocket<Identifier> to) {
       this.from = from;
-      this.to = to;    
+      this.to = to;
       buf = ByteBuffer.allocate(1024);
       from.register(true, false, this);
     }
-    
+
     public String toString() {
-      return "HalfPipe "+from+"=>"+to;    
+      return "HalfPipe "+from+"=>"+to;
     }
 
     public void receiveException(P2PSocket<Identifier> socket, Exception e) {
@@ -127,7 +127,7 @@ public class Forwarder<Identifier> {
 
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       if (canRead) {
-        if (socket != from) throw new IOException("Expected to read from "+from+" got "+socket);      
+        if (socket != from) throw new IOException("Expected to read from "+from+" got "+socket);
         long result = from.read(buf);
         if (result == -1) {
           logger.debug("{} has shut down input, shutting down output on {}", from, to);
@@ -137,26 +137,26 @@ public class Forwarder<Identifier> {
           return;
         }
         logger.trace("Read {} bytes from {}", result, from);
-        buf.flip(); 
+        buf.flip();
         if (!taps.isEmpty()) {
           for (SourceRouteTap<Identifier> tap : taps) {
             tap.receivedBytes(ByteBuffer.wrap(Arrays.copyOfRange(buf.array(), buf.position(), buf.limit())), sr, from, to);
           }
         }
-        to.register(false, true, this);        
+        to.register(false, true, this);
       } else {
         if (canWrite) {
-          if (socket != to) throw new IOException("Expected to write to "+to+" got "+socket);      
-          
-          long result = to.write(buf);         
+          if (socket != to) throw new IOException("Expected to write to "+to+" got "+socket);
+
+          long result = to.write(buf);
           if (result == -1) {
             logger.debug("{} has closed, closing {}", to, from);
             close();
             return;
           }
           logger.trace("Wrote {} bytes to {}", result, to);
-          
-          
+
+
           if (buf.hasRemaining()) {
             // keep writing
             to.register(false, true, this);
@@ -166,7 +166,7 @@ public class Forwarder<Identifier> {
             from.register(true, false, this);
           }
         } else {
-          throw new IOException("Didn't select for either "+socket+","+canRead+","+canWrite); 
+          throw new IOException("Didn't select for either "+socket+","+canRead+","+canWrite);
         }
       }
     }

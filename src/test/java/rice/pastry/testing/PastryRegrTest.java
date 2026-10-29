@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.testing;
 
 import java.util.Comparator;
@@ -60,11 +60,11 @@ import rice.pastry.routing.RoutingTable;
 
 /**
  * PastryRegrTest
- * 
+ *
  * a regression test suite for pastry. abstract class.
- * 
+ *
  * @version $Id: PastryRegrTest.java 4654 2009-01-08 16:33:07Z jeffh $
- * 
+ *
  * @author andrew ladd
  * @author peter druschel
  */
@@ -102,7 +102,7 @@ public abstract class PastryRegrTest {
   /**
    * wire protocol specific handling of the application object e.g., RMI may
    * launch a new thread
-   * 
+   *
    * @param pn pastry node
    * @param app newly created application
    */
@@ -124,7 +124,7 @@ public abstract class PastryRegrTest {
   protected abstract void killNode(PastryNode pn);
 
   protected Environment environment;
-  
+
   /**
    * constructor
    */
@@ -180,7 +180,7 @@ public abstract class PastryRegrTest {
   /**
    * make a set of num new pastry nodes, concurrently this tests concurrent node
    * joins
-   * 
+   *
    * @param num the number of nodes in a set
    */
 
@@ -216,7 +216,7 @@ public abstract class PastryRegrTest {
 
           // ADDED FOR WIRE PROTOCOL...
           synchronized(pn) {
-            while (!pn.isReady()) {                          
+            while (!pn.isReady()) {
               try {
                 pn.wait(500);
               } catch (InterruptedException ie) {}
@@ -230,7 +230,7 @@ public abstract class PastryRegrTest {
     for (int i = 0; i < pastryNodesLastAdded.size(); i++) {
       PastryNode pn = (PastryNode) pastryNodesLastAdded.get(i);
       synchronized(pn) {
-        while (!pn.isReady()) {                          
+        while (!pn.isReady()) {
           try {
             pn.wait(500);
           } catch (InterruptedException ie) {}
@@ -263,7 +263,7 @@ public abstract class PastryRegrTest {
    * sent from a random source node to a random destination; then, a second
    * message is sent from a random source node with a random key (key is not
    * necessarily the Id of an existing node)
-   * 
+   *
    * @param k the number of rounds
    */
 
@@ -530,8 +530,8 @@ public abstract class PastryRegrTest {
           }
         } else {
           // check entries
-          NodeHandle nh = (NodeHandle)rs.closestNode();          
-          
+          NodeHandle nh = (NodeHandle)rs.closestNode();
+
           int bestProximity = Integer.MAX_VALUE;
           if (nh != null) {
             bestProximity = rta.getPastryNode().proximity(nh);
@@ -552,7 +552,7 @@ public abstract class PastryRegrTest {
 
             NodeHandle nh2 = rs.get(k);
             Id id = nh2.getNodeId();
-            
+
             // check if node exists
             if (!pastryNodesSorted.containsKey(id)) {
               if (isReallyAlive(nh2))
@@ -601,7 +601,7 @@ public abstract class PastryRegrTest {
 
   /**
    * kill a given number of nodes, randomly chosen
-   * 
+   *
    * @param num the number of nodes to kill
    */
 

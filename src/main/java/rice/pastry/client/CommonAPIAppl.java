@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.client;
 
 import java.io.IOException;
@@ -49,14 +49,14 @@ import rice.pastry.routing.RouteMessage;
 /**
  * CommonAPIAppl is an abstract class that all new applications should extend.
  * It provides the common KBR API defined in
- * 
+ *
  * "Towards a Common API for Structured Peer-to-Peer Overlays." Frank Dabek, Ben
  * Zhao, Peter Druschel, John Kubiatowicz and Ion Stoica. In Proceedings of the
  * 2nd International Workshop on Peer-to-peer Systems (IPTPS'03) , Berkeley, CA,
  * February 2003.
- * 
+ *
  * @version $Id: CommonAPIAppl.java 3801 2007-07-18 15:04:40Z jeffh $
- * 
+ *
  * @author Peter Druschel
  */
 
@@ -64,7 +64,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
 
   /**
    * Constructor.
-   * 
+   *
    * @param pn the pastry node that the application attaches to.
    */
   public CommonAPIAppl(PastryNode pn) {
@@ -73,7 +73,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
 
   /**
    * Constructor.
-   * 
+   *
    * @param pn the pastry node that the application attaches to.
    */
   public CommonAPIAppl(PastryNode pn, String instance) {
@@ -90,8 +90,8 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * at most one extra hop to the route. Either K or hint may be NULL, but not
    * both. The operation provides a best-effort service: the message may be
    * lost, duplicated, corrupted, or delayed indefinitely.
-   * 
-   * 
+   *
+   *
    * @param key the key
    * @param msg the message to deliver.
    * @param hint the hint
@@ -99,7 +99,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
   public void route(Id key, Message msg, NodeHandle hint) {
     logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
 
-    RouteMessage rm = new RouteMessage(key, msg, hint, 
+    RouteMessage rm = new RouteMessage(key, msg, hint,
         (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
     rm.setTLOptions(options);
     thePastryNode.getRouter().route(rm);
@@ -119,7 +119,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * not true because, for instance, malicious nodes have caused the local node
    * to build a routing table that is biased towards malicious
    * nodes~\cite{Castro02osdi}.
-   * 
+   *
    * @param key the message's key
    * @param num the maximal number of next hops nodes requested
    * @param safe
@@ -136,7 +136,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
   /**
    * This method produces an unordered list of nodehandles that are neighbors of
    * the local node in the ID space. Up to num node handles are returned.
-   * 
+   *
    * @param num the maximal number of nodehandles requested
    * @return the nodehandle set
    */
@@ -152,7 +152,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * replica set size, then its maximum replica set is returned. The returned
    * nodes may be used for replicating data since they are precisely the nodes
    * which become roots for the key when the local node fails.
-   * 
+   *
    * @param key the key
    * @param max_rank the maximal number of nodehandles returned
    * @return the replica set
@@ -167,14 +167,14 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * is currently a r-root. The operations returns null if the range could not
    * be determined. It is an error to query the range of a node not present in
    * the neighbor set as returned by the update upcall or the neighborSet call.
-   * 
+   *
    * Some implementations may have multiple, disjoint ranges of keys for which a
    * given node is responsible (Pastry has two). The parameter key allows the
    * caller to specify which range should be returned. If the node referenced by
    * n is the r-root for key, then the resulting range includes key. Otherwise,
    * the result is the nearest range clockwise from key for which n is
    * responsible.
-   * 
+   *
    * @param n nodeHandle of the node whose range is being queried
    * @param r the rank
    * @param key the key
@@ -205,14 +205,14 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * is currently a r-root. The operations returns null if the range could not
    * be determined. It is an error to query the range of a node not present in
    * the neighbor set as returned by the update upcall or the neighborSet call.
-   * 
+   *
    * Some implementations may have multiple, disjoint ranges of keys for which a
    * given node is responsible (Pastry has two). The parameter key allows the
    * caller to specify which range should be returned. If the node referenced by
    * n is the r-root for key, then the resulting range includes key. Otherwise,
    * the result is the nearest range clockwise from key for which n is
    * responsible.
-   * 
+   *
    * @param n nodeHandle of the node whose range is being queried
    * @param r the rank
    * @param key the key
@@ -226,7 +226,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
 
   /*
    * upcall methods, to be overridden by the derived application object
-   * 
+   *
    * Applications process messages by executing code in upcall methods that are
    * invoked by the KBR routing system at nodes along a message's path and at
    * its root. To permit event-driven implementations, upcall handlers must not
@@ -235,7 +235,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
 
   /**
    * Called by pastry when a message arrives for this application.
-   * 
+   *
    * @param msg the message that is arriving.
    */
 
@@ -245,9 +245,9 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * Called by pastry when a message is enroute and is passing through this
    * node. If this method is not overridden, the default behaviour is to let the
    * message pass through.
-   * 
+   *
    * @param msg the route message that is passing through (its target and next hop are set).
-   *  
+   *
    */
 
   public void forward(RouteMessage msg) {
@@ -256,7 +256,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
 
   /**
    * Called by pastry when the neighbor set changes.
-   * 
+   *
    * @param nh the handle of the node that was added or removed.
    * @param joined true if the node was added, false if the node was removed.
    */
@@ -282,7 +282,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
 
   /**
    * Called by pastry when the leaf set changes.
-   * 
+   *
    * @param nh the handle of the node that was added or removed.
    * @param wasAdded true if the node was added, false if the node was removed.
    */
@@ -293,7 +293,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
 
   /**
    * Called by pastry to deliver a message to this client. Not to be overridden.
-   * 
+   *
    * @param msg the message that is arriving.
    */
 
@@ -314,7 +314,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
           try {
             deliver(rm.getTarget(), rm.unwrap(deserializer));
           } catch (IOException ioe) {
-            throw new RuntimeException("Error deserializing message "+rm,ioe); 
+            throw new RuntimeException("Error deserializing message "+rm,ioe);
           }
         } else {
           // route the message
@@ -331,4 +331,3 @@ public abstract class CommonAPIAppl extends PastryAppl {
   }
 
 }
-

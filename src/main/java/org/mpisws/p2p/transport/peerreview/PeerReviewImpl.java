@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview;
 
 import java.io.File;
@@ -107,13 +107,13 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.selector.TimerTask;
 
 /**
- * 
+ *
  * @author Jeff Hoye
  *
  * @param <Handle> (Usually a NodeHandle)
  * @param <Identifier> (Permanent Identifier), can get an Identifier from a Handle
  */
-public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements 
+public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements
     TransportLayerCallback<Handle, ByteBuffer>,
     PeerReview<Handle, Identifier>, StatusChangeListener<Identifier> {
 
@@ -129,7 +129,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   protected EvidenceSerializer evidenceSerializer;
   protected AuthenticatorSerializer authenticatorSerialilzer;
   protected EvidenceTool<Handle, Identifier> evidenceTool;
-  
+
   // compatibility with rice environment
   protected Environment env;
   protected Logger logger;
@@ -156,20 +156,20 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   private TimerTask maintenanceTask;
   private TimerTask authPushTask;
   private TimerTask checkpointTask;
-  
+
   protected RandomSource random;
 
   public RandomSource getRandomSource() {
     return random;
   }
-  
+
   long lastLogEntry = -1;
   boolean initialized = false;
   protected long timeToleranceMillis = DEFAULT_TIME_TOLERANCE_MILLIS;
-  
+
   public PeerReviewImpl(IdentityTransport<Handle, Identifier> transport,
       Environment env, Serializer<Handle> handleSerializer,
-      Serializer<Identifier> idSerializer,      
+      Serializer<Identifier> idSerializer,
       IdentifierExtractor<Handle, Identifier> identifierExtractor,
       IdStrTranslator<Identifier> stringTranslator
 //      AuthenticatorSerializer authenticatorSerialilzer,
@@ -194,11 +194,11 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     this.historyFactory = getSecureHistoryFactory(transport, env);
     random = new SimpleRandomSource(env.getLogManager(),"peerreview");
   }
-  
+
   protected SecureHistoryFactory getSecureHistoryFactory(IdentityTransport<Handle, Identifier> transport, Environment env) {
     return new SecureHistoryFactoryImpl(transport, env);
   }
-  
+
   /**
    * PeerReview checks the timestamps on messages against the local clock, and
    * ignores them if the timestamp is too far out of sync. The definition of
@@ -226,11 +226,11 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   protected void updateLogTime() {
     logger.trace("updateLogTime()");
     long now = env.getTimeSource().currentTimeMillis();
-  
+
     if (now > lastLogEntry) {
       if (!history.setNextSeq(now * 1000000))
         throw new RuntimeException("PeerReview: Cannot roll back history sequence number from "+history.getLastSeq()+" to "+now*1000000+"; did you change the local time?");
-        
+
       lastLogEntry = now;
     }
   }
@@ -239,7 +239,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       ByteBuffer message,
       final MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
-    
+
     /*
      * If the 'DON_TCOMMIT' flag is set, the message is passed through to the
      * transport layer. This is used e.g. for liveness/proximity pings in
@@ -279,60 +279,60 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     return commitmentProtocol.handleOutgoingMessage(target, message,
         deliverAckToMe, options);
   }
-  
+
   public void setApp(PeerReviewCallback<Handle, Identifier> callback) {
     logger.info("setApp({})", callback);
     this.callback = callback;
   }
-  
+
   /**
-   * 
+   *
    */
   public void setCallback(TransportLayerCallback<Handle, ByteBuffer> callback) {
     setApp((PeerReviewCallback<Handle, Identifier>)callback);
   }
 
   public void messageReceived(Handle handle, ByteBuffer message, Map<String, Object> options) throws IOException {
-    
+
     assert(initialized);
-    
+
     if (infoStore.getStatus(identifierExtractor.extractIdentifier(handle)) == STATUS_EXPOSED) {
       logger.warn("Received a message from an exposed node {} -- ignoring", handle);
       return;
     }
 
-    
+
     /* The misbehavior hook of the C++ implementation (tampering with data for testing) is not ported */
-    
+
     /* Deliver datagrams */
-    byte passthrough = message.get();    
+    byte passthrough = message.get();
     switch(passthrough) {
     case PEER_REVIEW_PASSTHROUGH:
       callback.messageReceived(handle, message, options);
-      break;      
+      break;
     case PEER_REVIEW_COMMIT:
       Statement<Identifier> m = null;
       updateLogTime();
-      byte type = message.get();      
+      byte type = message.get();
       SimpleInputBuffer sib = new SimpleInputBuffer(message);
-      switch (type) {      
+      switch (type) {
       case MSG_AUTHPUSH :
         authPushProtocol.handleIncomingAuthenticators(handle, AuthPushMessage.build(new SimpleInputBuffer(message),idSerializer,authenticatorSerialilzer));
         break;
       case MSG_AUTHREQ :
-        auditProtocol.handleIncomingDatagram(handle, new AuthRequest<Identifier>(new SimpleInputBuffer(message),idSerializer));      
+        auditProtocol.handleIncomingDatagram(handle, new AuthRequest<Identifier>(new SimpleInputBuffer(message),idSerializer));
         break;
-      case MSG_AUTHRESP :      
+      case MSG_AUTHRESP :
         auditProtocol.handleIncomingDatagram(handle, new AuthResponse<Identifier>(new SimpleInputBuffer(message),idSerializer,transport.getHashSizeBytes(),transport.getSignatureSizeBytes()));
         break;
-      case MSG_ACK:        
+      case MSG_ACK:
         commitmentProtocol.handleIncomingAck(handle, AckMessage.build(sib,idSerializer,transport.getHashSizeBytes(),transport.getSignatureSizeBytes()), options);
         break;
       case MSG_CHALLENGE:
         ChallengeMessage<Identifier> challenge = new ChallengeMessage<Identifier>(sib,idSerializer,evidenceSerializer);
         challengeProtocol.handleChallenge(handle, challenge, options);
         break;
-      case MSG_ACCUSATION:        
+      case MSG_ACCUSATION:
         statementProtocol.handleIncomingStatement(handle, new AccusationMessage<Identifier>(sib, idSerializer, evidenceSerializer), options);
         break;
       case MSG_RESPONSE:
@@ -345,7 +345,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       default:
         throw new RuntimeException("Unknown message type in PeerReview: #"+ type);
       }
-    }    
+    }
   }
 
   public static String getStatusString(int status) {
@@ -359,7 +359,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     }
     return "unknown status:"+status;
   }
-  
+
   /**
    * Helper function called internally from the library. It takes a (potentially
    * new) authenticator and adds it to our local store if (a) it hasn't been
@@ -367,18 +367,18 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
    */
   public boolean addAuthenticatorIfValid(AuthenticatorStore<Identifier> store, Identifier subject, Authenticator auth) {
     // see if we can exit early
-        
+
     Authenticator existingAuth = null;
     if (store != null) existingAuth = store.statAuthenticator(subject, auth.getSeq());
-    if (existingAuth != null) {       
+    if (existingAuth != null) {
       /* If yes, then it should be bit-wise identical to the new one */
-    
+
       if (auth.equals(existingAuth)) {
         return true;
       }
     }
-   
-     /* maybe the new authenticator is a forgery? Let's check the signature! 
+
+     /* maybe the new authenticator is a forgery? Let's check the signature!
         If the signature doesn't check out, then we simply discard the 'authenticator' and
         move on. */
      assert(transport.hasCertificate(subject));
@@ -388,11 +388,11 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
        int sigResult = transport.verify(subject, signedHash, auth.getSignature());
        assert((sigResult == SIGNATURE_OK) || sigResult == SIGNATURE_BAD);
        if (sigResult != SIGNATURE_OK) return false;
-       
+
        if (!verify(subject,auth)) {
-         return false; 
+         return false;
        }
-       
+
        /* Do we already have an authenticator with the same sequence number and from the same node? */
        if (existingAuth != null) {
          /* The signature checks out, so the node must have signed two different authenticators
@@ -401,7 +401,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
              logger.warn("Authenticator conflict for {} seq #{}", subject, auth.getSeq());
              logger.debug("Existing: [{}]", existingAuth);
              logger.debug("New:      [{}]", auth);
-             
+
              /**
               * PROOF_INCONSISTENT
               * byte type = PROOF_INCONSISTENT
@@ -420,11 +420,11 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
         sendEvidenceToWitnesses(subject, evidenceSeq, proof);
          return false;
        }
-       
-     
-       /* We haven't seen this authenticator... Signature is ok, so we keep the new authenticator in our store. */  
+
+
+       /* We haven't seen this authenticator... Signature is ok, so we keep the new authenticator in our store. */
        if (store != null) store.addAuthenticator(subject, auth);
-       return true;       
+       return true;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -433,7 +433,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   public Cancellable requestCertificate(Handle source, Identifier certHolder, Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
     return transport.requestCertificate(source, certHolder, c, options);
   }
-  
+
   public Cancellable requestCertificate(final Handle source, final Identifier certHolder) {
     return transport.requestCertificate(source, certHolder, new Continuation<X509Certificate, Exception>() {
 
@@ -443,12 +443,12 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
       public void receiveResult(X509Certificate result) {
         notifyCertificateAvailable(certHolder);
-      }        
+      }
     }, null);
   }
 
   public void notifyCertificateAvailable(Identifier id) {
-    commitmentProtocol.notifyCertificateAvailable(id); 
+    commitmentProtocol.notifyCertificateAvailable(id);
     authPushProtocol.notifyCertificateAvailable(id);
     statementProtocol.notifyCertificateAvailable(id);
   }
@@ -462,32 +462,32 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     updateLogTime();
     logger.info("Writing checkpoint ({} bytes)", sob.getWritten());
     history.appendEntry(EVT_CHECKPOINT, true, sob.getByteBuffer());
-  }  
-  
+  }
+
   /**
-   * Periodic timer for pushing batches of authenticators to the witnesses 
+   * Periodic timer for pushing batches of authenticators to the witnesses
    */
   protected void doAuthPush() {
     logger.info("Doing authenticator push");
     authPushProtocol.push();
   }
-  
+
   /**
-   * Periodic maintenance timer; used to garbage-collect old authenticators 
+   * Periodic maintenance timer; used to garbage-collect old authenticators
    */
   protected void doMaintenance() {
     logger.info("Doing maintenance");
     try {
       authInStore.garbageCollect();
       authOutStore.garbageCollect();
-      authPendingStore.garbageCollect();    
+      authPendingStore.garbageCollect();
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
   }
-  
+
   /**
-   * Periodic timer for writing checkpoints 
+   * Periodic timer for writing checkpoints
    */
   protected void doCheckpoint() {
     HashSeq foo = history.getTopLevelEntry();
@@ -495,20 +495,20 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     try {
       long topIdx = history.findSeq(topSeq);
       if (history.statEntry(topIdx).getType() != EVT_CHECKPOINT) {
-        writeCheckpoint();    
+        writeCheckpoint();
       }
     } catch (IOException ioe) {
       throw new RuntimeException("Error during checkpoint",ioe);
     }
   }
-  
+
   public void notifyStatusChange(final Identifier id, final int newStatus) {
     logger.atInfo().log(() -> "Status change: <"+id+"> becomes "+getStatusString(newStatus));
     challengeProtocol.notifyStatusChange(id, newStatus);
     commitmentProtocol.notifyStatusChange(id, newStatus);
-    
+
     // let pr finish first
-    env.getSelectorManager().schedule(new TimerTask() {    
+    env.getSelectorManager().schedule(new TimerTask() {
       public void run() {
         callback.notifyStatusChange(id, newStatus);
       }
@@ -516,10 +516,10 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
         return "NotifyStatusChangeTask: "+id+"=>"+newStatus;
       }
     }, 3);
-    
+
   }
-  
-  public void init(String dirname) throws IOException {    
+
+  public void init(String dirname) throws IOException {
     assert(callback != null);
     File dir = new File(dirname);
     if (!dir.exists()) {
@@ -528,9 +528,9 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       }
     }
     if (!dir.isDirectory()) throw new IllegalStateException("Cannot open PeerReview directory: "+dir.getAbsolutePath());
-    
+
     File namebuf = new File(dir,"peers");
-    
+
     infoStore = new PeerInfoStoreImpl<Handle, Identifier>(transport, stringTranslator, authenticatorSerialilzer, evidenceSerializer, env);
     infoStore.setStatusChangeListener(this);
 
@@ -538,21 +538,21 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
     boolean newLogCreated = false;
     String historyName = dirname+"/local";
-    
+
     this.history = historyFactory.open(historyName, "w");
     if (this.history == null) {
-      this.history = historyFactory.create(historyName, 0, transport.getEmptyHash());      
+      this.history = historyFactory.create(historyName, 0, transport.getEmptyHash());
       newLogCreated = true;
     }
-    
+
     updateLogTime();
-    
+
     if (!infoStore.setStorageDirectory(namebuf)) {
       throw new IllegalStateException("Cannot open info storage directory '"+namebuf+"'");
     }
-    
+
     /* Initialize authenticator store */
-    
+
     authInStore = new AuthenticatorStoreImpl<Identifier>(this);
     authInStore.setFilename(new File(dir,"authenticators.in"));
 
@@ -567,60 +567,60 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
     /* Remaining protocols */
     this.evidenceTransferProtocol = new EvidenceTransferProtocolImpl<Handle, Identifier>(this,transport,infoStore);
-    this.commitmentProtocol = new CommitmentProtocolImpl<Handle, Identifier>(this,transport,infoStore,authOutStore,history, timeToleranceMillis);    
+    this.commitmentProtocol = new CommitmentProtocolImpl<Handle, Identifier>(this,transport,infoStore,authOutStore,history, timeToleranceMillis);
     this.authPushProtocol = new AuthenticatorPushProtocolImpl<Handle, Identifier>(this, authInStore, authOutStore, authPendingStore, transport, infoStore, evidenceTransferProtocol, env);
     this.auditProtocol = new AuditProtocolImpl<Handle, Identifier>(this, history, infoStore, authInStore, transport, authOutStore, evidenceTransferProtocol, authCacheStore);
     this.challengeProtocol = new ChallengeResponseProtocolImpl<Handle, Identifier>(this, transport, infoStore, history, authOutStore, auditProtocol, commitmentProtocol);
     this.statementProtocol = new StatementProtocolImpl<Handle, Identifier>(this, challengeProtocol, infoStore, transport);
-    
+
     this.evidenceTool = new EvidenceToolImpl<Handle, Identifier>(this, handleSerializer, idSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
     this.verifierFactory = new VerifierFactoryImpl<Handle, Identifier>(this);
-    
+
     initialized = true;
 
-    maintenanceTask = env.getSelectorManager().schedule(new TimerTask() {    
+    maintenanceTask = env.getSelectorManager().schedule(new TimerTask() {
       @Override
       public void run() {
         doMaintenance();
-      }    
+      }
       public String toString() {
         return "DoMaintenanceTask";
       }
     },MAINTENANCE_INTERVAL_MILLIS, MAINTENANCE_INTERVAL_MILLIS);
-    
-    authPushTask = env.getSelectorManager().schedule(new TimerTask() {    
+
+    authPushTask = env.getSelectorManager().schedule(new TimerTask() {
       @Override
       public void run() {
         doAuthPush();
-      }    
+      }
       public String toString() {
         return "AuthPushTask";
       }
     },DEFAULT_AUTH_PUSH_INTERVAL_MILLIS, DEFAULT_AUTH_PUSH_INTERVAL_MILLIS);
-    
-    checkpointTask = env.getSelectorManager().schedule(new TimerTask() {    
+
+    checkpointTask = env.getSelectorManager().schedule(new TimerTask() {
       @Override
       public void run() {
         doCheckpoint();
-      }    
+      }
       public String toString() {
         return "CheckpointTask";
       }
     },newLogCreated ? 1 : DEFAULT_CHECKPOINT_INTERVAL_MILLIS, DEFAULT_CHECKPOINT_INTERVAL_MILLIS);
-        
+
     /* Append an INIT entry to the log */
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     transport.getLocalIdentifier().serialize(sob);
     history.appendEntry(EVT_INIT, true, sob.getByteBuffer());
 
     callback.init();
-    writeCheckpoint();    
+    writeCheckpoint();
   }
-    
+
   public PeerReviewCallback<Handle, Identifier> getApp() {
     return callback;
   }
-  
+
   public SocketRequestHandle<Handle> openSocket(Handle i, SocketCallback<Handle> deliverSocketToMe, Map<String, Object> options) {
     return transport.openSocket(i, deliverSocketToMe, options);
   }
@@ -640,7 +640,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   public Identifier getLocalId() {
     return identifierExtractor.extractIdentifier(transport.getLocalIdentifier());
   }
-  
+
   public Handle getLocalHandle() {
     return transport.getLocalIdentifier();
   }
@@ -650,7 +650,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
 
   public void setErrorHandler(ErrorHandler<Handle> handler) {
-    
+
   }
 
   public void destroy() {
@@ -672,18 +672,18 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   public long getTime() {
     return env.getTimeSource().currentTimeMillis();
   }
-  
-  /** 
-   * A helper function that extracts an authenticator from an incoming message and adds it to our local store. 
+
+  /**
+   * A helper function that extracts an authenticator from an incoming message and adds it to our local store.
    */
   public Authenticator extractAuthenticator(long seq, short entryType, byte[] entryHash, byte[] hTopMinusOne, byte[] signature) {
     byte[] hash = transport.hash(seq,entryType,hTopMinusOne, entryHash);
-    Authenticator ret = new Authenticator(seq,hash,signature);    
+    Authenticator ret = new Authenticator(seq,hash,signature);
     return ret;
   }
-  
+
   public Authenticator extractAuthenticator(Identifier id, long seq, short entryType, byte[] entryHash, byte[] hTopMinusOne, byte[] signature) {
-    
+
     Authenticator ret = extractAuthenticator(seq, entryType, entryHash, hTopMinusOne, signature);
     if (addAuthenticatorIfValid(authOutStore, id, ret)) {
       return ret;
@@ -713,37 +713,37 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   /**
    * Called internally by other classes if they have found evidence against one of our peers.
-   * We ask the EvidenceTransferProtocol to send it to the corresponding witness set. 
+   * We ask the EvidenceTransferProtocol to send it to the corresponding witness set.
    */
   public void sendEvidenceToWitnesses(Identifier subject, long evidenceSeq,
       Evidence evidence) {
     AccusationMessage<Identifier> accusation = new AccusationMessage<Identifier>(getLocalId(),subject,evidenceSeq,evidence);
-   
+
     logger.debug("Relaying evidence to <{}>'s witnesses", subject);
-    evidenceTransferProtocol.sendMessageToWitnesses(subject, accusation, null, null);  
+    evidenceTransferProtocol.sendMessageToWitnesses(subject, accusation, null, null);
   }
 
   /**
    * Note, must include PEER_REVIEW_COMMIT and the type
-   * 
+   *
    * @param dest
    * @param message
    * @param deliverAckToMe
    * @param options
    */
-  public void transmit(Handle dest, 
+  public void transmit(Handle dest,
       PeerReviewMessage message,
-      MessageCallback<Handle, ByteBuffer> deliverAckToMe, 
+      MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
     try {
-      
+
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       sob.writeByte(PeerReview.PEER_REVIEW_COMMIT);
       sob.writeByte((byte)message.getType());
       message.serialize(sob);
-      
+
       ByteBuffer buf = sob.getByteBuffer();
-      
+
       transport.sendMessage(dest, buf, deliverAckToMe, options);
     } catch (IOException ioe) {
       throw new RuntimeException("Error serializing:"+message,ioe);
@@ -765,9 +765,9 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   public boolean verify(Identifier id, Authenticator auth) {
     byte[] signedHash = transport.hash(auth.getPartToHashThenSign());
     int result = transport.verify(id, signedHash, auth.getSignature());
-    return result == SIGNATURE_OK; 
+    return result == SIGNATURE_OK;
   }
-  
+
   public int verify(Identifier id, byte[] msg, byte[] signature) {
     return transport.verify(id, msg, signature);
   }
@@ -799,11 +799,11 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   public SecureHistoryFactory getHistoryFactory() {
     return historyFactory;
   }
-  
+
   public VerifierFactory<Handle, Identifier> getVerifierFactory() {
     return verifierFactory;
   }
-  
+
   void disableAuthenticatorProcessing() {
     assert(initialized);
 

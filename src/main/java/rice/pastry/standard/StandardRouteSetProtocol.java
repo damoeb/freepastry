@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.standard;
 
 import java.io.IOException;
@@ -57,10 +57,10 @@ import rice.pastry.routing.RoutingTable;
 
 /**
  * An implementation of a simple route set protocol.
- * 
+ *
  * @version $Id: StandardRouteSetProtocol.java,v 1.15 2005/03/11 00:58:02 jeffh
  *          Exp $
- * 
+ *
  * @author Andrew Ladd
  * @author Peter Druschel
  */
@@ -71,14 +71,14 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
   private RoutingTable routeTable;
 
   private Environment environmet;
-  
+
   protected Logger logger;
 
   static class SRSPDeserializer extends PJavaSerializedDeserializer {
     public SRSPDeserializer(PastryNode pn) {
-      super(pn); 
+      super(pn);
     }
-    
+
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
       switch (type) {
         case RequestRouteRow.TYPE:
@@ -87,19 +87,19 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
           return new BroadcastRouteRow(buf,pn,pn);
       }
       return null;
-    }    
+    }
   }
-  
+
   /**
    * Constructor.
-   * 
+   *
    * @param ln the local node
    * @param rt the routing table
    */
   public StandardRouteSetProtocol(PastryNode ln, RoutingTable rt) {
     this(ln, rt, null);
   }
-  
+
   public StandardRouteSetProtocol(PastryNode ln, RoutingTable rt, MessageDeserializer md) {
     super(ln, null, RouteProtocolAddress.getCode(),  md == null ? new SRSPDeserializer(ln) : md);
     this.environmet = ln.getEnvironment();
@@ -110,7 +110,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
   /**
    * Receives a message.
-   * 
+   *
    * @param msg the message.
    */
 
@@ -197,16 +197,16 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
         if (rs != null && rs.size() > 0) {
           NodeHandle nh;
-          
+
           nh = rs.closestNode(10); // any liveness status will work
-          
+
           // this logic is to make this work correctly in the simulator
           // if we find him not alive, then we would have routed to him and the liveness would have failed
           // thus the correct behavior is to break, not continue.  In other words, we waste this cycle
           // finding the node faulty and removing it rather than doing an actual swap
           // - Jeff Hoye,  Aug 9, 2006
           if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
-            logger.debug("found dead node in table:{}", nh);            
+            logger.debug("found dead node in table:{}", nh);
             rs.remove(nh);
             break;
           }

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.message;
 
 import java.io.IOException;
@@ -49,12 +49,12 @@ import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
- * 
+ *
  * Note, it's only Evidence when the type has been changed.
- * 
+ *
   MSG_USERDATA
   byte type = MSG_USERDATA
-  long long topSeq   
+  long long topSeq
   handle senderHandle
   hash hTopMinusOne
   signature sig
@@ -70,9 +70,9 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
   Handle senderHandle;
   byte[] hTopMinusOne;
   byte[] signature;
-  int relevantLen; 
+  int relevantLen;
   private byte[] payload;
-  
+
   public UserDataMessage(long topSeq, Handle senderHandle, byte[] topMinusOne,
       byte[] sig, ByteBuffer message, int relevantlen) {
     this.topSeq = topSeq;
@@ -81,7 +81,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
     this.signature = sig;
     this.relevantLen = relevantlen;
 
-    assert((relevantlen == message.remaining()) || (relevantlen < 255));        
+    assert((relevantlen == message.remaining()) || (relevantlen < 255));
     if (message.remaining() == message.array().length) {
       this.payload = message.array();
     } else {
@@ -93,7 +93,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
   public String toString() {
     return "UDM:"+topSeq+","+senderHandle+","+MathUtils.toHex(hTopMinusOne)+","+MathUtils.toHex(signature)+","+relevantLen+","+payload.length;
   }
-  
+
   public short getType() {
     return TYPE;
   }
@@ -102,12 +102,12 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
     byte relevantCode = (relevantLen == payload.length) ? (byte)0xFF : (byte)relevantLen;
     return relevantCode;
   }
-  
+
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeLong(topSeq);
     senderHandle.serialize(buf);
     buf.write(hTopMinusOne, 0, hTopMinusOne.length);
-    buf.write(signature, 0, signature.length); 
+    buf.write(signature, 0, signature.length);
     byte relevantCode = getRelevantCode();
     buf.writeByte(relevantCode);
       buf.write(payload, 0, payload.length);
@@ -116,8 +116,8 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
   public static <H extends RawSerializable> UserDataMessage<H> build(
       InputBuffer buf, Serializer<H> serializer, int hashSize, int sigSize) throws IOException {
     long seq = buf.readLong();
-    H handle = serializer.deserialize(buf); 
-    byte[] hash = new byte[hashSize]; 
+    H handle = serializer.deserialize(buf);
+    byte[] hash = new byte[hashSize];
     buf.read(hash);
     byte[] sig = new byte[sigSize];
     buf.read(sig);
@@ -125,12 +125,12 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
     int len = MathUtils.uByteToInt(relevantCode);
 
     byte[] msg = new byte[buf.bytesRemaining()];
-    buf.read(msg);    
-    
+    buf.read(msg);
+
     if (len == 0xFF) {
       len = msg.length;
     }
-    
+
     return new UserDataMessage<H>(seq, handle, hash, sig, ByteBuffer.wrap(msg), len);
   }
 
@@ -157,7 +157,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
   public ByteBuffer getPayload() {
     return ByteBuffer.wrap(payload);
   }
-  
+
   public EvtRecv<Handle> getReceiveEvent(HashProvider hasher) {
     if (getRelevantLen() < getPayload().remaining()) {
       return new EvtRecv<Handle>(getSenderHandle(), getTopSeq(), getPayload(), getRelevantLen(), hasher);
@@ -173,7 +173,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
    */
   public byte[] getInnerHash(RawSerializable myId, HashProvider hasher) {
     try {
-      SimpleOutputBuffer sob = new SimpleOutputBuffer();    
+      SimpleOutputBuffer sob = new SimpleOutputBuffer();
       myId.serialize(sob);
       sob.writeBoolean(getRelevantLen() < getPayloadLen());
       return getInnerHash(sob.getByteBuffer(), hasher);
@@ -181,7 +181,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
       throw new RuntimeException(ioe);
     }
   }
-  
+
   /**
    * @param hasher
    * @return
@@ -197,7 +197,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
       throw new RuntimeException(ioe);
     }
   }
-  
+
   public byte[] getInnerHash(ByteBuffer header, HashProvider hasher) {
     /* The peer will have logged a RECV entry, and the signature is calculated over that
     entry. To verify the signature, we must reconstruct that RECV entry locally */
@@ -208,7 +208,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
     } else {
       return hasher.hash(header, ByteBuffer.wrap(payload));
     }
-    
+
   }
 
   public int getPayloadLen() {

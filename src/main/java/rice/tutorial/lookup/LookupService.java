@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.tutorial.lookup;
 
 import java.util.HashMap;
@@ -54,9 +54,9 @@ import rice.p2p.commonapi.RouteMessage;
  * given Id. It does this by routing a request across the ring, doing a
  * replicaSet lookup at the destination, and sending the result back. It is
  * perhaps the simplest useful application.
- * 
+ *
  * @author jstewart
- * 
+ *
  */
 public class LookupService implements Application {
 
@@ -74,7 +74,7 @@ public class LookupService implements Application {
 
   /**
    * Build a LookupService application with a specified timeout
-   * 
+   *
    * @param node
    *                the local node
    * @param timeout
@@ -100,13 +100,13 @@ public class LookupService implements Application {
       if (this.timeout <= 0) this.timeout = 30000; // a sane but very large
                                                     // value
     }
-    
+
     if (this.firstTimeout <= 0) this.firstTimeout = this.timeout / 16;
   }
 
   /**
    * Build a LookupService application with the default lookup timeout
-   * 
+   *
    * @param node
    *                the local node
    */
@@ -116,7 +116,7 @@ public class LookupService implements Application {
 
   /**
    * This Application always forwards its messages
-   * 
+   *
    * @see rice.p2p.commonapi.Application#forward(rice.p2p.commonapi.RouteMessage)
    */
   public boolean forward(RouteMessage message) {
@@ -175,11 +175,11 @@ public class LookupService implements Application {
    * via its continuation the set of <tt>num</tt> NodeHandles that are in
    * <tt>id</tt>'s replicaSet. Calling requestNodeHandles with a <tt>num</tt>
    * of 1 will return the node currently responsible for Id id.
-   * 
+   *
    * If there is a network problem or the Id of interest is not currently owned
    * by any node (for example due to churn in the overlay), the continuation
    * will receive a NodeLookupTimeoutException.
-   * 
+   *
    * @param id
    *                the Id of interest
    * @param num
@@ -235,7 +235,7 @@ public class LookupService implements Application {
    * This does the internal processing for requestNodeHandle(s). It adds the
    * continuation to the pending table, updates the sequence number, schedules
    * this timeout, and finally sends the actual message.
-   * 
+   *
    * @param id
    *                the Id of interest
    * @param num
@@ -256,11 +256,11 @@ public class LookupService implements Application {
    * Find the primary replica of a key. This is the node with the Id closest to
    * the key in pastry. This method will return via its continuation the
    * NodeHandle that is closest to <tt>id</tt>.
-   * 
+   *
    * If there is a network problem or the Id of interest is not currently owned
    * by any node (for example due to churn in the overlay), the continuation
    * will receive a NodeLookupTimeoutException.
-   * 
+   *
    * @param id
    *                the Id of interest
    * @param cont
@@ -289,7 +289,7 @@ public class LookupService implements Application {
 
   /**
    * This is a message used internally for implementing timeouts
-   * 
+   *
    * @author jstewart
    */
   public static class NodeLookupTimeout implements Message {
@@ -308,7 +308,7 @@ public class LookupService implements Application {
 
   /**
    * The query message
-   * 
+   *
    * @author jstewart
    */
   public static class NodeLookupQuery implements Message {
@@ -330,7 +330,7 @@ public class LookupService implements Application {
 
   /**
    * The response message
-   * 
+   *
    * @author jstewart
    */
   public static class NodeLookupResponse implements Message {
@@ -351,7 +351,7 @@ public class LookupService implements Application {
   /**
    * Returned by continuations handed to requestNodeHandles when a request times
    * out.
-   * 
+   *
    * @author jstewart
    */
   public static class NodeLookupTimeoutException extends Exception {

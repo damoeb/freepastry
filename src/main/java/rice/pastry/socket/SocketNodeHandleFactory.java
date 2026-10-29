@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.socket;
 
 import java.io.IOException;
@@ -57,53 +57,53 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   protected Map<SocketNodeHandle, SocketNodeHandle> handleSet;
   protected Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> listeners = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>();
   Logger logger;
-  
+
   public SocketNodeHandleFactory(PastryNode pn) {
     this.pn = pn;
     this.logger = pn.getEnvironment().getLogManager().getLogger(SocketNodeHandleFactory.class, null);
-    
+
     handleSet = new HashMap<SocketNodeHandle, SocketNodeHandle>();
   }
-  
-  
+
+
   /**
-   * This is kind of weird, may need to rethink this.  This is called to build one w/o 
+   * This is kind of weird, may need to rethink this.  This is called to build one w/o
    * deserializing anything.  (Either the local node, or one with a bogus id).
-   * 
+   *
    * @param i
    * @param id
    * @return
    */
   public SocketNodeHandle getNodeHandle(MultiInetSocketAddress i, long epoch, Id id) {
     SocketNodeHandle handle = new SocketNodeHandle(i, epoch, id, pn);
-    
+
     return (SocketNodeHandle)coalesce(handle);
   }
 
   public SocketNodeHandle readNodeHandle(InputBuffer buf) throws IOException {
     return coalesce(SocketNodeHandle.build(buf, pn));
   }
-  
+
   public SocketNodeHandle coalesce(SocketNodeHandle h) {
     SocketNodeHandle handle = (SocketNodeHandle)h;
     if (handleSet.containsKey(handle)) {
       return handleSet.get(handle);
     }
-    
+
     handle.setLocalNode(pn);
-    
+
     handleSet.put(handle, handle);
     notifyListeners(handle);
     return handle;
   }
-  
+
   /**
    * Notify the listeners that this new handle has come along.
    */
   protected void notifyListeners(SocketNodeHandle nh) {
     Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> temp = listeners;
-    synchronized (listeners) {      
-      temp = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>(listeners);      
+    synchronized (listeners) {
+      temp = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>(listeners);
     }
     for (NodeHandleFactoryListener<? super SocketNodeHandle> foo:temp) {
       foo.nodeHandleFound(nh);

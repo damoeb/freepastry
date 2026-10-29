@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.p2p.scribe.testing;
 
 import java.io.IOException;
@@ -100,19 +100,19 @@ public class ScribeRegrTest extends CommonAPITest {
   public void setupParams(Environment env) {
     super.setupParams(env);
     // want to retry fast because of problems with isReady()
-    env.getParameters().setInt("p2p_scribe_message_timeout",3000); 
+    env.getParameters().setInt("p2p_scribe_message_timeout",3000);
   }
-  
+
   /**
    * Usage: ScribeRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (rmi|wire)]
    * [-help]
    */
   public static void main(String args[]) throws IOException {
     Environment env = parseArgs(args);
-    
+
     ScribeRegrTest scribeTest = new ScribeRegrTest(env);
-    
-    
+
+
     scribeTest.start();
     env.destroy();
   }
@@ -147,7 +147,7 @@ public class ScribeRegrTest extends CommonAPITest {
     testSingleRoot("Single rooted Trees");
     testAPI();
     testFailureNotification();
-    testAddNode();    
+    testAddNode();
     testMaintenance();
 
   }
@@ -155,13 +155,13 @@ public class ScribeRegrTest extends CommonAPITest {
   /*
    *  ---------- Test methods and classes ----------
    */
-  
+
   protected void testAddNode() {
     String name = "TestAddNode";
     Topic topic = new Topic(generateId());
     Id id = topic.getId();
     TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
-    
+
     sectionStart("Test Add Node");
     stepStart("Tree Construction id "+id);
     for (int i = 0; i < NUM_NODES; i++) {
@@ -170,7 +170,7 @@ public class ScribeRegrTest extends CommonAPITest {
       simulate();
     }
     stepDone(SUCCESS);
-    
+
     stepStart("Add New Root");
     PastryNode pn;
     try {
@@ -186,7 +186,7 @@ public class ScribeRegrTest extends CommonAPITest {
       pn.boot(bootstrap);
     }
     nodes[NUM_NODES] = pn;
-    processNode(NUM_NODES, pn);    
+    processNode(NUM_NODES, pn);
     logger.info("Adding new root: {}", pn);
     synchronized(nodes[NUM_NODES]) {
       while(!pn.isReady()) {
@@ -197,11 +197,11 @@ public class ScribeRegrTest extends CommonAPITest {
     if (children.size() >= 1) {
       stepDone(SUCCESS);
     } else {
-      stepDone(FAILURE, "Node should be the root, has "+children.size()+" children for topic "+topic+"."); 
+      stepDone(FAILURE, "Node should be the root, has "+children.size()+" children for topic "+topic+".");
     }
     sectionDone();
   }
-  
+
   /**
     * Tests basic functionality
    */
@@ -253,7 +253,7 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart(name + " Anycast - No Accept");
     local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
 
-    local.anycast(topic, buildTestScribeContent(topic, 59));    
+    local.anycast(topic, buildTestScribeContent(topic, 59));
     simulate(NUM_NODES);
 
     failed = false;
@@ -325,12 +325,12 @@ public class ScribeRegrTest extends CommonAPITest {
           }
         }
       }
-    
+
       stepDone(FAILURE, "Expected 2 anycast messages to be found, found "+total+" l:"+str);
     } else {
       stepDone(SUCCESS);
     }
-    
+
     stepStart(name + " Unsubscribe");
     for (int i=0; i < NUM_NODES/SKIP; i++) {
       scribes[i].unsubscribe(topic, clients[i]);
@@ -372,7 +372,7 @@ public class ScribeRegrTest extends CommonAPITest {
     }
 
     if (! failed)
-      stepDone(SUCCESS);    
+      stepDone(SUCCESS);
 
     sectionDone();
   }
@@ -386,15 +386,15 @@ public class ScribeRegrTest extends CommonAPITest {
       int NUM_MESSAGES = 5;
       int SKIP = skip;
       int NUM_TOPICS = 2;
-      
-      // build antipodal topics so they are guaranteed to have different parents   
+
+      // build antipodal topics so they are guaranteed to have different parents
       TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
       List<Topic> topics = new ArrayList<Topic>(NUM_TOPICS);
       int[] id1 = {0, 0, 0, 0, 0x80000000};
       int[] id2 = {0, 0, 0, 0, 0};
       topics.add(new Topic(FACTORY.buildId(id1)));
       topics.add(new Topic(FACTORY.buildId(id2)));
-      
+
       stepStart(name + " Tree Construction (Parent Independence)");
       for (int i = 0; i < NUM_NODES; i++) {
         clients[i] = new TestScribeClient(scribes[i], topics, i);
@@ -405,11 +405,11 @@ public class ScribeRegrTest extends CommonAPITest {
       int numWithParent = 0;
       for (int i=0; i < NUM_NODES; i++) {
         if (scribes[i].getParent(topics.get(0)) == scribes[i].getParent(topics.get(1))) {
-          stepDone(FAILURE, "Topics "+topics.get(0)+" and "+topics.get(1)+" had same parent "+scribes[i].getParent(topics.get(0))+" on node "+scribes[i].getEndpoint().getLocalNodeHandle());         
+          stepDone(FAILURE, "Topics "+topics.get(0)+" and "+topics.get(1)+" had same parent "+scribes[i].getParent(topics.get(0))+" on node "+scribes[i].getEndpoint().getLocalNodeHandle());
         }
       }
       stepDone(SUCCESS);
-      
+
       stepStart(name + " Publish");
       ScribeImpl local = scribes[environment.getRandomSource().nextInt(NUM_NODES/SKIP)];
 
@@ -434,7 +434,7 @@ public class ScribeRegrTest extends CommonAPITest {
       stepStart(name + " Anycast - No Accept");
       local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
 
-      for (Topic topic : topics) 
+      for (Topic topic : topics)
         local.anycast(topic, buildTestScribeContent(topic, 62));
       simulate(NUM_NODES*NUM_TOPICS);
 
@@ -457,7 +457,7 @@ public class ScribeRegrTest extends CommonAPITest {
       client.acceptAnycast(true);
       local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
 
-      for (Topic topic : topics) 
+      for (Topic topic : topics)
         local.anycast(topic, buildTestScribeContent(topic, 63));
       simulate(NUM_NODES*NUM_TOPICS);
 
@@ -490,7 +490,7 @@ public class ScribeRegrTest extends CommonAPITest {
 
       local = scribes[environment.getRandomSource().nextInt(NUM_NODES/SKIP)];
 
-      for (Topic topic : topics) 
+      for (Topic topic : topics)
         local.anycast(topic, buildTestScribeContent(topic, 64));
       simulate(NUM_TOPICS);
 
@@ -508,12 +508,12 @@ public class ScribeRegrTest extends CommonAPITest {
             }
           }
         }
-      
+
         stepDone(FAILURE, "Expected "+(NUM_TOPICS*2)+" anycast messages to be found, found "+total+" l:"+str);
       } else {
         stepDone(SUCCESS);
       }
-      
+
       stepStart(name + " Unsubscribe");
       for (int i=0; i < NUM_NODES/SKIP; i++) {
         for (Topic topic : topics) {
@@ -523,7 +523,7 @@ public class ScribeRegrTest extends CommonAPITest {
       }
 
       local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
-      for (Topic topic : topics) 
+      for (Topic topic : topics)
         local.publish(topic, buildTestScribeContent(topic, 100));
       simulate();
 
@@ -546,12 +546,12 @@ public class ScribeRegrTest extends CommonAPITest {
             stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no clients, had " + scribes[i].getClientsByTopic(topic).size());
             failed = true;
           }
-  
+
           if (scribes[i].getChildrenOfTopic(topic).size() > 0) {
             stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no children, had " + scribes[i].getChildrenOfTopic(topic).size());
             failed = true;
           }
-  
+
           if (scribes[i].getParent(topic) != null) {
             stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no parent, had " + scribes[i].getParent(topic));
             failed = true;
@@ -560,12 +560,12 @@ public class ScribeRegrTest extends CommonAPITest {
       }
 
       if (! failed)
-        stepDone(SUCCESS);    
+        stepDone(SUCCESS);
 
       sectionDone();
     }
 
-  
+
   /**
     * Tests basic publish functionality
    */
@@ -599,12 +599,12 @@ public class ScribeRegrTest extends CommonAPITest {
           s+=" "+scribes[i];
         }
       }
-      
+
       stepDone(FAILURE, "Expected at least " + (NUM_NODES/2 - 1) + " nodes with parents, found " + numWithParent+" "+s);
     } else
       if (numWithParent > (NUM_NODES/2))
         stepDone(FAILURE, "Expected no more than " + (NUM_NODES/2) + " nodes with parents, due to policy, found " + numWithParent);
-      else 
+      else
         stepDone(SUCCESS);
 
     stepStart("Drop Child");
@@ -628,7 +628,7 @@ public class ScribeRegrTest extends CommonAPITest {
 
       // set this client to never allow subscribes
       policy.neverAllowSubscribe(true);
-      
+
       // drop the handle now
       scribe.removeChild(topic, child);
       simulate();
@@ -665,7 +665,7 @@ public class ScribeRegrTest extends CommonAPITest {
       policies[i].neverAllowSubscribe(false);
     }
     stepDone(SUCCESS);
-      
+
     sectionDone();
   }
 
@@ -683,13 +683,13 @@ public class ScribeRegrTest extends CommonAPITest {
     }
 
     stepDone(SUCCESS);
-    
+
     stepStart("Subscribe Attempt");
     int i = environment.getRandomSource().nextInt(NUM_NODES-1);
 
     while (scribes[i].isRoot(topic))
       i = environment.getRandomSource().nextInt(NUM_NODES-1);
-    
+
     client = new TestScribeClient(scribes[i], topic, i);
     scribes[i].subscribe(topic, client, (RawScribeContent) null, null);
     simulate();
@@ -710,7 +710,7 @@ public class ScribeRegrTest extends CommonAPITest {
     stepDone(SUCCESS);
 
     sectionDone();
-  }    
+  }
 
 
     protected void testSingleRoot(String name) {
@@ -721,33 +721,33 @@ public class ScribeRegrTest extends CommonAPITest {
   for(int num=0; num<numTrees; num ++) {
       Topic topic = new Topic(generateId());
       TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
-      
+
       stepStart(name + " TopicId=" + topic.getId());
       for (int i = 0; i < NUM_NODES; i++) {
         clients[i] = new TestScribeClient(scribes[i], topic, i);
         scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
         simulate();
       }
-      
+
       int numRoot = 0;
       for (int i=0; i < NUM_NODES; i++) {
     if (scribes[i].isRoot(topic)) {
         numRoot++;
     }
       }
-      
+
       if (numRoot != 1) {
     stepDone(FAILURE, "Number of roots= " + numRoot);
     failed = true;
       }
       else
     stepDone(SUCCESS);
-      
+
   }
   sectionDone();
-  
+
     }
-    
+
 
 
   /**
@@ -777,7 +777,7 @@ public class ScribeRegrTest extends CommonAPITest {
       stepDone(FAILURE, "Expected at least " + (NUM_NODES - 1) + " nodes with parents, found " + numWithParent);
     else
       stepDone(SUCCESS);
-    
+
     stepStart("Killing Nodes");
     for (int i=0; i<NUM_NODES/2; i++) {
       logger.info("Killing {}", nodes[i]);
@@ -786,11 +786,11 @@ public class ScribeRegrTest extends CommonAPITest {
       simulate(5);
     }
 
-    waitToRecoverFromKilling(scribes[0].MESSAGE_TIMEOUT);    
+    waitToRecoverFromKilling(scribes[0].MESSAGE_TIMEOUT);
     stepDone(SUCCESS);
 
     stepStart("Tree Recovery");
-    
+
     int localIndex = environment.getRandomSource().nextInt(NUM_NODES/2) + NUM_NODES/2;
     ScribeImpl local = scribes[localIndex];
 
@@ -812,7 +812,7 @@ public class ScribeRegrTest extends CommonAPITest {
 
     sectionDone();
   }
-  
+
 
   /**
    * Private method which generates a random Id
@@ -829,7 +829,7 @@ public class ScribeRegrTest extends CommonAPITest {
     List<Topic> ret = new ArrayList<Topic>(1);
     ret.add(topic);
     return ret;
-  }    
+  }
 
   /**
    * Utility class for past content objects
@@ -908,7 +908,7 @@ public class ScribeRegrTest extends CommonAPITest {
 
     /**
      * Gets the Message attribute of the TestRouteMessage object
-     * 
+     *
      * @deprecated
      * @return The Message value
      */
@@ -947,11 +947,11 @@ public class ScribeRegrTest extends CommonAPITest {
     public void setMessage(Message message) {
       this.message = message;
     }
-    
+
     public void setMessage(RawMessage message) {
       this.message = message;
     }
-    
+
   }
 
   /**
@@ -995,9 +995,9 @@ public class ScribeRegrTest extends CommonAPITest {
      * Constructor for TestScribeClient.
      */
     public TestScribeClient(Scribe scribe, Topic topic, int i) {
-      this(scribe, buildListOf1(topic), i);   
+      this(scribe, buildListOf1(topic), i);
     }
-    
+
     public TestScribeClient(Scribe scribe, List<Topic> topics, int i) {
       this.scribe = scribe;
       this.i = i;
@@ -1058,14 +1058,14 @@ public class ScribeRegrTest extends CommonAPITest {
     public boolean getSubscribeFailed() {
       return subscribeFailed;
     }
-    
-    public String toString() {      
+
+    public String toString() {
       if (topics.size() == 1) {
-        return topics.get(0).toString(); 
+        return topics.get(0).toString();
       }
       String s = "";
       for (Topic topic : topics) {
-        s+=topics.toString()+" "; 
+        s+=topics.toString()+" ";
       }
       return s+scribe;
     }
@@ -1078,7 +1078,7 @@ public class ScribeRegrTest extends CommonAPITest {
     protected boolean allowSubscribe;
 
     protected boolean neverAllowSubscribe;
-    
+
     public TestScribePolicy(Scribe scribe) {
       super(scribe.getEnvironment());
       this.scribe = scribe;
@@ -1106,17 +1106,3 @@ public class ScribeRegrTest extends CommonAPITest {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.history;
 
 import java.io.File;
@@ -47,16 +47,16 @@ import rice.p2p.util.RandomAccessFileIOBuffer;
 
 public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntryFactory, PeerReviewConstants {
   Environment environment;
-  
+
   HashProvider hashProv;
 
-  public SecureHistoryFactoryImpl(HashProvider hashProv, Environment env) {    
+  public SecureHistoryFactoryImpl(HashProvider hashProv, Environment env) {
     this.hashProv = hashProv;
     this.environment = env;
   }
-  
+
   /**
-   * Creates a new history (aka log). Histories are stored as two files: The 'index' file has a 
+   * Creates a new history (aka log). Histories are stored as two files: The 'index' file has a
    * fixed-size record for each entry, which contains the sequence number, content and node
    * hashes, as well as an index into the data file. The 'data' file just contains the raw
    * bytes for each entry. Note that the caller must specify the node hash and the sequence
@@ -64,13 +64,13 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
    */
   public SecureHistory create(String name, long baseSeq, byte[] baseHash) throws IOException {
     RandomAccessFileIOBuffer indexFile, dataFile;
-    
+
     if (name == null) {
       name = "peerReview."+environment.getTimeSource().currentTimeMillis()+"."+environment.getRandomSource().nextInt();
     }
     String indexName = name+".index";
     String dataName = name+".data";
-    
+
     File f = new File(indexName);
     if (f.exists()) {
       throw new RuntimeException("File "+f+" already exists.");
@@ -79,9 +79,9 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
     if (f.exists()) {
       throw new RuntimeException("File "+f+" already exists.");
     }
-    
+
     indexFile = new RandomAccessFileIOBuffer(indexName, "rw"); // may be rw
-    
+
     try {
       dataFile = new RandomAccessFileIOBuffer(dataName, "rw"); // may be rw
     } catch (IOException ioe) {
@@ -90,39 +90,39 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
     }
 
     IndexEntry entry = new IndexEntry(baseSeq, (long)0,EVT_INIT,-1, hashProv.getEmptyHash(), baseHash);
-    
+
     entry.serialize(indexFile);
-    
+
     SecureHistoryImpl history = makeSecureHistory(indexFile, dataFile, false, hashProv, this, environment.getLogManager().getLogger(SecureHistoryImpl.class, name));
-    
+
     return history;
   }
 
   protected SecureHistoryImpl makeSecureHistory(RandomAccessFileIOBuffer indexFile, RandomAccessFileIOBuffer dataFile, boolean readOnly, HashProvider hashProv, IndexEntryFactory indexFactory, Logger logger) throws IOException {
     return new SecureHistoryImpl(indexFile, dataFile, readOnly, hashProv, indexFactory, logger);
   }
-  
+
   /**
    *  Opens an existing history (aka log). The 'mode' can either be 'r' (read-only) or
-   *  'w' (read/write). 
+   *  'w' (read/write).
    */
 
   public SecureHistory open(String name, String mode) throws IOException {
     boolean readOnly = false;
-    
+
     if (mode.equals("r")) {
       readOnly = true;
     } else if (!mode.equals("w")) {
       return null;
     }
-    
+
     String fileMode;
     if (readOnly) {
       fileMode = "r";
     } else {
       fileMode = "rw"; // may be "rw"
     }
-    
+
     File f = new File(name+".index");
     if (!f.exists()) {
       return null;
@@ -132,7 +132,7 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
     if (!f2.exists()) {
       return null;
     }
-    
+
 
     RandomAccessFileIOBuffer indexFile = new RandomAccessFileIOBuffer(name+".index",fileMode);
 

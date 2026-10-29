@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.pastry;
 
@@ -46,24 +46,24 @@ import rice.p2p.util.RedBlackMap;
 
 /**
  * Represents a set of Pastry ids.
- * 
+ *
  * needs to be final otherwise:
  * clone method does not call super.clone()
  * This non-final class defines a clone() method that does not call super.
- * clone(). If this class ("A") is extended by a subclass ("B"), and the subclass 
- * B calls super.clone(), then it is likely that B's clone() method will return an 
- * object of type A, which violates the standard contract for clone(). 
- * If all clone() methods call super.clone(), then they are guaranteed to use 
+ * clone(). If this class ("A") is extended by a subclass ("B"), and the subclass
+ * B calls super.clone(), then it is likely that B's clone() method will return an
+ * object of type A, which violates the standard contract for clone().
+ * If all clone() methods call super.clone(), then they are guaranteed to use
  * Object.clone(), which always returns an object of the correct type.
- * 
+ *
  * @version $Id: IdSet.java 4654 2009-01-08 16:33:07Z jeffh $
  *
  * @author Peter Druschel
  */
 @SuppressWarnings("unchecked")
 public final class IdSet implements rice.p2p.commonapi.IdSet {
-  
-  
+
+
   static final long serialVersionUID = -1565571743719309172L;
 
   private SortedMap<rice.p2p.commonapi.Id, ?> idSet;
@@ -82,7 +82,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
 
   /**
    * Constructor.
-   * constructs 
+   * constructs
    * @param s the TreeSet based on which we construct a new IdSet
    */
   public IdSet(SortedMap<rice.p2p.commonapi.Id, ?> s) {
@@ -249,7 +249,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   public boolean isMemberId(rice.p2p.commonapi.Id id) {
     return isMember((Id) id);
   }
-  
+
   /**
    * Returns a new, empty IdSet of this type
    *
@@ -258,7 +258,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   public rice.p2p.commonapi.IdSet build() {
     return new IdSet();
   }
-  
+
   /**
    * return a subset of this set, consisting of the member ids in a given range
    * @param range the range (a rice.pastry.IdRange)
@@ -267,7 +267,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   public rice.p2p.commonapi.IdSet subSet(rice.p2p.commonapi.IdRange range) {
     return subSet((IdRange) range);
   }
-  
+
   /**
    * return a hash of this set
    *
@@ -276,7 +276,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   public byte[] hash() {
     return getHash();
   }
-  
+
   /**
    * return this set as an array
    * @return the array
@@ -284,7 +284,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   public rice.p2p.commonapi.Id[] asArray() {
     return (rice.p2p.commonapi.Id[]) idSet.keySet().toArray(new rice.p2p.commonapi.Id[0]);
   }
-  
+
   public Object clone(){
     return new IdSet(idSet);
   }

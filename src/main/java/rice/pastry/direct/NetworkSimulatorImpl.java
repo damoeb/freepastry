@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package rice.pastry.direct;
 
 import java.util.ArrayList;
@@ -54,7 +54,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
   protected RandomSource random;
   protected ProximityGenerator generator;
   protected LivenessProvider<Identifier> livenessProvider;
-  
+
   // TODO: add a listener to the top-level transport layer to notify simulator listeners
   public NetworkSimulatorImpl(Environment env, ProximityGenerator generator) {
     Parameters params = env.getParameters();
@@ -99,12 +99,12 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
   public void stop() {
     simulator.stop();
   }
-  
-  // ************************* What is this? ********************** 
+
+  // ************************* What is this? **********************
   private TestRecord testRecord;
   /**
    * get TestRecord
-   * 
+   *
    * @return the returned TestRecord
    */
   public TestRecord getTestRecord() {
@@ -113,16 +113,16 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
 
   /**
    * set TestRecord
-   * 
+   *
    * @param tr input TestRecord
    */
   public void setTestRecord(TestRecord tr) {
     testRecord = tr;
   }
 
-  
+
   /************** SimulatorListeners handling *******************/
-  List<GenericSimulatorListener<Identifier, MessageType>> listeners = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>();  
+  List<GenericSimulatorListener<Identifier, MessageType>> listeners = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>();
   public boolean addSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl) {
     synchronized(listeners) {
       if (listeners.contains(sl)) return false;
@@ -139,12 +139,12 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
 
   public void notifySimulatorListenersSent(MessageType m, Identifier from, Identifier to, int delay) {
     List<GenericSimulatorListener<Identifier, MessageType>> temp;
-    
+
     // so we aren't holding a lock while iterating/calling
     synchronized(listeners) {
        temp = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>(listeners);
     }
-  
+
     for(GenericSimulatorListener<Identifier, MessageType> listener : temp) {
       listener.messageSent(m, from, to, delay);
     }
@@ -152,19 +152,19 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
 
   public void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to) {
     List<GenericSimulatorListener<Identifier, MessageType>> temp;
-    
+
     // so we aren't holding a lock while iterating/calling
     synchronized(listeners) {
        temp = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>(listeners);
     }
-  
+
     for(GenericSimulatorListener<Identifier, MessageType> listener : temp) {
       listener.messageReceived(m, from, to);
     }
   }
 
   public void destroy(DirectPastryNode dpn) {
-    
+
   }
 
   public CancellableTask enqueueDelivery(Delivery del, int delay) {
@@ -192,7 +192,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
   }
 
   public void removeNode(PastryNode node) {
-    
+
   }
 
   public NodeRecord getNodeRecord(DirectNodeHandle handle) {

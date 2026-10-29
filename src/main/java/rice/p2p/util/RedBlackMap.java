@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /*
  * @(#)RedBlackMap.java  1.56 03/01/23
  *
@@ -56,9 +56,9 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 
 /**
- * This class is a modification of the RedBlackMap java class, with the added 
+ * This class is a modification of the RedBlackMap java class, with the added
  * benefit that iterators do not throw a ConcurrentModificationException when
- * the backing tree changes.  The iterator is guaranteed to walk through 
+ * the backing tree changes.  The iterator is guaranteed to walk through
  * some version of the tree, and may show nodes which were deleted or which
  * were subsequently added, but it will not die.
  */
@@ -173,7 +173,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      * key.
      *
      * @param key key whose presence in this map is to be tested.
-     * 
+     *
      * @return <tt>true</tt> if this map contains a mapping for the
      *            specified key.
      * @throws ClassCastException if the key cannot be compared with the keys
@@ -240,7 +240,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      * @throws NullPointerException key is <tt>null</tt> and this map uses
      *                  natural ordering, or its comparator does not tolerate
      *                  <tt>null</tt> keys.
-     * 
+     *
      * @see #containsKey(Object)
      */
     public synchronized V get(Object key) {
@@ -287,9 +287,9 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      * @param     map mappings to be stored in this map.
      * @throws    ClassCastException class of a key or value in the specified
      *                   map prevents it from being stored in this map.
-     * 
+     *
      * @throws NullPointerException if the given map is <tt>null</tt> or
-     *         this map does not permit <tt>null</tt> keys and a 
+     *         this map does not permit <tt>null</tt> keys and a
      *         key in the specified map is <tt>null</tt>.
      */
     public synchronized void putAll(Map<? extends K, ? extends V> map) {
@@ -406,7 +406,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
     }
 
     /**
-     * Returns the key corresonding to the specified Entry.  Throw 
+     * Returns the key corresonding to the specified Entry.  Throw
      * NoSuchElementException if the Entry is <tt>null</tt>.
      */
     private static <K,V> K key(Entry<K,V> e) {
@@ -422,7 +422,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      *
      * @param key key with which the specified value is to be associated.
      * @param value value to be associated with the specified key.
-     * 
+     *
      * @return previous value associated with specified key, or <tt>null</tt>
      *         if there was no mapping for key.  A <tt>null</tt> return can
      *         also indicate that the map previously associated <tt>null</tt>
@@ -476,7 +476,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      *         if there was no mapping for key.  A <tt>null</tt> return can
      *         also indicate that the map previously associated
      *         <tt>null</tt> with the specified key.
-     * 
+     *
      * @throws    ClassCastException key cannot be compared with the keys
      *            currently in the map.
      * @throws NullPointerException key is <tt>null</tt> and this map uses
@@ -492,15 +492,15 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         deleteEntry(p);
         return oldValue;
     }
-    
+
     public K getKey(Object key) {
-      if (key == null) 
+      if (key == null)
         return null;
-      
+
       Entry<K,V> p = getEntry(key);
       if (p == null)
         return null;
-      
+
       return p.key;
     }
 
@@ -522,9 +522,9 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
     @SuppressWarnings("unchecked")
     public synchronized Object clone() {
         RedBlackMap<K,V> clone = null;
-        try { 
+        try {
             clone = (RedBlackMap<K,V>)super.clone();
-        } catch (CloneNotSupportedException e) { 
+        } catch (CloneNotSupportedException e) {
             throw new InternalError();
         }
 
@@ -670,7 +670,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
                 public boolean contains(Object o) {
                   if (!(o instanceof Map.Entry))
                     return false;
-  
+
                     Map.Entry<?,?> entry = (Map.Entry<?,?>)o;
                     Object value = entry.getValue();
                     Entry<K,V> p = getEntry(entry.getKey());
@@ -734,10 +734,10 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      *
      * @param fromKey low endpoint (inclusive) of the subMap.
      * @param toKey high endpoint (exclusive) of the subMap.
-     * 
+     *
      * @return a view of the portion of this map whose keys range from
      *                <tt>fromKey</tt>, inclusive, to <tt>toKey</tt>, exclusive.
-     * 
+     *
      * @throws ClassCastException if <tt>fromKey</tt> and <tt>toKey</tt>
      *         cannot be compared to one another using this map's comparator
      *         (or, if the map has no comparator, using natural ordering).
@@ -967,7 +967,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
                     (toEnd     ? null         : getCeilEntry(toKey)));
             }
         }
-        
+
         protected K putInRange(K key) {
           if ((! fromStart) && (compare(key, fromKey) < 0))
             return fromKey;
@@ -978,9 +978,9 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         }
 
         public SortedMap<K,V> subMap(K fromKey, K toKey) {
-          if (compare(fromKey, toKey) > 0) 
+          if (compare(fromKey, toKey) > 0)
             return new RedBlackMap<K,V>(this).subMap(fromKey, toKey);
-          else 
+          else
             return new SubMap(putInRange(fromKey), putInRange(toKey));
         }
 
@@ -1003,76 +1003,76 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
                    (toEnd     || compare(key, toKey)   <= 0);
         }
     }
-    
-    
-    
-    
-    
+
+
+
+
+
     private class SubWrappedMap extends AbstractMap<K,V> implements SortedMap<K,V>, java.io.Serializable {
         private static final long serialVersionUID = -6520786458950516097L;
-        
+
         private K fromKey, toKey;
-        
+
         SubWrappedMap(K fromKey, K toKey) {
           if (compare(fromKey, toKey) < 0)
             throw new IllegalArgumentException("fromKey < toKey");
           this.fromKey = fromKey;
           this.toKey = toKey;
         }
-        
+
         public boolean isEmpty() {
           return entrySet.isEmpty();
         }
-        
+
         public boolean containsKey(Object key) {
           return inRange(key) && RedBlackMap.this.containsKey(key);
         }
-        
+
         public V get(Object key) {
           if (!inRange(key))
             return null;
           return RedBlackMap.this.get(key);
         }
-        
+
         public V put(K key, V value) {
           if (!inRange(key))
             throw new IllegalArgumentException("key out of range");
           return RedBlackMap.this.put(key, value);
         }
-        
+
         public Comparator<? super K> comparator() {
           return comparator;
         }
-        
+
         public K firstKey() {
           if (compare(key(getFirstEntry()), toKey) < 0)
             return key(getFirstEntry());
-          
+
           if (getCeilEntry(fromKey) == null)
             throw new NoSuchElementException();
-          
+
           return key(getCeilEntry(fromKey));
         }
-        
+
         public K lastKey() {
           if (compare(key(getLastEntry()), fromKey) > 0)
             return key(getLastEntry());
-          
+
           if (getPrecedingEntry(toKey) == null)
             throw new NoSuchElementException();
-          
+
           return key(getPrecedingEntry(toKey));
         }
-        
+
         private transient Set<Map.Entry<K,V>> entrySet = new EntrySetView();
-        
+
         public Set<Map.Entry<K,V>> entrySet() {
           return entrySet;
         }
-        
+
         private class EntrySetView extends AbstractSet<Map.Entry<K,V>> {
           private transient int size = -1, sizeModCount;
-          
+
           public int size() {
             if (size == -1 || sizeModCount != RedBlackMap.this.modCount) {
               size = 0;  sizeModCount = RedBlackMap.this.modCount;
@@ -1084,11 +1084,11 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
             }
             return size;
           }
-          
+
           public boolean isEmpty() {
             return !iterator().hasNext();
           }
-          
+
           public boolean contains(Object o) {
             if (!(o instanceof Map.Entry))
               return false;
@@ -1100,7 +1100,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
             return node != null &&
               valEquals(node.getValue(), entry.getValue());
           }
-          
+
           public boolean remove(Object o) {
             if (!(o instanceof Map.Entry))
               return false;
@@ -1115,11 +1115,11 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
             }
             return false;
           }
-          
+
           public Iterator<Map.Entry<K,V>> iterator() {
             RedBlackMap.Entry<K,V> from = getCeilEntry(fromKey);
             RedBlackMap.Entry<K,V> to = getPrecedingEntry(toKey);
-                      
+
             if (from == null) {
               return new SubMapEntryIterator(getFirstEntry(), getCeilEntry(toKey));
             } else if (to == null) {
@@ -1129,13 +1129,13 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
             }
           }
         }
-        
+
         public SortedMap<K,V> subMap(K fromKey, K toKey) {
           if (compare(fromKey, toKey) > 0) {
-            if ((compare(fromKey, this.toKey) < 0) && (compare(toKey, this.fromKey) > 0)) {            
+            if ((compare(fromKey, this.toKey) < 0) && (compare(toKey, this.fromKey) > 0)) {
               fromKey = ((compare(fromKey, this.fromKey) < 0) ? this.fromKey : fromKey);
               toKey = ((compare(toKey, this.toKey) > 0) ? this.toKey : toKey);
-          
+
               return new SubWrappedMap(fromKey, toKey);
             } else {
               return new RedBlackMap<K,V>(this).subMap(fromKey, toKey);
@@ -1146,7 +1146,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
             } else {
               fromKey = (((compare(fromKey, this.toKey) > 0) && (compare(fromKey, this.fromKey) < 0)) ? this.fromKey : fromKey);
               toKey = (((compare(toKey, this.toKey) > 0) && (compare(toKey, this.fromKey) < 0)) ? this.toKey : toKey);
-              
+
               if (compare(fromKey, toKey) > 0)
                 return new SubMap(fromKey, fromKey);
               else
@@ -1154,37 +1154,37 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
             }
           }
         }
-        
+
         public SortedMap<K,V> headMap(K toKey) {
-          if (compare(toKey, this.fromKey) > 0) 
+          if (compare(toKey, this.fromKey) > 0)
             return new RedBlackMap<K,V>(this).headMap(toKey);
           else
             if (compare(toKey, this.toKey) > 0)
               return RedBlackMap.this.headMap(this.toKey);
-            else 
+            else
               return RedBlackMap.this.headMap(toKey);
         }
-        
+
         public SortedMap<K,V> tailMap(K fromKey) {
-          if (compare(fromKey, this.toKey) < 0) 
+          if (compare(fromKey, this.toKey) < 0)
             return new RedBlackMap<K,V>(this).tailMap(fromKey);
           else
             if (compare(fromKey, this.fromKey) < 0)
               return RedBlackMap.this.tailMap(this.fromKey);
-            else 
+            else
               return RedBlackMap.this.tailMap(fromKey);
         }
-        
+
         private boolean inRange(Object key) {
           return (compare(key, fromKey) >= 0) || (compare(key, toKey) < 0);
         }
-        
+
         // This form allows the high endpoint (as well as all legit keys)
         private boolean inRange2(Object key) {
           return (compare(key, fromKey) >= 0) || (compare(key, toKey) <= 0);
         }
       }
-    
+
 
     /**
      * RedBlackMap Iterator.
@@ -1208,7 +1208,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
 
         final Entry<K,V> nextEntry() {
           lastReturned = next;
-          next = successor(next);          
+          next = successor(next);
           return lastReturned;
         }
 
@@ -1223,15 +1223,15 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
 
     private class KeyIterator implements Iterator<K> {
         private EntryIterator entryIterator = new EntryIterator();
-        
+
         public boolean hasNext() {
             return entryIterator.hasNext();
         }
-        
+
         public K next() {
             return entryIterator.nextEntry().key;
         }
-        
+
         public void remove() {
             entryIterator.remove();
         }
@@ -1239,15 +1239,15 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
 
     private class ValueIterator implements Iterator<V> {
         private EntryIterator entryIterator = new EntryIterator();
-        
+
         public boolean hasNext() {
             return entryIterator.hasNext();
         }
-        
+
         public V next() {
             return entryIterator.nextEntry().value;
         }
-        
+
         public void remove() {
             entryIterator.remove();
         }
@@ -1272,28 +1272,28 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
             return nextEntry();
         }
     }
-    
+
     private class SubWrappedMapEntryIterator implements Iterator<Map.Entry<K,V>> {
       SubMapEntryIterator iterator1, iterator2;
-      
+
       SubWrappedMapEntryIterator(Entry<K,V> first, Entry<K,V> firstExcluded) {
         iterator1 = new SubMapEntryIterator(getFirstEntry(), firstExcluded);
         iterator2 = new SubMapEntryIterator(first, null);
       }
-      
+
       public boolean hasNext() {
         return (iterator1.hasNext() || iterator2.hasNext());
       }
-      
+
       public Map.Entry<K,V> next() {
         return (iterator1.hasNext() ? iterator1.next() : iterator2.next());
       }
-      
+
       public void remove() {
         throw new UnsupportedOperationException("remove not supported!");
       }
     }
-        
+
     /**
      * Compares two keys using the correct comparison method for this RedBlackMap.
      */
@@ -1328,10 +1328,10 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         boolean deleted = false;
 
         /**
-         * Make a new cell with given key, value, and parent, and with 
-         * <tt>null</tt> child links, and BLACK color. 
+         * Make a new cell with given key, value, and parent, and with
+         * <tt>null</tt> child links, and BLACK color.
          */
-        Entry(K key, V value, Entry<K,V> parent) { 
+        Entry(K key, V value, Entry<K,V> parent) {
             this.key = key;
             this.value = value;
             this.parent = parent;
@@ -1342,8 +1342,8 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
          *
          * @return the key.
          */
-        public K getKey() { 
-            return key; 
+        public K getKey() {
+            return key;
         }
 
         /**
@@ -1449,20 +1449,20 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         return (p == null ? BLACK : p.color);
     }
 
-    private static <K,V> Entry<K,V> parentOf(Entry<K,V> p) { 
+    private static <K,V> Entry<K,V> parentOf(Entry<K,V> p) {
         return (p == null ? null: p.parent);
     }
 
-    private static <K,V> void setColor(Entry<K,V> p, boolean c) { 
-        if (p != null)  p.color = c; 
+    private static <K,V> void setColor(Entry<K,V> p, boolean c) {
+        if (p != null)  p.color = c;
     }
 
-    private static <K,V> Entry<K,V> leftOf(Entry<K,V> p) { 
-        return (p == null)? null: p.left; 
+    private static <K,V> Entry<K,V> leftOf(Entry<K,V> p) {
+        return (p == null)? null: p.left;
     }
 
-    private static <K,V> Entry<K,V> rightOf(Entry<K,V> p) { 
-        return (p == null)? null: p.right; 
+    private static <K,V> Entry<K,V> rightOf(Entry<K,V> p) {
+        return (p == null)? null: p.right;
     }
 
     /** From CLR **/
@@ -1517,7 +1517,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
                     }
                     setColor(parentOf(x), BLACK);
                     setColor(parentOf(parentOf(x)), RED);
-                    if (parentOf(parentOf(x)) != null) 
+                    if (parentOf(parentOf(x)) != null)
                         rotateRight(parentOf(parentOf(x)));
                 }
             } else {
@@ -1534,7 +1534,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
                     }
                     setColor(parentOf(x),  BLACK);
                     setColor(parentOf(parentOf(x)), RED);
-                    if (parentOf(parentOf(x)) != null) 
+                    if (parentOf(parentOf(x)) != null)
                         rotateLeft(parentOf(parentOf(x)));
                 }
             }
@@ -1553,8 +1553,8 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         // point to successor.
         if (p.left != null && p.right != null) {
             Entry<K,V> s = successor (p);
-            p.key = s.key;       
-            p.value = s.value;  
+            p.key = s.key;
+            p.value = s.value;
             p = s;
         } // p has 2 children
 
@@ -1591,7 +1591,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
                 p.parent = null;
             }
         }
-        
+
         p.deleted = true;
     }
 
@@ -1608,7 +1608,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
                     sib = rightOf(parentOf(x));
                 }
 
-                if (colorOf(leftOf(sib))  == BLACK && 
+                if (colorOf(leftOf(sib))  == BLACK &&
                     colorOf(rightOf(sib)) == BLACK) {
                     setColor(sib,  RED);
                     x = parentOf(x);
@@ -1635,7 +1635,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
                     sib = leftOf(parentOf(x));
                 }
 
-                if (colorOf(rightOf(sib)) == BLACK && 
+                if (colorOf(rightOf(sib)) == BLACK &&
                     colorOf(leftOf(sib)) == BLACK) {
                     setColor(sib,  RED);
                     x = parentOf(x);
@@ -1655,7 +1655,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
             }
         }
 
-        setColor(x, BLACK); 
+        setColor(x, BLACK);
     }
 
     private static final long serialVersionUID = 919286545866124006L;
@@ -1748,7 +1748,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      *        iterator or stream, as described above.
      * @throws java.io.IOException propagated from stream reads. This cannot
      *         occur if str is null.
-     * @throws ClassNotFoundException propagated from readObject. 
+     * @throws ClassNotFoundException propagated from readObject.
      *         This cannot occur if str is null.
      */
     private void buildFromSorted(int size, Iterator<?> it,
@@ -1771,21 +1771,21 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      * @param lo the first element index of this subtree. Initial should be 0.
      * @param hi the last element index of this subtree.  Initial should be
      *              size-1.
-     * @param redLevel the level at which nodes should be red. 
+     * @param redLevel the level at which nodes should be red.
      *        Must be equal to computeRedLevel for tree of this size.
      */
     @SuppressWarnings("unchecked")
     private static <K,V> Entry<K,V> buildFromSorted(int level, int lo, int hi,
                                          int redLevel,
-                                         Iterator<?> it, 
+                                         Iterator<?> it,
                                          java.io.ObjectInputStream str,
-                                         Object defaultVal) 
+                                         Object defaultVal)
         throws  java.io.IOException, ClassNotFoundException {
         /*
          * Strategy: The root is the middlemost element. To get to it, we
          * have to first recursively construct the entire left subtree,
          * so as to grab all of its elements. We can then proceed with right
-         * subtree. 
+         * subtree.
          *
          * The lo and hi arguments are the minimum and maximum
          * indices to pull out of the iterator or stream for current subtree.
@@ -1796,12 +1796,12 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         if (hi < lo) return null;
 
         int mid = (lo + hi) / 2;
-        
+
         Entry<K,V> left  = null;
-        if (lo < mid) 
+        if (lo < mid)
             left = buildFromSorted(level+1, lo, mid - 1, redLevel,
                                    it, str, defaultVal);
-        
+
         // extract key and/or value from iterator or stream
         K key;
         V value;
@@ -1820,23 +1820,23 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         }
 
         Entry<K,V> middle =  new Entry<K,V>(key, value, null);
-        
+
         // color nodes in non-full bottommost level red
         if (level == redLevel)
             middle.color = RED;
-        
-        if (left != null) { 
-            middle.left = left; 
-            left.parent = middle; 
+
+        if (left != null) {
+            middle.left = left;
+            left.parent = middle;
         }
-        
+
         if (mid < hi) {
             Entry<K,V> right = buildFromSorted(level+1, mid+1, hi, redLevel,
                                           it, str, defaultVal);
             middle.right = right;
             right.parent = middle;
         }
-        
+
         return middle;
     }
 
@@ -1851,7 +1851,7 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
      */
     private static int computeRedLevel(int sz) {
         int level = 0;
-        for (int m = sz - 1; m >= 0; m = m / 2 - 1) 
+        for (int m = sz - 1; m >= 0; m = m / 2 - 1)
             level++;
         return level;
     }

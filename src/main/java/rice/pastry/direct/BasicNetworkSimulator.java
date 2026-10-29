@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 /*
  * Created on Nov 8, 2005
  */
@@ -57,13 +57,13 @@ import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.CancellableTask;
 import rice.selector.TimerTask;
 
-public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulator implements 
+public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulator implements
     GenericNetworkSimulator<Identifier, MessageType> {
   class Tupel {
     Identifier i;
     DirectTransportLayer<Identifier, MessageType> tl;
     NodeRecord record;
-    
+
     public Tupel(Identifier i, DirectTransportLayer<Identifier, MessageType> tl, NodeRecord record) {
       super();
       this.i = i;
@@ -71,7 +71,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
       this.record = record;
     }
   }
-  
+
   /**
    * This maps to the next highest transport layer
    */
@@ -79,13 +79,13 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
 
 
   // to notify of send/receive
-  NetworkSimulator<Identifier, MessageType> sim; 
-  
+  NetworkSimulator<Identifier, MessageType> sim;
+
   protected int MIN_DELAY = 1;
-    
+
   protected final int maxDiameter;
   protected final int minDelay;
-  
+
   public BasicNetworkSimulator(Environment env, RandomSource random, NetworkSimulator<Identifier, MessageType> sim) {
     super(env, random, env.getLogManager().getLogger(BasicNetworkSimulator.class, null));
     this.sim = sim;
@@ -100,7 +100,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     logger.debug("addTask({})", dtt);
     manager.getTimer().schedule(dtt);
   }
-  
+
   public CancellableTask enqueueDelivery(Delivery d, int delay) {
     long time = timeSource.currentTimeMillis()+delay;
     logger.debug("BNS: enqueueDelivery {}:{}", d, time);
@@ -109,7 +109,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     addTask(dtt);
     return dtt;
   }
-  
+
   /**
    * node should always be a local node, because this will be delivered instantly
    */
@@ -126,19 +126,19 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
 
   void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to) {
-    sim.notifySimulatorListenersReceived(m, from, to);    
+    sim.notifySimulatorListenersReceived(m, from, to);
   }
 
   public Cancellable deliverMessageFixedRate(MessageType msg,
       Identifier node, Identifier from, int delay, int period) {
     return deliverMessage(msg, node, from, delay, period);
   }
-  
+
   public Cancellable deliverMessage(MessageType msg, Identifier node, Identifier from, int delay, int period) {
     logger.debug("BNS: deliver {} to {}", msg, node);
-    
+
     DirectTimerTask dtt = null;
-    
+
     if (from == null || isAlive(from)) {
       MessageDelivery<Identifier, MessageType> md = new MessageDelivery<Identifier, MessageType>(msg, node, from, null, this);
       dtt = new DirectTimerTask(md, timeSource.currentTimeMillis()+ delay,period);
@@ -147,7 +147,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     return dtt;
   }
 
-  
+
   public void registerIdentifier(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord record) {
     nodes.put(i, new Tupel(i, dtl, record));
   }
@@ -165,7 +165,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   public Environment getEnvironment(Identifier i) {
     return nodes.get(i).tl.getEnvironment();
   }
-  
+
   public RandomSource getRandomSource() {
     return random;
   }
@@ -173,16 +173,16 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   public boolean isAlive(Identifier i) {
     return nodes.containsKey(i);
   }
-  
+
   public DirectTransportLayer<Identifier, MessageType> getTL(Identifier i) {
     Tupel t = nodes.get(i);
     if (t == null) return null;
     return t.tl;
   }
-  
+
   /**
    * computes the one-way distance between two NodeIds
-   * 
+   *
    * @param a the first NodeId
    * @param b the second NodeId
    * @return the proximity between the two input NodeIds
@@ -193,20 +193,20 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     if (ta == null) {
       throw new RuntimeException("asking about node proximity for unknown node "+a);
     }
-      
+
     if (tb == null) {
-      throw new RuntimeException("asking about node proximity for unknown node "+b);      
+      throw new RuntimeException("asking about node proximity for unknown node "+b);
     }
-    
+
     NodeRecord nra = ta.record;
     NodeRecord nrb = tb.record;
-    
+
     return nra.networkDelay(nrb);
   }
 
   /**
    * computes the rtt between two NodeIds
-   * 
+   *
    * @param a the first NodeId
    * @param b the second NodeId
    * @return the proximity between the two input NodeIds
@@ -217,14 +217,14 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     if (ta == null) {
       throw new RuntimeException("asking about node proximity for unknown node "+a+" "+b);
     }
-      
+
     if (tb == null) {
-      throw new RuntimeException("asking about node proximity for unknown node "+b+" "+a);      
+      throw new RuntimeException("asking about node proximity for unknown node "+b+" "+a);
     }
-    
+
     NodeRecord nra = ta.record;
     NodeRecord nrb = tb.record;
-    
+
     return nra.proximity(nrb);
   }
 
@@ -246,7 +246,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
       return livenessListeners.remove(name);
     }
   }
-  
+
   private void notifyLivenessListeners(Identifier i, int liveness, Map<String, Object> options) {
     logger.atTrace().log(() -> "notifyLivenessListeners("+i+","+liveness+"):"+livenessListeners.get(0));
     List<LivenessListener<Identifier>> temp;

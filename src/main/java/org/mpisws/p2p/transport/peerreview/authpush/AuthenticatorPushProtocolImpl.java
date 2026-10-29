@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.authpush;
 
 import java.io.IOException;
@@ -83,11 +83,11 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
 
   Environment environment;
   Logger logger;
-  
+
   public AuthenticatorPushProtocolImpl(
-      PeerReview<Handle, Identifier> peerreview, AuthenticatorStore<Identifier> inStore, 
-      AuthenticatorStore<Identifier> outStore, AuthenticatorStore<Identifier> pendingStore, 
-      IdentityTransport<Handle, Identifier> transport, 
+      PeerReview<Handle, Identifier> peerreview, AuthenticatorStore<Identifier> inStore,
+      AuthenticatorStore<Identifier> outStore, AuthenticatorStore<Identifier> pendingStore,
+      IdentityTransport<Handle, Identifier> transport,
       PeerInfoStore<Handle, Identifier> infoStore,
       EvidenceTransferProtocol<Handle, Identifier> evidenceTransferProtocol, Environment env) {
     this.authInStore = inStore;
@@ -107,14 +107,14 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
     this.probabilistic = true;
     this.pXmit = pXmit;
   }
-  
+
   /* Start an authenticator push. We begin by determining the witness sets of all the nodes
   for which we have authenticators. */
 
   public void push() {
     logger.debug("Authenticator push initiated with {} subjects", authOutStore.getNumSubjects());
 
-    evidenceTransferProtocol.requestWitnesses(authOutStore.getSubjects(), 
+    evidenceTransferProtocol.requestWitnesses(authOutStore.getSubjects(),
         new Continuation<Map<Identifier,Collection<Handle>>, Exception>() {
 
           public void receiveException(Exception exception) {
@@ -125,14 +125,14 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
             continuePush(result);
           }
         });
-    
+
   }
 
   /*
    * Once we have all the witness sets, we bundle up all of our authenticators
    * in AUTHPUSH messages and send them to the witnesses.
-   * 
-   * NOTE: in the c++ impl, this was done via peerreview, now it's done via 
+   *
+   * NOTE: in the c++ impl, this was done via peerreview, now it's done via
    * a continuation.
    */
   public void continuePush(Map<Identifier, Collection<Handle>> subjectsToWitnesses) {
@@ -183,7 +183,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
 
   /**
    * TODO: make this use udp, or smaller AuthPushMessages
-   * 
+   *
    * @param h
    * @param authenticators
    */
@@ -205,7 +205,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
 
     peerreview.transmit(h, new AuthPushMessage<Identifier>(authenticators), null, null);
   }
-  
+
   /**
    * Called when some other node sends us an AUTHPUSH message. The message may
    * contain authenticators from multiple nodes. If, for some node, we don't
@@ -239,9 +239,9 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
         logger.debug("  Missing certificate for this subject; requesting from {} and recording auths as pending", source);
         for (Authenticator a : e.getValue()) {
           authPendingStore.addAuthenticator(id, a);
-        }         
+        }
         peerreview.requestCertificate(source, id);
-      }           
+      }
       if (infoStore.getStatus(id) != STATUS_TRUSTED) {
         evidenceTransferProtocol.sendEvidence(source, id);
       }

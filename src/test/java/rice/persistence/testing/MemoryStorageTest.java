@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.persistence.testing;
 
@@ -42,7 +42,7 @@ package rice.persistence.testing;
  *
  * @author Ansley Post
  * @author Alan Mislove
- * 
+ *
  * @version $Id: MemoryStorageTest.java 4654 2009-01-08 16:33:07Z jeffh $
  */
 import java.io.IOException;
@@ -64,7 +64,7 @@ import rice.persistence.Storage;
 public class MemoryStorageTest extends Test {
 
   private IdFactory FACTORY;
-  
+
   protected Storage storage;
 
   protected boolean store;
@@ -163,7 +163,7 @@ public class MemoryStorageTest extends Test {
     };
 
     sectionStart("Storing Objects");
-    
+
     stepStart("Storing First Object");
     storage.store(data[1], metadata[1], "First Object", put1);
   }
@@ -193,7 +193,7 @@ public class MemoryStorageTest extends Test {
           stepDone(FAILURE, "Returned object was null.");
           return;
         }
-        
+
         if (o.equals("Fourth Object")) {
           stepDone(SUCCESS);
         } else {
@@ -209,14 +209,14 @@ public class MemoryStorageTest extends Test {
         stepException(e);
       }
     };
-    
+
     final Continuation<Object, Exception> get3 = new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         if (o == null) {
           stepDone(FAILURE, "Returned object was null.");
           return;
         }
-        
+
         if (o.equals("Third Object")) {
           stepDone(SUCCESS);
         } else {
@@ -239,7 +239,7 @@ public class MemoryStorageTest extends Test {
           stepDone(FAILURE, "Returned object was null.");
           return;
         }
-        
+
         if (o.equals("Second Object")) {
           stepDone(SUCCESS);
         } else {
@@ -262,7 +262,7 @@ public class MemoryStorageTest extends Test {
           stepDone(FAILURE, "Returned object was null.");
           return;
         }
-        
+
         if (o.equals("First Object")) {
           stepDone(SUCCESS);
         } else {
@@ -278,7 +278,7 @@ public class MemoryStorageTest extends Test {
         stepException(e);
       }
     };
-    
+
     Continuation<Object, Exception> get0 = new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
@@ -319,7 +319,7 @@ public class MemoryStorageTest extends Test {
           stepStart("Checking for Fifth Object");
           if (! storage.exists(data[5])) stepDone(SUCCESS); else stepDone(FAILURE);
           sectionEnd();
-          
+
           sectionStart("Checking for Metadata");
           stepStart("Checking for First Object Metadata");
           if (metadata[1].equals(storage.getMetadata(data[1]))) stepDone(SUCCESS); else stepDone(FAILURE);
@@ -332,20 +332,20 @@ public class MemoryStorageTest extends Test {
           stepStart("Checking for Fifth Object Metadata");
           if (! metadata[5].equals(storage.getMetadata(data[5]))) stepDone(SUCCESS); else stepDone(FAILURE);
           sectionEnd();
-          
+
           sectionStart("Modifying Metadata");
           stepStart("Changing Metadata");
           storage.setMetadata(data[4], Integer.valueOf(5001), new Continuation<Object, Exception>() {
             public void receiveResult(Object o) {
               stepDone(SUCCESS);
-              
+
               stepStart("Checking for New Metadata");
               if ((Integer.valueOf(5001)).equals(storage.getMetadata(data[4]))) stepDone(SUCCESS); else stepDone(FAILURE);
               sectionEnd();
-              
+
               c.receiveResult(Boolean.valueOf(true));
             }
-            
+
             public void receiveException(Exception e) {
               stepException(e);
             }
@@ -354,12 +354,12 @@ public class MemoryStorageTest extends Test {
           throw new RuntimeException("SetUp did not complete correctly!");
         }
       }
-      
+
       public void receiveException(Exception e) {
         stepException(e);
       }
     });
-  }  
+  }
 
   private void testRemoval(final Continuation<Object, Exception> c) {
     final Continuation<Object, Exception> done1 = new Continuation<Object, Exception>() {
@@ -379,18 +379,18 @@ public class MemoryStorageTest extends Test {
         stepException(e);
       }
     };
-    
-    
+
+
     final Continuation<Object, Exception> retrieve1 = new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
-        
+
       }
 
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
-    
+
     final Continuation<Object, Exception> check1 = new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         if ((! store) || o.equals(Boolean.valueOf(true))) {
@@ -401,13 +401,13 @@ public class MemoryStorageTest extends Test {
 
         stepStart("Checking for First Object");
         boolean result = storage.exists(data[1]);
-        
+
         if ((! store) || (! result)) {
           stepDone(SUCCESS);
         } else {
           stepDone(FAILURE);
         }
-        
+
         stepStart("Attempting to Retrieve First Object");
         storage.getObject(data[1], done1);
       }
@@ -462,32 +462,32 @@ public class MemoryStorageTest extends Test {
 
         stepStart("Requesting Scan from 3 to 6");
         IdSet result = storage.scan(FACTORY.buildIdRange(data[3], data[6]));
-        
+
         if (result.numElements() != 2) {
           stepDone(FAILURE, "Result had " + result.numElements() + " elements, expected 2.");
           return;
         }
-        
-        
+
+
         if (! ((result.isMemberId(data[3])) && (result.isMemberId(data[4])))) {
           stepDone(FAILURE, "Result had incorrect elements " + data[0] + ", " + data[1] + ", expected 3 and 4.");
           return;
         }
-        
+
         stepDone(SUCCESS);
-        
+
         stepStart("Requesting Scan from 8 to 10");
         result = storage.scan(FACTORY.buildIdRange(data[8], data[10]));
-        
+
         if (result.numElements() != 0) {
           stepDone(FAILURE, "Result had " + result.numElements() + " elements, expected 0.");
           return;
         }
-        
+
         stepDone(SUCCESS);
-        
+
         stepStart("Requesting Scan from 'Monkey' to 9");
-        handleBadScan.receiveException(new Exception()); 
+        handleBadScan.receiveException(new Exception());
       }
 
       public void receiveException(Exception e) {
@@ -516,24 +516,24 @@ public class MemoryStorageTest extends Test {
   }
 
   private void testRandomInserts(final Continuation<Object, Exception> c) {
-    
+
     final int START_NUM = 10;
     final int END_NUM = 98;
     final int SKIP = 2;
 
     final int NUM_ELEMENTS = 1 + ((END_NUM - START_NUM) / SKIP);
-    
+
     final Continuation<Object, Exception> checkRandom = new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         stepStart("Checking object deletion");
         int NUM_DELETED = ((Integer) o).intValue();
         int length = storage.scan(FACTORY.buildIdRange(data[13 + START_NUM], data[13 + END_NUM + SKIP])).numElements();
-        
+
         int desired = NUM_ELEMENTS - NUM_DELETED;
-        
+
         if (length == desired) {
           stepDone(SUCCESS);
-          
+
           sectionEnd();
           c.receiveResult(Boolean.valueOf(true));
         } else {
@@ -547,9 +547,9 @@ public class MemoryStorageTest extends Test {
       }
     };
 
-    
+
     final Continuation<Object, Exception> removeRandom = new Continuation<Object, Exception>() {
-      
+
       private int count = START_NUM;
       private int num_deleted = 0;
 
@@ -569,7 +569,7 @@ public class MemoryStorageTest extends Test {
           return;
         }
 
-        if (environment.getRandomSource().nextBoolean()) { 
+        if (environment.getRandomSource().nextBoolean()) {
           num_deleted++;
           storage.unstore(data[13 + (count += SKIP)], this);
         } else {
@@ -586,20 +586,20 @@ public class MemoryStorageTest extends Test {
     final Continuation<Object, Exception> checkScan = new Continuation<Object, Exception>() {
 
       private int count = START_NUM;
-      
+
       public void receiveResult(Object o) {
           stepStart("Checking scans for all ranges");
 
         for (int count = START_NUM; count <  END_NUM - SKIP; count+=SKIP) {
           IdSet result = storage.scan(FACTORY.buildIdRange(data[13 + (count += SKIP)], data[13 + END_NUM]));
-          
+
           int i = NUM_ELEMENTS - ((count - START_NUM + SKIP) / SKIP) ;
           if (result.numElements() != i){
             stepDone(FAILURE, "Expected " + i + " found " + result.numElements() + " keys in scan from " + count + " to " + END_NUM + ".");
             return;
           }
         }
-        
+
         stepDone(SUCCESS);
         removeRandom.receiveResult(Boolean.valueOf(true));
       }
@@ -608,20 +608,20 @@ public class MemoryStorageTest extends Test {
         stepException(e);
       }
     };
-    
+
     final Continuation<Object, Exception> checkExists = new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         stepStart("Checking exists for all 50 objects");
-        
+
         for (int count = START_NUM; count < END_NUM; count+=SKIP) {
           boolean b = storage.exists(data[13 + count]);
-          
+
           if (! b) {
             stepDone(FAILURE, "Element " + count + " did exist (" + data[13+count].toStringFull() + ") - should not have (START " + START_NUM + " END " + END_NUM + ").");
             return;
           }
         }
-        
+
         stepDone(SUCCESS);
         checkScan.receiveResult(Boolean.valueOf(true));
       }
@@ -630,8 +630,8 @@ public class MemoryStorageTest extends Test {
         stepException(e);
       }
     };
-    
-    
+
+
     final Continuation<Object, Exception> insert = new Continuation<Object, Exception>() {
 
       private int count = START_NUM;
@@ -641,7 +641,7 @@ public class MemoryStorageTest extends Test {
           stepDone(FAILURE, "Insertion of " + count + " failed.");
           return;
         }
-        
+
         if (count == START_NUM) {
           sectionStart("Stress Testing");
           stepStart("Inserting 40 objects from 100 to 1000000 bytes");
@@ -655,7 +655,7 @@ public class MemoryStorageTest extends Test {
 
         int num = count;
         count += SKIP;
-        
+
         storage.store(data[13 + num], null, new byte[num * num], this);
       }
 
@@ -678,8 +678,8 @@ public class MemoryStorageTest extends Test {
         }
 
         stepDone(SUCCESS);
-        sectionEnd();  
-        
+        sectionEnd();
+
         c.receiveResult(Boolean.valueOf(true));
       }
 
@@ -729,7 +729,7 @@ public class MemoryStorageTest extends Test {
 
     testRandomInserts(insertNullKey);
   }
-  
+
   // A former "variable-length Ids" section stored a stub Id class (compareTo always 0, no distances, no bytes) in
   // this storage. A storage keeps its Ids in an IdSet of its IdFactory, here rice.pastry.IdSet, which holds only
   // rice.pastry.Ids, so that section failed with a ClassCastException. Even with another IdSet the stub could not

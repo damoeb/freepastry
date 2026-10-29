@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.replay.record;
 
 import rice.environment.logging.LogManager;
@@ -44,23 +44,23 @@ import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
 
 /**
- * This is the SelectorManager for PeerReview.  The invariant here is that we use a simTime that isn't updated near as 
+ * This is the SelectorManager for PeerReview.  The invariant here is that we use a simTime that isn't updated near as
  * frequently as the real clock.  This makes the events more discrete for replay.
- * 
+ *
  * @author Jeff Hoye
  *
  */
 public class RecordSM extends SelectorManager {
   DirectTimeSource simTime;
   TimeSource realTime;
-  
+
   public RecordSM(String instance, TimeSource realTime, DirectTimeSource simTime, LogManager log, RandomSource rs) {
     super(instance, simTime, log, rs);
     this.realTime = realTime;
     this.simTime = simTime;
   }
 
-  
+
   @Override
   protected synchronized void addTask(TimerTask task) {
     long now = timeSource.currentTimeMillis();
@@ -70,11 +70,11 @@ public class RecordSM extends SelectorManager {
     }
     super.addTask(task);
   }
-  
+
   @Override
   protected void executeDueTasks() {
     long now = realTime.currentTimeMillis();
-        
+
     boolean done = false;
     while (!done) {
       TimerTask next = null;
@@ -91,7 +91,7 @@ public class RecordSM extends SelectorManager {
           done = true;
         }
       } // sync
-      
+
       if (!done) {
         super.doInvocations();
         logger.debug("executing task {}", next);
@@ -104,11 +104,10 @@ public class RecordSM extends SelectorManager {
     }
     simTime.setTime(now); // so we always make some progress
     super.doInvocations();
-  }  
-  
+  }
+
   @Override
   protected void doInvocations() {
     // do nothing, this is called in executeDueTasks
   }
 }
-

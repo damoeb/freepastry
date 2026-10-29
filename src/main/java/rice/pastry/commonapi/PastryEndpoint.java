@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.pastry.commonapi;
 
@@ -85,7 +85,7 @@ import rice.pastry.standard.StandardAddress;
 public class PastryEndpoint extends PastryAppl implements Endpoint {
 
   protected Application application;
-    
+
   class PEDeserializer implements MessageDeserializer {
     public Message deserialize(InputBuffer buf, short type, int priority,
         NodeHandle sender) throws IOException {
@@ -95,9 +95,9 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
         logger.warn("Unable to deserialize message of type {} {} {}", type, PastryEndpoint.this, appDeserializer);
         throw iae;
       }
-    }    
+    }
   }
-  
+
   /**
    * Constructor.
    *
@@ -106,33 +106,33 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public PastryEndpoint(PastryNode pn, Application application, String instance, boolean register) {
     this(pn, application, instance, 0, register);
   }
-  
+
   /**
    * Constructor.
    *
    * @param pn the pastry node that the application attaches to.
    */
-  
+
   public PastryEndpoint(PastryNode pn, Application application, String instance, int address, boolean register) {
-    super(pn, 
-        instance, 
-        address == 0 ? StandardAddress.getAddress(application.getClass(),instance,pn.getEnvironment()): address, 
-        null, 
+    super(pn,
+        instance,
+        address == 0 ? StandardAddress.getAddress(application.getClass(),instance,pn.getEnvironment()): address,
+        null,
         pn.getEnvironment().getLogManager().getLogger(application.getClass(),instance == null ? "-endpoint" : instance+"-endpoint"));
-    
+
     appDeserializer = deserializer; // use this as the apps default deserializer
     deserializer = new PEDeserializer();
     this.application = application;
     if (register)
       register();
   }
-  
+
 
   /**
    * The commonapi's deserializer.  Java Deserializer by default.
    */
   MessageDeserializer appDeserializer;
-  
+
   // API methods to be invoked by applications
 
   /**
@@ -143,7 +143,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public Id getId() {
     return thePastryNode.getNodeId();
   }
-  
+
   /**
    * This operation forwards a message towards the root of
    * key.  The optional hint argument specifies a node
@@ -166,15 +166,15 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public MessageReceipt route(Id key, Message msg, NodeHandle hint, DeliveryNotification deliverAckToMe) {
     return route(key, msg, hint, deliverAckToMe, null);
   }
-  
+
   public MessageReceipt route(Id key, Message msg, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
     logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
 
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
     return routeHelper(key, pm, hint, deliverAckToMe, options);
   }
-  
-  
+
+
   /**
    * This duplication of the above code is to make a fast path for the RawMessage.  Though the codeblock
    * looks identical, it is actually calling a different PEM constructor.
@@ -183,7 +183,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     return route(key, msg, hint, null);
   }
   public MessageReceipt route(Id key, RawMessage msg, NodeHandle hint, DeliveryNotification deliverAckToMe) {
-    return route(key, msg, hint, deliverAckToMe, null);  
+    return route(key, msg, hint, deliverAckToMe, null);
   }
   public MessageReceipt route(Id key, RawMessage msg, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
     logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
@@ -191,21 +191,21 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
     return routeHelper(key, pm, hint, deliverAckToMe, options);
   }
-  
+
   /**
    * This method:
-   * a) constructs the RouteMessage 
+   * a) constructs the RouteMessage
    * b) adds a MessageReceipt to the RouteMessage
    * c) sets the priority option
    * d) calls router.route(rm);
-   * 
+   *
    * @param key
    * @param pm
    * @param hint
    * @param deliverAckToMe
    * @return
    */
-  private MessageReceipt routeHelper(Id key, final PastryEndpointMessage pm, final NodeHandle hint, final DeliveryNotification deliverAckToMe, Map<String, Object> options) { 
+  private MessageReceipt routeHelper(Id key, final PastryEndpointMessage pm, final NodeHandle hint, final DeliveryNotification deliverAckToMe, Map<String, Object> options) {
     if (options == null) options = this.options;
     logger.debug("routeHelper({},{},{},{}).init()", key, pm, hint, deliverAckToMe);
     if ((key == null) && (hint == null)) {
@@ -216,65 +216,65 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       noKey = true;
       key = hint.getId();
     }
-    
-    final rice.pastry.routing.RouteMessage rm = 
+
+    final rice.pastry.routing.RouteMessage rm =
       new rice.pastry.routing.RouteMessage(
           (rice.pastry.Id) key,
           pm,
           (rice.pastry.NodeHandle) hint,
         (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
-    
-    rm.setPrevNode(thePastryNode.getLocalHandle());                                                                              
+
+    rm.setPrevNode(thePastryNode.getLocalHandle());
     if (noKey) {
-      rm.getOptions().setMultipleHopsAllowed(false);  
+      rm.getOptions().setMultipleHopsAllowed(false);
       rm.setDestinationHandle((rice.pastry.NodeHandle)hint);
     }
-    
-    
-    
+
+
+
     final Id final_key = key;
     // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
     final MessageReceipt ret = new MessageReceipt(){
-      
+
       public boolean cancel() {
         logger.debug("routeHelper({},{},{},{}).cancel()", final_key, pm, hint, deliverAckToMe);
         return rm.cancel();
       }
-    
+
       public Message getMessage() {
         return pm.getMessage();
       }
-    
+
       public Id getId() {
         return final_key;
       }
-    
+
       public NodeHandle getHint() {
         return hint;
-      }    
+      }
     };
-    
+
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
     if ((deliverAckToMe != null) || (logger.isDebugEnabled())) {
       rm.setRouteMessageNotification(new RouteMessageNotification() {
         public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
           logger.atDebug().log(() -> "routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendSuccess():"+nextHop);
           if (deliverAckToMe != null) deliverAckToMe.sent(ret);
-        }    
+        }
         public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
           logger.atDebug().log(() -> "routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendFailed("+e+")");
           if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
         }
       });
     }
-    
+
     rm.setTLOptions(OptionsFactory.addOption(options, PriorityTransportLayer.OPTION_PRIORITY, pm.getPriority()));
-        
+
     thePastryNode.getRouter().route(rm);
 
     return ret;
   }
-  
+
 
   /**
    * Schedules a message to be delivered to this application after the provided number of
@@ -287,9 +287,9 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), message, thePastryNode.getLocalHandle());
     return thePastryNode.scheduleMsg(pm, delay);
   }
-  
+
   /**
-   * Schedules a message to be delivered to this application every period number of 
+   * Schedules a message to be delivered to this application every period number of
    * milliseconds, after delay number of milliseconds have passed.
    *
    * @param message The message to be delivered
@@ -306,7 +306,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * local node, beginning after the specified delay. Subsequent executions take
    * place at approximately regular intervals, separated by the specified
    * period.
-   * 
+   *
    * @param msg
    *          a message that will be delivered to the local node after the
    *          specified delay
@@ -319,9 +319,9 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public CancellableTask scheduleMessageAtFixedRate(Message msg,
       long delay, long period) {
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
-    return thePastryNode.scheduleMsgAtFixedRate(pm, delay, period);    
+    return thePastryNode.scheduleMsgAtFixedRate(pm, delay, period);
   }
-    
+
   /**
    * This method produces a list of nodes that can be used as next
    * hops on a route towards key, such that the resulting route
@@ -350,7 +350,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
     // get the nodes from the routing table
     NodeHandleSet ret = getRoutingTable().alternateRoutes((rice.pastry.Id) key, num);
-    
+
     if (ret.size() == 0) {
       // use the leafset
       int index = getLeafSet().mostSimilar((rice.pastry.Id)key);
@@ -359,7 +359,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       set.put((rice.pastry.NodeHandle)nh);
       ret = set;
     }
-    
+
     return ret;
   }
 
@@ -396,15 +396,15 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     if (maxRank > leafset.size()) {
       logger.trace("trying to get a replica set of size {} but only {} nodes in leafset", maxRank, leafset.size());
     }
-    
+
     return leafset.replicaSet((rice.pastry.Id) id, maxRank);
   }
-  
+
   /**
    * This methods returns an ordered set of nodehandles on which replicas of an object with
    * a given id can be stored.  The call returns nodes up to and including a node with maxRank.
    * This call also allows the application to provide a remote "center" node, as well as
-   * other nodes in the vicinity. 
+   * other nodes in the vicinity.
    *
    * @param id The object's id.
    * @param maxRank The number of desired replicas.
@@ -415,7 +415,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     LeafSet leaf = new LeafSet((rice.pastry.NodeHandle) root, getLeafSet().maxSize(), false);
     for (int i=0; i<set.size(); i++)
       leaf.put((rice.pastry.NodeHandle) set.getHandle(i));
-    
+
     return leaf.replicaSet((rice.pastry.Id) id, maxRank);
   }
 
@@ -442,7 +442,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    */
   public IdRange range(NodeHandle n, int r, Id key, boolean cumulative) {
     rice.pastry.Id pKey = (rice.pastry.Id) key;
-    
+
     if (cumulative)
       return getLeafSet().range((rice.pastry.NodeHandle) n, r);
 
@@ -490,7 +490,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
   public final void messageForAppl(rice.pastry.messaging.Message msg) {
     logger.trace("[{}] deliver {} from {}", thePastryNode, msg, msg.getSenderId());
-    
+
     if (msg instanceof PastryEndpointMessage) {
       // null for now, when RouteMessage stuff is completed, then it will be different!
       application.deliver(null, ((PastryEndpointMessage) msg).getMessage());
@@ -515,24 +515,24 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    */
   public void receiveMessage(rice.pastry.messaging.Message msg) {
     logger.trace("[{}] recv {}", thePastryNode, msg);
-      
+
     if (msg instanceof rice.pastry.routing.RouteMessage) {
       try {
       rice.pastry.routing.RouteMessage rm = (rice.pastry.routing.RouteMessage) msg;
-      
+
       // if the message has a destinationHandle, it should be for me, and it should always be delivered
       NodeHandle destinationHandle = rm.getDestinationHandle();
-      if (deliverWhenNotReady() || 
-          thePastryNode.isReady() || 
+      if (deliverWhenNotReady() ||
+          thePastryNode.isReady() ||
           rm.getPrevNode() == thePastryNode.getLocalHandle() ||
           (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
         // continue to receiveMessage()
       } else {
         logger.info("Dropping {} because node is not ready.", msg);
-        
+
         return;
       }
-      
+
       // call application
       logger.trace("[{}] forward {}", thePastryNode, msg);
       if (application.forward(rm)) {
@@ -548,7 +548,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
           } else {
             // route the message
             // if getDestHandle() == me, rm destHandle()
-            // this message was directed just to me, but now we've decided to forward it, so, 
+            // this message was directed just to me, but now we've decided to forward it, so,
             // make it generally routable now
             if (rm.getDestinationHandle() == thePastryNode.getLocalHandle()) {
               logger.warn("Warning, removing destNodeHandle: {} from {}", rm.getDestinationHandle(), rm);
@@ -562,20 +562,20 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
         rm.sendSuccess(thePastryNode.getLocalHandle());
       }
       } catch (IOException ioe) {
-        logger.atError().setCause(ioe).log(() -> this.toString()); 
+        logger.atError().setCause(ioe).log(() -> this.toString());
       }
     } else {
-      
+
       // if the message is not a RouteMessage, then it is for the local node and
       // was sent with a PastryAppl.routeMsgDirect(); we deliver it for backward compatibility
       messageForAppl(msg);
     }
   }
-  
+
   /**
    * Schedules a job for processing on the dedicated processing thread.  CPU intensive jobs, such
    * as encryption, erasure encoding, or bloom filter creation should never be done in the context
-   * of the underlying node's thread, and should only be done via this method.  
+   * of the underlying node's thread, and should only be done via this method.
    *
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
@@ -584,11 +584,11 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
     thePastryNode.process(task, command);
   }
-  
+
   /**
    * Returns a unique instance name of this endpoint, sort of a mailbox name for this
    * application.
-   * 
+   *
    * @return The unique instance name of this application
    */
   public String getInstance() {
@@ -607,11 +607,11 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
 
   public void setDeserializer(MessageDeserializer md) {
-    appDeserializer = md; 
+    appDeserializer = md;
   }
 
   public MessageDeserializer getDeserializer() {
-    return appDeserializer; 
+    return appDeserializer;
   }
 
   public Id readId(InputBuffer buf, short type) throws IOException {
@@ -626,7 +626,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public IdRange readIdRange(InputBuffer buf) throws IOException {
     return new rice.pastry.IdRange(buf);
   }
-  
+
   public NodeHandle coalesce(NodeHandle newHandle) {
     return thePastryNode.coalesce((rice.pastry.NodeHandle)newHandle);
   }
@@ -642,8 +642,8 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
 
   public List<NodeHandle> networkNeighbors(int num) {
-    HashSet<NodeHandle> handles = new HashSet<NodeHandle>();    
-    List<rice.pastry.NodeHandle> l = (List<rice.pastry.NodeHandle>)thePastryNode.getRoutingTable().asList();    
+    HashSet<NodeHandle> handles = new HashSet<NodeHandle>();
+    List<rice.pastry.NodeHandle> l = (List<rice.pastry.NodeHandle>)thePastryNode.getRoutingTable().asList();
     Iterator<rice.pastry.NodeHandle> i = l.iterator();
     while(i.hasNext()) {
       handles.add(i.next());
@@ -653,21 +653,21 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     while(i.hasNext()) {
       handles.add(i.next());
     }
-    
+
     NodeHandle[] array = handles.toArray(new NodeHandle[0]);
-    
-    Arrays.sort(array,new Comparator<NodeHandle>() {    
+
+    Arrays.sort(array,new Comparator<NodeHandle>() {
       public int compare(NodeHandle a, NodeHandle b) {
         return thePastryNode.proximity((rice.pastry.NodeHandle)a)-thePastryNode.proximity((rice.pastry.NodeHandle)b);
-      }          
+      }
     });
-    
-    
+
+
     if (array.length <= num) return Arrays.asList(array);
-    
+
     NodeHandle[] ret = new NodeHandle[num];
     System.arraycopy(array,0,ret,0,num);
-    
+
     return Arrays.asList(ret);
   }
 
@@ -684,15 +684,15 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public int proximity(NodeHandle nh) {
     return thePastryNode.proximity((rice.pastry.NodeHandle)nh);
   }
- 
+
   public boolean isAlive(NodeHandle nh) {
     return thePastryNode.isAlive((rice.pastry.NodeHandle)nh);
   }
 
   public int getAppId() {
-    return getAddress(); 
-  } 
-  
+    return getAddress();
+  }
+
   boolean consistentRouting = true;
   public void setConsistentRouting(boolean val) {
     consistentRouting = val;
@@ -709,14 +709,10 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     if (set.size() == 0) return false;
     return set.getHandle(0).equals(thePastryNode.getLocalHandle());
   }
-  
+
   public void setSendOptions(Map<String, Object> options) {
     this.options = options;
   }
 
 
 }
-
-
-
-

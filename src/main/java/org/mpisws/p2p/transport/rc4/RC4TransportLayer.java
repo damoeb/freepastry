@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.rc4;
 
 import java.io.IOException;
@@ -64,32 +64,32 @@ import rice.environment.random.RandomSource;
 
 /**
  * Only encrypts socket traffic!!!
- * 
+ *
  * Encrypts channels based on a password.
- * 
+ *
  * Builds a session password for each socket which is a hash of the user-defined password and a clear-text seed.
- * 
+ *
  * Note that the seed length isn't sent in the protocol, so it must be the same on all peers.
- * 
- * Why do we need a password seed?  Imagine a protocol where you contact a peer and it returns a boolean.  
+ *
+ * Why do we need a password seed?  Imagine a protocol where you contact a peer and it returns a boolean.
  * W/O a seed, the protocol would only return 2 possible messages.  While you may not know which is which, you could probably figure it
- * out by seeing who returns what.  
- * 
+ * out by seeing who returns what.
+ *
  * Both sides need to have a different seed, so that under a simple agreement protocol, you can't easily see a replay.
- * 
+ *
  * E.G:
  *   A -> B: 14  // I propose 14
  *   B -> A: 14  // I agree to 14, in this case an eavesdropper could determine whether or not B agreed with A, which is a leak of info
- * 
+ *
  * Here's the Seed protocol we use:
- * 
- * // pw is a pre-established password 
+ *
+ * // pw is a pre-established password
  * A -> B: SeedB
  * B -> E(H(pw,SeedB))[SeedA,SeedB]
  *  // Now A and B each have an agreed upon seed
- *  // Note that it may be important in step 2 to send SeedA before SeedB, otherwise, an attacker could keep sending new SeedB, 
+ *  // Note that it may be important in step 2 to send SeedA before SeedB, otherwise, an attacker could keep sending new SeedB,
  *  // and maybe learn something about the first packet... but maybe this doesn't matter because of the Hashing to generate the secret key
- * 
+ *
  * @author Jeff Hoye
  *
  * @param <Identifier>
@@ -99,16 +99,16 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
 
   protected TransportLayer<Identifier,MsgType> tl;
   protected TransportLayerCallback<Identifier, MsgType> callback;
-  
+
   protected Environment env;
   protected Logger logger;
 
   protected ErrorHandler<Identifier> errorHandler;
-  
+
   protected MessageDigest md;
 
   public static final int KEY_LENGTH = 16;
-  
+
   byte[] password;
   int PW_SEED_LENGTH;
   int WRITE_BUFFER_SIZE = 1024;
@@ -121,7 +121,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
   public RC4TransportLayer(TransportLayer<Identifier,MsgType> tl, Environment env, String password, int pwSeedLength, RandomSource random, ErrorHandler<Identifier> errorHandler) throws NoSuchAlgorithmException {
     this.tl = tl;
     this.tl.setCallback(this);
-    this.env=env; 
+    this.env=env;
     this.password = password.getBytes();
     this.PW_SEED_LENGTH = pwSeedLength;
     this.logger=env.getLogManager().getLogger(RC4TransportLayer.class, null);
@@ -130,7 +130,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
       md = MessageDigest.getInstance("SHA");
 
   }
-  
+
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
@@ -145,12 +145,12 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
 
   public SocketRequestHandle<Identifier> openSocket(final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
-    
+
     // Every socket is encrypted. A per-socket option to turn encryption off would need the other end to learn that the socket is unencrypted.
     // TODO: send a byte saying whether the socket is encrypted and honor it on the accepting end, so encryption can be turned off per socket
-    
+
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
-    
+
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
 
       public void receiveException(SocketRequestHandle<Identifier> s,
@@ -160,11 +160,11 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
 
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
           P2PSocket<Identifier> sock) {
-        
+
         // write the decrypt seed to B
         final byte[] decryptSeed = new byte[PW_SEED_LENGTH];
         random.nextBytes(decryptSeed);
-        
+
         P2PSocketReceiver<Identifier> writeDecryptSeedReceiver = new P2PSocketReceiver<Identifier>() {
           ByteBuffer dsBB = ByteBuffer.wrap(decryptSeed);
 
@@ -209,10 +209,10 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
                     socket.register(true, false, this);
                     return;
                   }
-                  
+
                   // decrypt the keys
                   byte[] decryptedSeeds = decryptCipher.update(encryptedSeeds.array());
-                  
+
                   // make sure decryptSeed == the second key in decryptedSeeds
                   boolean same = true;
                   for (int ctr = 0; ctr < PW_SEED_LENGTH; ctr++) {
@@ -230,7 +230,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
                   // copy out the encryptSeed
                   byte[] encryptSeed = new byte[PW_SEED_LENGTH];
                   System.arraycopy(decryptedSeeds, 0, encryptSeed, 0, PW_SEED_LENGTH);
-                  
+
                   // build the encrypt key
                   byte[] encryptKeyBytes = new byte[KEY_LENGTH];
                   synchronized(md) {
@@ -246,9 +246,9 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
                   } catch (GeneralSecurityException gse) {
                     socket.close();
                     deliverSocketToMe.receiveException(ret, gse);
-                  }            
+                  }
                 }
-  
+
                 public void receiveException(P2PSocket<Identifier> socket,
                     Exception ioe) {
                   deliverSocketToMe.receiveException(ret, ioe);
@@ -258,9 +258,9 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
             } catch (GeneralSecurityException gse) {
               socket.close();
               deliverSocketToMe.receiveException(ret, gse);
-            }            
+            }
           }
-          
+
           public void receiveException(P2PSocket<Identifier> socket,
               Exception ioe) {
             deliverSocketToMe.receiveException(ret, ioe);
@@ -270,13 +270,13 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
           writeDecryptSeedReceiver.receiveSelectResult(sock, false, true);
         } catch (IOException ioe) {
           deliverSocketToMe.receiveException(ret, ioe);
-        }        
-      }    
+        }
+      }
     }, options));
-    
+
     return ret;
   }
-  
+
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     // read the encryptSeed in plaintext
     // generate the encryptCipher
@@ -289,7 +289,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
     new P2PSocketReceiver<Identifier>() {
       byte[] encryptSeed = new byte[PW_SEED_LENGTH];
       ByteBuffer encryptSeedBuffer = ByteBuffer.wrap(encryptSeed);
-      
+
       public void receiveSelectResult(P2PSocket<Identifier> socket,
           boolean canRead, boolean canWrite) throws IOException {
         // read the encryptSeedBuffer until it is full
@@ -301,7 +301,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
           socket.register(true, false, this);
           return;
         }
-        
+
         // build the encrypt key
         byte[] encryptKeyBytes = new byte[KEY_LENGTH];
         synchronized(md) {
@@ -313,11 +313,11 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
         try {
           final Cipher encryptCipher = Cipher.getInstance(ALGORITHM);
           encryptCipher.init(Cipher.ENCRYPT_MODE, encryptKey);
-          
+
           // write the decrypt seed to A
           final byte[] decryptSeed = new byte[PW_SEED_LENGTH];
           random.nextBytes(decryptSeed);
-          
+
           // build the key
           byte[] decryptKeyBytes = new byte[KEY_LENGTH];
           synchronized(md) {
@@ -328,12 +328,12 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
           SecretKey decryptKey = new SecretKeySpec(decryptKeyBytes, ALGORITHM);
           final Cipher decryptCipher = Cipher.getInstance(ALGORITHM);
           decryptCipher.init(Cipher.DECRYPT_MODE, decryptKey);
-          
+
           // encrypt the seeds
           byte[] encryptedSeeds = new byte[PW_SEED_LENGTH*2];
           encryptCipher.update(decryptSeed,0,PW_SEED_LENGTH,encryptedSeeds,0);
           encryptCipher.update(encryptSeed,0,PW_SEED_LENGTH,encryptedSeeds,PW_SEED_LENGTH);
-          
+
           // write the encrypted seeds
           final ByteBuffer encryptedSeedsBuffer = ByteBuffer.wrap(encryptedSeeds);
           new P2PSocketReceiver<Identifier>() {
@@ -349,25 +349,25 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
                 socket.register(false, true, this);
                 return;
               }
-              
+
               // we're done...
               callback.incomingSocket(new EncryptedSocket<Identifier>(socket.getIdentifier(),socket,logger,errorHandler,socket.getOptions(),encryptCipher,decryptCipher,WRITE_BUFFER_SIZE));
             }
-            
+
             public void receiveException(P2PSocket<Identifier> socket,
                 Exception ioe) {
               errorHandler.receivedException(socket.getIdentifier(), ioe);
               socket.close();
-            }            
+            }
           }.receiveSelectResult(socket, false, true);
-          
-          
+
+
         } catch (GeneralSecurityException gse) {
           socket.close();
-        }            
+        }
 
       }
-    
+
       public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
         errorHandler.receivedException(socket.getIdentifier(), ioe);
         socket.close();
@@ -391,7 +391,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
   }
 
   public void destroy() {
-    
+
   }
 
   public void messageReceived(Identifier i, MsgType m,

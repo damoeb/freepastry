@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.replay.playback;
 
 import java.io.IOException;
@@ -54,10 +54,10 @@ public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRe
   boolean closed = false;
   boolean outputShutdown = false;
   Map<String, Object> options;
-  
+
   /**
    * TODO: Make extensible by putting into a factory.
-   * 
+   *
    * @param identifier
    * @param socketId
    * @param verifier
@@ -99,22 +99,22 @@ public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRe
 
     if (wantToWrite) {
       if (writer != null) {
-        if (writer != receiver) throw new IllegalStateException("Already registered "+writer+" for writing, you can't register "+receiver+" for writing as well!"); 
+        if (writer != receiver) throw new IllegalStateException("Already registered "+writer+" for writing, you can't register "+receiver+" for writing as well!");
       }
     }
-    
+
     if (wantToRead) {
       if (reader != null) {
-        if (reader != receiver) throw new IllegalStateException("Already registered "+reader+" for reading, you can't register "+receiver+" for reading as well!"); 
+        if (reader != receiver) throw new IllegalStateException("Already registered "+reader+" for reading, you can't register "+receiver+" for reading as well!");
       }
-      reader = receiver; 
+      reader = receiver;
     }
-    
+
     if (wantToWrite) {
-      writer = receiver; 
+      writer = receiver;
     }
   }
-  
+
   public void notifyIO(boolean canRead, boolean canWrite) throws IOException {
     if (!canRead && !canWrite) {
       throw new IOException("I can't read or write. canRead:"+canRead+" canWrite:"+canWrite);
@@ -126,28 +126,28 @@ public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRe
       reader = null;
       temp.receiveSelectResult(this, canRead, canWrite);
       return;
-    } 
-    
+    }
+
     if (canRead) {
       if (reader == null) throw new IllegalStateException("reader:"+reader+" canRead:"+canRead);
       P2PSocketReceiver<Identifier> temp = reader;
       reader = null;
       temp.receiveSelectResult(this, canRead, canWrite);
       return;
-    } 
-    
+    }
+
     if (canWrite) {
       if (writer == null) throw new IllegalStateException("writer:"+writer+" canWrite:"+canWrite);
       P2PSocketReceiver<Identifier> temp = writer;
       writer = null;
       temp.receiveSelectResult(this, canRead, canWrite);
       return;
-    }     
+    }
   }
 
   public void close() {
     closed = true;
-    
+
     verifier.close(socketId);
   }
 
@@ -155,15 +155,15 @@ public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRe
   public void setDeliverSocketToMe(SocketCallback<Identifier> deliverSocketToMe) {
     this.deliverSocketToMe = deliverSocketToMe;
   }
-  
+
   public void socketOpened() {
     deliverSocketToMe.receiveResult(this, this);
     deliverSocketToMe = null;
   }
-  
+
   public void shutdownOutput() {
     outputShutdown = true;
-    
+
     verifier.shutdownOutput(socketId);
   }
 
@@ -182,13 +182,13 @@ public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRe
         writer = null;
       }
     }
-    
+
     if (reader != null) {
       reader.receiveException(this, ioe);
       reader = null;
     }
   }
-  
+
   public boolean cancel() {
     throw new RuntimeException("Not implemented.");
   }

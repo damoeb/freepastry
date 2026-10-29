@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.infostore;
 
 import java.io.File;
@@ -72,13 +72,13 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   AuthenticatorSerializer authSerializer;
 
   EvidenceSerializer evidenceSerializer;
-  
-  
+
+
   public PeerInfoStoreImpl(
-      IdentityTransport<Handle, Identifier> transport, 
-      IdStrTranslator<Identifier> stringTranslator, 
-      AuthenticatorSerializer authSerializer, 
-      EvidenceSerializer evidenceSerializer, 
+      IdentityTransport<Handle, Identifier> transport,
+      IdStrTranslator<Identifier> stringTranslator,
+      AuthenticatorSerializer authSerializer,
+      EvidenceSerializer evidenceSerializer,
       Environment env) {
     this.peerInfoRecords = new HashMap<Identifier, PeerInfoRecord<Handle, Identifier>>();
     this.directory = null;
@@ -91,7 +91,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     this.evidenceSerializer = evidenceSerializer;
     this.logger = env.getLogManager().getLogger(PeerInfoStoreImpl.class, null);
   }
-  
+
   public static boolean isProof(Evidence e) {
     switch (e.getEvidenceType()) {
       case CHAL_AUDIT:
@@ -104,9 +104,9 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
         return true;
       default:
         throw new IllegalArgumentException("Cannot evaluate isProof("+e+"):"+e.getEvidenceType());
-    }    
+    }
   }
-    
+
   public void setStatusChangeListener(StatusChangeListener<Identifier> listener) {
     this.listener = listener;
   }
@@ -121,7 +121,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
       return null;
     return rec.findEvidence(originator, timestamp, create);
   }
-  
+
   /**
    * This is called when new evidence becomes available, or (during startup) for
    * all evidence files on disk. We only keep some metadata in memory; the
@@ -153,9 +153,9 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
    PeerInfoRecord<Handle, Identifier> rec = find(subject, true);
    EvidenceRecord<Handle, Identifier> evi = rec.findEvidence(originator, timestamp, true);
 
-   evi.setHasResponse(); 
+   evi.setHasResponse();
   }
-  
+
   /* Add a new piece of evidence */
 
   public void addEvidence(Identifier originator, Identifier subject, long timestamp, Evidence evidence) throws IOException {
@@ -168,24 +168,24 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
 
     /* Write the actual evidence to disk */
 
-    
+
     File outFile = getFile(subject, originator, timestamp, (proof ? "proof" : "challenge"));
-        
+
     FileOutputBuffer buf = new FileOutputBuffer(outFile);
-    buf.writeByte((byte)evidence.getEvidenceType());      
+    buf.writeByte((byte)evidence.getEvidenceType());
     evidence.serialize(buf);
     buf.close();
-    
+
     /* Update metadata in memory */
-    
+
     markEvidenceAvailable(originator, subject, timestamp, proof, interestedParty);
   }
 
   protected File getFile(Identifier subject, Identifier originator, long timestamp, String suffix) {
-    File outFile = new File(directory, stringTranslator.toString(subject)+"-"+stringTranslator.toString(originator)+"-"+timestamp+"."+suffix);  
+    File outFile = new File(directory, stringTranslator.toString(subject)+"-"+stringTranslator.toString(originator)+"-"+timestamp+"."+suffix);
     return outFile;
   }
-  
+
   /* Find out whether a node is TRUSTED, SUSPECTED or EXPOSED */
 
   public int getStatus(Identifier id) {
@@ -205,13 +205,13 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
       }
     }
     this.directory = directory;
-    
+
     /* To prevent a flood of status updates, we temporarily disable updates
        while we inspect the existing evidence on disk */
 
     boolean notificationWasEnabled = notificationEnabled;
     notificationEnabled = false;
-      
+
     /* Read the entire directory */
     File[] bar = directory.listFiles();
     if (bar != null) {
@@ -230,16 +230,16 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
           buf.close();
           setLastCheckedAuth(id, lastAuth);
         } else if (suffix.equals("challenge") || suffix.equals("response") || suffix.equals("proof")) {
-  
-  
-          
+
+
+
           /* PROOF, CHALLENGE and RESPONSE files */
           String[] parts = first.split("-");
           if (parts.length != 3) throw new IOException("Error reading filename :"+ent+" did not split into 3 parts:"+Arrays.toString(parts));
           Identifier subject = stringTranslator.readIdentifierFromString(parts[0]);
           Identifier originator = stringTranslator.readIdentifierFromString(parts[1]);
           long seq = Long.parseLong(parts[2]);
-  
+
           if (suffix.equals("challenge")) {
             markEvidenceAvailable(originator, subject, seq, false, null);
           } else if (suffix.equals("proof")) {
@@ -251,27 +251,27 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
       }
     }
     notificationEnabled = notificationWasEnabled;
-    
+
     return true;
   }
-  
+
   public PeerInfoRecord<Handle, Identifier> find(Identifier id) {
     return find(id,false);
   }
   public PeerInfoRecord<Handle, Identifier> find(Identifier id, boolean create) {
     PeerInfoRecord<Handle, Identifier> ret = peerInfoRecords.get(id);
-    
+
     if (ret == null && create) {
       ret = new PeerInfoRecord<Handle, Identifier>(id, this);
       peerInfoRecords.put(id, ret);
     }
     return ret;
   }
-  
+
   public Authenticator getLastCheckedAuth(Identifier id) {
     PeerInfoRecord<Handle, Identifier> rec = find(id, false);
     if (rec == null) return null;
-      
+
     return rec.getLastCheckedAuth();
   }
 
@@ -283,7 +283,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
       throw new RuntimeException(ioe);
     }
   }
-  
+
   /* statEvidence() of the C++ implementation is not ported: use findEvidence() */
 
   /**
@@ -292,7 +292,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   public Evidence getEvidence(Identifier originator, Identifier subject, long timestamp) throws IOException {
     EvidenceRecord<Handle, Identifier> evi = findEvidence(originator, subject, timestamp, false);
     if (evi == null) return null;
-    
+
     File infile = getFile(subject, originator, timestamp, evi.isProof() ? "proof" : "challenge");
     // done automatically by FIB
 
@@ -302,8 +302,8 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     buf.close();
     return e;
   }
-  
-  
+
+
 
   /**
    * Record a response to a challenge
@@ -311,19 +311,19 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   public void addResponse(Identifier originator, Identifier subject, long timestamp, Evidence response) throws IOException {
     EvidenceRecord<Handle, Identifier> evi = findEvidence(originator, subject, timestamp);
     assert(evi != null && !evi.isProof() && !evi.hasResponse());
-    
+
     FileOutputBuffer outfile = new FileOutputBuffer(getFile(subject, originator, timestamp, "response"));
     outfile.writeByte((byte)response.getEvidenceType());
     response.serialize(outfile);
     outfile.close();
-    
+
     markResponseAvailable(originator, subject, timestamp);
   }
 
   public String getHistoryName(Identifier subject) {
     return new File(directory,stringTranslator.toString(subject)+"-log").toString();
   }
-  
+
   public void notifyStatusChanged(Identifier subject, int newStatus) {
     if (!notificationEnabled || listener == null) return;
     listener.notifyStatusChange(subject, newStatus);

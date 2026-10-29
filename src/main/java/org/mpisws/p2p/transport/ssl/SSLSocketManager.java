@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.transport.ssl;
 
 import java.io.IOException;
@@ -68,14 +68,14 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
    * The cert of the remote node. (not applicable for non-clientAuth servers.
    */
   protected X509Certificate peerCert = null;
-  
+
   protected P2PSocket<Identifier> socket;
 
   protected SSLEngine engine;
   protected SSLTransportLayerImpl<Identifier, ?> sslTL;
 
   protected Logger logger;
-  
+
   protected boolean handshaking = true;
   protected boolean closed = true;
 
@@ -85,7 +85,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   protected LinkedList<ByteBuffer> writeMe = new LinkedList<ByteBuffer>(); // cipher, outgoing
   protected LinkedList<ByteBuffer> unwrapMe = new LinkedList<ByteBuffer>(); // cipher, incoming
   protected LinkedList<ByteBuffer> readMe; // plain, incoming
-  
+
 
   protected ByteBuffer bogusEncryptMe;
 
@@ -95,17 +95,17 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   protected Continuation<SSLSocketManager<Identifier>, Exception> c;
 
   protected boolean doneHandshaking = false;
-  
+
   protected Map<String, Object> options;
 
   protected boolean useClientAuth;
   protected boolean server;
 
   protected String name;
-  
+
   /**
    * Called on incoming side
-   * 
+   *
    * @param sslTL
    * @param s
    * @param c
@@ -131,7 +131,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
     bogusEncryptMe = ByteBuffer.allocate(0);
     readMe = new LinkedList<ByteBuffer>();
-    
+
     socket.register(true, false, this);
 
     handshakeWrap();
@@ -140,14 +140,14 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   public String toString() {
     return "SSLSocket to "+(name == null ? "unknown" : name)+" at "+socket.toString();
   }
-  
+
   protected void handleResult(SSLEngineResult result) {
     this.result = result;
     this.status = result.getHandshakeStatus();
   }
 
   boolean handshakeFail = false;
-  
+
   public void receiveSelectResult(P2PSocket<Identifier> socket,
       boolean canRead, boolean canWrite) throws IOException {
     if (handshakeFail) return;
@@ -163,10 +163,10 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         if (registeredToWrite != null) {
           P2PSocketReceiver<Identifier> temp = registeredToWrite;
           registeredToWrite = null;
-          temp.receiveSelectResult(this, false, true);       
+          temp.receiveSelectResult(this, false, true);
         }
       } else {
-        socket.register(false, true, this);        
+        socket.register(false, true, this);
       }
     }
     if (canRead) {
@@ -175,14 +175,14 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
           if (registeredToRead != null) {
             P2PSocketReceiver<Identifier> temp = registeredToRead;
             registeredToRead = null;
-            temp.receiveSelectResult(this, true, false);                 
+            temp.receiveSelectResult(this, true, false);
           }
         }
       } else {
         read();
         continueHandshaking();
       }
-    }    
+    }
   }
 
   protected boolean read() throws IOException {
@@ -198,7 +198,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
     return false;
   }
-  
+
   protected void handshakeWrap() {
       try {
         ByteBuffer outgoing = ByteBuffer.allocate(netBufferMax);
@@ -207,7 +207,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
           outgoing.flip();
           writeMe.addLast(outgoing);
           socket.register(false, true, this);
-        }    
+        }
       } catch (SSLException e) {
         fail(e);
         return;
@@ -244,7 +244,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
     if (!b.hasRemaining()) unwrapMe.removeFirst();
   }
-  
+
   protected void handshakeUnwrap() {
     try {
       if (unwrapMe.isEmpty()) {
@@ -261,7 +261,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
     continueHandshaking();
   }
-  
+
   protected void fail(Exception e) {
     if (doneHandshaking) return;
     logger.warn("fail:", e);
@@ -275,8 +275,8 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     socket.close();
     doneHandshaking = true;
   }
-  
-  protected void continueHandshaking() {    
+
+  protected void continueHandshaking() {
     if (runningTaskLock) {
       return; // wait for processing to finish
     }
@@ -301,7 +301,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   /**
    * Return true when done.
-   * 
+   *
    * @return
    */
   protected boolean checkDone() {
@@ -316,7 +316,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
             options = OptionsFactory.addOption(socket.getOptions(), SSLTransportLayer.OPTION_CERT_SUBJECT, name);
           } else {
             fail(new IllegalArgumentException("CN must start with CN= "+name+" "+this));
-            return false;          
+            return false;
           }
         } catch (Exception e) {
           fail(e);
@@ -329,11 +329,11 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
     return false;
   }
-  
+
   public X509Certificate getCert() {
     return peerCert;
   }
-  
+
   /*
    * If the result indicates that we have outstanding tasks to do, go ahead and
    * run them in this thread.
@@ -344,7 +344,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     if (status == HandshakeStatus.NEED_TASK) {
       runningTaskLock = true;
       sslTL.environment.getProcessor().process(new Executable<Object, Exception>() {
-        
+
         public Object execute() throws Exception {
           Runnable runnable;
           while ((runnable = engine.getDelegatedTask()) != null) {
@@ -361,7 +361,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         public void receiveException(Exception exception) {
           logger.warn("SSL handshake task failed", exception);
         };
-        public void receiveResult(Object result) {          
+        public void receiveResult(Object result) {
           runningTaskLock = false;
           continueHandshaking();
         };
@@ -399,7 +399,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         socket.register(true, false, this);
       }
     }
-    
+
     if (wantToWrite) {
       if (writeMe.isEmpty()) {
         try {
@@ -412,14 +412,14 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         registeredToWrite = receiver;
         socket.register(false, true, this);
       }
-    }    
+    }
   }
-  
+
   P2PSocketReceiver<Identifier> registeredToRead;
   P2PSocketReceiver<Identifier> registeredToWrite;
-  
+
   public long read(ByteBuffer dsts) throws IOException {
-    
+
     long start = dsts.position();
     unwrap();
     while(dsts.hasRemaining() && !readMe.isEmpty()) {
@@ -435,7 +435,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         readMe.removeFirst();
       }
     }
-    
+
     // now try reading off the socket
     if (dsts.hasRemaining() && readMe.isEmpty()) {
       if (read()) {
@@ -448,7 +448,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
           foo.position(pos+len);
           if (!foo.hasRemaining()) readMe.removeFirst();
         }
-      }    
+      }
     }
     return dsts.position()-start;
   }

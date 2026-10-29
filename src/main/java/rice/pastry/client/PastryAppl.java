@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.pastry.client;
 
@@ -74,7 +74,7 @@ import rice.pastry.standard.StandardAddress;
 public abstract class PastryAppl /*implements Observer*/
 {
   protected MessageDeserializer deserializer;
-  
+
   // private block
   protected String instance;
 
@@ -83,9 +83,9 @@ public abstract class PastryAppl /*implements Observer*/
   protected int address;
 
   protected Logger logger;
-  
+
   protected Map<String, Object> options;
-  
+
   private class LeafSetObserver implements NodeSetListener {
     public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
       leafSetChange(handle, added);
@@ -101,14 +101,14 @@ public abstract class PastryAppl /*implements Observer*/
   // constructor
 
   /**
-   * Constructor. 
+   * Constructor.
    *
    * @param pn the pastry node that client will attach to.
    */
   public PastryAppl(PastryNode pn) {
     this(pn, null);
   }
-  
+
   /**
    * Constructor.  This constructor will perform the same tasks as the
    * above constructor, but will also create a Pastry address for this
@@ -122,11 +122,11 @@ public abstract class PastryAppl /*implements Observer*/
     this(pn, instance, 0, null);
     register();
   }
-  
+
   public PastryAppl(PastryNode pn, String instance, int address, MessageDeserializer md) {
     this(pn, instance, address, md, null);
   }
-  
+
   public PastryAppl(PastryNode pn, String instance, int address, MessageDeserializer md, Logger logger) {
     this.address = address;
     if (instance != null) {
@@ -134,7 +134,7 @@ public abstract class PastryAppl /*implements Observer*/
     }
     if (address == 0)
       this.address = StandardAddress.getAddress(this.getClass(), instance, pn.getEnvironment());
-    
+
     thePastryNode = pn;
     this.logger = logger;
     if (this.logger == null) {
@@ -144,12 +144,12 @@ public abstract class PastryAppl /*implements Observer*/
     if (deserializer == null)
       deserializer = new JavaSerializedDeserializer(pn);
   }
-    
+
   /**
    * Constructor.  This constructor will perform the same tasks as the
    * above constructor, but will also create a Pastry address for this
    * application, using the specified port.
-   * 
+   *
    * Need to call register on this.
    *
    * @param pn the pastry node that client will attach to.
@@ -158,17 +158,17 @@ public abstract class PastryAppl /*implements Observer*/
   public PastryAppl(PastryNode pn, int port) {
     this(pn, null, port, null);
   }
-  
+
   public void register() {
     thePastryNode.registerReceiver(getAddress(), this);
 
     thePastryNode.addLeafSetListener(new LeafSetObserver());
     thePastryNode.addRouteSetListener(new RouteSetObserver());
 
-    thePastryNode.registerApp(this); // just adds it to a list    
-    
+    thePastryNode.registerApp(this); // just adds it to a list
+
   }
-  
+
   /**
    * Returns the address of this application.
    *
@@ -193,39 +193,39 @@ public abstract class PastryAppl /*implements Observer*/
     }
     receiveMessage(m);
   }
-  
+
   protected void setDeserializer(MessageDeserializer deserializer) {
-    this.deserializer = deserializer; 
+    this.deserializer = deserializer;
   }
-  
+
   public MessageDeserializer getDeserializer() {
     return this.deserializer;
   }
-  
+
   /**
    * Called by pastry to deliver a message to this client.
    *
    * @param msg the message that is arriving.
    */
   public void receiveMessage(Message msg) {
-    
+
     logger.trace("[{}] recv {}", thePastryNode, msg);
     if (msg instanceof RouteMessage) {
       RouteMessage rm = (RouteMessage) msg;
-      
+
         // if the message has a destinationHandle, it should be for me, and it should always be delivered
         NodeHandle destinationHandle = rm.getDestinationHandle();
-        if (deliverWhenNotReady() || 
-            thePastryNode.isReady() || 
+        if (deliverWhenNotReady() ||
+            thePastryNode.isReady() ||
             rm.getPrevNode() == thePastryNode.getLocalHandle() ||
             (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
           // continue to enrouteMessage()
         } else {
           if (rm.sendFailed(new NodeIsNotReadyException(thePastryNode.getLocalHandle()))) {
-            logger.info("Dropping {} because node is not ready.", msg);            
+            logger.info("Dropping {} because node is not ready.", msg);
           } else {
             logger.warn("Dropping {} because node is not ready.", msg);
-            
+
           }
 
           return;
@@ -241,9 +241,9 @@ public abstract class PastryAppl /*implements Observer*/
           }
         }
       } catch (IOException ioe) {
-        throw new RuntimeException("Error deserializing message "+rm,ioe); 
+        throw new RuntimeException("Error deserializing message "+rm,ioe);
       }
-    } else {      
+    } else {
       messageForAppl(msg);
     }
   }
@@ -275,7 +275,7 @@ public abstract class PastryAppl /*implements Observer*/
    *
    * @param dest the destination node
    * @param msg the message to deliver.
-   * @param opt send options that describe how the message is to be routed.  
+   * @param opt send options that describe how the message is to be routed.
    */
   public boolean routeMsgDirect(NodeHandle dest, Message msg, SendOptions opt) {
     logger.trace("[{}] routemsgdirect {} to {}", thePastryNode, msg, dest);
@@ -302,40 +302,40 @@ public abstract class PastryAppl /*implements Observer*/
     rm.setTLOptions(options);
     thePastryNode.getRouter().route(rm);
   }
-  
+
   // this one will replace the last one after the alpha release
   public MessageReceipt routeMsg(final Id key, final Message msg, final SendOptions opt, final DeliveryNotification deliverAckToMe) {
     logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     final RouteMessage rm = new RouteMessage(key, msg, opt,
         (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
-    
+
     final MessageReceipt ret = new MessageReceipt(){
-      
+
       public boolean cancel() {
         logger.debug("routeMsg({},{},{}).cancel()", key, msg, deliverAckToMe);
         return rm.cancel();
       }
-    
+
       public Message getMessage() {
         return msg;
       }
-    
+
       public Id getId() {
         return key;
       }
-    
+
       public NodeHandle getHint() {
         return null;
-      }    
+      }
     };
-    
+
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
     if ((deliverAckToMe != null) || (logger.isDebugEnabled())) {
       rm.setRouteMessageNotification(new RouteMessageNotification() {
         public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
           logger.debug("routeMsg({},{},{}).sendSuccess():{}", key, msg, deliverAckToMe, nextHop);
           if (deliverAckToMe != null) deliverAckToMe.sent(ret);
-        }    
+        }
         public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
           logger.atDebug().log(() -> "routeMsg("+key+","+msg+","+deliverAckToMe+").sendFailed("+e+")");
           if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
@@ -343,10 +343,10 @@ public abstract class PastryAppl /*implements Observer*/
       });
     }
 
-    
+
     rm.setTLOptions(OptionsFactory.addOption(options, PriorityTransportLayer.OPTION_PRIORITY, msg.getPriority()));
     thePastryNode.getRouter().route(rm);
-    
+
     return ret;
   }
 
@@ -434,76 +434,74 @@ public abstract class PastryAppl /*implements Observer*/
   /**
    * Invoked when the Pastry node has joined the overlay network and
    * is ready to send and receive messages
-   * 
+   *
    * As of FreePastry 1.4.1, replaced by PastryNode Observer pattern.
    */
   public void notifyReady() {}
 
   /**
    * Instructs the MessageDispatch how to behave when the PastryNode is not ready.
-   * 
+   *
    * An application can override this method to return true if it wishes to receive
    * messages before Pastry is ready().
-   * 
-   * Most applications should leave this as false, so that their application does 
+   *
+   * Most applications should leave this as false, so that their application does
    * not have inconsistent routing.  However Pastry's protocols (such as the join protocol)
    * need to receive messages before pastry is ready().  This is because they are attempting
    * to make pastry ready().
-   * 
+   *
    * @return false unless the node is a service
    */
   public boolean deliverWhenNotReady() {
     return false;
-  }  
-  
+  }
+
   /**
    * Called when PastryNode is destroyed.  Can be overloaded by applications.
    */
   public void destroy() {}
-  
+
 
   // *******************  Applicatoin Socket Interface *****************
   /**
    * Called to open an ApplicationLevelSocket
    */
   public void connect(rice.p2p.commonapi.NodeHandle handle, AppSocketReceiver receiver, int timeout) {
-    thePastryNode.connect((rice.pastry.NodeHandle)handle, receiver, this, timeout);    
-  }  
+    thePastryNode.connect((rice.pastry.NodeHandle)handle, receiver, this, timeout);
+  }
 
   /**
    * Sets an AppSocketReceiver to be called when the next socket arrives.
    * @param receiver
    */
-  public void accept(AppSocketReceiver receiver) {        
+  public void accept(AppSocketReceiver receiver) {
     this.receiver = receiver;
-  }  
-  
+  }
+
   /**
    * holds the receiverSocket
    */
   protected AppSocketReceiver receiver;
-  
+
   /**
    * @return true if a receiver is waiting for a socket
    */
   public boolean canReceiveSocket() {
     return receiver != null;
   }
-  
+
   /**
    * Calls receiver.receiveSocket(), then sets receiver to null.
-   * 
+   *
    * It sets it to null to allow the application to provide SocketInitiationBackpressure
-   * 
+   *
    * @param socket the new socket from the network
    * @throws IOException if the receiver throws it
    */
   public void finishReceiveSocket(AppSocket socket) throws IOException {
     AppSocketReceiver theReceiver = receiver;
     receiver = null;
-    theReceiver.receiveSocket(socket);    
+    theReceiver.receiveSocket(socket);
   }
-  
+
 }
-
-

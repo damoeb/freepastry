@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.util;
 
@@ -54,17 +54,17 @@ import java.util.SortedMap;
  */
 @SuppressWarnings("unchecked")
 public class ReverseTreeMap<K,V> implements Serializable {
-  
+
   /**
    * The internal normal map
    */
   protected SortedMap<K,V> normal = new RedBlackMap<K,V>();
-  
+
   /**
    * The internal value -> list of keys map
    */
   protected SortedMap<V,RedBlackMap<K,V>> reverse = new RedBlackMap<V,RedBlackMap<K,V>>();
-  
+
   /**
    * The internal list of keys with null as a mapping
    */
@@ -86,7 +86,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
     this.reverse = reverse;
     this.nulls = nulls;
   }
-  
+
   /**
    * returns the size
    *
@@ -95,7 +95,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
   public int size() {
     return normal.size();
   }
-  
+
   /**
    * Returns whether or not we contain the key
    *
@@ -105,7 +105,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
   public boolean containsKey(Object key) {
     return normal.containsKey(key);
   }
-  
+
   /**
    * Returns the value associated with the given key
    *
@@ -115,7 +115,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
   public synchronized V get(Object key) {
     return normal.get(key);
   }
-  
+
   /**
    * Return the set of keys
    *
@@ -124,7 +124,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
   public Set<K> keySet() {
     return normal.keySet();
   }
-  
+
   /**
    * Removes any and all mappings with the given key
    *
@@ -132,11 +132,11 @@ public class ReverseTreeMap<K,V> implements Serializable {
    */
   public void remove(Object key) {
     V value = normal.remove(key);
-    
+
     if (value != null) {
       RedBlackMap<K,V> o = reverse.get(value);
       o.remove(key);
-      
+
       if (o.size() == 0) {
         reverse.remove(value);
       }
@@ -144,55 +144,55 @@ public class ReverseTreeMap<K,V> implements Serializable {
       nulls.remove(key);
     }
   }
-  
-  
+
+
   /**
    * Method which captures the insert and adds it to the
    * reverse map
    *
-   * @param key The key 
+   * @param key The key
    * @param value The value
    */
   public void put(K key, V value) {
     V old = normal.put(key, value);
-    
+
     // remove any old reverse mapping
     if (old != null) {
-      RedBlackMap<K,V> o = reverse.get(old);        
+      RedBlackMap<K,V> o = reverse.get(old);
       o.remove(key);
-      
+
       if (o.size() == 0) {
         reverse.remove(old);
       }
     } else {
       nulls.remove(key);
     }
-    
+
     // and add the new reverse mapping
     if (value != null) {
       RedBlackMap<K,V> v = reverse.get(value);
-    
+
       // creating a treeset if necessary
       if (v == null) {
         v = new RedBlackMap<K,V>();
         reverse.put(value, v);
       }
-    
+
       v.put(key, value);
     } else {
       nulls.put(key, null);
     }
   }
-  
+
   /**
    * Method which returns the key map
    *
    * @retun The key Map
    */
   public SortedMap<K,V> keyMap() {
-    return normal; 
+    return normal;
   }
-  
+
   /**
    * Method which returns a *cloned* head map, or all of the values
    * up to the specified value
@@ -203,7 +203,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
   public SortedMap<K,V> keyHeadMap(K value) {
     return normal.headMap(value);
   }
-  
+
   /**
    * Method which returns a *cloned* tail map, or all of the values
    * after a the specified value
@@ -214,7 +214,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
   public SortedMap<K,V> keyTailMap(K value) {
     return normal.tailMap(value);
   }
-  
+
   /**
    * Method which returns a *cloned* sub map, or all of the values
    * between the specified values
@@ -236,7 +236,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
   public SortedMap<K,V> valueHeadMap(V value) {
     return convert(reverse.headMap(value));
   }
-  
+
   /**
    * Method which returns a tailset of the values, or all the
    * keys with values after to the specified value
@@ -257,16 +257,16 @@ public class ReverseTreeMap<K,V> implements Serializable {
    */
   public SortedMap<K,V> valueSubMap(V start, V end) {
     return convert(reverse.subMap(start, end));
-  }   
-  
+  }
+
   /**
    * Method which returns all of the keys which have null values
    *
    */
   public SortedMap<K,V> valueNullMap() {
     return nulls;
-  }   
-  
+  }
+
   /**
    * Internal method which converts a map from values to key maps into a map from keys to values
    *
@@ -276,10 +276,10 @@ public class ReverseTreeMap<K,V> implements Serializable {
   protected SortedMap<K,V> convert(SortedMap<V,RedBlackMap<K,V>> map) {
     SortedMap<K,V> result = new RedBlackMap<K,V>();
     Iterator<V> i = map.keySet().iterator();
-    
-    while (i.hasNext()) 
+
+    while (i.hasNext())
       result.putAll(map.get(i.next()));
-      
+
     return result;
   }
 }

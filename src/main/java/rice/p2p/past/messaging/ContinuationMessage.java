@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 
 package rice.p2p.past.messaging;
 
@@ -66,14 +66,14 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
 @SuppressWarnings("unchecked")
 public abstract class ContinuationMessage extends PastMessage implements Continuation<Object, Exception> {
 
-  static final long serialVersionUID = 1321112527034107161L; 
-  
+  static final long serialVersionUID = 1321112527034107161L;
+
   // the response data
   protected Object response;
 
   // the response exception, if one is thrown
   protected Exception exception;
-  
+
   /**
     * Constructor which takes a unique integer Id, as well as the
    * data to be stored
@@ -83,7 +83,7 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
    * @param dest The destination address
    */
   protected ContinuationMessage(int uid, NodeHandle source, Id dest) {
-    super(uid, source, dest); 
+    super(uid, source, dest);
   }
 
   /**
@@ -128,7 +128,7 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
   public Object getResponse() {
     return response;
   }
-  
+
   /**
    * No response or exception.
    */
@@ -136,7 +136,7 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
   /**
    * Subclass handled serialization.
    */
-  public static byte S_SUB = 1; 
+  public static byte S_SUB = 1;
   /**
    * Java Serialized Response
    */
@@ -145,24 +145,24 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
    * Java Serialized Exception
    */
   public static byte S_JAVA_EXCEPTION = 2;
-  
-  
+
+
   /**
    * The serialization stategy is that usually the subtype will have an optimal
    * serialization strategy, but sometimes we will have to revert to java serialization
-   * 
+   *
    * @param buf
    * @param endpoint
    * @throws IOException
    */
   public ContinuationMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
-    super(buf, endpoint); 
+    super(buf, endpoint);
     serType = buf.readByte();
     if (serType > S_SUB) deserialize(buf, endpoint); // not empty, and not handled by the sub
   }
-  
+
   /**
-   * 
+   *
    * @param buf
    * @throws IOException
    */
@@ -170,36 +170,36 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
     byte[] array = new byte[buf.readInt()];
     buf.read(array);
     ObjectInputStream ois = new JavaDeserializer(new ByteArrayInputStream(array), endpoint);
-    Object content;     
+    Object content;
     try {
       content = ois.readObject();
       if (serType == S_JAVA_RESPONSE) {
         response = content;
       } else {
-        exception = (Exception)content; 
+        exception = (Exception)content;
       }
     } catch (ClassNotFoundException e) {
       throw new RuntimeException("Unknown class type in message - closing channel.", e);
-    }          
+    }
   }
 
   public abstract void serialize(OutputBuffer buf) throws IOException;
-  
+
   protected byte serType;
-  
+
   /**
    * If you want this class to serialize itself, set javaSerialize to true,
    * otherwise, the subclass is expected to do an optimal serialization
-   * 
+   *
    * @param buf the buffer to write to
    * @param javaSerialize whether to Java-serialize the response or exception
    * @throws IOException if writing fails
    */
   public void serialize(OutputBuffer buf, boolean javaSerialize) throws IOException {
     super.serialize(buf);
-    
+
     serType = S_EMPTY;
-    
+
     if (javaSerialize) {
       Object content = response;
       if (response != null) {
@@ -208,20 +208,20 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
         serType = S_JAVA_EXCEPTION;
         content = exception;
       }
-      
+
       if (content == null) {
         serType = S_EMPTY;
         buf.writeByte(serType);
-      } else {      
+      } else {
         try {
-          buf.writeByte(serType);        
+          buf.writeByte(serType);
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
           ObjectOutputStream oos = new ObjectOutputStream(baos);
-          
+
           // write out object and find its length
           oos.writeObject(content);
           oos.close();
-          
+
           byte[] temp = baos.toByteArray();
           buf.writeInt(temp.length);
           buf.write(temp, 0, temp.length);
@@ -230,8 +230,7 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
         }
       }
     } else {
-      buf.writeByte(S_SUB); 
+      buf.writeByte(S_SUB);
     }
   }
 }
-

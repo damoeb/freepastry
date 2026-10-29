@@ -11,6 +11,8 @@ With [SDKMAN!](https://sdkman.io/), run `sdk env install` in the project root to
 
 The compiler runs with `-Xlint:rawtypes,deprecation,removal,dep-ann -Werror`: raw (untyped) generic types and calls to deprecated APIs fail the build. Failing tests fail the build too.
 
+`./mvnw verify` also runs Spotless: unused or wildcard imports, trailing whitespace, tabs and a missing final newline fail the build. Run `./mvnw spotless:apply` to fix them. Spotless does not reflow code.
+
 ## Quick Start
 
 ### Build

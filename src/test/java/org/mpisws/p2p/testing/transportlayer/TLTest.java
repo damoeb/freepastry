@@ -2,7 +2,7 @@
 
 "FreePastry" Peer-to-Peer Application Development Substrate
 
-Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute 
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
 for Software Systems.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -16,24 +16,24 @@ notice, this list of conditions and the following disclaimer.
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
 
-- Neither the name of Rice  University (RICE), Max Planck Institute for Software 
-Systems (MPI-SWS) nor the names of its contributors may be used to endorse or 
-promote products derived from this software without specific prior written 
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
 permission.
 
-This software is provided by RICE, MPI-SWS and the contributors on an "as is" 
-basis, without any representations or warranties of any kind, express or implied 
-including, but not limited to, representations or warranties of 
-non-infringement, merchantability or fitness for a particular purpose. In no 
-event shall RICE, MPI-SWS or contributors be liable for any direct, indirect, 
-incidental, special, exemplary, or consequential damages (including, but not 
-limited to, procurement of substitute goods or services; loss of use, data, or 
-profits; or business interruption) however caused and on any theory of 
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
 liability, whether in contract, strict liability, or tort (including negligence
-or otherwise) arising in any way out of the use of this software, even if 
+or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
-*******************************************************************************/ 
+*******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer;
 
 import java.io.IOException;
@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class TLTest<Identifier> {
-  
+
   static Environment env;
   static Logger logger;
   static Map<String, Object> options = new HashMap<String, Object>();
@@ -91,10 +91,10 @@ public abstract class TLTest<Identifier> {
   static boolean runsForSubclass(TestInfo info, Class<?> declaringClass) {
     return info.getTestClass().orElseThrow() != declaringClass;
   }
-  
+
   @AfterAll
   public static void tearDownAfterClass() throws Exception {
-    // Destroy the transport layers so that their ports are released: Environment.destroy() alone only stops the 
+    // Destroy the transport layers so that their ports are released: Environment.destroy() alone only stops the
     // selector (dropping pending invocations), leaving the server sockets bound for the next test class in this JVM.
     final List<Destructable> tls = new ArrayList<Destructable>();
     if (alice != null) tls.add(alice);
@@ -147,26 +147,26 @@ public abstract class TLTest<Identifier> {
    * A's view of b
    * @param a
    * @param b
-   * 
+   *
    * @return A's view of b
    */
   public Identifier getIdentifier(
-      TransportLayer<Identifier, ByteBuffer> a, 
+      TransportLayer<Identifier, ByteBuffer> a,
       TransportLayer<Identifier, ByteBuffer> b) {
-    return b.getLocalIdentifier(); 
+    return b.getLocalIdentifier();
   }
 
   /**
    * The identifier to a bogus node.
-   * 
+   *
    * @return
    */
   public abstract Identifier getBogusIdentifier(Identifier local) throws IOException;
-  
-  /*********************** TCP *************************/  
+
+  /*********************** TCP *************************/
   /**
    * 3 parts:
-   * 
+   *
    * - Alice opens a TCP socket to Bob
    * - Alice sends to Bob
    * - Alice closes the Socket
@@ -179,15 +179,15 @@ public abstract class TLTest<Identifier> {
     final List<ByteBuffer> receivedList = new ArrayList<ByteBuffer>(1);
     final List<ByteBuffer> sentList = new ArrayList<ByteBuffer>(1);
     final Object lock = new Object();
-    
+
     // Part I opening a connection
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
-    
+
       public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options)
           throws IOException {
-    
+
       }
-    
+
       public void incomingSocket(P2PSocket<Identifier> s)
           throws IOException {
         synchronized(lock) {
@@ -195,98 +195,98 @@ public abstract class TLTest<Identifier> {
           lock.notify();
         }
       }
-    
+
     });
-    
-    alice().openSocket(getIdentifier(alice(), bob()), new SocketCallback<Identifier>(){    
+
+    alice().openSocket(getIdentifier(alice(), bob()), new SocketCallback<Identifier>(){
       public void receiveResult(SocketRequestHandle<Identifier> s, P2PSocket<Identifier> result) {
         synchronized(lock) {
           aliceSockets.add(result);
           lock.notify();
         }
       }
-    
+
       public void receiveException(SocketRequestHandle<Identifier> s, Exception exception) {
         synchronized(lock) {
           exceptionList.add(exception);
           lock.notify();
         }
       }
-    }, 
+    },
     options);
-    
+
     // wait for it to open
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
       while((env.getTimeSource().currentTimeMillis()<timeout) && exceptionList.isEmpty() && (aliceSockets.isEmpty() || bobSockets.isEmpty())) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
     assertTrue(aliceSockets.size() == 1);
     assertTrue(bobSockets.size() == 1);
     assertTrue(exceptionList.isEmpty());
-    
+
 
     // Part II sending data
     final byte[] sentBytes = {0,1,2,3,4,5,6,7};
-    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes); 
+    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes);
     final ByteBuffer in = ByteBuffer.allocate(sentBytes.length);
-    
-    bobSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {    
+
+    bobSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
-        
+
         socket.read(in);
-        
+
         if (in.hasRemaining()) {
-          socket.register(true, false, this); 
+          socket.register(true, false, this);
         } else {
           synchronized(lock) {
             receivedList.add(in);
-            lock.notify(); 
+            lock.notify();
           }
         }
       }
-    
+
       public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
-          lock.notify(); 
+          lock.notify();
         }
-      }    
+      }
     });
 
-    aliceSockets.get(0).register(false, true, new P2PSocketReceiver<Identifier>() {    
+    aliceSockets.get(0).register(false, true, new P2PSocketReceiver<Identifier>() {
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
         socket.write(sentBuffer);
-        
+
         if (sentBuffer.hasRemaining()) {
-          socket.register(false, true, this); 
+          socket.register(false, true, this);
         } else {
           synchronized(lock) {
             sentList.add(sentBuffer);
-            lock.notify(); 
-          }          
+            lock.notify();
+          }
         }
       }
-    
+
       public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
-          lock.notify(); 
+          lock.notify();
         }
       }
-    
+
     });
-    
+
     timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
       while((env.getTimeSource().currentTimeMillis()<timeout) && exceptionList.isEmpty() && (receivedList.isEmpty() || sentList.isEmpty())) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
-    
+
     assertTrue(sentList.size() == 1);
     assertTrue(receivedList.size() == 1);
     assertTrue(Arrays.equals(sentList.get(0).array(), receivedList.get(0).array()), "recList.arr:"+receivedList.get(0).array()[0]+","+receivedList.get(0).array()[1]);
@@ -294,71 +294,71 @@ public abstract class TLTest<Identifier> {
 
     // Part III test shutdown/close()
     final List<P2PSocket<Identifier>> closed = new ArrayList<P2PSocket<Identifier>>();
-    
+
     aliceSockets.get(0).shutdownOutput();
-    
-    bobSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {    
+
+    bobSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
-        
+
         ByteBuffer bogus = ByteBuffer.allocate(1);
         if (socket.read(bogus) == -1) {
           socket.close();
           synchronized(lock) {
             closed.add(socket);
-            lock.notify(); 
+            lock.notify();
           }
         } else {
           synchronized(lock) {
             receivedList.add(bogus);
-            lock.notify(); 
+            lock.notify();
           }
-        }        
+        }
       }
-    
+
       public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
-          lock.notify(); 
+          lock.notify();
         }
-      }    
+      }
     });
 
-    aliceSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {    
+    aliceSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
-        
+
         ByteBuffer bogus = ByteBuffer.allocate(1);
         if (socket.read(bogus) == -1) {
           socket.close();
           synchronized(lock) {
             closed.add(socket);
-            lock.notify(); 
+            lock.notify();
           }
         } else {
           synchronized(lock) {
             receivedList.add(bogus);
-            lock.notify(); 
+            lock.notify();
           }
-        }        
+        }
       }
-    
+
       public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
-          lock.notify(); 
+          lock.notify();
         }
-      }    
+      }
     });
-    
-    
+
+
     timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
-      while((env.getTimeSource().currentTimeMillis()<timeout) && 
-          exceptionList.isEmpty() && 
-          receivedList.size() == 1 && 
+      while((env.getTimeSource().currentTimeMillis()<timeout) &&
+          exceptionList.isEmpty() &&
+          receivedList.size() == 1 &&
           (closed.size() < 2)) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
 
@@ -370,22 +370,22 @@ public abstract class TLTest<Identifier> {
     assertTrue(closed.contains(aliceSockets.get(0)));
     assertTrue(closed.contains(bobSockets.get(0)));
   }
-  
+
   public void testSocketThreadSafety() {
     // send on the selector
     // send not on the selector
-    
+
     // TODO: this test is empty: send on and off the selector thread, over TCP and UDP
   }
-  
-  /*********************** UDP *************************/  
+
+  /*********************** UDP *************************/
   /**
    * Sends udp message from alice to bob.
    */
   @Test
   public void sendUDP() throws Exception {
-    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes); 
-   
+    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes);
+
     class Tupel<Identifier> {
       Identifier i;
       ByteBuffer buf;
@@ -394,7 +394,7 @@ public abstract class TLTest<Identifier> {
         this.buf = buf;
       }
     }
-    
+
     // added to every time bob receives something
     final List<Tupel<Identifier>> receivedList = new ArrayList<Tupel<Identifier>>(1);
     final List<Exception> exceptionList = new ArrayList<Exception>(1);
@@ -402,28 +402,28 @@ public abstract class TLTest<Identifier> {
     final Object lock = new Object();
 
     // make a way for bob to receive the callback
-    bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {    
+    bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
       public void messageReceived(Identifier i, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
           receivedList.add(new Tupel<Identifier>(i, buf));
           lock.notify();
         }
-      }    
-      public void incomingSocket(P2PSocket<Identifier> s) {}    
+      }
+      public void incomingSocket(P2PSocket<Identifier> s) {}
     });
-    
+
     MessageRequestHandle<Identifier, ByteBuffer> handle = alice().sendMessage(
-        getIdentifier(alice(), bob()), 
-        sentBuffer, 
+        getIdentifier(alice(), bob()),
+        sentBuffer,
         new MessageCallback<Identifier, ByteBuffer>() {
-    
+
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             synchronized(lock) {
               sentList.add(msg);
               lock.notify();
-            }        
-          }    
-          
+            }
+          }
+
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             synchronized(lock) {
               ex.printStackTrace();
@@ -431,14 +431,14 @@ public abstract class TLTest<Identifier> {
               lock.notify();
             }
           }
-    }, 
+    },
     options);
-    
+
     // block for completion
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
       while((env.getTimeSource().currentTimeMillis()<timeout) && exceptionList.isEmpty() && (receivedList.isEmpty() || sentList.isEmpty())) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
 
@@ -450,19 +450,19 @@ public abstract class TLTest<Identifier> {
     assertTrue(Arrays.equals(rec, sentBuffer.array())); // it is equal
     assertTrue(receivedList.get(0).i.equals(getIdentifier(bob(), alice())), "i:"+receivedList.get(0).i+" getI():"+getIdentifier(bob(), alice()));
     assertTrue(sentList.size() == 1, "sentList.size():"+sentList.size()); // we got one notification
-    assertTrue(sentList.get(0) == handle); // it is the buffer we sent        
-    assertTrue(handle.getMessage() == sentBuffer, "handle.getMessage():"+handle.getMessage()+" sentBuffer:"+sentBuffer); // it is the buffer we sent        
+    assertTrue(sentList.get(0) == handle); // it is the buffer we sent
+    assertTrue(handle.getMessage() == sentBuffer, "handle.getMessage():"+handle.getMessage()+" sentBuffer:"+sentBuffer); // it is the buffer we sent
     bob().setCallback(null);
   }
-  
+
   /**
    * Sends huge udp message from alice to bob, should fail.
    */
   @Test
   public void messageTooBigUDP() throws Exception {
     final byte[] sentBytes = new byte[1000000]; // a big message
-    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes); 
-   
+    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes);
+
     // added to every time bob receives something
     final List<MessageRequestHandle<Identifier, ByteBuffer>> failedList = new ArrayList<MessageRequestHandle<Identifier, ByteBuffer>>(1);
     final List<MessageRequestHandle<Identifier, ByteBuffer>> sentList = new ArrayList<MessageRequestHandle<Identifier, ByteBuffer>>(1);
@@ -470,16 +470,16 @@ public abstract class TLTest<Identifier> {
     final Object lock = new Object();
 
     MessageRequestHandle<Identifier, ByteBuffer> cancellable = alice().sendMessage(
-        getIdentifier(alice(), bob()), 
-        sentBuffer, 
+        getIdentifier(alice(), bob()),
+        sentBuffer,
         new MessageCallback<Identifier, ByteBuffer>() {
-    
+
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             synchronized(lock) {
               sentList.add(msg);
               lock.notify();
-            }        
-          }    
+            }
+          }
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception exception) {
             synchronized(lock) {
               failedList.add(msg);
@@ -487,14 +487,14 @@ public abstract class TLTest<Identifier> {
               lock.notify();
             }
           }
-        }, 
+        },
         options);
-    
+
     // block for completion
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
       while((env.getTimeSource().currentTimeMillis()<timeout) && exceptionList.isEmpty() && sentList.isEmpty()) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
 
@@ -504,13 +504,13 @@ public abstract class TLTest<Identifier> {
     assertTrue(failedList.size() == 1);
     assertTrue(failedList.get(0) == cancellable);
     assertTrue(cancellable.getMessage() == sentBuffer);
-    
-  }  
-  
+
+  }
+
   @Test
   public void noCallbackTest() throws Exception {
-    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes); 
-    
+    final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes);
+
     class Tupel<Identifier> {
       Identifier i;
       ByteBuffer buf;
@@ -519,34 +519,34 @@ public abstract class TLTest<Identifier> {
         this.buf = buf;
       }
     }
-    
+
     // added to every time bob receives something
     final List<Tupel<Identifier>> receivedList = new ArrayList<Tupel<Identifier>>(1);
     final List<Exception> exceptionList = new ArrayList<Exception>(1);
     final Object lock = new Object();
 
     // make a way for bob to receive the callback
-    bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {    
+    bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
       public void messageReceived(Identifier i, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
           receivedList.add(new Tupel<Identifier>(i, buf));
           lock.notify();
         }
-      }    
-      public void incomingSocket(P2PSocket<Identifier> s) {}    
+      }
+      public void incomingSocket(P2PSocket<Identifier> s) {}
     });
-    
+
     alice().sendMessage(
-        getIdentifier(alice(), bob()), 
-        sentBuffer, 
-        null, 
+        getIdentifier(alice(), bob()),
+        sentBuffer,
+        null,
         null);
-    
+
     // block for completion
     long timeout = env.getTimeSource().currentTimeMillis()+4000;
     synchronized(lock) {
       while((env.getTimeSource().currentTimeMillis()<timeout) && exceptionList.isEmpty() && receivedList.isEmpty()) {
-        lock.wait(1000); 
+        lock.wait(1000);
       }
     }
 
@@ -557,8 +557,8 @@ public abstract class TLTest<Identifier> {
     receivedList.get(0).buf.get(rec);
     assertTrue(Arrays.equals(rec, sentBuffer.array())); // it is equal
     assertTrue(receivedList.get(0).i.equals(getIdentifier(bob(), alice())));
-    bob().setCallback(null); 
-    
+    bob().setCallback(null);
+
     // opening a socket without a callback is rejected
     assertThrows(IllegalArgumentException.class, () -> alice().openSocket(getIdentifier(alice(), bob()), null, options));
   }
