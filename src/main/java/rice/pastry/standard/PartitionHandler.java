@@ -296,8 +296,13 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     }
 
     public boolean equals(Object o) {
+      if (!(o instanceof GoneSetEntry)) return false;
       GoneSetEntry other = (GoneSetEntry)o;
       return other.nh.getId().equals(nh.getId());
+    }
+
+    public int hashCode() {
+      return nh.getId().hashCode();
     }
 
     public String toString() {

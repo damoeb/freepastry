@@ -42,6 +42,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Vector;
 
 import rice.environment.Environment;
@@ -858,6 +859,10 @@ public class ScribeRegrTest extends CommonAPITest {
 
       return (((TestScribeContent) o).topic.equals(topic) &&
         ((TestScribeContent) o).num == num);
+    }
+
+    public int hashCode() {
+      return Objects.hash(topic, num);
     }
 
     public String toString() {

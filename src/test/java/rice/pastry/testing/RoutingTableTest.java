@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Vector;
 
 import rice.Destructable;
@@ -244,6 +245,10 @@ public class RoutingTableTest {
 
       return (((TestScribeContent) o).topic.equals(topic) &&
         ((TestScribeContent) o).num == num);
+    }
+
+    public int hashCode() {
+      return Objects.hash(topic, num);
     }
 
     public String toString() {

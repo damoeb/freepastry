@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.slf4j.Logger;
@@ -78,6 +79,7 @@ public class LogSnippet {
   }
 
   public boolean equals(Object o) {
+    if (!(o instanceof LogSnippet)) return false;
     LogSnippet that = (LogSnippet)o;
     if (!Arrays.equals(this.baseHash, that.baseHash)) return false;
     if (this.entries.size() != that.entries.size()) return false;
@@ -87,6 +89,10 @@ public class LogSnippet {
       if (!i1.next().equals(i2.next())) return false;
     }
     return true;
+  }
+
+  public int hashCode() {
+    return Objects.hash(Arrays.hashCode(baseHash), entries);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

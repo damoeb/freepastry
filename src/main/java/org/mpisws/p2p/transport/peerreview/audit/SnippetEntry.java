@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport.peerreview.audit;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -79,11 +80,16 @@ public class SnippetEntry {
   }
 
   public boolean equals(Object o) {
+    if (!(o instanceof SnippetEntry)) return false;
     SnippetEntry that = (SnippetEntry)o;
     if (this.type != that.type) return false;
     if (this.seq != that.seq) return false;
     if (this.isHash != that.isHash) return false;
-    return Arrays.equals(content, content);
+    return Arrays.equals(this.content, that.content);
+  }
+
+  public int hashCode() {
+    return Objects.hash(type, seq, isHash, Arrays.hashCode(content));
   }
 
   public SnippetEntry(InputBuffer buf, long seq, int hashSize) throws IOException {

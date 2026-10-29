@@ -146,10 +146,6 @@ public class ProfileSelector extends SelectorManager {
     ArrayList<Stat> list = new ArrayList<Stat>(stats.values());
 
     Collections.sort(list,new Comparator<Stat>() {
-      public boolean equals(Object arg0) {
-        return false;
-      }
-
       public int compare(Stat arg0, Stat arg1) {
         Stat stat1 = (Stat)arg0;
         Stat stat2 = (Stat)arg1;

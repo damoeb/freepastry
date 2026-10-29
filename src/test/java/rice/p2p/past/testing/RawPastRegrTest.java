@@ -899,6 +899,11 @@ public class RawPastRegrTest extends CommonAPITest {
       return ((TestPastContent) o).id.equals(id);
     }
 
+    // subclasses refine equals with more fields, so id alone stays consistent
+    public int hashCode() {
+      return id.hashCode();
+    }
+
     public String toString() {
       return "TestPastContent(" + id + ")";
     }
