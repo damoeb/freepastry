@@ -340,7 +340,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     HashSet<NodeHandle> ret = new HashSet<NodeHandle>();
     int leftIndex = leafSet.ccwSize();
     if (leftIndex > MAX_NUM_TO_HEAR_FROM/2) leftIndex = MAX_NUM_TO_HEAR_FROM/2;
-    int rightIndex = leafSet.ccwSize();
+    int rightIndex = leafSet.cwSize();
     if (rightIndex > MAX_NUM_TO_HEAR_FROM/2) rightIndex = MAX_NUM_TO_HEAR_FROM/2;
     for (int i=-leftIndex; i<=rightIndex; i++) {
       if (i != 0) {
