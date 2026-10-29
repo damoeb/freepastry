@@ -40,6 +40,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -119,8 +120,10 @@ public class SimpleParameters implements Parameters {
         // some VMs report the bootstrap classloader via null-return
         if (loader == null)
           loader = ClassLoader.getSystemClassLoader();
-        this.defaults.load(loader.getResource(
-            orderedDefaults[ctr] + FILENAME_EXTENSION).openStream());
+        try (InputStream in = loader.getResource(
+            orderedDefaults[ctr] + FILENAME_EXTENSION).openStream()) {
+          this.defaults.load(in);
+        }
       } catch (Exception ioe) {
         String errorString = "Warning, couldn't load param file:"
           + (orderedDefaults[ctr] + FILENAME_EXTENSION);
@@ -131,8 +134,8 @@ public class SimpleParameters implements Parameters {
     if (this.configFileName != null) {
       File f = new File(this.configFileName);
       if (f.exists()) {
-        try {
-          properties.load(new FileInputStream(this.configFileName));
+        try (InputStream in = new FileInputStream(this.configFileName)) {
+          properties.load(in);
         } catch (IOException | IllegalArgumentException e) {
           throw new ParamsNotPresentException("Error loading "+f, e);
         }
