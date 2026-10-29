@@ -216,7 +216,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
           verifiers.put(i, ret);
         }
       }
-    } catch (Exception e) {
+    } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e) {
       throw new RuntimeException(e);
     }
     return ret;

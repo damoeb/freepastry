@@ -38,6 +38,7 @@ package rice.pastry.direct.proximitygenerators;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -140,9 +141,8 @@ public class GenericProximityGenerator implements ProximityGenerator {
     FileReader fr = null;
     try {
       fr = new FileReader(inFile_Matrix);
-    } catch (Exception e) {
-      fr.close();
-      throw new IOException("ERROR: The required inter-host distance matrix for Generic Network not found:"+inFile_Matrix.getAbsolutePath());
+    } catch (FileNotFoundException e) {
+      throw new IOException("ERROR: The required inter-host distance matrix for Generic Network not found:"+inFile_Matrix.getAbsolutePath(), e);
     }
     BufferedReader in = new BufferedReader(fr);
 

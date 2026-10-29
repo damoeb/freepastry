@@ -478,7 +478,7 @@ public class AggregateList {
     if (configFile != null) {
       try {
         configFile.close();
-      } catch (Exception ignored) {
+      } catch (IOException ignored) {
         // the contents are already read, a failed close loses nothing
       }
     }

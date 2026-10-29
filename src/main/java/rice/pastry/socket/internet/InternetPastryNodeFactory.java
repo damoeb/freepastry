@@ -183,7 +183,7 @@ public class InternetPastryNodeFactory extends
       } catch (InvocationTargetException e) {
         logger.info("Didn't find UPnP libs, skipping UPnP");
         return new StubNATHandler(env, localAddress);
-      } catch (Exception e) {
+      } catch (ReflectiveOperationException e) {
         logger.warn("Error constructing NATHandler.", e);
         throw new RuntimeException(e);
       }

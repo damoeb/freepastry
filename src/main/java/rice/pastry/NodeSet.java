@@ -130,7 +130,7 @@ public class NodeSet implements NodeSetI, Serializable {
   public NodeHandle get(Id nid) {
     try {
       return (NodeHandle) set.elementAt(getIndex(nid));
-    } catch (Exception e) {
+    } catch (ArrayIndexOutOfBoundsException e) {
       return null;
     }
 
@@ -148,7 +148,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
     try {
       h = (NodeHandle) set.elementAt(i);
-    } catch (Exception e) {
+    } catch (ArrayIndexOutOfBoundsException e) {
       return null;
     }
 
@@ -177,7 +177,7 @@ public class NodeSet implements NodeSetI, Serializable {
   public NodeHandle remove(Id nid) {
     try {
       return (NodeHandle) set.remove(getIndex(nid));
-    } catch (Exception e) {
+    } catch (ArrayIndexOutOfBoundsException e) {
       return null;
     }
   }
@@ -309,7 +309,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
     try {
       res = new NodeSet(new Vector<NodeHandle>(set.subList(from, to)));
-    } catch (Exception e) {
+    } catch (IndexOutOfBoundsException | IllegalArgumentException e) {
       return null;
     }
 

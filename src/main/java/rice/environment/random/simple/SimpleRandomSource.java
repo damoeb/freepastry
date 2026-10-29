@@ -40,6 +40,7 @@ advised of the possibility of such damage.
 package rice.environment.random.simple;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Random;
 
 import org.slf4j.Logger;
@@ -85,7 +86,7 @@ public class SimpleRandomSource implements RandomSource {
           i <<= (ctr*8);
           time ^= i;
         }
-      } catch (Exception ignored) {
+      } catch (UnknownHostException ignored) {
         // if there is no NIC, screw it, this is really unlikely anyway
       }
       init(time, manager, instance);

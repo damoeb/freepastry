@@ -607,15 +607,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       this.metadata = metadata;
       try {
         this.file = new FileInputStream(f);
-      } catch (IOException ioe) {
+      } catch (IOException | RuntimeException | Error e) {
         failed();
-        throw ioe;
-      } catch (RuntimeException re) {
-        failed();
-        throw re;
-      } catch (Throwable t) {
-        failed();
-        throw new RuntimeException(t);
+        throw e;
       }
       file.skip(offset);
       lastByte = offset+length;

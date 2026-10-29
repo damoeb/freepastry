@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.ssl;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.util.Map;
@@ -118,10 +119,8 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
     context.init(kmf.getKeyManagers(), tms, null);
 
     tl.setCallback(this);
-    } catch (RuntimeException re) {
-      throw re;
-    } catch (Exception nsae) {
-      throw new RuntimeException(nsae);
+    } catch (GeneralSecurityException gse) {
+      throw new RuntimeException(gse);
     }
 
   }

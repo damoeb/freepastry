@@ -105,7 +105,7 @@ public class SimpleParameters implements Parameters {
         if (f.exists()) {
           this.configFileName = defaultParamsFile;
         }
-      } catch (Exception e) {
+      } catch (SecurityException e) {
         LOG.warn("Cannot check for the parameter file {}", defaultParamsFile, e);
       }
     }
@@ -133,7 +133,7 @@ public class SimpleParameters implements Parameters {
       if (f.exists()) {
         try {
           properties.load(new FileInputStream(this.configFileName));
-        } catch (Exception e) {
+        } catch (IOException | IllegalArgumentException e) {
           throw new ParamsNotPresentException("Error loading "+f, e);
         }
       } else {

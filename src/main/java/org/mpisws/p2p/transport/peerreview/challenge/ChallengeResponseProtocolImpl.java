@@ -114,7 +114,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       } else {
         commitmentProtocol.handleIncomingMessage(pi.source, (UserDataMessage<Handle>)pi.message, pi.options);
       }
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }

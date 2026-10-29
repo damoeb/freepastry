@@ -247,11 +247,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         try {
           if (test2 != null)
             test2.close();
-        } catch (Exception ignored) {}
+        } catch (IOException ignored) {}
         try {
           if (temp != null)
             temp.close();
-        } catch (Exception ignored) {}
+        } catch (IOException ignored) {}
       }
       }
     }

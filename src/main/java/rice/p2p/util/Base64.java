@@ -705,7 +705,7 @@ public class Base64
             destination[ destOffset + 2 ] = (byte)( outBuff       );
 
             return 3;
-            }catch( Exception e){
+            }catch( ArrayIndexOutOfBoundsException e){
                 LOG.warn("Base64: cannot decode bytes {}, {}, {}, {}", source[srcOffset], source[srcOffset+1], source[srcOffset+2], source[srcOffset+3], e);
                 return -1;
             }   //e nd catch

@@ -425,7 +425,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
        /* We haven't seen this authenticator... Signature is ok, so we keep the new authenticator in our store. */
        if (store != null) store.addAuthenticator(subject, auth);
        return true;
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
