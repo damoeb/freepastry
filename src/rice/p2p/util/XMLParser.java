@@ -36,15 +36,39 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.util;
 
-import org.xmlpull.v1.*;
 import java.io.*;
 import java.util.*;
 
 /** 
 * This class is a memory-efficient implementation of most of the XML
-* pull parsing API.
+* pull parsing API (http://www.xmlpull.org).  It used to implement the xmlpull
+* XmlPullParser interface; it is now self-contained so FreePastry no longer depends
+* on the xmlpull/xpp3 libraries.  The event constants keep their xmlpull values.
+*
+* Only the subset of XML that XMLWriter produces is supported.  In particular, DTDs,
+* entity declarations and external entities are never processed (a DOCTYPE is
+* rejected as malformed), and only the predefined entities and the character
+* references &amp;#9; &amp;#10; and &amp;#13; are decoded, so the parser is not
+* susceptible to XXE or entity expansion attacks.
+*
+* A hand-written parser is kept instead of the JDK's StAX parser because it is
+* faster on this format and, unlike StAX, accepts every character that XMLWriter
+* writes (e.g. U+FFFE/U+FFFF in strings, which are not legal XML 1.0 characters).
 */
-public class XMLParser implements XmlPullParser {
+public class XMLParser {
+
+  /** Event types, with the values of the xmlpull XmlPullParser constants */
+  public static final int START_DOCUMENT = 0;
+  public static final int END_DOCUMENT = 1;
+  public static final int START_TAG = 2;
+  public static final int END_TAG = 3;
+  public static final int TEXT = 4;
+  public static final int CDSECT = 5;
+  public static final int ENTITY_REF = 6;
+  public static final int IGNORABLE_WHITESPACE = 7;
+  public static final int PROCESSING_INSTRUCTION = 8;
+  public static final int COMMENT = 9;
+  public static final int DOCDECL = 10;
 
   /**
    * The size of the internal buffer to allocate
@@ -115,6 +139,11 @@ public class XMLParser implements XmlPullParser {
    * Whether or not we are currently in a tag...
    */
   protected boolean inTag;
+
+  /**
+   * The type of the last event returned by next()
+   */
+  protected int eventType = START_DOCUMENT;
   
   /**
    * Internal variable which keeps track of the current mark
@@ -145,7 +174,7 @@ public class XMLParser implements XmlPullParser {
    * allowing the parser to free internal resources
    * such as parsing buffers.
    */
-  public void setInput(Reader in) throws XmlPullParserException {
+  public void setInput(Reader in) throws IOException {
     this.reader = in;
   }
   
@@ -217,8 +246,8 @@ public class XMLParser implements XmlPullParser {
    * @see #next()
    * @see #nextToken()
    */
-  public int getEventType() throws XmlPullParserException {
-    return 0;
+  public int getEventType() throws IOException {
+    return eventType;
   }
   
   /**
@@ -239,7 +268,14 @@ public class XMLParser implements XmlPullParser {
    * @see #END_TAG
    * @see #END_DOCUMENT
    */
-  public int next() throws XmlPullParserException, IOException {
+  public int next() throws IOException {
+    return (eventType = nextEvent());
+  }
+
+  /**
+   * Internal method which parses the next event
+   */
+  protected int nextEvent() throws IOException {
     char next = 0;
     
     try {
@@ -253,7 +289,7 @@ public class XMLParser implements XmlPullParser {
         int result = parseTag();
         
         if (result == START_DOCUMENT)
-          return next();
+          return nextEvent();
         else
           return result;
       case '/':
@@ -281,7 +317,7 @@ public class XMLParser implements XmlPullParser {
    * via nextToken only.
    *
    */
-  public boolean isWhitespace() throws XmlPullParserException {
+  public boolean isWhitespace() throws IOException {
     return isWhitespace(text);
   }
   
@@ -374,9 +410,9 @@ public class XMLParser implements XmlPullParser {
    *
    * @param the expected char
    */
-  protected void expect(char c) throws XmlPullParserException, IOException {
+  protected void expect(char c) throws IOException {
     if (current() != c) 
-      throw new XmlPullParserException("Expected character '" + c + "' got '" + current() + "'");
+      throw new IOException("Expected character '" + c + "' got '" + current() + "'");
     else
       step();
   }
@@ -462,7 +498,7 @@ public class XMLParser implements XmlPullParser {
    *
    * @param The name of the parsed tag
    */
-  protected int parseEndTag(String tag) throws XmlPullParserException, IOException {
+  protected int parseEndTag(String tag) throws IOException {
     expect('/');
     expect('>');
 
@@ -477,7 +513,7 @@ public class XMLParser implements XmlPullParser {
   /**
    * Internal method which parses a tag
    */
-  protected int parseTag() throws XmlPullParserException, IOException {
+  protected int parseTag() throws IOException {
     expect('<');
 
     switch (current()) {
@@ -495,7 +531,7 @@ public class XMLParser implements XmlPullParser {
    *
    * @param The name of the parsed tag
    */
-  protected int parseEndTag() throws XmlPullParserException, IOException {
+  protected int parseEndTag() throws IOException {
     expect('/');
     parseUntilNot(WHITESPACE);
  
@@ -515,7 +551,7 @@ public class XMLParser implements XmlPullParser {
   /**
    * Method which parses a start tag
    */
-  protected int parseStartTag() throws XmlPullParserException, IOException {
+  protected int parseStartTag() throws IOException {
     parseUntilNot(WHITESPACE);
     
     this.name = parseUntil(WHITESPACE_OR_TAG_END);
@@ -542,7 +578,7 @@ public class XMLParser implements XmlPullParser {
   /**
    * Method which parses a document tag
    */
-  protected int parseDocumentTag() throws XmlPullParserException, IOException {
+  protected int parseDocumentTag() throws IOException {
     expect('?');
     
     parseUntilNot(WHITESPACE);
@@ -550,7 +586,7 @@ public class XMLParser implements XmlPullParser {
     String type = parseUntil(WHITESPACE_OR_TAG_END);
 
     if (! (type.toLowerCase().equals("xml")))
-      throw new XmlPullParserException("This does not appear to be an XML document - found '" + type + "'!");
+      throw new IOException("This does not appear to be an XML document - found '" + type + "'!");
     
     parseUntilNot(WHITESPACE);
     
@@ -571,7 +607,7 @@ public class XMLParser implements XmlPullParser {
   /**
    * Method which parses all of the attributes of a start tag
    */
-  protected void parseAttributes() throws XmlPullParserException, IOException {
+  protected void parseAttributes() throws IOException {
     clearAttributes();
 
     while (true) {
@@ -607,7 +643,7 @@ public class XMLParser implements XmlPullParser {
    *
    * @param The name of the parsed tag
    */
-  protected int parseText() throws XmlPullParserException, IOException {
+  protected int parseText() throws IOException {
     clearAttributes();
     this.text = convert(parseUntil('<'));
     this.inTag = false;
@@ -623,13 +659,42 @@ public class XMLParser implements XmlPullParser {
    * @return The result
    */
   protected String convert(String string) {
-    if (string.indexOf('&') < 0)
+    int amp = string.indexOf('&');
+    
+    if (amp < 0)
       return string;
     
-    for (int i=0; i<ENTITIES.length; i++)
-      string = string.replaceAll(ENTITIES[i][0], ENTITIES[i][1]);
+    // Single pass over the string.  Equivalent to replacing each ENTITIES pattern in
+    // turn (as this method used to do with replaceAll()): &amp; was decoded last there,
+    // so a decoded '&' is never decoded again, and unknown entities are kept verbatim.
+    StringBuilder result = new StringBuilder(string.length());
+    int last = 0;
     
-    return string; 
+    while (amp >= 0) {
+      String[] entity = matchEntity(string, amp);
+      
+      if (entity != null) {
+        result.append(string, last, amp).append(entity[1]);
+        last = amp + entity[0].length();
+        amp = string.indexOf('&', last);
+      } else {
+        amp = string.indexOf('&', amp + 1);
+      }
+    }
+    
+    return result.append(string, last, string.length()).toString(); 
+  }
+  
+  /**
+   * Internal method which returns the entry of ENTITIES starting at the given
+   * offset of the string, or null if there is none
+   */
+  private static String[] matchEntity(String string, int offset) {
+    for (int i=0; i<ENTITIES.length; i++)
+      if (string.startsWith(ENTITIES[i][0], offset))
+        return ENTITIES[i];
+    
+    return null;
   }
   
   /**
@@ -712,7 +777,7 @@ public class XMLParser implements XmlPullParser {
    *   ----- UNSUPPORTED METHODS -----
    */
   
-  public void setFeature(String name, boolean state) throws XmlPullParserException {
+  public void setFeature(String name, boolean state) throws IOException {
     throw new UnsupportedOperationException();
   }
   
@@ -720,7 +785,7 @@ public class XMLParser implements XmlPullParser {
     throw new UnsupportedOperationException();
   }
   
-  public void setProperty(String name, Object value) throws XmlPullParserException {
+  public void setProperty(String name, Object value) throws IOException {
     throw new UnsupportedOperationException();
   }
   
@@ -728,7 +793,7 @@ public class XMLParser implements XmlPullParser {
     throw new UnsupportedOperationException();
   }
   
-  public void setInput(InputStream inputStream, String inputEncoding) throws XmlPullParserException {
+  public void setInput(InputStream inputStream, String inputEncoding) throws IOException {
     throw new UnsupportedOperationException();
   }
   
@@ -736,19 +801,19 @@ public class XMLParser implements XmlPullParser {
     throw new UnsupportedOperationException();
   }
   
-  public void defineEntityReplacementText(String entityName, String replacementText ) throws XmlPullParserException {
+  public void defineEntityReplacementText(String entityName, String replacementText ) throws IOException {
     throw new UnsupportedOperationException();
   }
   
-  public int getNamespaceCount(int depth) throws XmlPullParserException {
+  public int getNamespaceCount(int depth) throws IOException {
     throw new UnsupportedOperationException();
   }
   
-  public String getNamespacePrefix(int pos) throws XmlPullParserException  {
+  public String getNamespacePrefix(int pos) throws IOException  {
     throw new UnsupportedOperationException();
   }
   
-  public String getNamespaceUri(int pos) throws XmlPullParserException {
+  public String getNamespaceUri(int pos) throws IOException {
     throw new UnsupportedOperationException();
   }
   
@@ -784,7 +849,7 @@ public class XMLParser implements XmlPullParser {
     throw new UnsupportedOperationException();
   }
   
-  public boolean isEmptyElementTag() throws XmlPullParserException {
+  public boolean isEmptyElementTag() throws IOException {
     throw new UnsupportedOperationException();
   }
   
@@ -804,19 +869,19 @@ public class XMLParser implements XmlPullParser {
     throw new UnsupportedOperationException();
   }
   
-  public int nextToken() throws XmlPullParserException, IOException {
+  public int nextToken() throws IOException {
     throw new UnsupportedOperationException();
   }
   
-  public void require(int type, String namespace, String name) throws XmlPullParserException, IOException {
+  public void require(int type, String namespace, String name) throws IOException {
     throw new UnsupportedOperationException();
   }
   
-  public String nextText() throws XmlPullParserException, IOException {
+  public String nextText() throws IOException {
     throw new UnsupportedOperationException();
   }
   
-  public int nextTag() throws XmlPullParserException, IOException {
+  public int nextTag() throws IOException {
     throw new UnsupportedOperationException();
   }
   

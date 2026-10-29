@@ -105,7 +105,11 @@ public class XMLObjectInputStream extends ObjectInputStream {
   /**
    * The ReflectionFactory (jdk.unsupported), which allows for prividged construction of
    * objects.  Looked up reflectively so the build does not depend on internal API at
-   * compile time.
+   * compile time.  As of Java 25 there is no supported replacement: java.io.ObjectStreamClass
+   * does not expose instance creation, and MethodHandles cannot allocate an object
+   * without running one of its own class's constructors.  The JDK keeps this class in
+   * jdk.unsupported precisely for serialization libraries (JEP 260; JDK 24 even added
+   * more serialization methods to it).
    */
   private static final Object REFL_FACTORY;
   private static final Method NEW_CONSTRUCTOR_FOR_SERIALIZATION;

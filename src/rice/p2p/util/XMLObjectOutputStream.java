@@ -134,16 +134,10 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   public XMLObjectOutputStream(OutputStream out) throws IOException {
     super();
-    try {
-      this.writer = new XMLWriter(out);
-      int hash = 0;
-      if (writer != null) hash = writer.hashCode();
-      this.debugstr = "writer after new, in try: "+writer+" "+hash+"\n";
-    } catch (NoClassDefFoundError ncdfe) {
-      System.err.println("ERROR: Make sure to add xmlpull.jar to the classpath");
-      throw ncdfe; 
-    }
-    int hash = 0;
+    this.writer = new XMLWriter(out);
+    int hash = writer.hashCode();
+    this.debugstr = "writer after new: "+writer+" "+hash+"\n";
+    hash = 0;
     if (writer != null) hash = writer.hashCode();
     this.debugstr += "writer after try: "+writer+" "+hash+"\n";
     this.references = new Hashtable<Reference, String>();

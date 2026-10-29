@@ -38,13 +38,27 @@ advised of the possibility of such damage.
 package rice.p2p.util;
 
 import java.io.*;
-import org.xmlpull.v1.*;
+import java.util.*;
 
 /**
  * XMLWriter is a utility class used by XMLObjectOutputStream to perform the actual
- * XML writing.  This writing is based on the XML Pull-Parsing API, available online
- * at http://www.xmlpull.org.  Any of the provided serializer implementations will work 
- * with this reader.
+ * XML writing.  
+ *
+ * The output format is the one the xpp3 MXSerializer produced (configured with a one
+ * space indentation, "\n" line separators and apostrophes around attribute values),
+ * which this class reproduces byte for byte so that the XML written stays identical
+ * after the xmlpull/xpp3 libraries were dropped.  The JDK's StAX XMLStreamWriter
+ * cannot be used for that: it always quotes attributes with '"' and escapes 
+ * differently.  The rules, taken over from MXSerializer, are:
+ * <ul>
+ * <li>a start tag is preceded by a newline and (depth - 1) spaces, except for the 
+ * root element and right after text; indentation is capped at 64 spaces</li>
+ * <li>an end tag is indented the same way, unless the element has no content, in 
+ * which case it is written as " /&gt;"</li>
+ * <li>in attribute values, '&amp;', '&lt;' and '\'' are escaped as entities and tab, 
+ * LF and CR as character references; other characters below 0x20 are rejected with
+ * an IllegalStateException</li>
+ * </ul>
  *
  * @version $Id: XMLWriter.java 3613 2007-02-15 14:45:14Z jstewart $
  *
@@ -53,14 +67,34 @@ import org.xmlpull.v1.*;
 public class XMLWriter {
   
   /**
-   * The actual XML serializer, which does the writing
+   * The maximum indentation, in characters, as in MXSerializer
    */
-  protected XmlSerializer serializer;
+  protected static final int MAX_INDENT = 65;
   
   /**
-   * The underlying writer which the serializer uses
+   * A newline followed by MAX_INDENT spaces, prefixes of which are written as indentation
+   */
+  protected static final char[] INDENTATION = ("\n" + " ".repeat(MAX_INDENT)).toCharArray();
+  
+  /**
+   * The underlying writer which the XML is written to
    */
   protected Writer writer;
+  
+  /**
+   * The names of the currently open elements
+   */
+  protected ArrayList<String> open;
+  
+  /**
+   * Whether the last start tag still lacks its closing '&gt;' (attributes can be added)
+   */
+  protected boolean startTagIncomplete;
+  
+  /**
+   * Whether the last thing written was a tag (and not text), so the next tag is indented
+   */
+  protected boolean seenTag;
   
   /**
    * Constructor which takes the provided writer and
@@ -70,18 +104,8 @@ public class XMLWriter {
    * @throws IOException If an error occurs
    */
   public XMLWriter(OutputStream out) throws IOException {
-    try {
-      this.writer = new BufferedWriter(new OutputStreamWriter(out));
-      XmlPullParserFactory factory = XmlPullParserFactory.newInstance(System.getProperty(XmlPullParserFactory.PROPERTY_NAME), null);
-      serializer = factory.newSerializer();
-      
-      serializer.setOutput(this.writer);
-      serializer.setProperty("http://xmlpull.org/v1/doc/properties.html#serializer-indentation", " ");
-      serializer.setProperty("http://xmlpull.org/v1/doc/properties.html#serializer-line-separator", "\n");
-      serializer.setFeature("http://xmlpull.org/v1/doc/features.html#serializer-attvalue-use-apostrophe", true);
-    } catch (XmlPullParserException e) {
-      throw new IOException("XML Exception thrown: " + e);
-    }    
+    this.writer = new BufferedWriter(new OutputStreamWriter(out));
+    this.open = new ArrayList<String>();
   }
   
   /**
@@ -90,7 +114,8 @@ public class XMLWriter {
    * @throws IOException If an error occurs
    */
   public void flush() throws IOException {
-    serializer.flush();
+    closeStartTag();
+    writer.flush();
   }
   
   /**
@@ -100,8 +125,8 @@ public class XMLWriter {
    * @throws IOException If an error occurs
    */
   public void close() throws IOException {
-    serializer.text("\n");
-    serializer.flush();
+    text("\n");
+    flush();
     writer.close();
   }
   
@@ -121,8 +146,8 @@ public class XMLWriter {
    * @throws IOException If an error occurs
    */
   public void writeHeader() throws IOException {
-    serializer.startDocument(null, null);
-    serializer.text("\n\n");
+    writer.write("<?xml version='1.0'?>");
+    text("\n\n");
   }
   
   /**
@@ -213,7 +238,14 @@ public class XMLWriter {
    * @throws IOException If an error occurs
    */
   protected void attribute(String name, String value) throws IOException {
-    serializer.attribute(null, name, value);
+    if (! startTagIncomplete)
+      throw new IllegalArgumentException("start() must be called before attribute()");
+    
+    writer.write(' ');
+    writer.write(name);
+    writer.write("='");
+    writeAttributeValue(value);
+    writer.write('\'');
   }
   
   /**
@@ -223,7 +255,16 @@ public class XMLWriter {
    * @throws IOException If an error occurs
    */
   public void start(String name) throws IOException {
-    serializer.startTag(null, name);
+    closeStartTag();
+    open.add(name);
+    
+    if (seenTag)
+      writeIndent();
+    
+    seenTag = true;
+    startTagIncomplete = true;
+    writer.write('<');
+    writer.write(name);
   }
   
   /**
@@ -233,6 +274,91 @@ public class XMLWriter {
    * @throws IOException If an error occurs
    */
   public void end(String name) throws IOException {
-    serializer.endTag(null, name);
+    if (open.isEmpty() || ! open.get(open.size() - 1).equals(name))
+      throw new IllegalArgumentException("expected element name " + (open.isEmpty() ? null : open.get(open.size() - 1)) + " and not " + name);
+    
+    if (startTagIncomplete) {
+      writer.write(" />");
+      startTagIncomplete = false;
+    } else {
+      if (seenTag)
+        writeIndent();
+      
+      writer.write("</");
+      writer.write(name);
+      writer.write('>');
+    }
+    
+    open.remove(open.size() - 1);
+    seenTag = true;
+  }
+  
+  /**
+   * Internal method which writes element content.  Only used for the whitespace between
+   * the header, the root element and the end of the document, so it is not escaped.
+   *
+   * @param text The text to write
+   * @throws IOException If an error occurs
+   */
+  protected void text(String text) throws IOException {
+    closeStartTag();
+    seenTag = false;
+    writer.write(text);
+  }
+  
+  /**
+   * Internal method which finishes the current start tag, if any, with a '&gt;'
+   *
+   * @throws IOException If an error occurs
+   */
+  protected void closeStartTag() throws IOException {
+    if (startTagIncomplete) {
+      writer.write('>');
+      startTagIncomplete = false;
+    }
+  }
+  
+  /**
+   * Internal method which writes the indentation for a tag at the current depth
+   *
+   * @throws IOException If an error occurs
+   */
+  protected void writeIndent() throws IOException {
+    writer.write(INDENTATION, 0, Math.min(open.size(), MAX_INDENT));
+  }
+  
+  /**
+   * Internal method which writes the escaped value of an attribute
+   *
+   * @param value The value to write
+   * @throws IOException If an error occurs
+   */
+  protected void writeAttributeValue(String value) throws IOException {
+    int length = value.length();
+    int last = 0;
+    
+    for (int i=0; i<length; i++) {
+      char c = value.charAt(i);
+      String escaped;
+      
+      switch (c) {
+        case '&': escaped = "&amp;"; break;
+        case '<': escaped = "&lt;"; break;
+        case '\'': escaped = "&apos;"; break;
+        case '\t': escaped = "&#9;"; break;
+        case '\n': escaped = "&#10;"; break;
+        case '\r': escaped = "&#13;"; break;
+        default:
+          if (c < ' ')
+            throw new IllegalStateException("character " + (int) c + " is not allowed in output (attr value=" + value + ")");
+          continue;
+      }
+      
+      writer.write(value, last, i - last);
+      writer.write(escaped);
+      last = i + 1;
+    }
+    
+    writer.write(value, last, length - last);
   }
 }
