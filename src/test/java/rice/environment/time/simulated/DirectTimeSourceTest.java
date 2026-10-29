@@ -36,14 +36,20 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.environment.time.simulated;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.Test;
+import rice.environment.Environment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DirectTimeSourceTest {
 
   static final long START = 12345;
+  static final long JOIN_MILLIS = 5000;
 
   @Test
   public void startsAtTheGivenTime() {
@@ -55,5 +61,38 @@ public class DirectTimeSourceTest {
     long before = System.currentTimeMillis();
     DirectTimeSource ts = new DirectTimeSource(-1);
     assertTrue(ts.currentTimeMillis() >= before, "a negative start time should start the clock at the wall-clock time");
+  }
+
+  @Test
+  public void destroyWakesUpSleepers() throws InterruptedException {
+    Environment env = Environment.directEnvironment();
+    try {
+      final DirectTimeSource ts = (DirectTimeSource)env.getTimeSource();
+      final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
+      Thread sleeper = new Thread(new Runnable() {
+        public void run() {
+          try {
+            ts.sleep(1000000); // simulated time doesn't advance in this test
+          } catch (Throwable t) {
+            thrown.set(t);
+          }
+        }
+      }, "DirectTimeSourceTest sleeper");
+      sleeper.setDaemon(true);
+      sleeper.start();
+      long deadline = System.currentTimeMillis() + JOIN_MILLIS;
+      while (sleeper.getState() != Thread.State.WAITING && System.currentTimeMillis() < deadline) {
+        Thread.sleep(10);
+      }
+      assertEquals(Thread.State.WAITING, sleeper.getState());
+
+      ts.destroy();
+
+      sleeper.join(JOIN_MILLIS);
+      assertFalse(sleeper.isAlive(), "destroy() must wake up the sleeping thread");
+      assertInstanceOf(InterruptedException.class, thrown.get());
+    } finally {
+      env.destroy();
+    }
   }
 }

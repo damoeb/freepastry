@@ -39,7 +39,6 @@ advised of the possibility of such damage.
  */
 package rice.environment.time.simulated;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 
 import org.slf4j.Logger;
@@ -147,13 +146,17 @@ public class DirectTimeSource implements TimeSource {
   }
 
   /**
-   * TODO: synchronize on the selectorManager like sleep() does; pendingTimers is modified here without that lock
+   * Wakes up the threads blocked in {@link #sleep(long)}, they throw an InterruptedException.
    */
   public void destroy() {
-    for (BlockingTimerTask btt : new ArrayList<BlockingTimerTask>(pendingTimers)) {
-      btt.interrupt();
+    if (selectorManager == null) return; // nobody can be sleeping
+    synchronized(selectorManager) {
+      for (BlockingTimerTask btt : pendingTimers) {
+        btt.interrupt();
+      }
+      pendingTimers.clear();
+      selectorManager.notifyAll();
     }
-    pendingTimers.clear();
   }
 
 }
