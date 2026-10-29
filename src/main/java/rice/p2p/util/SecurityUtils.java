@@ -97,6 +97,12 @@ public class SecurityUtils {
   public final static String SYMMETRIC_ALGORITHM = "DES";
 
   /**
+   * The mode and padding of the symmetric cipher.  CBC, because plain "DES" means ECB, which ignores the IV
+   * and encrypts equal blocks to equal ciphertext.
+   */
+  public final static String SYMMETRIC_TRANSFORMATION = SYMMETRIC_ALGORITHM + "/CBC/PKCS5Padding";
+
+  /**
    * The name of the asymmetric generator to use.
    */
   public final static String ASYMMETRIC_GENERATOR = "RSA";
@@ -234,7 +240,7 @@ public class SecurityUtils {
     Security.insertProviderAt(new org.bouncycastle.jce.provider.BouncyCastleProvider(), 2);
 
     try {
-      cipherSymmetric = Cipher.getInstance(SYMMETRIC_ALGORITHM);
+      cipherSymmetric = Cipher.getInstance(SYMMETRIC_TRANSFORMATION);
       cipherAsymmetric = Cipher.getInstance(ASYMMETRIC_ALGORITHM, "BC");
       deprecatedCipherAsymmetric = Cipher.getInstance(DEPRECATED_ASYMMETRIC_ALGORITHM);
       generatorSymmetric = KeyGenerator.getInstance(SYMMETRIC_GENERATOR);

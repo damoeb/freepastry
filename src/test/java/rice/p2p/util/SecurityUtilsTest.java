@@ -76,6 +76,24 @@ public class SecurityUtilsTest {
   }
 
   @Test
+  public void equalPlaintextsEncryptToDifferentCiphertexts() {
+    byte[] key = SecurityUtils.generateKeySymmetric();
+    byte[] first = SecurityUtils.encryptSymmetric(PLAIN, key);
+    byte[] second = SecurityUtils.encryptSymmetric(PLAIN, key);
+    assertFalse(Arrays.equals(Arrays.copyOfRange(first, IV_BYTES, first.length),
+        Arrays.copyOfRange(second, IV_BYTES, second.length)), "the cipher must use the IV");
+  }
+
+  @Test
+  public void equalBlocksEncryptToDifferentCiphertext() {
+    byte[] key = SecurityUtils.generateKeySymmetric();
+    byte[] twoEqualBlocks = new byte[2 * IV_BYTES];
+    byte[] cipher = SecurityUtils.encryptSymmetric(twoEqualBlocks, key, new byte[IV_BYTES]);
+    assertFalse(Arrays.equals(Arrays.copyOfRange(cipher, 0, IV_BYTES), Arrays.copyOfRange(cipher, IV_BYTES, 2 * IV_BYTES)),
+        "equal plaintext blocks must not give equal ciphertext blocks");
+  }
+
+  @Test
   public void generatesIVsOfTheCipherBlockSize() {
     byte[] iv = SecurityUtils.generateIVSymmetric();
     assertEquals(IV_BYTES, iv.length);
