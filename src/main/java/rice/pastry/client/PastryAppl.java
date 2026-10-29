@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.pastry.client;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.DeliveryNotification;
 import rice.p2p.commonapi.MessageReceipt;
 import rice.p2p.commonapi.appsocket.*;
@@ -177,10 +177,10 @@ public abstract class PastryAppl /*implements Observer*/
     try {
       m = msg.deserialize(deserializer);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.SEVERE) logger.logException("Error deserializing "+msg+" in "+this+".  Message will be dropped.", ioe);
+      logger.error("Error deserializing {} in {}.  Message will be dropped.", msg, this, ioe);
       return;
     } catch (RuntimeException re) {
-      if (logger.level <= Logger.SEVERE) logger.logException("Error deserializing "+msg+" in "+this+".  Message will be dropped.", re);
+      logger.error("Error deserializing {} in {}.  Message will be dropped.", msg, this, re);
       throw re;
     }
     receiveMessage(m);
@@ -201,8 +201,7 @@ public abstract class PastryAppl /*implements Observer*/
    */
   public void receiveMessage(Message msg) {
     
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] recv " + msg);
+    logger.trace("[{}] recv {}", thePastryNode, msg);
     if (msg instanceof RouteMessage) {
       RouteMessage rm = (RouteMessage) msg;
       
@@ -215,9 +214,9 @@ public abstract class PastryAppl /*implements Observer*/
           // continue to enrouteMessage()
         } else {
           if (rm.sendFailed(new NodeIsNotReadyException(thePastryNode.getLocalHandle()))) {
-            if (logger.level <= Logger.CONFIG) logger.log("Dropping "+msg+" because node is not ready.");            
+            logger.info("Dropping {} because node is not ready.", msg);            
           } else {
-            if (logger.level <= Logger.WARNING) logger.log("Dropping "+msg+" because node is not ready.");
+            logger.warn("Dropping {} because node is not ready.", msg);
             
           }
 
@@ -271,8 +270,7 @@ public abstract class PastryAppl /*implements Observer*/
    * @param opt send options that describe how the message is to be routed.  
    */
   public boolean routeMsgDirect(NodeHandle dest, Message msg, SendOptions opt) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] routemsgdirect " + msg + " to " + dest);
+    logger.trace("[{}] routemsgdirect {} to {}", thePastryNode, msg, dest);
     if (dest.getLiveness() >= NodeHandle.LIVENESS_DEAD) return false;
 
     thePastryNode.send(dest,msg,null, options);
@@ -290,8 +288,7 @@ public abstract class PastryAppl /*implements Observer*/
    * @param opt send options that describe how the message is to be routed.
    */
   public void routeMsg(Id key, Message msg, SendOptions opt) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] routemsg " + msg + " to " + key);
+    logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     RouteMessage rm = new RouteMessage(key, msg, opt,
         (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
     rm.setTLOptions(options);
@@ -300,15 +297,14 @@ public abstract class PastryAppl /*implements Observer*/
   
   // this one will replace the last one after the alpha release
   public MessageReceipt routeMsg(final Id key, final Message msg, final SendOptions opt, final DeliveryNotification deliverAckToMe) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] routemsg " + msg + " to " + key);
+    logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     final RouteMessage rm = new RouteMessage(key, msg, opt,
         (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
     
     final MessageReceipt ret = new MessageReceipt(){
       
       public boolean cancel() {
-        if (logger.level <= Logger.FINE) logger.log("routeMsg("+key+","+msg+","+deliverAckToMe+").cancel()");
+        logger.debug("routeMsg({},{},{}).cancel()", key, msg, deliverAckToMe);
         return rm.cancel();
       }
     
@@ -326,14 +322,14 @@ public abstract class PastryAppl /*implements Observer*/
     };
     
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
-    if ((deliverAckToMe != null) || (logger.level <= Logger.FINE)) {
+    if ((deliverAckToMe != null) || (logger.isDebugEnabled())) {
       rm.setRouteMessageNotification(new RouteMessageNotification() {
         public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
-          if (logger.level <= Logger.FINE) logger.log("routeMsg("+key+","+msg+","+deliverAckToMe+").sendSuccess():"+nextHop);
+          logger.debug("routeMsg({},{},{}).sendSuccess():{}", key, msg, deliverAckToMe, nextHop);
           if (deliverAckToMe != null) deliverAckToMe.sent(ret);
         }    
         public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
-          if (logger.level <= Logger.FINE) logger.log("routeMsg("+key+","+msg+","+deliverAckToMe+").sendFailed("+e+")");
+          logger.atDebug().log(() -> "routeMsg("+key+","+msg+","+deliverAckToMe+").sendFailed("+e+")");
           if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
         }
       });

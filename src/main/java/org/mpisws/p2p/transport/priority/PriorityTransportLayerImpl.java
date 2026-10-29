@@ -73,9 +73,9 @@ import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.exception.NodeIsDeadException;
 import rice.p2p.util.MathUtils;
@@ -148,7 +148,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     this.MAX_MSG_SIZE = maxMsgSize;
     this.MAX_QUEUE_SIZE = maxQueueSize;
     this.tl = tl;    
-    if (logger.level <= Logger.INFO) logger.log("MAX_QUEUE_SIZE:"+MAX_QUEUE_SIZE+" MAX_MSG_SIZE:"+MAX_MSG_SIZE);
+    logger.info("MAX_QUEUE_SIZE:{} MAX_MSG_SIZE:{}", MAX_QUEUE_SIZE, MAX_MSG_SIZE);
     this.livenessProvider = livenessProvider;
     this.proximityProvider = proximityProvider;
     tl.setCallback(this);
@@ -196,11 +196,11 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
             callback.incomingSocket(s);
             break;
           case PRIMARY_SOCKET_B:
-            if (logger.level <= Logger.FINE) logger.log("Opened Primary Socket from "+s.getIdentifier());
+            logger.debug("Opened Primary Socket from {}", s.getIdentifier());
             getEntityManager(s.getIdentifier()).primarySocketAvailable(s, null);
             break;
           case BIG_MSG_SOCKET_B:
-            if (logger.level <= Logger.FINE) logger.log("Opened BIG Message Socket from "+s.getIdentifier());
+            logger.debug("Opened BIG Message Socket from {}", s.getIdentifier());
             getEntityManager(s.getIdentifier()).handleBigMsgSocket(s);
             break;
           }
@@ -272,7 +272,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }  
 
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier i, ByteBuffer m, final MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> opts) {
-    if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+opts+")");
+    logger.debug("sendMessage({},{},{},{})", i, m, deliverAckToMe, opts);
     // callers may pass null options, but queued messages need non-null options (e.g. EntityManager.startLivenessChecker())
     final Map<String, Object> options = (opts == null) ? new HashMap<String, Object>() : opts;
     
@@ -314,11 +314,11 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
    */
   class MissingCallback implements TransportLayerCallback<Identifier, ByteBuffer> {
     public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
-      if (logger.level <= Logger.WARNING) logger.log("No TransportLayerCallback set, dropping message of size "+m.remaining()+" from "+i);
+      logger.warn("No TransportLayerCallback set, dropping message of size {} from {}", m.remaining(), i);
     }
 
     public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-      if (logger.level <= Logger.WARNING) logger.log("No TransportLayerCallback set, closing incoming socket "+s);
+      logger.warn("No TransportLayerCallback set, closing incoming socket {}", s);
       s.close();
     }
   }
@@ -373,15 +373,17 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     getEntityManager(i).stopLivenessChecker();
   }
   
-  public void printMemStats(int logLevel) {
-    if (logLevel <= Logger.FINE) {
+  /**
+   * Logs the number of queued messages at debug level, and each non-empty queue at trace level.
+   */
+  public void printMemStats() {
+    if (logger.isDebugEnabled()) {
       synchronized(entityManagers) {
         int queueSum = 0;
         for(EntityManager em : entityManagers.values()) {
           int queueSize = em.queue.size();
           queueSum+=queueSize;          
-          if (logLevel <= Logger.FINEST ||   // finest prints empty queues 
-             (queueSize > 0 && logLevel <= Logger.FINER)) {  // only prints non-empty queues
+          if (queueSize > 0 && logger.isTraceEnabled()) {
             Identifier temp = em.identifier.get();
             String s = "";
             Map<String, Object> options = null; 
@@ -392,10 +394,10 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
               }
               s = ""+livenessProvider.getLiveness(temp, options);
             }
-            logger.log("EM{"+temp+","+s+","+em.writingSocket+","+em.pendingSocket+"} queue:"+queueSize+" reg:"+em.registered+" lChecker:"+em.livenessChecker);
+            logger.trace("EM{"+temp+","+s+","+em.writingSocket+","+em.pendingSocket+"} queue:"+queueSize+" reg:"+em.registered+" lChecker:"+em.livenessChecker);
           }
         }        
-        logger.log("NumEMs:"+entityManagers.size()+" numPendingMsgs:"+queueSum);
+        logger.debug("NumEMs:{} numPendingMsgs:{}", entityManagers.size(), queueSum);
       } // synchronized
     }
   }
@@ -458,7 +460,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         messageThatIsBeingWritten = null;
       }
       synchronized(EntityManager.this) {  
-        if (logger.level <= logger.INFO) logger.log(EntityManager.this+".clearState() setting pendingSocket to null "+pendingSocket);
+        logger.info("{}.clearState() setting pendingSocket to null {}", EntityManager.this, pendingSocket);
 
         if (pendingSocket != null) {
           pendingSocket.cancel();
@@ -477,7 +479,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
      * @return true if we did it now
      */
     public boolean closeMe(P2PSocket<Identifier> socket) {
-      if (logger.level <= Logger.FINER) logger.logException("closeMe("+socket+"):"+(socket == writingSocket)+","+messageThatIsBeingWritten, new Exception("Stack Trace"));
+      if (logger.isTraceEnabled()) logger.atTrace().setCause(new Exception("Stack Trace")).log(() -> "closeMe("+socket+"):"+(socket == writingSocket)+","+messageThatIsBeingWritten);
       if (socket == writingSocket) {
         if (messageThatIsBeingWritten == null) {
           sockets.remove(socket);
@@ -504,15 +506,15 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       // make sure we're on the selector thread so synchronization of writingSocket is simple
       if (!selectorManager.isSelectorThread()) throw new IllegalStateException("Must be called on the selector");
 
-      if (logger.level <= Logger.FINE) logger.log("primarySocketAvailable("+s+","+receipt+")");
+      logger.debug("primarySocketAvailable({},{})", s, receipt);
       
       // set pendingSocket to null if possible
       synchronized(EntityManager.this) {
         if (receipt != null) {
           if (receipt == pendingSocket) {
-            if (logger.level <= logger.INFO) logger.log(EntityManager.this+".primarySocketAvailable setting pendingSocket to null "+pendingSocket);
+            logger.info("{}.primarySocketAvailable setting pendingSocket to null {}", EntityManager.this, pendingSocket);
             stopLivenessChecker();
-            if (logger.level <= Logger.FINE) logger.log("got socket:"+s+" clearing pendingSocket:"+pendingSocket);
+            logger.debug("got socket:{} clearing pendingSocket:{}", s, pendingSocket);
             pendingSocket = null;  // this is the one we requested
           } else {
             // why would this ever be equal? -Jeff 01.11.08
@@ -528,7 +530,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     }
     
     public void setWritingSocket(P2PSocket<Identifier> s/*, String loc*/) {
-      if (logger.level <= Logger.INFO-1) logger.log(this+".setWritingSocket("+s+")");
+      logger.info("{}.setWritingSocket({})", this, s);
       writingSocket = s;
       if (primarySocketListeners.isEmpty()) return;
       if (s == null) {
@@ -578,7 +580,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         if (haveMessageToSend()) {
           // maybe we should remember if we were registered, and don't reregister, but for now it doesn't hurt
           registered = true;  // may fail in this call and set registered back to false, so make sure to do this before calling register          
-          if (logger.level <= Logger.FINEST) logger.log(this+".scheduleToWriteIfNeeded() registering to write on "+writingSocket);
+          logger.trace("{}.scheduleToWriteIfNeeded() registering to write on {}", this, writingSocket);
           writingSocket.register(false, true, this);
         }
       }      
@@ -587,7 +589,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     public void openPrimarySocketHelper(final Identifier i, Map<String, Object> options) {
       synchronized(this) {
         if (pendingSocket != null || writingSocket != null) return;
-        if (logger.level <= Logger.FINE) logger.log("Opening Primary Socket to "+i);
+        logger.debug("Opening Primary Socket to {}", i);
         
         final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i, options, logger) {
           public boolean cancel() {
@@ -596,7 +598,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
           }
         };
 
-        if (logger.level <= Logger.INFO) logger.log(EntityManager.this+".openPrimarySocketHelper() setting pendingSocket to "+handle);
+        logger.info("{}.openPrimarySocketHelper() setting pendingSocket to {}", EntityManager.this, handle);
         pendingSocket = handle;
         startLivenessChecker(i, options);
         
@@ -612,7 +614,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
               ByteBuffer writeMe = ByteBuffer.wrap(PRIMARY_SOCKET);
               public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
                 if (canRead || !canWrite) throw new IllegalArgumentException("expected to write!  canRead:"+canRead+" canWrite:"+canWrite);
-                if (logger.level <= Logger.FINE) logger.log("Opened Primary socket "+socket+" to "+i);
+                logger.debug("Opened Primary socket {} to {}", socket, i);
                 if (socket.write(writeMe) == -1) {
                   cancelLivenessChecker(i);
                   getEntityManager(socket.getIdentifier()).receiveSocketException(handle, new org.mpisws.p2p.transport.ClosedChannelException("Channel closed while writing."));
@@ -653,7 +655,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         throw new IllegalArgumentException("Options is null");
       }
       if (livenessChecker == null) {
-        if (logger.level <= Logger.FINER) logger.log("startLivenessChecker("+temp+","+options+") pend:"+pendingSocket+" writingS:"+writingSocket+" theQueue:"+queue.size());
+        logger.atTrace().log(() -> "startLivenessChecker("+temp+","+options+") pend:"+pendingSocket+" writingS:"+writingSocket+" theQueue:"+queue.size());
         livenessChecker = new TimerTask() {      
           @Override
           public void run() {            
@@ -664,7 +666,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
               livenessProvider.checkLiveness(temp, options);        
 
             // if this throws a NPE, there is a bug, cause this should have been cancelled if pendingSocket == null
-              if (logger.level <= logger.INFO) logger.log(EntityManager.this+".liveness checker setting pendingSocket to null "+pendingSocket);
+              logger.info("{}.liveness checker setting pendingSocket to null {}", EntityManager.this, pendingSocket);
               pendingSocket.cancel();  
               pendingSocket = null;
             }
@@ -682,7 +684,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       
     public void stopLivenessChecker() {
       if (livenessChecker == null) return;
-      if (logger.level <= Logger.FINER) logger.log("stopLivenessChecker("+identifier.get()+") pend:"+pendingSocket+" writingS:"+writingSocket+" theQueue:"+queue.size());
+      logger.atTrace().log(() -> "stopLivenessChecker("+identifier.get()+") pend:"+pendingSocket+" writingS:"+writingSocket+" theQueue:"+queue.size());
 
       livenessChecker.cancel();
       livenessChecker = null;
@@ -709,10 +711,10 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       synchronized(queue) {  
         if (messageThatIsBeingWritten == null) {
           messageThatIsBeingWritten = queue.poll();
-          if (logger.level <= Logger.FINEST) logger.log("poll("+identifier.get()+") set messageThatIsBeingWritten = "+messageThatIsBeingWritten);
+          logger.atTrace().log(() -> "poll("+identifier.get()+") set messageThatIsBeingWritten = "+messageThatIsBeingWritten);
         }
-        if (queue.size() >= (MAX_QUEUE_SIZE-1) && logger.level <= Logger.INFO) {
-          logger.log(this+"polling from full queue (this is a good thing) "+messageThatIsBeingWritten);
+        if (queue.size() >= (MAX_QUEUE_SIZE-1) && logger.isInfoEnabled()) {
+          logger.info(this+"polling from full queue (this is a good thing) "+messageThatIsBeingWritten);
         }      
         return messageThatIsBeingWritten;
       }
@@ -732,9 +734,9 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
      */
     public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
       
-      if (logger.level <= Logger.FINER) {
-        logger.logException(this+".receiveException("+socket+","+ioe+"):"+messageThatIsBeingWritten+" wrS:"+writingSocket, ioe);
-      } else if (logger.level <= Logger.INFO) logger.log(this+".receiveException("+socket+","+ioe+"):"+messageThatIsBeingWritten+" wrS:"+writingSocket+" "+ioe);
+      if (logger.isTraceEnabled()) {
+        logger.trace(this+".receiveException("+socket+","+ioe+"):"+messageThatIsBeingWritten+" wrS:"+writingSocket, ioe);
+      } else logger.atInfo().log(() -> this+".receiveException("+socket+","+ioe+"):"+messageThatIsBeingWritten+" wrS:"+writingSocket+" "+ioe);
       registered = false;
       sockets.remove(socket);
       if (ioe instanceof ClosedChannelException) {
@@ -754,11 +756,11 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       if (canRead || !canWrite) throw new IllegalStateException(this+" Expected only to write. canRead:"+canRead+" canWrite:"+canWrite+" socket:"+socket);
       if (socket != writingSocket) {
         // this is because the close() method calls receiveSelectResult
-        if (logger.level <= Logger.WARNING) logger.log("receivedSelectResult("+socket+", r:"+canRead+" w:"+canWrite+") ws:"+writingSocket);
+        logger.warn("receivedSelectResult({}, r:{} w:{}) ws:{}", socket, canRead, canWrite, writingSocket);
         return;
       }
       
-      if (logger.level <= Logger.FINEST) logger.log("receivedSelectResult("+socket+","+canRead+","+canWrite);
+      logger.trace("receivedSelectResult({},{},{}", socket, canRead, canWrite);
       MessageWrapper current = poll();
       while (current != null && current.receiveSelectResult(writingSocket)) {
         current = poll();
@@ -777,7 +779,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     public void receiveSocketException(SocketRequestHandleImpl<Identifier> handle, Exception ex) {      
       synchronized(EntityManager.this) {
         if (handle == pendingSocket) {        
-          if (logger.level <= logger.INFO) logger.log(EntityManager.this+".receiveSocketException("+ex+") setting pendingSocket to null "+pendingSocket);
+          logger.info("{}.receiveSocketException({}) setting pendingSocket to null {}", EntityManager.this, ex, pendingSocket);
 
           stopLivenessChecker();
           pendingSocket = null; 
@@ -797,7 +799,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         // drop the lowest priority message if the queue is overflowing        
         while (queue.size() > MAX_QUEUE_SIZE) {
           MessageWrapper w = queue.removeLast();
-          if (logger.level <= Logger.CONFIG) logger.log("Dropping "+w+" because queue is full. MAX_QUEUE_SIZE:"+MAX_QUEUE_SIZE);
+          logger.info("Dropping {} because queue is full. MAX_QUEUE_SIZE:{}", w, MAX_QUEUE_SIZE);
           w.drop();
         }
       }
@@ -812,7 +814,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     }
     
     public void purge(IOException ioe) {
-      if (logger.level <= Logger.FINE) logger.log(this+"purge("+ioe+"):"+messageThatIsBeingWritten);
+      logger.debug("{}purge({}):{}", this, ioe, messageThatIsBeingWritten);
       ArrayList<Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper>> callSendFailed = 
         new ArrayList<Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper>>();
       synchronized(queue) {
@@ -844,7 +846,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       }
       setWritingSocket(null/*, "purge"*/);
       synchronized(EntityManager.this) {
-        if (logger.level <= logger.INFO) logger.log(EntityManager.this+".purge setting pendingSocket to null "+pendingSocket);
+        logger.info("{}.purge setting pendingSocket to null {}", EntityManager.this, pendingSocket);
         if (pendingSocket != null) {
           stopLivenessChecker();
           pendingSocket.cancel();
@@ -873,14 +875,14 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       }
       
       public void start(Map<String,Object> options) {
-        if (logger.level <= Logger.FINER) logger.log("Opening BIG message socket to:"+i);
+        logger.trace("Opening BIG message socket to:{}", i);
         tl.openSocket(i, this, options);
       }
 
       public MessageRequestHandle<Identifier, ByteBuffer> addMessage(
           ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
           Map<String, Object> options) {
-        if (logger.level <= Logger.FINE) logger.log("Sending BIG message of size:"+m.remaining()+" to:"+i);
+        logger.debug("Sending BIG message of size:{} to:{}", m.remaining(), i);
         PendingMessage ret = new PendingMessage(m,deliverAckToMe,options);
         msgs.addLast(ret);
         return ret;
@@ -908,7 +910,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
           boolean canRead, boolean canWrite) throws IOException {
         if (header.hasRemaining()) {
           if (socket.write(header) < 0) {
-            if (logger.level <= Logger.WARNING) logger.log("Error writing BIG message header to:"+socket);
+            logger.warn("Error writing BIG message header to:{}", socket);
             receiveException(new org.mpisws.p2p.transport.ClosedChannelException("Socket closed before writing BIG header."));
             return;
           }
@@ -917,7 +919,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
             socket.register(false, true, this);
             return;
           } else {
-            if (logger.level <= Logger.FINER) logger.log("Wrote BIG message header to:"+socket);
+            logger.trace("Wrote BIG message header to:{}", socket);
           }
         }
         
@@ -932,7 +934,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
           P2PSocket<Identifier> sock) {  
         socket = sock;
         try {
-          if (logger.level <= Logger.INFO) logger.log("Opened BIG message socket to:"+i);
+          logger.info("Opened BIG message socket to:{}", i);
           receiveSelectResult(sock, false, true);
         } catch (IOException ioe) {
           receiveException(ioe);
@@ -1023,7 +1025,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
               receiveException(socket, new org.mpisws.p2p.transport.ClosedChannelException("Remote node closed channel: "+socket));
               return;
             }            
-            if (logger.level <= Logger.FINEST) logger.log("BIG message wrote: "+ret+" of "+msg.capacity());
+            logger.trace("BIG message wrote: {} of {}", ret, msg.capacity());
             if (msg.hasRemaining()) {
               socket.register(false, true, this);
             } else {
@@ -1042,7 +1044,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
      * @param socket
      */
     protected void handleBigMsgSocket(P2PSocket<Identifier> socket) {
-      if (logger.level <= Logger.INFO) logger.log("handling BIG message socket from:"+socket);
+      logger.info("handling BIG message socket from:{}", socket);
       try {
         new P2PSocketReceiver<Identifier>() {
           byte[] sizeBytes = new byte[4];
@@ -1068,10 +1070,10 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
               } else {
                 int size = MathUtils.byteArrayToInt(sizeBytes);
                 msgBuf = ByteBuffer.allocate(size);
-                if (logger.level <= Logger.FINER) logger.log("Receiving BIG message of size:"+size+" from:"+socket);
+                logger.trace("Receiving BIG message of size:{} from:{}", size, socket);
                 // continue
                 if (size > MAX_BIG_MSG_SIZE) {
-                  if (logger.level <= Logger.WARNING) logger.log("Closing socket, BIG message of size:"+size+" is too big! (max:"+MAX_BIG_MSG_SIZE+") from:"+socket);
+                  logger.warn("Closing socket, BIG message of size:{} is too big! (max:{}) from:{}", size, MAX_BIG_MSG_SIZE, socket);
                   socket.close();
                   return;
                 }
@@ -1090,7 +1092,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
                 return;
               } else {
                 // done with this msg
-                if (logger.level <= Logger.FINE) logger.log("Received BIG message of size:"+msgBuf.capacity()+" from:"+socket);
+                logger.debug("Received BIG message of size:{} from:{}", msgBuf.capacity(), socket);
                 msgBuf.flip();
                 sizeBuf.clear();
                 callback.messageReceived(socket.getIdentifier(), msgBuf, socket.getOptions());
@@ -1102,7 +1104,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
           }      
         }.receiveSelectResult(socket, true, false);
       } catch (IOException ioe) {
-        ioe.printStackTrace();
+        logger.warn("Error reading big message from {}", socket, ioe);
       }
     }
 
@@ -1121,7 +1123,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         ByteBuffer message, 
         MessageCallback<Identifier, ByteBuffer> deliverAckToMe, 
         final Map<String, Object> options) {      
-      if (logger.level <= Logger.FINER) logger.log(this+"send("+message+")");
+      logger.trace("{}send({})", this, message);
 
       // pick the priority
       int priority = DEFAULT_PRIORITY;
@@ -1183,7 +1185,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     }
 
     protected boolean complete(MessageWrapper wrapper) {
-      if (logger.level <= Logger.FINE) logger.log(this+".complete("+wrapper+")");
+      logger.debug("{}.complete({})", this, wrapper);
       if (wrapper != messageThatIsBeingWritten) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+messageThatIsBeingWritten);
       
       synchronized(queue) {
@@ -1278,11 +1280,11 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
        * @return true if should keep writing
        */
       public boolean receiveSelectResult(P2PSocket<Identifier> socket) throws IOException {
-        if (logger.level <= Logger.FINEST) logger.log(this+".receiveSelectResult("+socket+")");
+        logger.trace("{}.receiveSelectResult({})", this, socket);
         try {
         if (this.socket != null && this.socket != socket) {
           // this shouldn't happen
-          if (logger.level <= Logger.WARNING) logger.log(this+" Socket changed!!! can:"+cancelled+" comp:"+completed+" socket:"+socket+" writingSocket:"+writingSocket+" this.socket:"+this.socket);
+          logger.atWarn().log(() -> this+" Socket changed!!! can:"+cancelled+" comp:"+completed+" socket:"+socket+" writingSocket:"+writingSocket+" this.socket:"+this.socket);
           socket.shutdownOutput();
           
           // do we need to reset?
@@ -1293,21 +1295,21 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         this.socket = socket;
         
         if (cancelled && message.position() == 0) {
-          if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") cancelled"); 
+          logger.trace("{}.rsr({}) cancelled", this, socket); 
           // cancel
           return true;
         } else {
           long bytesWritten;
           if ((bytesWritten = socket.write(message)) == -1) {
             // socket was closed, need to register new socket
-            if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") socket was closed"); 
+            logger.trace("{}.rsr({}) socket was closed", this, socket); 
             clearAndEnqueue(this);
             return false;
           }
-          if (logger.level <= Logger.FINER) logger.log(this+" wrote "+bytesWritten+" bytes of "+message.capacity()+" remaining:"+message.remaining());
+          logger.trace("{} wrote {} bytes of {} remaining:{}", this, bytesWritten, message.capacity(), message.remaining());
 
           if (message.hasRemaining()) {
-            if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") has remaining"); 
+            logger.trace("{}.rsr({}) has remaining", this, socket); 
             return false;
           }
         }
@@ -1315,7 +1317,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
         return EntityManager.this.complete(this); 
         } catch (IOException ioe) {
           // note, clearAndEnqueue() gets called later by the writer when the stack unravels again
-          if (logger.level <= Logger.FINEST) logger.logException(this+".rsr("+socket+")", ioe);
+          logger.trace("{}.rsr({})", this, socket, ioe);
           throw ioe;
         }
       }
@@ -1390,10 +1392,10 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       @Override
       public void done(P2PSocket<Identifier> socket) throws IOException {
         int msgSize = buf.asIntBuffer().get();
-        if (logger.level <= Logger.FINER) logger.log(EntityManager.this+" reading message of size "+msgSize);
+        logger.trace("{} reading message of size {}", EntityManager.this, msgSize);
 
         if (msgSize > MAX_MSG_SIZE) {
-          if (logger.level <= Logger.WARNING) logger.log(socket+" attempted to send a message of size "+msgSize+". MAX_MSG_SIZE = "+MAX_MSG_SIZE);
+          logger.warn("{} attempted to send a message of size {}. MAX_MSG_SIZE = {}", socket, msgSize, MAX_MSG_SIZE);
           closeMe(socket);
           return;
         }
@@ -1465,7 +1467,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       }                    
       
       public void done(P2PSocket<Identifier> socket) throws IOException {
-        if (logger.level <= Logger.FINE) logger.log(EntityManager.this+" read message of size "+buf.capacity()+" from "+socket);        
+        logger.debug("{} read message of size {} from {}", EntityManager.this, buf.capacity(), socket);        
         notifyListenersRead(buf.capacity(), socket.getIdentifier(), socket.getOptions());
         callback.messageReceived(socket.getIdentifier(), buf, socket.getOptions()); 
         new SizeReader(socket);

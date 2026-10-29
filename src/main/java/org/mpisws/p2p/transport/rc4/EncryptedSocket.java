@@ -48,8 +48,8 @@ import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
+import org.slf4j.Logger;
 
-import rice.environment.logging.Logger;
 
 public class EncryptedSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier>{
 
@@ -95,7 +95,7 @@ public class EncryptedSocket<Identifier> extends SocketWrapperSocket<Identifier,
       return decryptCipher.update(input, output); 
     } catch (ShortBufferException sbe) {
       // this is a bug if this happens, it shouldn't b/c rc4 encryption/decryption should be the same size
-      logger.logException("We got a short buffer exception reading. This indicates a bug in the implementation. "+this, sbe);
+      logger.error("We got a short buffer exception reading. This indicates a bug in the implementation. {}", this, sbe);
       socket.close();      
       return -1;
     }
@@ -140,7 +140,7 @@ public class EncryptedSocket<Identifier> extends SocketWrapperSocket<Identifier,
       ret = socket.write(encryptedWriteBuffer);      
     } catch (ShortBufferException sbe) {
       // this is a bug if this happens, it shouldn't b/c rc4 encryption/decryption should be the same size
-      logger.logException("We got a short buffer exception reading. This indicates a bug in the implementation. "+this, sbe);
+      logger.error("We got a short buffer exception reading. This indicates a bug in the implementation. {}", this, sbe);
       return -1;
     }
 

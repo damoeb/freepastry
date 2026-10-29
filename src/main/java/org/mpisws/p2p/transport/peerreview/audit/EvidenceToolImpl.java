@@ -58,8 +58,8 @@ import org.mpisws.p2p.transport.peerreview.history.logentry.EvtSign;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.util.Serializer;
 
+import org.slf4j.Logger;
 import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
@@ -95,12 +95,12 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
   public Tuple<Integer, Identifier> checkSnippet(LogSnippet snippet) {
     for (SnippetEntry entry : snippet.entries) {
       if (entry.isHash && entry.type != EVT_CHECKPOINT && entry.type != EVT_SENDSIGN && entry.type != EVT_SEND) {
-        if (logger.level <= Logger.WARNING) logger.log("Malformed statement: Entry of type #"+entry.type+" is hashed");
+        logger.warn("Malformed statement: Entry of type #{} is hashed", entry.type);
         return new Tuple<Integer, Identifier>(INVALID,null);
       }
       
       /* Further processing depends on the entry type */
-      if (logger.level <= Logger.FINER) logger.log("Entry type "+entry.type+", size="+entry.content.length+" "+(entry.isHash ? " (hashed)" : ""));
+      logger.atTrace().log(() -> "Entry type "+entry.type+", size="+entry.content.length+" "+(entry.isHash ? " (hashed)" : ""));
 
       try {
         SimpleInputBuffer sib = new SimpleInputBuffer(entry.content);
@@ -114,7 +114,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
             EvtRecv<Handle> recv = new EvtRecv<Handle>(sib,handleSerializer,hashSize);
             Identifier id = peerreview.getIdentifierExtractor().extractIdentifier(recv.getSenderHandle());
             if (!peerreview.hasCertificate(id)) {
-              if (logger.level <= Logger.FINE) logger.log("AUDIT RESPONSE contains RECV from "+id+"; certificate needed");
+              logger.debug("AUDIT RESPONSE contains RECV from {}; certificate needed", id);
               return new Tuple<Integer, Identifier>(CERT_MISSING, id);
             }
             break;
@@ -126,7 +126,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
             EvtAck<Identifier> evtAck = new EvtAck<Identifier>(sib,idSerializer,hashSize,signatureSize);
             Identifier id = evtAck.getRemoteId();
             if (!peerreview.hasCertificate(id)) {
-              if (logger.level <= Logger.FINE) logger.log("AUDIT RESPONSE contains RECV from "+id+"; certificate needed");
+              logger.debug("AUDIT RESPONSE contains RECV from {}; certificate needed", id);
               return new Tuple<Integer, Identifier>(CERT_MISSING, id);
             }
             break;
@@ -146,7 +146,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
             break;
         }
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("Malformed entry:"+entry,ioe);
+        logger.warn("Malformed entry:{}", entry, ioe);
         return new Tuple<Integer, Identifier>(INVALID,null);
       }
     }
@@ -219,7 +219,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
     Map<Long, SendEntryRecord> secache = new HashMap<Long, SendEntryRecord>();
     
     
-    if (logger.level <= Logger.FINE) logger.log("Checking snippet (flags="+flags+")");
+    logger.debug("Checking snippet (flags={})", flags);
     // TODO: check for FLAG_FULL here? (open question inherited from the C++ PeerReview port)
 
     /* We read the snippet entry by entry and check the following:
@@ -233,20 +233,20 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
 
       if (!firstEntry) {
         if (entry.seq <= lastEntry.seq) {
-          if (logger.level <= Logger.WARNING) logger.log("Log snippet attempts to roll back the sequence number from "+lastEntry.seq+" to "+entry.seq+"; flagging invalid");
+          logger.warn("Log snippet attempts to roll back the sequence number from {} to {}; flagging invalid", lastEntry.seq, entry.seq);
           return false;
         }
   
         if (keyNodeHash != null && !keyNodeFound && (entry.seq > keyNodeMaxSeq)) {
-          if (logger.level <= Logger.WARNING) logger.log("Hash of keyNode does not appear in ["+snippet.getFirstSeq()+","+keyNodeMaxSeq+"]; flagging invalid");
+          logger.warn("Hash of keyNode does not appear in [{},{}]; flagging invalid", snippet.getFirstSeq(), keyNodeMaxSeq);
           return false;
         }
       }
 
-      if (logger.level <= Logger.FINER) logger.log("Entry type "+entry.type+", size="+entry.content.length+", seq="+entry.seq+" "+(entry.isHash ? " (hashed)" : ""));
+      logger.atTrace().log(() -> "Entry type "+entry.type+", size="+entry.content.length+", seq="+entry.seq+" "+(entry.isHash ? " (hashed)" : ""));
 
       if (lastEntry != null && (lastEntry.type == EVT_RECV) && ((entry.type != EVT_SIGN) || (entry.seq != (lastEntry.seq+1)))) {
-        if (logger.level <= Logger.WARNING) logger.log("Log snippet omits the mandatory EVT_SIGN after an EVT_RECV; flagging invalid");
+        logger.warn("Log snippet omits the mandatory EVT_SIGN after an EVT_RECV; flagging invalid");
         return false;
       }
 
@@ -286,7 +286,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
             assert(entry.content.length >= signatureSize);
             if (!firstEntry) {
               if (lastEntry.type != EVT_SEND) {
-                if (logger.level <= Logger.WARNING) logger.log("Spurious EVT_SENDSIGN in snippet; flagging invalid");
+                logger.warn("Spurious EVT_SENDSIGN in snippet; flagging invalid");
                 return false;
               }
               EvtSendSign evtSendSign = new EvtSendSign(sib,signatureSize);
@@ -294,12 +294,12 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
               if (sendWasHashed) {
                 byte[] actualHash = peerreview.hash(ByteBuffer.wrap(evtSendSign.restOfMessage));
                 if (!Arrays.equals(lastEntry.content,actualHash)) {
-                  if (logger.level <= Logger.WARNING) logger.log("EVT_SENDSIGN content does not match hash in EVT_SEND");
+                  logger.warn("EVT_SENDSIGN content does not match hash in EVT_SEND");
                   return false;
                 }
               } else {
                 if (entry.content.length > signatureSize) {
-                  if (logger.level <= Logger.WARNING) logger.log("EVT_SENDSIGN contains extra bytes, but preceding EVT_SEND was not hashed");
+                  logger.warn("EVT_SENDSIGN contains extra bytes, but preceding EVT_SEND was not hashed");
                   return false;
                 }
               }
@@ -313,7 +313,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
               int verifyResult = peerreview.verify(peerreview.getIdentifierExtractor().extractIdentifier(subjectHandle), signedHash, evtSendSign.signature);
               assert((verifyResult == SIGNATURE_OK) || (verifyResult == SIGNATURE_BAD));
               if (verifyResult != SIGNATURE_OK) {
-                if (logger.level <= Logger.WARNING) logger.log("Signature in EVT_SENDSIGN does not match node hash of EVT_SEND");
+                logger.warn("Signature in EVT_SENDSIGN does not match node hash of EVT_SEND");
                 return false;
               }
 
@@ -331,7 +331,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
                   }
 
                   if (!previouslyReceived) {
-                    if (logger.level <= Logger.FINER) logger.log("accepting new message "+lastEntry.seq);
+                    logger.trace("accepting new message {}", lastEntry.seq);
 
                     /* We're cheating a little bit here... essentially we reconstruct the original
                        USERDATA message as feed it to the commitment protocol, pretending that
@@ -356,7 +356,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
             /* RECV entries must ALWAYS be followed by a SIGN */
 
             if (lastEntry.type != EVT_RECV) {
-              if (logger.level <= Logger.WARNING) logger.log("Spurious EVT_SIGN in snippet; flagging invalid");
+              logger.warn("Spurious EVT_SIGN in snippet; flagging invalid");
               return false;
             }
 
@@ -383,7 +383,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
 
             boolean isGoodAuth = peerreview.addAuthenticatorIfValid(authStoreOrNull, senderId, senderAuth);
             if (!isGoodAuth) {
-              if (logger.level <= Logger.WARNING) logger.log("Snippet contains a RECV from "+senderHandle+" whose signature does not match; flagging invalid");
+              logger.warn("Snippet contains a RECV from {} whose signature does not match; flagging invalid", senderHandle);
               return false;
             }
           }
@@ -416,7 +416,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
 
             boolean isGoodAuth = peerreview.addAuthenticatorIfValid(authStoreOrNull, evtAck.getRemoteId(), receiverAuth);
             if (!isGoodAuth) {
-              if (logger.level <= Logger.WARNING) logger.log("Snippet contains an ACK from "+evtAck.getRemoteId()+" whose signature does not match; flagging invalid");
+              logger.warn("Snippet contains an ACK from {} whose signature does not match; flagging invalid", evtAck.getRemoteId());
               return false;
             }
           }
@@ -433,7 +433,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
           break;
       }
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("Error verifying SnippitEntry "+entry,ioe);
+        logger.warn("Error verifying SnippitEntry {}", entry, ioe);
         return false;
       }
 
@@ -452,11 +452,11 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
       if (firstEntry) {
         if (startWithCheckpoint) {
           if ((entry.type != EVT_CHECKPOINT) && (entry.type != EVT_INIT)) {
-            if (logger.level <= Logger.WARNING) logger.log("Previous checkpoint requested, but not included; flagging invalid");
+            logger.warn("Previous checkpoint requested, but not included; flagging invalid");
             return false;
           }
           if (entry.isHash) {
-            if (logger.level <= Logger.WARNING) logger.log("Previous checkpoint requested, but only hash is included; flagging invalid");
+            logger.warn("Previous checkpoint requested, but only hash is included; flagging invalid");
             return false;
           }
         } else {
@@ -471,17 +471,17 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
     }
 
     if (lastEntry.type == EVT_RECV) {
-      if (logger.level <= Logger.WARNING) logger.log("Log snippet ends with a RECV event; missing mandatory SIGN");
+      logger.warn("Log snippet ends with a RECV event; missing mandatory SIGN");
       return false;
     }
 
     if (lastEntry.type == EVT_SEND) {
-      if (logger.level <= Logger.WARNING) logger.log("Log snippet ends with a SEND event; missing mandatory SENDSIGN");
+      logger.warn("Log snippet ends with a SEND event; missing mandatory SENDSIGN");
       return false;
     }
 
     if (keyNodeHash != null && !keyNodeFound) {
-      if (logger.level <= Logger.WARNING) logger.log("Key node not found in log snippet; flagging invalid");
+      logger.warn("Key node not found in log snippet; flagging invalid");
       return false;
     }
     

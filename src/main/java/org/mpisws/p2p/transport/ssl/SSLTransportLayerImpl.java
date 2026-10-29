@@ -69,9 +69,10 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
+import org.slf4j.Logger;
+import org.slf4j.event.Level;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 /**
  * Does not encrypt UDP messages
@@ -113,7 +114,7 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
     this.environment = env;
     this.logger = env.getLogManager().getLogger(SSLTransportLayerImpl.class, null);
     this.tl = tl;
-    errorHandler = new DefaultErrorHandler<Identifier>(logger, Logger.WARNING);
+    errorHandler = new DefaultErrorHandler<Identifier>(logger, Level.WARN);
     this.clientAuth = clientAuth;
 
     try {

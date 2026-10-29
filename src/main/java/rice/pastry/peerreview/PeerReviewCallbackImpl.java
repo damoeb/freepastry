@@ -56,9 +56,9 @@ import org.mpisws.p2p.transport.peerreview.PeerReviewCallback;
 import org.mpisws.p2p.transport.peerreview.WitnessListener;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
@@ -145,7 +145,7 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
     for (NodeHandle h : foo) {
       ret.add((TransportLayerNodeHandle<MultiInetSocketAddress>)h);
     }
-    logger.log("myWitnessedNodes: "+ret);
+    logger.info("myWitnessedNodes: {}", ret);
     return ret;
   }
   
@@ -192,7 +192,7 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
         for (NodeHandle nh : result) {
           if (!nh.getId().equals(subject)) ret.add((TransportLayerNodeHandle<MultiInetSocketAddress>)nh);
         }
-        logger.log("returning witnesses for "+subject+" "+ret);
+        logger.info("returning witnesses for {} {}", subject, ret);
         callback.notifyWitnessSet(subject, ret);
       }
     

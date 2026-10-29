@@ -42,7 +42,6 @@ import java.io.PrintStream;
 import java.util.*;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.*;

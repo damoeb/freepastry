@@ -62,7 +62,7 @@ import org.mpisws.p2p.transport.peerreview.message.OutgoingUserDataMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
@@ -209,7 +209,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
         
         addToReceiveCache(peerreview.getIdentifierExtractor().extractIdentifier(udm.getSenderHandle()), 
             udm.getTopSeq(), history.getNumEntries() - 1);
-        if (logger.level < Logger.FINE) logger.log("New message logged as seq#"+seqOfRecvEntry);
+        logger.debug("New message logged as seq#{}", seqOfRecvEntry);
   
         /* Construct the SIGN entry and append it to the log */
         
@@ -226,7 +226,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
         seqOfRecvEntry = i2.getSeq();
         myHashTop = i2.getNodeHash();
         myHashTopMinusOne = i1.getNodeHash();
-        if (logger.level < Logger.FINE) logger.log("This message has already been logged as seq#"+seqOfRecvEntry);
+        logger.debug("This message has already been logged as seq#{}", seqOfRecvEntry);
       }
   
       /* Generate ACK = (MSG_ACK, myID, remoteSeq, localSeq, myTopMinusOne, signature) */
@@ -282,13 +282,12 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
       int status = infoStore.getStatus(idx);
       switch (status) {
         case STATUS_EXPOSED: /* Node is already exposed; no point in sending it any further messages */
-          if (logger.level <= Logger.WARNING) logger.log("Releasing messages sent to exposed node "+idx);
+          logger.warn("Releasing messages sent to exposed node {}", idx);
           info.clearXmitQueue();
           return;
         case STATUS_SUSPECTED: /* Node is suspected; send the first unanswered challenge */
           if (info.lastChallenge < (peerreview.getTime() - info.currentChallengeInterval)) {
-            if (logger.level <= Logger.WARNING) logger.log(
-                "Pending message for SUSPECTED node "+info.getHandle()+"; challenging node (interval="+info.currentChallengeInterval+")");
+            logger.warn("Pending message for SUSPECTED node {}; challenging node (interval={})", info.getHandle(), info.currentChallengeInterval);
             info.lastChallenge = peerreview.getTime();
             info.currentChallengeInterval *= 2;
             peerreview.challengeSuspectedNode(info.handle);
@@ -314,8 +313,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
         /* Otherwise, retransmit the current packet a few times, up to the specified limit */
       
         if (info.retransmitsSoFar < MAX_RETRANSMISSIONS) {
-          if (logger.level <= Logger.WARNING) logger.log(
-              "Retransmitting a "+info.xmitQueue.getFirst().getPayload().remaining()+"-byte message to "+info.getHandle()+
+          logger.atWarn().log(() -> "Retransmitting a "+info.xmitQueue.getFirst().getPayload().remaining()+"-byte message to "+info.getHandle()+
               " (lastxmit="+info.lastTransmit+", timeout="+info.currentTimeout+", type="+
               info.xmitQueue.getFirst().getType()+")");
           info.retransmitsSoFar++;
@@ -327,9 +325,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
         
           /* If the peer still won't acknowledge the message, file a SEND challenge with its witnesses */
           
-          if (logger.level <= Logger.WARNING) logger.log(info.handle+
-              " has not acknowledged our message after "+info.retransmitsSoFar+
-              " retransmissions; filing as evidence");
+          logger.warn("{} has not acknowledged our message after {} retransmissions; filing as evidence", info.handle, info.retransmitsSoFar);
           OutgoingUserDataMessage<Handle> challenge = info.xmitQueue.removeFirst();
           challenge.sendFailed(new IOException("Peer Review Giving Up sending message to "+idx));
           
@@ -384,25 +380,23 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
         /* Since the message is not yet in the log, deliver it to the application */
 
         if (!ret.b()) {
-          if (logger.level <= Logger.FINE) logger.log(
-              "Delivering message from "+udm.getSenderHandle()+" via "+info.handle+" ("+
+          logger.atDebug().log(() -> "Delivering message from "+udm.getSenderHandle()+" via "+info.handle+" ("+
               udm.getPayloadLen()+" bytes; "+udm.getRelevantLen()+"/"+udm.getPayloadLen()+" relevant)");
           try {
             peerreview.getApp().messageReceived(udm.getSenderHandle(), udm.getPayload(), t.b()); 
           } catch (IOException ioe) {
-            logger.logException("Error handling "+udm, ioe);
+            logger.warn("Error handling {}", udm, ioe);
           }
         } else {
-          if (logger.level <= Logger.FINE) logger.log(
-              "Message from "+udm.getSenderHandle()+" via "+info.getHandle()+" was previously logged; not delivered");
+          logger.debug("Message from {} via {} was previously logged; not delivered", udm.getSenderHandle(), info.getHandle());
         }
 
         /* Send the ACK */
 
-        if (logger.level <= Logger.FINE) logger.log("Returning ACK to"+info.getHandle());
+        logger.debug("Returning ACK to{}", info.getHandle());
           peerreview.transmit(info.handle, ret.a(), null, t.b());
       } else {
-        if (logger.level <= Logger.WARNING) logger.log("Cannot verify signature on message "+udm.getTopSeq()+" from "+info.getHandle()+"; discarding");
+        logger.warn("Cannot verify signature on message {} from {}; discarding", udm.getTopSeq(), info.getHandle());
       }
       
       /* Release the message */
@@ -432,7 +426,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     long txmit = (msg.getTopSeq() / MAX_ENTRIES_PER_MS);
 
     if ((txmit < (peerreview.getTime()-timeToleranceMillis)) || (txmit > (peerreview.getTime()+timeToleranceMillis))) {
-      if (logger.level <= Logger.WARNING) logger.log("Invalid sequence no #"+msg.getTopSeq()+" on incoming message (dt="+(txmit-peerreview.getTime())+"); discarding");
+      logger.atWarn().log(() -> "Invalid sequence no #"+msg.getTopSeq()+" on incoming message (dt="+(txmit-peerreview.getTime())+"); discarding");
       return;
     }
 
@@ -522,7 +516,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
 
     /* Acknowledgment: Log it (if we don't have it already) and send the next message, if any */
 
-    if (logger.level <= Logger.FINE) logger.log("Received an ACK from "+source);
+    logger.debug("Received an ACK from {}", source);
     // TODO: check that ackMessage came from the source
         
     if (transport.hasCertificate(ackMessage.getNodeId())) {
@@ -556,7 +550,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
 
           /* Signature is okay... append an ACK entry to the log */
 
-          if (logger.level <= Logger.FINE) logger.log("ACK is okay; logging "+ackMessage);
+          logger.debug("ACK is okay; logging {}", ackMessage);
           
           EvtAck<Identifier> evtAck = new EvtAck<Identifier>(ackMessage.getNodeId(), ackMessage.getSendEntrySeq(), ackMessage.getRecvEntrySeq(), ackMessage.getHashTopMinusOne(), ackMessage.getSignature());
           history.appendEntry(EVT_ACK, true, evtAck.serialize());
@@ -571,17 +565,17 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
 
           makeProgress(peerreview.getIdentifierExtractor().extractIdentifier(p.getHandle()));
         } else {
-          if (logger.level <= Logger.WARNING) logger.log("Invalid ACK from <"+ackMessage.getNodeId()+">; discarding");
+          logger.warn("Invalid ACK from <{}>; discarding", ackMessage.getNodeId());
         }
       } else {
         if (findAckEntry(ackMessage.getNodeId(), ackMessage.getSendEntrySeq()) < 0) {
-          if (logger.level <= Logger.WARNING) logger.log("<"+ackMessage.getNodeId()+"> has ACKed something we haven't sent ("+ackMessage.getSendEntrySeq()+"); discarding");
+          logger.warn("<{}> has ACKed something we haven't sent ({}); discarding", ackMessage.getNodeId(), ackMessage.getSendEntrySeq());
         } else {
-          if (logger.level <= Logger.WARNING) logger.log("Duplicate ACK from <"+ackMessage.getNodeId()+">; discarding");
+          logger.warn("Duplicate ACK from <{}>; discarding", ackMessage.getNodeId());
         }
       }
     } else {
-      if (logger.level <= Logger.WARNING) logger.log("We got an ACK from <"+ackMessage.getNodeId()+">, but we don't have the certificate; discarding");     
+      logger.warn("We got an ACK from <{}>, but we don't have the certificate; discarding", ackMessage.getNodeId());     
     }
   }
 

@@ -104,11 +104,11 @@ import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.CloneableLogManager;
+import rice.environment.logging.Slf4jLogManager;
 import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.processing.Processor;
 import rice.environment.processing.simple.SimpleProcessor;
@@ -249,8 +249,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         temp.close();
         temp = null;
         
-        if (logger.level <= Logger.WARNING)
-          logger.log("Error binding to default IP, using " + localAddress+":"+port);
+        logger.warn("Error binding to default IP, using {}:{}", localAddress, port);
         
         try {
           test2 = new ServerSocket();
@@ -552,15 +551,15 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
                 TransportLayerNodeHandle<MultiInetSocketAddress> oldDest, 
                 TransportLayerNodeHandle<MultiInetSocketAddress> newDest) {
               if (newDest.getAddress().equals(oldDest.getAddress())) {
-                if (logger.level <= Logger.INFO) logger.log("canChange("+oldDest+","+newDest+")");
+                logger.info("canChange({},{})", oldDest, newDest);
                 if (newDest.getEpoch() > oldDest.getEpoch()) {
-                  if (logger.level <= Logger.INFO) logger.log("canChange("+oldDest+":"+oldDest.getEpoch()+","+newDest+":"+newDest.getEpoch()+"):true");
+                  logger.info("canChange({}:{},{}:{}):true", oldDest, oldDest.getEpoch(), newDest, newDest.getEpoch());
                   return true;
                 }
               } else {
                 throw new RuntimeException("canChange("+oldDest+","+newDest+") doesn't make any sense, these aren't comparable to each other.");
               }
-              if (logger.level <= Logger.INFO) logger.log("canChange("+oldDest+":"+oldDest.getEpoch()+","+newDest+":"+newDest.getEpoch()+"):false");
+              logger.info("canChange({}:{},{}:{}):false", oldDest, oldDest.getEpoch(), newDest, newDest.getEpoch());
               return false;
               
             }          
@@ -735,7 +734,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           public void receivedUnexpectedData(
               TransportLayerNodeHandle<MultiInetSocketAddress> id, byte[] bytes,
               int location, Map<String, Object> options) {
-            if (logger.level <= Logger.WARNING) {
+            if (logger.isWarnEnabled()) {
               // make this pretty
               String s = "";
               int numBytes = 8;
@@ -743,19 +742,19 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
               for (int i = 0; i < numBytes; i++) {
                 s+=bytes[i]+","; 
               }
-              logger.log("Unexpected data from "+id+" "+s);
+              logger.warn("Unexpected data from "+id+" "+s);
             }
           }
         
           public void receivedException(
               TransportLayerNodeHandle<MultiInetSocketAddress> i, Throwable error) {
-            if (logger.level <= Logger.INFO) {
+            if (logger.isInfoEnabled()) {
               if (error instanceof NodeIsFaultyException) {                  
                 NodeIsFaultyException nife = (NodeIsFaultyException)error;
-                logger.log("Dropping message "+nife.getAttemptedMessage()+" to "+nife.getIdentifier()+" because it is faulty.");
+                logger.info("Dropping message "+nife.getAttemptedMessage()+" to "+nife.getIdentifier()+" because it is faulty.");
                 if (i.getLiveness() < NodeHandle.LIVENESS_DEAD) {
                   TransportLayerNodeHandle<MultiInetSocketAddress> nh = (TransportLayerNodeHandle<MultiInetSocketAddress>)i;
-                  logger.logException("NodeIsFaultyException thrown for non-dead node. "+i+" "+nh.getLiveness(),nife);
+                  logger.info("NodeIsFaultyException thrown for non-dead node. "+i+" "+nh.getLiveness(), nife);
                 }
               }
             }
@@ -852,7 +851,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
      * PNS.nearNodes() calls into the continuation which calls PastryNode.doneNode() 
      */
     public void boot(Collection<InetSocketAddress> bootaddresses_temp) {
-      if (logger.level <= Logger.FINE) logger.log("boot("+bootaddresses_temp+")");
+      logger.debug("boot({})", bootaddresses_temp);
       final Collection<InetSocketAddress> bootaddresses;
       if (bootaddresses_temp == null) {
         bootaddresses = Collections.EMPTY_LIST;
@@ -864,7 +863,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       
       if (bootaddresses.isEmpty() ||
           (bootaddresses.size() == 1 && seed)) {
-        if (logger.level <= Logger.INFO) logger.log("boot() calling pn.doneNode(empty)");
+        logger.info("boot() calling pn.doneNode(empty)");
         bootAsBootstrap();
         return;
       }
@@ -881,7 +880,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       
       // fill in tempBootHandles
       for (InetSocketAddress addr : bootaddresses) { 
-        if (logger.level <= Logger.FINER) logger.log("addr:"+addr+" local:"+localAddr);
+        logger.trace("addr:{} local:{}", addr, localAddr);
         if (!addr.equals(localAddr)) {
           tempBootHandles.add(getTempNodeHandle(addr));
         }
@@ -900,7 +899,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           // make sure this only gets called once
           if (done) return;
           done = true;
-          if (logger.level <= Logger.FINE) logger.log("boot() beginning pns with "+initialSet);
+          logger.debug("boot() beginning pns with {}", initialSet);
           
           // remove the listener
           pn.getLivenessProvider().removeLivenessListener(listener.get(0));
@@ -914,7 +913,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
                 pn.joinFailed(new JoinFailedException("Cannot join ring.  All bootstraps are faulty."+bootaddresses));
                 return;
               }
-              if (logger.level <= Logger.INFO) logger.log("boot() calling pn.doneNode("+result+")");
+              logger.info("boot() calling pn.doneNode({})", result);
               pn.doneNode(result);
             }
           
@@ -935,7 +934,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           Logger logger = pn.getEnvironment().getLogManager().getLogger(SocketPastryNodeFactory.class, null);
           public void livenessChanged(NodeHandle i2, int val, Map<String, Object> options) {
             SocketNodeHandle i = (SocketNodeHandle)i2;
-            if (logger.level <= Logger.FINE) logger.log("livenessChanged("+i+","+val+")");
+            logger.debug("livenessChanged({},{})", i, val);
             if (val <= LIVENESS_SUSPECTED && i.getEpoch() != -1L) {
               boolean complete = false;
               
@@ -953,11 +952,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           }        
         });
 
-      if (logger.level <= Logger.FINE) logger.log("boot() adding liveness listener");
+      logger.debug("boot() adding liveness listener");
       // register the listener
       pn.getLivenessProvider().addLivenessListener(listener.get(0));
 
-      if (logger.level <= Logger.FINE) logger.log("boot() checking liveness");
+      logger.debug("boot() checking liveness");
       // check liveness on the bogus nodes
       for (SocketNodeHandle h : tempBootHandles) {
         checkLiveness(h, null);
@@ -971,7 +970,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           
             @Override
             public void run() {
-              if (logger.level <= Logger.FINE) logger.log("boot() timer expiring, attempting to start pns (it may have already started)");
+              logger.debug("boot() timer expiring, attempting to start pns (it may have already started)");
 
               beginPns.receiveResult(bootHandles);
             }            
@@ -981,7 +980,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
       // the root node (no boot addresses)
       if (tempBootHandles.isEmpty()) {
-        if (logger.level <= Logger.FINE) logger.log("invoking receiveResult (this is probably the first node in the ring)");
+        logger.debug("invoking receiveResult (this is probably the first node in the ring)");
         environment.getSelectorManager().invoke(new Runnable(){          
           public void run() {
             beginPns.receiveResult(bootHandles);
@@ -989,7 +988,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         });
       }
       
-      if (logger.level <= Logger.FINE) logger.log("boot() returning");
+      logger.debug("boot() returning");
       
     }
     /**
@@ -1119,7 +1118,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         try {
           pAddress = environment.getParameters().getInetSocketAddress("external_address");
         } catch (IOException ioe) {
-          ioe.printStackTrace();
+          logger.warn("Could not read external_address, ignoring it", ioe);
         }
       }
     }
@@ -1141,8 +1140,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       // below if you change
       // this
     } catch (BindException e) {
-      if (logger.level <= Logger.WARNING)
-        logger.logException("Warning: " , e);
+      logger.warn("Warning: ", e);
 
       if (environment.getParameters().getBoolean(
           "pastry_socket_increment_port_after_construction")) {
@@ -1155,10 +1153,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           // case the node can't bind to anything, expect a
           // StackOverflowException
         } catch (StackOverflowError soe) {
-          if (logger.level <= Logger.SEVERE)
-            logger
-                .log("SEVERE: SocketPastryNodeFactory: Could not bind on any ports!"
-                    + soe);
+          logger.error("SEVERE: SocketPastryNodeFactory: Could not bind on any ports!" + soe);
           throw soe;
         }
       } else {
@@ -1292,9 +1287,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   protected LogManager cloneLogManager(Environment rootEnvironment, Id nodeId) {
     LogManager lman = rootEnvironment.getLogManager();
-    if (lman instanceof CloneableLogManager) {
-      lman = ((CloneableLogManager) rootEnvironment
-          .getLogManager()).clone("0x" + nodeId.toStringBare());
+    if (lman instanceof Slf4jLogManager slm) {
+      lman = slm.clone("0x" + nodeId.toStringBare());
     }
     return lman;
   }

@@ -37,9 +37,9 @@ advised of the possibility of such damage.
 
 package rice.pastry;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Node;
 import rice.pastry.leafset.*;

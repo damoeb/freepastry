@@ -34,27 +34,24 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/ 
-/*
- * Created on Apr 6, 2005
- */
+
 package rice.environment.logging;
 
+import org.slf4j.Logger;
+
 /**
- * Factory interface to generate loggers.
- * 
- * Usually acquired by calling environment.getLogManager().
- * 
- * @author Jeff Hoye
+ * Hands out the SLF4J loggers of one {@link rice.environment.Environment}.
+ *
+ * Usually acquired by calling {@code environment.getLogManager()}. Levels, output format and destinations are
+ * configured in the SLF4J backend, not here. The default implementation is {@link Slf4jLogManager}.
  */
-@SuppressWarnings("unchecked")
 public interface LogManager {
   /**
-   * Returns the Logger matching the parameters, constructs a new one if an 
-   * appropriate one hasn't yet been constructed.
-   * 
+   * Returns the logger for a class and an optional instance name.
+   *
    * @param clazz the Class associated with this logger.
-   * @param instance the instance-name associated with this logger.
+   * @param instance the instance-name associated with this logger, or null.
    * @return the logger.
    */
-  public Logger getLogger(Class<?> clazz, String instance);
+  Logger getLogger(Class<?> clazz, String instance);
 }

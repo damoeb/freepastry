@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package org.mpisws.p2p.transport.direct;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
@@ -86,7 +86,7 @@ public class EventSimulator {
   public void setMaxSpeed(float speed) {
     if (!isDirectTimeSource) {
       if (!printedDirectTimeSourceWarning) {
-        if (logger.level <= Logger.WARNING) logger.log("Invalid TimeSource for setMaxSpeed()/setFullSpeed().  Use Environment.directEnvironment() to construct your Environment.");
+        logger.warn("Invalid TimeSource for setMaxSpeed()/setFullSpeed().  Use Environment.directEnvironment() to construct your Environment.");
         printedDirectTimeSourceWarning = true;
       }
     }
@@ -113,7 +113,7 @@ public class EventSimulator {
       
       long scheduledExecutionTime = manager.getNextTaskExecutionTime();
       if (scheduledExecutionTime < 0) {
-        if (logger.level <= Logger.FINE) logger.log("taskQueue is empty");
+        logger.debug("taskQueue is empty");
         return false;
       }
       
@@ -137,7 +137,7 @@ public class EventSimulator {
           }
         }
           
-        if (logger.level <= Logger.FINER) logger.log("the time is now "+newSimTime);              
+        logger.trace("the time is now {}", newSimTime);              
         ((DirectTimeSource)timeSource).setTime(newSimTime);      
       }
     } // synchronized(manager)
@@ -163,14 +163,14 @@ public class EventSimulator {
                 try {
                   manager.wait(100); // must wait on the real clock, because the simulated clock can only be advanced by simulate()
                 } catch (InterruptedException ie) {
-                  logger.logException("BasicNetworkSimulator interrupted.",ie); 
+                  logger.warn("BasicNetworkSimulator interrupted.", ie); 
                 }
               }
             }
             // re-invoke the simulation task
             manager.invoke(this);
             } catch (InterruptedException ie) {
-              if (logger.level <= Logger.SEVERE) logger.logException("BasicNetworkSimulator.start()",ie); 
+              logger.error("BasicNetworkSimulator.start()", ie); 
               stop();
             }
           }

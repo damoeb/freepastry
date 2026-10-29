@@ -49,7 +49,6 @@ import org.mpisws.p2p.transport.direct.DirectTransportLayer;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;

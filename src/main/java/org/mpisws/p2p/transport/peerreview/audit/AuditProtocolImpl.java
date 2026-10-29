@@ -68,7 +68,7 @@ import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;
 import rice.selector.TimerTask;
@@ -165,7 +165,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     
     /* Send the AUDIT challenge to the target node */
 
-    if (logger.level <= Logger.FINE) logger.log("Sending AUDIT request to "+aai.target+" (range="+authFrom.getSeq()+"-"+authTo.getSeq()+",eseq="+evidenceSeq+")");
+    logger.debug("Sending AUDIT request to {} (range={}-{},eseq={})", aai.target, authFrom.getSeq(), authTo.getSeq(), evidenceSeq);
     peerreview.transmit(target, auditRequest, null, null);
   }
 
@@ -182,7 +182,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     
       int status = infoStore.getStatus(i);
       if (status != STATUS_TRUSTED) {
-        if (logger.level <= Logger.FINE) logger.log("Node "+h+" is "+renderStatus(status)+"; skipping audit");
+        logger.atDebug().log(() -> "Node "+h+" is "+renderStatus(status)+"; skipping audit");
         continue;
       }
     
@@ -198,25 +198,25 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         boolean haveEnoughAuthenticators = true;
         byte needPrevCheckpoint = 0;
 
-        if (logger.level <= Logger.INFO) logger.log("Starting to audit "+h);
+        logger.info("Starting to audit {}", h);
 
         if ((authFrom = infoStore.getLastCheckedAuth(i)) == null) {
           if ((authFrom = authInStore.getOldestAuthenticator(i)) != null) {
-            if (logger.level <= Logger.FINE) logger.log("We haven't audited this node before; using oldest authenticator");
+            logger.debug("We haven't audited this node before; using oldest authenticator");
             needPrevCheckpoint = 1;
           } else {
-            if (logger.level <= Logger.FINE) logger.log("We don't have any authenticators for this node; skipping this audit");
+            logger.debug("We don't have any authenticators for this node; skipping this audit");
             haveEnoughAuthenticators = false;
           }
         }
 
         if ((authTo = authInStore.getMostRecentAuthenticator(i)) == null) {
-          if (logger.level <= Logger.FINE) logger.log("No recent authenticator; skipping this audit");
+          logger.debug("No recent authenticator; skipping this audit");
           haveEnoughAuthenticators = false;
         }
           
         if (haveEnoughAuthenticators && authFrom.getSeq()>authTo.getSeq()) {
-          if (logger.level <= Logger.FINE) logger.log("authFrom>authTo; skipping this audit");
+          logger.debug("authFrom>authTo; skipping this audit");
           haveEnoughAuthenticators = false; 
         }
           
@@ -227,7 +227,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
           beginAudit(h, authFrom, authTo, needPrevCheckpoint, true);
         }
       } else {
-        if (logger.level <= Logger.WARNING) logger.log("Node "+h+" is already being audited; skipping");
+        logger.warn("Node {} is already being audited; skipping", h);
       }
     }
     
@@ -259,7 +259,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       if ((now >= foo.currentTimeout) && !foo.isReplaying) {
         Identifier i = peerreview.getIdentifierExtractor().extractIdentifier(foo.target);
            
-        if (logger.level <= Logger.WARNING) logger.log("No response to AUDIT request; filing as evidence "+foo.evidenceSeq);
+        logger.warn("No response to AUDIT request; filing as evidence {}", foo.evidenceSeq);
         try {
           infoStore.addEvidence(peerreview.getLocalId(), i, foo.evidenceSeq, 
               foo.request.challenge);
@@ -289,18 +289,18 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         long authFromSeq = aii.authFrom!=null ? aii.authFrom.getSeq() : -1;
         long authToSeq = aii.authTo!=null ? aii.authTo.getSeq() : -1;
         if ((0<=authFromSeq) && (authFromSeq <= aii.since) && (aii.since < authToSeq)) {
-          if (logger.level <= Logger.FINE) logger.log("Investigation of "+aii.target+" (since "+aii.since+") is proceeding with an audit");
+          logger.debug("Investigation of {} (since {}) is proceeding with an audit", aii.target, aii.since);
           
           if (authToSeq > authFromSeq) {
-            if (logger.level <= Logger.FINER) logger.log("Authenticators: "+authFromSeq+"-"+authToSeq);
+            logger.trace("Authenticators: {}-{}", authFromSeq, authToSeq);
             beginAudit(aii.target, aii.authFrom, aii.authTo, FLAG_FULL_MESSAGES_SENDER, false);
             terminateInvestigation(aii.target);
           } else {
-            if (logger.level <= Logger.WARNING) logger.log("Cannot start investigation; authTo<authFrom ?!? (since="+aii.since+", authFrom="+authFromSeq+", authTo="+authToSeq+")");
+            logger.warn("Cannot start investigation; authTo<authFrom ?!? (since={}, authFrom={}, authTo={})", aii.since, authFromSeq, authToSeq);
             terminateInvestigation(aii.target);
           }
         } else {
-          if (logger.level <= Logger.FINE) logger.log("Retransmitting investigation requests for "+aii.target+" at "+aii.since);
+          logger.debug("Retransmitting investigation requests for {} at {}", aii.target, aii.since);
           sendInvestigation(aii.target);
           aii.currentTimeout += INVESTIGATION_INTERVAL_MILLIS;
         }
@@ -391,7 +391,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     /* We have to keep a small fraction of the authenticators around so we can later
        answer AUTHREQ messages from other nodes. */
 
-    if (logger.level <= Logger.FINE) logger.log("Checking of AUDIT response against "+auths.size()+" authenticators ["+fromSeq+"-"+toSeq+"]");
+    logger.debug("Checking of AUDIT response against {} authenticators [{}-{}]", auths.size(), fromSeq, toSeq);
 
     long mostRecentAuthInCache = -1;
     Authenticator mrauth = authCacheStore.getMostRecentAuthenticator(subject);
@@ -403,7 +403,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       Authenticator thisAuth = auths.get(i);
       long thisSeq = thisAuth.getSeq();
       if (thisSeq > (mostRecentAuthInCache + (AUTH_CACHE_INTERVAL*1000L))) {
-        if (logger.level <= Logger.FINER) logger.log( "Caching auth "+thisSeq+" for "+subject);
+        logger.trace("Caching auth {} for {}", thisSeq, subject);
         authCacheStore.addAuthenticator(subject, thisAuth);
         mostRecentAuthInCache = thisSeq;
       }
@@ -416,11 +416,11 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     int authPtr = auths.size() - 1;
     Authenticator nextAuth = (authPtr<0) ? null : auths.get(authPtr);
     long nextAuthSeq = (authPtr<0) ? -1 : nextAuth.getSeq();
-    if (logger.level <= Logger.FINER) logger.log("  NA #"+authPtr+" "+nextAuthSeq);
+    logger.trace("  NA #{} {}", authPtr, nextAuthSeq);
 
     for (SnippetEntry sEntry : snippet.entries) {
       currentSeq = sEntry.seq;
-      if (logger.level <= Logger.FINER) logger.log("[2] Entry type "+sEntry.type+", size="+sEntry.content.length+
+      if (logger.isTraceEnabled()) logger.trace("[2] Entry type "+sEntry.type+", size="+sEntry.content.length+
           ", seq="+currentSeq+(sEntry.isHash ? " (hashed)" : ""));
 
       byte[] entry = sEntry.content;
@@ -436,7 +436,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       }
       
       currentNodeHash = transport.hash(currentSeq, sEntry.type, currentNodeHash, contentHash);
-      if (logger.level <= Logger.FINEST) logger.log("NH ["+MathUtils.toBase64(currentNodeHash)+"]");
+      if (logger.isTraceEnabled()) logger.trace("NH ["+MathUtils.toBase64(currentNodeHash)+"]");
 
       /* If we have an authenticator for this entry (matched by sequence number), the hash in the
          authenticator must match the node hash. If not, we have a proof of misbehavior. */
@@ -446,27 +446,27 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         
         if (currentSeq == nextAuthSeq) {          
           if (!Arrays.equals(currentNodeHash, nextAuth.getHash())) {
-            if (logger.level <= Logger.WARNING) logger.log("Found a divergence for node <"+subject+">'s authenticator #"+currentSeq);
+            logger.warn("Found a divergence for node <{}>'s authenticator #{}", subject, currentSeq);
             foundMisbehavior = true;
           } else {  
-            if (logger.level <= Logger.FINEST) logger.log("Authenticator verified OK");
+            logger.trace("Authenticator verified OK");
   
             authPtr--;
             nextAuth = (authPtr<0) ? null : auths.get(authPtr);
             nextAuthSeq = (authPtr<0) ? -1 : nextAuth.getSeq();            
-            if (logger.level <= Logger.FINEST) logger.log( "NA #"+authPtr+" "+ nextAuthSeq);
+            logger.trace("NA #{} {}", authPtr, nextAuthSeq);
           }
         } else if (currentSeq > nextAuthSeq) {
-          if (logger.level <= Logger.WARNING) logger.log("Node "+subject+" is trying to hide authenticator #"+nextAuthSeq);
+          logger.warn("Node {} is trying to hide authenticator #{}", subject, nextAuthSeq);
           foundMisbehavior = true;
         }
         
         if (foundMisbehavior) {
-          if (logger.level <= Logger.FINE) logger.log("Extracting proof of misbehavior from audit response");
+          logger.debug("Extracting proof of misbehavior from audit response");
           ProofInconsistent proof = new ProofInconsistent(toAuthenticator,nextAuth,snippet);
 
           long evidenceSeq = peerreview.getEvidenceSeq();
-          if (logger.level <= Logger.FINE) logger.log("Filing proof against "+subject+" under evidence sequence number #"+evidenceSeq);
+          logger.debug("Filing proof against {} under evidence sequence number #{}", subject, evidenceSeq);
           infoStore.addEvidence(peerreview.getLocalId(), subject, evidenceSeq, proof);
           peerreview.sendEvidenceToWitnesses(subject, evidenceSeq, proof);
 
@@ -480,7 +480,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     /* All these authenticators for this segment checked out okay. We don't need them any more,
        so we can remove them from our local store. */
 //
-    if (logger.level <= Logger.FINE) logger.log( "All authenticators in range ["+fromSeq+","+toSeq+"] check out OK; flushing");
+    logger.debug("All authenticators in range [{},{}] check out OK; flushing", fromSeq, toSeq);
     // TODO: check the old authenticators and flush only from fromSeq instead of Long.MIN_VALUE
     authInStore.flushAuthenticatorsFor(subject, Long.MIN_VALUE, toSeq);
 
@@ -488,7 +488,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
     String namebuf = infoStore.getHistoryName(subject);
     
-    if (logger.level <= Logger.FINE) logger.log("opening history for "+namebuf);
+    logger.debug("opening history for {}", namebuf);
     SecureHistory subjectHistory = peerreview.getHistoryFactory().open(namebuf, "w");
     
     boolean logCanBeAppended = false;
@@ -505,14 +505,14 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
        we stop here */
     
     if (!aai.shouldBeReplayed/* && !logCanBeAppended*/) {
-      if (logger.level <= Logger.FINE) logger.log( "This audit response does not need to be replayed; discarding");
+      logger.debug("This audit response does not need to be replayed; discarding");
       terminateAudit(aai.target);
       return;
     }
 
     /* Add entries to our local copy of the subject's history */
     
-    if (logger.level <= Logger.FINE) logger.log( "Adding entries in snippet to log '"+namebuf+"'");
+    logger.debug("Adding entries in snippet to log '{}'", namebuf);
     if (!logCanBeAppended)
       throw new RuntimeException("Cannot append snippet to local copy of node's history; there appears to be a gap ("+topSeq+"-"+fromSeq+")!");
     
@@ -533,10 +533,10 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       short[] markerTypes = new short[]{ EVT_CHECKPOINT };
       long lastCheckpointIdx = subjectHistory.findLastEntry(markerTypes, fromSeq);
 
-      if (logger.level <= Logger.FINEST) logger.log( "LastCheckpointIdx="+lastCheckpointIdx+" (up to "+fromSeq+")");
+      logger.trace("LastCheckpointIdx={} (up to {})", lastCheckpointIdx, fromSeq);
 
       if (lastCheckpointIdx < 0) {
-        if (logger.level <= Logger.WARNING) logger.log("Cannot find last checkpoint in subject history "+namebuf);
+        logger.warn("Cannot find last checkpoint in subject history {}", namebuf);
 
         terminateAudit(subjectHandle);
         return;
@@ -553,9 +553,9 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       aai.verifier = verifier;
       aai.isReplaying = true;
 
-      if (logger.level <= Logger.INFO) logger.log( "REPLAY ============================================");
-      if (logger.level <= Logger.FINE) logger.log( "Node being replayed: "+subjectHandle);
-      if (logger.level <= Logger.FINE) logger.log( "Range in log       : "+fromSeq+"-"+toSeq);
+      logger.info("REPLAY ============================================");
+      logger.debug("Node being replayed: {}", subjectHandle);
+      logger.debug("Range in log       : {}-{}", fromSeq, toSeq);
 
       /* Do the replay */
 
@@ -563,7 +563,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       while(sm.makeProgress());
       
       boolean verifiedOK = verifier.verifiedOK(); 
-      if (logger.level <= Logger.INFO) logger.log( "END OF REPLAY: "+(verifiedOK ? "VERIFIED OK" : "VERIFICATION FAILED")+" =================");
+      logger.atInfo().log(() -> "END OF REPLAY: "+(verifiedOK ? "VERIFIED OK" : "VERIFICATION FAILED")+" =================");
 
       /* If there was a divergence, we have a proof of misbehavior */
 
@@ -576,7 +576,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         if (foo == null) throw new RuntimeException("Cannot stat checkpoint entry");
         lastCheckpointSeq = foo.getSeq();
         
-        if (logger.level <= Logger.WARNING) logger.log("Audit revealed a protocol violation; filing evidence (snippet from "+lastCheckpointSeq+")");
+        logger.warn("Audit revealed a protocol violation; filing evidence (snippet from {})", lastCheckpointSeq);
 
         ProofNonconformant<Handle> proof = new ProofNonconformant<Handle>(toAuthenticator,subjectHandle,snippet);
         long evidenceSeq = peerreview.getEvidenceSeq();
@@ -587,7 +587,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
     /* Terminate the audit, and remember the last authenticator for further reference */
 
-    if (logger.level <= Logger.FINE) logger.log( "Audit completed; terminating");  
+    logger.debug("Audit completed; terminating");  
     infoStore.setLastCheckedAuth(peerreview.getIdentifierExtractor().extractIdentifier(aai.target), ((ChallengeAudit)aai.request.challenge).to);
     terminateAudit(aai.target);
   }
@@ -618,7 +618,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
           /* The request contains a timestamp T; we're being asked to return two authenticators,
              one has to be older than T, and the other must be as recent as possible */
           
-          if (logger.level <= Logger.INFO) logger.log("Received authenticator request for "+request.subject+" (since "+request.timestamp+")");
+          logger.info("Received authenticator request for {} (since {})", request.subject, request.timestamp);
           
           /* There are several places we might find 'old' authenticators. Check all of them,
              and pick the authenticator that is closest to T */
@@ -652,14 +652,14 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
             AuthResponse<Identifier> response = new AuthResponse<Identifier>(request.subject,best,foo);
             peerreview.transmit(handle, response, null, null);
           } else {
-            if (logger.level <= Logger.WARNING) logger.log("Cannot respond to this request; we don't have any authenticators for "+request.subject);
+            logger.warn("Cannot respond to this request; we don't have any authenticators for {}", request.subject);
           }
         }
         
         break;
       case MSG_AUTHRESP: { /* Response to a request for authenticators */
         AuthResponse<Identifier> response = (AuthResponse<Identifier>)message;
-          if (logger.level <= Logger.FINE) logger.log("Received AUTHRESP(<"+response.subject+">, "+response.authFrom+".."+response.authTo+") from "+handle);
+          logger.debug("Received AUTHRESP(<{}>, {}..{}) from {}", response.subject, response.authFrom, response.authTo, handle);
 
           // TODO: check the signatures of response.authFrom and response.authTo
           int idx = -1;
@@ -673,7 +673,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
               investigation.authTo = response.authTo;
             }
           } else {
-            if (logger.level <= Logger.WARNING) logger.log("AUTH response does not match any ongoing investigations; ignoring");
+            logger.warn("AUTH response does not match any ongoing investigations; ignoring");
           }
         }
         
@@ -705,13 +705,11 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(id);
     if (investigation != null) {
       if (since * 1000000 > investigation.since) {
-        if (logger.level <= Logger.FINE) logger.log("Skipping investigation request for " + target + " at "
-              + since + ", since an investigation at " + investigation.since + " is already ongoing");
+        logger.debug("Skipping investigation request for {} at {}, since an investigation at {} is already ongoing", target, since, investigation.since);
         return;
       }
 
-      if (logger.level <= Logger.FINE)
-        logger.log("Extending existing investigation from "+ investigation.since + " to " + since * 1000000);
+      if (logger.isDebugEnabled()) logger.debug("Extending existing investigation from "+ investigation.since + " to " + since * 1000000);
       investigation.since = since * 1000000; /* log granularity */
     } else {
       investigation = new ActiveInvestigationInfo<Handle>(target, since * 1000000,

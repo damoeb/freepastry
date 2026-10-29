@@ -60,8 +60,8 @@ import org.mpisws.p2p.transport.peerreview.replay.EventCallback;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
 import org.mpisws.p2p.transport.util.Serializer;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.random.RandomSource;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -148,12 +148,12 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     try {
       next = history.statEntry(nextEventIndex);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("Error fetching log entry #"+nextEventIndex,ioe);
+      logger.warn("Error fetching log entry #{}", nextEventIndex, ioe);
       foundFault = true;
       return;
     }
 
-    if (logger.level <= Logger.FINE) logger.log("fetchNextEvent():"+next);
+    logger.debug("fetchNextEvent():{}", next);
 
     if (next == null) {
       return;
@@ -162,18 +162,18 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     if (next.isHashed()) {
       // make the nextEvent only the content hash
       
-      if (logger.level <= Logger.FINE) logger.log("Fetched log entry #"+nextEventIndex+" (type "+next.getType()+", hashed, seq="+next.getSeq()+")");
+      logger.debug("Fetched log entry #{} (type {}, hashed, seq={})", nextEventIndex, next.getType(), next.getSeq());
     } else {
       // load the nextEvent from the file
       
       try {
         nextEvent = new SimpleInputBuffer(history.getEntry(nextEventIndex, next.getSizeInFile()));
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("Error fetching log entry #"+nextEventIndex+" (type "+next.getType()+", size "+next.getSizeInFile()+" bytes, seq="+next.getSeq()+")",ioe);
+        logger.warn("Error fetching log entry #{} (type {}, size {} bytes, seq={})", nextEventIndex, next.getType(), next.getSizeInFile(), next.getSeq(), ioe);
         foundFault = true;
         return;
       }
-      if (logger.level <= Logger.FINE) logger.log("Fetched log entry #"+nextEventIndex+" (type "+next.getType()+", size "+next.getSizeInFile()+" bytes, seq="+next.getSeq()+")");
+      logger.debug("Fetched log entry #{} (type {}, size {} bytes, seq={})", nextEventIndex, next.getType(), next.getSizeInFile(), next.getSeq());
     }    
   }
   
@@ -214,12 +214,12 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
    * handle foreground requests 
    */
   public boolean makeProgress() {
-    if (logger.level <= Logger.FINE) logger.log("makeProgress()");
+    logger.debug("makeProgress()");
     if (foundFault || next == null)
       return false;
       
     if (!initialized && (next.getType() != EVT_CHECKPOINT) && (next.getType() != EVT_INIT)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: No INIT or CHECKPOINT found at the beginning of the log; marking as invalid "+next);
+      logger.warn("Replay: No INIT or CHECKPOINT found at the beginning of the log; marking as invalid {}", next);
       foundFault = true;
       return false;
     }
@@ -235,10 +235,10 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     
     /* Sanity checks */
 
-    if (logger.level <= Logger.FINER) logger.log("Replaying event #"+nextEventIndex+" (type "+next.getType()+", seq="+next.getSeq()+")");
+    logger.trace("Replaying event #{} (type {}, seq={})", nextEventIndex, next.getType(), next.getSeq());
       
     if (next.isHashed() && (next.getType() != EVT_CHECKPOINT) && (next.getType() != EVT_INIT)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Trying to replay hashed event "+next.getType());
+      logger.warn("Replay: Trying to replay hashed event {}", next.getType());
       foundFault = true;
       return false;
     }
@@ -253,21 +253,21 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       }
 
       case EVT_SEND : /* SEND events should have been handled by Verifier::send() */
-        if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SEND evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
+        logger.warn("Replay: Encountered EVT_SEND evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
         return false;
       case EVT_SOCKET_READ: {
-        if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SOCKET_READ evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
+        logger.warn("Replay: Encountered EVT_SOCKET_READ evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
         return false;        
       }
       case EVT_SOCKET_CLOSE: {
-        if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SOCKET_CLOSE evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
+        logger.warn("Replay: Encountered EVT_SOCKET_CLOSE evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
         return false;        
       }
       case EVT_SOCKET_SHUTDOWN_OUTPUT: {
-        if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SOCKET_SHUTDOWN_OUTPUT evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
+        logger.warn("Replay: Encountered EVT_SOCKET_SHUTDOWN_OUTPUT evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
         return false;        
       }
@@ -287,7 +287,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
         fetchNextEvent();
         if (next == null || (next.getType() != EVT_SIGN) || (next.getSizeInFile() != (int)(transport.getHashSizeBytes()+transport.getSignatureSizeBytes()))) {
-          if (logger.level <= Logger.WARNING) logger.log("Replay: RECV event not followed by SIGN; marking as invalid");
+          logger.warn("Replay: RECV event not followed by SIGN; marking as invalid");
           foundFault = true;
           return false;
         }
@@ -299,7 +299,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         app.messageReceived(sender, msgBuf, null);
         break;
       case EVT_SIGN : /* SIGN events should have been handled by the preceding RECV */
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Spurious SIGN event; marking as invalid");
+        logger.warn("Replay: Spurious SIGN event; marking as invalid");
         foundFault = true;
         return false;
       case EVT_ACK : /* Skip ACKs */
@@ -308,7 +308,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         long ackedSeq = nextEvent.readLong();
         VerifierMRH<Handle> foo = callbacks.remove(ackedSeq);
         if (foo == null) {
-          if (logger.level <= Logger.WARNING) logger.log("Replay: no message to be acked for seq:"+ackedSeq+" fail.");
+          logger.warn("Replay: no message to be acked for seq:{} fail.", ackedSeq);
           foundFault = true;
           return false;
         }
@@ -327,11 +327,11 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
             initialized = true;
             
             if (!app.loadCheckpoint(nextEvent)) {
-              if (logger.level <= Logger.WARNING) logger.log("Cannot load checkpoint");
+              logger.warn("Cannot load checkpoint");
               foundFault = true;
             }
           } else {
-            if (logger.level <= Logger.WARNING) logger.log("Replay: Initial checkpoint is hashed; marking as invalid");
+            logger.warn("Replay: Initial checkpoint is hashed; marking as invalid");
             foundFault = true;
           }
         } else {
@@ -346,9 +346,9 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
           if (!next.isHashed()) {
             if (actualCheckpointSize != next.getSizeInFile()) {
-              if (logger.level <= Logger.WARNING) logger.log("Replay: Checkpoint has different size (expected "+next.getSizeInFile()+" bytes, but got "+actualCheckpointSize+"); marking as invalid");
-              if (logger.level <= Logger.FINE) logger.log( "Expected:"+nextEvent);
-              if (logger.level <= Logger.FINE) logger.log( "Found:"+actualCheckpointSize);
+              logger.warn("Replay: Checkpoint has different size (expected {} bytes, but got {}); marking as invalid", next.getSizeInFile(), actualCheckpointSize);
+              logger.debug("Expected:{}", nextEvent);
+              logger.debug("Found:{}", actualCheckpointSize);
               foundFault = true;
               return false;
             }
@@ -359,9 +359,9 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
             nextEvent.read(bar);
             
             if (!Arrays.equals(bar, buf.getBytes())) {
-              if (logger.level <= Logger.WARNING) logger.log("Replay: Checkpoint does not match");
-              if (logger.level <= Logger.FINE) logger.log("Expected:"+next.getSizeInFile());
-              if (logger.level <= Logger.FINE) logger.log("Found:"+buf.getWritten());
+              logger.warn("Replay: Checkpoint does not match");
+              logger.debug("Expected:{}", next.getSizeInFile());
+              logger.debug("Found:{}", buf.getWritten());
 
               foundFault = true;
               return false;
@@ -370,13 +370,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
           
             byte[] checkpointHash = transport.hash(buf.getByteBuffer());
             if (!Arrays.equals(checkpointHash, next.getContentHash())) {
-              if (logger.level <= Logger.WARNING) logger.log("Replay: Checkpoint is hashed, but does not match hash value in the log\n"+
+              logger.atWarn().log(() -> "Replay: Checkpoint is hashed, but does not match hash value in the log\n"+
                   Arrays.toString(checkpointHash)+"\n"+Arrays.toString(next.getContentHash()));
               foundFault = true;
               return false;
             }
 
-            if (logger.level <= Logger.FINEST) logger.log( "Hashed checkpoint is OK");
+            logger.trace("Hashed checkpoint is OK");
             history.upgradeHashedEntry((int)nextEventIndex, buf.getByteBuffer());
           }
         }
@@ -422,14 +422,14 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       case EVT_SOCKET_EXCEPTION: {
         int socketId = nextEvent.readInt();
         IOException ex = deserializeException(nextEvent);
-        logger.log("deserializeException("+ex+")");
+        logger.info("deserializeException("+ex+")");
         fetchNextEvent();
         socketException(socketId, ex);
         break;
       }
       default:
         if (!eventCallback.containsKey(next.getType())) {
-          if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): Unregistered event #"+next.getType()+"; marking as invalid");
+          logger.warn("Replay({}): Unregistered event #{}; marking as invalid", nextEventIndex, next.getType());
           foundFault = true;
           return false;
         }
@@ -441,7 +441,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         break;
       }// switch
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("Exception handling event #"+nextEventIndex+" "+next,ioe);
+      logger.warn("Exception handling event #{} {}", nextEventIndex, next, ioe);
       foundFault = true;
       return false;
     }
@@ -466,23 +466,23 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       relevantLen = (Integer)options.get(PeerReview.RELEVANT_LENGTH);
     }
     
-    if (logger.level <= Logger.FINE) logger.log("Verifier::send("+target+", "+relevantLen+"/"+message.remaining()+" bytes)");
+    logger.debug("Verifier::send({}, {}/{} bytes)", target, relevantLen, message.remaining());
     
     // Sanity checks 
     
     if (next == null) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Send event after end of segment; marking as invalid");
+      logger.warn("Replay: Send event after end of segment; marking as invalid");
       foundFault = true;
       return null;
     }
     
     if (next.getType() == EVT_INIT) {
-      if (logger.level <= Logger.FINER) logger.log("Skipped; next event is an INIT");
+      logger.trace("Skipped; next event is an INIT");
       return null;
     }
     
     if (next.getType() != EVT_SEND) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SEND event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay({}): SEND event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType());
       foundFault = true;
       return null;
     }
@@ -507,7 +507,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       }
       byte[] cHash = transport.hash(buf.getByteBuffer());
       if (!Arrays.equals(cHash,next.getContentHash())) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: SEND is hashed, but hash of predicted SEND entry does not match hash in the log");
+        logger.warn("Replay: SEND is hashed, but hash of predicted SEND entry does not match hash in the log");
         foundFault = true;
         return null;
       }
@@ -523,7 +523,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     Handle logReceiver;
      logReceiver = peerreview.getHandleSerializer().deserialize(nextEvent);
     if (!logReceiver.equals(target)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SEND to "+target+" during replay, but log shows SEND to "+logReceiver+"; marking as invalid");      
+      logger.warn("Replay({}): SEND to {} during replay, but log shows SEND to {}; marking as invalid", nextEventIndex, target, logReceiver);      
       // reset nextEvent so next time we parse this event it isn't nonsense
       nextEvent = new SimpleInputBuffer(history.getEntry(next, next.getSizeInFile()));
       foundFault = true;
@@ -535,7 +535,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
     if (logIsHashed) {
       if (relevantLen >= msgLen) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay is entirely relevant, but log entry is partly hashed; marking as invalid");
+        logger.warn("Replay: Message sent during replay is entirely relevant, but log entry is partly hashed; marking as invalid");
         foundFault = true;
         return null;
       }
@@ -544,7 +544,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       assert(logRelevantLen >= 0);
       
       if (relevantLen != logRelevantLen) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay has "+relevantLen+" relevant bytes, but log entry has "+logRelevantLen+"; marking as invalid");
+        logger.warn("Replay: Message sent during replay has {} relevant bytes, but log entry has {}; marking as invalid", relevantLen, logRelevantLen);
         foundFault = true;
         return null;
       }
@@ -553,9 +553,9 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       nextEvent.read(loggedMsg);
       ByteBuffer loggedMsgBB = ByteBuffer.wrap(loggedMsg);
       if ((relevantLen > 0) && message.equals(loggedMsgBB)) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Relevant part of partly hashed message differs");
-        if (logger.level <= Logger.FINE) logger.log("Expected: ["+loggedMsgBB+"]");
-        if (logger.level <= Logger.FINE) logger.log("Actual:   ["+message+"]");
+        logger.warn("Replay: Relevant part of partly hashed message differs");
+        logger.debug("Expected: [{}]", loggedMsgBB);
+        logger.debug("Actual:   [{}]", message);
         foundFault = true;
         return null;
       }
@@ -567,22 +567,22 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       System.arraycopy(msgHashBytes, msgHashBytes.length-transport.getHashSizeBytes(), msgHash, 0, transport.getHashSizeBytes());
       assert(msgLen == (relevantLen + transport.getHashSizeBytes()));
       if (!msgHash.equals(logHash)) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Hashed part of partly hashed message differs");
-        if (logger.level <= Logger.FINE) logger.log("Expected: ["+logHash+"]");
-        if (logger.level <= Logger.FINE) logger.log("Actual:   ["+msgHash+"]");
+        logger.warn("Replay: Hashed part of partly hashed message differs");
+        logger.debug("Expected: [{}]", logHash);
+        logger.debug("Actual:   [{}]", msgHash);
         foundFault = true;
         return null;
       }
     } else {
       if (relevantLen < msgLen) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay is only partly relevant, but log entry is not hashed; marking as invalid");
+        logger.warn("Replay: Message sent during replay is only partly relevant, but log entry is not hashed; marking as invalid");
         foundFault = true;
         return null;
       }
 
       int logMsglen = nextEvent.bytesRemaining();
       if (msgLen != logMsglen) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay has "+msgLen+" bytes, but log entry has "+logMsglen+"; marking as invalid");
+        logger.warn("Replay: Message sent during replay has {} bytes, but log entry has {}; marking as invalid", msgLen, logMsglen);
         foundFault = true;
         return null;
       }
@@ -593,13 +593,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       message.get(sentMsg);
       
       if (loggedMsg.length != sentMsg.length) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay differs from message in the log by length log:"+loggedMsg.length+" sent:"+sentMsg.length);
+        logger.warn("Replay: Message sent during replay differs from message in the log by length log:{} sent:{}", loggedMsg.length, sentMsg.length);
         foundFault = true;
         return null;        
       }
       
       if ((msgLen > 0) && !Arrays.equals(loggedMsg, sentMsg)) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay differs from message in the log");
+        logger.warn("Replay: Message sent during replay differs from message in the log");
         foundFault = true;
         return null;
       }
@@ -609,11 +609,11 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       assert(next.getType() == EVT_SENDSIGN);
     fetchNextEvent();
     if (next == null) {
-      logger.log("next event is null");
+      logger.info("next event is null");
     }
     return ret;
     } catch (IOException ioe) {
-      logger.logException("Error calculating hash", ioe);
+      logger.warn("Error calculating hash", ioe);
       foundFault = true;
       return null;
     }
@@ -730,13 +730,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
    */
   public int openSocket(Handle target) throws IOException {
     if (next == null) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: OpenSocket event after end of segment; marking as invalid");
+      logger.warn("Replay: OpenSocket event after end of segment; marking as invalid");
       foundFault = true;
       return Integer.MIN_VALUE;
     }
 
     if (next.getType() != EVT_SOCKET_OPEN_OUTGOING) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_OPEN_OUTGOING event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay: SOCKET_OPEN_OUTGOING event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
       return Integer.MIN_VALUE;
     }
@@ -746,7 +746,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     Handle logReceiver;
     logReceiver = peerreview.getHandleSerializer().deserialize(nextEvent);
     if (!logReceiver.equals(target)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_OPEN_OUTGOING to "+target+" during replay, but log shows SOCKET_OPEN_OUTGOING to "+logReceiver+"; marking as invalid");
+      logger.warn("Replay: SOCKET_OPEN_OUTGOING to {} during replay, but log shows SOCKET_OPEN_OUTGOING to {}; marking as invalid", target, logReceiver);
       foundFault = true;
       return Integer.MIN_VALUE;
     }
@@ -764,7 +764,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
    */
   public int readSocket(int socketId, ByteBuffer dst) throws IOException {
     if (next == null) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: ReadSocket event after end of segment; marking as invalid");
+      logger.warn("Replay: ReadSocket event after end of segment; marking as invalid");
       foundFault = true;
       return 0;
     }
@@ -775,14 +775,14 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     }
     
     if (next.getType() != EVT_SOCKET_READ) {
-      if (logger.level <= Logger.WARNING) logger.logException("Replay ("+nextEventIndex+"): SOCKET_READ event during replay, but next event in log is #"+next.getType()+"; marking as invalid", new Exception("Stack Trace"));
+      logger.warn("Replay ({}): SOCKET_READ event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType(), new Exception("Stack Trace"));
       foundFault = true;
       return Integer.MIN_VALUE;
     }
 
     int loggedSocket = nextEvent.readInt();
     if (loggedSocket != socketId) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_READ on socket "+socketId+" during replay, but log shows SOCKET_READ to "+loggedSocket+"; marking as invalid");
+      logger.warn("Replay: SOCKET_READ on socket {} during replay, but log shows SOCKET_READ to {}; marking as invalid", socketId, loggedSocket);
       foundFault = true;
       return 0;
     }
@@ -790,7 +790,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     // TODO: Change this when we make multiple reads a single event
     int ret = nextEvent.bytesRemaining();
     if (dst.remaining() < ret) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_READ reading a maximum of "+dst.remaining()+" on socket "+socketId+" during replay, but log shows SOCKET_READ reading "+ret+" bytes; marking as invalid");
+      logger.warn("Replay: SOCKET_READ reading a maximum of {} on socket {} during replay, but log shows SOCKET_READ reading {} bytes; marking as invalid", dst.remaining(), socketId, ret);
       foundFault = true;
       return 0;
     }
@@ -803,13 +803,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   
   public void generatedSocketException(int socketId, IOException ioe) {
     if (next == null) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: WriteSocket event after end of segment; marking as invalid");
+      logger.warn("Replay: WriteSocket event after end of segment; marking as invalid");
       foundFault = true;
       return;
     }
     
     if (next.getType() != EVT_SOCKET_EXCEPTION) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_EXCEPTION event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay: EVT_SOCKET_EXCEPTION event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
       return;
     }
@@ -817,12 +817,12 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     try {
       int loggedSocket = nextEvent.readInt();
       if (loggedSocket != socketId) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_EXCEPTION on socket "+socketId+" during replay, but log shows EVT_SOCKET_EXCEPTION to "+loggedSocket+"; marking as invalid");
+        logger.warn("Replay: EVT_SOCKET_EXCEPTION on socket {} during replay, but log shows EVT_SOCKET_EXCEPTION to {}; marking as invalid", socketId, loggedSocket);
         foundFault = true;
         return;
       }
     } catch (IOException ioe2) {
-      if (logger.level <= Logger.WARNING) logger.logException("Replay: Error reading log", ioe2);      
+      logger.warn("Replay: Error reading log", ioe2);      
     }
     
     // all good
@@ -839,7 +839,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
    */
   public int writeSocket(int socketId, ByteBuffer src) throws IOException {
     if (next == null) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: WriteSocket event after end of segment; marking as invalid");
+      logger.warn("Replay: WriteSocket event after end of segment; marking as invalid");
       foundFault = true;
       return 0;
     }
@@ -850,14 +850,14 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     }
     
     if (next.getType() != EVT_SOCKET_WRITE) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_WRITE event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay: SOCKET_WRITE event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
       return Integer.MIN_VALUE;
     }
 
     int loggedSocket = nextEvent.readInt();
     if (loggedSocket != socketId) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_WRITE on socket "+socketId+" during replay, but log shows SOCKET_WRITE to "+loggedSocket+"; marking as invalid");
+      logger.warn("Replay: SOCKET_WRITE on socket {} during replay, but log shows SOCKET_WRITE to {}; marking as invalid", socketId, loggedSocket);
       foundFault = true;
       return 0;
     }
@@ -865,7 +865,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     // TODO: Change this when we make multiple reads a single event
     int ret = nextEvent.bytesRemaining();
     if (src.remaining() < ret) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_WRITE writing a maximum of "+src.remaining()+" on socket "+socketId+" during replay, but log shows SOCKET_WRITE writing "+ret+" bytes; marking as invalid");
+      logger.warn("Replay: SOCKET_WRITE writing a maximum of {} on socket {} during replay, but log shows SOCKET_WRITE writing {} bytes; marking as invalid", src.remaining(), socketId, ret);
       foundFault = true;
       return 0;
     }
@@ -876,7 +876,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     src.get(sentMsg);
 
     if (!Arrays.equals(loggedMsg, sentMsg)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Message wrote during replay differs from message in the log");
+      logger.warn("Replay: Message wrote during replay differs from message in the log");
       foundFault = true;
       return 0;
     }
@@ -887,13 +887,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   
   public void close(int socketId) {
     if (next == null) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SOCKET_CLOSE event after end of segment; marking as invalid");
+      logger.warn("Replay({}): SOCKET_CLOSE event after end of segment; marking as invalid", nextEventIndex);
       foundFault = true;
       return;
     }
     
     if (next.getType() != EVT_SOCKET_CLOSE) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SOCKET_CLOSE event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay({}): SOCKET_CLOSE event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType());
       foundFault = true;
       return;
     }
@@ -902,13 +902,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     try {
       loggedSocket = nextEvent.readInt();
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Error deserializing event "+next);
+      logger.warn("Replay: Error deserializing event {}", next);
       foundFault = true;
       return;
     }
 
     if (loggedSocket != socketId) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_CLOSE on socket "+socketId+" during replay, but log shows SOCKET_CLOSE to "+loggedSocket+"; marking as invalid");
+      logger.warn("Replay: SOCKET_CLOSE on socket {} during replay, but log shows SOCKET_CLOSE to {}; marking as invalid", socketId, loggedSocket);
       foundFault = true;
       return;
     }
@@ -918,13 +918,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   
   public void shutdownOutput(int socketId) {
     if (next == null) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event after end of segment; marking as invalid");
+      logger.warn("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event after end of segment; marking as invalid");
       foundFault = true;
       return;
     }
     
     if (next.getType() != EVT_SOCKET_SHUTDOWN_OUTPUT) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
       return;
     }
@@ -933,13 +933,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     try {
       loggedSocket = nextEvent.readInt();
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Error deserializing event "+next);
+      logger.warn("Replay: Error deserializing event {}", next);
       foundFault = true;
       return;
     }
 
     if (loggedSocket != socketId) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT on socket "+socketId+" during replay, but log shows EVT_SOCKET_SHUTDOWN_OUTPUT to "+loggedSocket+"; marking as invalid");
+      logger.warn("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT on socket {} during replay, but log shows EVT_SOCKET_SHUTDOWN_OUTPUT to {}; marking as invalid", socketId, loggedSocket);
       foundFault = true;
       return;
     }

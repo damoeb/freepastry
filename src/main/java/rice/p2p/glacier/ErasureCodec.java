@@ -39,8 +39,8 @@ package rice.p2p.glacier;
 import java.io.*;
 import java.util.Arrays;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.*;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.commonapi.Endpoint;
@@ -103,8 +103,7 @@ public class ErasureCodec {
       else
         s+=" ";
     }
-    if (logger.level <= Logger.INFO) logger.log(
-        s);
+    logger.info(s);
   }
   public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
     return encodeObject(obj instanceof RawPastContent ? (RawPastContent)obj : new JavaSerializedPastContent(obj), generateFragment);
@@ -118,8 +117,7 @@ public class ErasureCodec {
    * @return
    */
   public Fragment[] encodeObject(RawPastContent obj, boolean[] generateFragment) {
-    if (logger.level <= Logger.FINER) logger.log( 
-        "Serialize object: " + obj);
+    logger.trace("Serialize object: {}", obj);
 
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -127,8 +125,7 @@ public class ErasureCodec {
       obj.serialize(sob);
       return encode(sob.getBytes(), sob.getWritten(), generateFragment); 
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log( 
-          "Cannot serialize object: "+ioe);
+      logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
       return null;
     }
   }
@@ -354,14 +351,11 @@ public class ErasureCodec {
     try {
       return deserialize(bytes, endpoint, pcd);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException(
-          "", ioe);
+      logger.warn("", ioe);
     } catch (ClassNotFoundException cnfe) {
-      if (logger.level <= Logger.WARNING) logger.logException(
-          "", cnfe);
+      logger.warn("", cnfe);
     } catch (IllegalStateException ise) {
-      if (logger.level <= Logger.WARNING) logger.logException(
-          "", ise);
+      logger.warn("", ise);
     }
 
     return null;

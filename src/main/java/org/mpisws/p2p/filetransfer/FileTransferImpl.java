@@ -50,9 +50,9 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.processing.Processor;
 import rice.environment.processing.WorkRequest;
 import rice.p2p.commonapi.appsocket.AppSocket;
@@ -217,7 +217,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       // drop the lowest priority message if the queue is overflowing        
       while (queue.size() > MAX_QUEUE_SIZE) {
         MessageWrapper w = queue.removeLast();
-        if (logger.level <= Logger.CONFIG) logger.log("Dropping "+w+" because queue is full. MAX_QUEUE_SIZE:"+MAX_QUEUE_SIZE);
+        logger.info("Dropping {} because queue is full. MAX_QUEUE_SIZE:{}", w, MAX_QUEUE_SIZE);
         w.drop();
       }
     }
@@ -243,7 +243,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       if (haveMessageToSend()) {
         // maybe we should remember if we were registered, and don't reregister, but for now it doesn't hurt
         registered = true;  // may fail in this call and set registered back to false, so make sure to do this before calling register          
-        if (logger.level <= Logger.FINEST) logger.log(this+".scheduleToWriteIfNeeded() registering to write");
+        logger.trace("{}.scheduleToWriteIfNeeded() registering to write", this);
         socket.register(false, true, 300000, this);
       }
     }
@@ -270,10 +270,10 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     synchronized(queue) {
       if (messageThatIsBeingWritten == null) {
         messageThatIsBeingWritten = queue.poll();
-        if (logger.level <= Logger.FINEST) logger.log(this+".poll() set messageThatIsBeingWritten = "+messageThatIsBeingWritten);
+        logger.trace("{}.poll() set messageThatIsBeingWritten = {}", this, messageThatIsBeingWritten);
       }
-      if (queue.size() >= (MAX_QUEUE_SIZE-1) && logger.level <= Logger.INFO) {
-        logger.log(this+"polling from full queue ("+queue.size()+") (this is a good thing) "+messageThatIsBeingWritten);
+      if (queue.size() >= (MAX_QUEUE_SIZE-1) && logger.isInfoEnabled()) {
+        logger.info(this+"polling from full queue ("+queue.size()+") (this is a good thing) "+messageThatIsBeingWritten);
       }      
       return messageThatIsBeingWritten;
     }
@@ -291,7 +291,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   protected boolean complete(MessageWrapper wrapper) {
-    if (logger.level <= Logger.FINEST) logger.log(this+".complete("+wrapper+")");
+    logger.trace("{}.complete({})", this, wrapper);
     if (wrapper != messageThatIsBeingWritten) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+messageThatIsBeingWritten);
     
     messageThatIsBeingWritten = null;
@@ -324,7 +324,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   
   protected void notifyListenersSendMsgProgress(BBReceipt receipt,
       int bytesSent, int bytesTotal) {
-    if (logger.level <= Logger.FINE) logger.log("notifyListenersSendMsgProgress("+receipt+","+bytesSent+","+bytesTotal+")");
+    logger.debug("notifyListenersSendMsgProgress({},{},{})", receipt, bytesSent, bytesTotal);
     for (FileTransferListener l : getListeners()) {
       l.msgTransferred(receipt, bytesSent, bytesTotal, false);
     }
@@ -332,7 +332,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
   protected void notifyListenersReceiveMsgProgress(BBReceipt receipt,
       int bytesReceived, int bytesTotal) {
-    if (logger.level <= Logger.FINE) logger.log("notifyListenersReceiveMsgProgress("+receipt+","+bytesReceived+","+bytesTotal+")");
+    logger.debug("notifyListenersReceiveMsgProgress({},{},{})", receipt, bytesReceived, bytesTotal);
     for (FileTransferListener l : getListeners()) {
       l.msgTransferred(receipt, bytesReceived, bytesTotal, true);
     }
@@ -340,7 +340,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
   protected void notifyListenersSendFileProgress(FileReceipt receipt,
       long bytesSent, long bytesTotal) {
-    if (logger.level <= Logger.FINE) logger.log("notifyListenersSendFileProgress("+receipt+","+bytesSent+","+bytesTotal+")");
+    logger.debug("notifyListenersSendFileProgress({},{},{})", receipt, bytesSent, bytesTotal);
     for (FileTransferListener l : getListeners()) {
       l.fileTransferred(receipt, bytesSent, bytesTotal, false);
     }
@@ -348,28 +348,28 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   
   protected void notifyListenersReceiveFileProgress(FileReceipt receipt,
       long bytesReceived, long bytesTotal) {
-    if (logger.level <= Logger.FINE) logger.log("notifyListenersReceiveFileProgress("+receipt+","+bytesReceived+","+bytesTotal+")");
+    logger.debug("notifyListenersReceiveFileProgress({},{},{})", receipt, bytesReceived, bytesTotal);
     for (FileTransferListener l : getListeners()) {
       l.fileTransferred(receipt, bytesReceived, bytesTotal, true);
     }
   }
 
   protected void notifyListenersSenderCancelled(DataReader receipt) {
-    if (logger.level <= Logger.FINE) logger.log("notifyListenersSenderCancelled("+receipt+")");    
+    logger.debug("notifyListenersSenderCancelled({})", receipt);    
     for (FileTransferListener l : getListeners()) {
       l.transferCancelled(receipt, true);
     }
   }
 
   protected void notifyListenersReceiverCancelled(Receipt receipt) {
-    if (logger.level <= Logger.FINE) logger.log("notifyListenersReceiverCancelled("+receipt+")");    
+    logger.debug("notifyListenersReceiverCancelled({})", receipt);    
     for (FileTransferListener l : getListeners()) {
       l.transferCancelled(receipt, false);
     }
   }
   
   protected void notifyListenersTransferFailed(Receipt receipt, boolean incoming) {
-    if (logger.level <= Logger.FINE) logger.log("notifyListenersTransferFailed("+receipt+")");    
+    logger.debug("notifyListenersTransferFailed({})", receipt);    
     for (FileTransferListener l : getListeners()) {
       l.transferFailed(receipt, incoming);
     }
@@ -731,7 +731,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         }
       
         public void receiveException(Exception exception) {
-          if (logger.level <= Logger.WARNING) logger.logException("Error closing file <"+uid+"> "+file+" "+metadata.length, exception);
+          logger.warn("Error closing file <{}> {} {}", uid, file, metadata.length, exception);
         }
       
       };
@@ -907,10 +907,10 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      * @return true if should keep writing
      */
     public boolean receiveSelectResult(AppSocket socket) throws IOException {
-      if (logger.level <= Logger.FINEST) logger.log(this+".receiveSelectResult("+socket+")");
+      logger.trace("{}.receiveSelectResult({})", this, socket);
       
       if (receipt.isCancelled() && !started) {
-        if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") cancelled"); 
+        logger.trace("{}.rsr({}) cancelled", this, socket); 
         messageThatIsBeingWritten = null;
         return true;
       } else {
@@ -923,7 +923,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         }
 
         if (message.get(0).hasRemaining()) {
-          if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") has remaining"); 
+          logger.trace("{}.rsr({}) has remaining", this, socket); 
           return false;
         } else {
           // write the next BB
@@ -959,7 +959,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     if (canWrite) {  
       try {
         registered = false;
-        if (logger.level <= Logger.FINEST) logger.log("receivedSelectResult("+socket+","+canRead+","+canWrite);
+        logger.trace("receivedSelectResult({},{},{}", socket, canRead, canWrite);
         MessageWrapper current = poll();
         while (current != null && current.receiveSelectResult(socket)) {
           current = poll();
@@ -967,7 +967,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         scheduleToWriteIfNeeded();
       } catch (IOException ioe) {
         // note, clearAndEnqueue() gets called later by the writer when the stack unravels again
-        if (logger.level <= Logger.FINEST) logger.logException(this+".rsr("+socket+")", ioe);
+        logger.trace("{}.rsr({})", this, socket, ioe);
         receiveException(socket, ioe);
         return;
       }
@@ -1070,7 +1070,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       writer.notifyReceiverCancelled();
       notifyListenersReceiverCancelled(writer);
     } else {
-      if (logger.level <= Logger.WARNING) logger.log("receiverCanclled("+uid+") no record of the uid.");
+      logger.warn("receiverCanclled({}) no record of the uid.", uid);
     }
   }
 
@@ -1079,7 +1079,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     if (reader != null) {
       reader.cancelled(reader);
     } else {
-      if (logger.level <= Logger.WARNING) logger.log("senderCanclled("+uid+") no record of the uid.");
+      logger.warn("senderCanclled({}) no record of the uid.", uid);
     }
   }
 
@@ -1400,7 +1400,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         }
       
         public void receiveException(Exception exception) {
-          if (logger.level <= Logger.WARNING) logger.logException("Error writing file "+f+" "+metadata.length, exception);
+          logger.warn("Error writing file {} {}", f, metadata.length, exception);
           FileDataReader.this.cancel();
           decrementFileChunksInMemory();
         }      
@@ -1425,7 +1425,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       try {
         file.close();
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("Error closing file "+file, ioe);
+        logger.warn("Error closing file {}", file, ioe);
       }
         
       // notify callback
@@ -1478,13 +1478,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       WorkRequest<RandomAccessFile> wr = new WorkRequest<RandomAccessFile>(new Continuation<RandomAccessFile, Exception>() {
       
         public void receiveResult(RandomAccessFile result) {
-          if (logger.level <= Logger.INFO) logger.log("File Cancelled<"+uid+"> "+f+","+offset+","+(ptr-offset)+","+length);
+          logger.atInfo().log(() -> "File Cancelled<"+uid+"> "+f+","+offset+","+(ptr-offset)+","+length);
           fileAllocater.fileCancelled(ByteBuffer.wrap(metadata), f, offset, ptr-offset, length, exception);
           notifyListenersSenderCancelled(reader);
         }
       
         public void receiveException(Exception exception) {
-          if (logger.level <= Logger.WARNING) logger.logException("Error closing file "+file, exception);
+          logger.warn("Error closing file {}", file, exception);
         }      
       },environment.getSelectorManager()) {
       
@@ -1569,7 +1569,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      * @return true if should keep writing
      */
     public boolean receiveSelectResult(AppSocket socket) throws IOException {
-      if (logger.level <= Logger.FINEST) logger.log(this+".receiveSelectResult("+socket+")");
+      logger.trace("{}.receiveSelectResult({})", this, socket);
       
       long bytesWritten;
       if ((bytesWritten = socket.write(msg)) == -1) {
@@ -1579,7 +1579,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       }
 
       if (msg.hasRemaining()) {
-        if (logger.level <= Logger.FINEST) logger.log(this+".rsr("+socket+") has remaining"); 
+        logger.trace("{}.rsr({}) has remaining", this, socket); 
         return false;
       }
       return FileTransferImpl.this.complete(this);

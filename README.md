@@ -96,7 +96,17 @@ This creates a JAR with all dependencies included.
 FreePastry uses the following libraries (managed by Maven):
 
 - Bouncy Castle (bcprov, bcpkix) - Cryptography and X.509 certificates (PKI tooling, SSL transport)
+- SLF4J API 2 (`slf4j-api`) - Logging facade; see [Logging](#logging)
 - JUnit 6 (Jupiter, plus the Vintage engine for the JUnit 4 tests) - Testing framework
+- slf4j-simple (test scope only) - Logging backend for the tests
+
+## Logging
+
+FreePastry logs through the [SLF4J](https://www.slf4j.org/) 2 API and does not bring a logging backend of its own. Put exactly one SLF4J backend on your application's classpath, for example `org.slf4j:slf4j-simple` for console output or `ch.qos.logback:logback-classic` for files and rotation. Without a backend, SLF4J prints one warning and discards all log output.
+
+Levels, line format and output files are configured in the backend, for example in `simplelogger.properties` (`org.slf4j.simpleLogger.defaultLogLevel=info`, `org.slf4j.simpleLogger.log.rice.pastry.socket=debug`) or in `logback.xml`. Each logger is named after its class, so package prefixes work as usual. A logger created with an instance name gets `.<instance>` appended, and each node of a multi-node JVM appends `.<node id>` (for example `rice.pastry.PastryNode.0x1A2B3C`), so you can also set the level of a single node.
+
+The old `freepastry.params` logging parameters (`loglevel`, `<logger>_loglevel`, `logging_*`, `log_rotate_*`, `environment_logToFile`, `fileLogManager_*`) are gone: set levels and log files in the backend instead. The tests use slf4j-simple with `src/test/resources/simplelogger.properties`, which logs at `warn` and above.
 
 ## Documentation
 

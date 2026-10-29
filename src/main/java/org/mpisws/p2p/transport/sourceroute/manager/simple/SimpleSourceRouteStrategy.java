@@ -51,8 +51,8 @@ import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.util.TimerWeakHashMap;
 
 /**

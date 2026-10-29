@@ -39,7 +39,7 @@ package rice.p2p.glacier.v2;
 import java.io.*;
 import java.util.Arrays;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.commonapi.rawserialization.*;
@@ -120,7 +120,7 @@ public class BloomFilter implements Serializable {
       else
         s+="1";
     s+="\n";
-    if (logger.level <= Logger.INFO) logger.log(s);
+    logger.info(s);
   }
   
   public void add(byte[] data) {

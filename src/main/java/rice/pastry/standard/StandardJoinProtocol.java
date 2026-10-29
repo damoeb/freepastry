@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.standard;
 
 import rice.Continuation;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.pastry.*;
 import rice.pastry.messaging.*;
@@ -123,8 +122,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
   protected ScheduledMessage joinEvent;
 
   public void initiateJoin(Collection<NodeHandle> bootstrap) {
-    if (logger.level <= Logger.CONFIG)
-      logger.log("initiateJoin(" + bootstrap + ")");
+    logger.info("initiateJoin({})", bootstrap);
     if (bootstrap == null || bootstrap.isEmpty()) {
       // no bootstrap node, so ready immediately
       thePastryNode.setReady();
@@ -159,11 +157,10 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
     final NodeHandle nh = ij.getHandle();
 
     if (nh == null) {
-      if (logger.level <= Logger.SEVERE) logger.log(
-          "ERROR: Cannot join ring.  All bootstraps are faulty."+ij); 
+      logger.error("ERROR: Cannot join ring.  All bootstraps are faulty.{}", ij); 
       thePastryNode.joinFailed(new JoinFailedException("Cannot join ring.  All bootstraps are faulty."+ij));
     } else {
-      if (logger.level <= Logger.INFO) logger.log("InitiateJoin attempting to join:"+nh+" liveness:"+nh.getLiveness());
+      logger.info("InitiateJoin attempting to join:{} liveness:{}", nh, nh.getLiveness());
         getJoinRequest(nh, new Continuation<JoinRequest, Exception>() {
         
           public void receiveResult(JoinRequest jr) {
@@ -212,21 +209,21 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
         
         rm.setRouteMessageNotification(new RouteMessageNotification(){          
           public void sendSuccess(RouteMessage message, NodeHandle nextHop) {
-            if (logger.level <= Logger.CONFIG) logger.log("sendSuccess("+message+"):"+nextHop);
+            logger.info("sendSuccess({}):{}", message, nextHop);
           }
         
           public void sendFailed(RouteMessage message, Exception e) {
-            if (logger.level <= Logger.CONFIG) logger.logException("sendFailed("+message+") ",e);
+            logger.info("sendFailed({}) ", message, e);
           }          
         });
         
         rm.setTLOptions(getOptions(jr, rm.getTLOptions()));
   
-        if (logger.level <= Logger.CONFIG) logger.log("Routing "+rm);
+        logger.info("Routing {}", rm);
         thePastryNode.getRouter().route(rm);
       }      
     } catch (IOException ioe) {
-      if (logger.level <= Logger.SEVERE) logger.logException("StandardJoinProtocol.receiveMessage()",ioe); 
+      logger.error("StandardJoinProtocol.receiveMessage()", ioe); 
     }        
   }
   
@@ -244,27 +241,25 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
 
     // this is the terminal node on the request path
     if (thePastryNode.isReady()) {
-      if (logger.level <= Logger.CONFIG) logger.log("acceptJoin "+jr);
+      logger.info("acceptJoin {}", jr);
       jr.acceptJoin(localHandle, leafSet);
       thePastryNode.send(joiner,jr,new PMessageNotification(){          
         public void sent(PMessageReceipt msg) {
-          if (logger.level <= Logger.CONFIG) logger.log("acceptJoin.sent("+msg+"):"+jr);
+          logger.info("acceptJoin.sent({}):{}", msg, jr);
         }          
         public void sendFailed(PMessageReceipt msg, Exception reason2) {
           Throwable reason = reason2;
-          if (logger.level <= Logger.CONFIG) {
-            logger.logException("acceptJoin.sendFailed("+msg+"):"+jr, reason);
+          if (logger.isInfoEnabled()) {
+            logger.info("acceptJoin.sendFailed("+msg+"):"+jr, reason);
             while (reason.getCause() != null) {
               reason = reason.getCause();
-              logger.logException("because", reason);
+              logger.info("because", reason);
             }
           }
         }
       }, getOptions(jr, options));
     } else {
-      if (logger.level <= Logger.INFO) logger.log(
-          "NOTE: Dropping incoming JoinRequest " + jr
-              + " because local node is not ready!");
+      logger.info("NOTE: Dropping incoming JoinRequest {} because local node is not ready!", jr);
     }
   }
   
@@ -276,8 +271,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
     NodeHandle jh = jr.getJoinHandle(); // the node we joined to.
 
     if (jh.getId().equals(localHandle.getId()) && !jh.equals(localHandle)) {
-      if (logger.level <= Logger.WARNING) logger.log(
-          "NodeId collision, unable to join: " + localHandle + ":" + jh);
+      logger.warn("NodeId collision, unable to join: {}:{}", localHandle, jh);
     } else if (jh.getLiveness() < NodeHandle.LIVENESS_DEAD) { // the join handle is alive
       routeTable.put(jh);
       // add the num. closest node to the routing table

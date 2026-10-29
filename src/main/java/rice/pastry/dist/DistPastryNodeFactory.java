@@ -45,7 +45,6 @@ import java.util.*;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.CancellableTask;
 import rice.pastry.*;

@@ -73,7 +73,6 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -191,7 +190,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     try {
       signer.update(bytes);
       byte[] ret = signer.sign();
-      if (logger.level <= Logger.FINEST) logger.log("Signature of "+MathUtils.toBase64(bytes)+" was "+MathUtils.toBase64(ret));
+      logger.atTrace().log(() -> "Signature of "+MathUtils.toBase64(bytes)+" was "+MathUtils.toBase64(ret));
       return ret;
     } catch (SignatureException se) {
       RuntimeException throwMe = new RuntimeException("Couldn't sign "+bytes);
@@ -201,7 +200,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   }
 
   public int verify(I id, byte[] msg, byte[] signature) {
-    if (logger.level <= Logger.FINEST) logger.log("Verify:"+id+" "+msg.length+" "+MathUtils.toBase64(msg)+" == "+signature.length+" "+MathUtils.toBase64(signature));
+    logger.atTrace().log(() -> "Verify:"+id+" "+msg.length+" "+MathUtils.toBase64(msg)+" == "+signature.length+" "+MathUtils.toBase64(signature));
     Signature verifier = getVerifier(id);
     if (verifier == null) return NO_CERTIFICATE;
 

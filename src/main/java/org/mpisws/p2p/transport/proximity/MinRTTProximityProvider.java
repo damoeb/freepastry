@@ -46,8 +46,8 @@ import java.util.Map;
 import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.liveness.Pinger;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.time.TimeSource;
 
 public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Identifier>, PingListener<Identifier> {
@@ -109,7 +109,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
       EntityManager manager = managers.get(i);
       if (manager == null) {
         manager = new EntityManager(i);
-        if (logger.level <= Logger.FINER) logger.log("Creating EM for "+i);
+        logger.trace("Creating EM for {}", i);
         managers.put(i,manager);
       }
       return manager;
@@ -144,7 +144,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     public void ping(Map<String, Object> options) {
       long now = time.currentTimeMillis();
       if ((now - lastPingTime) < pingThrottle) {
-        if  (logger.level <= Logger.FINE) logger.log("Dropping ping because pingThrottle."+(pingThrottle - (now - lastPingTime)));
+        logger.atDebug().log(() -> "Dropping ping because pingThrottle."+(pingThrottle - (now - lastPingTime)));
         return;
       }          
       lastPingTime = now;
@@ -168,9 +168,9 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
      */
     protected void markProximity(int proximity, Map<String, Object> options) {
       if (proximity < 0) throw new IllegalArgumentException("proximity must be >= 0, was:"+proximity);
-      if (logger.level <= Logger.FINER) logger.log(this+".markProximity("+proximity+")");
+      logger.trace("{}.markProximity({})", this, proximity);
       if (this.proximity > proximity) {
-        if (logger.level <= Logger.FINE) logger.log(this+" updating proximity to "+proximity);
+        logger.debug("{} updating proximity to {}", this, proximity);
         this.proximity = proximity;
         notifyProximityListeners(identifier, proximity, options);
       }

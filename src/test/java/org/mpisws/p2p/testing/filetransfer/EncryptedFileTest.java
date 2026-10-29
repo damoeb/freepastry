@@ -62,9 +62,9 @@ import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -82,7 +82,7 @@ public class EncryptedFileTest {
     final Logger logger = env.getLogManager().getLogger(EncryptedFileTest.class, null);
     DefaultErrorHandler<InetSocketAddress> errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
     
-    logger.log("Encrypted Test");
+    logger.info("Encrypted Test");
     
     // this node will receive a file
     InetSocketAddress addr1 = new InetSocketAddress(local, 9001);
@@ -92,7 +92,7 @@ public class EncryptedFileTest {
     ltl1.addLivenessListener(new LivenessListener<InetSocketAddress>() {    
       public void livenessChanged(InetSocketAddress i, int val,
           Map<String, Object> options) {
-        logger.log("Node1: livenessChanged("+i+","+val+","+options+")");
+        logger.info("Node1: livenessChanged({},{},{})", i, val, options);
       }    
     });
     
@@ -107,7 +107,7 @@ public class EncryptedFileTest {
     
       public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
         // we got a socket, convert it to an AppSocket, then a FileTransfer
-        logger.log("incomingSocket("+s+")");    
+        logger.info("incomingSocket({})", s);    
         final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
         FileTransfer ft = new FileTransferImpl(sock,new FileTransferCallback() {
         
@@ -118,14 +118,14 @@ public class EncryptedFileTest {
           public void fileReceived(File f, ByteBuffer metadata) {
             try {
               String name = new SimpleInputBuffer(metadata).readUTF();            
-              logger.log("file received "+f+" named:"+name+" size:"+f.length());
+              logger.info("file received {} named:{} size:{}", f, name, f.length());
             } catch (IOException ioe) {
-              logger.logException("Error interpreting filename ", ioe);
+              logger.warn("Error interpreting filename ", ioe);
             }
           }
 
           public void receiveException(Exception ioe) {
-            logger.logException("Receiver FTC.receiveException()", ioe);
+            logger.warn("Receiver FTC.receiveException()", ioe);
           }
         
         },env);
@@ -155,7 +155,7 @@ public class EncryptedFileTest {
     ltl2.addLivenessListener(new LivenessListener<InetSocketAddress>() {    
       public void livenessChanged(InetSocketAddress i, int val,
           Map<String, Object> options) {
-        logger.log("Node2: livenessChanged("+i+","+val+","+options+")");
+        logger.info("Node2: livenessChanged({},{},{})", i, val, options);
       }    
     });    
     ltl2.checkLiveness(addr1, null);
@@ -166,7 +166,7 @@ public class EncryptedFileTest {
     
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> s) {
-        logger.log("opened Socket "+s);
+        logger.info("opened Socket {}", s);
         
         // we got the socket we requested, convert it to an AppSocket, then a FileTransfer
         final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
@@ -181,7 +181,7 @@ public class EncryptedFileTest {
           }
         
           public void receiveException(Exception ioe) {
-            logger.logException("Sender FTC.receiveException()", ioe);
+            logger.warn("Sender FTC.receiveException()", ioe);
           }
         }, env);       
         ft.addListener(new SimpleFileTransferListener("Sender") {
@@ -211,14 +211,14 @@ public class EncryptedFileTest {
           
           });
         } catch (IOException ioe) {
-          logger.logException("Error sending file.", ioe);
+          logger.warn("Error sending file.", ioe);
         }
         
       }
     
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
-        logger.logException("receiveException("+s+")", ex);
+        logger.warn("receiveException({})", s, ex);
       }    
     }, null);
     

@@ -41,7 +41,6 @@ import java.net.*;
 import java.util.*;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.*;
 import rice.pastry.routing.*;
 import rice.pastry.leafset.*;

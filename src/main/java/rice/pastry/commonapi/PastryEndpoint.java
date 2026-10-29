@@ -45,7 +45,6 @@ import org.mpisws.p2p.transport.util.OptionsFactory;
 
 import rice.*;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.pastry.NodeSet;
@@ -76,7 +75,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       try {
         return new PastryEndpointMessage(getAddress(),buf,appDeserializer,type, priority,(rice.pastry.NodeHandle)sender);
       } catch (IllegalArgumentException iae) {
-        logger.log("Unable to deserialize message of type "+type+" "+PastryEndpoint.this+" "+appDeserializer);
+        logger.warn("Unable to deserialize message of type {} {} {}", type, PastryEndpoint.this, appDeserializer);
         throw iae;
       }
     }    
@@ -152,8 +151,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
   
   public MessageReceipt route(Id key, Message msg, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    if (logger.level <= Logger.FINER) logger.log(
-      "[" + thePastryNode + "] route " + msg + " to " + key);
+    logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
 
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
     return routeHelper(key, pm, hint, deliverAckToMe, options);
@@ -171,8 +169,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     return route(key, msg, hint, deliverAckToMe, null);  
   }
   public MessageReceipt route(Id key, RawMessage msg, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] route " + msg + " to " + key);
+    logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
 
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
     return routeHelper(key, pm, hint, deliverAckToMe, options);
@@ -193,7 +190,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    */
   private MessageReceipt routeHelper(Id key, final PastryEndpointMessage pm, final NodeHandle hint, final DeliveryNotification deliverAckToMe, Map<String, Object> options) { 
     if (options == null) options = this.options;
-    if (logger.level <= Logger.FINE) logger.log("routeHelper("+key+","+pm+","+hint+","+deliverAckToMe+").init()");
+    logger.debug("routeHelper({},{},{},{}).init()", key, pm, hint, deliverAckToMe);
     if ((key == null) && (hint == null)) {
       throw new IllegalArgumentException("key and hint are null!");
     }
@@ -223,7 +220,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     final MessageReceipt ret = new MessageReceipt(){
       
       public boolean cancel() {
-        if (logger.level <= Logger.FINE) logger.log("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").cancel()");
+        logger.debug("routeHelper({},{},{},{}).cancel()", final_key, pm, hint, deliverAckToMe);
         return rm.cancel();
       }
     
@@ -241,14 +238,14 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     };
     
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
-    if ((deliverAckToMe != null) || (logger.level <= Logger.FINE)) {
+    if ((deliverAckToMe != null) || (logger.isDebugEnabled())) {
       rm.setRouteMessageNotification(new RouteMessageNotification() {
         public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
-          if (logger.level <= Logger.FINE) logger.log("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendSuccess():"+nextHop);
+          logger.atDebug().log(() -> "routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendSuccess():"+nextHop);
           if (deliverAckToMe != null) deliverAckToMe.sent(ret);
         }    
         public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
-          if (logger.level <= Logger.FINE) logger.log("routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendFailed("+e+")");
+          logger.atDebug().log(() -> "routeHelper("+final_key+","+pm+","+hint+","+deliverAckToMe+").sendFailed("+e+")");
           if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
         }
       });
@@ -380,8 +377,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       throw new IllegalArgumentException("maximum replicaSet size for this configuration exceeded; asked for "+maxRank+" but max is "+(leafset.maxSize()/2+1));
     }
     if (maxRank > leafset.size()) {
-      if (logger.level <= Logger.FINER) logger.log(
-          "trying to get a replica set of size "+maxRank+" but only "+leafset.size()+" nodes in leafset");
+      logger.trace("trying to get a replica set of size {} but only {} nodes in leafset", maxRank, leafset.size());
     }
     
     return leafset.replicaSet((rice.pastry.Id) id, maxRank);
@@ -476,15 +472,13 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   // Upcall to Application support
 
   public final void messageForAppl(rice.pastry.messaging.Message msg) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] deliver " + msg + " from " + msg.getSenderId());
+    logger.trace("[{}] deliver {} from {}", thePastryNode, msg, msg.getSenderId());
     
     if (msg instanceof PastryEndpointMessage) {
       // null for now, when RouteMessage stuff is completed, then it will be different!
       application.deliver(null, ((PastryEndpointMessage) msg).getMessage());
     } else {
-      if (logger.level <= Logger.WARNING) logger.log(
-          "Received unknown message " + msg + " - dropping on floor");
+      logger.warn("Received unknown message {} - dropping on floor", msg);
     }
   }
 
@@ -503,8 +497,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * @param msg the message that is arriving.
    */
   public void receiveMessage(rice.pastry.messaging.Message msg) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] recv " + msg);
+    logger.trace("[{}] recv {}", thePastryNode, msg);
       
     if (msg instanceof rice.pastry.routing.RouteMessage) {
       try {
@@ -518,14 +511,13 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
           (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
         // continue to receiveMessage()
       } else {
-        if (logger.level <= Logger.INFO) logger.log("Dropping "+msg+" because node is not ready.");
+        logger.info("Dropping {} because node is not ready.", msg);
         
         return;
       }
       
       // call application
-      if (logger.level <= Logger.FINER) logger.log(
-          "[" + thePastryNode + "] forward " + msg);
+      logger.trace("[{}] forward {}", thePastryNode, msg);
       if (application.forward(rm)) {
         if (rm.getNextHop() != null) {
           rice.pastry.NodeHandle nextHop = rm.getNextHop();
@@ -533,8 +525,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
           // if the message is for the local node, deliver it here
           if (getNodeId().equals(nextHop.getNodeId())) {
             PastryEndpointMessage pMsg = (PastryEndpointMessage) rm.unwrap(deserializer);
-            if (logger.level <= Logger.FINER) logger.log(
-                "[" + thePastryNode + "] deliver " + pMsg + " from " + pMsg.getSenderId());
+            logger.trace("[{}] deliver {} from {}", thePastryNode, pMsg, pMsg.getSenderId());
             application.deliver(rm.getTarget(), pMsg.getMessage());
             rm.sendSuccess(thePastryNode.getLocalHandle());
           } else {
@@ -543,7 +534,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
             // this message was directed just to me, but now we've decided to forward it, so, 
             // make it generally routable now
             if (rm.getDestinationHandle() == thePastryNode.getLocalHandle()) {
-              if (logger.level <= Logger.WARNING) logger.log("Warning, removing destNodeHandle: "+rm.getDestinationHandle()+" from "+rm);
+              logger.warn("Warning, removing destNodeHandle: {} from {}", rm.getDestinationHandle(), rm);
               rm.setDestinationHandle(null);
             }
             thePastryNode.getRouter().route(rm);
@@ -554,7 +545,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
         rm.sendSuccess(thePastryNode.getLocalHandle());
       }
       } catch (IOException ioe) {
-        if (logger.level <= Logger.SEVERE) logger.logException(this.toString(),ioe); 
+        logger.atError().setCause(ioe).log(() -> this.toString()); 
       }
     } else {
       

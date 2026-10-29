@@ -35,11 +35,12 @@ advised of the possibility of such damage.
 
 *******************************************************************************/ 
 /**
- * Logging. A {@link rice.environment.logging.LogManager} hands out
- * {@link rice.environment.logging.Logger}s per class and instance name; the level of each logger comes
- * from the {@code loglevel} parameter, or from {@code <logger name>_loglevel} for one logger. Code
- * guards every log call with {@code if (logger.level <= Logger.FINE)} to avoid building messages that
- * are not logged. A {@link rice.environment.logging.CloneableLogManager} can be cloned with a prefix,
- * which node factories use to tag the output of each node in a multi-node JVM.
+ * Logging. FreePastry logs through the SLF4J 2 API ({@link org.slf4j.Logger}). A
+ * {@link rice.environment.logging.LogManager}, available from {@code environment.getLogManager()}, hands out one
+ * logger per class and instance name. The default {@link rice.environment.logging.Slf4jLogManager} names it
+ * {@code <class>[.<instance>][.<prefix>]} and creates it with {@link org.slf4j.LoggerFactory}; node factories call
+ * {@link rice.environment.logging.Slf4jLogManager#clone(String)} with the node id, so the loggers of different nodes
+ * in one JVM can be told apart. Levels, format and output are configured in the SLF4J backend that the application
+ * puts on the classpath, not in FreePastry's parameters.
  */
 package rice.environment.logging;

@@ -45,7 +45,6 @@ import org.mpisws.p2p.transport.rendezvous.ContactDirectStrategy;
 
 
 import rice.Continuation;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
@@ -88,7 +87,7 @@ public class RendezvousPNSApplication extends PNSApplication {
   protected boolean ignore(NodeHandle handle, Continuation<?, Exception> c) {
 
     if (useHandle(handle)) return false;
-    if (logger.level <= Logger.FINE) logger.log("PNS not using firewalled node "+handle);
+    logger.debug("PNS not using firewalled node {}", handle);
     c.receiveException(new NodeIsFirewalledException(handle));
     return true;
   }
@@ -132,12 +131,12 @@ public class RendezvousPNSApplication extends PNSApplication {
   public Cancellable getNearHandles(Collection<NodeHandle> bootHandles,
       Continuation<Collection<NodeHandle>, Exception> deliverResultToMe) {
     ArrayList<NodeHandle> newBootHandles = new ArrayList<NodeHandle>();
-    if (logger.level <= Logger.INFO) logger.log("Booting off of "+bootHandles.size()+" nodes. "+bootHandles);
+    logger.info("Booting off of {} nodes. {}", bootHandles.size(), bootHandles);
     for (NodeHandle handle : bootHandles) {
       if (useHandle(handle)) {
         newBootHandles.add(handle);
       } else {
-        if (logger.level <= Logger.WARNING) logger.log("Can't use "+handle+" it is firewalled.");
+        logger.warn("Can't use {} it is firewalled.", handle);
       }
     }
     
@@ -155,7 +154,7 @@ public class RendezvousPNSApplication extends PNSApplication {
       public void receiveResult(LeafSet result) {
         for (NodeHandle handle : result) {
           if (!useHandle(handle)) {
-            if (logger.level <= Logger.FINE) logger.log("getLeafSet("+input+") Dropping "+handle);
+            logger.debug("getLeafSet({}) Dropping {}", input, handle);
             result.remove(handle);
           }
         }
@@ -180,7 +179,7 @@ public class RendezvousPNSApplication extends PNSApplication {
           if (rs != null) {
             for (NodeHandle handle : rs) {
               if (handle != null && !useHandle(handle)) {
-                if (logger.level <= Logger.FINE) logger.log("getRouteRow("+input+","+row+") Dropping "+handle+" because it is FireWalled");
+                logger.debug("getRouteRow({},{}) Dropping {} because it is FireWalled", input, row, handle);
                 rs.remove(handle);
               }
             }

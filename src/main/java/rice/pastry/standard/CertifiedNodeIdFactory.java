@@ -47,8 +47,8 @@ import java.util.zip.*;
 import javax.crypto.*;
 import javax.crypto.spec.*;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.pastry.*;
 import rice.p2p.util.*;
@@ -104,15 +104,14 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
         xois = new XMLObjectInputStream(new FileInputStream(f));
         return (Id) xois.readObject();
       } else {
-        if (logger.level <= Logger.WARNING) logger.log(
-          "Unable to find NodeID certificate - exiting.");
+        logger.warn("Unable to find NodeID certificate - exiting.");
         throw new RuntimeException("Unable to find NodeID certificate - make sure that the NodeID certificate file '" + NODE_ID_FILENAME + "' exists in your ePOST directory.");
       }
     } catch (IOException e) {
-      if (logger.level <= Logger.WARNING) logger.logException("",e);
+      logger.warn("", e);
       throw new RuntimeException(e);
     } catch (ClassNotFoundException e) {
-      if (logger.level <= Logger.WARNING) logger.logException("",e);
+      logger.warn("", e);
       throw new RuntimeException(e);
     } finally {
       try {

@@ -40,10 +40,10 @@ package rice.p2p.past.gc;
 import java.io.*;
 import java.util.*;
 
+import org.slf4j.Logger;
 import rice.*;
 import rice.Continuation.*;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.past.*;
@@ -90,7 +90,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
             return GCRefreshMessage.build(buf, endpoint);
         }
       } catch (IOException e) {
-        if (logger.level <= Logger.SEVERE) logger.log("Exception in deserializer in "+GCPastImpl.this.endpoint.toString()+":"+instance+" "+e);
+        logger.atError().log(() -> "Exception in deserializer in "+GCPastImpl.this.endpoint.toString()+":"+instance+" "+e);
         throw e;
       }
       
@@ -178,7 +178,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * @param command Command to be performed when the result is received
    */
   public void insert(final PastContent obj, final long expiration, Continuation<? super Boolean[], Exception> command) {
-    if (logger.level <= Logger.FINE) logger.log( "Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
+    logger.atDebug().log(() -> "Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
     
     doInsert(obj.getId(), new MessageBuilder() {
       public PastMessage buildMessage() {
@@ -234,7 +234,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * @param command Command to be performed when the result is received
    */
   public void refresh(final Id[] array, long[] expirations, Continuation<? super Object[], Exception> command) {
-    if (logger.level <= Logger.FINE) logger.log( "Refreshing " + array.length + " data elements");
+    logger.debug("Refreshing {} data elements", array.length);
 
     GCIdSet set = new GCIdSet(realFactory);
     for (int i=0; i<array.length; i++)
@@ -259,7 +259,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
    */
   protected void refresh(final GCIdSet ids, Continuation<? super Object, Exception> command) {
     final Logger logger = environment.getLogManager().getLogger(GCPastImpl.class, instance);
-    if (logger.level <= Logger.FINE) logger.log( "REFRESH: CALLED WITH "+ ids.numElements() + " ELEMENTS");
+    logger.atDebug().log(() -> "REFRESH: CALLED WITH "+ ids.numElements() + " ELEMENTS");
 
     if (ids.numElements() == 0) {
       command.receiveResult(new Object[0]);
@@ -268,7 +268,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
     
     final Id[] array = ids.asArray();
     GCId start = (GCId) array[0];
-    if (logger.level <= Logger.FINE) logger.log( "REFRESH: GETTINGS ALL HANDLES OF " + start);
+    logger.debug("REFRESH: GETTINGS ALL HANDLES OF {}", start);
 
     
     sendRequest(start.getId(), new GCLookupHandlesMessage(getUID(), start.getId(), getLocalNodeHandle(), start.getId()), 
@@ -277,11 +277,11 @@ public class GCPastImpl extends PastImpl implements GCPast {
         final NodeHandleSet set = (NodeHandleSet) o;
         final ReplicaMap map = new ReplicaMap();
 
-        if (logger.level <= Logger.FINE) logger.log( "REFRESH: GOT " + set + " SET OF HANDLES!");
+        logger.debug("REFRESH: GOT {} SET OF HANDLES!", set);
         
         endpoint.process(new Executable<Object, Exception>() {
           public Object execute() {
-            if (logger.level <= Logger.FINE) logger.log( "REFRESH: ON PROCESSING THREAD!");
+            logger.debug("REFRESH: ON PROCESSING THREAD!");
 
             for (int i=0; i<array.length; i++) {
               GCId id = (GCId) array[i];
@@ -298,13 +298,13 @@ public class GCPastImpl extends PastImpl implements GCPast {
               }
             }
             
-            if (logger.level <= Logger.FINE) logger.log( "REFRESH: DONE WITH PROCESSING THREAD - MOVING TO NORMAL THREAD!");
+            logger.debug("REFRESH: DONE WITH PROCESSING THREAD - MOVING TO NORMAL THREAD!");
             
             return null;
           }
         }, new StandardContinuation<Object, Object, Exception>(parent) {
           public void receiveResult(Object o) {
-            if (logger.level <= Logger.FINE) logger.log( "REFRESH: BACK ON NORMAL THREAD!");
+            logger.debug("REFRESH: BACK ON NORMAL THREAD!");
 
             final Iterator<NodeHandle> iterator = map.getReplicas();
             
@@ -313,20 +313,20 @@ public class GCPastImpl extends PastImpl implements GCPast {
                 if (iterator.hasNext()) {
                   NodeHandle next = iterator.next();
                   GCIdSet ids = map.getIds(next);
-                  if (logger.level <= Logger.FINE) logger.log( "REFRESH: SENDING REQUEST TO " + next + " FOR IDSET " + ids);
+                  logger.debug("REFRESH: SENDING REQUEST TO {} FOR IDSET {}", next, ids);
                   
                   
                   sendRequest(next, new GCRefreshMessage(getUID(), ids, getLocalNodeHandle(), next.getId()), 
                               new NamedContinuation<Object, Exception>("GCRefresh to " + next, this));
                 } else {
-                  if (logger.level <= Logger.FINE) logger.log( "REFRESH: DONE SENDING REQUESTS, RECURSING");
+                  logger.debug("REFRESH: DONE SENDING REQUESTS, RECURSING");
                   
                   refresh(ids, parent);
                 }
               }
               
               public void receiveException(Exception e) {
-                if (logger.level <= Logger.FINE) logger.log( "GOT EXCEPTION " + e + " REFRESHING ITEMS - CONTINUING");
+                logger.atDebug().log(() -> "GOT EXCEPTION " + e + " REFRESHING ITEMS - CONTINUING");
                 receiveResult(null);
               }
             };
@@ -382,7 +382,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
         if (policy.allowInsert(imsg.getContent())) {
           Id theId = imsg.getContent().getId();
           if (theId == null) {
-            if (logger.level <= Logger.SEVERE) logger.log("Error: null Id from "+imsg.getContent()+" from "+imsg+" in "+this);
+            logger.error("Error: null Id from {} from {} in {}", imsg.getContent(), imsg, this);
           }
           storage.getObject(theId, new StandardContinuation<Serializable, Object, Exception>(getResponseContinuation(msg)) {
             public void receiveResult(Serializable o) {
@@ -437,8 +437,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
                   trash.getObject(id.getId(), new StandardContinuation<Serializable, Object, Exception>(this) {
                     public void receiveResult(Serializable o) {
                       if ((o != null) && (o instanceof GCPastContent)) {
-                        if (logger.level <= Logger.FINE) logger.log( 
-                            "GCREFRESH: Restoring object " + id + " from trash!");
+                        logger.debug("GCREFRESH: Restoring object {} from trash!", id);
                         GCPastContent content = (GCPastContent) o;
                         
                         storage.store(id.getId(), content.getMetadata(id.getExpiration()), content, new StandardContinuation<Boolean, Object, Exception>(parent) {
@@ -468,7 +467,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
         set.removeHandle(getLocalNodeHandle().getId());
         set.putHandle(getLocalNodeHandle());
         
-        if (logger.level <= Logger.FINER) logger.log( "Returning neighbor set " + set + " for lookup handles of id " + lmsg.getId() + " max " + lmsg.getMax() + " at " + endpoint.getId());
+        logger.trace("Returning neighbor set {} for lookup handles of id {} max {} at {}", set, lmsg.getId(), lmsg.getMax(), endpoint.getId());
         getResponseContinuation(msg).receiveResult(set);
       } else if (msg instanceof GCCollectMessage) {
         // get all ids which expiration before now
@@ -487,7 +486,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
             GCPastContent content = (GCPastContent) o;
             
             if (content != null) {
-              if (logger.level <= Logger.FINE) logger.log( "Retrieved data for fetch handles of id " + fmsg.getId());
+              logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
               GCPastMetadata metadata = (GCPastMetadata) storage.getMetadata(fmsg.getId());
               
               if (metadata != null) 
@@ -559,7 +558,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * @param id The id to fetch
    */
   public void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
-    if (logger.level <= Logger.FINER) logger.log( "Sending out replication fetch request for the id " + id);
+    logger.trace("Sending out replication fetch request for the id {}", id);
     final GCId gcid = (GCId) id;
     
     if (gcid.getExpiration() < environment.getTimeSource().currentTimeMillis()) {
@@ -583,11 +582,11 @@ public class GCPastImpl extends PastImpl implements GCPast {
       policy.fetch(gcid.getId(), hint, backup, this, new StandardContinuation<Serializable, Boolean, Exception>(command) {
         public void receiveResult(Serializable o) {
           if (o == null) {
-            if (logger.level <= Logger.WARNING) logger.log( "Could not fetch id " + id + " - policy returned null in namespace " + instance);
+            logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, instance);
             parent.receiveResult(Boolean.valueOf(false));
           } else {
             GCPastContent content = (GCPastContent) o;
-            if (logger.level <= Logger.FINEST) logger.log( "inserting replica of id " + id);
+            logger.trace("inserting replica of id {}", id);
             
             storage.getStorage().store(gcid.getId(), content.getMetadata(gcid.getExpiration()), content, parent);
           }

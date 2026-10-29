@@ -38,8 +38,8 @@ package rice.tutorial.lookup;
 
 import java.util.HashMap;
 
+import org.slf4j.Logger;
 import rice.Continuation;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.*;
 
 /**
@@ -120,7 +120,7 @@ public class LookupService implements Application {
     if (message instanceof NodeLookupQuery) {
       NodeLookupQuery query = (NodeLookupQuery) message;
 
-      if (logger.level <= Logger.FINER) logger.log("NodeLookup query received for " + id + " with sequence number " + query.seqno);
+      logger.trace("NodeLookup query received for {} with sequence number {}", id, query.seqno);
 
       // this is the only interesting line of code in this method, if you can
       // call it interesting
@@ -132,12 +132,12 @@ public class LookupService implements Application {
 
       if (pending.containsKey(response.seqno)) {
 
-        if (logger.level <= Logger.FINER) logger.log("NodeLookup response received with sequence number " + response.seqno);
+        logger.trace("NodeLookup response received with sequence number {}", response.seqno);
 
         pending.remove(response.seqno).receiveResult(response.nodes);
 
       } else {
-        if (logger.level <= Logger.INFO) logger.log("NodeLookup received response for non-existent or expired lookup " + response.seqno);
+        logger.info("NodeLookup received response for non-existent or expired lookup {}", response.seqno);
       }
 
     } else if (message instanceof NodeLookupTimeout) {
@@ -146,14 +146,14 @@ public class LookupService implements Application {
       // if it's not in pending, then a message has already been delivered
       if (pending.containsKey(response.seqno)) {
 
-        if (logger.level <= Logger.FINE) logger.log("NodeLookup timed out with sequence number " + response.seqno);
+        logger.debug("NodeLookup timed out with sequence number {}", response.seqno);
 
         pending.remove(response.seqno).receiveException(new NodeLookupTimeoutException());
 
       }
 
     } else {
-      if (logger.level <= Logger.WARNING) logger.log("NodeLookup received unexpected message " + message);
+      logger.warn("NodeLookup received unexpected message {}", message);
     }
   }
 
@@ -239,7 +239,7 @@ public class LookupService implements Application {
   protected void sendMessage(int seq, Id id, int num, Continuation<NodeHandleSet, Exception> cont, long timeout) {
     pending.put(seq, cont);
 
-    if (logger.level <= Logger.FINER) logger.log("NodeLookup being sent to id  " + id + " with sequence number " + seq);
+    logger.trace("NodeLookup being sent to id  {} with sequence number {}", id, seq);
 
     endpoint.route(id, new NodeLookupQuery(endpoint.getLocalNodeHandle(), num, seq), null);
     endpoint.scheduleMessage(new NodeLookupTimeout(seq), timeout);

@@ -61,7 +61,7 @@ import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 
 import rice.environment.Environment;
-import rice.environment.logging.CloneableLogManager;
+import rice.environment.logging.Slf4jLogManager;
 
 public class PriorityTest extends TLTest<MultiInetSocketAddress> {
   @BeforeAll
@@ -81,7 +81,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
         env.getProcessor(), 
         env.getRandomSource(), 
         env.getTimeSource(), 
-        ((CloneableLogManager) env.getLogManager()).clone(name),
+        ((Slf4jLogManager) env.getLogManager()).clone(name),
         env.getParameters(), 
         env.getExceptionStrategy());    
     env.addDestructable(env_a);    

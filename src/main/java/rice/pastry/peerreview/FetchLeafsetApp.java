@@ -93,7 +93,7 @@ public class FetchLeafsetApp extends PastryAppl {
     switch(m.getType()) {
     case FetchLeafsetRequest.TYPE:
       FetchLeafsetRequest req = (FetchLeafsetRequest)m;
-      logger.log("getNeighbors("+req.subject+") sending response");
+      logger.info("getNeighbors({}) sending response", req.subject);
 
       thePastryNode.send(req.getSender(),new FetchLeafsetResponse(req.subject,thePastryNode.getLeafSet()),null,null);
       return;
@@ -104,7 +104,7 @@ public class FetchLeafsetApp extends PastryAppl {
   }
 
   protected void handleResponse(FetchLeafsetResponse response) {
-    logger.log("handleResponse("+response.subject+")");
+    logger.info("handleResponse({})", response.subject);
     Tuple<TimerTask, Collection<Continuation<Collection<NodeHandle>, Exception>>> foo = pendingLookups.remove(response.subject);
     if (foo == null) return;
     foo.a().cancel();
@@ -125,7 +125,7 @@ public class FetchLeafsetApp extends PastryAppl {
   public void getNeighbors(final Id subject,
       Continuation<Collection<NodeHandle>, Exception> continuation) {
     
-    logger.log("getNeighbors("+subject+")");
+    logger.info("getNeighbors({})", subject);
     
     Tuple<TimerTask, Collection<Continuation<Collection<NodeHandle>, Exception>>> foo = pendingLookups.get(subject);
 
@@ -136,7 +136,7 @@ public class FetchLeafsetApp extends PastryAppl {
         new TimerTask() {      
           @Override
           public void run() {
-            logger.log("getNeighbors("+subject+") sending fetch");
+            logger.info("getNeighbors({}) sending fetch", subject);
             thePastryNode.getRouter().route(new RouteMessage(subject,new FetchLeafsetRequest(thePastryNode.getLocalHandle(),subject),routeMsgVersion));
           }      
         },

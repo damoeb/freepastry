@@ -39,6 +39,7 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing.simple;
 
+import org.slf4j.Logger;
 import rice.*;
 import rice.environment.logging.*;
 import rice.environment.time.TimeSource;
@@ -101,14 +102,12 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
   public void run() {
     if (cancelled) return;
     running = true;
-    if (logger.level <= Logger.FINER)
-      logger.log("COUNT: Starting execution of " + this);
+    logger.trace("COUNT: Starting execution of {}", this);
     try {
       long start = timeSource.currentTimeMillis();
       final R result = r.execute();
-      if (logger.level <= Logger.FINEST)
-        logger.log("QT: " + (timeSource.currentTimeMillis() - start) + " "
-            + r.toString());
+      logger.atTrace().log(() -> "QT: " + (timeSource.currentTimeMillis() - start) + " "
+          + r.toString());
 
       selectorManager.invoke(new Runnable() {
         public void run() {
@@ -130,8 +129,7 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
         }
       });
     }
-    if (logger.level <= Logger.FINER)
-      logger.log("COUNT: Done execution of " + this);
+    logger.trace("COUNT: Done execution of {}", this);
   }
 
   public boolean cancel() {

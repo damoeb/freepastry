@@ -52,8 +52,8 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 public class DirectAppSocket<Identifier, MessageType> {
   public static final byte[] EOF = new byte[0];
@@ -180,7 +180,7 @@ public class DirectAppSocket<Identifier, MessageType> {
       } // synchronized(this)
 
       bytesInFlight-=lengthRead;
-      if (logger.level <= Logger.FINER) logger.log(this+".write("+dsts+") len:"+lengthRead+" inFlight:"+bytesInFlight);
+      logger.trace("{}.write({}) len:{} inFlight:{}", this, dsts, lengthRead, bytesInFlight);
 
       simulator.enqueueDelivery(new Delivery() {              
         public void deliver() {
@@ -221,7 +221,7 @@ public class DirectAppSocket<Identifier, MessageType> {
         remaining-=lengthToReadFromBuffer;
       }
       
-      if (logger.level <= Logger.FINER) logger.log(this+".write("+srcs+") len:"+lengthToWrite+" inFlight:"+counterpart.bytesInFlight);
+      logger.trace("{}.write({}) len:{} inFlight:{}", this, srcs, lengthToWrite, counterpart.bytesInFlight);
       simulator.enqueueDelivery(new Delivery() {      
         int mySeq = seq++;
         public void deliver() {
@@ -243,11 +243,11 @@ public class DirectAppSocket<Identifier, MessageType> {
      */
     protected void addToReadQueue(byte[] msg) {
       synchronized(this) {
-        if (logger.level <= Logger.FINE) {
+        if (logger.isDebugEnabled()) {
           if (msg == EOF) {
-            logger.log(this+": addToReadQueue(EOF)");
+            logger.debug(this+": addToReadQueue(EOF)");
           } else {
-            logger.log(this+": addToReadQueue("+msg.length+")");            
+            logger.debug(this+": addToReadQueue("+msg.length+")");            
           }
         }
         byteDeliveries.addLast(msg);
@@ -264,10 +264,10 @@ public class DirectAppSocket<Identifier, MessageType> {
         P2PSocketReceiver<Identifier> temp = writer;
         writer = null;
         try {
-          if (logger.level <= Logger.FINEST) logger.log(this+".notifyCanWrite()");
+          logger.trace("{}.notifyCanWrite()", this);
           temp.receiveSelectResult(this, false, true);
         } catch (IOException ioe) {
-          logger.logException("Error in "+temp, ioe);
+          logger.warn("Error in {}", temp, ioe);
         }
       }
     }
@@ -281,10 +281,10 @@ public class DirectAppSocket<Identifier, MessageType> {
         P2PSocketReceiver<Identifier> temp = reader;
         reader = null;
         try {
-          if (logger.level <= Logger.FINEST) logger.log(this+".notifyCanRead()");
+          logger.trace("{}.notifyCanRead()", this);
           temp.receiveSelectResult(this, true, false);
         } catch (IOException ioe) {
-          logger.logException("Error in "+temp, ioe);
+          logger.warn("Error in {}", temp, ioe);
         }
       }
     }    
@@ -333,7 +333,7 @@ public class DirectAppSocket<Identifier, MessageType> {
     }
   
     public void shutdownOutput() {
-      if (logger.level <= Logger.FINER) logger.log(this+".shutdownOutput()");
+      logger.trace("{}.shutdownOutput()", this);
       outputClosed = true;
       if (!simulator.isAlive(counterpart.localNodeHandle)) return; // do nothing
       simulator.enqueueDelivery(new Delivery() {      
@@ -406,7 +406,7 @@ public class DirectAppSocket<Identifier, MessageType> {
       if (simulator.isAlive(connector)) {
         connectorReceiver.receiveResult(connectorHandle, connectorEndpoint);
       } else {
-        System.out.println("NOT IMPLEMENTED: Connector died during application socket initiation.");
+        connectorLogger.warn("NOT IMPLEMENTED: Connector died during application socket initiation.");
       }
     }
     // out of band, needs to get in front of any other message

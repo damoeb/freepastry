@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.*;
 
 import java.net.*;
@@ -79,8 +79,7 @@ public class IPNodeIdFactory implements NodeIdFactory {
         throw new Exception(
             "got loopback address: nodeIds will not be unique across computers!");
     } catch (Exception e) {
-      if (logger.level <= Logger.SEVERE) logger.log(
-          "ALERT: IPNodeIdFactory cannot determine local IP address: "+ e);
+      logger.atError().log(() -> "ALERT: IPNodeIdFactory cannot determine local IP address: "+ e);
     }
   }
 
@@ -112,7 +111,7 @@ public class IPNodeIdFactory implements NodeIdFactory {
     try {
       md = MessageDigest.getInstance("SHA");
     } catch (NoSuchAlgorithmException e) {
-      if (logger.level <= Logger.SEVERE) logger.log("No SHA support!");
+      logger.error("No SHA support!");
       throw new RuntimeException("No SHA support!",e);
     }
 

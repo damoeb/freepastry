@@ -59,7 +59,6 @@ public class PartitionHandlerTest {
   public static void main(String[] args) throws IOException, InterruptedException {
     Environment env;
     env = new Environment();
-    env.getParameters().setString("loglevel", "ALL");
     SocketPastryNodeFactory factoryA = new SocketPastryNodeFactory(new RandomNodeIdFactory(env), PORT_A, env);
     SocketPastryNodeFactory factoryB = new SocketPastryNodeFactory(new RandomNodeIdFactory(env), PORT_B, env);
     

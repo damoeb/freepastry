@@ -54,7 +54,6 @@ import org.mpisws.p2p.transport.direct.GenericNetworkSimulator;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
@@ -105,14 +104,13 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
 
   private void addTask(TimerTask dtt) {
-    if (logger.level <= Logger.FINE) logger.log("addTask("+dtt+")");
+    logger.debug("addTask({})", dtt);
     manager.getTimer().schedule(dtt);
   }
   
   public CancellableTask enqueueDelivery(Delivery d, int delay) {
     long time = timeSource.currentTimeMillis()+delay;
-    if (logger.level <= Logger.FINE)      
-      logger.log("BNS: enqueueDelivery " + d+":"+time);
+    logger.debug("BNS: enqueueDelivery {}:{}", d, time);
     DeliveryTimerTask dtt = null;
     dtt = new DeliveryTimerTask(d, time, d.getSeq());
     addTask(dtt);
@@ -144,8 +142,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
   
   public Cancellable deliverMessage(MessageType msg, Identifier node, Identifier from, int delay, int period) {
-    if (logger.level <= Logger.FINE)
-      logger.log("BNS: deliver " + msg + " to " + node);
+    logger.debug("BNS: deliver {} to {}", msg, node);
     
     DirectTimerTask dtt = null;
     
@@ -258,7 +255,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
   
   private void notifyLivenessListeners(Identifier i, int liveness, Map<String, Object> options) {
-    if (logger.level <= Logger.FINER) logger.log("notifyLivenessListeners("+i+","+liveness+"):"+livenessListeners.get(0));
+    logger.atTrace().log(() -> "notifyLivenessListeners("+i+","+liveness+"):"+livenessListeners.get(0));
     List<LivenessListener<Identifier>> temp;
     synchronized(livenessListeners) {
       temp = new ArrayList<LivenessListener<Identifier>>(livenessListeners);

@@ -56,9 +56,9 @@ import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.infostore.PeerInfoStore;
 import org.mpisws.p2p.transport.peerreview.message.AuthPushMessage;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
@@ -117,13 +117,13 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
   for which we have authenticators. */
 
   public void push() {
-    if (logger.level <= Logger.FINE) logger.log("Authenticator push initiated with "+authOutStore.getNumSubjects()+" subjects");
+    logger.debug("Authenticator push initiated with {} subjects", authOutStore.getNumSubjects());
 
     evidenceTransferProtocol.requestWitnesses(authOutStore.getSubjects(), 
         new Continuation<Map<Identifier,Collection<Handle>>, Exception>() {
 
           public void receiveException(Exception exception) {
-            logger.logException("Error requesting witnesses "+authOutStore.getSubjects(), exception);
+            logger.warn("Error requesting witnesses {}", authOutStore.getSubjects(), exception);
           }
 
           public void receiveResult(Map<Identifier, Collection<Handle>> result) {
@@ -142,7 +142,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
    */
   public void continuePush(Map<Identifier, Collection<Handle>> subjectsToWitnesses) {
 
-    if (logger.level <= Logger.FINE) logger.log("Continuing authenticator push with "+subjectsToWitnesses.size()+" subjects");
+    logger.debug("Continuing authenticator push with {} subjects", subjectsToWitnesses.size());
 
     /*
      * We're given a list mapping subjects to witnesses, whereas what we really
@@ -163,7 +163,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
       }
     }
 
-    if (logger.level <= Logger.FINER) logger.log("Found " + witnesses.size() + " unique witnesses");
+    logger.trace("Found {} unique witnesses", witnesses.size());
 
     /*
      * For each witness, create all the AUTHPUSH messages we need to send to it.
@@ -180,7 +180,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
     }
 
     /* Once all the messages are sent, we don't need the authenticators any more */
-    if (logger.level <= Logger.FINER) logger.log("Push completed; releasing authenticators");
+    logger.trace("Push completed; releasing authenticators");
     for (Identifier i : subjectsToWitnesses.keySet()) {
       authOutStore.flush(i);
     }
@@ -222,7 +222,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
       Identifier id) {
     for (Authenticator thisAuth : authenticators) {
       if (!peerreview.addAuthenticatorIfValid(authInStore, id, thisAuth))
-        if (logger.level <= Logger.WARNING) logger.log("Authenticator "+thisAuth+" has invalid signature; discarding");
+        logger.warn("Authenticator {} has invalid signature; discarding", thisAuth);
     }
   }
 
@@ -234,14 +234,14 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
    * and put them into the authInStore.
    */
   public void handleIncomingAuthenticators(Handle source, AuthPushMessage<Identifier> msg) {
-    if (logger.level <= Logger.INFO) logger.log("Received authenticators from "+source);
+    logger.info("Received authenticators from {}", source);
     for (Entry<Identifier, List<Authenticator>> e : msg.authenticators.entrySet()) {
       Identifier id = e.getKey();
-      if (logger.level <= Logger.FINE) logger.log("  Subject <"+id+">, "+e.getValue().size()+" authenticators");
+      logger.debug("  Subject <{}>, {} authenticators", id, e.getValue().size());
       if (transport.hasCertificate(id)) {
         addAuthenticatorsIfValid(e.getValue(), id);
       } else {
-        if (logger.level <= Logger.FINE) logger.log("  Missing certificate for this subject; requesting from "+source+" and recording auths as pending");
+        logger.debug("  Missing certificate for this subject; requesting from {} and recording auths as pending", source);
         for (Authenticator a : e.getValue()) {
           authPendingStore.addAuthenticator(id, a);
         }         
@@ -260,8 +260,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
   public void notifyCertificateAvailable(Identifier id) {
     int numAuths = authPendingStore.numAuthenticatorsFor(id);
     if (numAuths > 0) {
-      if (logger.level <= Logger.FINE)
-        logger.log("Found " + numAuths + " pending authenticators for <"+id+">; processing...");
+      logger.debug("Found {} pending authenticators for <{}>; processing...", numAuths, id);
 
       List<Authenticator> buffer = authPendingStore.getAuthenticators(id);
       addAuthenticatorsIfValid(buffer, id);

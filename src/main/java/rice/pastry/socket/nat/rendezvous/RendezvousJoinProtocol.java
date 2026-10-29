@@ -47,7 +47,6 @@ import org.mpisws.p2p.transport.rendezvous.RendezvousTransportLayerImpl;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 
 import rice.Continuation;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
@@ -123,7 +122,7 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
     // TODO: Throw exception if can't directly contact the bootstrap
     
     // open the pilot before sending the JoinRequest.
-    if (logger.level <= Logger.FINE) logger.log("opening pilot to "+bootstrap);
+    logger.debug("opening pilot to {}", bootstrap);
     pilotManager.openPilot((RendezvousSocketNodeHandle)bootstrap, 
         new Continuation<SocketRequestHandle<RendezvousSocketNodeHandle>, Exception>(){
 

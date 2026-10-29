@@ -47,7 +47,7 @@ import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.util.MathUtils;
 
 public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> implements PeerReviewConstants {
@@ -80,7 +80,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
         socketIdBuffer.clear();
         recordLayer.logEvent(EVT_SOCKET_CLOSED, socketIdBuffer);
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException(this+".read()",ioe); 
+        logger.warn("{}.read()", this, ioe); 
       }      
     } else {    
       // wrap the read bytes with a new BB
@@ -92,7 +92,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
         socketIdBuffer.clear();
         recordLayer.logEvent(EVT_SOCKET_READ, socketIdBuffer, bits);
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException(this+".read()",ioe); 
+        logger.warn("{}.read()", this, ioe); 
       }
     }
     
@@ -113,7 +113,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
         socketIdBuffer.clear();
         recordLayer.logEvent(EVT_SOCKET_CLOSED, socketIdBuffer);
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException(this+".write()",ioe); 
+        logger.warn("{}.write()", this, ioe); 
       }      
     } else {    
       // wrap the read bytes with a new BB
@@ -125,7 +125,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
         socketIdBuffer.clear();
         recordLayer.logEvent(EVT_SOCKET_WRITE, socketIdBuffer, bits);
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException(this+".write()",ioe); 
+        logger.warn("{}.write()", this, ioe); 
       }
     }
 
@@ -139,7 +139,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
       socketIdBuffer.clear();      
       recordLayer.logEvent(EVT_SOCKET_CLOSE, socketIdBuffer);
     } catch (IOException ioe2) {
-      if (logger.level <= Logger.WARNING) logger.logException(this+".receiveException()",ioe2); 
+      logger.warn("{}.receiveException()", this, ioe2); 
     }        
     super.close();
   }
@@ -152,7 +152,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
       socketIdBuffer.clear();      
       recordLayer.logEvent(EVT_SOCKET_SHUTDOWN_OUTPUT, socketIdBuffer);
     } catch (IOException ioe2) {
-      if (logger.level <= Logger.WARNING) logger.logException(this+".receiveException()",ioe2); 
+      logger.warn("{}.receiveException()", this, ioe2); 
     }        
     super.shutdownOutput();
   }
@@ -185,7 +185,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
           socketIdBuffer.clear();
           recordLayer.logEvent(evt, socketIdBuffer);
         } catch (IOException ioe2) {
-          if (logger.level <= Logger.WARNING) logger.logException(this+".receiveException()",ioe2); 
+          logger.warn("{}.receiveException()", this, ioe2); 
         }        
         receiver.receiveSelectResult(RecordSocket.this, canRead, canWrite);
       }
@@ -195,7 +195,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
           socketIdBuffer.clear();
           recordLayer.logSocketException(socketIdBuffer, ioe);
         } catch (IOException ioe2) {
-          if (logger.level <= Logger.WARNING) logger.logException(this+"@"+socketId+".receiveException()",ioe2); 
+          logger.warn("{}@{}.receiveException()", this, socketId, ioe2); 
         }
         receiver.receiveException(socket, ioe);
       }

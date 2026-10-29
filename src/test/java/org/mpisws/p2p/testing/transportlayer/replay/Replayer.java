@@ -58,9 +58,9 @@ import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 import org.mpisws.p2p.transport.util.Serializer;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -104,7 +104,7 @@ public class Replayer implements MyEvents, EventCallback {
       @Override
       public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
         SocketNodeHandle ret = (SocketNodeHandle)super.getLocalHandle(pn, nhf);
-        logger.log(ret.toStringFull());
+        logger.info(ret.toStringFull());
         return ret;
       }
       
@@ -186,7 +186,7 @@ public class Replayer implements MyEvents, EventCallback {
   }
 
   public void replayEvent(short type, InputBuffer entry) {
-    if (logger.level <= Logger.FINE) logger.log("replayEvent("+type+")");
+    logger.debug("replayEvent({})", type);
     switch (type) {
     case EVT_BOOT:
       node.getBootstrapper().boot(Collections.singletonList(bootaddress));

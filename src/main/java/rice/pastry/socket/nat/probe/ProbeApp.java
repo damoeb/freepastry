@@ -48,7 +48,6 @@ import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.networkinfo.Prober;
 
 import rice.Continuation;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
@@ -90,7 +89,7 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
   }
   
   public void handleProbeRequestMessage(ProbeRequestMessage prm) {
-    if (logger.level <= Logger.FINE) logger.log("handleProbeRequestMessage("+prm+")");
+    logger.debug("handleProbeRequestMessage({})", prm);
     prober.probe(
         addressStrategy.getAddress(((SocketNodeHandle)thePastryNode.getLocalHandle()).getAddress(), 
             prm.getProbeRequester()), 
@@ -105,7 +104,7 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
    * If there are no candidates at all, send the message to self (or call handleProbeRequest()
    */
   public Cancellable requestProbe(MultiInetSocketAddress addr, long uid, final Continuation<Boolean, Exception> deliverResultToMe) {
-    if (logger.level <= Logger.FINE) logger.log("requestProbe("+addr+","+uid+","+deliverResultToMe+")");
+    logger.debug("requestProbe({},{},{})", addr, uid, deliverResultToMe);
     // Step 1: find valid helpers
     
     // make a list of valid candidates

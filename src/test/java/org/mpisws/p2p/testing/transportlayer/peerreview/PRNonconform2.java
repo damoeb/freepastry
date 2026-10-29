@@ -42,7 +42,6 @@ import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 /**
  * Alice deviates from the protocol by sending a message that's different 
@@ -67,22 +66,22 @@ public class PRNonconform2 extends PRRegressionTest {
     // see if everyone found bob exposed
     try {
       if (recordedStatus.get(bobHandle).get(aliceHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
-        logger.log("Bob Didn't expose Alice");
+        logger.info("Bob Didn't expose Alice");
         fail("Bob Didn't expose Alice");
         return;
       }
       if (recordedStatus.get(carolHandle).get(aliceHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
-        logger.log("Carol Didn't expose Alice");
+        logger.info("Carol Didn't expose Alice");
         fail("Carol Didn't expose Alice");
         return;
       }
     } catch (Exception e) {
       // in case there is no record
-      logger.logException("Failure", e);
+      logger.warn("Failure", e);
       fail("No status recorded: "+e);
       return;
     }
-    logger.log("Success");
+    logger.info("Success");
     succeed();    
   }
   
@@ -123,10 +122,10 @@ public class PRNonconform2 extends PRRegressionTest {
             IdImpl id,
             int newStatus) {
           if (player.localHandle.id.id == 1) return; // ignore alice's stuff
-          if (logger.level <= Logger.INFO) logger.log("notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
+          logger.atInfo().log(() -> "notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
           if (newStatus == STATUS_EXPOSED) {
             if (!id.equals(aliceHandle.id)) {
-              logger.log("Node not trusted: "+id);
+              logger.info("Node not trusted: {}", id);
               fail("Node not trusted: "+id+" at "+player.localHandle);
               return;
             }

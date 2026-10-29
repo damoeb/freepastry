@@ -40,7 +40,6 @@ import java.lang.*;
 import java.util.*;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.*;
 import rice.pastry.direct.proximitygenerators.SphereNetworkProximityGenerator;
 import rice.pastry.messaging.*;

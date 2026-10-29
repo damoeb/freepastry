@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.channels.*;
 import java.util.*;
 
+import org.slf4j.Logger;
 import rice.Destructable;
 import rice.environment.Environment;
 import rice.environment.logging.*;
@@ -124,9 +125,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     try {
       selector = Selector.open();
     } catch (IOException e) {
-      System.out
-          .println("SEVERE ERROR (SelectorManager): Error creating selector "
-              + e);
+      logger.error("Error creating selector", e);
     }
     lastTime = timeSource.currentTimeMillis();
   }
@@ -219,7 +218,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     if (d == null)
       throw new NullPointerException();
     if (invocations == null) {
-      if (logger.level <= Logger.FINE) logger.log("Dropping invocation "+d+", the selector was destroyed.");
+      logger.debug("Dropping invocation {}, the selector was destroyed.", d);
       return;
     }
     invocations.add(d);
@@ -261,7 +260,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * to be started when this thread's start() method is invoked.
    */
   public void run() {
-    if (logger.level <= Logger.INFO) logger.log("SelectorManager -- " + instance + " starting...");
+    logger.info("SelectorManager -- {} starting...", instance);
 
     lastTime = timeSource.currentTimeMillis();
     // loop while waiting for activity
@@ -301,13 +300,12 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           }
         } // if select
       } catch (Throwable t) {
-        if (logger.level <= Logger.SEVERE) logger.logException(
-            "ERROR (SelectorManager.run): " , t);
+        logger.error("ERROR (SelectorManager.run): ", t);
         environment.getExceptionStrategy().handleException(this, t);
       }
     } // while(running)
     shutdown();
-    if (logger.level <= Logger.INFO) logger.log("Selector "+instance+" shutting down.");
+    logger.info("Selector {} shutting down.", instance);
   }
   
   /**
@@ -337,7 +335,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           r.run();
         } catch (Throwable t) {
           // keep going: the rest must still run, and there is no loop left to report to
-          if (logger.level <= Logger.WARNING) logger.logException("Error running "+r+" while destroying the selector", t);
+          logger.warn("Error running {} while destroying the selector", r, t);
         }
       }
     }
@@ -353,10 +351,10 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       modifyKeys.clear();
       cancelledKeys.clear();
     }
-    if (droppedInvocations > 0 && logger.level <= Logger.WARNING) 
-      logger.log("Dropped "+droppedInvocations+" invocations that were still being scheduled after "+MAX_SHUTDOWN_ROUNDS+" rounds during shutdown.");
-    if ((skipped > 0 || droppedTasks > 0) && logger.level <= Logger.FINE) 
-      logger.log("Dropped "+skipped+" rescheduled invocations and "+droppedTasks+" timer tasks during shutdown.");
+    if (droppedInvocations > 0)
+      logger.warn("Dropped {} invocations that were still being scheduled after {} rounds during shutdown.", droppedInvocations, MAX_SHUTDOWN_ROUNDS);
+    if (skipped > 0 || droppedTasks > 0)
+      logger.debug("Dropped {} rescheduled invocations and {} timer tasks during shutdown.", skipped, droppedTasks);
     synchronized (loopObservers) {
       loopObservers.clear();
     }
@@ -368,7 +366,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           try {
             key.channel().close();
           } catch (IOException ioe) {
-            if (logger.level <= Logger.WARNING) logger.logException("Error closing "+key.channel()+" while destroying the selector", ioe);
+            logger.atWarn().setCause(ioe).log(() -> "Error closing "+key.channel()+" while destroying the selector");
           }
           key.cancel();
         }
@@ -380,7 +378,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       try {
         selector.close();
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("Error cancelling selector:",ioe);
+        logger.warn("Error cancelling selector:", ioe);
       }
     }
   }
@@ -391,11 +389,9 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * all channels that are still registered, see {@link #shutdown()}. Join this thread to wait for that.
    */
   public void destroy() {
-    if (logger.level <= Logger.FINE) {
-      logger.logException("destroying SelectorManager", new Exception("Stack Trace"));
-    } else if (logger.level <= Logger.INFO) {
-      logger.log("destroying SelectorManager");
-    }
+    if (logger.isDebugEnabled()) {
+      logger.debug("destroying SelectorManager", new Exception("Stack Trace"));
+    } else logger.info("destroying SelectorManager");
     running = false; 
     // don't wait for the select() timeout; Selector.wakeup() is thread safe, and sticky if not selecting yet
     if (selector != null) selector.wakeup();
@@ -450,8 +446,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     SelectionKey[] keys = selectedKeys();
     
     // to debug weird selection bug
-    if (keys.length > 1000 && logger.level <= Logger.FINE) {
-      logger.log("lots of selection keys!");
+    if (keys.length > 1000 && logger.isDebugEnabled()) {
+      logger.debug("lots of selection keys!");
       HashMap<String, Integer> histo = new HashMap<String, Integer>();
       for (int i = 0; i < keys.length; i++) {
         String keyclass = keys[i].getClass().getName();
@@ -461,13 +457,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           histo.put(keyclass, Integer.valueOf(1));
         }
       }
-      logger.log("begin selection keys by class");
+      logger.debug("begin selection keys by class");
       Iterator<String> it = histo.keySet().iterator();
       while (it.hasNext()) {
         String name = (String)it.next();
-        logger.log("Selection Key: " + name + ": "+histo.get(name));
+        logger.debug("Selection Key: " + name + ": "+histo.get(name));
       }
-      logger.log("end selection keys by class");
+      logger.debug("end selection keys by class");
     }
 
     for (int i = 0; i < keys.length; i++) {
@@ -509,7 +505,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * called by the selector thread.
    */
   protected void doInvocations() {
-    if (logger.level <= Logger.FINEST) logger.log("SM.doInvocations()");
+    logger.trace("SM.doInvocations()");
     Iterator<Runnable> i;
     synchronized (this) {
       i = new ArrayList<Runnable>(invocations).iterator();
@@ -583,7 +579,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * @exception IOException if the select fails
    */
   protected int select(int time) throws IOException {
-    if (logger.level <= Logger.FINEST) logger.log("SM.select("+time+")");
+    logger.trace("SM.select({})", time);
 
     if (time > TIMEOUT)
       time = TIMEOUT;
@@ -595,11 +591,11 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       wakeupTime = timeSource.currentTimeMillis() + time;
       return selector.select(time);
     } catch (CancelledKeyException cce) {
-      if (logger.level <= Logger.WARNING) logger.logException("CCE: cause:",cce.getCause());
+      logger.warn("CCE: cause:", cce.getCause());
       throw cce;
     } catch (IOException e) {
       if (e.getMessage().indexOf("Interrupted system call") >= 0) {
-        if (logger.level <= Logger.WARNING) logger.log("Got interrupted system call, continuing anyway...");
+        logger.warn("Got interrupted system call, continuing anyway...");
         return 1;
       } else {
         throw e;
@@ -696,15 +692,15 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   protected synchronized void addTask(TimerTask task) {
     if (invocations == null) {
       // destroyed, it would never run
-      if (logger.level <= Logger.FINE) logger.log("Dropping task "+task+", the selector was destroyed.");
+      logger.debug("Dropping task {}, the selector was destroyed.", task);
       return;
     }
     synchronized(seqLock) {
       task.seq = seqCtr++;
     }
-    if (logger.level <= Logger.FINER) logger.log("addTask("+task+") scheduled for "+task.scheduledExecutionTime());
+    logger.atTrace().log(() -> "addTask("+task+") scheduled for "+task.scheduledExecutionTime());
       if (!timerQueue.add(task)) {
-        if (logger.level <= Logger.WARNING) logger.log("ERROR: Got false while enqueueing task "+task+"!");
+        logger.warn("ERROR: Got false while enqueueing task {}!", task);
         Thread.dumpStack();
       } else {
         task.setSelectorManager(this); 
@@ -728,7 +724,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
   
   public synchronized void removeTask(TimerTask task) {
-    if (logger.level <= Logger.FINER) logger.log("removeTask("+task+") scheduled for "+task.scheduledExecutionTime());
+    logger.atTrace().log(() -> "removeTask("+task+") scheduled for "+task.scheduledExecutionTime());
     timerQueue.remove(task);
   }
 
@@ -754,7 +750,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    */
   protected void executeDueTasks() {
     long now = timeSource.currentTimeMillis();
-    if (logger.level <= Logger.FINEST) logger.log("SM.executeDueTasks() "+now);
+    logger.trace("SM.executeDueTasks() {}", now);
     
     ArrayList<TimerTask> executeNow = new ArrayList<TimerTask>();
 
@@ -783,7 +779,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     while (i.hasNext()) {
       TimerTask next = i.next();
       try {
-        if (logger.level <= Logger.FINER) logger.log("executing task "+next);
+        logger.trace("executing task {}", next);
         
         if (executeTask(next)) {
           addBack.add(next);
@@ -839,10 +835,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   public Environment getEnvironment() {
     return environment;
-  }
-
-  public void setLogLevel(int level) {
-    logger.level = level;
   }
 
   

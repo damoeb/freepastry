@@ -46,8 +46,8 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 public class SourceRouteManagerP2PSocket<Identifier> extends SocketWrapperSocket<Identifier, SourceRoute<Identifier>> {
 

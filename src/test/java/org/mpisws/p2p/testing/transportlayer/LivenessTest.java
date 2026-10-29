@@ -68,7 +68,7 @@ import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 
 import rice.environment.Environment;
-import rice.environment.logging.CloneableLogManager;
+import rice.environment.logging.Slf4jLogManager;
 import rice.environment.params.Parameters;
 import rice.selector.Timer;
 import rice.selector.TimerTask;
@@ -135,7 +135,7 @@ public class LivenessTest extends SRTest {
         env.getProcessor(), 
         env.getRandomSource(), 
         env.getTimeSource(), 
-        ((CloneableLogManager) env.getLogManager()).clone(name),
+        ((Slf4jLogManager) env.getLogManager()).clone(name),
         env.getParameters(), 
         env.getExceptionStrategy());    
     env.addDestructable(env_a);    

@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
@@ -84,8 +83,8 @@ public class DistTutorial {
     // Disable PNS for our example
     env.getParameters().setBoolean("transport_use_pns", false);
     
-    // enable logging on our new layer
-    env.getParameters().setInt("rice.tutorial.transportlayer.BandwidthLimitingTransportLayer_loglevel", Logger.FINE);
+    // to see our new layer's log output, set the logger rice.tutorial.transportlayer.BandwidthLimitingTransportLayer
+    // to debug in your SLF4J backend's configuration
     
     // construct the PastryNodeFactory, this is how we use rice.pastry.socket
     // (BandwidthLimitingTransportLayer.exampleA() builds the same kind of factory in a different way)

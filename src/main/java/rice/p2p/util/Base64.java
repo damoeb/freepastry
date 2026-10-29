@@ -81,8 +81,13 @@ advised of the possibility of such damage.
  */
 package rice.p2p.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Base64
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Base64.class);
+
     
 /* ********  P U B L I C   F I E L D S  ******** */   
     
@@ -408,7 +413,7 @@ public class Base64
         }   // end try
         catch( java.io.IOException e )
         {
-            e.printStackTrace();
+            LOG.warn("Base64: error serializing object", e);
             return null;
         }   // end catch
         finally
@@ -537,7 +542,7 @@ public class Base64
             }   // end try
             catch( java.io.IOException e )
             {
-                e.printStackTrace();
+                LOG.warn("Base64: error compressing data", e);
                 return null;
             }   // end catch
             finally
@@ -699,10 +704,7 @@ public class Base64
 
             return 3;
             }catch( Exception e){
-                System.err.println(""+source[srcOffset]+ ": " + ( DECODABET[ source[ srcOffset     ] ]  ) );
-                System.err.println(""+source[srcOffset+1]+  ": " + ( DECODABET[ source[ srcOffset + 1 ] ]  ) );
-                System.err.println(""+source[srcOffset+2]+  ": " + ( DECODABET[ source[ srcOffset + 2 ] ]  ) );
-                System.err.println(""+source[srcOffset+3]+  ": " + ( DECODABET[ source[ srcOffset + 3 ] ]  ) );
+                LOG.warn("Base64: cannot decode bytes {}, {}, {}, {}", source[srcOffset], source[srcOffset+1], source[srcOffset+2], source[srcOffset+3], e);
                 return -1;
             }   //e nd catch
         }
@@ -758,7 +760,7 @@ public class Base64
             }   // end if: white space, equals sign or better
             else
             {
-                System.err.println( "Bad Base64 input character at " + i + ": " + source[i] + "(decimal)" );
+                LOG.warn("Bad Base64 input character at {}: {} (decimal)", i, source[i]);
                 return null;
             }   // end else: 
         }   // each input character
@@ -876,12 +878,12 @@ public class Base64
         }   // end try
         catch( java.io.IOException e )
         {
-            e.printStackTrace();
+            LOG.warn("Base64: error deserializing object", e);
             obj = null;
         }   // end catch
         catch( java.lang.ClassNotFoundException e )
         {
-            e.printStackTrace();
+            LOG.warn("Base64: error deserializing object", e);
             obj = null;
         }   // end catch
         finally

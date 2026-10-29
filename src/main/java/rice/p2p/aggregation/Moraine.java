@@ -38,9 +38,9 @@ package rice.p2p.aggregation;
 
 import java.util.Arrays;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.glacier.VersioningPast;
@@ -132,9 +132,7 @@ public class Moraine implements GCPast, VersioningPast {
       }
 
       public void receiveException(Exception result) {
-        if (logger.level <= Logger.WARNING) {
-          logger.logException("in Moraine.lookupHandles, newPast threw up: ",result);
-        }
+        logger.warn("in Moraine.lookupHandles, newPast threw up: ", result);
         oldPast.lookupHandles(id, max, command);
       }
     });
@@ -204,9 +202,7 @@ public class Moraine implements GCPast, VersioningPast {
       }
 
       public void receiveException(Exception result) {
-        if (logger.level <= Logger.WARNING) {
-          logger.logException("in Moraine.refresh, oldPast threw up: ",result);
-        }
+        logger.warn("in Moraine.refresh, oldPast threw up: ", result);
         receiveResult(null);
       }
     }); 
@@ -259,9 +255,7 @@ public class Moraine implements GCPast, VersioningPast {
       }
 
       public void receiveException(Exception result) {
-        if (logger.level <= Logger.WARNING) {
-          logger.logException("in Moraine.lookupHandles, newPast threw up: ",result);
-        }
+        logger.warn("in Moraine.lookupHandles, newPast threw up: ", result);
         vOldPast.lookupHandles(id, version, num, command);
       }
     });
@@ -274,9 +268,7 @@ public class Moraine implements GCPast, VersioningPast {
       }
 
       public void receiveException(Exception result) {
-        if (logger.level <= Logger.WARNING) {
-          logger.logException("in Moraine.refresh, oldPast threw up: ",result);
-        }
+        logger.warn("in Moraine.refresh, oldPast threw up: ", result);
         receiveResult(null);
       }
     }); 

@@ -39,7 +39,6 @@ package rice.pastry.standard;
 import java.io.IOException;
 import java.util.*;
 
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
@@ -172,11 +171,11 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     if ((oldTime == null) || (oldTime.longValue() < time)) {
       lastTimeReceivedBLS.put(from, Long.valueOf(time));      
       long leaseTime = time+LEASE_PERIOD-timeSource.currentTimeMillis();
-      if (logger.level <= Logger.FINE) {
-        logger.log("PLSP.updateRecBLS("+from+","+time+"):"+leaseTime);
+      if (logger.isDebugEnabled()) {
+        logger.debug("PLSP.updateRecBLS("+from+","+time+"):"+leaseTime);
       } else {
-        if (leaseTime < 10 && logger.level <= Logger.INFO) {
-          logger.log("PLSP.updateRecBLS("+from+","+time+"):"+leaseTime);
+        if (leaseTime < 10 && logger.isInfoEnabled()) {
+          logger.info("PLSP.updateRecBLS("+from+","+time+"):"+leaseTime);
         }
       }              
         
@@ -248,7 +247,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
                 
         // nodes were never coming back alive when we called them faulty incorrectly
         if (rls.returnHandle().getLiveness() >= NodeHandle.LIVENESS_DEAD) {
-          if (logger.level <= Logger.INFO) logger.log("Issued lease to dead node:"+rls.returnHandle()+" initiating checkLiveness()");
+          logger.atInfo().log(() -> "Issued lease to dead node:"+rls.returnHandle()+" initiating checkLiveness()");
           rls.returnHandle().checkLiveness();
           
         }
@@ -311,7 +310,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
   public void start() {
     if (!hasSetStrategy) {
-      if (logger.level <= Logger.INFO) logger.log("PLSP.start(): Setting self as ReadyStrategy");
+      logger.info("PLSP.start(): Setting self as ReadyStrategy");
       localNode.setReadyStrategy(this);
       hasSetStrategy = true;
       localNode.addLeafSetListener(this);
@@ -322,7 +321,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   
   public void stop() {
     if (hasSetStrategy) {
-      if (logger.level <= Logger.INFO) logger.log("PLSP.start(): Removing self as ReadyStrategy");
+      logger.info("PLSP.start(): Removing self as ReadyStrategy");
       hasSetStrategy = false; 
       localNode.deleteLeafSetListener(this);
     }
@@ -427,8 +426,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     long currentTime = timeSource.currentTimeMillis();
     if (time == null
         || (time.longValue() < (currentTime - BLS_THROTTLE))) {
-      if (logger.level <= Logger.FINE) // only log if not throttled
-        logger.log("PeriodicLeafSetProtocol: Checking liveness on neighbor:"+ sendTo+" "+time+" cl:"+checkLiveness);
+      logger.debug("PeriodicLeafSetProtocol: Checking liveness on neighbor:{} {} cl:{}", sendTo, time, checkLiveness); // only log if not throttled
       lastTimeSentBLS.put(sendTo, Long.valueOf(currentTime));
 
       thePastryNode.send(sendTo, new BroadcastLeafSet(localHandle, leafSet, BroadcastLeafSet.Update, 0), null, options);
@@ -467,8 +465,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
   boolean destroyed = false;
   public void destroy() {
-    if (logger.level <= Logger.INFO)
-      logger.log("PLSP: destroy() called");
+    logger.info("PLSP: destroy() called");
     destroyed = true;
     if (pingNeighborMessage != null)
       pingNeighborMessage.cancel();
@@ -489,7 +486,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         removeFromLeafsetIfPossible(nh); 
       }
     } else {
-      if (logger.level <= Logger.FINE) logger.log("Removed "+nh+" from the LeafSet.");
+      logger.debug("Removed {} from the LeafSet.", nh);
       nh.removeNodeHandleListener(this); 
     }
   }
@@ -540,12 +537,12 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       long leaseExpiration = l_time.longValue()+LEASE_PERIOD;
       long now = timeSource.currentTimeMillis();
       if (leaseExpiration > now) {
-        if (logger.level <= Logger.INFO) logger.log("Removing "+nh+" from leafset later."+(leaseExpiration-now));
+        logger.atInfo().log(() -> "Removing "+nh+" from leafset later."+(leaseExpiration-now));
         // remove it later when lease expires
         thePastryNode.getEnvironment().getSelectorManager().getTimer().schedule(new TimerTask() {          
           @Override
           public void run() {
-            if (logger.level <= Logger.FINE) logger.log("removeFromLeafsetIfPossible("+nh+")");
+            logger.debug("removeFromLeafsetIfPossible({})", nh);
             // do this recursively in case we issue a new lease
             removeFromLeafsetIfPossible(nh);
           }          

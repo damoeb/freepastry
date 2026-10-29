@@ -46,7 +46,6 @@ import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.priority.QueueOverflowException;
 
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
@@ -103,7 +102,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
   }
   
   protected void rerouteMe(final RouteMessage rm, NodeHandle oldDest, Exception ioe) {        
-    if (logger.level <= Logger.FINE) logger.log("rerouteMe("+rm+" oldDest:"+oldDest+")");
+    logger.debug("rerouteMe({} oldDest:{})", rm, oldDest);
 
     rm.numRetries++;
     if (rm.numRetries > MAX_RETRIES) {
@@ -115,9 +114,9 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         dontPrint = rm.sendFailed(ioe);
       }
       if (dontPrint) {
-        if (logger.level <= Logger.CONFIG) logger.log("rerouteMe() dropping "+rm+" after "+rm.numRetries+" attempts to (re)route.");
+        logger.info("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.numRetries);
       } else {
-        if (logger.level <= Logger.WARNING) logger.log("rerouteMe() dropping "+rm+" after "+rm.numRetries+" attempts to (re)route.");        
+        logger.warn("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.numRetries);        
       }
       return;
     }
@@ -133,7 +132,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
   }
   
   private void addToPending(RouterNotification notifyMe, NodeHandle handle) {
-    if (logger.level <= Logger.FINE) logger.log("addToPending("+notifyMe+" to:"+handle+")");
+    logger.debug("addToPending({} to:{})", notifyMe, handle);
     synchronized(pending) {
       Collection<RouterNotification> c = pending.get(handle);
       if (c == null) {
@@ -155,7 +154,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     synchronized(pending) {
       Collection<RouterNotification> c = pending.get(handle);
       if (c == null) {
-        if (logger.level <= Logger.FINE) logger.log("removeFromPending("+notifyMe+","+handle+") had no pending messages for handle.");
+        logger.debug("removeFromPending({},{}) had no pending messages for handle.", notifyMe, handle);
         return false;
       }
       boolean ret = c.remove(notifyMe);
@@ -163,7 +162,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         pending.remove(handle);
       }
       if (!ret) {
-        if (logger.level <= Logger.FINE) logger.log("removeFromPending("+notifyMe+","+handle+") msg was not there."); 
+        logger.debug("removeFromPending({},{}) msg was not there.", notifyMe, handle); 
       }
       return ret;
     }    
@@ -176,7 +175,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         rerouteMe = pending.remove(i);        
       }
       if (rerouteMe != null) {
-        if (logger.level <= Logger.FINE) logger.log("removing all messages to:"+i);
+        logger.debug("removing all messages to:{}", i);
         for (RouterNotification rn : rerouteMe) {
           rn.cancel();
           rerouteMe(rn.rm, rn.dest, null);
@@ -199,11 +198,11 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     public RouterNotification(RouteMessage rm, NodeHandle handle) {
       this.rm = rm;
       this.dest = handle;
-      if (logger.level <= Logger.FINE) logger.log("RN.ctor() "+rm+" to:"+dest);
+      logger.debug("RN.ctor() {} to:{}", rm, dest);
     }
 
     public void setCancellable(PMessageReceipt receipt) {
-      if (receipt == null) if (logger.level <= Logger.WARNING) logger.logException(this+".setCancellable(null)", new Exception("Stack Trace"));
+      if (receipt == null) logger.warn("{}.setCancellable(null)", this, new Exception("Stack Trace"));
           
       this.cancellable = receipt;
     }
@@ -217,16 +216,16 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         // todo, reroute this to a node w/o a full queue
         removeFromPending(this, dest);
         if (rm.sendFailed(reason)) {
-          if (logger.level <= Logger.CONFIG) logger.logException("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier(), reason);
+          logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);
         } else {
-          if (logger.level <= Logger.FINE) {
-            logger.logException("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier(), reason);
+          if (logger.isDebugEnabled()) {
+            logger.debug("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier(), reason);
           } else {
-            if (logger.level <= Logger.INFO) {
+            if (logger.isInfoEnabled()) {
               if (msg.getIdentifier() == null) {
-                logger.logException("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier()+" "+reason+" identifier was null!!!", new Exception("Stack Trace"));
+                logger.info("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier()+" "+reason+" identifier was null!!!", new Exception("Stack Trace"));
               } else {
-                logger.log("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier()+" "+reason);          
+                logger.info("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier()+" "+reason);          
               }
             }
           }
@@ -236,21 +235,21 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       
       if (reason instanceof NodeIsFaultyException) {
         if (msg.getIdentifier().getLiveness() < NodeHandle.LIVENESS_DEAD) {
-          if (logger.level <= Logger.WARNING) {
-            logger.logException("Threw NodeIsFaultyException, and node is alive.  Node:"+msg.getIdentifier()+" Liveness:"+msg.getIdentifier().getLiveness(), reason);
-            logger.logException("RRTrace", new Exception("Stack Trace"));
+          if (logger.isWarnEnabled()) {
+            logger.warn("Threw NodeIsFaultyException, and node is alive.  Node:"+msg.getIdentifier()+" Liveness:"+msg.getIdentifier().getLiveness(), reason);
+            logger.warn("RRTrace", new Exception("Stack Trace"));
           }
         }
       }
       
       if (removeFromPending(this, dest)) {
-        if (logger.level <= Logger.INFO) logger.logException("Send failed on message "+rm+" to "+dest+" rerouting."+msg, reason);
+        logger.info("Send failed on message {} to {} rerouting.{}", rm, dest, msg, reason);
         rerouteMe(rm, dest, reason);
       } else {        
         if (rm.sendFailed(reason)) {
-          if (logger.level <= Logger.CONFIG) logger.logException("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier(), reason);
+          logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);
         } else {
-          if (logger.level <= Logger.INFO) logger.logException("sendFailed("+msg.getMessage()+")=>"+msg.getIdentifier(), reason);          
+          logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);          
         }
       }
     }
@@ -260,7 +259,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     boolean cancelled = false;
     
     public void sent(PMessageReceipt msg) {
-      if (logger.level <= Logger.FINE) logger.log("Send success "+rm+" to:"+dest+" "+msg);
+      logger.debug("Send success {} to:{} {}", rm, dest, msg);
       sent = true;
       cancellable = null;
       rm.setTLCancellable(null);
@@ -269,8 +268,8 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     }
 
     public boolean cancel() {
-      if (logger.level <= Logger.FINE) logger.log("cancelling "+this);
-      if (cancellable == null && logger.level <= Logger.WARNING) logger.log("cancellable = null c:"+cancelled+" s:"+sent+" f:"+failed);
+      logger.debug("cancelling {}", this);
+      if (cancellable == null && logger.isWarnEnabled()) logger.warn("cancellable = null c:"+cancelled+" s:"+sent+" f:"+failed);
       cancelled = true;
       if (cancellable != null) return cancellable.cancel();
       return true;

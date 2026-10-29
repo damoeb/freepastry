@@ -44,7 +44,6 @@ import java.util.*;
 
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.*;
@@ -195,7 +194,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     
     cleanupTask = new TimerTask() {    
       public void run() {
-        if (logger.level<=Logger.FINE)logger.log("CJP: Cleanup task.");
+        logger.debug("CJP: Cleanup task.");
         synchronized(failed) {
           long now = thePastryNode.getEnvironment().getTimeSource().currentTimeMillis();
           long expiration = now-failedNodeExpirationTime;
@@ -203,12 +202,12 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
           while(i.hasNext()) {
             FailedTime ft = (FailedTime)i.next();
             if (ft.time < expiration) {
-              if (logger.level<=Logger.FINE)logger.log("CJP: Removing "+ft.handle+" from failed set.");
+              logger.debug("CJP: Removing {} from failed set.", ft.handle);
               i.remove(); 
               ft.handle.removeNodeHandleListener(ConsistentJoinProtocol.this);   
               observing.remove(ft.handle);
             } else {
-              if (logger.level<=Logger.FINER)logger.log("CJP: Not Removing "+ft.handle+" from failed set until "+(ft.time+failedNodeExpirationTime)+" which is another "+(ft.time+failedNodeExpirationTime-now)+" millis.");               
+              logger.atTrace().log(() -> "CJP: Not Removing "+ft.handle+" from failed set until "+(ft.time+failedNodeExpirationTime)+" which is another "+(ft.time+failedNodeExpirationTime-now)+" millis.");               
             }
           }
         }
@@ -227,14 +226,14 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    */
   protected void setReady() {    
     if (joinEvent != null) {
-      if (logger.level <= Logger.INFO) logger.log("cancelling "+joinEvent);
+      logger.info("cancelling {}", joinEvent);
       joinEvent.cancel();
       joinEvent = null;
     }
     
     if (tryingToGoReady) return;
     tryingToGoReady = true;
-    if (logger.level <= Logger.INFO) logger.log("ConsistentJonProtocol.setReady()");
+    logger.info("ConsistentJonProtocol.setReady()");
     gotResponse.clear();
     
     // send a probe to everyone in the leafset
@@ -255,7 +254,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   public void addToLeafSet(NodeHandle nh) {
     leafSet.put(nh);
     if (!observing.contains(nh)) {
-      if (logger.level <= Logger.FINE) logger.log("CJP observing "+nh);
+      logger.debug("CJP observing {}", nh);
       nh.addNodeHandleListener(this, 40);
       observing.add(nh);
     }
@@ -281,16 +280,16 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     }
     
     Collection<NodeHandle> c = whoDoWeNeedAResponseFrom();
-    if (logger.level <= Logger.INFO) logger.log("CJP: timeout1, still waiting to hear from "+c.size()+" nodes.");
+    logger.info("CJP: timeout1, still waiting to hear from {} nodes.", c.size());
     
     Iterator<NodeHandle> i = c.iterator();
     while(i.hasNext()) {
       NodeHandle nh = (NodeHandle)i.next(); 
-      if (logger.level <= Logger.FINE) logger.log("CJP: timeout2, still waiting to hear from "+nh);
+      logger.debug("CJP: timeout2, still waiting to hear from {}", nh);
       try {
         sendTheMessage(nh, false);
       } catch (NullPointerException npe) {
-        if (logger.level <= Logger.WARNING) logger.log("npe, nh = "+nh+" c:"+c);
+        logger.warn("npe, nh = {} c:{}", nh, c);
         throw npe;
       }
     }
@@ -308,7 +307,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    *
    */
   public void otherNodesMaySuspectFaulty(int timeNotScheduled) {
-    if (logger.level <= Logger.WARNING) logger.log("WARNING: CJP.otherNodesMaySuspectFaulty("+timeNotScheduled+")");
+    logger.warn("WARNING: CJP.otherNodesMaySuspectFaulty({})", timeNotScheduled);
     // need to recover ownership of the readiness process
     nextReadyStrategy.stop();
     
@@ -346,14 +345,14 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    * Handle the CJM as in the MSR-TR
    */
   public void receiveMessage(Message msg) {
-    if (logger.level <= Logger.FINER) logger.log("CJP: receiveMessage("+msg+")");
+    logger.trace("CJP: receiveMessage({})", msg);
     if (msg instanceof ConsistentJoinMsg) {
       ConsistentJoinMsg cjm = (ConsistentJoinMsg)msg;
       // identify node j, the sender of the message
       NodeHandle j = cjm.ls.get(0);
       
       if (j.getLiveness() > LivenessListener.LIVENESS_SUSPECTED) {
-        if (logger.level <= Logger.INFO) logger.log("got message from dead node:"+msg);
+        logger.info("got message from dead node:{}", msg);
         j.checkLiveness(); // we got a message from a dead node...
       }
       
@@ -376,7 +375,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
             
             // Note, can't remove from leafset, this is to only be done by the LeafSetProtocol
           } else {
-            if (logger.level <= Logger.FINE) logger.log("CJP: checking liveness2 on "+nh);
+            logger.debug("CJP: checking liveness2 on {}", nh);
             nh.checkLiveness();
           }
         }
@@ -476,18 +475,18 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
         }
         // failed_i = {} is done by the cleanup task, not here
       } else {
-        if (logger.level <= Logger.FINE) {
+        if (logger.isDebugEnabled()) {
           String toHearFromStr = "";
           Iterator<NodeHandle> i = toHearFrom.iterator();
           while(i.hasNext()) {
             NodeHandle nh = (NodeHandle)i.next();
             toHearFromStr+=nh+":"+nh.getLiveness()+",";
           }
-          logger.log("CJP: still need to hear from:"+toHearFromStr);
+          logger.debug("CJP: still need to hear from:"+toHearFromStr);
         }
       }
     } else {
-      if (logger.level <= Logger.FINE) logger.log("CJP: LS is not complete: "+leafSet);      
+      logger.debug("CJP: LS is not complete: {}", leafSet);      
       // sendTheMessage to leftmost and rightmost
       
       NodeHandle left = null;
@@ -518,7 +517,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     if (!reply) {
       if (!tryingToGoReady) return;
     }
-    if (logger.level <= Logger.FINE) logger.log("CJP:  sendTheMessage("+nh+","+reply+")");
+    logger.debug("CJP:  sendTheMessage({},{})", nh, reply);
     
     // TODO: repeat this message while the node is alive, so a rare message drop cannot stall going ready
     HashSet<NodeHandle> toSend;
@@ -581,7 +580,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   }
 
   private void update(Object arg0, Object arg) {
-    if (logger.level <= Logger.FINEST) logger.log("CJP: update("+arg0+","+arg+")"+arg.getClass().getName());
+    logger.trace("CJP: update({},{}){}", arg0, arg, arg.getClass().getName());
     
     if (arg0 instanceof NodeHandle) {
           
@@ -589,7 +588,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
         // want to throw the exception if it is something we don't recognize
       NodeHandle nh = (NodeHandle)arg0;
       if (((Integer) arg) == NodeHandle.DECLARED_DEAD) {
-        if (logger.level <= Logger.FINE) logger.log("CJP:"+arg0+" declared dead");
+        logger.debug("CJP:{} declared dead", arg0);
         if (!failed.containsKey(nh)) {
           failed.put(nh, new FailedTime(nh, thePastryNode.getEnvironment().getTimeSource().currentTimeMillis()));
         }
@@ -608,7 +607,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
         }
       }
     } else {
-      if (logger.level <= Logger.FINEST) logger.logException("update()", new Exception("Stack Trace"));
+      if (logger.isTraceEnabled()) logger.trace("update()", new Exception("Stack Trace"));
     }
   }
 
@@ -636,7 +635,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   }
   
   public void destroy() {
-    if (logger.level <= Logger.INFO) logger.log("CJP: destroy() called");
+    logger.info("CJP: destroy() called");
     thePastryNode.getEnvironment().getSelectorManager().removeLoopObserver(this);
     cleanupTask.cancel();
     Iterator<NodeHandle> it2 = observing.iterator();

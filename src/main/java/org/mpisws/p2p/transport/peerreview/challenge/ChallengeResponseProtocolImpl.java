@@ -67,7 +67,7 @@ import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.peerreview.message.ResponseMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -160,19 +160,16 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
         byte flags = audit.flags;
         long seqFrom = audit.from.getSeq();
         long seqTo = audit.to.getSeq();
-        if (logger.level <= Logger.FINER) logger.log(
-            "Received an AUDIT challenge for ["+seqFrom+","+seqTo+"] from "+source+
+        logger.atTrace().log(() -> "Received an AUDIT challenge for ["+seqFrom+","+seqTo+"] from "+source+
             " (eseq="+challenge.evidenceSeq+", flags="+audit.flags+")");
         
         if (seqTo < seqFrom) {
-          if (logger.level <= Logger.WARNING) logger.log("Received an AUDIT challenge with seqTo<seqFrom:"+seqTo+"<"+seqFrom);
+          logger.warn("Received an AUDIT challenge with seqTo<seqFrom:{}<{}", seqTo, seqFrom);
           return;
         }
         
         if ((seqFrom < history.getBaseSeq()) || (seqTo > history.getLastSeq())) {
-          if (logger.level <= Logger.WARNING) logger.log(
-              "Received an AUDIT whose range ["+seqFrom+"-"+seqTo+"] is outside our history range ["+
-              history.getBaseSeq()+"-"+history.getLastSeq()+"]");
+          logger.warn("Received an AUDIT whose range [{}-{}] is outside our history range [{}-{}]", seqFrom, seqTo, history.getBaseSeq(), history.getLastSeq());
           return;
         }
          
@@ -197,7 +194,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
           if (((beginSeq % 1000000) > 0) && !((flags & FLAG_INCLUDE_CHECKPOINT) == FLAG_INCLUDE_CHECKPOINT)) {
             beginSeq -= (beginSeq % 1000000);
             idxFrom = history.findSeq(beginSeq);
-            if (logger.level <= Logger.FINEST) logger.log("Moving beginSeq to "+beginSeq+" (idx="+idxFrom+")");
+            logger.trace("Moving beginSeq to {} (idx={})", beginSeq, idxFrom);
             assert(idxFrom >= 0);
           }
           
@@ -212,7 +209,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
               break;
             
             idxTo++;
-            if (logger.level <= Logger.FINEST) logger.log( "Advancing endSeq past "+followingSeq+" (idx="+idxTo+")");
+            logger.trace("Advancing endSeq past {} (idx={})", followingSeq, idxTo);
           }
                     
           if ((toEntry = history.statEntry(idxTo)) == null) { 
@@ -234,14 +231,13 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
             
             /* ... and send it back to the challenger */
   
-            if (logger.level <= Logger.FINER) logger.log("Answering AUDIT challenge with "+snippet.entries.size()+"-entry log snippet"); 
+            logger.trace("Answering AUDIT challenge with {}-entry log snippet", snippet.entries.size()); 
             peerreview.transmit(source, response, null, options);
           } else {
-            if (logger.level <= Logger.WARNING) logger.log("Error accessing history in handleChallenge("+source+","+challenge+")");
+            logger.warn("Error accessing history in handleChallenge({},{})", source, challenge);
           }
         } else {
-          if (logger.level <= Logger.WARNING) logger.log(
-              "Cannot respond to AUDIT challenge ["+seqFrom+"-"+seqTo+",flags="+flags+
+          if (logger.isWarnEnabled()) logger.warn("Cannot respond to AUDIT challenge ["+seqFrom+"-"+seqTo+",flags="+flags+
               "]; entries not found (iF="+idxFrom+"/iT="+idxTo+")");
         }
         break;
@@ -254,7 +250,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       {
         UserDataMessage<Handle> udm = (UserDataMessage<Handle>)challenge.getChallenge();        
 
-        if (logger.level <= Logger.INFO) logger.log( "Received a SEND challenge");
+        logger.info("Received a SEND challenge");
 
         Tuple<AckMessage<Identifier>, Boolean> ret = commitmentProtocol.logMessageIfNew(udm);
         AckMessage<Identifier> response = ret.a();
@@ -264,7 +260,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
            already (i.e. if it was logged previously) */
           
         if (!loggedPreviously) {
-          if (logger.level <= Logger.FINER) logger.log( "Delivering message in CHAL_SEND "+udm);
+          logger.trace("Delivering message in CHAL_SEND {}", udm);
           peerreview.getApp().messageReceived(udm.getSenderHandle(), udm.getPayload(), options);
         }
   
@@ -274,7 +270,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
         /* ... and send it back to the challenger */
         
-        if (logger.level <= Logger.FINER) logger.log( "Returning a  response");
+        logger.trace("Returning a  response");
         peerreview.transmit(source, rMsg, null, options);        
         break;
       }
@@ -283,7 +279,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       
       default:
       {
-        if (logger.level <= Logger.WARNING) logger.log("Unknown challenge #"+type+" from "+source);
+        logger.warn("Unknown challenge #{} from {}", type, source);
         break;
       }
     }
@@ -299,10 +295,10 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       Evidence auditEvidence = auditProtocol.statOngoingAudit(message.subject, message.evidenceSeq); 
       if (auditEvidence != null) {
         if (isValidResponse(message.subject, auditEvidence, message.evidence, true)) {
-          if (logger.level <= Logger.FINE) logger.log( "Received response to ongoing AUDIT from "+message.subject);
+          logger.debug("Received response to ongoing AUDIT from {}", message.subject);
           auditProtocol.processAuditResponse(message.subject, message.evidenceSeq, (AuditResponse<Handle>)message.evidence);
         } else {
-          if (logger.level <= Logger.WARNING) logger.log("Invalid response to ongoing audit of "+message.subject);
+          logger.warn("Invalid response to ongoing audit of {}", message.subject);
         }
         
         return;
@@ -317,21 +313,21 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     EvidenceRecord<Handle, Identifier> record = infoStore.findEvidence(message.originator, message.subject, message.evidenceSeq);
     interestedParty = record.getInterestedParty();
     if (record == null) {
-      if (logger.level <= Logger.WARNING) logger.log("Received response, but matching request is missing; discarding");
+      logger.warn("Received response, but matching request is missing; discarding");
       return;
     }
     
     /* The evidence has to be a CHALLENGE; for PROOFs there is no valid response */
     
     if (record.isProof()) {
-      if (logger.level <= Logger.WARNING) logger.log("Received an alleged response to a proof; discarding");
+      logger.warn("Received an alleged response to a proof; discarding");
       return;
     }
     
     /* If we get a duplicate response, discard it */
     
     if (record.hasResponse()) {
-      if (logger.level <= Logger.WARNING) logger.log("Received duplicate response; discarding");
+      logger.warn("Received duplicate response; discarding");
       return;
     }
     
@@ -342,8 +338,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       /* Check the response against the evidence; if it is valid, add it to our store */
       
       if (isValidResponse(message.subject, evidence, message.evidence)) {
-        if (logger.level <= Logger.FINE) logger.log(
-            "Received valid response (orig="+message.originator+", subject="+message.subject+", t="+message.evidenceSeq+"); adding");
+        logger.debug("Received valid response (orig={}, subject={}, t={}); adding", message.originator, message.subject, message.evidenceSeq);
         infoStore.addResponse(message.originator, message.subject, message.evidenceSeq, message.evidence);
         
         /* If we've only relayed this challenge for another node (probably in our
@@ -351,11 +346,11 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
            the original challenger. */
         
         if (interestedParty != null) {
-          if (logger.level <= Logger.FINE) logger.log("Relaying response to interested party "+interestedParty);
+          logger.debug("Relaying response to interested party {}", interestedParty);
           peerreview.transmit(interestedParty, message, null, options);
         }
       } else {
-        if (logger.level <= Logger.WARNING) logger.log("Invalid response; discarding");
+        logger.warn("Invalid response; discarding");
       }
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
@@ -391,7 +386,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       long fromNodeMaxSeq = requestedBeginSeq + 999999;
 //
       if ((firstSeq > requestedBeginSeq) || (!includePrevCheckpoint && (firstSeq < requestedBeginSeq))) {
-        if (logger.level <= Logger.WARNING) logger.log("Log snippet starts at "+firstSeq+", but we asked for "+requestedBeginSeq+" (ilc="+(includePrevCheckpoint ? "yes" : "no")+"); flagging invalid");
+        if (logger.isWarnEnabled()) logger.warn("Log snippet starts at "+firstSeq+", but we asked for "+requestedBeginSeq+" (ilc="+(includePrevCheckpoint ? "yes" : "no")+"); flagging invalid");
         return false;
       }
 
@@ -422,8 +417,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       
       boolean okay = true;
       if (ackSenderSeq != senderSeq) {
-        if (logger.level <= Logger.WARNING) logger.log(
-            "RESP.SEND: ACK contains sender seq "+ackSenderSeq+", but challenge contains "+senderSeq+"; flagging invalid");
+        logger.warn("RESP.SEND: ACK contains sender seq {}, but challenge contains {}; flagging invalid", ackSenderSeq, senderSeq);
         okay = false;
       }
 
@@ -432,9 +426,9 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
         
         Authenticator authenticator = peerreview.extractAuthenticator(receiverID, ackReceiverSeq, EVT_RECV, innerHash, receiverHtopMinusOne, receiverSignature);
         if (authenticator != null) {
-          if (logger.level <= Logger.FINE) logger.log( "Auth OK");
+          logger.debug("Auth OK");
         } else {
-          if (logger.level <= Logger.WARNING) logger.log("RESP.SEND: Signature on ACK is invalid");
+          logger.warn("RESP.SEND: Signature on ACK is invalid");
           okay = false;
         }
       }
@@ -445,7 +439,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       break;
     }
     default:
-      if (logger.level <= Logger.WARNING) logger.log("Cannot check whether response type #"+evidence.getEvidenceType()+" is valid; answering no");
+      logger.warn("Cannot check whether response type #{} is valid; answering no", evidence.getEvidenceType());
       throw new RuntimeException("Cannot check whether response type #"+evidence.getEvidenceType()+" is valid; answering no");
     }
     return true;
@@ -465,26 +459,22 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     switch(m.getType()) {
     case MSG_RESPONSE: {
         ResponseMessage<Identifier> message = (ResponseMessage<Identifier>)m;
-        if (logger.level <= Logger.FINE) 
-          logger.log("Statement completed: RESPONSE  (orig="+message.originator+
-              ", subject="+message.subject+", ts="+message.evidenceSeq+")");
+        logger.debug("Statement completed: RESPONSE  (orig={}, subject={}, ts={})", message.originator, message.subject, message.evidenceSeq);
         handleResponse(message, options);
         if (infoStore.getStatus(peerreview.getIdentifierExtractor().extractIdentifier(source)) == STATUS_SUSPECTED) {
-          if (logger.level <= Logger.FINE) logger.log( "RECHALLENGE "+source);
+          logger.debug("RECHALLENGE {}", source);
           challengeSuspectedNode(source);
         }
         return;
       }
     case MSG_ACCUSATION:
       AccusationMessage<Identifier> message = (AccusationMessage<Identifier>)m;
-      if (logger.level <= Logger.FINE) 
-        logger.log("Statement completed: ACCUSATION  (orig="+message.originator+
-            ", subject="+message.subject+", ts="+message.evidenceSeq+")");
+      logger.debug("Statement completed: ACCUSATION  (orig={}, subject={}, ts={})", message.originator, message.subject, message.evidenceSeq);
        
       int status = infoStore.getStatus(peerreview.getIdentifierExtractor().extractIdentifier(source));
         switch (status) {
         case STATUS_EXPOSED:
-          if (logger.level <= Logger.FINE) logger.log( "Got an accusation from exposed node "+source+"; discarding");
+          logger.debug("Got an accusation from exposed node {}; discarding", source);
           break;
         case STATUS_TRUSTED:
           try {
@@ -492,7 +482,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
             if (foo == null) {
               infoStore.addEvidence(message.originator, message.subject, message.evidenceSeq, message.evidence, source);
             } else {
-              if (logger.level <= Logger.FINE) logger.log( "We already have a copy of that challenge; discarding");
+              logger.debug("We already have a copy of that challenge; discarding");
             }
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);
@@ -502,7 +492,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
         {
           /* If the status is SUSPECTED, we queue the message for later delivery */
   
-          if (logger.level <= Logger.WARNING) logger.log("Incoming accusation from SUSPECTED node "+source+"; queueing and challenging the node");
+          logger.warn("Incoming accusation from SUSPECTED node {}; queueing and challenging the node", source);
           copyAndEnqueueTail(source, message.evidence, true, message.subject, message.originator, message.evidenceSeq, options);
   
           /* Furthermore, we must have an unanswered challenge, which we send to the remote node */
@@ -546,7 +536,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     int status = infoStore.getStatus(peerreview.getIdentifierExtractor().extractIdentifier(source));
     switch (status) {
       case STATUS_EXPOSED:
-        if (logger.level <= Logger.FINE) logger.log("Got a user message from exposed node "+source+"; discarding");
+        logger.debug("Got a user message from exposed node {}; discarding", source);
         return;
       case STATUS_TRUSTED:
         commitmentProtocol.handleIncomingMessage(source, message, options);
@@ -557,7 +547,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     
     /* If the status is SUSPECTED, we queue the message for later delivery */
 
-    if (logger.level <= Logger.WARNING) logger.log("Incoming message from SUSPECTED node "+source+"; queueing and challenging the node");
+    logger.warn("Incoming message from SUSPECTED node {}; queueing and challenging the node", source);
     copyAndEnqueueTail(source, message, false, null, null, 0, options);
 
     /* Furthermore, we must have an unanswered challenge, which we send to the remote node */

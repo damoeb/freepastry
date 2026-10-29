@@ -40,7 +40,6 @@ package rice.p2p.splitstream.testing;
 import java.io.IOException;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.p2p.commonapi.*;
@@ -416,7 +415,7 @@ public class SplitStreamRegrTest extends CommonAPITest {
     }
 
     private void log(String s) {
-      if (logger.level <= Logger.FINE) logger.log("" + n + " " + s);
+      logger.debug("{} {}", n, s);
     }
 
   }

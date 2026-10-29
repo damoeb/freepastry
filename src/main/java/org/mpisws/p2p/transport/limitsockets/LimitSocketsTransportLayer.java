@@ -58,8 +58,8 @@ import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.selector.Timer;
 import rice.selector.TimerTask;
 
@@ -96,12 +96,12 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   }
 
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
-    if (logger.level <= Logger.FINER) logger.logException(LimitSocketsTransportLayer.this+".openSocket("+i+","+deliverSocketToMe+","+options+")",new Exception("Stack Trace"));
+    if (logger.isTraceEnabled()) logger.trace("{}.openSocket({},{},{})", LimitSocketsTransportLayer.this, i, deliverSocketToMe, options, new Exception("Stack Trace"));
     
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i, options, logger) {
       @Override
       public boolean cancel() {
-        if (logger.level <= Logger.FINER) logger.log(this+".openSocket("+i+","+deliverSocketToMe+"):"+this+".cancel()");
+        logger.trace("{}.openSocket({},{}):{}.cancel()", this, i, deliverSocketToMe, this);
         return super.cancel();
       }      
       
@@ -112,11 +112,11 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
     
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>(){
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
-        if (logger.level <= Logger.FINER) logger.log(this+".openSocket("+i+","+deliverSocketToMe+"):"+ret+".receiveResult()");
+        logger.trace("{}.openSocket({},{}):{}.receiveResult()", this, i, deliverSocketToMe, ret);
         deliverSocketToMe.receiveResult(ret, getLSSock(sock));
       }
       public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
-        if (logger.level <= Logger.FINER) logger.log(this+".openSocket("+i+","+deliverSocketToMe+"):"+ret+".receiveException("+ex+")");
+        logger.atTrace().log(() -> this+".openSocket("+i+","+deliverSocketToMe+"):"+ret+".receiveException("+ex+")");
         deliverSocketToMe.receiveException(ret, ex);
       }
       public String toString() {
@@ -129,7 +129,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   }
   
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    if (logger.level <= Logger.FINER) logger.log(this+".incomingSocket("+s+")");
+    logger.trace("{}.incomingSocket({})", this, s);
     callback.incomingSocket(getLSSock(s));
   }
 
@@ -166,7 +166,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
      *
      */
     public void forceClose() {
-      if (logger.level <= Logger.FINE) logger.log(this+".forceClose()");
+      logger.debug("{}.forceClose()", this);
       forcedClose = true;
       super.shutdownOutput();
       timer.schedule(new TimerTask() {
@@ -186,7 +186,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
      */
     @Override
     public void close() {
-      if (logger.level <= Logger.FINER) logger.log(this+".close()");
+      logger.trace("{}.close()", this);
       closed = true;
       cache.remove(this);
       super.close();

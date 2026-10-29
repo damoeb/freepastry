@@ -43,9 +43,13 @@ import org.mpisws.p2p.transport.peerreview.history.HashPolicy;
 import org.mpisws.p2p.transport.peerreview.history.logentry.EvtSend;
 import org.mpisws.p2p.transport.util.Serializer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 
 public class ChallengeHashPolicy<Identifier> implements HashPolicy, PeerReviewConstants {
+  private static final Logger LOG = LoggerFactory.getLogger(ChallengeHashPolicy.class);
+
   byte flags;
   Identifier originator;
   boolean includeNextCheckpoint;
@@ -90,7 +94,7 @@ public class ChallengeHashPolicy<Identifier> implements HashPolicy, PeerReviewCo
           }
         } catch (IOException ioe) {
           // it's fine, it just didn't deserialize properly
-          ioe.printStackTrace();
+          LOG.debug("Cannot deserialize the originator of a SEND entry", ioe);
         }
         return false;
       }

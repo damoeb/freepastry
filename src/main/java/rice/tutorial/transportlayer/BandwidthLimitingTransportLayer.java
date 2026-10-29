@@ -64,8 +64,8 @@ import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
@@ -153,7 +153,7 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
       }
     }
     if (!success) {
-      if (logger.level <= Logger.FINE) logger.log("Dropping message "+m+" because not enough bandwidth:"+bucket);
+      logger.debug("Dropping message {} because not enough bandwidth:{}", m, bucket);
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(returnMe, new NotEnoughBandwidthException(bucket, m.remaining()));
       return returnMe;
     }
@@ -222,7 +222,7 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
         return ret;
       }
 
-      if (logger.level <= Logger.FINE) logger.log("Limiting "+socket+" to "+bucket+" bytes.");
+      logger.debug("Limiting {} to {} bytes.", socket, bucket);
       
       // The user is trying to write more than is allowed.  To handle this we 
       // will copy the allowed amount into a temporary ByteBuffer and pass that

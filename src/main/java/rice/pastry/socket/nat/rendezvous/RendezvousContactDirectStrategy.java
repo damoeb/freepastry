@@ -40,8 +40,8 @@ import org.mpisws.p2p.transport.multiaddress.AddressStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.rendezvous.ContactDirectStrategy;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 public class RendezvousContactDirectStrategy implements ContactDirectStrategy<RendezvousSocketNodeHandle> {
   MultiInetSocketAddress localAddr; 
@@ -74,7 +74,7 @@ public class RendezvousContactDirectStrategy implements ContactDirectStrategy<Re
       return a.getInnermostAddress().getAddress().equals(localAddr.getInnermostAddress().getAddress());
     } else {
       boolean ret = addressStrategy.getAddress(localAddr, a).equals(a.getInnermostAddress());
-      if (ret && logger.level <= Logger.FINE) logger.log("rendezvous contacting direct:"+remoteNode); 
+      if (ret && logger.isDebugEnabled()) logger.debug("rendezvous contacting direct:"+remoteNode); 
       return ret;
     }
   }

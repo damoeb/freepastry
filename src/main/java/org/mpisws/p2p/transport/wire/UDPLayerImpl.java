@@ -52,7 +52,7 @@ import java.util.Map;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.environment.params.Parameters;
 import rice.selector.SelectionKeyHandler;
 
@@ -108,7 +108,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
       MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe, 
       Map<String, Object> options) {
     Envelope envelope;
-    if (logger.level <= Logger.FINER-3) logger.log("sendMessage("+destination+","+msg+","+deliverAckToMe+")"); 
+    logger.trace("sendMessage({},{},{})", destination, msg, deliverAckToMe); 
     envelope = new Envelope(destination, msg, deliverAckToMe, options);
       synchronized (pendingMsgs) {        
         pendingMsgs.add(envelope);
@@ -177,7 +177,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
       key = wire.environment.getSelectorManager().register(channel, this, 0);
       key.interestOps(SelectionKey.OP_READ);
-      if (logger.level <= Logger.INFO) logger.log("UDPLayer bound to "+wire.bindAddress);
+      logger.info("UDPLayer bound to {}", wire.bindAddress);
     } catch (BindException be) {
       // Java's stupid exception isn't helpful, make a helpful one...
       throw new BindException("Address already in use:"+wire.bindAddress);
@@ -205,8 +205,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
           readHeader(address);
           readBuffer.clear();
         } else {
-          if (logger.level <= Logger.INFO) logger.log(
-            "(PM) Read from datagram channel, but no bytes were there - not bad, but weird.");
+          logger.info("(PM) Read from datagram channel, but no bytes were there - not bad, but weird.");
           break;
         }
       }
@@ -218,8 +217,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   }
 
   protected void readHeader(InetSocketAddress address) throws IOException {
-    if (logger.level <= Logger.FINE) 
-      logger.log("readHeader("+address+","+readBuffer.remaining()+")");
+    logger.debug("readHeader({},{})", address, readBuffer.remaining());
     byte[] remaining = new byte[readBuffer.remaining()];      
     readBuffer.get(remaining);
     wire.messageReceived(address, ByteBuffer.wrap(remaining), OPTIONS);    
@@ -243,9 +241,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
           try {            
 
             int len = write.msg.remaining();
-            if (logger.level <= Logger.FINE) {
-              logger.log("writing "+len+" to "+write.destination);
-            }
+            logger.debug("writing {} to {}", len, write.destination);
             if (channel.send(write.msg, write.destination) == len) {
               if (write.continuation != null) write.continuation.ack(write);
               i.remove();              
@@ -264,11 +260,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
         }
       }
     } catch (Exception e) {
-      if (logger.level <= Logger.WARNING) {
-        
-        logger.logException(
-          "ERROR (datagrammanager:write) to " + write.destination, e);
-      }        
+      logger.warn("ERROR (datagrammanager:write) to {}", write.destination, e);        
     } finally {
       if (pendingMsgs.isEmpty()) 
         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
@@ -345,7 +337,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     Runnable r = new Runnable(){    
       public void run() { 
         try {
-          if (logger.level <= Logger.INFO) logger.log("destroy(): "+channel);
+          logger.info("destroy(): {}", channel);
           if (key != null) {
             if (key.channel() != null)
               key.channel().close();
@@ -353,7 +345,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
             key.attach(null);
           }
         } catch (IOException ioe) {
-          if (logger.level <= Logger.WARNING) logger.logException("Error destroying UDPLayer", ioe); 
+          logger.warn("Error destroying UDPLayer", ioe); 
         }
       }
     };

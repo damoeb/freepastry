@@ -42,6 +42,7 @@ package rice.environment.random.simple;
 import java.net.InetAddress;
 import java.util.Random;
 
+import org.slf4j.Logger;
 import rice.environment.logging.*;
 import rice.environment.random.RandomSource;
 
@@ -98,62 +99,62 @@ public class SimpleRandomSource implements RandomSource {
     if (manager != null)
       logger = manager.getLogger(SimpleRandomSource.class, instance);
     if (logger != null) 
-      if (logger.level <= Logger.INFO) logger.log("RNG seed = "+seed);
+      logger.info("RNG seed = {}", seed);
     rnd = new Random(seed);    
   }
   
   public boolean nextBoolean() {
     boolean ret = rnd.nextBoolean();
     if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextBoolean = "+ret);
+      logger.trace("nextBoolean = {}", ret);
     return ret;
   }
   
   public void nextBytes(byte[] bytes) {
     rnd.nextBytes(bytes);
     if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextBytes["+bytes.length+"] = "+bytes);
+      logger.trace("nextBytes[{}] = {}", bytes.length, bytes);
   }
   
   public double nextDouble() {
     double ret = rnd.nextDouble();
     if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextDouble = "+ret);
+      logger.trace("nextDouble = {}", ret);
     return ret;
   }
   
   public float nextFloat() {
     float ret = rnd.nextFloat();
     if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextFloat = "+ret);
+      logger.trace("nextFloat = {}", ret);
     return ret;
   }
   
   public double nextGaussian() {
     double ret = rnd.nextGaussian();
     if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextGaussian = "+ret);
+      logger.trace("nextGaussian = {}", ret);
     return ret;
   }
   
   public int nextInt() {
     int ret = rnd.nextInt();
     if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextInt = "+ret);
+      logger.trace("nextInt = {}", ret);
     return ret;
   }
   
   public int nextInt(int max) {
     int ret = rnd.nextInt(max);
     if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextInt2 = "+ret);
+      logger.trace("nextInt2 = {}", ret);
     return ret;
   }
   
   public long nextLong() {
     long ret = rnd.nextLong();
     if (logger != null) 
-      if (logger.level <= Logger.FINER) logger.log("nextLong = "+ret);
+      logger.trace("nextLong = {}", ret);
     return ret;
   }
 }

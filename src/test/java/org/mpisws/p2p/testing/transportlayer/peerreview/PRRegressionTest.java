@@ -90,9 +90,9 @@ import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordLayer;
 import org.mpisws.p2p.transport.util.Serializer;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -247,7 +247,7 @@ public class PRRegressionTest {
           try {                
             callback.messageReceived(i, m, null);
           } catch (IOException ioe) {
-            logger.logException("Error delivering a message to "+localIdentifier, ioe);
+            logger.warn("Error delivering a message to {}", localIdentifier, ioe);
             fail("Error delivering a message to "+localIdentifier+": "+ioe);
           }
         }      
@@ -285,7 +285,7 @@ public class PRRegressionTest {
       this.tl = tl;
       this.env = env;
       this.logger = env.getLogManager().getLogger(BogusApp.class, null);
-      logger.log("new bogus app "+player);
+      logger.info("new bogus app {}", player);
       dest = player.destHandle;
       tl.setCallback(this);      
     }
@@ -305,7 +305,7 @@ public class PRRegressionTest {
     
     public void scheduleMessageToBeSent(long time, final boolean reschedule) {
       nextSendTime = time;
-      if (logger.level <= Logger.FINE) logger.log("scheduling message to be sent at:"+time);
+      logger.debug("scheduling message to be sent at:{}", time);
       env.getSelectorManager().schedule(new TimerTask() {
         public String toString() {
           return "SendMessageTask "+scheduledExecutionTime();
@@ -322,24 +322,22 @@ public class PRRegressionTest {
     public void sendMessage() {
       byte[] msg = generateMessage();
       
-      logger.log("sending message "+msg.length+" "+MathUtils.toBase64(msg));
-      if (logger.level <= Logger.INFO) logger.log("sending message "+msg.length+" "+MathUtils.toBase64(msg));
+      logger.atInfo().log(() -> "sending message "+msg.length+" "+MathUtils.toBase64(msg));
       try {
       tl.sendMessage(dest, ByteBuffer.wrap(msg), new MessageCallback<HandleImpl, ByteBuffer>() {
         
         public void sendFailed(MessageRequestHandle<HandleImpl, ByteBuffer> msg,
             Exception reason) {
-          logger.log("sendFailed("+msg+")");
+          logger.info("sendFailed({})", msg);
         }
       
         public void ack(MessageRequestHandle<HandleImpl, ByteBuffer> msg) {
-          alice.logger.log("ack("+msg+") "+Thread.currentThread());
-          if (logger.level <= Logger.FINE) alice.logger.log("ack("+msg+")");
+          logger.debug("ack({}) {}", msg, Thread.currentThread());
         }
       
       }, null);      
       } catch (NullPointerException npe) {
-        logger.log("tl:"+tl+" "+dest);
+        logger.info("tl:{} {}", tl, dest);
         throw npe;
       }
     }
@@ -351,7 +349,7 @@ public class PRRegressionTest {
     }
     
     public void storeCheckpoint(OutputBuffer buffer) throws IOException {
-      if (logger.level <= Logger.FINER) logger.log("storeCheckpoint "+nextSendTime);
+      logger.trace("storeCheckpoint {}", nextSendTime);
       buffer.writeInt(31173);
       buffer.writeLong(nextSendTime);
       buffer.writeBoolean(dest != null);
@@ -361,7 +359,7 @@ public class PRRegressionTest {
       byte[] bytes = baos.toByteArray();
       buffer.writeInt(bytes.length);      
       buffer.write(bytes, 0, bytes.length);
-      if (logger.level <= Logger.FINEST) logger.log("storeCheckpoint:"+Arrays.toString(((SimpleOutputBuffer)buffer).getBytes()));
+      logger.atTrace().log(() -> "storeCheckpoint:"+Arrays.toString(((SimpleOutputBuffer)buffer).getBytes()));
     }
 
     public boolean loadCheckpoint(InputBuffer buffer) throws IOException {
@@ -370,7 +368,7 @@ public class PRRegressionTest {
       if (buffer.readBoolean()) {
         dest = new HandleSerializer().deserialize(buffer);
       }
-      if (logger.level <= Logger.FINER) logger.log("loadCheckpoint "+nextSendTime);
+      logger.trace("loadCheckpoint {}", nextSendTime);
       byte[] bytes = new byte[buffer.readInt()];
       buffer.read(bytes);
       ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
@@ -409,7 +407,7 @@ public class PRRegressionTest {
 
     public void messageReceived(HandleImpl i, ByteBuffer m,
         Map<String, Object> options) throws IOException {
-      if (logger.level <= Logger.INFO) logger.log("Message received: "+MathUtils.toBase64(m.array()));
+      logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(m.array()));
     }
 
     public void getWitnesses(IdImpl subject,
@@ -420,9 +418,9 @@ public class PRRegressionTest {
     public void notifyStatusChange(
         IdImpl id,
         int newStatus) {
-      if (logger.level <= Logger.INFO) logger.log("notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
+      logger.atInfo().log(() -> "notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
       if (newStatus != STATUS_TRUSTED) {
-        logger.log("Failure, Node not trusted: "+id+" at "+player.localHandle);
+        logger.info("Failure, Node not trusted: {} at {}", id, player.localHandle);
         fail("Node not trusted: "+id+" at "+player.localHandle);
         return;
       }
@@ -512,7 +510,7 @@ public class PRRegressionTest {
           try {
             pr.init(f.getPath());
           } catch (IOException ioe) {
-            logger.logException("Error initializing PeerReview of "+Player.this.localHandle, ioe);
+            logger.warn("Error initializing PeerReview of {}", Player.this.localHandle, ioe);
             fail("Error initializing PeerReview of "+Player.this.localHandle+": "+ioe);
           }
         }
@@ -599,10 +597,6 @@ public class PRRegressionTest {
   HandleImpl carolHandle = new HandleImpl("carol", new IdImpl(3));
 
 
-  public void setLoggingParams(Environment env) {
-    env.getParameters().setInt("org.mpisws.p2p.testing.transportlayer.peerreview_loglevel", Logger.INFO);
-  }
-
   protected BogusApp getBogusApp(Player player, PeerReview<HandleImpl, IdImpl> pr,
       Environment env) {
     return new BogusApp(player,pr,env);
@@ -644,13 +638,13 @@ public class PRRegressionTest {
     for (Entry<HandleImpl, Map<IdImpl, Integer>> foo : recordedStatus.entrySet()) {
       for (Entry<IdImpl, Integer> i : foo.getValue().entrySet()) {
         if (i.getValue() != StatusChangeListener.STATUS_TRUSTED) {
-          logger.log("Fail: "+foo.getKey()+" found "+i.getKey()+" "+i.getValue());
+          logger.info("Fail: {} found {} {}", foo.getKey(), i.getKey(), i.getValue());
           fail(foo.getKey()+" found "+i.getKey()+" "+PeerReviewImpl.getStatusString(i.getValue()));
           return;
         }
       }
     }
-    logger.log("Success");
+    logger.info("Success");
     succeed();
   }
 
@@ -750,7 +744,6 @@ public class PRRegressionTest {
     },millisToFinish);
 
     logger = env.getLogManager().getLogger(PRRegressionTest.class, null);
-    setLoggingParams(env);
     
     buildCryptoMaterial(env);
         
@@ -762,7 +755,7 @@ public class PRRegressionTest {
           
           setupWitnesses();
         } catch (Exception ioe) {
-          logger.logException("Error building the players", ioe);
+          logger.warn("Error building the players", ioe);
           fail("Error building the players: "+ioe);
         }
       }

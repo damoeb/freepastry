@@ -54,8 +54,8 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.CancellableTask;
 import rice.pastry.direct.NetworkSimulator;
@@ -143,9 +143,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     MessageRequestHandleImpl<Identifier, MessageType> handle = new MessageRequestHandleImpl<Identifier, MessageType>(i, m, options);
     
     if (livenessProvider.getLiveness(i, null) >= LivenessListener.LIVENESS_DEAD) {
-      if (logger.level <= Logger.FINE)
-        logger.log("Attempt to send message " + m
-            + " to a dead node " + i + "!");      
+      logger.debug("Attempt to send message {} to a dead node {}!", m, i);      
       
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(handle, new NodeIsFaultyException(i));
     } else {
@@ -180,7 +178,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     try {
       callback.incomingSocket(acceptorEndpoint);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("Exception in "+callback,ioe);
+      logger.warn("Exception in {}", callback, ioe);
     }
   }
 

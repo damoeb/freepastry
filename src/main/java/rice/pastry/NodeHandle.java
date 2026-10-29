@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.pastry;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
@@ -220,24 +220,24 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   
   @Override
   public void addNodeHandleListener(NodeHandleListener listener, int priority) {
-    if (logger.level <= Logger.FINER) logger.log(this+".addNodeHandleListener("+listener+")");
+    logger.trace("{}.addNodeHandleListener({})", this, listener);
     super.addNodeHandleListener(listener, priority);
   }
   
   @Override
   protected void nodeHandleListenerPriorityChanged(NodeHandleListener listener, int oldPriority, int newPriority) {
     // Should we warn?  Hopefully this won't happen very often...
-    if (logger.level <= Logger.WARNING) logger.log(this+".addNodeHandleListener("+listener+","+newPriority+") changed priority, was:"+listener+":"+oldPriority);      
+    logger.atWarn().log(() -> this+".addNodeHandleListener("+listener+","+newPriority+") changed priority, was:"+listener+":"+oldPriority);      
   }
   
   @Override
   public boolean removeNodeHandleListener(NodeHandleListener listener) {
-    if (logger.level <= Logger.FINER) logger.log(this+".removeNodeHandleListener("+listener+")");
+    logger.trace("{}.removeNodeHandleListener({})", this, listener);
     boolean ret = super.removeNodeHandleListener(listener);
     if (ret) {
-      if (logger.level <= Logger.FINEST) logger.log(this+".removeNodeHandleListener("+listener+"):success");
+      logger.trace("{}.removeNodeHandleListener({}):success", this, listener);
     } else {
-      if (logger.level <= Logger.INFO) logger.log(this+".removeNodeHandleListener("+listener+"):failure "+listener+" was not a listener.");      
+      logger.info("{}.removeNodeHandleListener({}):failure {} was not a listener.", this, listener, listener);      
     }
     return ret;
   }
@@ -247,7 +247,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    */
   @Override
   public void notifyObservers(Object arg) {
-    if (logger.level <= Logger.FINEST) logger.log(this+".notifyObservers("+arg+"):notifying "+countObservers()+" listeners");            
+    logger.atTrace().log(() -> this+".notifyObservers("+arg+"):notifying "+countObservers()+" listeners");            
     notifyNodeHandleListeners(arg); 
   }
 
@@ -260,15 +260,11 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    */
   public void update(Object update) {
     if (logger != null) {
-      if (logger.level <= Logger.FINE) {
-        logger.log(this+".update("+update+")"+countObservers());
-      }
+      logger.atDebug().log(() -> this+".update("+update+")"+countObservers());
     }
     notifyObservers(update);
     if (logger != null) {
-      if (logger.level <= Logger.FINEST) {
-        logger.log(this+".update("+update+")"+countObservers()+" done");
-      }
+      logger.atTrace().log(() -> this+".update("+update+")"+countObservers()+" done");
     }
   }  
 }

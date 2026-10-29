@@ -43,7 +43,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 
 public class FileInputBuffer extends DataInputStream implements InputBuffer {
@@ -63,7 +63,7 @@ public class FileInputBuffer extends DataInputStream implements InputBuffer {
     try {
       return this.available();
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("error getting available bytes for "+this+".",ioe);
+      logger.warn("error getting available bytes for {}.", this, ioe);
       return -1;
     }
   }

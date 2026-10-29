@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.glacier.v2;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.IdRange;
 
 public class GlacierStatistics {
@@ -89,6 +89,6 @@ public class GlacierStatistics {
     for (int i=0; i<messagesSentByTag.length; i++)
       s+=messagesSentByTag[i]+" ";
     s+="\n";
-    if (logger.level <= Logger.INFO) logger.log(s);
+    logger.info(s);
   }
 };

@@ -41,10 +41,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.*;
 
+import org.slf4j.Logger;
 import rice.*;
 import rice.Continuation.*;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
@@ -169,7 +169,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     
     this.handle = endpoint.getLocalNodeHandle();
     
-    if (logger.level <= Logger.FINER) logger.log("Starting up ReplicationImpl with client " + client + " and factor " + replicationFactor);
+    logger.trace("Starting up ReplicationImpl with client {} and factor {}", client, replicationFactor);
 
     endpoint.register();
     // inject the first reminder message, which will cause the replication to begin
@@ -214,7 +214,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     try {
       return endpoint.range(handle, replicationFactor, handle.getId(), true);
     } catch (RangeCannotBeDeterminedException rcbde) {
-      if (logger.level <= Logger.WARNING) logger.log("ReplicationImpl.getTotalRange():"+rcbde+" returning null.");
+      logger.atWarn().log(() -> "ReplicationImpl.getTotalRange():"+rcbde+" returning null.");
       return null; 
     }
   }
@@ -223,7 +223,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
    * Internal method which updates the client about what his current range is
    */
   private void updateClient() {
-    if (logger.level <= Logger.FINE) logger.log( "Updating client with range " + getTotalRange());
+    logger.debug("Updating client with range {}", getTotalRange());
     
     if (getTotalRange() != null)
       client.setRange(getTotalRange());
@@ -255,7 +255,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
                 public void receiveResult(IdBloomFilter o) {
                   IdBloomFilter filter = (IdBloomFilter) o;
   
-                  if (ReplicationImpl.this.logger.level <= Logger.FINE) ReplicationImpl.this.logger.log( "COUNT: Sending request to " + handle + " for range " + range + ", " + ourRange + " in instance " + instance);
+                  ReplicationImpl.this.logger.debug("COUNT: Sending request to {} for range {}, {} in instance {}", handle, range, ourRange, instance);
                   
                   RequestMessage request = new RequestMessage(ReplicationImpl.this.handle, new IdRange[] {range, ourRange}, new IdBloomFilter[] {filter, ourFilter});
                   endpoint.route(null, request, handle);
@@ -267,7 +267,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
           }
         }
         
-        if (logger.level <= Logger.FINE) logger.log( "COUNT: Done sending replications requests with " + total + " in instance " + instance);
+        logger.debug("COUNT: Done sending replications requests with {} in instance {}", total, instance);
       }
     });
   }
@@ -299,7 +299,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
    * @param message The message being sent
    */
   public void deliver(Id id, Message message) {
-    if (logger.level <= Logger.FINE) logger.log( "COUNT: Replication " + instance + " received message " + message);
+    logger.debug("COUNT: Replication {} received message {}", instance, message);
     
     if (message instanceof RequestMessage) {
       final RequestMessage rm = (RequestMessage) message;
@@ -309,18 +309,18 @@ public class ReplicationImpl implements Replication, Application, Destructable {
           Object[] array = (Object[]) o;
           IdSet[] result = new IdSet[array.length];
           if ((array.length > 0) && (array[0] instanceof Throwable)) {
-            if (logger.level <= Logger.SEVERE) logger.logException("Errors in Multicontinuation:",(Throwable)array[0]);
+            logger.error("Errors in Multicontinuation:", (Throwable)array[0]);
           } else {
             try {
               System.arraycopy(array, 0, result, 0, array.length);
             } catch (ArrayStoreException ase) {
               if (array.length > 0) {
-                if (logger.level <= Logger.SEVERE) logger.logException("Error copying "+array[0].getClass().getName()+":"+array.length,ase);            
+                logger.error("Error copying {}:{}", array[0].getClass().getName(), array.length, ase);            
                 throw ase;
               }
             }
           }            
-          if (logger.level <= Logger.FINE) logger.log( "COUNT: Telling node " + rm.getSource() + " to fetch");
+          logger.debug("COUNT: Telling node {} to fetch", rm.getSource());
           endpoint.route(null, new ResponseMessage(handle, rm.getRanges(), result), rm.getSource());
         }
       }, rm.getRanges().length);
@@ -349,7 +349,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
         
         IdSet fetch = policy.difference(client.scan(rm.getRanges()[i]), temp, factory);
         
-        if (logger.level <= Logger.FINE) logger.log( "COUNT: Was told to fetch " + fetch.numElements() + " in instance " + instance);
+        logger.atDebug().log(() -> "COUNT: Was told to fetch " + fetch.numElements() + " in instance " + instance);
 
         if (fetch.numElements() > 0) 
           client.fetch(fetch, rm.getSource());
@@ -358,7 +358,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
       replicate(); 
       updateClient(); 
     } else {
-      if (logger.level <= Logger.WARNING) logger.log( "Received unknown message " + message + " - dropping on floor.");
+      logger.warn("Received unknown message {} - dropping on floor.", message);
     }
   }
   

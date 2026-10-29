@@ -44,8 +44,8 @@ import java.util.Collections;
 
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
+import org.slf4j.Logger;
 
-import rice.environment.logging.Logger;
 
 public class Forwarder<Identifier> {
   SourceRoute<Identifier> sr;
@@ -121,7 +121,7 @@ public class Forwarder<Identifier> {
     }
 
     public void receiveException(P2PSocket<Identifier> socket, Exception e) {
-      if (logger.level <= Logger.FINE) logger.logException(this+" "+socket, e);
+      logger.debug("{} {}", this, socket, e);
       close();
     }
 
@@ -130,13 +130,13 @@ public class Forwarder<Identifier> {
         if (socket != from) throw new IOException("Expected to read from "+from+" got "+socket);      
         long result = from.read(buf);
         if (result == -1) {
-          if (logger.level <= Logger.FINE) logger.log(from+" has shut down input, shutting down output on "+to);
+          logger.debug("{} has shut down input, shutting down output on {}", from, to);
           // nothing is buffered (we only read after buf has been fully written), so shut down now
           to.shutdownOutput();
           halfPipeShutdown();
           return;
         }
-        if (logger.level <= Logger.FINER) logger.log("Read "+result+" bytes from "+from);
+        logger.trace("Read {} bytes from {}", result, from);
         buf.flip(); 
         if (!taps.isEmpty()) {
           for (SourceRouteTap<Identifier> tap : taps) {
@@ -150,11 +150,11 @@ public class Forwarder<Identifier> {
           
           long result = to.write(buf);         
           if (result == -1) {
-            if (logger.level <= Logger.FINE) logger.log(to+" has closed, closing "+from);
+            logger.debug("{} has closed, closing {}", to, from);
             close();
             return;
           }
-          if (logger.level <= Logger.FINER) logger.log("Wrote "+result+" bytes to "+to);
+          logger.trace("Wrote {} bytes to {}", result, to);
           
           
           if (buf.hasRemaining()) {

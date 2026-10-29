@@ -44,8 +44,8 @@ import java.io.RandomAccessFile;
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 

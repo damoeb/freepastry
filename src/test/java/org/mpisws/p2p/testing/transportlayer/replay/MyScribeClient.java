@@ -42,7 +42,7 @@ package org.mpisws.p2p.testing.transportlayer.replay;
 import java.util.Collection;
 import java.util.Collections;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.scribe.Scribe;
 import rice.p2p.scribe.ScribeContent;
@@ -154,7 +154,7 @@ public class MyScribeClient implements ScribeMultiClient, Application {
    * Called whenever we receive a published message.
    */
   public void deliver(Topic topic, ScribeContent content) {
-    logger.log("MyScribeClient.deliver("+topic+","+content+")");
+    logger.info("MyScribeClient.deliver({},{})", topic, content);
     if (((MyScribeContent)content).from == null) {
       new Exception("Stack Trace").printStackTrace();
     }

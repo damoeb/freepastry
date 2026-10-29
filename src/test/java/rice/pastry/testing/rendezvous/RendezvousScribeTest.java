@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.testing.RawScribeRegrTest;

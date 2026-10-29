@@ -38,7 +38,6 @@ package rice.pastry.client;
 
 import java.io.IOException;
 
-import rice.environment.logging.Logger;
 import rice.pastry.*;
 import rice.pastry.messaging.*;
 import rice.pastry.routing.*;
@@ -94,8 +93,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * @param hint the hint
    */
   public void route(Id key, Message msg, NodeHandle hint) {
-    if (logger.level <= Logger.FINER) logger.log( 
-        "[" + thePastryNode + "] route " + msg + " to " + key);
+    logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
 
     RouteMessage rm = new RouteMessage(key, msg, hint, 
         (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
@@ -296,8 +294,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    */
 
   public void receiveMessage(Message msg) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "[" + thePastryNode + "] recv " + msg);
+    logger.trace("[{}] recv {}", thePastryNode, msg);
 
     if (msg instanceof RouteMessage) {
       RouteMessage rm = (RouteMessage) msg;

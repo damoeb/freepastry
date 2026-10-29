@@ -57,10 +57,10 @@ import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.Serializer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.CloneableLogManager;
+import rice.environment.logging.Slf4jLogManager;
 import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;
@@ -153,11 +153,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
   
   public void logEvent(short type, ByteBuffer ... entry) throws IOException {
     if (history == null) return;
-    if (logger.level <= Logger.FINEST) {
-      logger.logException("logging #"+history.getNumEntries()+" t:"+type, new Exception("Stack Trace"));
-    } else if (logger.level <= Logger.FINER) {
-      logger.log("logging #"+history.getNumEntries()+" t:"+type);
-    }
+    if (logger.isTraceEnabled()) logger.trace("logging #{} t:{}", history.getNumEntries(), type, new Exception("Stack Trace"));
     updateLogTime();
     history.appendEntry(type, true, entry);   
   }
@@ -171,7 +167,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
       identifierSerializer.serialize(i, sob);
       logEvent(EVT_SOCKET_OPEN_OUTGOING, socketIdBuffer, sob.getByteBuffer());
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("openSocket("+i+")",ioe); 
+      logger.warn("openSocket({})", i, ioe); 
     }
 
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i, options, logger);
@@ -182,7 +178,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
         try {
           logEvent(EVT_SOCKET_OPENED_OUTGOING, socketIdBuffer);
         } catch (IOException ioe) {
-          if (logger.level <= Logger.WARNING) logger.logException("error logging in openSocket("+i+")",ioe); 
+          logger.warn("error logging in openSocket({})", i, ioe); 
         }
         socketIdBuffer.clear();
         deliverSocketToMe.receiveResult(ret, new RecordSocket<Identifier>(i, sock, logger, options, socketId, socketIdBuffer, RecordLayer.this));
@@ -192,7 +188,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
         try {
           logSocketException(socketIdBuffer, ex);
         } catch (IOException ioe) {
-          if (logger.level <= Logger.WARNING) logger.logException("openSocket("+i+")@"+socketId,ioe); 
+          logger.warn("openSocket({})@{}", i, socketId, ioe); 
         }
         deliverSocketToMe.receiveException(ret, ex);
       }
@@ -210,20 +206,16 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
       identifierSerializer.serialize(s.getIdentifier(), sob);
       logEvent(EVT_SOCKET_OPEN_INCOMING, socketIdBuffer, sob.getByteBuffer());
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("incomingSocket("+s.getIdentifier()+")",ioe); 
+      logger.warn("incomingSocket({})", s.getIdentifier(), ioe); 
     }
     
     callback.incomingSocket(new RecordSocket<Identifier>(s.getIdentifier(), s, logger, s.getOptions(), socketId, socketIdBuffer, RecordLayer.this));
   }
   
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
-    if (logger.level <= Logger.FINEST) {
-      logger.logException("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));      
-    } else if (logger.level <= Logger.FINER) {
-      logger.log("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()));
-    } else if (logger.level <= Logger.FINE) {
-      logger.log("sendMessage("+i+","+m+")");      
-    }
+    if (logger.isTraceEnabled()) {
+      logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));      
+    } else logger.debug("sendMessage({},{})", i, m);
     // If the 'RELEVANT_MSG' flag is set to false, the message is passed through to the transport
     // layer. This is used e.g. for liveness/proximity pings in Pastry. 
     if (options == null || !options.containsKey(PR_RELEVANT_MSG) || ((Integer)options.get(PR_RELEVANT_MSG)).intValue() != 0) {
@@ -241,7 +233,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
         identifierSerializer.serialize(i, sob);
         logEvent(EVT_SEND, sob.getByteBuffer(), m);
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("sendMessage("+i+","+m+")",ioe); 
+        logger.warn("sendMessage({},{})", i, m, ioe); 
       }
       
       m.position(position); // set the incoming position
@@ -259,14 +251,14 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
       if (identifierSerializer == null) {
         // just drop this event, it's while we're booting, 
         // don't forward it or you will mess up the state of the state machine vs the log
-        if (logger.level <= Logger.WARNING) logger.log("Dropping messageReceived("+i+","+m+") while booting");
+        logger.warn("Dropping messageReceived({},{}) while booting", i, m);
         return; 
       }
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       identifierSerializer.serialize(i, sob);
       logEvent(EVT_RECV, sob.getByteBuffer(), m);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("messageReceived("+i+","+m+")",ioe); 
+      logger.warn("messageReceived({},{})", i, m, ioe); 
     }
 
     callback.messageReceived(i, m, options);
@@ -297,7 +289,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
       if (history != null) history.close();
       history = null;
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("Error destroying.", ioe);
+      logger.warn("Error destroying.", ioe);
     }
     tl.destroy();
   }
@@ -316,7 +308,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
   public static Environment generateEnvironment(RandomSource rs) {
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
     DirectTimeSource dts = new DirectTimeSource(System.currentTimeMillis());
-    LogManager lm = Environment.generateDefaultLogManager(dts,params);
+    LogManager lm = Environment.generateDefaultLogManager();
     dts.setLogManager(lm);
     SelectorManager selector = new RecordSM("Default", new SimpleTimeSource(), dts,lm,rs);
     dts.setSelectorManager(selector);
@@ -328,8 +320,8 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
         // new logManager
         DirectTimeSource dts = new DirectTimeSource(getTimeSource().currentTimeMillis());
         LogManager lman = getLogManager();
-        if (lman instanceof CloneableLogManager) {
-          lman = ((CloneableLogManager) getLogManager()).clone(prefix,dts);          
+        if (lman instanceof Slf4jLogManager slm) {
+          lman = slm.clone(prefix);
         }                
         dts.setLogManager(lman);
         
@@ -378,7 +370,7 @@ public class RecordLayer<Identifier> implements PeerReviewConstants,
   }
   
   public void logSocketException(ByteBuffer socketId, Exception ioe) throws IOException {
-    if (logger.level <= Logger.CONFIG) logger.logException("logSocketException("+ioe+")", ioe);
+    logger.info("logSocketException({})", ioe, ioe);
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     String className = ioe.getClass().getName();
     if (className.endsWith("ClosedChannelException")) {

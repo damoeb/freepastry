@@ -41,6 +41,8 @@ package rice.environment.processing.simple;
 
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rice.environment.processing.WorkRequest;
 
 /**
@@ -48,6 +50,8 @@ import rice.environment.processing.WorkRequest;
  */
 @SuppressWarnings("unchecked")
 public class WorkQueue {
+  private static final Logger LOG = LoggerFactory.getLogger(WorkQueue.class);
+
   List<WorkRequest<?>> q = new LinkedList<WorkRequest<?>>();
   /* A negative capacity, is equivalent to infinite capacity */
   int capacity = -1;
@@ -80,7 +84,7 @@ public class WorkQueue {
       try {
         wait();
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        LOG.warn("Interrupted while waiting for work", e);
       }
     }
     

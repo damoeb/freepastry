@@ -40,6 +40,8 @@ package rice.p2p.util;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * XMLObjectOutputStream is an extension of ObjectOutputStream which provides
@@ -65,6 +67,8 @@ import java.util.*;
  */
 @SuppressWarnings("unchecked")
 public class XMLObjectOutputStream extends ObjectOutputStream {
+  private static final Logger LOG = LoggerFactory.getLogger(XMLObjectOutputStream.class);
+
   
   /**
    * A cache of the writeReplace() methods, mapping class->writeReplace()
@@ -160,8 +164,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   protected void writeStreamHeader() throws IOException {
     if (writer == null) {
-      System.out.println("FLUGLE writer is null in writeStreamHeader()...");
-      System.out.println(debugstr);
+      LOG.warn("writer is null in writeStreamHeader(): {}", debugstr);
     }
     try {
       writer.writeHeader();
@@ -170,11 +173,10 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       writer.attribute("minor", 1);
       writer.attribute("format", "JSX.DataReader");
     } catch (NullPointerException npe) {
-      System.out.println("FLUGLE writer NPE'd in writeStreamHeader()...");
       int hash = 0;
       if (writer != null) hash = writer.hashCode();
       this.debugstr += "writer in NPE handler: "+writer+" "+hash+"\n";
-      System.out.println(debugstr);
+      LOG.warn("writer NPE'd in writeStreamHeader(): {}", debugstr);
       throw npe;
     }
   }  
@@ -686,9 +688,8 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     if (references.get(ref) == null) {
       references.put(ref, reference);
     } else {
-      System.out.println("SERIOUS ERROR: Attempt to re-store reference: " + 
-                         "EXISTING: " + references.get(ref) + " " + references.get(ref).hashCode() + 
-                         "NEW: " + o + " " + o.hashCode());
+      LOG.error("Attempt to re-store reference: EXISTING: {} {} NEW: {} {}",
+          references.get(ref), references.get(ref).hashCode(), o, o.hashCode());
     }
   }
   

@@ -45,8 +45,8 @@ import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.NodeHandle;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouterStrategy;
@@ -67,14 +67,14 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     if (!i.hasNext()) return null;
     NodeHandle best = i.next();
     int bestRating = routingQuality(best);
-    if (logger.level <= Logger.FINEST) logger.log("Routing "+msg+"(0) "+best+":"+bestRating);
+    logger.trace("Routing {}(0) {}:{}", msg, best, bestRating);
     if (bestRating == 0) return best;
 
     int ctr = 1;
     while (i.hasNext()) {
       NodeHandle next = i.next();
       int nextRating = routingQuality(next);
-      if (logger.level <= Logger.FINEST) logger.log("Routing "+msg+"("+(ctr++)+") "+next+":"+nextRating);
+      if (logger.isTraceEnabled()) logger.trace("Routing "+msg+"("+(ctr++)+") "+next+":"+nextRating);
       
       // found a perfect node?
       if (nextRating == 0) return next;
@@ -88,7 +88,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     }
     
     if (bestRating > 3) {
-      if (logger.level <= Logger.INFO) logger.log("Can't find route for "+msg);
+      logger.info("Can't find route for {}", msg);
             
       /*
          This is needed to prevent problems before the leafset is built, or in the case that the entire leafset is not connectable.
@@ -97,7 +97,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
       return null; // fail if node is unreachable
     }
 
-    if (logger.level <= Logger.FINEST) logger.log("Routing "+msg+"returning "+best+":"+bestRating);
+    logger.trace("Routing {}returning {}:{}", msg, best, bestRating);
     return best;
   }
 

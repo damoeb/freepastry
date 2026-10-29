@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.direct;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;

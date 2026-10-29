@@ -62,10 +62,10 @@ import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Destructable;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -115,7 +115,7 @@ public class TCPLayer extends SelectionKeyHandler {
       channel.configureBlocking(false);
       channel.socket().setReuseAddress(true);
       channel.socket().bind(wire.bindAddress);
-      if (logger.level <= Logger.INFO) logger.log("TCPLayer bound to "+wire.bindAddress);
+      logger.info("TCPLayer bound to {}", wire.bindAddress);
       
       this.key = wire.environment.getSelectorManager().register(channel, this, SelectionKey.OP_ACCEPT);
     }
@@ -126,10 +126,10 @@ public class TCPLayer extends SelectionKeyHandler {
       SocketCallback<InetSocketAddress> deliverSocketToMe,
       Map<String, Object> options) {
     if (isDestroyed()) return null;
-    if (logger.level <= Logger.FINEST) {
-      logger.logException("openSocket("+destination+")", new Exception("Stack Trace"));
+    if (logger.isTraceEnabled()) {
+      logger.trace("openSocket("+destination+")", new Exception("Stack Trace"));
     } else {
-      if (logger.level <= Logger.FINE) logger.log("openSocket("+destination+")");
+      logger.debug("openSocket({})", destination);
     }
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
     try {
@@ -141,7 +141,7 @@ public class TCPLayer extends SelectionKeyHandler {
         return sm;
       }
     } catch (IOException e) {
-      if (logger.level <= Logger.WARNING) logger.logException("GOT ERROR " + e + " OPENING PATH - MARKING PATH " + destination + " AS DEAD!",e);
+      logger.warn("GOT ERROR {} OPENING PATH - MARKING PATH {} AS DEAD!", e, destination, e);
       SocketRequestHandle<InetSocketAddress> can = new SocketRequestHandleImpl<InetSocketAddress>(destination, options, logger);
       deliverSocketToMe.receiveException(can, e);
       return can;
@@ -156,7 +156,7 @@ public class TCPLayer extends SelectionKeyHandler {
   }
 
   public void destroy() {
-    if (logger.level <= Logger.INFO) logger.log("destroy()");
+    logger.info("destroy()");
 
     try {
       if (key != null) {
@@ -210,7 +210,7 @@ public class TCPLayer extends SelectionKeyHandler {
       }
       wire.incomingSocket(sm);      
     } catch (IOException e) {
-      if (logger.level <= Logger.WARNING) logger.log( "ERROR (accepting connection): " + e);
+      logger.atWarn().log(() -> "ERROR (accepting connection): " + e);
       wire.errorHandler.receivedException(null, e);
     }
   }

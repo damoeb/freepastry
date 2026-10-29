@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.testing;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.pastry.*;
@@ -162,28 +161,6 @@ public class HelloWorld {
 
   private static void doIinitstuff(String args[], Environment env) {
     for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-verbosity") && i + 1 < args.length) {
-        int num = Integer.parseInt(args[i + 1]);
-        env.getParameters().setInt("loglevel", num*100);
-        break;
-      }
-    }
-
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-silent") && i + 1 < args.length) {
-        env.getParameters().setInt("loglevel", Logger.SEVERE);
-        break;
-      }        
-    }
-
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-verbose") && i + 1 < args.length) {
-        env.getParameters().setInt("loglevel", Logger.ALL);
-        break;
-      }        
-    }
-
-    for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-nodes") && i + 1 < args.length)
         numnodes = Integer.parseInt(args[i + 1]);
 
@@ -198,18 +175,18 @@ public class HelloWorld {
 
       if (args[i].equals("-help")) {
         System.out
-            .println("Usage: HelloWorld [-msgs m] [-nodes n] [-verbose|-silent|-verbosity v]");        
+            .println("Usage: HelloWorld [-msgs m] [-nodes n]");        
         System.out
             .println("                  [-simultaneous_joins] [-simultaneous_msgs] [-help]");
         System.out
-            .println("  Default verbosity is 8, -verbose is 1, and -silent is 10 (error msgs only).");
+            .println("  Log levels are set in the SLF4J backend's configuration.");
         System.exit(1);
       }
     }    
   }
   
   /**
-   * Usage: HelloWorld [-msgs m] [-nodes n] [-verbose|-silent|-verbosity v]
+   * Usage: HelloWorld [-msgs m] [-nodes n]
    * [-simultaneous_joins] [-simultaneous_msgs] [-help]
    */
   public static void main(String args[]) {

@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.pastry.messaging.Message;
 import rice.selector.TimerTask;
 
@@ -87,7 +87,7 @@ public class ScheduledMessage extends TimerTask {
       if (m != null) localNode.receiveMessage(msg);
     } catch (Exception e) {
       Logger logger = localNode.getEnvironment().getLogManager().getLogger(getClass(), null);
-      if (logger.level <= Logger.WARNING) logger.logException("Delivering " + this + " caused exception ", e);
+      logger.warn("Delivering {} caused exception ", this, e);
     }
   }
 

@@ -41,8 +41,8 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.direct.Delivery;
 import org.mpisws.p2p.transport.direct.DirectTransportLayer;
+import org.slf4j.Logger;
 
-import rice.environment.logging.Logger;
 
   /**
    * 
@@ -76,19 +76,19 @@ import rice.environment.logging.Logger;
     }
 
     public void deliver() {
-      if (logger.level <= Logger.FINE) logger.log("MD: deliver "+msg+" to "+node);
+      logger.debug("MD: deliver {} to {}", msg, node);
       try {
         DirectTransportLayer<Identifier, MessageType> tl = networkSimulator.getTL(node);
         if (tl != null) {
           networkSimulator.notifySimulatorListenersReceived(msg, from, node);
           tl.incomingMessage(from, msg, options);
         } else {
-          if (logger.level <= Logger.WARNING) logger.log("Message "+msg+" dropped because destination "+node+" is dead.");
+          logger.warn("Message {} dropped because destination {} is dead.", msg, node);
           // Notify sender? tough decision, this would be lost in the network, but over tcp, this would be noticed
           // maybe notify sender if tcp?
         }
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("Error delivering message "+this, ioe);
+        logger.warn("Error delivering message {}", this, ioe);
       }
       
     } 

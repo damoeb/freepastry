@@ -51,7 +51,7 @@ import java.util.TreeSet;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.util.Serializer;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 
@@ -93,7 +93,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
       try {
         authFile.close();
       } catch (IOException ioe) {
-        logger.logException("Couldn't close authFile "+authFile,ioe);
+        logger.warn("Couldn't close authFile {}", authFile, ioe);
       } finally {
         authFile = null;
       }

@@ -38,8 +38,8 @@ package rice.p2p.aggregation;
 
 import java.util.Arrays;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 public class AggregationStatistics {
   public final long granularity;
@@ -77,6 +77,6 @@ public class AggregationStatistics {
     s+="@L.AG   objsTotal="+numObjectsTotal+" objsAlive="+numObjectsAlive+"\n";
     s+="@L.AG   objBytesTotal="+totalObjectsSize+" objBytesAlive="+liveObjectsSize+"\n";
     s+="@L.AG   aggrTotal="+numAggregatesTotal+" ptrArrays="+numPointerArrays+" critical="+criticalAggregates+" orphaned="+orphanedAggregates;
-    if (logger.level <= Logger.INFO) logger.log(s);
+    logger.info(s);
   }
 }

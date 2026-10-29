@@ -47,7 +47,7 @@ import org.mpisws.p2p.transport.peerreview.audit.SnippetEntry;
 import org.mpisws.p2p.transport.util.FileInputBuffer;
 import org.mpisws.p2p.transport.util.FileOutputBuffer;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 
@@ -129,7 +129,7 @@ public class SecureHistoryImpl implements SecureHistory {
    */
   public void appendEntry(short type, boolean storeFullEntry, ByteBuffer ... entry) throws IOException {
     assert(indexFile != null && dataFile != null);
-    if (logger.level <= Logger.FINER) logger.log("appendEntry("+type+","+storeFullEntry+","+entry.length+","+entry[0].remaining()+"):"+nextSeq);
+    logger.atTrace().log(() -> "appendEntry("+type+","+storeFullEntry+","+entry.length+","+entry[0].remaining()+"):"+nextSeq);
     // Sanity check (for debugging) 
 
     if (readOnly) throw new IllegalStateException("Cannot append entry to readonly history");
@@ -230,7 +230,7 @@ public class SecureHistoryImpl implements SecureHistory {
    */
   public void close() throws IOException {
     assert(indexFile != null && dataFile != null);
-    if (logger.level <= Logger.FINE) logger.logException(this+".close()", new Exception("Stack Trace"));
+    if (logger.isDebugEnabled()) logger.debug("{}.close()", this, new Exception("Stack Trace"));
     indexFile.close();
     dataFile.close();
     
@@ -488,7 +488,7 @@ public class SecureHistoryImpl implements SecureHistory {
     try {
       dataFile.seek(ie.fileIndex);
     } catch (IOException ioe) {
-      logger.log("fileIndex:"+ie.fileIndex+" "+ie);
+      logger.warn("fileIndex:{} {}", ie.fileIndex, ie);
       throw ioe;
     }
     int bytesToRead = (maxSizeToRead>=ie.sizeInFile) ? ie.sizeInFile : maxSizeToRead;

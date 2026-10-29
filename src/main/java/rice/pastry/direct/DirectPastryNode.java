@@ -43,7 +43,6 @@ import java.util.Map;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.pastry.Id;

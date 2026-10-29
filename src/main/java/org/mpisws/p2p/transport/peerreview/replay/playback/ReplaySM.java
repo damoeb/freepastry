@@ -43,7 +43,6 @@ import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
 import rice.environment.time.TimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.selector.SelectorManager;
@@ -87,7 +86,7 @@ public class ReplaySM extends SelectorManager {
   protected synchronized void addTask(TimerTask task) {
     long now = timeSource.currentTimeMillis();
     if ((task.scheduledExecutionTime() < now) && (timeSource instanceof DirectTimeSource)) {
-      if (logger.level <= Logger.WARNING) logger.logException("Can't schedule a task in the past. "+task+" now:"+now+" task.execTime:"+task.scheduledExecutionTime(), new Exception("Stack Trace"));
+      logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Can't schedule a task in the past. "+task+" now:"+now+" task.execTime:"+task.scheduledExecutionTime());
       throw new RuntimeException("Can't schedule a task in the past.");
     }
     super.addTask(task);
@@ -96,7 +95,7 @@ public class ReplaySM extends SelectorManager {
   public boolean makeProgress() {
     // Handle any pending timers. Note that we have to be sure to call them in the exact same
     // order as in the main code; otherwise there can be subtle bugs and side-effects. 
-    if (logger.level <= Logger.FINER) logger.log("executeDueTasks()");
+    logger.trace("executeDueTasks()");
 
     if (isSuccess()) return false;
     boolean timerProgress = true;
@@ -123,7 +122,7 @@ public class ReplaySM extends SelectorManager {
       
       if (timerProgress) {
         super.doInvocations();
-        if (logger.level <= Logger.FINE) logger.log("executing task "+next);
+        logger.debug("executing task {}", next);
         if (next.execute(simTime)) { // execute the event
           synchronized(this) {
             timerQueue.add(next); // if the event needs to be rescheduled, add it back on

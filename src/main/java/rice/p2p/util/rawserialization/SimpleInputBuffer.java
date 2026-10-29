@@ -42,9 +42,13 @@ package rice.p2p.util.rawserialization;
 import java.io.*;
 import java.nio.ByteBuffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 
 public class SimpleInputBuffer extends DataInputStream implements InputBuffer {
+  private static final Logger LOG = LoggerFactory.getLogger(SimpleInputBuffer.class);
+
   ByteArrayInputStream bais;
   
   public SimpleInputBuffer(ByteBuffer bb) {
@@ -65,7 +69,7 @@ public class SimpleInputBuffer extends DataInputStream implements InputBuffer {
     try {
       return this.available();
     } catch (IOException ioe) {
-      ioe.printStackTrace();
+      LOG.warn("bytesRemaining() failed", ioe);
     }
     return -1;
   }  

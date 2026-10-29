@@ -138,8 +138,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   public PastryNode newNode(NodeHandle bootstrap, Id nodeId) {
     try {
       if (bootstrap == null)
-        if (logger.level <= Logger.WARNING) logger.log(
-            "No bootstrap node provided, starting a new ring...");
+        logger.warn("No bootstrap node provided, starting a new ring...");
       PastryNode pn = newNode(nodeId);
       if (bootstrap == null) {
         pn.getBootstrapper().boot(Collections.EMPTY_LIST);
@@ -148,7 +147,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       }
       return pn;
     } catch (IOException ioe) {
-      logger.logException("Couldn't construct node.", ioe);
+      logger.error("Couldn't construct node.", ioe);
       return null;
     }
   }
@@ -163,13 +162,13 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       // this code builds a different environment for each PastryNode
       Environment environment = this.environment;
       if (this.environment.getParameters().getBoolean("pastry_factory_multipleNodes")) {
-        if (this.environment.getLogManager() instanceof CloneableLogManager) {
+        if (this.environment.getLogManager() instanceof Slf4jLogManager slm) {
           environment = new Environment(
               this.environment.getSelectorManager(),
               this.environment.getProcessor(),
             this.environment.getRandomSource(),
             this.environment.getTimeSource(),
-            ((CloneableLogManager)this.environment.getLogManager()).clone("0x"+nodeId.toStringBare()),
+            slm.clone("0x"+nodeId.toStringBare()),
             this.environment.getParameters(), 
             this.environment.getExceptionStrategy());
         }
@@ -351,7 +350,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       public void boot(Collection<NodeHandle> bootaddresses) {
         pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {        
           public void receiveResult(Collection<NodeHandle> result) {
-            if (logger.level <= Logger.INFO) logger.log("boot() calling pn.doneNode("+result+")");
+            logger.info("boot() calling pn.doneNode({})", result);
             pn.doneNode(result);
           }        
           public void receiveException(Exception exception) {

@@ -40,9 +40,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.*;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.*;
 import rice.pastry.join.JoinRequest;
 import rice.pastry.routing.*;
@@ -125,28 +125,28 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     Iterator<GoneSetEntry> it = gone.values().iterator();
     long now = env.getTimeSource().currentTimeMillis();
 
-    if (logger.level <= Logger.FINE) logger.log("Doing maintenance in PartitionHandler "+now);
+    logger.debug("Doing maintenance in PartitionHandler {}", now);
 
-    if (logger.level <= Logger.FINER) logger.log("gone size 1 is "+gone.size()+" of "+maxGoneSize);
+    logger.trace("gone size 1 is {} of {}", gone.size(), maxGoneSize);
 
     while (it.hasNext()) {
       GoneSetEntry g = (GoneSetEntry)it.next();
       if (now - g.timestamp > maxGoneAge) { // toss if too old
-        if (logger.level <= Logger.FINEST) logger.log("Removing "+g+" from gone due to expiry");
+        logger.atTrace().log(() -> "Removing "+g+" from gone due to expiry");
         it.remove();
       } else if (g.nh.getLiveness() > NodeHandle.LIVENESS_DEAD) { // toss if epoch changed
-        if (logger.level <= Logger.FINEST) logger.log("Removing "+g+" from gone due to death");
+        logger.atTrace().log(() -> "Removing "+g+" from gone due to death");
         it.remove();
       }
     }
     
-    if (logger.level <= Logger.FINER) logger.log("gone size 2 is "+gone.size()+" of "+maxGoneSize);
+    logger.trace("gone size 2 is {} of {}", gone.size(), maxGoneSize);
 
     while (gone.size() > maxGoneSize) {
       Object key = gone.keySet().iterator().next();
       gone.remove(key);
     }
-    if (logger.level <= Logger.FINER) logger.log("gone size 3 is "+gone.size()+" of "+maxGoneSize);
+    logger.trace("gone size 3 is {} of {}", gone.size(), maxGoneSize);
   }
 
   private List<NodeHandle> getRoutingTableAsList() {
@@ -186,7 +186,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
   public NodeHandle getCandidateNode() {
     synchronized (this) {
       int which = env.getRandomSource().nextInt(maxGoneSize);
-      if (logger.level <= Logger.FINEST) logger.log("getGone choosing node "+which+" from gone or routing table");
+      logger.trace("getGone choosing node {} from gone or routing table", which);
       
       Iterator<GoneSetEntry> it = gone.values().iterator();
       while (which>0 && it.hasNext()) {
@@ -196,7 +196,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
   
       if (it.hasNext()) {
         // assert which==0;
-        if (logger.level <= Logger.FINEST) logger.log("getGone chose node from gone "+which);
+        logger.trace("getGone chose node from gone {}", which);
         return ((GoneSetEntry)it.next()).nh;
       }
     }
@@ -204,13 +204,13 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     List<NodeHandle> rtHandles = getRoutingTableAsList();
     
     if (rtHandles.isEmpty()) {
-      if (logger.level <= Logger.INFO) logger.log("getGone returning null; routing table is empty!");
+      logger.info("getGone returning null; routing table is empty!");
       return null;
     }
     
     int which = env.getRandomSource().nextInt(rtHandles.size());
 
-    if (logger.level <= Logger.FINEST) logger.log("getGone choosing node "+which+" from routing table");
+    logger.trace("getGone choosing node {} from routing table", which);
 
     return rtHandles.get(which);
 
@@ -220,19 +220,19 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
   private void getNodeHandleToProbe(Continuation<NodeHandle, Exception> c) {
     if (env.getRandomSource().nextDouble() > bootstrapRate) {
       NodeHandle nh = getCandidateNode();
-      if (logger.level <= Logger.FINEST) logger.log("getGone chose "+nh);
+      logger.trace("getGone chose {}", nh);
       if (nh != null) {
         c.receiveResult(nh);
         return;
       }
     }
-    if (logger.level <= Logger.FINEST) logger.log("getNodeHandleToProbe choosing bootstrap");
+    logger.trace("getNodeHandleToProbe choosing bootstrap");
     
     factory.getNodeHandle(bootstraps, c);
   }
   
   public void run() {
-    if (logger.level <= Logger.INFO) logger.log("running partition handler");
+    logger.info("running partition handler");
     doGoneMaintainence();
     
     getNodeHandleToProbe(new Continuation<NodeHandle, Exception>() {
@@ -241,13 +241,13 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
         if (result != null) {
           rejoin((NodeHandle)result);
         } else {
-          if (logger.level <= Logger.INFO) logger.log("getNodeHandleToProbe returned null");
+          logger.info("getNodeHandleToProbe returned null");
         }
       }
 
       public void receiveException(Exception result) {
         // oh well
-        if (logger.level <= Logger.INFO) logger.logException("exception in PartitionHandler",result);
+        logger.info("exception in PartitionHandler", result);
       }
       
     });
@@ -265,11 +265,11 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
       synchronized (this) {
         if (handle.getLiveness() == NodeHandle.LIVENESS_DEAD) {
           if (gone.containsKey(handle.getId())) {
-            if (logger.level <= Logger.FINEST) logger.log("PartitionHandler updating node "+handle);
+            logger.trace("PartitionHandler updating node {}", handle);
             ((GoneSetEntry)gone.get(handle.getId())).nh = handle;
           } else {
             GoneSetEntry g = new GoneSetEntry(handle, env.getTimeSource().currentTimeMillis());
-            if (logger.level <= Logger.FINEST) logger.log("PartitionHandler adding node "+g);
+            logger.atTrace().log(() -> "PartitionHandler adding node "+g);
             gone.put(handle.getId(),g);
           }
         }
@@ -303,7 +303,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
    * @param timer the timer used to schedule partition checks (normally from the environment)
    */
   public void start(Timer timer) {
-    if (logger.level <= Logger.INFO) logger.log("installing partition handler");
+    logger.info("installing partition handler");
     timer.schedule(this, env.getParameters().getInt("partition_handler_check_interval"), 
         env.getParameters().getInt("partition_handler_check_interval"));
   }
@@ -329,7 +329,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     try {
       nh.bootstrap(rm);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("Error bootstrapping.",ioe); 
+      logger.warn("Error bootstrapping.", ioe); 
     }
   }
 

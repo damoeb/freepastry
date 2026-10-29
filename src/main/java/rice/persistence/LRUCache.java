@@ -49,10 +49,10 @@ import java.io.*;
 import java.util.*;
 import java.util.zip.*;
 
+import org.slf4j.Logger;
 import rice.*;
 import rice.Continuation.*;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.util.*;
 
@@ -423,7 +423,7 @@ public class LRUCache implements Cache {
       return baos.toByteArray().length;
     } catch (IOException e) {
       Logger logger = environment.getLogManager().getLogger(LRUCache.class, null);
-      if (logger.level <= Logger.WARNING) logger.logException("", e);
+      logger.warn("", e);
       // returns maximum value here, so it won't be cached
       return Integer.MAX_VALUE;
     }

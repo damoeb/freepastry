@@ -43,8 +43,8 @@ import java.util.*;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.multiring.messaging.*;
@@ -344,8 +344,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
       RingMessage rm = (RingMessage) content;
       collection.route(rm.getId(), rm.getRawMessage(), rm.getApplication(), null, null);
     } else {
-      if (logger.level <= Logger.WARNING) logger.log(
-          "Received unrecognized message " + content);
+      logger.warn("Received unrecognized message {}", content);
     }
     return true;
   }
@@ -358,8 +357,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * @param content The content which was published
    */
   public void deliver(Topic topic, ScribeContent content) {
-    if (logger.level <= Logger.FINER) logger.log(
-        "Received unexpected delivery on topic " + topic + " of " + content);
+    logger.trace("Received unexpected delivery on topic {} of {}", topic, content);
   }
   
   /**
@@ -422,8 +420,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * @param topic The topic which the subscribe failed on
    */
   private void retrySubscribe(Topic topic) {
-    if (logger.level <= Logger.WARNING) logger.log(
-        getId() + ": Received error joining ringId topic " + topic + " - trying again.");
+    logger.warn("{}: Received error joining ringId topic {} - trying again.", getId(), topic);
     nodeAdded(((RingId) topic.getId()).getId());
   }
   

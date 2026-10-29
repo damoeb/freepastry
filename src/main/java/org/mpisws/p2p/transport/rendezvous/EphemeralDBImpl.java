@@ -39,8 +39,8 @@ package org.mpisws.p2p.transport.rendezvous;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.time.TimeSource;
 import rice.p2p.util.tuples.MutableTuple;
 
@@ -84,36 +84,36 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
    * @param tag
    */
   public void mapHighToTag(HighIdentifier high, long tag) {
-    if (logger.level <= Logger.FINE) logger.log("mapHighToTag("+high+","+tag+")");
+    logger.debug("mapHighToTag({},{})", high, tag);
     highToTag.put(high, tag);
   }
 
   public Identifier getEphemeral(HighIdentifier high) {
     Long tag = highToTag.get(high);
     if (tag == null) {
-      if (logger.level <= Logger.FINE) logger.log("getEphemeral("+high+"):null");
+      logger.debug("getEphemeral({}):null", high);
       return null;
     }
     Identifier ret = getEphemeral(tag, null);
     if (ret == null) {
       highToTag.remove(high);
     }
-    if (logger.level <= Logger.FINE) logger.log("getEphemeral("+high+"):"+ret);
+    logger.debug("getEphemeral({}):{}", high, ret);
     return ret;
   }
   
   public Identifier getEphemeral(long tag, Identifier i) {
     MutableTuple<Identifier, Long> ret = tagToEphemeral.get(tag);
     if (ret == null) {
-      if (logger.level <= Logger.FINE) logger.log("getEphemeral("+tag+","+i+"):"+i);
+      logger.debug("getEphemeral({},{}):{}", tag, i, i);
       return i;
     }
     if (ret.b() < time.currentTimeMillis()-STALE_PORT_TIME) {
       clear(tag);
-      if (logger.level <= Logger.FINE) logger.log("getEphemeral("+tag+","+i+"):"+i);
+      logger.debug("getEphemeral({},{}):{}", tag, i, i);
       return i;
     }
-    if (logger.level <= Logger.FINE) logger.log("getEphemeral("+tag+","+i+"):"+ret.a());
+    logger.atDebug().log(() -> "getEphemeral("+tag+","+i+"):"+ret.a());
     return ret.a();
   }
 
@@ -130,7 +130,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
       } else {
         // update timestamp
         ret.setB(now);
-        if (logger.level <= Logger.FINE) logger.log("getTagForEphemeral("+addr+"):"+tag);
+        logger.debug("getTagForEphemeral({}):{}", addr, tag);
         return tag;
       }
     }
@@ -140,12 +140,12 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
     MutableTuple<Identifier, Long> ret = new MutableTuple<Identifier, Long>(addr, now);
     ephemeralToTag.put(addr, tag);
     tagToEphemeral.put(tag,ret);
-    if (logger.level <= Logger.FINE) logger.log("getTagForEphemeral("+addr+"):"+tag);
+    logger.debug("getTagForEphemeral({}):{}", addr, tag);
     return tag;
   }
 
   protected void clear(long tag) {
-    if (logger.level <= Logger.FINE) logger.log("clear("+tag+")");
+    logger.debug("clear({})", tag);
     MutableTuple<Identifier, Long> ret = tagToEphemeral.remove(tag);
     ephemeralToTag.remove(ret.a());
   }

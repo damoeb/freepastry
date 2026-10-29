@@ -31,6 +31,7 @@
         <surefire.excludedGroups>integration</surefire.excludedGroups>
         <surefire.forkTimeout>300</surefire.forkTimeout>
         <bouncycastle.version>1.86</bouncycastle.version>
+        <slf4j.version>2.0.20</slf4j.version>
     </properties>
 
     <dependencies>
@@ -45,6 +46,20 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
+        </dependency>
+        <!-- Logging API; applications choose the backend (slf4j-simple, logback, log4j2, ...) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- Logging backend for the tests only, configured by src/test/resources/simplelogger.properties -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- JUnit Jupiter for testing -->

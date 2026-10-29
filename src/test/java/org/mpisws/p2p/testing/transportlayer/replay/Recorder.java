@@ -56,7 +56,6 @@ import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.random.RandomSource;
@@ -117,14 +116,14 @@ public class Recorder implements MyEvents {
       @Override
       public rice.pastry.NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
         SocketNodeHandle ret = (SocketNodeHandle)super.getLocalHandle(pn, nhf);
-        if (logger.level <= Logger.FINE) logger.log("getLocalHandle():"+ret.toStringFull());
+        logger.atDebug().log(() -> "getLocalHandle():"+ret.toStringFull());
         return ret;
       }
       
       @Override
       protected RandomSource cloneRandomSource(Environment rootEnvironment, Id nodeId, LogManager lman) {
         long randSeed = rootEnvironment.getRandomSource().nextLong();
-        if (logger.level <= Logger.FINE) logger.log("RandSeed for "+nodeId+" "+randSeed);
+        logger.debug("RandSeed for {} {}", nodeId, randSeed);
         
         storedRandSeed.put(nodeId, randSeed); 
         
@@ -151,7 +150,7 @@ public class Recorder implements MyEvents {
             try {
               recorders.get(pn).logEvent(EVT_BOOT);
             } catch (IOException ioe) {
-              pn.getEnvironment().getLogManager().getLogger(Bootstrapper.class, null).logException("Error recording EVT_BOOT",ioe);
+              pn.getEnvironment().getLogManager().getLogger(Bootstrapper.class, null).warn("Error recording EVT_BOOT", ioe);
             }
             internal.boot(bootaddresses);
           }        
@@ -262,7 +261,7 @@ public class Recorder implements MyEvents {
       try {
         doIt();
       } catch (IOException ioe) {
-        app.node.getEnvironment().getLogManager().getLogger(Bootstrapper.class, null).logException("Error recording event",ioe);
+        app.node.getEnvironment().getLogManager().getLogger(Bootstrapper.class, null).warn("Error recording event", ioe);
       }      
     }        
   }

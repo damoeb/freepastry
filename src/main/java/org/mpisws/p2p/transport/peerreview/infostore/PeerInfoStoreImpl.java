@@ -52,8 +52,8 @@ import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.util.FileInputBuffer;
 import org.mpisws.p2p.transport.util.FileOutputBuffer;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
@@ -168,7 +168,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     addEvidence(originator, subject, timestamp, evidence, null);
   }
   public void addEvidence(Identifier originator, Identifier subject, long timestamp, Evidence evidence, Handle interestedParty) throws IOException {
-    if (logger.level <= Logger.FINE) logger.log("addEvidence(orig="+originator+", subj="+subject+", seq="+timestamp+")");
+    logger.debug("addEvidence(orig={}, subj={}, seq={})", originator, subject, timestamp);
 
     boolean proof = isProof(evidence);
 

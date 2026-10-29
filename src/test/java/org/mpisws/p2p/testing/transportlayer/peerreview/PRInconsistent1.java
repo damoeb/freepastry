@@ -51,8 +51,8 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistoryImpl;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 
 /**
@@ -102,7 +102,7 @@ public class PRInconsistent1 extends PRRegressionTest {
                           try {
                             fork(idx);                                        
                           } catch (IOException ioe) {
-                            logger.logException("Error forking the history at index "+idx, ioe);
+                            logger.warn("Error forking the history at index {}", idx, ioe);
                           }
                         }                      
                       });
@@ -135,7 +135,7 @@ public class PRInconsistent1 extends PRRegressionTest {
      */
     public void fork(long entryIndex) throws IOException {   
       IndexEntry entry = statEntry(entryIndex);
-      logger.log("forking at "+entryIndex+" "+entry);
+      logger.info("forking at {} {}", entryIndex, entry);
       
       dataFile.setLength(entry.getFileIndex());
       indexFile.setLength(entryIndex*indexFactory.getSerializedSize());
@@ -152,22 +152,22 @@ public class PRInconsistent1 extends PRRegressionTest {
     // see if everyone found bob exposed
     try {
       if (recordedStatus.get(aliceHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
-        logger.log("Alice Didn't expose bob");
+        logger.info("Alice Didn't expose bob");
         fail("Alice Didn't expose bob");
         return;
       }
       if (recordedStatus.get(carolHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
-        logger.log("Carol Didn't expose bob");
+        logger.info("Carol Didn't expose bob");
         fail("Carol Didn't expose bob");
         return;
       }
     } catch (Exception e) {
       // in case there is no record
-      logger.logException("Failure", e);
+      logger.warn("Failure", e);
       fail("No status recorded: "+e);
       return;
     }
-    logger.log("Success");
+    logger.info("Success");
     succeed();    
   }
   
@@ -181,10 +181,10 @@ public class PRInconsistent1 extends PRRegressionTest {
           IdImpl id,
           int newStatus) {
         if (player.localHandle.id.id == 2) return; // ignore bob's stuff
-        if (logger.level <= Logger.INFO) logger.log("notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
+        logger.atInfo().log(() -> "notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
         if (newStatus == STATUS_EXPOSED) {
           if (!id.equals(bobHandle.id)) {
-            logger.log("Node not trusted: "+id);
+            logger.info("Node not trusted: {}", id);
             fail("Node not trusted: "+id+" at "+player.localHandle);
             return;
           }

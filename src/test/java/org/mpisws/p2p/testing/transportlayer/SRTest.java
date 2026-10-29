@@ -62,7 +62,7 @@ import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 
 import rice.environment.Environment;
-import rice.environment.logging.CloneableLogManager;
+import rice.environment.logging.Slf4jLogManager;
 
 public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
   static SourceRouteTransportLayer<MultiInetSocketAddress> carol_tap; // going to be the middle hop for alice/bob
@@ -117,7 +117,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
         env.getProcessor(), 
         env.getRandomSource(), 
         env.getTimeSource(), 
-        ((CloneableLogManager) env.getLogManager()).clone(name),
+        ((Slf4jLogManager) env.getLogManager()).clone(name),
         env.getParameters(), 
         env.getExceptionStrategy());    
     env.addDestructable(env_a);    

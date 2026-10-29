@@ -73,8 +73,8 @@ import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -164,7 +164,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
   }
   
   public void addPendingMessage(UpperIdentifier i, IdentityMessageHandle ret) {
-    if (logger.level <= Logger.FINER) logger.log("addPendingMessage("+i+","+ret+")");
+    logger.trace("addPendingMessage({},{})", i, ret);
     synchronized(pendingMessages) {
       Set<IdentityMessageHandle> set = pendingMessages.get(i);
       if (set == null) {
@@ -188,8 +188,11 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }     
   }
   
-  public void printMemStats(int logLevel) {
-    if (logLevel <= Logger.FINE) {
+  /**
+   * Logs the number of pending messages at debug level, and each upper identifier's queue at trace level.
+   */
+  public void printMemStats() {
+    if (logger.isDebugEnabled()) {
       synchronized(pendingMessages) {
         int queueSum = 0;
         for(UpperIdentifier i : pendingMessages.keySet()) {
@@ -199,11 +202,11 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
             queueSize = theSet.size();
           }
           queueSum+=queueSize;
-          if (logLevel <= Logger.FINER) {            
-            logger.log("PM{"+i+","+upper.getLiveness(i, null)+"} queue:"+queueSize);
+          if (logger.isTraceEnabled()) {
+            logger.trace("PM{"+i+","+upper.getLiveness(i, null)+"} queue:"+queueSize);
           }
         }        
-        logger.log("NumUpperIds:"+pendingMessages.size()+" numPendingMsgs:"+queueSum);
+        logger.debug("NumUpperIds:{} numPendingMsgs:{}", pendingMessages.size(), queueSum);
       } // synchronized
     }
   }
@@ -221,12 +224,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
    */
   public void setDeadForever(LowerIdentifier l, UpperIdentifier i, Map<String, Object> options) {
     if (deadForever.contains(i)) return;
-    if (logger.level <= Logger.FINER) logger.logException("setDeadForever("+l+","+i+","+options+")",new Exception("Stack Trace"));
+    if (logger.isTraceEnabled()) logger.trace("setDeadForever({},{},{})", l, i, options, new Exception("Stack Trace"));
     deadForever.add(i);
       Map<String, Object> o2 = OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, i);
       // how do we notify?  If we have a lower, then let it trickle through the TLs, otherwise, call it only on the upper
       if (l == null) {
-        if (logger.level <= Logger.INFO) logger.log("setDeadForever("+l+","+i+","+options+"): l == null"); 
+        logger.info("setDeadForever({},{},{}): l == null", l, i, options); 
         upper.setLiveness(i, LIVENESS_DEAD_FOREVER, o2);
       } else {
         overrideLiveness.setLiveness(l, LIVENESS_DEAD_FOREVER, o2);        
@@ -265,7 +268,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       
       UpperIdentifier old = bindings.get(m);
       if (old == null) {        
-        if (logger.level <= Logger.FINE) logger.log("addBinding("+u+","+l+") old is null");
+        logger.debug("addBinding({},{}) old is null", u, l);
         bindings.put(m, u);
         if (l != null) {
           overrideLiveness.setLiveness(l, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
@@ -275,7 +278,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         return true;
       } else {
         if (old.equals(u)) {          
-          if (logger.level <= Logger.FINEST) logger.log("addBinding("+u+","+l+") old is equal");
+          logger.trace("addBinding({},{}) old is equal", u, l);
           if (l != null) {
             overrideLiveness.setLiveness(l, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
           } else {
@@ -287,9 +290,9 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         // they are different        
         if (destinationChanged(old, u, l, options)) {
           bindings.put(m, u);                
-          if (logger.level <= Logger.FINE) logger.log("addBinding("+u+","+l+") old "+old+" is dead");
+          logger.debug("addBinding({},{}) old {} is dead", u, l, old);
           if (l == null) {
-            if (logger.level <= Logger.INFO) logger.log("addBinding("+u+","+l+"): l == null"); 
+            logger.info("addBinding({},{}): l == null", u, l); 
             upper.setLiveness(u, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
           } else {
             overrideLiveness.setLiveness(l, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
@@ -297,8 +300,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           return true;
         } else {          
           // mark the new one as faulty
-          if (logger.level <= Logger.INFO) logger.log("The nodeChangeStrategy found identifier "+u+
-              " to be stale.  Should be using "+old);
+          logger.info("The nodeChangeStrategy found identifier {} to be stale.  Should be using {}", u, old);
           return false;
         }
       }
@@ -329,11 +331,11 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       }
 
       if (nodeChangeStrategy.canChange(oldDest, newDest)) {
-        if (logger.level <= Logger.INFO) logger.log("destinationChanged("+oldDest+"->"+newDest+","+i+","+options+")");
+        logger.info("destinationChanged({}->{},{},{})", oldDest, newDest, i, options);
         setDeadForever(i, oldDest, options);   
         return true;
       } else {
-        if (logger.level <= Logger.INFO) logger.log("destinationDidntChange("+newDest+"->"+oldDest+","+i+","+options+")");
+        logger.info("destinationDidntChange({}->{},{},{})", newDest, oldDest, i, options);
         setDeadForever(i, newDest, options);   
         return false;
       }
@@ -373,7 +375,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         final LowerIdentifier i, 
         final SocketCallback<LowerIdentifier> deliverSocketToMe, 
         final Map<String, Object> options) {      
-      if (logger.level <= Logger.INFO-50) logger.log("openSocket("+i+","+deliverSocketToMe+","+options+")");
+      logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
 
       // what happens if they cancel after the socket has been received by a lower layer, but is still reading the header?  
       // May need to re-think this SRHI at all the layers
@@ -458,7 +460,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                             byte answer = responseBuffer.array()[0];
                             if (answer == FAILURE) {
                               // wrong address, read more 
-                              if (logger.level <= Logger.INFO) logger.log("openSocket("+i+","+deliverSocketToMe+") answer = FAILURE");
+                              logger.info("openSocket({},{}) answer = FAILURE", i, deliverSocketToMe);
                               UpperIdentifier newDest = serializer.deserialize(new SocketInputBuffer(socket, localIdentifier.length), i);
                               
                               if (addBinding(newDest, i, options)) {
@@ -504,7 +506,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
 
     public void incomingSocket(P2PSocket<LowerIdentifier> s) throws IOException {
-      if (logger.level <= Logger.FINE) logger.log("incomingSocket("+s+")");
+      logger.debug("incomingSocket({})", s);
       
       // see if it wants to verify us
       new P2PSocketReceiver<LowerIdentifier>() {        
@@ -517,7 +519,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
           if (socket.read(buf) < 0) {
             // socket closed
-            if (logger.level <= Logger.INFO) errorHandler.receivedException(socket.getIdentifier(), new IOException("Socket closed while incoming."));
+            if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), new IOException("Socket closed while incoming."));
             return;
           }          
           if (buf.hasRemaining()) {
@@ -546,7 +548,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                 // read the TO field
                 if (socket.read(buf) < 0) {
                   // socket closed
-                  if (logger.level <= Logger.INFO) errorHandler.receivedException(socket.getIdentifier(), new IOException("Socket closed while incoming."));
+                  if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), new IOException("Socket closed while incoming."));
                   return;
                 }
                 
@@ -557,8 +559,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                 }
                 
                 if (!Arrays.equals(buf.array(), localIdentifier)) {
-                  if (logger.level <= Logger.INFO) 
-                    logger.log("incomingSocket() FAILURE expected "+
+                  logger.atInfo().log(() -> "incomingSocket() FAILURE expected "+
                         Arrays.toString(buf.array())+" me:"+
                         Arrays.toString(localIdentifier));
                   
@@ -578,7 +579,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                       
                       if (socket.write(writeMe) == -1) {
                         // socket closed
-                        if (logger.level <= Logger.INFO) errorHandler.receivedException(socket.getIdentifier(), new ClosedChannelException("Error on incoming socket."));
+                        if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), new ClosedChannelException("Error on incoming socket."));
                         return;                  
                       }
                       
@@ -593,7 +594,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                 }
               } else {
                 // doesn't want to verify
-                if (logger.level <= Logger.INFO) logger.log("Connection from "+socket.getIdentifier()+" didn't want to verify our identity.");
+                logger.info("Connection from {} didn't want to verify our identity.", socket.getIdentifier());
               }
               // either he doesn't want to verify, or the TO was me, 
               // now read the FROM, and add the proper index into the options
@@ -624,8 +625,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                     // no problem, sending message
                   } else {
                     // this is bad, a previous instance is trying to open a socket
-                    if (logger.level <= Logger.WARNING) 
-                      logger.log("Serious error.  There was an attempt to open a socket from a supposedly stale identifier:"+
+                    logger.atWarn().log(() -> "Serious error.  There was an attempt to open a socket from a supposedly stale identifier:"+
                           from+". Current identifier is "+bindings.get(serializer.translateUp(socket.getIdentifier()))+" lower:"+socket.getIdentifier());
                     socket.close();
                     return;
@@ -637,7 +637,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                   final ByteBuffer writeMe = ByteBuffer.wrap(result);
                   new P2PSocketReceiver<LowerIdentifier>() {
                     public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
-                      if (logger.level <= Logger.INFO) errorHandler.receivedException(socket.getIdentifier(), ioe);                
+                      if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), ioe);                
                     }
 
                     public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
@@ -646,7 +646,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                       
                       if (socket.write(writeMe) == -1) {
                         // socket closed
-                        if (logger.level <= Logger.INFO) errorHandler.receivedException(socket.getIdentifier(), new ClosedChannelException("Error on incoming socket."));
+                        if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), new ClosedChannelException("Error on incoming socket."));
                         return;                  
                       }
                       
@@ -680,14 +680,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         final MessageCallback<LowerIdentifier, ByteBuffer> deliverAckToMe, 
         final Map<String, Object> options) {
 
-      if (logger.level <= Logger.FINEST) {
+      if (logger.isTraceEnabled()) {
         byte[] b = new byte[m.remaining()];
         System.arraycopy(m.array(), m.position(), b, 0, b.length);
-        logger.log("sendMessage("+i+","+m+")"+Arrays.toString(b));
+        logger.trace("sendMessage("+i+","+m+")"+Arrays.toString(b));
       } else {
-        if (logger.level <= Logger.FINE) {
-          logger.log("sendMessage("+i+","+m+")");        
-        }
+        logger.debug("sendMessage({},{})", i, m);
       }
 
       // what happens if they cancel after the socket has been received by a lower layer, but is still reading the header?  
@@ -770,7 +768,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       Map<String, Object> newOptions = OptionsFactory.copyOptions(options);
       
       byte msgType = m.get();
-      if (logger.level <= Logger.FINE) logger.log("messageReceived("+i+","+m+"):"+msgType);
+      logger.debug("messageReceived({},{}):{}", i, m, msgType);
       switch(msgType) {
         case NORMAL:
           // this is a normal message, make sure it's for me        
@@ -778,8 +776,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           m.get(dest);
           if (!Arrays.equals(dest, localIdentifier)) {
             // send back an error 
-            if (logger.level <= Logger.INFO) logger.log(
-                "received message for wrong node from:"+i+
+            logger.atInfo().log(() -> "received message for wrong node from:"+i+
                 " intended:"+Arrays.toString(dest)+
                 " me:"+Arrays.toString(localIdentifier));
             
@@ -800,7 +797,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
             
             // need to do this so the bootstrapper knows the proper identity
           } else {
-            if (logger.level <= Logger.WARNING) logger.log("Warning.  Received message from stale identifier:"+
+            logger.atWarn().log(() -> "Warning.  Received message from stale identifier:"+
                 from+". Current identifier is "+bindings.get(serializer.translateUp(i))+" lower:"+i+" Probably a delayed message, dropping.");
             errorHandler.receivedUnexpectedData(i, m.array(), m.position(), newOptions);
             return;
@@ -810,14 +807,10 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           // continue to read the rest of the message
           
           // it's for me, no problem
-          if (logger.level <= Logger.FINEST) {
+          if (logger.isTraceEnabled()) {
             byte[] b = new byte[m.remaining()];
             System.arraycopy(m.array(), m.position(), b, 0, b.length);
-            logger.log(
-              "received message for me from:"+from+"("+from+"("+i+")) "+Arrays.toString(b));
-          } else {
-            if (logger.level <= Logger.FINER) 
-              logger.log("received message for me from:"+from+"("+i+") "+m);            
+            logger.trace("received message for me from:"+from+"("+from+"("+i+")) "+Arrays.toString(b));
           }
           callback.messageReceived(i, m, newOptions);
           break;
@@ -826,10 +819,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           UpperIdentifier oldDest = bindings.get(serializer.translateUp(i));
           
           UpperIdentifier newDest = serializer.deserialize(new SimpleInputBuffer(m.array(),m.position()), i);
-          if (logger.level <= Logger.INFO) logger.log(
-              "received INCORRECT_IDENTITY:"+i+
-              " old:"+oldDest+
-              " new:"+newDest);
+          logger.info("received INCORRECT_IDENTITY:{} old:{} new:{}", i, oldDest, newDest);
           
           if (addBinding(newDest, i, options)) { // should call setDeadForever
             
@@ -859,7 +849,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
 
     public void destroy() {
-      if (logger.level <= Logger.INFO) logger.log("destroy()");
+      logger.info("destroy()");
       tl.destroy();
     }
   }
@@ -917,7 +907,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         final UpperIdentifier i, 
         final SocketCallback<UpperIdentifier> deliverSocketToMe, 
         final Map<String, Object> options) {
-      if (logger.level <= Logger.FINE) logger.log("openSocket("+i+","+deliverSocketToMe+","+options+")");
+      logger.debug("openSocket({},{},{})", i, deliverSocketToMe, options);
       
       final SocketRequestHandleImpl<UpperIdentifier> handle = 
         new SocketRequestHandleImpl<UpperIdentifier>(i, options, logger);
@@ -956,7 +946,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         MessageCallback<UpperIdentifier, UpperMsgType> deliverAckToMe, 
         Map<String, Object> options) {
       if (!environment.getSelectorManager().isSelectorThread()) throw new RuntimeException("Must be called on selector thread.");
-      if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+","+options+")");
+      logger.debug("sendMessage({},{},{})", i, m, options);
 
       // how to synchronized this properly?  It's too bad that we have to hold the lock for the calls into the lower levels.
       // an alternative would be to re-synchronized and check again, and immediately cancel the message
@@ -992,7 +982,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
     
     public void incomingSocket(P2PSocket<MiddleIdentifier> s) throws IOException {
-      if (logger.level <= Logger.FINE) logger.log("incomingSocket("+s+")");
+      logger.debug("incomingSocket({})", s);
       final UpperIdentifier from = getIntendedDest(s.getOptions());
 
       if (from == null) {
@@ -1005,15 +995,13 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       if (sanityChecker.isSane(from, s.getIdentifier())) {
         callback.incomingSocket(new SocketWrapperSocket<UpperIdentifier, MiddleIdentifier>(from, s, logger, errorHandler, s.getOptions()));
       } else {
-        if (logger.level <= Logger.WARNING) logger.logException(
-            "incomingSocket() Sanity checker did not match "+from+" to "+s.getIdentifier()+" options:"+s.getOptions(), 
-            new Exception("Stack Trace"));
+        logger.warn("incomingSocket() Sanity checker did not match {} to {} options:{}", from, s.getIdentifier(), s.getOptions(), new Exception("Stack Trace"));
         s.close();
       }
     }
 
     public void messageReceived(MiddleIdentifier i, UpperMsgType m, Map<String, Object> options) throws IOException {
-      if (logger.level <= Logger.FINE) logger.log("messageReceived("+i+","+m+","+options+")");
+      logger.debug("messageReceived({},{},{})", i, m, options);
       final UpperIdentifier from = getIntendedDest(options);
 
       if (from == null) {
@@ -1024,15 +1012,13 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       if (sanityChecker.isSane(from, i)) {
         callback.messageReceived(from, m, options);
       } else {
-        if (logger.level <= Logger.WARNING) logger.logException(
-            "messageReceived() Sanity checker did not match "+from+" to "+i+" options:"+options, 
-            new Exception("Stack Trace"));
+        logger.warn("messageReceived() Sanity checker did not match {} to {} options:{}", from, i, options, new Exception("Stack Trace"));
       }
     }
     
 
     public boolean checkLiveness(UpperIdentifier i, Map<String, Object> options) {
-      if (logger.level <= Logger.FINE) logger.log("checkLiveness("+i+","+options+")");
+      logger.debug("checkLiveness({},{})", i, options);
       if (deadForever.contains(i)) return false;
 
       options = OptionsFactory.copyOptions(options);
@@ -1054,7 +1040,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
     
     public int getLiveness(UpperIdentifier i, Map<String, Object> options) {
-      if (logger.level <= Logger.FINER) logger.log("getLiveness("+i+","+options+")");
+      logger.trace("getLiveness({},{})", i, options);
       if (deadForever.contains(i)) return LIVENESS_DEAD_FOREVER;
       options = OptionsFactory.copyOptions(options);
       options.put(NODE_HANDLE_FROM_INDEX, i);      
@@ -1065,14 +1051,14 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     public void livenessChanged(MiddleIdentifier i, int val, Map<String, Object> options) {
       if (deadForever.contains(i)) {
         if (val < LIVENESS_DEAD) {
-          if (logger.level <= Logger.SEVERE) logger.log("Node "+i+" came back from the dead!  It's a miracle! "+val+" Ignoring."); 
+          logger.error("Node {} came back from the dead!  It's a miracle! {} Ignoring.", i, val); 
         }
         return;
       }
       
       UpperIdentifier upper = getIntendedDest(options);
         if (upper == null) {
-          if (logger.level <= Logger.WARNING) logger.logException("Memory for index "+options.get(NODE_HANDLE_FROM_INDEX)+" collected suppressing livenessChanged()", new Exception("Stack Trace"));
+          logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for index "+options.get(NODE_HANDLE_FROM_INDEX)+" collected suppressing livenessChanged()");
           return;
         }
       setLiveness(upper, val, options);
@@ -1102,7 +1088,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     protected Map<UpperIdentifier, Integer> liveness = new HashMap<UpperIdentifier, Integer>();
     
     protected void notifyLivenessListeners(UpperIdentifier i, int liveness, Map<String, Object> options) {
-      if (logger.level <= Logger.FINER) logger.log("notifyLivenessListeners("+i+","+liveness+")");
+      logger.trace("notifyLivenessListeners({},{})", i, liveness);
       List<LivenessListener<UpperIdentifier>> temp;
       synchronized(livenessListeners) {
         temp = new ArrayList<LivenessListener<UpperIdentifier>>(livenessListeners);
@@ -1127,7 +1113,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
     
     public int proximity(UpperIdentifier i, Map<String, Object> options) {
-      if (logger.level <= Logger.FINEST) logger.log("proximity("+i+")");
+      logger.trace("proximity({})", i);
       if (deadForever.contains(i)) return Integer.MAX_VALUE;
       return prox.proximity(serializer.translateDown(i), OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, i));
     }
@@ -1135,7 +1121,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     public void proximityChanged(MiddleIdentifier i, int newProx, Map<String, Object> options) {
       UpperIdentifier upper = getIntendedDest(options);
       if (upper == null) {
-        if (logger.level <= Logger.WARNING) logger.logException("Memory for "+options.get(NODE_HANDLE_FROM_INDEX)+" collected suppressing proximityChanged()", new Exception("Stack Trace"));
+        logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for "+options.get(NODE_HANDLE_FROM_INDEX)+" collected suppressing proximityChanged()");
         return;
       }
       
@@ -1143,7 +1129,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
     
     private void notifyProximityListeners(UpperIdentifier i, int newProx, Map<String, Object> options) {
-      if (logger.level <= Logger.FINER) logger.log("notifyProximityListeners("+i+","+newProx+")");
+      logger.trace("notifyProximityListeners({},{})", i, newProx);
       List<ProximityListener<UpperIdentifier>> temp;
       synchronized(proxListeners) {
         temp = new ArrayList<ProximityListener<UpperIdentifier>>(proxListeners);
@@ -1174,7 +1160,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
 
     public void destroy() {
-      if (logger.level <= Logger.INFO) logger.log("destroy()");
+      logger.info("destroy()");
       tl.destroy();
     }
   }

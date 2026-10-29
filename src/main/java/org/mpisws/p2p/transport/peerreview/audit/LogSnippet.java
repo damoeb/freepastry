@@ -47,7 +47,7 @@ import java.util.List;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.util.Serializer;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
@@ -138,12 +138,12 @@ public class LogSnippet {
 
     byte[] currentNodeHash = baseHash;
     
-    if (logger.level <= Logger.FINE) logger.log("Checking whether hash chain in snippet contains node #"+keyNodeSeq);
+    logger.debug("Checking whether hash chain in snippet contains node #{}", keyNodeSeq);
 
     for (SnippetEntry entry : entries) {
       if (entry.seq > keyNodeSeq) break; // fail
 
-      if (logger.level <= Logger.FINER) logger.log("Entry "+entry);
+      logger.trace("Entry {}", entry);
 
       byte[] contentHash;
       if (entry.isHash) {
@@ -158,10 +158,10 @@ public class LogSnippet {
 
       if (entry.seq == keyNodeSeq) {
         if (Arrays.equals(currentNodeHash, keyNodeHash)) {
-          if (logger.level <= Logger.FINER) logger.log("Yes, the node was found and has the specified hash");
+          logger.trace("Yes, the node was found and has the specified hash");
           return true;
         } else {
-          if (logger.level <= Logger.FINER) logger.log("No, the node was found but has a different hash");
+          logger.trace("No, the node was found but has a different hash");
           return false;
         }
       }
@@ -170,7 +170,7 @@ public class LogSnippet {
 
     }
 
-    if (logger.level <= Logger.FINER) logger.log("No, a node with this sequence number was not found");
+    logger.trace("No, a node with this sequence number was not found");
     return false;
   }
 

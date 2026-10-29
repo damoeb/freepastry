@@ -37,11 +37,11 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi.testing;
 
+import org.slf4j.Logger;
 import rice.*;
 
 import rice.environment.Environment;
 import rice.environment.logging.*;
-import rice.environment.logging.simple.SimpleLogManager;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;
@@ -256,9 +256,9 @@ public abstract class CommonAPITest {
       long now = environment.getTimeSource().currentTimeMillis();
       System.out.println("Created node " + i + " with id " + nodes[i]+" at "+now+" "+(now-last));
       last = now;
-      if (logger.level <= Logger.FINE) logger.log(((PastryNode)nodes[i]).getLeafSet().toString());
+      if (logger.isDebugEnabled()) logger.debug(((PastryNode)nodes[i]).getLeafSet().toString());
     }
-    if (logger.level <= Logger.INFO) logger.log(((PastryNode)nodes[0]).getLeafSet().toString());
+    logger.atInfo().log(() -> ((PastryNode)nodes[0]).getLeafSet().toString());
     if (simulator != null) simulator.setFullSpeed();
   }
   
@@ -325,7 +325,7 @@ public abstract class CommonAPITest {
           return null;
         }
         if (!ret.isReady()) {
-          if (logger.level <= Logger.INFO) logger.log("Node "+ret+" is not yet ready.");
+          logger.info("Node {} is not yet ready.", ret);
         }
       }
     }
@@ -486,7 +486,7 @@ public abstract class CommonAPITest {
    * @param e The exception which was thrown
    */
   protected final void stepException(Exception e) {
-    logger.logException("\nException occurred during testing.",e);
+    logger.warn("\nException occurred during testing.", e);
 
     if (environment.getParameters().getBoolean("commonapi_testing_exit_on_failure")) {
       System.exit(2);
@@ -628,7 +628,7 @@ public abstract class CommonAPITest {
     RandomSource rand = null; 
     if (params.getString("commonapi_testing_protocol").equals("direct")) {
       timeSource = new DirectTimeSource(params);
-      logManager = Environment.generateDefaultLogManager(timeSource, params);
+      logManager = Environment.generateDefaultLogManager();
       rand = Environment.generateDefaultRandomSource(params, logManager);
       ((DirectTimeSource)timeSource).setLogManager(logManager);
       selector = Environment.generateDefaultSelectorManager(timeSource, logManager, rand);

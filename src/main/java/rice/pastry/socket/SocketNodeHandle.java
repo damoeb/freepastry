@@ -46,7 +46,6 @@ import java.util.Observable;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
@@ -119,7 +118,7 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
    * @return true if node is currently alive.
    */
   public boolean checkLiveness() {
-    if (logger.level <= Logger.FINE) logger.log(this+".checkLiveness()");
+    logger.debug("{}.checkLiveness()", this);
     ((PastryNode)localnode).getLivenessProvider().checkLiveness(this, null);
     return getLiveness() < LIVENESS_DEAD;
   }

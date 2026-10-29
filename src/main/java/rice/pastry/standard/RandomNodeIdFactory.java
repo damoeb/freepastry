@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.random.RandomSource;
 import rice.pastry.*;
 
@@ -88,8 +88,7 @@ public class RandomNodeIdFactory implements NodeIdFactory {
     try {
       md = MessageDigest.getInstance("SHA");
     } catch (NoSuchAlgorithmException e) {
-      if (logger.level <= Logger.SEVERE) logger.log(
-          "No SHA support!");
+      logger.error("No SHA support!");
       throw new RuntimeException("No SHA support!",e);
     }
 

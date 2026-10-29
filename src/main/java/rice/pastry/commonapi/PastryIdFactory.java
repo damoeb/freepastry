@@ -37,8 +37,8 @@ advised of the possibility of such damage.
 
 package rice.pastry.commonapi;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.*;
 
@@ -66,8 +66,7 @@ public class PastryIdFactory implements IdFactory {
       md = MessageDigest.getInstance("SHA");
     } catch ( NoSuchAlgorithmException e ) {
       Logger logger = env.getLogManager().getLogger(getClass(), null);
-      if (logger.level <= Logger.SEVERE) logger.log(
-        "No SHA support!" );
+      logger.error("No SHA support!");
     }
   }
       

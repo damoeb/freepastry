@@ -56,7 +56,6 @@ import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 
 import rice.Continuation;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.MessageReceipt;
@@ -150,17 +149,17 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
   public void messageForAppl(Message msg) {
     if (msg instanceof ByteBufferMsg) {
       ByteBufferMsg bbm = (ByteBufferMsg)msg;
-      if (logger.level <= Logger.FINE) logger.log("messageForAppl("+bbm+")");
+      logger.debug("messageForAppl({})", bbm);
       try {
         tl.messageReceivedFromOverlay((RendezvousSocketNodeHandle)bbm.getOriginalSender(), bbm.buffer, null);
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("dropping "+bbm, ioe);
+        logger.warn("dropping {}", bbm, ioe);
       }
       return;
     }
     if (msg instanceof PilotForwardMsg) {
       PilotForwardMsg pfm = (PilotForwardMsg)msg;
-      if (logger.level <= Logger.FINER) logger.log("Forwarding message "+pfm);
+      logger.trace("Forwarding message {}", pfm);
       thePastryNode.send(pfm.getTarget(), pfm.getBBMsg(), null, null);
       return;
     }
@@ -183,11 +182,11 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       final Continuation<Integer, Exception> deliverAckToMe,
       final Map<String, Object> options) {
 
-    if (logger.level <= Logger.INFO) logger.log("openChannel()"+source+"->"+target+" via "+rendezvous+" uid:"+uid+","+deliverAckToMe+","+options);
+    logger.atInfo().log(() -> "openChannel()"+source+"->"+target+" via "+rendezvous+" uid:"+uid+","+deliverAckToMe+","+options);
 
     if (target.getLiveness() > LivenessListener.LIVENESS_DEAD) {
       // if he's dead forever (consider changing this to dead... but think of implications)
-      if (logger.level <= Logger.INFO) logger.log("openChannel() attempted to open to dead_forever target. Dropping."+source+"->"+target+" via "+rendezvous+" uid:"+uid+","+deliverAckToMe+","+options);
+      logger.atInfo().log(() -> "openChannel() attempted to open to dead_forever target. Dropping."+source+"->"+target+" via "+rendezvous+" uid:"+uid+","+deliverAckToMe+","+options);
       if (deliverAckToMe != null) deliverAckToMe.receiveException(new NodeIsFaultyException(target));
       return null;
     }
@@ -209,7 +208,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     }
 
     OpenChannelMsg msg = new OpenChannelMsg(getAddress(), rendezvous, source, uid);
-    if (logger.level <= Logger.FINE) logger.log("routing "+msg+" to "+target);
+    logger.debug("routing {} to {}", msg, target);
     final RouteMessage rm = 
       new RouteMessage(
           target.getNodeId(),
@@ -217,26 +216,26 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));    
     rm.setDestinationHandle(target);
 
-    if (logger.level <= Logger.FINER) logger.log("openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+") sending via "+rm);      
+    logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+") sending via "+rm);      
     
     // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
     final Cancellable ret = new Cancellable() {
       
       public boolean cancel() {
-        if (logger.level <= Logger.FINE) logger.log("openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").cancel()");
+        logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").cancel()");
         return rm.cancel();
       }
     };
     
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
-    if ((deliverAckToMe != null) || (logger.level <= Logger.INFO)) {
+    if ((deliverAckToMe != null) || (logger.isInfoEnabled())) {
       rm.setRouteMessageNotification(new RouteMessageNotification() {
         public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
-          if (logger.level <= Logger.FINER) logger.log("openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
+          logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
           if (deliverAckToMe != null) deliverAckToMe.receiveResult(uid);
         }    
         public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
-          if (logger.level <= Logger.FINE) logger.log("openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendFailed("+e+")");
+          logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendFailed("+e+")");
           if (deliverAckToMe != null) deliverAckToMe.receiveException(e);
         }
       });
@@ -254,7 +253,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       final ByteBuffer m, 
       final MessageCallback<RendezvousSocketNodeHandle, ByteBuffer> deliverAckToMe, 
       Map<String, Object> ops) {
-    if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+ops+")");
+    logger.debug("sendMessage({},{},{},{})", i, m, deliverAckToMe, ops);
     // TODO: use the new method in PastryAppl
     
     // pull USE_UDP, because that's not going to happen
@@ -268,7 +267,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     
     if (options.containsKey(RendezvousTransportLayerImpl.OPTION_USE_PILOT)) {
       RendezvousSocketNodeHandle pilot = (RendezvousSocketNodeHandle)options.get(RendezvousTransportLayerImpl.OPTION_USE_PILOT);
-      if (logger.level <= Logger.FINER) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+pilot);      
+      logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+pilot);      
       final MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer> ret = 
         new MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer>(i,m,options);
       ret.setSubCancellable(thePastryNode.send(pilot, new PilotForwardMsg(getAddress(),msg,i), new PMessageNotification(){      
@@ -291,13 +290,13 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
   
       rm.setTLOptions(options);
       
-      if (logger.level <= Logger.FINER) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+rm);      
+      logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+rm);      
       
       // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
       final MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer> ret = new MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer>() {
         
         public boolean cancel() {
-          if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+options+").cancel()");
+          logger.debug("sendMessage({},{},{},{}).cancel()", i, m, deliverAckToMe, options);
           return rm.cancel();
         }
       
@@ -315,14 +314,14 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       };
       
       // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
-      if ((deliverAckToMe != null) || (logger.level <= Logger.FINE)) {
+      if ((deliverAckToMe != null) || (logger.isDebugEnabled())) {
         rm.setRouteMessageNotification(new RouteMessageNotification() {
           public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
-            if (logger.level <= Logger.FINER) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
+            logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
             if (deliverAckToMe != null) deliverAckToMe.ack(ret);
           }    
           public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
-            if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendFailed("+e+")");
+            logger.atDebug().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendFailed("+e+")");
             if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
           }
         });

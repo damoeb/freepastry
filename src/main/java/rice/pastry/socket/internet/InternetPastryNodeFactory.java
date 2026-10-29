@@ -54,7 +54,6 @@ import org.mpisws.p2p.transport.networkinfo.ConnectivityResult;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Cancellable;
 import rice.pastry.Id;
@@ -177,16 +176,16 @@ public class InternetPastryNodeFactory extends
         Object[] foo = {env, localAddress};
         return (NATHandler)constructor.newInstance(foo);
       } catch (ClassNotFoundException e) {
-        if (logger.level <= Logger.INFO) logger.log("Didn't find UPnP libs, skipping UPnP");
+        logger.info("Didn't find UPnP libs, skipping UPnP");
         return new StubNATHandler(env, localAddress);
       } catch (NoClassDefFoundError e) {
-        if (logger.level <= Logger.INFO) logger.log("Didn't find UPnP libs, skipping UPnP");
+        logger.info("Didn't find UPnP libs, skipping UPnP");
         return new StubNATHandler(env, localAddress);
       } catch (InvocationTargetException e) {
-        if (logger.level <= Logger.INFO) logger.log("Didn't find UPnP libs, skipping UPnP");
+        logger.info("Didn't find UPnP libs, skipping UPnP");
         return new StubNATHandler(env, localAddress);        
       } catch (Exception e) {
-        if (logger.level <= Logger.WARNING) logger.logException("Error constructing NATHandler.",e);
+        logger.warn("Error constructing NATHandler.", e);
         throw new RuntimeException(e);
       }
     } else {
@@ -224,11 +223,11 @@ public class InternetPastryNodeFactory extends
     try {
       natHandler.findFireWall(address); // warning, this is blocking...
     } catch (CantFindFirewallException cffe) {
-      if (logger.level <= Logger.INFO) logger.log("Can't find firewall, continuing. For better performance, enable UPnP.  Will try to verify if user configured a port forward rule..."+cffe);
+      logger.info("Can't find firewall, continuing. For better performance, enable UPnP.  Will try to verify if user configured a port forward rule..." + cffe);
       // ignore
       return false;
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log(ioe.toString());
+      logger.atWarn().log(() -> ioe.toString());
       // ignore
       return false;
     }

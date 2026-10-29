@@ -59,9 +59,9 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 
+import org.slf4j.Logger;
 import rice.Destructable;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.selector.SelectorManager;
 
 public abstract class TLTest<Identifier> {
@@ -112,7 +112,7 @@ public abstract class TLTest<Identifier> {
             d.destroy();
           } catch (RuntimeException re) {
             // may already have been destroyed by a test
-            if (logger != null && logger.level <= Logger.FINE) logger.logException("destroying "+d, re);
+            if (logger != null && logger.isDebugEnabled()) logger.debug("destroying "+d, re);
           }
         }
       }

@@ -40,7 +40,7 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.SocketRequestHandle;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.Cancellable;
 
 public class SocketRequestHandleImpl<Identifier> implements SocketRequestHandle<Identifier> {

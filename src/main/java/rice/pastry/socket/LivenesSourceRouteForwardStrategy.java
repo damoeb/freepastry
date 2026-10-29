@@ -43,8 +43,8 @@ import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteForwardStrategy;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 public class LivenesSourceRouteForwardStrategy<Identifier> implements
     SourceRouteForwardStrategy<Identifier> {
@@ -72,9 +72,7 @@ public class LivenesSourceRouteForwardStrategy<Identifier> implements
     SourceRoute<Identifier> i = factory.getSourceRoute(nextHop);
     boolean ret = (liveness.getLiveness(i, options) < LivenessProvider.LIVENESS_DEAD);
     if (!ret)
-      if (logger.level <= Logger.WARNING)
-        logger.log("Not forwarding socket to " + nextHop + " sr:" + sr
-            + " because I believe it is dead.");
+      logger.warn("Not forwarding socket to {} sr:{} because I believe it is dead.", nextHop, sr);
     return ret;
   }
 

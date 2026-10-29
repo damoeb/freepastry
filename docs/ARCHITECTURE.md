@@ -17,7 +17,7 @@ FreePastry has three layers:
 | `getParameters()` | `rice.environment.params.Parameters` | `SimpleParameters` | Required: the constructor throws if it is null. |
 | `getTimeSource()` | `rice.environment.time.TimeSource` | `SimpleTimeSource` (wall clock) | The simulator uses `DirectTimeSource`, a simulated clock. |
 | `getRandomSource()` | `rice.environment.random.RandomSource` | `SimpleRandomSource` | Seeded from the `random_seed` parameter (`CLOCK` means seed from the time). |
-| `getLogManager()` | `rice.environment.logging.LogManager` | `SimpleLogManager`, or `FileLogManager` if `environment_logToFile` | Hands out a `Logger` per class and instance. |
+| `getLogManager()` | `rice.environment.logging.LogManager` | `Slf4jLogManager` | Hands out an SLF4J `org.slf4j.Logger` per class and instance. |
 | `getSelectorManager()` | `rice.selector.SelectorManager` | a new selector thread named "Default" | See the threading section below. |
 | `getProcessor()` | `rice.environment.processing.Processor` | `SimpleProcessor("Default")` | `SimProcessor` if `environment_use_sim_processor`. |
 | `getExceptionStrategy()` | `rice.environment.exception.ExceptionStrategy` | `SimpleExceptionStrategy` | Called when the selector loop catches a `Throwable`. |
@@ -28,9 +28,11 @@ Ways to build one:
 - `Environment.directEnvironment()` sets up the simulator: a `DirectTimeSource`, a `SimProcessor` and a selector that is driven by the simulator.
 - Subclasses can override `chooseDefaults()`.
 
-Parameters are read when components are constructed, so most of them must be set before you build a node. Logging is configured through `loglevel` (global) and `<loggerName>_loglevel` (per logger), see `AbstractLogManager`. By convention every log call is guarded, for example `if (logger.level <= Logger.FINE) logger.log(...)`.
+Parameters are read when components are constructed, so most of them must be set before you build a node.
 
-`Environment.destroy()` stores the parameters. It then destroys every registered `rice.Destructable`, then the selector and then the processor, all on the selector thread (if called from another thread it uses `invoke()`). Components register themselves with `addDestructable()`. For example, `PastryNode`'s constructor calls `e.addDestructable(this)`. `cloneEnvironment()` derives a child environment that shares the parent's fate (the parent destroys it). Node factories use this to give each node its own log prefix, and optionally its own selector or processor.
+Logging goes through SLF4J 2. Components get their logger from `environment.getLogManager().getLogger(getClass(), instance)`. The default `Slf4jLogManager` names it `<class>[.<instance>][.<prefix>]`, where the prefix is set by `Slf4jLogManager.clone(prefix)` (node factories use the node id), and creates it with `LoggerFactory.getLogger(name)`. Classes without an environment use `LoggerFactory.getLogger(X.class)` directly. Levels, format and destinations are the job of the SLF4J backend the application provides (the tests use slf4j-simple, configured by `src/test/resources/simplelogger.properties`); there are no logging parameters in `freepastry.params`. Log calls use placeholders, `logger.debug("routing {} to {}", msg, hop)`, or the lazy fluent form, `logger.atDebug().log(() -> expensive())`, so messages are only built when the level is enabled. Explicit `if (logger.isDebugEnabled())` guards remain only around multi-statement blocks or expensive arguments. Log lines carry the backend's wall-clock timestamp, not the simulator's virtual time.
+
+`Environment.destroy()` stores the parameters. It then destroys every registered `rice.Destructable`, then the selector and then the processor, all on the selector thread (if called from another thread it uses `invoke()`). Components register themselves with `addDestructable()`. For example, `PastryNode`'s constructor calls `e.addDestructable(this)`. `cloneEnvironment()` derives a child environment that shares the parent's fate (the parent destroys it). Node factories use this to give each node its own logger name suffix, and optionally its own selector or processor.
 
 ## Threads, and what runs where
 
@@ -110,7 +112,7 @@ To call into FreePastry and wait for the answer, use `Continuation.ExternalConti
 
 The node factories read three parameters:
 
-- `pastry_factory_multipleNodes` (default `true`): each node gets a cloned environment with its own log prefix and random source.
+- `pastry_factory_multipleNodes` (default `true`): each node gets a cloned environment with its own logger name suffix (the node id) and random source.
 - `pastry_factory_selectorPerNode` (default `false`): each node gets its own selector thread. By default all nodes share one selector thread.
 - `pastry_factory_processorPerNode` (default `false`): each node gets its own processor. By default they share one.
 

@@ -42,6 +42,7 @@ package rice.environment.time.simulated;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import org.slf4j.Logger;
 import rice.Destructable;
 import rice.environment.logging.*;
 import rice.environment.params.Parameters;
@@ -96,10 +97,10 @@ public class DirectTimeSource implements TimeSource {
    */
   public void setTime(long newTime) {
     if (newTime < time) {
-      if (logger.level <= Logger.WARNING) logger.log("Attempted to set time from "+time+" to "+newTime+", ignoring.");
+      logger.warn("Attempted to set time from {} to {}, ignoring.", time, newTime);
       return;
     }
-    if ((newTime > time) && (logger.level <= Logger.FINER)) logger.log("DirectTimeSource.setTime("+time+"=>"+newTime+")");
+    if (newTime > time) logger.trace("DirectTimeSource.setTime({}=>{})", time, newTime);
     time = newTime;
   }
 
@@ -133,7 +134,7 @@ public class DirectTimeSource implements TimeSource {
       // we only lock on the selector
       BlockingTimerTask btt = new BlockingTimerTask();
       pendingTimers.add(btt);
-      if (logger.level <= Logger.FINE) logger.log("DirectTimeSource.sleep("+delay+")");
+      logger.debug("DirectTimeSource.sleep({})", delay);
       
       selectorManager.getTimer().schedule(btt,delay);
       

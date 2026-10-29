@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.pastry.*;
 import rice.pastry.client.PastryAppl;
@@ -109,7 +109,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
   public void messageForAppl(Message msg) {
     if (msg instanceof BroadcastRouteRow) {
       BroadcastRouteRow brr = (BroadcastRouteRow) msg;
-      if (logger.level <= Logger.FINER+5) logger.log("Received "+brr.toStringFull());
+      if (logger.isTraceEnabled()) logger.trace("Received "+brr.toStringFull());
 
       RouteSet[] row = brr.getRow();
 
@@ -138,7 +138,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
       RouteSet row[] = routeTable.getRow(reqRow);
       BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
-      if (logger.level <= Logger.FINER+5) logger.log("Responding to "+rrr+" with "+brr.toStringFull());
+      if (logger.isTraceEnabled()) logger.trace("Responding to "+rrr+" with "+brr.toStringFull());
       thePastryNode.send(nh,brr,null,options);
     }
 
@@ -165,8 +165,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
   private void maintainRouteSet() {
 
-    if (logger.level <= Logger.INFO) logger.log(
-      "maintainRouteSet " + thePastryNode.getLocalHandle().getNodeId());
+    logger.info("maintainRouteSet {}", thePastryNode.getLocalHandle().getNodeId());
 
     // for each populated row in our routing table
     for (short i = (short)(routeTable.numRows() - 1); i >= 0; i--) {
@@ -199,12 +198,12 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
           // finding the node faulty and removing it rather than doing an actual swap
           // - Jeff Hoye,  Aug 9, 2006
           if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
-            if (logger.level <= Logger.FINE) logger.log("found dead node in table:"+nh);            
+            logger.debug("found dead node in table:{}", nh);            
             rs.remove(nh);
             break;
           }
 
-          if (logger.level <= Logger.FINE) logger.log("swapping with "+(i+1)+"/"+routeTable.numRows()+" "+(j+1)+"/"+maxTrials+":"+nh);
+          if (logger.isDebugEnabled()) logger.debug("swapping with "+(i+1)+"/"+routeTable.numRows()+" "+(j+1)+"/"+maxTrials+":"+nh);
           thePastryNode.send(nh,brr,null,options);
           thePastryNode.send(nh,rrr,null,options);
           break;

@@ -70,7 +70,7 @@ pastry_direct_guarantee_consistency=true
 
 # rice.pastry.socket parameters
 # tells the factory you intend to use multiple nodes
-# this causes the logger to prepend all entries with the nodeid
+# this gives each node its own environment, and appends the node id to each of its logger names
 pastry_factory_multipleNodes = true
 pastry_factory_selectorPerNode = false
 pastry_factory_processorPerNode = false
@@ -379,37 +379,9 @@ p2p_glacier_maxActiveRestores = 3
 org.mpisws.p2p.testing.transportlayer.replay.Recorder_printlog = true
 
 # logging
-#default log level
-loglevel = WARNING
-
-#example of enabling logging on the endpoint:
-#rice.p2p.scribe@ScribeRegrTest-endpoint_loglevel = INFO
-
-logging_packageOnly = true
-
-logging_date_format = yyyyMMdd.HHmmss.SSS
-logging_enable=true
-
-# 24 hours
-log_rotate_interval = 86400000
-# the name of the active log file, and the filename prefix of rotated log
-log_rotate_filename = freepastry.log
-# the format of the date for the rotating log
-log_rotating_date_format = yyyyMMdd.HHmmss.SSS
-
-# true will tell the environment to ues the FileLogManager
-environment_logToFile = false
-# the prefix for the log files (otherwise will be named after the nodeId)
-fileLogManager_filePrefix = 
-# the suffix for the log files
-fileLogManager_fileSuffix = .log
-# wether to keep the line prefix (declaring the node id) for each line of the log
-fileLogManager_keepLinePrefix = false
-fileLogManager_multipleFiles = true
-fileLogManager_defaultFileName = main
-
-# false = append true = overwrite
-fileLogManager_overwrite_existing_log_file = false
+# FreePastry logs through SLF4J. Log levels, format and output files are configured in the SLF4J backend
+# the application puts on the classpath (e.g. simplelogger.properties for slf4j-simple, logback.xml for logback),
+# not here. Logger names are the class name, plus ".<instance>" and ".<node id>" where applicable.
 
 # the amount of time the LookupService tutorial app will wait before timing out
 # in milliseconds, default is 30 seconds

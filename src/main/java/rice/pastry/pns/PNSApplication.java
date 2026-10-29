@@ -52,9 +52,9 @@ import java.util.Set;
 import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.exception.TimeoutException;
@@ -132,7 +132,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
   @Override
   public void messageForAppl(Message msg) {
-    if (logger.level <= Logger.FINER) logger.log("messageForAppl("+msg+")");
+    logger.trace("messageForAppl({})", msg);
 
     if (msg instanceof LeafSetRequest) {
       LeafSetRequest req = (LeafSetRequest)msg;
@@ -195,7 +195,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     }
     
 
-    if (logger.level <= Logger.WARNING) logger.log("unrecognized message in messageForAppl("+msg+")");
+    logger.warn("unrecognized message in messageForAppl({})", msg);
   }
   
   public Cancellable getNearHandles(final Collection<NodeHandle> bootHandles, final Continuation<Collection<NodeHandle>, Exception> deliverResultToMe) {
@@ -220,7 +220,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       Continuation<Integer, IOException> c = new Continuation<Integer, IOException>() {
                 
         public void receiveResult(Integer result) {
-          if (logger.level <= Logger.FINE) logger.log("got proximity for "+handle+" in getNearHandles()");
+          logger.debug("got proximity for {} in getNearHandles()", handle);
           if ((best.a() != null) && 
               (pingCache.get(best.a()).intValue() < result.intValue())) {
             // we're not the best, just return
@@ -236,13 +236,13 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
           Cancellable cancellable = getNearest(handle, new Continuation<Collection<NodeHandle>, Exception>() {
     
             public void receiveResult(Collection<NodeHandle> result) {
-              if (logger.level <= Logger.FINE) logger.log("receiveResult("+result+") in getNearHandles()");
+              logger.debug("receiveResult({}) in getNearHandles()", result);
               ret.cancel(); // go ahead and cancel everything
               finish();
             }
     
             public void receiveException(Exception exception) {        
-              logger.logException("PNS got an exception in getNearHandles() returning what we got.",exception);
+              logger.warn("PNS got an exception in getNearHandles() returning what we got.", exception);
               finish();
             }    
       
@@ -250,7 +250,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
               thePastryNode.removeProximityListener(PNSApplication.this);
               List<NodeHandle> ret = sortedProximityCache();
               purgeProximityCache();
-              if (logger.level <= Logger.INFO) logger.log("getNearHandles("+bootHandles+"):"+ret.size()+ret);
+              logger.info("getNearHandles({}):{}{}", bootHandles, ret.size(), ret);
               deliverResultToMe.receiveResult(getNearHandlesHelper(ret));        
             }
           });
@@ -470,7 +470,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    * @param c
    */
   public Cancellable getProximity(final NodeHandle handle, final Continuation<Integer, IOException> c, int timeout) {
-    if (logger.level <= Logger.FINEST) logger.log("getProximity("+handle+")");
+    logger.trace("getProximity({})", handle);
     int prox;
     
     // acquire a lock that will block proximityChanged()
@@ -478,7 +478,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       // see what we have for proximity (will initiate a checkLiveness => proximityChanged() if DEFAULT)
       prox = thePastryNode.proximity(handle);
       if (prox == DEFAULT_PROXIMITY) {
-        if (logger.level <= Logger.FINE) logger.log("getProximity("+handle+"): waiting for proximity update");
+        logger.debug("getProximity({}): waiting for proximity update", handle);
         // need to find it
         Collection<Continuation<Integer, IOException>> waiters = waitingForPing.get(handle);
         if (waiters == null) {          
@@ -534,7 +534,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
   Map<NodeHandle, Collection<Continuation<Integer, IOException>>> waitingForPing = 
     new HashMap<NodeHandle, Collection<Continuation<Integer, IOException>>>();
   public void proximityChanged(NodeHandle i, int newProximity, Map<String, Object> options) {
-    if (logger.level <= Logger.FINE) logger.log("proximityChanged("+i+","+newProximity+")");
+    logger.debug("proximityChanged({},{})", i, newProximity);
     synchronized(pingCache) {
       pingCache.put(i, newProximity);
     }
@@ -577,10 +577,10 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    * @return A node suitable to boot off of (which is close the this node)
    */
   public Cancellable getNearest(final NodeHandle seed, final Continuation<Collection<NodeHandle>, Exception> retToMe) {    
-    if (logger.level <= Logger.FINE) logger.log("getNearest("+seed+")");
+    logger.debug("getNearest({})", seed);
       // if the seed is null, we can't do anything
     if (seed == null) {
-      if (logger.level <= Logger.WARNING) logger.logException("getNearest("+seed+")", new Exception("Stack Trace"));
+      logger.warn("getNearest({})", seed, new Exception("Stack Trace"));
       environment.getSelectorManager().invoke(new Runnable() {        
         public void run() {
           retToMe.receiveResult(null);
@@ -597,7 +597,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     
         public void receiveResult(LeafSet result) {
           // ping everyone in the leafset:
-          if (logger.level <= Logger.FINE) logger.log("getNearest("+seed+") got "+result);
+          logger.debug("getNearest({}) got {}", seed, result);
           
           // seed is the bootstrap node that we use to enter the pastry ring
           NodeHandle nearNode = seed;
@@ -760,7 +760,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    * @return The closest node out of handle union array
    */
   private Cancellable closestToMe(final NodeHandle handle, final Collection<NodeHandle> handles, final Continuation<NodeHandle, Exception> c) {
-    if (logger.level <= Logger.FINE) logger.log("closestToMe("+handle+","+handles+")");
+    logger.debug("closestToMe({},{})", handle, handles);
     final AttachableCancellable ret = new AttachableCancellable();
     final NodeHandle[] closestNode = {handle};
 
@@ -773,11 +773,11 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     ArrayList<NodeHandle> temp = new ArrayList<NodeHandle>(remaining); // need to include handle when looping
     for (NodeHandle nh : temp) {
       final NodeHandle tempNode = nh;
-      if (logger.level <= Logger.FINER) logger.log("closestToMe checking prox on "+tempNode+"("+handle+","+handles+")");      
+      logger.trace("closestToMe checking prox on {}({},{})", tempNode, handle, handles);      
       ret.attach(getProximity(handle, new Continuation<Integer, IOException>(){
       
         public void receiveResult(Integer result) {
-          if (logger.level <= Logger.FINEST) logger.log("closestToMe got prox("+result.intValue()+") on "+tempNode+"("+handle+","+handles+")");      
+          logger.atTrace().log(() -> "closestToMe got prox("+result.intValue()+") on "+tempNode+"("+handle+","+handles+")");      
           remaining.remove(tempNode);
           int prox = result.intValue();
           if ((prox >= 0) && (prox < nearestdist[0]) && tempNode.getLiveness() < NodeHandle.LIVENESS_DEAD) {

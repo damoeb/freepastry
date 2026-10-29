@@ -41,7 +41,6 @@ package rice.pastry.messaging;
 
 import java.io.*;
 
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.*;

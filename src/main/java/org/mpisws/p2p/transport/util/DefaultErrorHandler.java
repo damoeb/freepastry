@@ -41,8 +41,9 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.ErrorHandler;
+import org.slf4j.Logger;
+import org.slf4j.event.Level;
 
-import rice.environment.logging.Logger;
 
 /**
  * Just logs the problems.
@@ -54,21 +55,25 @@ import rice.environment.logging.Logger;
 public class DefaultErrorHandler<Identifier> implements
     ErrorHandler<Identifier> {
   public int NUM_BYTES_TO_PRINT = 8;
-  protected int printlevel;
+  protected Level printlevel;
   private Logger logger;
   
   public DefaultErrorHandler(Logger logger) {
-    this(logger, Logger.INFO);
+    this(logger, Level.INFO);
   }
   
-  public DefaultErrorHandler(Logger logger, int printlevel) {
+  /**
+   * @param logger where to log
+   * @param printlevel the level {@link #receivedException(Object, Throwable)} logs at
+   */
+  public DefaultErrorHandler(Logger logger, Level printlevel) {
     if (logger == null) throw new IllegalArgumentException("logger is null");
     this.logger = logger;
     this.printlevel = printlevel;
   }
   
   public void receivedUnexpectedData(Identifier id, byte[] bytes, int pos, Map<String, Object> options) {
-    if (logger.level <= Logger.INFO) {
+    if (logger.isInfoEnabled()) {
       // make this pretty
       String s = "";
       int numBytes = NUM_BYTES_TO_PRINT;
@@ -76,14 +81,12 @@ public class DefaultErrorHandler<Identifier> implements
       for (int i = 0; i < numBytes; i++) {
         s+=bytes[i]+","; 
       }
-      logger.log("Unexpected data from "+id+" "+s);
+      logger.info("Unexpected data from "+id+" "+s);
     }
   }
 
   public void receivedException(Identifier i, Throwable error) {
-    if (logger.level <= printlevel) {      
-      logger.logException(i == null ? null : i.toString(), error);
-    }
+    logger.atLevel(printlevel).setCause(error).log(() -> String.valueOf(i));
   }
 
 }

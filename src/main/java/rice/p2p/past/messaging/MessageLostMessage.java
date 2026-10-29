@@ -39,9 +39,9 @@ package rice.p2p.past.messaging;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
 import rice.*;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.past.*;
@@ -103,7 +103,7 @@ public class MessageLostMessage extends PastMessage {
   public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
     Logger logger = env.getLogManager().getLogger(getClass(), instance);
     Exception e = new PastException("Outgoing message '" + messageString + "' to " + id + "/" + hint + " was lost - please try again.");
-    if (logger.level <= Logger.WARNING) logger.logException("ERROR: Outgoing PAST message " + messageString + " with UID " + getUID() + " was lost", e);
+    logger.warn("ERROR: Outgoing PAST message {} with UID {} was lost", messageString, getUID(), e);
     c.receiveException(e);
   }
 

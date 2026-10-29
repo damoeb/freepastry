@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.standard;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.pastry.*;
 import rice.pastry.messaging.*;
@@ -293,8 +293,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    * periodically.
    */
   public void maintainLeafSet() {
-    if (logger.level <= Logger.FINE) logger.log(
-        "maintainLeafSet " + thePastryNode.getLocalHandle().getNodeId());
+    logger.debug("maintainLeafSet {}", thePastryNode.getLocalHandle().getNodeId());
 
     boolean lostMembers = false;
 
@@ -351,9 +350,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     }
 
     if (allDead && leafSet.size() > 0)
-      if (logger.level <= Logger.SEVERE) logger.log(
-          "Ring failure at" + thePastryNode.getLocalHandle().getNodeId()
-              + "all ccw leafset entries failed");
+      logger.error("Ring failure at{}all ccw leafset entries failed", thePastryNode.getLocalHandle().getNodeId());
 
     allDead = true;
     // request from most distant live cw entry
@@ -367,9 +364,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     }
 
     if (allDead && leafSet.size() > 0)
-      if (logger.level <= Logger.SEVERE) logger.log(
-          "Ring failure at" + thePastryNode.getLocalHandle().getNodeId()
-              + "all cw leafset entries failed");
+      logger.error("Ring failure at{}all cw leafset entries failed", thePastryNode.getLocalHandle().getNodeId());
 
   }
 

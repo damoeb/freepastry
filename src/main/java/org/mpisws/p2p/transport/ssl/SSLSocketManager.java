@@ -54,9 +54,9 @@ import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Executable;
-import rice.environment.logging.Logger;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
 
 public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
@@ -261,10 +261,10 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   
   protected void fail(Exception e) {
     if (doneHandshaking) return;
-    logger.logException("fail:",e);
+    logger.warn("fail:", e);
     Throwable e2 = e;
     while (e2.getCause() != null) {
-      logger.logException("fail cause:", e2.getCause());
+      logger.warn("fail cause:", e2.getCause());
       e2 = e2.getCause();
     }
     handshakeFail = true;
@@ -356,7 +356,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         }
       },new Continuation<Object, Exception>() {
         public void receiveException(Exception exception) {
-          exception.printStackTrace();
+          logger.warn("SSL handshake task failed", exception);
         };
         public void receiveResult(Object result) {          
           runningTaskLock = false;

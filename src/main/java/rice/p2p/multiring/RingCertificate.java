@@ -43,6 +43,8 @@ import java.security.*;
 import java.util.*;
 import java.util.zip.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rice.environment.Environment;
 import rice.p2p.commonapi.*;
 import rice.p2p.multiring.*;
@@ -59,6 +61,8 @@ import rice.pastry.dist.*;
  * @author Alan Mislove
  */
 public class RingCertificate implements Serializable {
+  private static final Logger LOG = LoggerFactory.getLogger(RingCertificate.class);
+
   
   // serialver 
   private static final long serialVersionUID = 5915358246762577456L;
@@ -97,12 +101,11 @@ public class RingCertificate implements Serializable {
             CERTIFICATES.put(cert.getId(), cert);
           } 
         } else {
-          System.err.println("RINGCERT: Could not verify ring certificate " + cert + " ignoring.");
+          LOG.warn("RINGCERT: Could not verify ring certificate {} ignoring.", cert);
         }
       }
     } catch (Exception e) {
-      System.err.println("RINGCERT: ERROR: Found exception " + e + " while reading in ring certificates!");
-      e.printStackTrace();
+      LOG.error("RINGCERT: Found an exception while reading in ring certificates!", e);
     }
   }
   

@@ -41,6 +41,8 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.security.*;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * XMLObjectInputStream is an extension of ObjectInputStream which provides
@@ -65,6 +67,8 @@ import java.util.*;
  */
 @SuppressWarnings("unchecked")
 public class XMLObjectInputStream extends ObjectInputStream {
+  private static final Logger LOG = LoggerFactory.getLogger(XMLObjectInputStream.class);
+
   
   /**
    * The hashmap of readResolve methods, mapping Class->Method
@@ -1129,12 +1133,10 @@ public class XMLObjectInputStream extends ObjectInputStream {
         currentClasses.pop();
         readUnreadOptionalData();
       } catch (InvocationTargetException e) {
-        System.out.println(e.getTargetException().getMessage());
-        e.getTargetException().printStackTrace();
+        LOG.warn("readObject() of {} failed", c.getName(), e.getTargetException());
         throw new IOException("InvocationTargetException thrown! " + e.getTargetException());
       } catch (IllegalAccessException e) {
-        System.out.println(e.getMessage());
-        e.printStackTrace();
+        LOG.warn("readObject() of {} is not accessible", c.getName(), e);
         throw new IOException("IllegalAccessException thrown! " + e);
       }
     } else {
@@ -1320,8 +1322,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
     } catch (IllegalAccessException e) {
       // skip IAE, which is very likely caused by setting a final field on < JVM 1.5
     } catch (IllegalArgumentException e) {
-      System.err.println("COULD NOT SET FIELD " + field + " OF " + o.getClass().getName() + " - SKIPPING.  THIS SHOULD NOT HAPPEN!" + e);
-      e.printStackTrace();
+      LOG.error("Could not set field {} of {} - skipping. This should not happen!", field, o.getClass().getName(), e);
     }
   }
   

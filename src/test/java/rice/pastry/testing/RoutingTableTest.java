@@ -43,7 +43,6 @@ import java.util.*;
 
 import rice.Destructable;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.Id;
@@ -822,12 +821,6 @@ public class RoutingTableTest {
               }            
             });
             
-            if (logHeavy) {
-              env.getParameters().setInt("rice.pastry.standard.ConsistentJoinProtocol_loglevel",Logger.FINE); 
-              env.getParameters().setInt("rice.pastry.standard.StandardRouteSetProtocol_loglevel",405); 
-              env.getParameters().setInt("rice.pastry.standard.StandardRouter_loglevel", Logger.FINE); 
-            }
-
             // launch our node!
             RoutingTableTest dt = new RoutingTableTest(numNodes, meanSessionTime, useScribe, msgSendVals[msgSendRateIndex], rtMaintVals[rtMaintIndex], tries, env);
             synchronized(lock) {

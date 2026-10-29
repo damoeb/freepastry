@@ -42,12 +42,11 @@ package rice.environment;
 import java.io.IOException;
 import java.util.*;
 
+import org.slf4j.Logger;
 import rice.Destructable;
 import rice.environment.exception.ExceptionStrategy;
 import rice.environment.exception.simple.SimpleExceptionStrategy;
 import rice.environment.logging.*;
-import rice.environment.logging.file.FileLogManager;
-import rice.environment.logging.simple.SimpleLogManager;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;
@@ -92,7 +91,7 @@ public class Environment implements Destructable {
    *   or rice.environment.processing.sim.SimProcessor if environment_use_sim_processor is set
    * @param rs the RandomSource.  Default: rice.environment.random.simple.SimpleRandomSource
    * @param time the TimeSource.  Default: rice.environment.time.simple.SimpleTimeSource
-   * @param lm the LogManager.  Default: rice.environment.logging.simple.SimpleLogManager
+   * @param lm the LogManager.  Default: rice.environment.logging.Slf4jLogManager
    * @param params the Parameters.  Required.
    * @param strategy the ExceptionStrategy.  Default: rice.environment.exception.simple.SimpleExceptionStrategy
    * @throws IllegalArgumentException if params is null
@@ -144,7 +143,7 @@ public class Environment implements Destructable {
   public static Environment directEnvironment(RandomSource rs) {
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
     DirectTimeSource dts = new DirectTimeSource(params);
-    LogManager lm = generateDefaultLogManager(dts,params);
+    LogManager lm = generateDefaultLogManager();
     dts.setLogManager(lm);
     SelectorManager selector = generateDefaultSelectorManager(dts,lm,rs);
     dts.setSelectorManager(selector);
@@ -174,7 +173,7 @@ public class Environment implements Destructable {
       time = generateDefaultTimeSource(); 
     }
     if (logManager == null) {
-      logManager = generateDefaultLogManager(time, params);
+      logManager = generateDefaultLogManager();
     }
     if (randomSource == null) {
       randomSource = generateDefaultRandomSource(params,logManager);
@@ -215,11 +214,11 @@ public class Environment implements Destructable {
     return new SimpleTimeSource();
   }
   
-  public static LogManager generateDefaultLogManager(TimeSource time, Parameters params) {
-    if (params.getBoolean("environment_logToFile")) {
-      return new FileLogManager(time, params); 
-    }
-    return new SimpleLogManager(time, params); 
+  /**
+   * @return the default LogManager, which hands out SLF4J loggers
+   */
+  public static LogManager generateDefaultLogManager() {
+    return new Slf4jLogManager();
   }
   
   public static SelectorManager generateDefaultSelectorManager(TimeSource time, LogManager logging, RandomSource randomSource) {
@@ -258,7 +257,7 @@ public class Environment implements Destructable {
     try {
       params.store();
     } catch (IOException ioe) {      
-      if (logger.level <= Logger.WARNING) logger.logException("Error during shutdown",ioe); 
+      logger.warn("Error during shutdown", ioe);
     }
     if (getSelectorManager().isSelectorThread()) {
       callDestroyOnDestructables();
@@ -283,7 +282,7 @@ public class Environment implements Destructable {
 
   public void addDestructable(Destructable destructable) {
     if (destructable == null) {
-      if (logger.level <= Logger.WARNING) logger.logException("addDestructable(null)", new Exception("Stack Trace"));
+      logger.warn("addDestructable(null)", new Exception("Stack Trace"));
       return;
     }
     destructables.add(destructable);
@@ -292,7 +291,7 @@ public class Environment implements Destructable {
   
   public void removeDestructable(Destructable destructable) {
     if (destructable == null) {
-      if (logger.level <= Logger.WARNING) logger.logException("addDestructable(null)", new Exception("Stack Trace"));
+      logger.warn("addDestructable(null)", new Exception("Stack Trace"));
       return;
     }
     destructables.remove(destructable);
@@ -342,8 +341,8 @@ public class Environment implements Destructable {
   
   protected LogManager cloneLogManager(String prefix) {
     LogManager lman = getLogManager();
-    if (lman instanceof CloneableLogManager) {
-      lman = ((CloneableLogManager) getLogManager()).clone(prefix);
+    if (lman instanceof Slf4jLogManager slm) {
+      lman = slm.clone(prefix);
     }
     return lman;
   }

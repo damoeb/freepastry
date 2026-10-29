@@ -40,8 +40,8 @@ import org.mpisws.p2p.transport.rendezvous.OutgoingPilotListener;
 import org.mpisws.p2p.transport.rendezvous.PilotManager;
 import org.mpisws.p2p.transport.rendezvous.RendezvousContact;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeSetEventSource;
 import rice.pastry.NodeSetListener;
@@ -70,7 +70,7 @@ public class LeafSetPilotStrategy<Identifier extends RendezvousContact> implemen
   }
 
   public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
-    if (logger.level <= Logger.FINER) logger.log("nodeSetUpdate("+handle+")");
+    logger.trace("nodeSetUpdate({})", handle);
     Identifier nh = (Identifier)handle;
     if (nh.canContactDirect()) {
       if (added) {

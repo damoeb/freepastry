@@ -59,8 +59,8 @@ import org.mpisws.p2p.transport.util.DefaultCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.wire.exception.StalledSocketException;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.selector.TimerTask;
 
@@ -202,7 +202,7 @@ public class MagicNumberTransportLayer<Identifier> implements
     System.arraycopy(HEADER, 0, msgWithHeader, 0, HEADER.length);
     m.get(msgWithHeader, HEADER.length, m.remaining());
     
-    if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+")");
+    logger.debug("sendMessage({},{})", i, m);
 
     final MessageRequestHandleImpl<Identifier, ByteBuffer> cancellable 
       = new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
@@ -242,7 +242,7 @@ public class MagicNumberTransportLayer<Identifier> implements
   }
 
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
-    if (logger.level <= Logger.FINE) logger.log("messageReceived("+i+","+m+")");
+    logger.debug("messageReceived({},{})", i, m);
 
     if (m.remaining() < HEADER.length) {
       errorHandler.receivedUnexpectedData(i, m.array(), 0, null);

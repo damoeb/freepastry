@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.pastry.routing;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.LegacyObservable;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.*;
@@ -431,7 +431,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    */
 
   public synchronized boolean put(NodeHandle handle) {
-    if (logger.level <= Logger.FINER) logger.log("RT: put("+handle+")");        
+    logger.trace("RT: put({})", handle);        
     Id nid = handle.getNodeId();
     RouteSet ns = makeBestEntry(nid);
     
@@ -508,7 +508,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
     try {
       return routingTable[i];
     } catch (ArrayIndexOutOfBoundsException aioobe) {
-      if (logger.level <= Logger.WARNING) logger.log("Warning, call to RoutingTable.getRow("+i+") max should be "+(routingTable.length-1)); 
+      logger.atWarn().log(() -> "Warning, call to RoutingTable.getRow("+i+") max should be "+(routingTable.length-1)); 
       return null;
     }
   }
@@ -521,7 +521,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    */
 
   public synchronized NodeHandle remove(NodeHandle nh) {
-    if (logger.level <= Logger.FINER) logger.log("RT: remove("+nh+")"); 
+    logger.trace("RT: remove({})", nh); 
     RouteSet ns = getBestEntry(nh.getNodeId());
 
     if (ns == null)
@@ -540,12 +540,12 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    */
 
   public void nodeSetUpdate(Object o, NodeHandle handle, boolean added) {
-    if (logger.level <= Logger.FINE) {
+    if (logger.isDebugEnabled()) {
       RouteSet rs = (RouteSet)o;
       if (added) {
-        logger.log("RT: added("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
+        logger.debug("RT: added("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
       } else {
-        logger.log("RT: removed("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");        
+        logger.debug("RT: removed("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");        
       }
     }
     
@@ -666,7 +666,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    */
   @Deprecated
   public void addObserver(Observer o) {
-    if (logger.level <= Logger.WARNING) logger.logException("WARNING: Observer on RoutingTable is deprecated", new Exception("Stack Trace"));
+    logger.warn("WARNING: Observer on RoutingTable is deprecated", new Exception("Stack Trace"));
     super.addObserver(o); 
   }
   
@@ -676,7 +676,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    */
   @Deprecated
   public void deleteObserver(Observer o) {
-    if (logger.level <= Logger.WARNING) logger.log("WARNING: Observer on RoutingTable is deprecated");
+    logger.warn("WARNING: Observer on RoutingTable is deprecated");
     super.deleteObserver(o); 
   }
   

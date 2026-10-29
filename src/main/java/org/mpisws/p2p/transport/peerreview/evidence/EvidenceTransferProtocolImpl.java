@@ -61,8 +61,8 @@ import org.mpisws.p2p.transport.peerreview.message.AccusationMessage;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.priority.MessageInfo;
 
+import org.slf4j.Logger;
 import rice.Continuation;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /**
@@ -306,8 +306,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    * evidence.
    */
   public void sendEvidence(Handle target, Identifier subject) {
-    if (logger.level <= Logger.FINER)
-      logger.log("sendEvidence(" + target + ", subject=" + subject + ")");
+    logger.trace("sendEvidence({}, subject={})", target, subject);
 
     int status = infoStore.getStatus(subject);
     assert (status != STATUS_TRUSTED);
@@ -332,11 +331,10 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   
       /* ... and send it */
   
-      if (logger.level <= Logger.FINER)
-        logger.log("Sending "+accusation+" "+((status == STATUS_EXPOSED) ? "proof" : "challenge")+" to "+target);
+      logger.atTrace().log(() -> "Sending "+accusation+" "+((status == STATUS_EXPOSED) ? "proof" : "challenge")+" to "+target);
       peerreview.transmit(target, accusation, null, null);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log("Error sending evidence.");
+      logger.warn("Error sending evidence.");
     }
   }
 }

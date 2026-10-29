@@ -55,8 +55,8 @@ import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
@@ -142,7 +142,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
       Map<String, Object> options) {
     if (destroyed) return null;
     
-    if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+")");
+    logger.debug("sendMessage({},{})", i, m);
 
     final MessageRequestHandleImpl<Identifier, RawMessage> handle 
       = new MessageRequestHandleImpl<Identifier, RawMessage>(i, m, options);
@@ -171,7 +171,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
     }
     
     buf = ByteBuffer.wrap(sob.getBytes());
-    if (logger.level <= Logger.FINEST) logger.log("sendMessage("+i+","+m+") serialized:"+buf);
+    logger.trace("sendMessage({},{}) serialized:{}", i, m, buf);
 
     handle.setSubCancellable(tl.sendMessage(
         i, 
@@ -179,7 +179,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
         new MessageCallback<Identifier, ByteBuffer>() {
     
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
-            if (logger.level <= Logger.FINER) logger.log("sendMessage("+i+","+m+").ack()");
+            logger.trace("sendMessage({},{}).ack()", i, m);
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(handle);
           }
@@ -191,7 +191,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
             if (ex instanceof QueueOverflowException) {
               ex = new QueueOverflowException(i, m, ex); 
             }
-            if (logger.level <= Logger.CONFIG) logger.logException("sendFailed("+i+","+m+")",ex);
+            logger.info("sendFailed({},{})", i, m, ex);
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe == null) {
               errorHandler.receivedException(i, ex);
@@ -207,7 +207,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
     SimpleInputBuffer buf = new SimpleInputBuffer(m.array(), m.position());
     RawMessage ret = deserializer.deserialize(buf, i);
-    if (logger.level <= Logger.FINE) logger.log("messageReceived("+i+","+ret+")");
+    logger.debug("messageReceived({},{})", i, ret);
     callback.messageReceived(i, ret, options);
   }
 
@@ -235,14 +235,14 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
       Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
-    if (logger.level <= Logger.FINE) logger.log("openSocket("+i+")");
+    logger.debug("openSocket({})", i);
     return tl.openSocket(i, deliverSocketToMe, options);
     
     // we only serialize the Id, we assume the underlying layer got the address of the NodeHandle correct
   }
 
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    if (logger.level <= Logger.FINE) logger.log("incomingSocket("+s+")");
+    logger.debug("incomingSocket({})", s);
     callback.incomingSocket(s);
   }
 }

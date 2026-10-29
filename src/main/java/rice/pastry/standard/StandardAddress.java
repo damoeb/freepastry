@@ -37,8 +37,8 @@ advised of the possibility of such damage.
 
 package rice.pastry.standard;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.*;
 import rice.pastry.messaging.*;
 
@@ -63,8 +63,7 @@ public class StandardAddress {
       md = MessageDigest.getInstance("SHA");
     } catch ( NoSuchAlgorithmException e ) {
       Logger logger = env.getLogManager().getLogger(StandardAddress.class, null);
-      if (logger.level <= Logger.SEVERE) logger.log(
-        "No SHA support!" );
+      logger.error("No SHA support!");
     }
     
     byte[] digest = new byte[4];

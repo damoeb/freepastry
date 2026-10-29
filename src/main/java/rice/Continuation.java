@@ -37,8 +37,8 @@ advised of the possibility of such damage.
 
 package rice;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.selector.SelectorManager;
 
 /**
@@ -187,8 +187,7 @@ public interface Continuation<R, E extends Exception> {
      * @param result The exception which was caused.
      */
     public void receiveException(E result) {
-      if (logger.level <= Logger.WARNING) logger.logException(
-          "ERROR - Received exception " + result + " during task " + name, result);
+      logger.warn("ERROR - Received exception {} during task {}", result, name, result);
     }
   }
   

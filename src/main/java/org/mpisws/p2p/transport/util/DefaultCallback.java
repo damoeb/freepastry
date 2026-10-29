@@ -44,8 +44,8 @@ import java.util.Map;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 
 public class DefaultCallback<Identifier, MessageType> implements
     TransportLayerCallback<Identifier, MessageType> {
@@ -61,16 +61,16 @@ public class DefaultCallback<Identifier, MessageType> implements
 
   public void incomingSocket(P2PSocket<Identifier> s)
       throws IOException {
-    logger.log("incomingSocket("+s+")");
+    logger.info("incomingSocket({})", s);
   }
 
   public void livenessChanged(Identifier i, int state) {
-    logger.log("livenessChanged("+i+","+state+")");
+    logger.info("livenessChanged({},{})", i, state);
   }
 
   public void messageReceived(Identifier i, MessageType m, Map<String, Object> options)
       throws IOException {
-    logger.log("messageReceived("+i+","+m+")");
+    logger.info("messageReceived({},{})", i, m);
   }
 
 }

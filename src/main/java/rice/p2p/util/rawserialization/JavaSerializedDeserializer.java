@@ -41,7 +41,6 @@ package rice.p2p.util.rawserialization;
 
 import java.io.*;
 
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.pastry.PastryNode;

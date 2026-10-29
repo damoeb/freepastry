@@ -41,7 +41,6 @@ import java.io.PrintStream;
 import java.util.*;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.*;
@@ -177,7 +176,7 @@ public class ScribeRegrTest extends CommonAPITest {
     }
     nodes[NUM_NODES] = pn;
     processNode(NUM_NODES, pn);    
-    if (logger.level <= Logger.INFO) logger.log("Adding new root: "+ pn);
+    logger.info("Adding new root: {}", pn);
     synchronized(nodes[NUM_NODES]) {
       while(!pn.isReady()) {
         try { pn.wait(1000); } catch (InterruptedException ie) {return;}
@@ -770,7 +769,7 @@ public class ScribeRegrTest extends CommonAPITest {
     
     stepStart("Killing Nodes");
     for (int i=0; i<NUM_NODES/2; i++) {
-      if (logger.level <= Logger.INFO) logger.log("Killing " + nodes[i]);
+      logger.info("Killing {}", nodes[i]);
       scribes[i].destroy();
       kill(i);
       simulate(5);

@@ -40,7 +40,7 @@ package rice.p2p.splitstream;
 import java.io.*;
 import java.util.*;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.*;
 import rice.p2p.scribe.*;
 import rice.p2p.scribe.rawserialization.RawScribeContent;
@@ -221,10 +221,10 @@ public class Stripe implements ScribeMultiClient {
           clients[i].deliver(this, data);
         }
       } else {
-        if (logger.level <= Logger.WARNING) logger.log("Received unexpected content " + content);
+        logger.warn("Received unexpected content {}", content);
       }
     } else {
-      if (logger.level <= Logger.WARNING) logger.log("Received update for unexcpected topic " + topic + " content " + content);
+      logger.warn("Received update for unexcpected topic {} content {}", topic, content);
     }
   }
 
@@ -235,7 +235,7 @@ public class Stripe implements ScribeMultiClient {
    * @param child The child that was added
    */
   public void childAdded(Topic topic, NodeHandle child) {
-    if (logger.level <= Logger.FINE) logger.log("childAdded("+topic+","+child+")");
+    logger.debug("childAdded({},{})", topic, child);
   }
 
   /**
@@ -245,7 +245,7 @@ public class Stripe implements ScribeMultiClient {
    * @param child The child that was removed
    */
   public void childRemoved(Topic topic, NodeHandle child) {
-    if (logger.level <= Logger.FINE) logger.log("childRemoved("+topic+","+child+")");
+    logger.debug("childRemoved({},{})", topic, child);
   }
 
 
@@ -294,8 +294,7 @@ public class Stripe implements ScribeMultiClient {
     if (count.intValue() < MAX_FAILED_SUBSCRIPTION) {
       count = Integer.valueOf(count.intValue() + 1);
 
-      if (logger.level <= Logger.WARNING) logger.log( 
-          "DEBUG :: Subscription failed at " + channel.getLocalId() + " for topic " + topic + " - retrying.");
+      logger.warn("DEBUG :: Subscription failed at {} for topic {} - retrying.", channel.getLocalId(), topic);
       scribe.subscribe(topic, this, (RawScribeContent) null, null);
 
       failed.put(topic, count);

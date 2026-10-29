@@ -67,9 +67,9 @@ import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.AttachableCancellable;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -287,7 +287,7 @@ public class NetworkInfoTransportLayer implements
   public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress i,
       SocketCallback<InetSocketAddress> deliverSocketToMe,
       Map<String, Object> options) {
-    if (logger.level <= Logger.INFO-50) logger.log("openSocket("+i+","+deliverSocketToMe+","+options+")");
+    logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
 
     return openSocket(i,HEADER_PASSTHROUGH,deliverSocketToMe,options);
   }
@@ -295,7 +295,7 @@ public class NetworkInfoTransportLayer implements
   public SocketRequestHandle<InetSocketAddress> openSocket(final InetSocketAddress i, final byte[] header,
       final SocketCallback<InetSocketAddress> deliverSocketToMe,
       Map<String, Object> options) {
-    if (logger.level <= Logger.FINEST) logger.log("openSocket("+i+","+header.length+")");
+    logger.trace("openSocket({},{})", i, header.length);
 
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
@@ -322,7 +322,7 @@ public class NetworkInfoTransportLayer implements
               socket.close();
               return;
             }
-            if (logger.level <= Logger.FINEST) logger.log("openSocket("+i+","+header.length+") wrote "+ret+".  Remaining:"+buf.remaining());
+            logger.trace("openSocket({},{}) wrote {}.  Remaining:{}", i, header.length, ret, buf.remaining());
 
             if (buf.hasRemaining()) {
               socket.register(false, true, this);
@@ -345,13 +345,13 @@ public class NetworkInfoTransportLayer implements
   }
 
   public void incomingSocket(final P2PSocket<InetSocketAddress> s) throws IOException {
-    if (logger.level <= Logger.FINEST) logger.log("incomingSocket("+s+")");
+    logger.trace("incomingSocket({})", s);
     new P2PSocketReceiver<InetSocketAddress>() {
       ByteBuffer bb = ByteBuffer.allocate(HEADER_PASSTHROUGH.length); 
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
           boolean canRead, boolean canWrite) throws IOException {
         long bytesRead = socket.read(bb);
-        if (logger.level <= Logger.FINEST) logger.log("incomingSocket("+s+"): bytesRead = "+bytesRead+" remaining:"+bb.remaining());
+        logger.trace("incomingSocket({}): bytesRead = {} remaining:{}", s, bytesRead, bb.remaining());
         if (bytesRead < 0) {
           socket.close();
           return;
@@ -364,7 +364,7 @@ public class NetworkInfoTransportLayer implements
         // read the array
         byte[] ret = bb.array();
         if (ret.length > 1) throw new RuntimeException("Make this work over the array, implementation expectes header to be 1 byte.");
-        if (logger.level <= Logger.FINEST) logger.log("incomingSocket("+s+"): type = "+ret[0]);
+        logger.trace("incomingSocket({}): type = {}", s, ret[0]);
         switch (ret[0]) {
         case HEADER_PASSTHROUGH_BYTE:
           callback.incomingSocket(socket);
@@ -401,7 +401,7 @@ public class NetworkInfoTransportLayer implements
   public void handleIpRequest(final P2PSocket<InetSocketAddress> socket) throws IOException {
     // write out the caller's ip address
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
-    if (logger.level <= Logger.INFO) logger.log("HEADER_IP_ADDRESS_REQUEST_BYTE serializing "+socket.getIdentifier());
+    logger.info("HEADER_IP_ADDRESS_REQUEST_BYTE serializing {}", socket.getIdentifier());
     addrSerializer.serialize(socket.getIdentifier(), sob);          
     final ByteBuffer writeMe = sob.getByteBuffer();
     new P2PSocketReceiver<InetSocketAddress>() {           
@@ -430,7 +430,7 @@ public class NetworkInfoTransportLayer implements
     // write out the caller's ip address
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     Collection<InetSocketAddress> ret = probeStrategy.getExternalAddresses();
-    if (logger.level <= Logger.INFO) logger.log("serializing "+ret.size()+" external addresses for "+socket.getIdentifier());
+    logger.info("serializing {} external addresses for {}", ret.size(), socket.getIdentifier());
     
     // only take the first 20
     if (ret.size() > 20) {
@@ -687,7 +687,7 @@ public class NetworkInfoTransportLayer implements
 
     final long uid = environment.getRandomSource().nextLong();
     
-    if (logger.level <= Logger.FINE) logger.log("verifyConnectivity("+local+","+probeAddress+"):"+uid);
+    logger.debug("verifyConnectivity({},{}):{}", local, probeAddress, uid);
 
     synchronized(verifyConnectionRequests) {
       verifyConnectionRequests.put(uid, deliverResultToMe);
@@ -769,7 +769,7 @@ public class NetworkInfoTransportLayer implements
   }
 
   public Cancellable probe(final InetSocketAddress addr, final long uid, final Continuation<Long, Exception> deliverResponseToMe, final Map<String, Object> options) {
-    if (logger.level <= Logger.FINE) logger.log("probe("+addr+","+uid+","+deliverResponseToMe+","+options+")");
+    logger.debug("probe({},{},{},{})", addr, uid, deliverResponseToMe, options);
     // udp
     final AttachableCancellable ret = new AttachableCancellable();
     ByteBuffer msg = ByteBuffer.allocate(9); // header+uid
@@ -787,7 +787,7 @@ public class NetworkInfoTransportLayer implements
     if (deliverResponseToMe != null) {
       mc = new MessageCallback<InetSocketAddress, ByteBuffer>() {
         public void ack(MessageRequestHandle<InetSocketAddress, ByteBuffer> msg) {
-          if (logger.level <= Logger.FINER) logger.log("probe("+addr+","+uid+","+deliverResponseToMe+","+options+").udpSuccess()");
+          logger.trace("probe({},{},{},{}).udpSuccess()", addr, uid, deliverResponseToMe, options);
           success[0] = true;
           if (success[1]) {
             deliverResponseToMe.receiveResult(uid);
@@ -796,7 +796,7 @@ public class NetworkInfoTransportLayer implements
             
         public void sendFailed(
             MessageRequestHandle<InetSocketAddress, ByteBuffer> msg, Exception reason) {
-          if (logger.level <= Logger.FINER) logger.log("probe("+addr+","+uid+","+deliverResponseToMe+","+options+").udpFailure()");
+          logger.trace("probe({},{},{},{}).udpFailure()", addr, uid, deliverResponseToMe, options);
 
           ret.cancel();
           deliverResponseToMe.receiveException(reason);
@@ -817,7 +817,7 @@ public class NetworkInfoTransportLayer implements
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         // maybe we should read a response here, but I don't think it's important, just read to close
-        if (logger.level <= Logger.FINER) logger.log("probe("+addr+","+uid+","+deliverResponseToMe+","+options+").receiveResult("+sock+")");
+        logger.atTrace().log(() -> "probe("+addr+","+uid+","+deliverResponseToMe+","+options+").receiveResult("+sock+")");
         success[1] = true;
         if (success[0]) {
           deliverResponseToMe.receiveResult(uid);
@@ -828,7 +828,7 @@ public class NetworkInfoTransportLayer implements
     
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
-        if (logger.level <= Logger.FINER) logger.log("probe("+addr+","+uid+","+deliverResponseToMe+","+options+").tcpFailure2() "+ex);
+        logger.atTrace().log(() -> "probe("+addr+","+uid+","+deliverResponseToMe+","+options+").tcpFailure2() "+ex);
         if (deliverResponseToMe != null) deliverResponseToMe.receiveException(ex);
       }    
     }, options));    

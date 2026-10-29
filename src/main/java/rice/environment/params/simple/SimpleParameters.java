@@ -40,6 +40,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rice.environment.params.ParameterChangeListener;
 import rice.environment.params.Parameters;
 
@@ -51,6 +53,8 @@ import rice.environment.params.Parameters;
  * @author Alan Mislove
  */
 public class SimpleParameters implements Parameters {
+  private static final Logger LOG = LoggerFactory.getLogger(SimpleParameters.class);
+
 
   private MyProperties properties;
 
@@ -90,7 +94,7 @@ public class SimpleParameters implements Parameters {
           this.configFileName = defaultParamsFile; 
         }
       } catch (Exception e) {
-        e.printStackTrace(); 
+        LOG.warn("Cannot check for the parameter file {}", defaultParamsFile, e);
       }
     }
     this.properties = new MyProperties();
@@ -121,8 +125,7 @@ public class SimpleParameters implements Parameters {
           throw new ParamsNotPresentException("Error loading "+f, e);
         }
       } else {
-        System.err.println("Configuration file " + f.getAbsolutePath()
-            + " not present.  Using defaults.");
+        LOG.info("Configuration file {} not present.  Using defaults.", f.getAbsolutePath());
       }
     }
   }
@@ -144,8 +147,7 @@ public class SimpleParameters implements Parameters {
       return new InetSocketAddress(InetAddress.getByName(host), Integer
           .parseInt(port));
     } catch (UnknownHostException uhe) {
-      System.err.println("ERROR: Unable to find IP for ISA " + name
-          + " - returning null.");
+      LOG.error("Unable to find IP for ISA {} - returning null.", name);
       return null;
     }
   }
@@ -157,8 +159,7 @@ public class SimpleParameters implements Parameters {
       result = defaults.getProperty(name);
 
     if (result == null) {
-      System.err.println("WARNING: The parameter '" + name
-          + "' was not found - this is likely going to cause an error.");
+      LOG.warn("The parameter '{}' was not found - this is likely going to cause an error.", name);
     } else {
       // remove any surrounding whitespace
       result = result.trim();
@@ -354,8 +355,7 @@ public class SimpleParameters implements Parameters {
       next.renameTo(current);
       old.delete();
     } catch (IOException ioe) {
-      System.err.println("[Loader       ]: Unable to store properties file "
-          + configFileName + ", got error " + ioe);
+      LOG.error("Unable to store properties file {}", configFileName, ioe);
       throw ioe;
     }
   }

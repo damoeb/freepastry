@@ -43,8 +43,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.Scribe;

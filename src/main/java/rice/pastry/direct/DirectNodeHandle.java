@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.util.*;
 
 
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.commonapi.rawserialization.SizeCheckOutputBuffer;

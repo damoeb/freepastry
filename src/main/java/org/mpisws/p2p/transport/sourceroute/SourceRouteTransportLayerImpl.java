@@ -65,9 +65,9 @@ import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -131,7 +131,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
       Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
     
-    if (logger.level <= Logger.INFO-50) logger.log("openSocket("+i+","+deliverSocketToMe+","+options+")");
+    logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
 
     // invariants
     if (i.getNumHops() <= 1) {
@@ -142,7 +142,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
       throw new IllegalArgumentException("SourceRoute must start with self! sr:"+i+" self:"+etl.getLocalIdentifier());
     }
         
-    if (logger.level <= Logger.FINE) logger.log("openSocket("+i+")");    
+    logger.debug("openSocket({})", i);    
     
     final SocketRequestHandleImpl<SourceRoute<Identifier>> handle = new SocketRequestHandleImpl<SourceRoute<Identifier>>(i, options, logger);
     
@@ -168,7 +168,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
           }        
         });
 
-        if (logger.level <= Logger.FINER) logger.log("openSocket("+i+"):receiveResult("+result+")");
+        logger.trace("openSocket({}):receiveResult({})", i, result);
         result.register(false, true, new P2PSocketReceiver<Identifier>() {        
           public void receiveSelectResult(P2PSocket<Identifier> socket,
               boolean canRead, boolean canWrite) throws IOException {
@@ -221,19 +221,19 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
 
   public void incomingSocket(final P2PSocket<Identifier> socka) throws IOException {
     // read the header
-    if (logger.level <= Logger.FINE) logger.log("incomingSocket("+socka+")");
+    logger.debug("incomingSocket({})", socka);
 
     final SocketInputBuffer sib = new SocketInputBuffer(socka,1024);
     socka.register(true, false, new P2PSocketReceiver<Identifier>() {
     
       public void receiveSelectResult(P2PSocket<Identifier> socket,
           boolean canRead, boolean canWrite) throws IOException {
-        if (logger.level <= Logger.FINER) logger.log("incomingSocket("+socket+"):receiveSelectResult()");
+        logger.trace("incomingSocket({}):receiveSelectResult()", socket);
         if (canWrite || !canRead) throw new IOException("Expected to read! "+canRead+","+canWrite);
         try {
           final SourceRoute<Identifier> sr = srFactory.build(sib, etl.getLocalIdentifier(), socka.getIdentifier());
           
-          if (logger.level <= Logger.FINEST) logger.log("Read socket "+sr);
+          logger.trace("Read socket {}", sr);
           if (sr.getLastHop().equals(etl.getLocalIdentifier())) {    
             // last hop
             incomingSocketHelper(socket, srFactory.reverse(sr));
@@ -256,11 +256,11 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
             sib.read(srbytes);
             final ByteBuffer b = ByteBuffer.wrap(srbytes);
                 
-            if (logger.level <= Logger.FINER) logger.log("I'm hop "+hopNum+" in "+sr);
+            logger.trace("I'm hop {} in {}", hopNum, sr);
             // we're an intermediate node, open next socket
             Identifier nextHop = sr.getHop(hopNum+1);
             if (forwardSourceRouteStrategy.forward(nextHop, sr, true, socka.getOptions())) {
-              if (logger.level <= Logger.FINEST) logger.log("Attempting to open next hop "+nextHop+" <"+hopNum+"> in "+sr);
+              logger.trace("Attempting to open next hop {} <{}> in {}", nextHop, hopNum, sr);
               
               etl.openSocket(nextHop, new SocketCallback<Identifier>() {
               
@@ -305,7 +305,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
               }, null);
             } else {
               // don't even bother opening to the next hop
-              if (logger.level <= Logger.INFO) logger.log("Rejecting opening next hop "+nextHop+" <"+hopNum+"> in "+sr);
+              logger.info("Rejecting opening next hop {} <{}> in {}", nextHop, hopNum, sr);
               socka.close();
             }            
           }
@@ -313,7 +313,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
         } catch (InsufficientBytesException ibe) {
           socket.register(true, false, this); 
         } catch (IOException e) {
-          if (logger.level <= Logger.INFO) errorHandler.receivedException(srFactory.getSourceRoute(etl.getLocalIdentifier(), socket.getIdentifier()), e);
+          if (logger.isInfoEnabled()) errorHandler.receivedException(srFactory.getSourceRoute(etl.getLocalIdentifier(), socket.getIdentifier()), e);
           socka.close();
         }
       }
@@ -329,7 +329,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   public MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> sendMessage(final SourceRoute<Identifier> i, final ByteBuffer m,
       final MessageCallback<SourceRoute<Identifier>, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
-    if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+")");    
+    logger.debug("sendMessage({},{})", i, m);    
     
     // invariants
     if (i.getNumHops() <= 1) {
@@ -413,7 +413,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
         errorHandler.receivedUnexpectedData(sr, m.array(), pos, null);
         return;
       }
-      if (logger.level <= Logger.FINER) logger.log("I'm hop "+hopNum+" in "+sr);
+      logger.trace("I'm hop {} in {}", hopNum, sr);
       // notify taps
       for (SourceRouteTap<Identifier> tap : taps) {
         byte[] retArr = new byte[m.array().length];

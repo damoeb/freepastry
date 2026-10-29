@@ -48,9 +48,9 @@ import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.networkinfo.ConnectivityResult;
 import org.mpisws.p2p.transport.networkinfo.InetSocketAddressLookup;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.AttachableCancellable;
 import rice.pastry.Id;
@@ -103,7 +103,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
   public Cancellable findExternalNodes(final InetSocketAddress local,
       final Collection<InetSocketAddress> probeAddresses,
       final Continuation<Collection<InetSocketAddress>, IOException> deliverResultToMe) {
-    if (logger.level <= Logger.FINER) logger.log("findExternalAddress("+local+","+probeAddresses+","+deliverResultToMe+")");
+    logger.trace("findExternalAddress({},{},{})", local, probeAddresses, deliverResultToMe);
     // TODO: make sure the addresses are Internet routable?
     // TODO: Timeout (can be in parallel, so timeout ~every second, and try the next one, then cancel everything if one comes through)
 
@@ -120,7 +120,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
       
       public void receiveException(IOException exception) {
         // we couldn't even get a transport layer, DOA        
-        if (logger.level <= Logger.INFO) logger.log("findExternalAddress("+local+","+probeAddresses+","+deliverResultToMe+").receiveException("+exception+")");
+        logger.atInfo().log(() -> "findExternalAddress("+local+","+probeAddresses+","+deliverResultToMe+").receiveException("+exception+")");
         deliverResultToMe.receiveException(exception);
       }      
     }));
@@ -140,14 +140,14 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
   public void findExternalNodesHelper(final InetSocketAddressLookup lookup, final AttachableCancellable ret, final InetSocketAddress local,
       final List<InetSocketAddress> probeList,
       final Continuation<Collection<InetSocketAddress>, IOException> deliverResultToMe) {
-    if (logger.level <= Logger.FINER) logger.log("findExternalNodesHelper("+lookup+","+local+","+probeList+")");
+    logger.trace("findExternalNodesHelper({},{},{})", lookup, local, probeList);
     // we're on the selector now, and we have our TL        
     // pull a random node off the list, and try it, we do this so the recursion works
     InetSocketAddress target = probeList.remove(spnf.getEnvironment().getRandomSource().nextInt(probeList.size())); 
     
     ret.attach(lookup.getExternalNodes(target, new Continuation<Collection<InetSocketAddress>, IOException>() {          
       public void receiveResult(final Collection<InetSocketAddress> result) {              
-        if (logger.level <= Logger.INFO) logger.log("findExternalNodesHelper("+lookup+","+local+","+probeList+").success:"+result);
+        logger.info("findExternalNodesHelper({},{},{}).success:{}", lookup, local, probeList, result);
 
         // success!
         ret.cancel(); // kill any recursive tries
@@ -162,7 +162,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
       }
     
       public void receiveException(final IOException exception) {
-        if (logger.level <= Logger.INFO) logger.log("findExternalNodesHelper("+lookup+","+local+","+probeList+").receiveException("+exception+")");
+        logger.atInfo().log(() -> "findExternalNodesHelper("+lookup+","+local+","+probeList+").receiveException("+exception+")");
         
         // see if we can try anyone else
         if (probeList.isEmpty()) {
@@ -189,7 +189,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
   public Cancellable findExternalAddress(final InetSocketAddress local,
       final Collection<InetSocketAddress> probeAddresses,
       final Continuation<InetAddress, IOException> deliverResultToMe) {
-    if (logger.level <= Logger.FINER) logger.log("findExternalAddress("+local+","+probeAddresses+","+deliverResultToMe+")");
+    logger.trace("findExternalAddress({},{},{})", local, probeAddresses, deliverResultToMe);
     // TODO: make sure the addresses are Internet routable?
     // TODO: Timeout (can be in parallel, so timeout ~every second, and try the next one, then cancel everything if one comes through)
 
@@ -206,7 +206,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
       
       public void receiveException(IOException exception) {
         // we couldn't even get a transport layer, DOA        
-        if (logger.level <= Logger.INFO) logger.log("findExternalAddress("+local+","+probeAddresses+","+deliverResultToMe+").receiveException("+exception+")");
+        logger.atInfo().log(() -> "findExternalAddress("+local+","+probeAddresses+","+deliverResultToMe+").receiveException("+exception+")");
         deliverResultToMe.receiveException(exception);
       }      
     }));
@@ -226,14 +226,14 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
   public void findExternalAddressHelper(final InetSocketAddressLookup lookup, final AttachableCancellable ret, final InetSocketAddress local,
       final List<InetSocketAddress> probeList,
       final Continuation<InetAddress, IOException> deliverResultToMe) {
-    if (logger.level <= Logger.FINER) logger.log("findExternalAddressHelper("+lookup+","+local+","+probeList+")");
+    logger.trace("findExternalAddressHelper({},{},{})", lookup, local, probeList);
     // we're on the selector now, and we have our TL        
     // pull a random node off the list, and try it, we do this so the recursion works
     InetSocketAddress target = probeList.remove(spnf.getEnvironment().getRandomSource().nextInt(probeList.size())); 
     
     ret.attach(lookup.getMyInetAddress(target, new Continuation<InetSocketAddress, IOException>() {          
       public void receiveResult(final InetSocketAddress result) {              
-        if (logger.level <= Logger.INFO) logger.log("findExternalAddressHelper("+lookup+","+local+","+probeList+").success:"+result);
+        logger.info("findExternalAddressHelper({},{},{}).success:{}", lookup, local, probeList, result);
 
         // success!
         ret.cancel(); // kill any recursive tries
@@ -248,7 +248,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
       }
     
       public void receiveException(final IOException exception) {
-        if (logger.level <= Logger.INFO) logger.log("findExternalAddressHelper("+lookup+","+local+","+probeList+").receiveException("+exception+")");
+        logger.atInfo().log(() -> "findExternalAddressHelper("+lookup+","+local+","+probeList+").receiveException("+exception+")");
         
         // see if we can try anyone else
         if (probeList.isEmpty()) {
@@ -277,7 +277,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
       final Collection<InetSocketAddress> probeAddresses,
       final ConnectivityResult deliverResultToMe) {
     final ArrayList<InetSocketAddress> probeList = new ArrayList<InetSocketAddress>(probeAddresses);
-    if (logger.level <= Logger.FINER) logger.log("verifyConnectivity("+local+","+probeAddresses+")");
+    logger.trace("verifyConnectivity({},{})", local, probeAddresses);
 
     // don't probe self
     for (int ctr = 0; ctr < local.getNumAddresses(); ctr++) {
@@ -285,7 +285,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
     }
     
     if (probeList.isEmpty()) {
-      if (logger.level <= Logger.FINER) logger.log("verifyConnectivity("+local+","+probeAddresses+"). no valid addresses");
+      logger.trace("verifyConnectivity({},{}). no valid addresses", local, probeAddresses);
       deliverResultToMe.receiveException(new IllegalStateException("No valid probe addresses. "+probeAddresses+" local:"+local));
       return null;
     }
@@ -317,7 +317,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
               ret.cancel();
               lookup.destroy();
             }
-            if (logger.level <= Logger.INFO) logger.log("verifyConnectivity("+local+","+probeAddresses+"). udpSuccess("+from+")");
+            logger.info("verifyConnectivity({},{}). udpSuccess({})", local, probeAddresses, from);
             
             // lookup.destroy() uses an invoke
             environment.getSelectorManager().invoke(new Runnable() {        
@@ -333,7 +333,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
               ret.cancel();
               lookup.destroy();
             }
-            if (logger.level <= Logger.INFO) logger.log("verifyConnectivity("+local+","+probeAddresses+"). tcpSuccess("+from+")");
+            logger.info("verifyConnectivity({},{}). tcpSuccess({})", local, probeAddresses, from);
             
             // lookup.destroy() uses an invoke
             environment.getSelectorManager().invoke(new Runnable() {        
@@ -348,7 +348,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
             // see if we can try anyone else
             if (probeList.isEmpty()) {
               lookup.destroy();
-              if (logger.level <= Logger.INFO) logger.log("verifyConnectivity("+local+","+probeAddresses+"). failure no more addresses "+exception);
+              logger.atInfo().log(() -> "verifyConnectivity("+local+","+probeAddresses+"). failure no more addresses "+exception);
               
               // lookup.destroy() uses an invoke
               environment.getSelectorManager().invoke(new Runnable() {        
@@ -368,7 +368,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
       
       public void receiveException(IOException exception) {
         // we couldn't even get a transport layer, DOA        
-        if (logger.level <= Logger.INFO) logger.log("verifyConnectivity("+local+","+probeAddresses+"). couldn't get tl "+exception);
+        logger.atInfo().log(() -> "verifyConnectivity("+local+","+probeAddresses+"). couldn't get tl "+exception);
         deliverResultToMe.receiveException(exception);
       }      
     }));
@@ -380,7 +380,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
       final MultiInetSocketAddress local,
       final List<InetSocketAddress> probeList,
       final ConnectivityResult deliverResultToMe) {
-      if (logger.level <= Logger.INFO) logger.log("verifyConnectivityHelper("+local+","+probeList+")");
+      logger.info("verifyConnectivityHelper({},{})", local, probeList);
       
       // we're on the selector now, and we have our TL        
       // pull a random node off the list, and try it, we do this so the recursion works

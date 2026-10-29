@@ -49,8 +49,8 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.time.TimeSource;
 
 /**
@@ -107,20 +107,20 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
     if (udpTable.containsKey(i)) {
       long now = timeSource.currentTimeMillis();
       if (udpTable.get(i)+UDP_OPEN_MILLIS >= now) {
-        if (logger.level <= Logger.FINER) logger.log("accepting messageReceived("+i+","+m+","+options+")");
+        logger.trace("accepting messageReceived({},{},{})", i, m, options);
         udpTable.put(i,now);
         callback.messageReceived(i, m, options);
         return;
       }      
     }
-    if (logger.level <= Logger.FINE) logger.log("dropping messageReceived("+i+","+m+","+options+")");
+    logger.debug("dropping messageReceived({},{},{})", i, m, options);
   }
   
   /**
    * Only allow outgoing sockets.
    */
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    if (logger.level <= Logger.FINE) logger.log("closing incomingSocket("+s+")");
+    logger.debug("closing incomingSocket({})", s);
     s.close();
   }
 

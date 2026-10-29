@@ -61,9 +61,9 @@ import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -135,7 +135,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
 
     final SocketRequestHandleImpl<MultiInetSocketAddress> handle = new SocketRequestHandleImpl<MultiInetSocketAddress>(i, options, logger);
     
-    if (logger.level <= Logger.INFO-50) logger.log("openSocket("+i+","+deliverSocketToMe+","+options+")");
+    logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
     SimpleOutputBuffer sob = new SimpleOutputBuffer(localAddress.getSerializedLength());
     try {
       localAddress.serialize(sob);
@@ -160,7 +160,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
           }        
         });
 
-        if (logger.level <= Logger.FINER) logger.log("openSocket("+i+"):receiveResult("+result+")");
+        logger.trace("openSocket({}):receiveResult({})", i, result);
         if (sendIdentifier) {
           result.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {        
             public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
@@ -200,7 +200,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   }
 
   public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
-    if (logger.level <= Logger.FINE) logger.log("incomingSocket("+s+"):"+sendIdentifier);
+    logger.debug("incomingSocket({}):{}", s, sendIdentifier);
 
     if (sendIdentifier) {
       final SocketInputBuffer sib = new SocketInputBuffer(s,1024);
@@ -208,16 +208,16 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
       
         public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
             boolean canRead, boolean canWrite) throws IOException {
-          if (logger.level <= Logger.FINER) logger.log("incomingSocket("+socket+"):receiveSelectResult()");
+          logger.trace("incomingSocket({}):receiveSelectResult()", socket);
           if (canWrite || !canRead) throw new IOException("Expected to read! "+canRead+","+canWrite);
           try {
             MultiInetSocketAddress eisa = MultiInetSocketAddress.build(sib);
-            if (logger.level <= Logger.FINEST) logger.log("Read "+eisa);
+            logger.trace("Read {}", eisa);
             callback.incomingSocket(new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(eisa, socket, logger, errorHandler, socket.getOptions()));
           } catch (InsufficientBytesException ibe) {
             socket.register(true, false, this); 
           } catch (IOException e) {
-            if (logger.level <= Logger.INFO) errorHandler.receivedException(new MultiInetSocketAddress(socket.getIdentifier()), e);
+            if (logger.isInfoEnabled()) errorHandler.receivedException(new MultiInetSocketAddress(socket.getIdentifier()), e);
           }
         }
       
@@ -241,7 +241,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
       final MessageCallback<MultiInetSocketAddress, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
     
-    if (logger.level <= Logger.FINE) logger.log("sendMessage("+i+","+m+")");
+    logger.debug("sendMessage({},{})", i, m);
 
     final MessageRequestHandleImpl<MultiInetSocketAddress, ByteBuffer> handle 
       = new MessageRequestHandleImpl<MultiInetSocketAddress, ByteBuffer>(i, m, options);
@@ -293,7 +293,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   }
   
   public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) throws IOException {
-    if (logger.level <= Logger.FINE) logger.log("messageReceived("+i+","+m+")");
+    logger.debug("messageReceived({},{})", i, m);
     // read numAddresses
     if (sendIdentifier) {      
       int pos = m.position();

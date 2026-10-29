@@ -56,9 +56,8 @@ import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.Serializer;
 
 import rice.environment.Environment;
-import rice.environment.logging.CloneableLogManager;
+import rice.environment.logging.Slf4jLogManager;
 import rice.environment.logging.LogManager;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;
@@ -109,19 +108,15 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
   }
   
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
-    if (logger.level <= Logger.FINEST) {
-      logger.logException("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));      
-    } else if (logger.level <= Logger.FINER) {
-      logger.log("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()));
-    } else if (logger.level <= Logger.FINE) {
-      logger.log("sendMessage("+i+","+m+")");      
-    }
+    if (logger.isTraceEnabled()) {
+      logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));      
+    } else logger.debug("sendMessage({},{})", i, m);
     MessageRequestHandleImpl<Identifier, ByteBuffer> ret = new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
     try {
       send(i, m, -1);
       if (deliverAckToMe != null) deliverAckToMe.ack(ret);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("", ioe);
+      logger.warn("", ioe);
       throw new RuntimeException(ioe);
     }
     return ret;
@@ -151,7 +146,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
 
   @Override
   protected void receive(final Identifier from, final ByteBuffer msg) throws IOException {
-    if (logger.level <= Logger.FINER) logger.log("receive("+from+","+msg+")");
+    logger.trace("receive({},{})", from, msg);
         
     callback.messageReceived(from, msg, null);
   }
@@ -173,11 +168,10 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
     DirectTimeSource dts = new DirectTimeSource(startTime);
     
     LogManager lm;
-    if ((lm2 != null) && (lm2 instanceof CloneableLogManager)) {      
-      CloneableLogManager clm = (CloneableLogManager)lm2;
-      lm = clm.clone(clm.getPrefix()+"-"+name, dts);      
+    if (lm2 instanceof Slf4jLogManager clm) {
+      lm = clm.clone(clm.getPrefix()+"-"+name);
     } else {
-      lm = Environment.generateDefaultLogManager(dts,params);
+      lm = Environment.generateDefaultLogManager();
     }
     RandomSource rs = new SimpleRandomSource(randSeed, lm);
     dts.setLogManager(lm);

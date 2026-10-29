@@ -57,9 +57,9 @@ import org.mpisws.p2p.transport.TransportLayerListener;
 import org.mpisws.p2p.transport.util.DefaultCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -155,7 +155,7 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
       ByteBuffer m, 
       MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe, 
       Map<String, Object> options) {
-    if (logger.level <= Logger.FINE) logger.log("sendMessage("+destination+","+m+")");
+    logger.debug("sendMessage({},{})", destination, m);
     return udp.sendMessage(destination, m, deliverAckToMe, options); 
   }
 
@@ -165,7 +165,7 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
 
   boolean destroyed = false;
   public void destroy() {
-    if (logger.level <= Logger.INFO) logger.log("destroy()");
+    logger.info("destroy()");
     destroyed = true;
     udp.destroy();
     tcp.destroy();

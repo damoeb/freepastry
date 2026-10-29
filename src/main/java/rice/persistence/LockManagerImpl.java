@@ -38,9 +38,9 @@ package rice.persistence;
 
 import java.util.*;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Id;
 
 @SuppressWarnings("unchecked")
@@ -59,16 +59,16 @@ public class LockManagerImpl implements LockManager {
   
   public void lock(Id id, Continuation<?, ?> c) {
     Continuation<?, ?> torun = null;
-    if (logger.level <= Logger.FINE) logger.log("locking on id "+id+" for continuation "+c);
+    logger.debug("locking on id {} for continuation {}", id, c);
     synchronized (this) {
       if (locks.containsKey(id)) {
         List<Continuation<?, ?>> locklist = locks.get(id);
-        if (logger.level <= Logger.FINER) logger.log("locking on id "+id+"; blocked on "+locklist.size()+" earlier continuations");
-        if (locklist.size() > 10 && logger.level <= Logger.INFO) logger.log("locking on id "+id+"; "+locklist.size()+" continuations in queue.  That seems large");
+        logger.trace("locking on id {}; blocked on {} earlier continuations", id, locklist.size());
+        if (locklist.size() > 10) logger.info("locking on id {}; {} continuations in queue.  That seems large", id, locklist.size());
         locklist.add(c);
       } else {
         locks.put(id, new LinkedList<Continuation<?, ?>>());
-        if (logger.level <= Logger.FINER) logger.log("locking on id "+id+"; no contention so running "+c);
+        logger.trace("locking on id {}; no contention so running {}", id, c);
         torun = c;
       }
     }
@@ -78,19 +78,19 @@ public class LockManagerImpl implements LockManager {
   
   public void unlock(Id id) {
     Continuation<?, ?> torun = null;
-    if (logger.level <= Logger.FINE) logger.log("unlocking on id "+id);
+    logger.debug("unlocking on id {}", id);
     synchronized (this) {
       if (locks.containsKey(id)) {
         if (locks.get(id).isEmpty()) {
-          if (logger.level <= Logger.FINER) logger.log("unlocking on id "+id+"; last out the door -- removing lock ");
+          logger.trace("unlocking on id {}; last out the door -- removing lock ", id);
           locks.remove(id);
         } else {
           Continuation<?, ?> next = locks.get(id).remove(0);
-          if (logger.level <= Logger.FINER) logger.log("unlocking on id "+id+"; starting next continuation "+next);
+          logger.trace("unlocking on id {}; starting next continuation {}", id, next);
           torun = next;
         }
       } else {
-        if (logger.level <= Logger.WARNING) logger.log("unlocking on id "+id+"; no lock currently held!!");
+        logger.warn("unlocking on id {}; no lock currently held!!", id);
       }
     }
     if (torun != null)

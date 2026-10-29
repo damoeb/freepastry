@@ -40,7 +40,6 @@ import java.io.*;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.*;
@@ -93,9 +92,6 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    */
   public static void main(String args[]) throws IOException {
     Environment env = parseArgs(args);
-    Parameters param = env.getParameters();
-    param.setString("fileLogManager_filePrefix","retest_");
-    param.setString("fileLogManager_fileSuffix",".log");
     ReplicationManagerRegrTest test = new ReplicationManagerRegrTest(env);
     test.start();
     env.destroy();

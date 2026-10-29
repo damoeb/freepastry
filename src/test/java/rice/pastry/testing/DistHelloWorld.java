@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.testing;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.pastry.*;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.*;
@@ -134,14 +133,14 @@ public class DistHelloWorld {
         System.out
             .println("Usage: DistHelloWorld [-msgs m] [-nodes n] [-port p] [-bootstrap bshost[:bsport]]");
         System.out
-            .println("                     [-protocol (rmi|wire)] [-verbose|-silent|-verbosity v] [-help]");
+            .println("                     [-protocol (rmi|wire)] [-help]");
         System.out.println("");
         System.out
             .println("  Ports p and bsport refer to RMI registry  or Socket port numbers (default = 5009).");
         System.out
             .println("  Without -bootstrap bshost[:bsport], only localhost:p is used for bootstrap.");
         System.out
-            .println("  Default verbosity is 8, -verbose is 1, and -silent is 10 (error msgs only).");
+            .println("  Log levels are set in the SLF4J backend's configuration.");
         System.exit(1);
       }
     }
@@ -149,28 +148,6 @@ public class DistHelloWorld {
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-msgs") && i + 1 < args.length)
         nummsgs = Integer.parseInt(args[i + 1]);
-    }
-
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-verbosity") && i + 1 < args.length) {
-        int num = Integer.parseInt(args[i + 1]);
-        env.getParameters().setInt("loglevel", num*100);
-        break;
-      }
-    }
-
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-silent") && i + 1 < args.length) {
-        env.getParameters().setInt("loglevel", Logger.SEVERE);
-        break;
-      }        
-    }
-
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-verbose") && i + 1 < args.length) {
-        env.getParameters().setInt("loglevel", Logger.ALL);
-        break;
-      }        
     }
 
     for (int i = 0; i < args.length; i++) {
@@ -249,18 +226,16 @@ public class DistHelloWorld {
 
   /**
    * Usage: DistHelloWorld [-msgs m] [-nodes n] [-port p] [-bootstrap
-   * bshost[:bsport]] [-verbose|-silent|-verbosity v] [-help].
+   * bshost[:bsport]] [-help].
    * 
    * Ports p and bsport refer to Socket port numbers (default =
    * 5009). Without -bootstrap bshost[:bsport], only localhost:p is used for
-   * bootstrap. Default verbosity is 8, -verbose is 1, and -silent is 10 (error
-   * msgs only).
+   * bootstrap. Log levels are set in the SLF4J backend's configuration.
    */
   public static void main(String args[]) throws IOException {
     
     
     Environment env = new Environment();
-    env.getParameters().setInt("loglevel", 800);
     doIinitstuff(args, env);
     DistHelloWorld driver = new DistHelloWorld(env);
 

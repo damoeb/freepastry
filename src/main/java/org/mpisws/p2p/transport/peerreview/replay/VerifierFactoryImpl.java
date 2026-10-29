@@ -43,8 +43,8 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplayLayer;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public class VerifierFactoryImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements VerifierFactory<Handle, Identifier>{

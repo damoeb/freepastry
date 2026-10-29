@@ -41,6 +41,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
@@ -50,6 +52,8 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  * @author Jeff Hoye
  */
 public class MutableInetSocketAddressStrategy implements LocalIdentifierStrategy<InetSocketAddress> {
+  private static final Logger LOG = LoggerFactory.getLogger(MutableInetSocketAddressStrategy.class);
+
   int port;  
   Serializer<InetSocketAddress> serializer;
   
@@ -71,7 +75,7 @@ public class MutableInetSocketAddressStrategy implements LocalIdentifierStrategy
   }
 
   protected byte[] serializeAddress(InetSocketAddress addr) throws IOException {    
-    System.out.println("Address changed to "+addr);
+    LOG.info("Address changed to {}", addr);
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     serializer.serialize(addr, sob);
     return sob.getBytes();      

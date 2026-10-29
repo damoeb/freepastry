@@ -54,9 +54,9 @@ import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.Serializer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -113,13 +113,13 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
       final Key principal, final Continuation<Value, Exception> c,
       Map<String, Object> options) {    
     
-    if (logger.level <= Logger.FINE) logger.log("requestValue("+source+","+principal+")");
+    logger.debug("requestValue({},{})", source, principal);
     if (knownValues.containsKey(principal)) {
       if (c != null) c.receiveResult(knownValues.get(principal));
       return null;
     }
     
-    if (logger.level <= Logger.FINER) logger.log("requestValue("+source+","+principal+") opening socket");
+    logger.trace("requestValue({},{}) opening socket", source, principal);
     return tl.openSocket(source, new SocketCallback<Identifier>() {
 
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
@@ -152,7 +152,7 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
                     case RESPONSE_SUCCESS:
                       Value value = valueSerializer.deserialize(sib);
                       
-                      if (logger.level <= Logger.FINER) logger.log("requestValue("+source+","+principal+") got value "+value);
+                      logger.trace("requestValue({},{}) got value {}", source, principal, value);
 
                       knownValues.put(principal, value);
                       c.receiveResult(value);
@@ -223,11 +223,11 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
   }
   
   public void incomingSocket(final P2PSocket<Identifier> sock) throws IOException {
-    if (logger.level <= Logger.FINEST) logger.log("incomingSocket() from "+sock);
+    logger.trace("incomingSocket() from {}", sock);
     new BufferReader<Identifier>(sock,new Continuation<ByteBuffer, Exception>() {    
       public void receiveResult(ByteBuffer result) {
         byte type = result.get();
-        if (logger.level <= Logger.FINEST) logger.log("incomingSocket() from "+sock+" "+type);
+        logger.trace("incomingSocket() from {} {}", sock, type);
         
         switch (type) {
         case PASSTHROUGH:
@@ -253,7 +253,7 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
   }
 
   public void handleValueRequest(final P2PSocket<Identifier> sock) {
-    if (logger.level <= Logger.FINER) logger.log("handleValueRequest() from "+sock);
+    logger.trace("handleValueRequest() from {}", sock);
     new BufferReader<Identifier>(sock,new Continuation<ByteBuffer, Exception>() {
     
       public void receiveResult(ByteBuffer result) {

@@ -78,7 +78,6 @@ import org.mpisws.p2p.transport.util.OptionsFactory;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.Cancellable;
@@ -417,13 +416,13 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     SocketNodeHandle ret = pnhf.getNodeHandle(proxyAddress, pn.getEnvironment().getTimeSource().currentTimeMillis(), pn.getNodeId(), contactState);
     
     // this code is for logging    
-    if (logger.level <= Logger.FINE || (contactState != localContactState && logger.level <= Logger.INFO)) {
+    if (logger.isDebugEnabled() || (contactState != localContactState && logger.isInfoEnabled())) {
       switch(contactState) {
       case RendezvousSocketNodeHandle.CONTACT_DIRECT:
-        logger.log(ret+" is not firewalled.");
+        logger.info(ret+" is not firewalled.");
         break;
       case RendezvousSocketNodeHandle.CONTACT_FIREWALLED:
-        logger.log(ret+" is firewalled.");
+        logger.info(ret+" is firewalled.");
         break;
       }
     }
@@ -529,7 +528,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
               }
             }
             if (close) {
-              logger.log("closing pilot");
+              logger.info("closing pilot");
               manager.closePilot(result.getIdentifier());
               return;
             }
@@ -539,7 +538,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
           }
         
           public void receiveException(Exception exception) {
-            logger.logException("In Rendezvous Bootstrapper.checkLiveness("+h+")", exception);
+            logger.warn("In Rendezvous Bootstrapper.checkLiveness({})", h, exception);
           }        
         });        
       }      

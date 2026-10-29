@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/ 
 package rice.p2p.glacier.v2;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.logging.*;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.glacier.*;
 import rice.p2p.past.PastContent;
@@ -89,8 +89,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
       obj.serialize(sob);
       return createManifestsHelper(key, sob.getBytes(), sob.getWritten(), fragments, expiration);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log( 
-          "Cannot serialize object: "+ioe);
+      logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
       return null;
     }
   }
@@ -107,8 +106,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
     try {
       md = MessageDigest.getInstance("SHA");
     } catch (NoSuchAlgorithmException e) {
-      if (logger.level <= Logger.WARNING) logger.log( 
-          "No SHA support!");
+      logger.warn("No SHA support!");
       return null;
     }
 
@@ -138,8 +136,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
   }
   
   public Fragment[] encodeObject(RawPastContent obj, boolean[] generateFragment) {
-    if (logger.level <= Logger.FINER) logger.log( 
-        "Serialize object: " + obj);
+    logger.trace("Serialize object: {}", obj);
 
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -147,8 +144,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
       obj.serialize(sob);
       return encodeObjectHelper(obj, sob.getBytes(), sob.getWritten(), generateFragment); 
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log( 
-          "Cannot serialize object: "+ioe);
+      logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
       return null;
     }
   }
@@ -159,11 +155,9 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
 
     
   private Fragment[] encodeObjectHelper(PastContent obj, byte[] bytes, int length, boolean[] generateFragment) {  
-    if (logger.level <= Logger.FINER) logger.log( 
-        "Create fragments: " + obj);
+    logger.trace("Create fragments: {}", obj);
     Fragment[] fragments = codec.encode(bytes, length, generateFragment);
-    if (logger.level <= Logger.FINER) logger.log( 
-        "Completed: " + obj);
+    logger.trace("Completed: {}", obj);
     
     return fragments;
   }

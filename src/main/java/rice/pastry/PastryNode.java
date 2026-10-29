@@ -57,9 +57,9 @@ import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
+import org.slf4j.Logger;
 import rice.*;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.LegacyObservable;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.exception.AppNotRegisteredException;
@@ -319,7 +319,7 @@ public class PastryNode extends LegacyObservable implements
   }
 
   public NodeHandle coalesce(NodeHandle newHandle) {
-    if (logger.level <= Logger.FINER) logger.log("coalesce("+newHandle+")");
+    logger.trace("coalesce({})", newHandle);
     return coalesce(handleFactory, newHandle);
   }
 
@@ -342,7 +342,7 @@ public class PastryNode extends LegacyObservable implements
     // It is possible to have the setReady() invoked more than once if the
     // message denoting the termination of join protocol is duplicated.
     boolean ready = readyStrategy.isReady();
-    if (logger.level <= Logger.INFO) logger.log("PastryNode.notifyReadyObservers("+ready+")");
+    logger.info("PastryNode.notifyReadyObservers({})", ready);
 
     if (ready) {
       nodeIsReady(); // deprecate this
@@ -594,7 +594,7 @@ public class PastryNode extends LegacyObservable implements
    */
   public synchronized void receiveMessage(Message msg) {
     if (isDestroyed) return;
-    if (logger.level <= Logger.FINE) logger.log("receiveMessage("+msg+")");
+    logger.debug("receiveMessage({})", msg);
     myMessageDispatch.dispatchMessage(msg);
   }
   
@@ -608,7 +608,7 @@ public class PastryNode extends LegacyObservable implements
    */
   public void registerReceiver(int address,
       PastryAppl receiver) {
-    if (logger.level <= Logger.FINE) logger.log("registerReceiver("+address+","+receiver+"):"+receiver.getDeserializer());
+    logger.debug("registerReceiver({},{}):{}", address, receiver, receiver.getDeserializer());
     myMessageDispatch.registerReceiver(address, receiver);
   }
 
@@ -711,12 +711,12 @@ public class PastryNode extends LegacyObservable implements
    */
   public void destroy() {
     if (isDestroyed) return;
-    if (logger.level <= Logger.INFO) logger.log("Destroying "+this);
+    logger.info("Destroying {}", this);
     isDestroyed = true;
     Iterator<Destructable> i = destructables.iterator();
     while(i.hasNext()) {
       Destructable d = i.next();
-      if (logger.level <= Logger.INFO - 5) logger.log("Destroying "+d);
+      logger.info("Destroying {}", d);
       d.destroy(); 
     }
     getEnvironment().removeDestructable(this);
@@ -762,7 +762,7 @@ public class PastryNode extends LegacyObservable implements
               
               if (c != handle.getSubCancellable()) throw new RuntimeException("c != handle.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
               
-              if (logger.level <= Logger.FINER) logger.log("openSocket("+i+"):receiveResult("+result+")");
+              logger.trace("openSocket({}):receiveResult({})", i, result);
               result.register(false, true, new P2PSocketReceiver<NodeHandle>() {        
                 public void receiveSelectResult(P2PSocket<NodeHandle> socket,
                     boolean canRead, boolean canWrite) throws IOException {
@@ -850,7 +850,7 @@ public class PastryNode extends LegacyObservable implements
   
   protected JoinFailedException joinFailedReason;
   public void joinFailed(JoinFailedException cje) {
-    if (logger.level <= Logger.WARNING) logger.log("joinFailed("+cje+")");
+    logger.atWarn().log(() -> "joinFailed("+cje+")");
     joinFailedReason = cje;
     synchronized(this) {
       joinFailed = true;
@@ -927,7 +927,7 @@ public class PastryNode extends LegacyObservable implements
           boolean canRead, boolean canWrite) throws IOException {
         // read the appId
         if (socket.read(appIdBuffer) == -1) {
-          if (logger.level <= Logger.WARNING) logger.log("AppId Socket from "+socket+" closed unexpectedly.");
+          logger.warn("AppId Socket from {} closed unexpectedly.", socket);
           return;
         }
         
@@ -951,7 +951,7 @@ public class PastryNode extends LegacyObservable implements
               boolean success = false;
               
               if (acceptorAppl == null) {
-                if (logger.level <= Logger.WARNING) logger.log("Sending error to connecter "+socket+" "+new AppNotRegisteredException(appId));
+                logger.atWarn().log(() -> "Sending error to connecter "+socket+" "+new AppNotRegisteredException(appId));
                 toWrite.put(CONNECTION_NO_APP);
                 toWrite.clear();
                 socket.write(toWrite);
@@ -964,7 +964,7 @@ public class PastryNode extends LegacyObservable implements
                     toWrite.clear();
                     success = true;
                   } else {
-                    if (logger.level <= Logger.WARNING) logger.log("Sending error to connecter "+socket+" "+new NoReceiverAvailableException());
+                    logger.atWarn().log(() -> "Sending error to connecter "+socket+" "+new NoReceiverAvailableException());
                     toWrite.put(CONNECTION_NO_ACCEPTOR);                    
                     toWrite.clear();
                   }
@@ -972,7 +972,7 @@ public class PastryNode extends LegacyObservable implements
                   socket.write(toWrite);
                   if (toWrite.hasRemaining()) {
                     // this sucks, because the synchronization with the app-receiver becomes all wrong, this shouldn't normally happen
-                    if (logger.level <= Logger.WARNING) logger.log("couldn't write 1 bite!!! "+toWrite);
+                    logger.warn("couldn't write 1 bite!!! {}", toWrite);
                     socket.close();
                     return;
                   }
@@ -985,7 +985,7 @@ public class PastryNode extends LegacyObservable implements
             } // rSR()
           
             public void receiveException(P2PSocket<NodeHandle> socket, Exception ioe) {
-              if (logger.level <= Logger.WARNING) logger.logException("incomingSocket("+socket+")", ioe);
+              logger.warn("incomingSocket({})", socket, ioe);
               return;
             }          
           });
@@ -995,7 +995,7 @@ public class PastryNode extends LegacyObservable implements
       public void receiveException(
           P2PSocket<NodeHandle> socket,
           Exception ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("incomingSocket("+socket+")",ioe);
+        logger.warn("incomingSocket({})", socket, ioe);
       }
     
     });
@@ -1198,21 +1198,19 @@ public class PastryNode extends LegacyObservable implements
    * @param bootstrap The node which this node should boot off of.
    */
   public void doneNode(Collection<NodeHandle> bootstrap) { 
-    if (logger.level <= Logger.INFO) logger.log("doneNode:"+bootstrap);
-    if (logger.level <= Logger.INFO) logger.log("doneNode:"+bootstrap);
+    logger.info("doneNode:{}", bootstrap);
+    logger.info("doneNode:{}", bootstrap);
     if (routeSetMaintFreq > 0) {
       // schedule the routeset maintenance event
       routeSetRoutineMaintenance = scheduleMsgAtFixedRate(new InitiateRouteSetMaintenance(),
         routeSetMaintFreq * 1000, routeSetMaintFreq * 1000);
-      if (logger.level <= Logger.CONFIG) logger.log(
-          "Scheduling routeSetMaint for "+routeSetMaintFreq * 1000+","+routeSetMaintFreq * 1000);
+      logger.atInfo().log(() -> "Scheduling routeSetMaint for "+routeSetMaintFreq * 1000+","+routeSetMaintFreq * 1000);
     }
     if (leafSetMaintFreq > 0) {
       // schedule the leafset maintenance event
       leafSetRoutineMaintenance = scheduleMsgAtFixedRate(new InitiateLeafSetMaintenance(),
         leafSetMaintFreq * 1000, leafSetMaintFreq * 1000);
-      if (logger.level <= Logger.CONFIG) logger.log(
-          "Scheduling leafSetMaint for "+leafSetMaintFreq * 1000+","+leafSetMaintFreq * 1000);
+      logger.atInfo().log(() -> "Scheduling leafSetMaint for "+leafSetMaintFreq * 1000+","+leafSetMaintFreq * 1000);
     }
     
     joiner.initiateJoin(bootstrap);
@@ -1244,7 +1242,7 @@ public class PastryNode extends LegacyObservable implements
   }
   
   protected void notifyLivenessListeners(NodeHandle i, int val, Map<String, Object> options) {
-    if (logger.level <= Logger.FINE) logger.log("notifyLivenessListeners("+i+","+val+")"); 
+    logger.debug("notifyLivenessListeners({},{})", i, val); 
     ArrayList<LivenessListener<NodeHandle>> temp;
     synchronized(livenessListeners) {
       temp = new ArrayList<LivenessListener<NodeHandle>>(livenessListeners);

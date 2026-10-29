@@ -46,7 +46,6 @@ import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.util.MathUtils;
 import rice.selector.TimerTask;
 
@@ -72,22 +71,22 @@ public class PRNonconform1 extends PRRegressionTest {
     // see if everyone found bob exposed
     try {
       if (recordedStatus.get(aliceHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
-        logger.log("Alice Didn't expose bob");
+        logger.info("Alice Didn't expose bob");
         fail("Alice Didn't expose bob");
         return;
       }
       if (recordedStatus.get(carolHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
-        logger.log("Carol Didn't expose bob");
+        logger.info("Carol Didn't expose bob");
         fail("Carol Didn't expose bob");
         return;
       }
     } catch (Exception e) {
       // in case there is no record
-      logger.logException("Failure", e);
+      logger.warn("Failure", e);
       fail("No status recorded: "+e);
       return;
     }
-    logger.log("Success");
+    logger.info("Success");
     succeed();    
   }
   
@@ -115,7 +114,7 @@ public class PRNonconform1 extends PRRegressionTest {
       @Override
       public void messageReceived(HandleImpl i, ByteBuffer m,
           Map<String, Object> options) throws IOException {
-        if (logger.level <= Logger.INFO) logger.log("Message received: "+MathUtils.toBase64(m.array()));
+        logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(m.array()));
       }
       
       @Override
@@ -123,10 +122,10 @@ public class PRNonconform1 extends PRRegressionTest {
           IdImpl id,
           int newStatus) {
         if (player.localHandle.id.id == 2) return; // ignore bob's stuff
-        if (logger.level <= Logger.INFO) logger.log("notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
+        logger.atInfo().log(() -> "notifyStatusChange("+id+","+PeerReviewImpl.getStatusString(newStatus)+")");
         if (newStatus == STATUS_EXPOSED) {
           if (!id.equals(bobHandle.id)) {
-            logger.log("Node not trusted: "+id);
+            logger.info("Node not trusted: {}", id);
             fail("Node not trusted: "+id+" at "+player.localHandle);
             return;
           }

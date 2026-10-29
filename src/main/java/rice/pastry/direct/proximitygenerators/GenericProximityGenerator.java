@@ -42,6 +42,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.pastry.direct.NodeRecord;
@@ -49,6 +50,8 @@ import rice.pastry.direct.ProximityGenerator;
 
 public class GenericProximityGenerator implements ProximityGenerator {
   protected RandomSource random;
+
+  protected Logger logger;
   
   float MIN_DIST = 2.0f;
   
@@ -67,6 +70,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
   public File inFile_Matrix;
 
   public GenericProximityGenerator(Environment env, File inFile) throws IOException {
+    logger = env.getLogManager().getLogger(GenericProximityGenerator.class, null);
     MAXOVERLAYSIZE = env.getParameters().getInt("pastry_direct_gtitm_max_overlay_size");
     MIN_DIST = env.getParameters().getFloat("pastry_direct_min_delay");
     float delayFactor = env.getParameters().getFloat("pastry_direct_gtitm_delay_factor");// 1.0
@@ -164,9 +168,10 @@ public class GenericProximityGenerator implements ProximityGenerator {
         lineCount++;
         if (lineCount == MAXOVERLAYSIZE) break;
       }
-      System.out.println("Size of Generic Network matrix= " + lineCount);
+      final int size = lineCount;
+      logger.info("Size of Generic Network matrix= {}", size);
     } catch (IOException e) {
-      System.out.println("Exception" + e);
+      logger.warn("Exception reading the Generic Network matrix", e);
     }
   }
   

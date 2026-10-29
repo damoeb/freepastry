@@ -105,9 +105,9 @@ import org.mpisws.p2p.transport.peerreview.statement.StatementProtocolImpl;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.Serializer;
 
+import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.simulated.DirectTimeSource;
@@ -236,7 +236,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   updated, this function is called. */
 
   protected void updateLogTime() {
-    if (logger.level <= Logger.FINEST) logger.log("updateLogTime()");
+    logger.trace("updateLogTime()");
     long now = env.getTimeSource().currentTimeMillis();
   
     if (now > lastLogEntry) {
@@ -293,7 +293,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
   
   public void setApp(PeerReviewCallback<Handle, Identifier> callback) {
-    if (logger.level <= Logger.INFO) logger.log("setApp("+callback+")");
+    logger.info("setApp({})", callback);
     this.callback = callback;
   }
   
@@ -309,7 +309,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     assert(initialized);
     
     if (infoStore.getStatus(identifierExtractor.extractIdentifier(handle)) == STATUS_EXPOSED) {
-      if (logger.level <= Logger.WARNING) logger.log("Received a message from an exposed node "+handle+" -- ignoring");
+      logger.warn("Received a message from an exposed node {} -- ignoring", handle);
       return;
     }
 
@@ -410,9 +410,9 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
          /* The signature checks out, so the node must have signed two different authenticators
          with the same sequence number! This is a proof of misbehavior, and we must
          notify the witness set! */
-             if (logger.level < Logger.WARNING) logger.log("Authenticator conflict for "+subject+" seq #"+auth.getSeq());
-             if (logger.level < Logger.FINE) logger.log("Existing: ["+existingAuth+"]");
-             if (logger.level < Logger.FINE) logger.log("New:      ["+auth+"]");
+             logger.warn("Authenticator conflict for {} seq #{}", subject, auth.getSeq());
+             logger.debug("Existing: [{}]", existingAuth);
+             logger.debug("New:      [{}]", auth);
              
              /**
               * PROOF_INCONSISTENT
@@ -450,7 +450,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     return transport.requestCertificate(source, certHolder, new Continuation<X509Certificate, Exception>() {
 
       public void receiveException(Exception exception) {
-        if (logger.level <= Logger.WARNING) logger.logException("error receiving cert for "+certHolder+" from "+source, exception);
+        logger.warn("error receiving cert for {} from {}", certHolder, source, exception);
       }
 
       public void receiveResult(X509Certificate result) {
@@ -472,7 +472,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     callback.storeCheckpoint(sob);
 
     updateLogTime();
-    if (logger.level <= Logger.INFO) logger.log( "Writing checkpoint ("+sob.getWritten()+" bytes)");
+    logger.info("Writing checkpoint ({} bytes)", sob.getWritten());
     history.appendEntry(EVT_CHECKPOINT, true, sob.getByteBuffer());
   }  
   
@@ -480,7 +480,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
    * Periodic timer for pushing batches of authenticators to the witnesses 
    */
   protected void doAuthPush() {
-    if (logger.level <= Logger.INFO) logger.log("Doing authenticator push");
+    logger.info("Doing authenticator push");
     authPushProtocol.push();
   }
   
@@ -488,7 +488,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
    * Periodic maintenance timer; used to garbage-collect old authenticators 
    */
   protected void doMaintenance() {
-    if (logger.level <= Logger.INFO) logger.log("Doing maintenance");
+    logger.info("Doing maintenance");
     try {
       authInStore.garbageCollect();
       authOutStore.garbageCollect();
@@ -515,7 +515,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
   
   public void notifyStatusChange(final Identifier id, final int newStatus) {
-    if (logger.level <= Logger.INFO) logger.log("Status change: <"+id+"> becomes "+getStatusString(newStatus));
+    logger.atInfo().log(() -> "Status change: <"+id+"> becomes "+getStatusString(newStatus));
     challengeProtocol.notifyStatusChange(id, newStatus);
     commitmentProtocol.notifyStatusChange(id, newStatus);
     
@@ -731,7 +731,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       Evidence evidence) {
     AccusationMessage<Identifier> accusation = new AccusationMessage<Identifier>(getLocalId(),subject,evidenceSeq,evidence);
    
-    if (logger.level <= Logger.FINE) logger.log("Relaying evidence to <"+subject+">'s witnesses");
+    logger.debug("Relaying evidence to <{}>'s witnesses", subject);
     evidenceTransferProtocol.sendMessageToWitnesses(subject, accusation, null, null);  
   }
 

@@ -57,7 +57,6 @@ import org.mpisws.p2p.transport.MessageCallback;
 import rice.Continuation;
 import rice.Destructable;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.RawMessage;

@@ -54,7 +54,7 @@ import org.mpisws.p2p.transport.peerreview.replay.EventCallback;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.util.Serializer;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -176,12 +176,12 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     try {
       next = history.statEntry(nextEventIndex);
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("Error fetching log entry #"+nextEventIndex,ioe);
+      logger.warn("Error fetching log entry #{}", nextEventIndex, ioe);
       foundFault = true;
       return;
     }
 
-    if (logger.level <= Logger.FINE) logger.log("fetchNextEvent():"+next);
+    logger.debug("fetchNextEvent():{}", next);
 
     if (next == null)
       return;
@@ -191,7 +191,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       
       nextEventIsHashed = true;
       nextEvent = new SimpleInputBuffer(next.getContentHash());
-      if (logger.level <= Logger.FINE) logger.log("Fetched log entry #"+nextEventIndex+" (type "+next.getType()+", hashed, seq="+next.getSeq()+")");
+      logger.debug("Fetched log entry #{} (type {}, hashed, seq={})", nextEventIndex, next.getType(), next.getSeq());
     } else {
       // load the nextEvent from the file
       
@@ -199,11 +199,11 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       try {
         nextEvent = new SimpleInputBuffer(history.getEntry(nextEventIndex, next.getSizeInFile()));
       } catch (IOException ioe) {
-        if (logger.level <= Logger.WARNING) logger.logException("Error fetching log entry #"+nextEventIndex+" (type "+next.getType()+", size "+next.getSizeInFile()+" bytes, seq="+next.getSeq()+")",ioe);
+        logger.warn("Error fetching log entry #{} (type {}, size {} bytes, seq={})", nextEventIndex, next.getType(), next.getSizeInFile(), next.getSeq(), ioe);
         foundFault = true;
         return;
       }
-      if (logger.level <= Logger.FINE) logger.log("Fetched log entry #"+nextEventIndex+" (type "+next.getType()+", size "+next.getSizeInFile()+" bytes, seq="+next.getSeq()+")");
+      logger.debug("Fetched log entry #{} (type {}, size {} bytes, seq={})", nextEventIndex, next.getType(), next.getSizeInFile(), next.getSeq());
     }
     
     haveNextEvent = true;
@@ -220,23 +220,23 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     if (relevantLen < 0)
       relevantLen = message.remaining();
 
-    if (logger.level <= Logger.FINE) logger.log("Verifier::send("+target+", "+relevantLen+"/"+message.remaining()+" bytes)");
+    logger.debug("Verifier::send({}, {}/{} bytes)", target, relevantLen, message.remaining());
     
     // Sanity checks 
     
     if (!haveNextEvent) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Send event after end of segment; marking as invalid");
+      logger.warn("Replay: Send event after end of segment; marking as invalid");
       foundFault = true;
       return;
     }
     
     if (next.getType() == EVT_INIT) {
-      if (logger.level <= Logger.FINER) logger.log("Skipped; next event is an INIT");
+      logger.trace("Skipped; next event is an INIT");
       return;
     }
     
     if (next.getType() != EVT_SEND) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SEND event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay({}): SEND event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType());
       foundFault = true;
       return;
     }
@@ -256,7 +256,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       }
       byte[] cHash = hashProv.hash(ByteBuffer.wrap(buf.getBytes()));
       if (!cHash.equals(next.getContentHash())) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: SEND is hashed, but hash of predicted SEND entry does not match hash in the log");
+        logger.warn("Replay: SEND is hashed, but hash of predicted SEND entry does not match hash in the log");
         foundFault = true;
         return;
       }
@@ -273,7 +273,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     Identifier logReceiver;
      logReceiver = serializer.deserialize(nextEvent);
     if (!logReceiver.equals(target)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SEND to "+target+" during replay, but log shows SEND to "+logReceiver+"; marking as invalid");      
+      logger.warn("Replay({}): SEND to {} during replay, but log shows SEND to {}; marking as invalid", nextEventIndex, target, logReceiver);      
       // reset nextEvent so next time we parse this event it isn't nonsense
       nextEvent = new SimpleInputBuffer(history.getEntry(next, next.getSizeInFile()));
       foundFault = true;
@@ -286,7 +286,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 
     if (logIsHashed) {
       if (relevantLen >= msgLen) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay is entirely relevant, but log entry is partly hashed; marking as invalid");
+        logger.warn("Replay: Message sent during replay is entirely relevant, but log entry is partly hashed; marking as invalid");
         foundFault = true;
         return;
       }
@@ -295,7 +295,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       assert(logRelevantLen >= 0);
       
       if (relevantLen != logRelevantLen) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay has "+relevantLen+" relevant bytes, but log entry has "+logRelevantLen+"; marking as invalid");
+        logger.warn("Replay: Message sent during replay has {} relevant bytes, but log entry has {}; marking as invalid", relevantLen, logRelevantLen);
         foundFault = true;
         return;
       }
@@ -304,9 +304,9 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       nextEvent.read(loggedMsg);
       ByteBuffer loggedMsgBB = ByteBuffer.wrap(loggedMsg);
       if ((relevantLen > 0) && message.equals(loggedMsgBB)) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Relevant part of partly hashed message differs");
-        if (logger.level <= Logger.FINE) logger.log("Expected: ["+loggedMsgBB+"]");
-        if (logger.level <= Logger.FINE) logger.log("Actual:   ["+message+"]");
+        logger.warn("Replay: Relevant part of partly hashed message differs");
+        logger.debug("Expected: [{}]", loggedMsgBB);
+        logger.debug("Actual:   [{}]", message);
         foundFault = true;
         return;
       }
@@ -318,22 +318,22 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       System.arraycopy(msgHashBytes, msgHashBytes.length-hashSizeBytes, msgHash, 0, hashSizeBytes);
       assert(msgLen == (relevantLen + hashSizeBytes));
       if (!msgHash.equals(logHash)) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Hashed part of partly hashed message differs");
-        if (logger.level <= Logger.FINE) logger.log("Expected: ["+logHash+"]");
-        if (logger.level <= Logger.FINE) logger.log("Actual:   ["+msgHash+"]");
+        logger.warn("Replay: Hashed part of partly hashed message differs");
+        logger.debug("Expected: [{}]", logHash);
+        logger.debug("Actual:   [{}]", msgHash);
         foundFault = true;
         return;
       }
     } else {
       if (relevantLen < msgLen) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay is only partly relevant, but log entry is not hashed; marking as invalid");
+        logger.warn("Replay: Message sent during replay is only partly relevant, but log entry is not hashed; marking as invalid");
         foundFault = true;
         return;
       }
 
       int logMsglen = nextEvent.bytesRemaining();
       if (msgLen != logMsglen) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay has "+msgLen+" bytes, but log entry has "+logMsglen+"; marking as invalid");
+        logger.warn("Replay: Message sent during replay has {} bytes, but log entry has {}; marking as invalid", msgLen, logMsglen);
         foundFault = true;
         return;
       }
@@ -344,13 +344,13 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       message.get(sentMsg);
       
       if (loggedMsg.length != sentMsg.length) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay differs from message in the log by length log:"+loggedMsg.length+" sent:"+sentMsg.length);
+        logger.warn("Replay: Message sent during replay differs from message in the log by length log:{} sent:{}", loggedMsg.length, sentMsg.length);
         foundFault = true;
         return;        
       }
       
       if ((msgLen > 0) && !Arrays.equals(loggedMsg, sentMsg)) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Message sent during replay differs from message in the log");
+        logger.warn("Replay: Message sent during replay differs from message in the log");
         foundFault = true;
         return;
       }
@@ -370,13 +370,13 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
    */
   public int openSocket(Identifier target) throws IOException {
     if (!haveNextEvent) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: OpenSocket event after end of segment; marking as invalid");
+      logger.warn("Replay: OpenSocket event after end of segment; marking as invalid");
       foundFault = true;
       return Integer.MIN_VALUE;
     }
 
     if (next.getType() != EVT_SOCKET_OPEN_OUTGOING) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_OPEN_OUTGOING event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay: SOCKET_OPEN_OUTGOING event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
       return Integer.MIN_VALUE;
     }
@@ -386,7 +386,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     Identifier logReceiver;
     logReceiver = serializer.deserialize(nextEvent);
     if (!logReceiver.equals(target)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_OPEN_OUTGOING to "+target+" during replay, but log shows SOCKET_OPEN_OUTGOING to "+logReceiver+"; marking as invalid");
+      logger.warn("Replay: SOCKET_OPEN_OUTGOING to {} during replay, but log shows SOCKET_OPEN_OUTGOING to {}; marking as invalid", target, logReceiver);
       foundFault = true;
       return Integer.MIN_VALUE;
     }
@@ -404,7 +404,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
    */
   public int readSocket(int socketId, ByteBuffer dst) throws IOException {
     if (!haveNextEvent) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: ReadSocket event after end of segment; marking as invalid");
+      logger.warn("Replay: ReadSocket event after end of segment; marking as invalid");
       foundFault = true;
       return 0;
     }
@@ -415,14 +415,14 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     }
     
     if (next.getType() != EVT_SOCKET_READ) {
-      if (logger.level <= Logger.WARNING) logger.logException("Replay ("+nextEventIndex+"): SOCKET_READ event during replay, but next event in log is #"+next.getType()+"; marking as invalid", new Exception("Stack Trace"));
+      logger.warn("Replay ({}): SOCKET_READ event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType(), new Exception("Stack Trace"));
       foundFault = true;
       return Integer.MIN_VALUE;
     }
 
     int loggedSocket = nextEvent.readInt();
     if (loggedSocket != socketId) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_READ on socket "+socketId+" during replay, but log shows SOCKET_READ to "+loggedSocket+"; marking as invalid");
+      logger.warn("Replay: SOCKET_READ on socket {} during replay, but log shows SOCKET_READ to {}; marking as invalid", socketId, loggedSocket);
       foundFault = true;
       return 0;
     }
@@ -430,7 +430,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     // TODO: Change this when we make multiple reads a single event
     int ret = nextEvent.bytesRemaining();
     if (dst.remaining() < ret) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_READ reading a maximum of "+dst.remaining()+" on socket "+socketId+" during replay, but log shows SOCKET_READ reading "+ret+" bytes; marking as invalid");
+      logger.warn("Replay: SOCKET_READ reading a maximum of {} on socket {} during replay, but log shows SOCKET_READ reading {} bytes; marking as invalid", dst.remaining(), socketId, ret);
       foundFault = true;
       return 0;
     }
@@ -443,13 +443,13 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   
   public void generatedSocketException(int socketId, IOException ioe) {
     if (!haveNextEvent) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: WriteSocket event after end of segment; marking as invalid");
+      logger.warn("Replay: WriteSocket event after end of segment; marking as invalid");
       foundFault = true;
       return;
     }
     
     if (next.getType() != EVT_SOCKET_EXCEPTION) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_EXCEPTION event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay: EVT_SOCKET_EXCEPTION event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
       return;
     }
@@ -457,12 +457,12 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     try {
       int loggedSocket = nextEvent.readInt();
       if (loggedSocket != socketId) {
-        if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_EXCEPTION on socket "+socketId+" during replay, but log shows EVT_SOCKET_EXCEPTION to "+loggedSocket+"; marking as invalid");
+        logger.warn("Replay: EVT_SOCKET_EXCEPTION on socket {} during replay, but log shows EVT_SOCKET_EXCEPTION to {}; marking as invalid", socketId, loggedSocket);
         foundFault = true;
         return;
       }
     } catch (IOException ioe2) {
-      if (logger.level <= Logger.WARNING) logger.logException("Replay: Error reading log", ioe2);      
+      logger.warn("Replay: Error reading log", ioe2);      
     }
     
     // all good
@@ -479,7 +479,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
    */
   public int writeSocket(int socketId, ByteBuffer src) throws IOException {
     if (!haveNextEvent) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: WriteSocket event after end of segment; marking as invalid");
+      logger.warn("Replay: WriteSocket event after end of segment; marking as invalid");
       foundFault = true;
       return 0;
     }
@@ -490,14 +490,14 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     }
     
     if (next.getType() != EVT_SOCKET_WRITE) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_WRITE event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay: SOCKET_WRITE event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
       return Integer.MIN_VALUE;
     }
 
     int loggedSocket = nextEvent.readInt();
     if (loggedSocket != socketId) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_WRITE on socket "+socketId+" during replay, but log shows SOCKET_WRITE to "+loggedSocket+"; marking as invalid");
+      logger.warn("Replay: SOCKET_WRITE on socket {} during replay, but log shows SOCKET_WRITE to {}; marking as invalid", socketId, loggedSocket);
       foundFault = true;
       return 0;
     }
@@ -505,7 +505,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     // TODO: Change this when we make multiple reads a single event
     int ret = nextEvent.bytesRemaining();
     if (src.remaining() < ret) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_WRITE writing a maximum of "+src.remaining()+" on socket "+socketId+" during replay, but log shows SOCKET_WRITE writing "+ret+" bytes; marking as invalid");
+      logger.warn("Replay: SOCKET_WRITE writing a maximum of {} on socket {} during replay, but log shows SOCKET_WRITE writing {} bytes; marking as invalid", src.remaining(), socketId, ret);
       foundFault = true;
       return 0;
     }
@@ -516,7 +516,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     src.get(sentMsg);
 
     if (!Arrays.equals(loggedMsg, sentMsg)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Message wrote during replay differs from message in the log");
+      logger.warn("Replay: Message wrote during replay differs from message in the log");
       foundFault = true;
       return 0;
     }
@@ -527,13 +527,13 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   
   public void close(int socketId) {
     if (!haveNextEvent) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SOCKET_CLOSE event after end of segment; marking as invalid");
+      logger.warn("Replay({}): SOCKET_CLOSE event after end of segment; marking as invalid", nextEventIndex);
       foundFault = true;
       return;
     }
     
     if (next.getType() != EVT_SOCKET_CLOSE) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): SOCKET_CLOSE event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay({}): SOCKET_CLOSE event during replay, but next event in log is #{}; marking as invalid", nextEventIndex, next.getType());
       foundFault = true;
       return;
     }
@@ -542,13 +542,13 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     try {
       loggedSocket = nextEvent.readInt();
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Error deserializing event "+next);
+      logger.warn("Replay: Error deserializing event {}", next);
       foundFault = true;
       return;
     }
 
     if (loggedSocket != socketId) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: SOCKET_CLOSE on socket "+socketId+" during replay, but log shows SOCKET_CLOSE to "+loggedSocket+"; marking as invalid");
+      logger.warn("Replay: SOCKET_CLOSE on socket {} during replay, but log shows SOCKET_CLOSE to {}; marking as invalid", socketId, loggedSocket);
       foundFault = true;
       return;
     }
@@ -558,13 +558,13 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   
   public void shutdownOutput(int socketId) {
     if (!haveNextEvent) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event after end of segment; marking as invalid");
+      logger.warn("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event after end of segment; marking as invalid");
       foundFault = true;
       return;
     }
     
     if (next.getType() != EVT_SOCKET_SHUTDOWN_OUTPUT) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event during replay, but next event in log is #"+next.getType()+"; marking as invalid");
+      logger.warn("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT event during replay, but next event in log is #{}; marking as invalid", next.getType());
       foundFault = true;
       return;
     }
@@ -573,13 +573,13 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     try {
       loggedSocket = nextEvent.readInt();
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Error deserializing event "+next);
+      logger.warn("Replay: Error deserializing event {}", next);
       foundFault = true;
       return;
     }
 
     if (loggedSocket != socketId) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT on socket "+socketId+" during replay, but log shows EVT_SOCKET_SHUTDOWN_OUTPUT to "+loggedSocket+"; marking as invalid");
+      logger.warn("Replay: EVT_SOCKET_SHUTDOWN_OUTPUT on socket {} during replay, but log shows EVT_SOCKET_SHUTDOWN_OUTPUT to {}; marking as invalid", socketId, loggedSocket);
       foundFault = true;
       return;
     }
@@ -616,12 +616,12 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
    * handle foreground requests 
    */
   public boolean makeProgress() {
-    if (logger.level <= Logger.FINE) logger.log("makeProgress()");
+    logger.debug("makeProgress()");
     if (foundFault || !haveNextEvent)
       return false;
       
     if (!initialized && (next.getType() != EVT_CHECKPOINT) && (next.getType() != EVT_INIT)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: No INIT or CHECKPOINT found at the beginning of the log; marking as invalid "+next);
+      logger.warn("Replay: No INIT or CHECKPOINT found at the beginning of the log; marking as invalid {}", next);
       foundFault = true;
       return false;
     }
@@ -637,10 +637,10 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     
     /* Sanity checks */
 
-    if (logger.level <= Logger.FINE) logger.log("Replaying event #"+nextEventIndex+" (type "+next.getType()+", seq="+next.getSeq()+")");
+    logger.debug("Replaying event #{} (type {}, seq={})", nextEventIndex, next.getType(), next.getSeq());
       
     if (nextEventIsHashed && (next.getType() != EVT_CHECKPOINT) && (next.getType() != EVT_INIT)) {
-      if (logger.level <= Logger.WARNING) logger.log("Replay: Trying to replay hashed event");
+      logger.warn("Replay: Trying to replay hashed event");
       foundFault = true;
       return false;
     }
@@ -650,21 +650,21 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     try {
       switch (next.getType()) {
       case EVT_SEND : /* SEND events should have been handled by Verifier::send() */
-        if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SEND evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
+        logger.warn("Replay: Encountered EVT_SEND evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
         return false;
       case EVT_SOCKET_READ: {
-        if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SOCKET_READ evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
+        logger.warn("Replay: Encountered EVT_SOCKET_READ evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
         return false;        
       }
       case EVT_SOCKET_CLOSE: {
-        if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SOCKET_CLOSE evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
+        logger.warn("Replay: Encountered EVT_SOCKET_CLOSE evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
         return false;        
       }
       case EVT_SOCKET_SHUTDOWN_OUTPUT: {
-        if (logger.level <= Logger.WARNING) logger.logException("Replay: Encountered EVT_SOCKET_SHUTDOWN_OUTPUT evt #"+nextEventIndex+"; marking as invalid", new Exception("Stack Trace"));
+        logger.warn("Replay: Encountered EVT_SOCKET_SHUTDOWN_OUTPUT evt #{}; marking as invalid", nextEventIndex, new Exception("Stack Trace"));
         foundFault = true;
         return false;        
       }
@@ -689,7 +689,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         if (useSendSign) {
           fetchNextEvent();
           if (!haveNextEvent || (next.getType() != EVT_SIGN) || (next.getSizeInFile() != (int)(hashSizeBytes+signatureSizeBytes))) {
-            if (logger.level <= Logger.WARNING) logger.log("Replay: RECV event not followed by SIGN; marking as invalid");
+            logger.warn("Replay: RECV event not followed by SIGN; marking as invalid");
             foundFault = true;
             return false;
           }
@@ -702,7 +702,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         receive(sender, msgBuf);
         break;
       case EVT_SIGN : /* SIGN events should have been handled by the preceding RECV */
-        if (logger.level <= Logger.WARNING) logger.log("Replay: Spurious SIGN event; marking as invalid");
+        logger.warn("Replay: Spurious SIGN event; marking as invalid");
         foundFault = true;
         return false;
       case EVT_ACK : /* Skip ACKs */
@@ -751,14 +751,14 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       case EVT_SOCKET_EXCEPTION: {
         int socketId = nextEvent.readInt();
         IOException ex = deserializeException(nextEvent);
-        logger.log("deserializeException("+ex+")");
+        logger.info("deserializeException("+ex+")");
         fetchNextEvent();
         socketException(socketId, ex);
         break;
       }
       default:
         if (!eventCallback.containsKey(next.getType())) {
-          if (logger.level <= Logger.WARNING) logger.log("Replay("+nextEventIndex+"): Unregistered event #"+next.getType()+"; marking as invalid");
+          logger.warn("Replay({}): Unregistered event #{}; marking as invalid", nextEventIndex, next.getType());
           foundFault = true;
           return false;
         }
@@ -770,7 +770,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         break;
       }// switch
     } catch (IOException ioe) {
-      if (logger.level <= Logger.WARNING) logger.logException("Exception handling event #"+nextEventIndex+" "+next,ioe);
+      logger.warn("Exception handling event #{} {}", nextEventIndex, next, ioe);
       foundFault = true;
       return false;
     }

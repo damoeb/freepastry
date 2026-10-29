@@ -39,7 +39,7 @@ package rice.p2p.glacier.v2;
 import java.security.*;
 import java.io.*;
 
-import rice.environment.logging.Logger;
+import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.*;
 import rice.p2p.glacier.Fragment;
 
@@ -96,7 +96,7 @@ public class Manifest implements Serializable {
     try {
       md = MessageDigest.getInstance("SHA");
     } catch (NoSuchAlgorithmException e) {
-      if (logger.level <= Logger.SEVERE) logger.log("*** SHA-1 not supported ***"+toStringFull());
+      logger.atError().log(() -> "*** SHA-1 not supported ***"+toStringFull());
       return false;
     }
 
@@ -106,7 +106,7 @@ public class Manifest implements Serializable {
     byte[] thisHash = md.digest();
     
     if (thisHash.length != fragmentHash[fragmentID].length) {
-      if (logger.level <= Logger.WARNING) logger.log("*** LENGTH MISMATCH: "+thisHash.length+" != "+fragmentHash[fragmentID].length+" ***"+toStringFull());
+      logger.atWarn().log(() -> "*** LENGTH MISMATCH: "+thisHash.length+" != "+fragmentHash[fragmentID].length+" ***"+toStringFull());
       return false;
     }
       
@@ -117,7 +117,7 @@ public class Manifest implements Serializable {
         for (int j=0; j<thisHash.length; j++)
           s+=thisHash[j];
         s+="\n"+toStringFull();
-        if (logger.level <= Logger.WARNING) logger.log(s);
+        logger.warn(s);
         return false;
       }
     }
