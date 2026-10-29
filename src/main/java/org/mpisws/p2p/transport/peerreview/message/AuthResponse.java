@@ -67,7 +67,7 @@ public class AuthResponse<Identifier extends RawSerializable> implements PeerRev
   }
 
   public short getType() {
-    return MSG_AUTHREQ;
+    return MSG_AUTHRESP;
   }
 
   public AuthResponse(InputBuffer buf, Serializer<Identifier> serializer, int hashSize, int signatureSize) throws IOException {

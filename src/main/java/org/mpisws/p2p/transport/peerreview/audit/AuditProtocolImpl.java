@@ -659,9 +659,8 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
           logger.debug("Received AUTHRESP(<{}>, {}..{}) from {}", response.subject, response.authFrom, response.authTo, handle);
 
           // TODO: check the signatures of response.authFrom and response.authTo
-          int idx = -1;
           ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(response.subject);
-          if (idx >= 0) {
+          if (investigation != null) {
             if (investigation.authFrom == null || (response.authFrom.getSeq()<investigation.authFrom.getSeq())) {
               investigation.authFrom =  response.authFrom;
             }
