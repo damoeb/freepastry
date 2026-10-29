@@ -178,7 +178,8 @@ public class GCIdSet implements IdSet {
    * @return Equals
    */
   public boolean equals(Object o) {
-    GCIdSet other = (GCIdSet) o;
+    if (!(o instanceof GCIdSet other))
+      return false;
 
     if (numElements() != other.numElements())
       return false;

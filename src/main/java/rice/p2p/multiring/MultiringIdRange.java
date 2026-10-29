@@ -171,7 +171,8 @@ public class MultiringIdRange implements IdRange {
    * @return Equals
    */
   public boolean equals(Object o) {
-    MultiringIdRange other = (MultiringIdRange) o;
+    if (!(o instanceof MultiringIdRange other))
+      return false;
     return (other.getRange().equals(range) && other.ringId.equals(ringId));
   }
 

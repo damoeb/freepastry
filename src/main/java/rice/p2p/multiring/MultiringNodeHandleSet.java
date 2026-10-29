@@ -180,7 +180,8 @@ public class MultiringNodeHandleSet implements NodeHandleSet {
    * @return Equals
    */
   public boolean equals(Object o) {
-    MultiringNodeHandleSet other = (MultiringNodeHandleSet) o;
+    if (!(o instanceof MultiringNodeHandleSet other))
+      return false;
     return (other.getSet().equals(set) && other.ringId.equals(ringId));
   }
 
