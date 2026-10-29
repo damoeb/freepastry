@@ -102,7 +102,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
   public int compareTo(TimerTask arg0) {
     TimerTask tt = (TimerTask)arg0;
     if (tt == this) return 0;
-    int diff = (int)(nextExecutionTime-tt.nextExecutionTime);
+    int diff = Long.compare(nextExecutionTime, tt.nextExecutionTime);
     if (diff == 0) {
       // compare the sequence numbers
       diff = seq-tt.seq;

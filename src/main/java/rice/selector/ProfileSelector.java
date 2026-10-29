@@ -151,7 +151,7 @@ public class ProfileSelector extends SelectorManager {
         Stat stat1 = (Stat)arg0;
         Stat stat2 = (Stat)arg1;
 
-        return (int)(stat2.totalTime-stat1.totalTime);
+        return Long.compare(stat2.totalTime, stat1.totalTime);
       }
     });
     Iterator<Stat> i = list.iterator();
