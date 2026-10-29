@@ -142,7 +142,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    */
   protected void initReceiveCache() throws IOException {
     receiveCache = new LinkedHashMap<Tuple<Identifier, Long>, ReceiveInfo<Identifier>>(RECEIVE_CACHE_SIZE, 0.75f, true) {
-      protected boolean removeEldestEntry(Map.Entry eldest) {
+      protected boolean removeEldestEntry(Map.Entry<Tuple<Identifier, Long>, ReceiveInfo<Identifier>> eldest) {
         return size() > RECEIVE_CACHE_SIZE;
       }
     };

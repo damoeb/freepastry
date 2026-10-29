@@ -47,7 +47,6 @@ import rice.environment.Environment;
 public class StubNATHandler implements NATHandler {
 
   String errorString = "Stub NATHandler implementation.  Plese refer to http://freepastry.org/FreePastry/nat.html to better configure FreePastry for your environment.";
-//  String errorString = "Stub implementation.  You should use a real implementation such as rice.pastry.socket.nat.sbbi.SBBINatHandler.  You can do this by setting \"nat_handler_class = rice.pastry.socket.nat.sbbi.SBBINatHandler\" in the params file, or disable firewall checking by setting \"nat_search_policy\" = \"never\".";
   
   public StubNATHandler(Environment environment, InetAddress address) {
     // TODO Auto-generated constructor stub

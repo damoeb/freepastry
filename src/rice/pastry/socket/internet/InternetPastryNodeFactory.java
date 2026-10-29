@@ -125,8 +125,8 @@ public class InternetPastryNodeFactory extends
    * @param startPort the port of the first created node, will be incremented for additional nodes, 
    *   can be specified on a per-Node basis by calling newNode() with a MultiInetSocketAddress 
    * @param env can't be null
-   * @param handler will attempt to use SBBI's UPnP library if null, unless blocked by deleting the 
-   *   param "nat_handler_class" 
+   * @param handler if null, uses the class named by the param "nat_handler_class", or a 
+   *   StubNATHandler if that param is not set 
    * @param probeAddresses a list of bootstrap nodes' Internet routable addresses, used to establish
    *   firewall information
    * @param externalAddresses ordered addresses of the nat propagation from most external to most internal,
@@ -196,7 +196,6 @@ public class InternetPastryNodeFactory extends
       }
     } else {
       return new StubNATHandler(env, localAddress);
-//    return new SBBINatHandler(environment, this.localAddress);
     }    
   }
 
