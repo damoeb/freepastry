@@ -405,6 +405,17 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       logger.debug("destroying SelectorManager", new Exception("Stack Trace"));
     } else logger.info("destroying SelectorManager");
     running = false;
+    if (getState() == Thread.State.NEW) {
+      // the loop never ran, so shutdown() won't either: release the selector here
+      if (selector != null) {
+        try {
+          selector.close();
+        } catch (IOException ioe) {
+          logger.warn("Error closing selector:", ioe);
+        }
+      }
+      return;
+    }
     // don't wait for the select() timeout; Selector.wakeup() is thread safe, and sticky if not selecting yet
     if (selector != null) selector.wakeup();
   }

@@ -52,6 +52,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import rice.Destructable;
 import rice.environment.Environment;
+import rice.environment.logging.Slf4jLogManager;
+import rice.environment.time.simple.SimpleTimeSource;
 import rice.selector.SelectionKeyHandler;
 import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
@@ -245,6 +247,14 @@ public class SelectorManagerDestroyTest {
       rebind.socket().setReuseAddress(false);
       rebind.socket().bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
     }
+  }
+
+  @Test
+  public void destroyClosesTheSelectorOfAnUnstartedManager() {
+    SelectorManager unstarted = new SelectorManager("unstarted", new SimpleTimeSource(), new Slf4jLogManager());
+    assertTrue(unstarted.getSelector().isOpen());
+    unstarted.destroy();
+    assertFalse(unstarted.getSelector().isOpen(), "the selector of a manager that never ran must be closed");
   }
 
   @Test
