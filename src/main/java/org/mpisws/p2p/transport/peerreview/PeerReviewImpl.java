@@ -99,7 +99,6 @@ import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
@@ -192,7 +191,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     this.evidenceSerializer = new EvidenceSerializerImpl<Handle, Identifier>(handleSerializer,
         idSerializer,transport.getHashSizeBytes(),transport.getSignatureSizeBytes());
     this.historyFactory = getSecureHistoryFactory(transport, env);
-    random = new SimpleRandomSource(env.getLogManager(),"peerreview");
+    random = env.getRandomSource();
   }
 
   protected SecureHistoryFactory getSecureHistoryFactory(IdentityTransport<Handle, Identifier> transport, Environment env) {
