@@ -266,16 +266,16 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   @Override
   protected NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) throws IOException {
-    // TODO: this factory cannot read or build handles (it returns null); the simulator never serializes them
+    // simulator handles are shared objects: they are never serialized, and each one is already canonical
     return new NodeHandleFactory<NodeHandle>(){
 
       public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
-        return null;
+        throw new IOException("The direct simulator does not deserialize node handles");
       }
 
       public NodeHandle coalesce(NodeHandle handle) {
         notifyListeners(handle);
-        return null;
+        return handle;
       }
 
       /**
