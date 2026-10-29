@@ -253,7 +253,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         byte[] hash = hashProv.hash(message);
       }
       byte[] cHash = hashProv.hash(ByteBuffer.wrap(buf.getBytes()));
-      if (!cHash.equals(next.getContentHash())) {
+      if (!Arrays.equals(cHash, next.getContentHash())) {
         logger.warn("Replay: SEND is hashed, but hash of predicted SEND entry does not match hash in the log");
         foundFault = true;
         return;
