@@ -147,34 +147,31 @@ public class FragmentKeyRange implements IdRange {
   }
 
   /**
-   * Not supported.
+   * Two FragmentKeyRanges are equal if their underlying ranges are.
    *
    * @param o the object to compare to
-   * @return never returns
-   * @throws RuntimeException always
+   * @return whether o is a FragmentKeyRange over an equal range
    */
   public boolean equals(Object o) {
-    throw new RuntimeException("FragmentKeyRange.equals() is not supported!");
+    return (o instanceof FragmentKeyRange other) && range.equals(other.range);
   }
 
   /**
-   * Not supported.
+   * Returns the hash code of the underlying range.
    *
-   * @return never returns
-   * @throws RuntimeException always
+   * @return the hash code
    */
   public int hashCode() {
-    throw new RuntimeException("FragmentKeyRange.hashCode() is not supported!");
+    return range.hashCode();
   }
 
   /**
-   * Not supported.
+   * Returns a string representation of this range.
    *
-   * @return never returns
-   * @throws RuntimeException always
+   * @return the underlying range, marked as a FragmentKeyRange
    */
   public String toString() {
-    throw new RuntimeException("FragmentKeyRange.toString() is not supported!");
+    return "FragmentKeyRange[" + range + "]";
   }
 
   public void FragmentKeyRange(InputBuffer buf, Endpoint endpoint) throws IOException {
