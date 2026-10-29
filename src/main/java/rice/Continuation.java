@@ -257,6 +257,8 @@ public interface Continuation<R, E extends Exception> {
         }
       } catch (InterruptedException e) {
         exception = e;
+        // keep the interrupt visible to the caller
+        Thread.currentThread().interrupt();
       }
     }
 
