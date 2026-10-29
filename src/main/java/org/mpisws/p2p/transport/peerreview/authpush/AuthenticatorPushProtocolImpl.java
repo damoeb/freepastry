@@ -43,7 +43,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
@@ -55,6 +54,7 @@ import org.mpisws.p2p.transport.peerreview.message.AuthPushMessage;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
+import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /**
@@ -79,7 +79,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
   EvidenceTransferProtocol<Handle, Identifier> evidenceTransferProtocol;
   boolean probabilistic;
   double pXmit;
-  Random random = new Random();
+  RandomSource random;
 
   Environment environment;
   Logger logger;
@@ -100,6 +100,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
     this.probabilistic = false;
     this.pXmit = 1.0;
     this.environment = env;
+    this.random = env.getRandomSource();
     this.logger = env.getLogManager().getLogger(AuthenticatorPushProtocolImpl.class, null);
   }
 

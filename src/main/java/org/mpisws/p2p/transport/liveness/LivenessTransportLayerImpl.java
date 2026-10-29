@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
@@ -63,6 +62,7 @@ import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
+import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
 import rice.p2p.util.TimerWeakHashMap;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -119,7 +119,7 @@ public class LivenessTransportLayerImpl<Identifier> implements
   protected Environment environment;
   protected TimeSource time;
   protected Timer timer;
-  protected Random random;
+  protected RandomSource random;
 
   /**
    * Pass the msg to the callback if it is NORMAL
@@ -143,7 +143,7 @@ public class LivenessTransportLayerImpl<Identifier> implements
     this.logger = env.getLogManager().getLogger(LivenessTransportLayerImpl.class, null);
     this.time = env.getTimeSource();
     this.timer = env.getSelectorManager().getTimer();
-    random = new Random();
+    random = env.getRandomSource();
     this.livenessListeners = new ArrayList<LivenessListener<Identifier>>();
     this.pingListeners = new ArrayList<PingListener<Identifier>>();
       this.managers = new TimerWeakHashMap<Identifier, EntityManager>(env.getSelectorManager(), 300000);
