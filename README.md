@@ -94,16 +94,12 @@ This creates a JAR with all dependencies included.
 
 FreePastry uses the following libraries (managed by Maven):
 
-- Bouncy Castle (bcprov) - Cryptography
-- Apache Commons JXPath - XML processing
-- Apache Commons Logging - Logging framework
-- XML Pull Parser - XML parsing
-- XPP3 - XML parsing
-- SBBI UPnP Library - UPnP support
+- Bouncy Castle (bcprov, bcpkix) - Cryptography and X.509 certificates (PKI tooling, SSL transport)
 - JUnit 6 (Jupiter, plus the Vintage engine for the JUnit 4 tests) - Testing framework
 
 ## Documentation
 
+- Architecture overview for new developers (threading, transport stack, apps): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Full release notes and detailed documentation: `docs/README.html`
 - Javadoc API documentation: Generate with `mvn javadoc:javadoc`, view at `target/site/apidocs/index.html`
 - Tutorial examples: `src/rice/tutorial/`
