@@ -227,8 +227,8 @@ public class AggregateList {
     } catch (FileNotFoundException fnfe) {
       logger.warn("No aggregate log found; using configuration file only");
     } catch (Exception e) {
-      logger.warn("Exception while recovering aggregate log: ", e);
-      System.exit(1);
+      // a half-replayed log leaves the list inconsistent, so refuse to continue
+      throw new IllegalStateException("Cannot recover aggregate log "+logFileName, e);
     }
 
     if (entriesReplayed > 0) {
