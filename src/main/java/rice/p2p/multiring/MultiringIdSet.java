@@ -55,7 +55,6 @@ public class MultiringIdSet implements IdSet {
   /**
    * Serialver for backwards compatibility
    */
-  static final long serialVersionUID = -7675959536005571206L;
 
   /**
    * The actual IdSet

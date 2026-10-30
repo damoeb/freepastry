@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.commonapi;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.NoSuchElementException;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -53,7 +52,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Jeff Hoye
  * @author Alan Mislove
  */
-public interface NodeHandleSet extends Serializable {
+public interface NodeHandleSet {
 
   /**
    * Puts a NodeHandle into the set.

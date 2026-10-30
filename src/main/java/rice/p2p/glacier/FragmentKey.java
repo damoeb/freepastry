@@ -62,8 +62,6 @@ public class FragmentKey implements Id {
    */
   private final int id;
 
-  private static final long serialVersionUID = 5373228569261524536L;
-
   /**
    * Constructor for FragmentKey.
    *

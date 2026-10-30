@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
-import java.io.Serializable;
 
 import rice.pastry.leafset.LeafSetProtocolAddress;
 import rice.pastry.messaging.Message;
@@ -49,7 +48,7 @@ import rice.pastry.messaging.Message;
  * @author Peter Druschel
  */
 
-public class InitiatePingNeighbor extends Message implements Serializable {
+public class InitiatePingNeighbor extends Message {
 
   /**
    * Constructor.

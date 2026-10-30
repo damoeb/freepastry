@@ -51,9 +51,6 @@ import rice.p2p.util.HashUtils;
  */
 public class StandardAddress {
 
-  //serial ver for backward compatibility
-  private static final long serialVersionUID = 1564239935633411277L;
-
   /**
    * Returns the address of an application: the first two bytes of the SHA-256 hash of its class, followed by the
    * first two bytes of the SHA-256 hash of its instance name (or two zero bytes if there is none).

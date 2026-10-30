@@ -50,8 +50,6 @@ import rice.p2p.commonapi.Id;
  */
 public abstract class ContentHashPastContent implements PastContent {
 
-  private static final long serialVersionUID = 6375789163758367025L;
-
   private final Id myId;
 
   // ----- PastCONTENT METHODS -----

@@ -60,7 +60,6 @@ public class InsertMessage extends ContinuationMessage {
   public static final short TYPE = 4;
 
   // serailver for bward compatibility
-  static final long serialVersionUID = -7027957470028259605L;
 
   // the data to insert
   protected PastContent content;

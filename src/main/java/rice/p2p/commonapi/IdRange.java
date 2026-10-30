@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.commonapi;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
@@ -52,7 +51,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Alan Mislove
  * @author Peter Druschel
  */
-public interface IdRange extends Serializable {
+public interface IdRange {
 
   /**
    * test if a given key lies within this range

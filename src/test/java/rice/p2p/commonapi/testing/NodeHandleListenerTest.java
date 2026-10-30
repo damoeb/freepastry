@@ -56,8 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class NodeHandleListenerTest {
 
   static class TestHandle extends NodeHandle {
-    private static final long serialVersionUID = 1L;
-
     public Id getId() { return null; }
     public boolean checkLiveness() { return true; }
     public void serialize(OutputBuffer buf) throws IOException { }

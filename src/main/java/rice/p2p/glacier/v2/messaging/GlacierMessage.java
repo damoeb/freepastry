@@ -47,9 +47,6 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
 
 public abstract class GlacierMessage implements RawMessage {
 
-  // serialver for backward compatibility
-  private static final long serialVersionUID = -5849182107707420256L;
-
   // the unique id for this message
   private final int id;
 

@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -55,11 +54,9 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Peter Druschel
  */
 
-public class NodeSet implements NodeSetI, Serializable {
+public class NodeSet implements NodeSetI {
 
   public static final short TYPE = 1;
-
-  static final long serialVersionUID = 4410658508346287677L;
 
   /**
    * of NodeHandle

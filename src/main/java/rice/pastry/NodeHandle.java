@@ -60,10 +60,9 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   public static final int LIVENESS_DEAD = 3;
 
   // the local pastry node
-  protected transient PastryNode localnode;
-  protected transient Logger logger;
+  protected PastryNode localnode;
+  protected Logger logger;
 
-  static final long serialVersionUID = 987479397660721015L;
   /**
    * Gets the nodeId of this Pastry node.
    *

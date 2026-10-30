@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import java.io.IOException;
-import java.io.ObjectStreamException;
 import java.lang.ref.WeakReference;
 import java.util.Random;
 import java.util.WeakHashMap;
@@ -81,7 +80,6 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * serialver for backwards compatibility
    */
-  static final long serialVersionUID = 2166868464271508935L;
 
   /**
    * Distance constants
@@ -288,16 +286,6 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
         return id;
       }
     }
-  }
-
-  /**
-   * Define readResolve, which will replace the deserialized object with the canonical
-   * one (if one exists) to ensure Id coalescing.
-   *
-   * @return The real Id
-   */
-  private Object readResolve() throws ObjectStreamException {
-    return resolve(ID_MAP, this);
   }
 
 
@@ -961,8 +949,6 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @author amislove
    */
   public static class Distance implements rice.p2p.commonapi.Id.Distance {
-
-    private static final long serialVersionUID = 5464763824924998962L;
 
     private int difference[];
 

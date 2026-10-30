@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.routing;
 
-import java.io.Serializable;
 import rice.pastry.messaging.Message;
 
 /**
@@ -48,8 +47,7 @@ import rice.pastry.messaging.Message;
  * @author Peter Druschel
  */
 
-public class InitiateRouteSetMaintenance extends Message implements
-    Serializable {
+public class InitiateRouteSetMaintenance extends Message {
   /**
    * Constructor.
    *

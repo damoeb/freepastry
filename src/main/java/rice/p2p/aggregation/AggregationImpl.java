@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.aggregation;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -325,11 +324,11 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     refresher.refresh(ids, versions, expirations, command);
   }
 
-  public Serializable getHandle() {
+  public Id getHandle() {
     return aggregateList.getRoot();
   }
 
-  public void setHandle(Serializable handle, Continuation<? super Boolean, Exception> command) {
+  public void setHandle(Id handle, Continuation<? super Boolean, Exception> command) {
     tree.setHandle(handle, command);
   }
 

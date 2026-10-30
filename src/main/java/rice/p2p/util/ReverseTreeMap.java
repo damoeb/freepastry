@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.util;
 
-import java.io.Serializable;
 import java.util.Set;
 import java.util.SortedMap;
 
@@ -52,7 +51,7 @@ import java.util.SortedMap;
  * @author Alan Mislove
  */
 @SuppressWarnings("unchecked")
-public class ReverseTreeMap<K,V> implements Serializable {
+public class ReverseTreeMap<K,V> {
 
   /**
    * The internal normal map

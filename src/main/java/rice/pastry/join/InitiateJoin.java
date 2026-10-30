@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.join;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
 
@@ -51,7 +50,7 @@ import rice.pastry.messaging.Message;
  * @author Andrew Ladd
  */
 
-public class InitiateJoin extends Message implements Serializable {
+public class InitiateJoin extends Message {
   private NodeHandle[] handle;
 
   /**

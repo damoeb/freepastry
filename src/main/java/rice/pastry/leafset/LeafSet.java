@@ -38,8 +38,6 @@ advised of the possibility of such damage.
 package rice.pastry.leafset;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -68,19 +66,17 @@ import rice.pastry.routing.RoutingTable;
  * @author Andrew Ladd
  * @author Peter Druschel
  */
-public class LeafSet implements Serializable, Iterable<NodeHandle> {
-  static private final long serialVersionUID = 3960030608598552977L;
-
+public class LeafSet implements Iterable<NodeHandle> {
   private Id baseId;
   private NodeHandle baseHandle;
   private SimilarSet cwSet;
   private SimilarSet ccwSet;
 
-  transient boolean observe = true;
+  boolean observe = true;
   private int theSize;
 
   // can get backup entries from this when we remove
-  transient RoutingTable routingTable;
+  RoutingTable routingTable;
 
   private LeafSet(LeafSet that) {
     this(that, true);
@@ -116,17 +112,6 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
     cwSet = new SimilarSet(this, localNode, size/2, true);
     ccwSet = new SimilarSet(this, localNode, size/2, false);
-  }
-
-  /**
-   * Internal method for reading in this data object
-   *
-   * @param ois The current input stream
-   */
-  private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-    ois.defaultReadObject();
-
-    observe = true;
   }
 
   /**

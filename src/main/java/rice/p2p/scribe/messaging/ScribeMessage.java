@@ -55,9 +55,6 @@ import rice.p2p.scribe.Topic;
  */
 public abstract class ScribeMessage implements RawMessage {
 
-  // serialver for backward compatibility
-  private static final long serialVersionUID = 4593674882226544604L;
-
   // the source of this message
   private NodeHandle source;
 

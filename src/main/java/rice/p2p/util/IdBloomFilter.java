@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.util;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Iterator;
 
 import rice.p2p.commonapi.Id;
@@ -57,12 +56,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  *
  * @author Alan Mislove
  */
-public class IdBloomFilter implements Serializable {
+public class IdBloomFilter {
 
-  // serialver for backwards compatibility
-  private static final long serialVersionUID = -9122948172786936161L;
-
-  // note cannot configure these because Serializable
   /**
    * The number of bits per key in bloom filters
    */
@@ -81,7 +76,7 @@ public class IdBloomFilter implements Serializable {
    * will construct a new array if there isn't one yet, then it will encode the
    * id into the array.
    */
-  private transient byte[] array;
+  private byte[] array;
 
   /**
    * The parameters to the hash functions for this bloom filter

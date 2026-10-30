@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.aggregation;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -81,21 +80,21 @@ final class AggregateTree {
     this.rebuildInProgress = false;
   }
 
-  void setHandle(Serializable handle, Continuation<? super Boolean, Exception> command) {
+  void setHandle(Id handle, Continuation<? super Boolean, Exception> command) {
     logger.info("setHandle({})", handle);
 
-    if (!(handle instanceof Id)) {
+    if (handle == null) {
       command.receiveException(new AggregationException("Illegal handle"));
       return;
     }
 
-    if (aggregateList.getADC((Id) handle) != null) {
+    if (aggregateList.getADC(handle) != null) {
       logger.info("Rebuild: Handle {} is already covered by current root", handle);
       command.receiveResult(Boolean.valueOf(true));
       return;
     }
 
-    aggregateList.setRoot((Id) handle);
+    aggregateList.setRoot(handle);
     rebuildAggregateList(command);
   }
 

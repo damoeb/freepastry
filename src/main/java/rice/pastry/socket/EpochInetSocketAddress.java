@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.pastry.socket;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
@@ -51,12 +50,11 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @version $Id: EpochInetSocketAddress.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Alan Mislove
  */
-public class EpochInetSocketAddress implements Serializable {
+public class EpochInetSocketAddress {
 
   /**
    *
    */
-  private static final long serialVersionUID = 2081191512212313338L;
 
   // a static epoch which indicates an unknown (and irrelevant) epoch number
   public static final long EPOCH_UNKNOWN = -1;

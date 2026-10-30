@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi;
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
@@ -48,7 +47,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Alan Mislove
  * @author Peter Druschel
  */
-public interface Id extends Comparable<Id>, Serializable {
+public interface Id extends Comparable<Id> {
 
   /**
    * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
@@ -99,7 +98,7 @@ public interface Id extends Comparable<Id>, Serializable {
    * @version $Id: Id.java 4654 2009-01-08 16:33:07Z jeffh $
    * @author amislove
    */
-  public static interface Distance extends Comparable<Distance>, Serializable {
+  public static interface Distance extends Comparable<Distance> {
 
     /**
      * Shift operator. shift(-1,0) multiplies value of this by two, shift(1,0) divides by 2

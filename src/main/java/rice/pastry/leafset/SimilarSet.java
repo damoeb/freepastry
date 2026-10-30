@@ -36,8 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.leafset;
 
-import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,9 +58,7 @@ import rice.pastry.routing.RoutingTable;
  * @author Peter Druschel
  */
 
-public class SimilarSet implements NodeSetEventSource, Serializable {
-
-  private static final long serialVersionUID = 2289610430696506873L;
+public class SimilarSet implements NodeSetEventSource {
 
   private NodeHandle ln;
 
@@ -210,7 +206,7 @@ public class SimilarSet implements NodeSetEventSource, Serializable {
     return true;
   }
 
-  transient ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
+  ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
 
   public void addNodeSetListener(NodeSetListener listener) {
     synchronized (listeners) {
@@ -492,8 +488,8 @@ public class SimilarSet implements NodeSetEventSource, Serializable {
     return theSize;
   }
 
-  transient Id.Distance d1 = new Id.Distance();
-  transient Id.Distance d = new Id.Distance();
+  Id.Distance d1 = new Id.Distance();
+  Id.Distance d = new Id.Distance();
   /**
    * Impl that doesn't produce garbage
    *
@@ -605,14 +601,6 @@ public class SimilarSet implements NodeSetEventSource, Serializable {
       }
     }
     return al;
-  }
-
-  private void readObject(java.io.ObjectInputStream in)
-    throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    d1 = new Id.Distance();
-    d = new Id.Distance();
-    listeners = new ArrayList<NodeSetListener>();
   }
 
   public String toString() {

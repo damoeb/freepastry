@@ -42,7 +42,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.BitSet;
 import java.util.Random;
 
@@ -73,7 +72,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  *
  * @author Alan Mislove
  */
-public class BloomFilter implements Serializable {
+public class BloomFilter {
 
   // cant parameterize, because object is serializable
   /**

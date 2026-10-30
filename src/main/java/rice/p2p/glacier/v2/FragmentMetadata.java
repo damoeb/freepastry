@@ -37,14 +37,11 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
-public class FragmentMetadata implements Serializable, Comparable<FragmentMetadata> {
-
-  private static final long serialVersionUID = 3380538644355999384L;
+public class FragmentMetadata implements Comparable<FragmentMetadata> {
 
   private final long currentExpirationDate;
   private final long previousExpirationDate;

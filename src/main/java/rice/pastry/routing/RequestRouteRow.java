@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.routing;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Date;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -53,7 +52,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Andrew Ladd
  */
 
-public class RequestRouteRow extends PRawMessage implements Serializable {
+public class RequestRouteRow extends PRawMessage {
   public static final short TYPE = 1;
 
   private short row;

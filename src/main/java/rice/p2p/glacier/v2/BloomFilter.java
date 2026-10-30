@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
@@ -45,9 +44,7 @@ import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
-public class BloomFilter implements Serializable {
-
-  private static final long serialVersionUID = -3938913031743354080L;
+public class BloomFilter {
 
   private byte bitfield[];
   private int hashParams[];

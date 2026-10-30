@@ -38,8 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.commonapi;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -60,15 +58,12 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Alan Mislove
  * @author Peter Druschel
  */
-public abstract class NodeHandle implements Serializable {
+public abstract class NodeHandle {
 
   // constants defining types of observable events
   public static final Integer PROXIMITY_CHANGED = Integer.valueOf(1);
   public static final Integer DECLARED_DEAD = Integer.valueOf(2);
   public static final Integer DECLARED_LIVE = Integer.valueOf(3);
-
-  // serialver
-  private static final long serialVersionUID = 4761193998848368227L;
 
   /**
    * Returns this node's id.
@@ -115,15 +110,7 @@ public abstract class NodeHandle implements Serializable {
   private static final Comparator<ListenerEntry> BY_PRIORITY =
     (a, b) -> Integer.compare(b.priority, a.priority);
 
-  private transient List<ListenerEntry> listeners = new ArrayList<ListenerEntry>();
-
-  /**
-   * Need to construct listeners in deserialization.
-   */
-  private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    listeners = new ArrayList<ListenerEntry>();
-  }
+  private List<ListenerEntry> listeners = new ArrayList<ListenerEntry>();
 
   /**
    * Registers a listener with priority 0.

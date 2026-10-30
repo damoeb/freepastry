@@ -36,10 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.routing;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 
 /**
  * This is the options for a client to send messages.
@@ -49,7 +45,7 @@ import java.io.Serializable;
  * @author Andrew Ladd
  */
 
-public class SendOptions implements Serializable {
+public class SendOptions {
   private boolean random;
 
   private boolean noShortCuts;
@@ -158,22 +154,6 @@ public class SendOptions implements Serializable {
 
   public void setRerouteIfSuspected(boolean b) {
     rerouteIfSuspected = b;
-  }
-
-  private void readObject(ObjectInputStream in) throws IOException,
-      ClassNotFoundException {
-    random = in.readBoolean();
-    noShortCuts = in.readBoolean();
-    shortestPath = in.readBoolean();
-    allowMultipleHops = in.readBoolean();
-  }
-
-  private void writeObject(ObjectOutputStream out) throws IOException,
-      ClassNotFoundException {
-    out.writeBoolean(random);
-    out.writeBoolean(noShortCuts);
-    out.writeBoolean(shortestPath);
-    out.writeBoolean(allowMultipleHops);
   }
 
 }

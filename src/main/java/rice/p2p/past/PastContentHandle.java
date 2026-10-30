@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
@@ -56,7 +55,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public interface PastContentHandle extends Serializable, RawSerializable {
+public interface PastContentHandle extends RawSerializable {
 
   /**
    * get the id of the PastContent object associated with this handle

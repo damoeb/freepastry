@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.messaging;
 
-import java.io.Serializable;
 import java.util.Date;
 
 import rice.pastry.Id;
@@ -51,9 +50,7 @@ import rice.pastry.NodeHandle;
  * @author Sitaram Iyer
  */
 
-public abstract class Message implements Serializable, rice.p2p.commonapi.Message {
-  private static final long serialVersionUID = 8921944904321235696L;
-
+public abstract class Message implements rice.p2p.commonapi.Message {
   public static final int DEFAULT_PRIORITY_LEVEL = rice.p2p.commonapi.Message.MEDIUM_PRIORITY;
 
   private int destination;
@@ -68,7 +65,7 @@ public abstract class Message implements Serializable, rice.p2p.commonapi.Messag
 
   private int priorityLevel = DEFAULT_PRIORITY_LEVEL;
 
-  private transient Date theStamp;
+  private Date theStamp;
 
   /**
    * Constructor.

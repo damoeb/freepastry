@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi;
 
-import java.io.Serializable;
 import java.util.Iterator;
 
 /**
@@ -50,7 +49,7 @@ import java.util.Iterator;
  * @author Alan Mislove
  * @author Peter Druschel
  */
-public interface IdSet extends Serializable {
+public interface IdSet {
 
   /**
    * return the number of elements

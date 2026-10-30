@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.multiaddress;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
@@ -52,7 +51,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  *
  * @author Jeff Hoye
  */
-public class MultiInetSocketAddress implements Serializable {
+public class MultiInetSocketAddress {
   static final InetSocketAddressSerializer serializer = new InetSocketAddressSerializer();
 
   // the address list, most external first

@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.scribe;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
@@ -49,7 +48,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  * @version $Id: ScribeContent.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Alan Mislove
  */
-public interface ScribeContent extends Serializable, RawSerializable {
+public interface ScribeContent extends RawSerializable {
   /**
    * The type id of this content's raw serialization, which the matching deserializer switches on.
    * Zero is reserved and must not be used.

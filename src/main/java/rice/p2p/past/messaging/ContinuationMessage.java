@@ -61,8 +61,6 @@ import rice.p2p.past.PastRemoteException;
 @SuppressWarnings("unchecked")
 public abstract class ContinuationMessage extends PastMessage implements Continuation<Object, Exception> {
 
-  static final long serialVersionUID = 1321112527034107161L;
-
   // the response data
   protected Object response;
 

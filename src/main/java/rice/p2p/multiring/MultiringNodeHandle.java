@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.multiring;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -53,7 +52,6 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 public class MultiringNodeHandle extends NodeHandle implements NodeHandleListener  {
 
   // serailver
-  static final long serialVersionUID = -2972303779251779984L;
 
   /**
    * The internal handle
@@ -153,17 +151,6 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    */
   public int hashCode() {
     return (handle.hashCode() + ringId.hashCode());
-  }
-
-  /**
-   * ReadObject overridden in order to maintain observer.
-   *
-   * @param ois The InputStream
-   */
-  private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-    ois.defaultReadObject();
-
-    handle.addNodeHandleListener(this);
   }
 
   /**

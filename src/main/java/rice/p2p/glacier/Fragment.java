@@ -37,17 +37,12 @@ advised of the possibility of such damage.
 package rice.p2p.glacier;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
-public class Fragment implements Serializable {
-  private static final long serialVersionUID = -809948154556539350L;
-
-  private transient byte payload[];
+public class Fragment {
+  private byte payload[];
 
   public Fragment(int _size) {
     payload = new byte[_size];
@@ -55,18 +50,6 @@ public class Fragment implements Serializable {
 
   public byte[] getPayload() {
     return payload;
-  }
-
-  private void writeObject(ObjectOutputStream oos) throws IOException {
-    oos.defaultWriteObject();
-    oos.writeInt(payload.length);
-    oos.write(payload);
-  }
-
-  private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-    ois.defaultReadObject();
-    payload = new byte[ois.readInt()];
-    ois.readFully(payload, 0, payload.length);
   }
 
   public Fragment(InputBuffer buf) throws IOException {

@@ -55,8 +55,6 @@ import rice.p2p.util.HashUtils;
 public final class IdSet implements rice.p2p.commonapi.IdSet {
 
 
-  static final long serialVersionUID = -1565571743719309172L;
-
   private SortedMap<rice.p2p.commonapi.Id, ?> idSet;
 
   // a cache of the fingerprint hash

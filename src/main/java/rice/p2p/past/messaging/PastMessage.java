@@ -59,9 +59,6 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  */
 public abstract class PastMessage implements RawMessage {
 
-  // serialver for backward compatibility
-  private static final long serialVersionUID = -7195054010358285316L;
-
   // the unique id for this message
   private final int id;
 

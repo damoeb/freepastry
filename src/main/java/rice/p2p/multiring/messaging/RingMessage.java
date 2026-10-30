@@ -58,9 +58,6 @@ import rice.p2p.scribe.ScribeContent;
  */
 public class RingMessage implements ScribeContent {
 
-  // serialver for backward compatibility
-  private static final long serialVersionUID = -7097995807488121199L;
-
   public static final short TYPE = 1;
 
   /**

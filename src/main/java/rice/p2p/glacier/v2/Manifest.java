@@ -37,9 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 
 import org.slf4j.Logger;
 import rice.p2p.util.HashUtils;
@@ -47,13 +44,11 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.Fragment;
 
-public class Manifest implements Serializable {
+public class Manifest {
 
-  static final long serialVersionUID = -436805143199825662L;
-
-  private transient byte[] objectHash;
-  private transient byte[][] fragmentHash;
-  private transient byte[] signature;
+  private byte[] objectHash;
+  private byte[][] fragmentHash;
+  private byte[] signature;
   private long expirationDate;
 
   public Manifest(byte[] objectHash, byte[][] fragmentHash, long expirationDate) {
@@ -153,41 +148,6 @@ public class Manifest implements Serializable {
       result = result + "  - fragmHash"+i+" = ["+dump(fragmentHash[i], false)+"]\n";
 
     return result;
-  }
-
-  private void writeObject(ObjectOutputStream oos) throws IOException {
-    oos.defaultWriteObject();
-    oos.writeInt(objectHash.length);
-    oos.writeInt(fragmentHash.length);
-    oos.writeInt(fragmentHash[0].length);
-    oos.writeInt(signature.length);
-    oos.write(objectHash);
-    int dim1 = fragmentHash.length;
-    int dim2 = fragmentHash[0].length;
-    byte[] fragmentHashField = new byte[dim1*dim2];
-    for (int i=0; i<dim1; i++)
-      for (int j=0; j<dim2; j++)
-        fragmentHashField[i*dim2 + j] = fragmentHash[i][j];
-    oos.write(fragmentHashField);
-    oos.write(signature);
-  }
-
-  private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-    ois.defaultReadObject();
-    int objectHashLength = ois.readInt();
-    int fragmentHashLength = ois.readInt();
-    int fragmentHashSubLength = ois.readInt();
-    int signatureLength = ois.readInt();
-    objectHash = new byte[objectHashLength];
-    ois.readFully(objectHash, 0, objectHashLength);
-    byte[] fragmentHashField = new byte[fragmentHashLength * fragmentHashSubLength];
-    ois.readFully(fragmentHashField, 0, fragmentHashLength * fragmentHashSubLength);
-    fragmentHash = new byte[fragmentHashLength][fragmentHashSubLength];
-    for (int i=0; i<fragmentHashLength; i++)
-      for (int j=0; j<fragmentHashSubLength; j++)
-        fragmentHash[i][j] = fragmentHashField[i*fragmentHashSubLength + j];
-    signature = new byte[signatureLength];
-    ois.readFully(signature, 0, signatureLength);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

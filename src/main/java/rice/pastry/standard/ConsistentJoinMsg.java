@@ -54,8 +54,6 @@ import rice.pastry.messaging.PRawMessage;
  * @author Jeff Hoye
  */
 public class ConsistentJoinMsg extends PRawMessage {
-  private static final long serialVersionUID = -8942404626084999673L;
-
   public static final short TYPE = 2;
 
   LeafSet ls;

@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.glacier;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -52,7 +51,7 @@ import rice.p2p.util.MathUtils;
  * @version $Id: VersionKey.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author ahae
  */
-public class VersionKey implements Id, Serializable {
+public class VersionKey implements Id {
   public static final short TYPE = 41;
 
   /**
@@ -63,8 +62,6 @@ public class VersionKey implements Id, Serializable {
    * The version of the object
    */
   private final long version;
-
-  private static final long serialVersionUID = -7473630685140924130L;
 
   /**
    * Constructor for VersionKey.

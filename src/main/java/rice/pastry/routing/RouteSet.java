@@ -37,9 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.routing;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -64,11 +61,9 @@ import rice.pastry.PastryNode;
  * @author Peter Druschel
  */
 
-public class RouteSet implements NodeSetI, Serializable,
+public class RouteSet implements NodeSetI,
     NodeHandleListener, Iterable<NodeHandle> {
   public static final short TYPE = 2;
-
-  private static final long serialVersionUID = 8156336294555109590L;
 
   private NodeHandle[] nodes;
 
@@ -76,9 +71,9 @@ public class RouteSet implements NodeSetI, Serializable,
 
   private int closest;
 
-  transient int row;
-  transient int col;
-  transient PastryNode localNode;
+  int row;
+  int col;
+  PastryNode localNode;
 
   /**
    * Constructor.
@@ -266,7 +261,7 @@ public class RouteSet implements NodeSetI, Serializable,
     return null;
   }
 
-  transient RoutingTable observer;
+  RoutingTable observer;
 
   private void notifyTable(NodeHandle handle, boolean added) {
     if (observer != null)
@@ -419,51 +414,6 @@ public class RouteSet implements NodeSetI, Serializable,
         return i;
 
     return -1;
-  }
-
-  /**
-   * deserialize the routeSet pings the handle the was the closest on the
-   * sending node
-   */
-  private void readObject(ObjectInputStream in) throws IOException,
-      ClassNotFoundException {
-    nodes = (NodeHandle[]) in.readObject();
-    theSize = in.readInt();
-    closest = in.readInt();
-    if (closest != -1)
-      nodes[closest].ping();
-    closest = -1;
-  }
-
-  /**
-   * serialize the RouteSet records the closest node
-   */
-  private void writeObject(ObjectOutputStream out) throws IOException,
-      ClassNotFoundException {
-    if (closest == -1)
-      closestNode();
-
-    // here, we don't want to advertise nodes which are dead, so we filter
-    // our list based on only live nodes
-    NodeHandle[] tmp = new NodeHandle[nodes.length];
-
-    int j = 0;
-    for (int i = 0; i < tmp.length; i++) {
-      if ((nodes[i] != null) && (nodes[i].getLiveness() < NodeHandle.LIVENESS_DEAD)) {
-        tmp[j] = nodes[i];
-        j++;
-      }
-    }
-
-    out.writeObject(tmp);
-    out.writeInt(j);
-
-    int closest = -1;
-    for (int i = 0; i < j; i++)
-      if ((closest == -1) || (localNode.proximity(tmp[i]) < localNode.proximity(tmp[closest])))
-        closest = i;
-
-    out.writeInt(closest);
   }
 
   // Common API Support

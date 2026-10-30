@@ -61,8 +61,6 @@ import rice.p2p.past.PastException;
 public class MessageLostMessage extends PastMessage {
   public static final short TYPE = 7;
 
-  private static final long serialVersionUID = -8664827144233122095L;
-
   // the id the message was sent to
   private final Id id;
 

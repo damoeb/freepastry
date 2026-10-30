@@ -46,7 +46,6 @@ package rice.p2p.aggregation;
  * @author Andreas Haeberlen
  */
 
-import java.io.Serializable;
 
 import rice.Continuation;
 import rice.p2p.commonapi.Id;
@@ -68,7 +67,7 @@ public interface Aggregation {
    *
    * @return the current handle object
    */
-  public Serializable getHandle();
+  public Id getHandle();
 
   /**
    * Restores the handle object. This method should always be invoked
@@ -79,7 +78,7 @@ public interface Aggregation {
    * @param handle the handle object
    * @param command Command to be performed when the method completes.
    */
-  public void setHandle(Serializable handle, Continuation<? super Boolean, Exception> command);
+  public void setHandle(Id handle, Continuation<? super Boolean, Exception> command);
 
   /**
    * Creates an aggregate that includes the most current object

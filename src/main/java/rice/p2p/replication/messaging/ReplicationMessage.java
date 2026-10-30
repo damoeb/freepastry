@@ -54,9 +54,6 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  */
 public abstract class ReplicationMessage implements RawMessage {
 
-  // serialver for backward compatibility
-  private static final long serialVersionUID = 2121558100279943464L;
-
   // the source of this message
   private final NodeHandle source;
 

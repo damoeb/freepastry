@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.scribe;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -52,7 +51,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @version $Id: Topic.java 3653 2007-03-27 18:39:52Z jeffh $
  * @author Alan Mislove
  */
-public class Topic implements Serializable, Comparable<Topic> {
+public class Topic implements Comparable<Topic> {
 
   /**
    * The Id to which this topic is mapped

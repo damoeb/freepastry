@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.multiring;
 
 import java.io.IOException;
-import java.io.ObjectStreamException;
 import java.lang.ref.WeakReference;
 import java.util.WeakHashMap;
 
@@ -60,7 +59,6 @@ public class RingId implements Id {
   /**
    * Serialver for backward compatibility
    */
-  private static final long serialVersionUID = -4390496639871320200L;
 
   /**
    * Support for coalesced Ids - ensures only one copy of each Id is in memory
@@ -125,17 +123,6 @@ public class RingId implements Id {
         return id;
       }
     }
-  }
-
-  /**
-   * Define readResolve, which is meant to replace the deserialized object with the canonical
-   * one (if one exists) to ensure RingId coalescing. Currently it returns the object itself.
-   *
-   * @return This RingId
-   */
-  private Object readResolve() throws ObjectStreamException {
-    // TODO: return resolve(this) to coalesce RingIds; disabled to preserve backward compatibility with serialization
-    return this;
   }
 
   /**

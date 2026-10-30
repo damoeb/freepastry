@@ -37,14 +37,13 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.glacier.Fragment;
 
-public class FragmentAndManifest implements Serializable, RawSerializable {
+public class FragmentAndManifest implements RawSerializable {
   private final Fragment fragment;
   private Manifest manifest;
 

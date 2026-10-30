@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.util;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
@@ -57,7 +56,7 @@ import java.util.SortedMap;
  * @author Alan Mislove
  */
 @SuppressWarnings("unchecked")
-public class ImmutableSortedMap<K, V> implements SortedMap<K, V>, Serializable {
+public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
 
   // the internal map
   private final SortedMap<K, V> map;

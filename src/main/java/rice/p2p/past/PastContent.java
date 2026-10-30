@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -60,7 +59,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public interface PastContent extends Serializable, RawSerializable {
+public interface PastContent extends RawSerializable {
 
   /**
    * Checks if a insert operation should be allowed.  Invoked when a

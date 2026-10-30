@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -50,11 +49,10 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Peter Druschel
  */
 
-public class IdRange implements rice.p2p.commonapi.IdRange, Serializable {
+public class IdRange implements rice.p2p.commonapi.IdRange {
   /**
    *
    */
-  private static final long serialVersionUID = -361018850912613915L;
 
   private boolean empty;
 

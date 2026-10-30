@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.past.gc;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -50,10 +49,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @version $Id: GCPastMetadata.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Peter Druschel
  */
-public class GCPastMetadata implements Serializable, Comparable<GCPastMetadata> {
-
-  // serialver for backwards compatibility
-  private static final long serialVersionUID = -2432306227012003387L;
+public class GCPastMetadata implements Comparable<GCPastMetadata> {
 
   // the expiration time
   private long expiration;

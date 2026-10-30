@@ -65,8 +65,6 @@ public class JoinRequest extends PRawMessage {
   public static final byte HAS_JOIN_HANDLE = 0x02;
   public static final byte HAS_LEAFSET = 0x02;
 
-  static final long serialVersionUID = 231671018732832563L;
-
   public static final short TYPE = 1;
 
   private final NodeHandle handle;

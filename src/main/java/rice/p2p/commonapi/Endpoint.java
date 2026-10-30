@@ -304,7 +304,7 @@ public interface Endpoint extends NodeHandleReader {
   public boolean routingConsistentFor(Id id);
 
   /**
-   * Reads an Id written with Id.serialize(); more efficient than Java Serialization
+   * Reads an Id written with Id.serialize()
    *
    * @param buf the buffer to read the id from
    * @param type the type of the id, as returned by Id.getType()

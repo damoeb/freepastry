@@ -37,16 +37,13 @@ advised of the possibility of such damage.
 package rice.p2p.aggregation;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
-public class ObjectDescriptor implements Serializable, Comparable<ObjectDescriptor> {
-
-  private static final long serialVersionUID = -3035115249019556223L;
+public class ObjectDescriptor implements Comparable<ObjectDescriptor> {
 
   private final Id key;
   private final long version;

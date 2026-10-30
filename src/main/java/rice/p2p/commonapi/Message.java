@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi;
 
-import java.io.Serializable;
 
 /**
  * @(#) Message.java
@@ -50,7 +49,7 @@ import java.io.Serializable;
  * @author Alan Mislove
  * @author Peter Druschel
  */
-public interface Message extends Serializable {
+public interface Message {
 
   // different priority levels
   public static final int MAX_PRIORITY = -15;

@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.routing;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Map;
 
 import rice.p2p.commonapi.Cancellable;
@@ -63,29 +62,26 @@ import rice.pastry.messaging.PRawMessage;
  * @author Andrew Ladd
  */
 
-public class RouteMessage extends PRawMessage implements Serializable,
-    rice.p2p.commonapi.RouteMessage {
-  private static final long serialVersionUID = 3492981895989180093L;
-
+public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.RouteMessage {
   public static final short TYPE = -23525;
 
   private Id target;
   private NodeHandle destinationHandle;
-  private transient byte version;
+  private byte version;
 
   private NodeHandle prevNode;
 
-  private transient SendOptions opts;
+  private SendOptions opts;
 
   private int auxAddress;
 
-  private transient NodeHandle nextHop;
+  private NodeHandle nextHop;
 
   private Message internalMsg;
   // optimization to not use instanceof in the normal new case
-  private transient PRawMessage rawInternalMsg = null;
-  private transient InputBuffer serializedMsg;
-  private transient PastryNode pn;
+  private PRawMessage rawInternalMsg = null;
+  private InputBuffer serializedMsg;
+  private PastryNode pn;
 
   boolean hasSender;
   byte internalPriority;
@@ -94,7 +90,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
   /**
    * This is used by the Rerouter to keep track of how many attempted reroutes of the message.
    */
-  private transient int numRetries = 0;
+  private int numRetries = 0;
 
   private RMDeserializer endpointDeserializer = new RMDeserializer();
 
@@ -503,7 +499,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
     return destinationHandle;
   }
 
-  private transient Map<String, Object> options;
+  private Map<String, Object> options;
   public Map<String, Object> getTLOptions() {
     return options;
   }

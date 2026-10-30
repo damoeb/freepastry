@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.util;
 
-import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Comparator;
@@ -62,10 +61,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * Like a TreeMap view, a view's subMap, headMap and tailMap clamp their bounds into the view's range, and put() of
  * a key out of range throws IllegalArgumentException.
  */
-public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements SortedMap<K, V>, Serializable {
-  private static final long serialVersionUID = 1L;
+public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements SortedMap<K, V> {
 
-  /** Stands in for a null value. An enum, so that it stays a singleton through serialization. */
+  /** Stands in for a null value. */
   private enum Null { VALUE }
 
   /** the whole map, shared by all views of it */
@@ -223,7 +221,7 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
     return new ConcurrentRingMap<K, V>(backing, clamp(fromKey), hi);
   }
 
-  private transient Set<Map.Entry<K, V>> entrySet;
+  private Set<Map.Entry<K, V>> entrySet;
 
   @Override
   public Set<Map.Entry<K, V>> entrySet() {

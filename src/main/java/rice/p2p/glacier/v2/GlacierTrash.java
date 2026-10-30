@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import java.io.Serializable;
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -73,7 +72,7 @@ final class GlacierTrash {
         public void receiveResult(Object o) {
           logger.atDebug().log(() -> "Fragment "+fkey.toStringFull()+" retrieved, storing in trash");
           if (o != null) {
-            moveToTrash(fkey, (Serializable) o, command);
+            moveToTrash(fkey, o, command);
           } else {
             receiveException(new GlacierException("Move to trash: Fragment "+fkey+" does not exist?!?"));
           }
@@ -92,7 +91,7 @@ final class GlacierTrash {
   /**
    * Stores a fragment in the trash, then removes it from the fragment storage.
    */
-  private void moveToTrash(final Id fkey, Serializable fam, final Continuation<? super Boolean, Exception> command) {
+  private void moveToTrash(final Id fkey, Object fam, final Continuation<? super Boolean, Exception> command) {
     trashStorage.store(fkey, null, fam, new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         logger.atDebug().log(() -> "Deleting fragment "+fkey.toStringFull());
