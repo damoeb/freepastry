@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.mpisws.p2p</groupId>
     <artifactId>freepastry</artifactId>
     <version>2.1.0</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
     <name>FreePastry</name>
     <description>A modular, open-source implementation of the Pastry peer-to-peer structured overlay network</description>
@@ -22,6 +22,23 @@
         </license>
     </licenses>
 
+    <!-- In dependency order. freepastry-all builds the jar-with-dependencies. -->
+    <modules>
+        <module>modules/core</module>
+        <module>modules/transport</module>
+        <module>modules/filetransfer</module>
+        <module>modules/pastry</module>
+        <module>modules/pki</module>
+        <module>modules/peerreview</module>
+        <module>modules/persistence</module>
+        <module>modules/past</module>
+        <module>modules/scribe</module>
+        <module>modules/multiring</module>
+        <module>modules/glacier</module>
+        <module>modules/tutorials</module>
+        <module>modules/all</module>
+    </modules>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
@@ -30,54 +47,256 @@
         <surefire.groups></surefire.groups>
         <surefire.excludedGroups>integration</surefire.excludedGroups>
         <surefire.forkTimeout>300</surefire.forkTimeout>
+        <!-- ./mvnw test -Dtest=SomeTest runs across all modules; the modules without SomeTest must not fail -->
+        <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
         <bouncycastle.version>1.86</bouncycastle.version>
         <slf4j.version>2.0.20</slf4j.version>
     </properties>
 
-    <dependencies>
-        <!-- Bouncy Castle for cryptography -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk18on</artifactId>
-            <version>${bouncycastle.version}</version>
-        </dependency>
-        <!-- Bouncy Castle certificate builders, used by the PKI tooling (CAToolImpl) -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>${bouncycastle.version}</version>
-        </dependency>
-        <!-- Logging API; applications choose the backend (slf4j-simple, logback, log4j2, ...) -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Bouncy Castle for cryptography -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <!-- Bouncy Castle certificate builders, used by the PKI tooling (CAToolImpl) -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <!-- Logging API; applications choose the backend (slf4j-simple, logback, log4j2, ...) -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
 
-        <!-- Logging backend for the tests only, configured by src/test/resources/simplelogger.properties -->
+            <!-- The FreePastry modules -->
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-transport</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-filetransfer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-pastry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-pki</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-peerreview</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-persistence</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-past</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-scribe</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-multiring</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-glacier</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-tutorials</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Shared test helpers, published by the jar plugin's test-jar goal -->
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-core</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-transport</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-pastry</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- Every module tests with JUnit and logs through slf4j-simple, configured by its src/test/resources/simplelogger.properties -->
+    <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- JUnit Jupiter for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Maven Compiler Plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.16.0</version>
+                    <configuration>
+                        <release>${maven.compiler.release}</release>
+                        <compilerArgs>
+                            <!-- No raw (untyped) generics and no deprecated API usage: either fails the build -->
+                            <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
+                            <arg>-Werror</arg>
+                        </compilerArgs>
+                        <showDeprecation>true</showDeprecation>
+                        <debuglevel>lines,vars,source</debuglevel>
+                        <debug>true</debug>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven JAR Plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.5.1</version>
+                    <configuration>
+                        <archive>
+                            <manifestFile>${maven.multiModuleProjectDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                        </archive>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Javadoc Plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.12.0</version>
+                    <configuration>
+                        <doctitle>Rice Pastry API</doctitle>
+                        <windowtitle>Rice Pastry - API Specifications</windowtitle>
+                        <bottom><![CDATA[<i>Copyright &#169; 2001-2025 - Rice Pastry.</i>]]></bottom>
+                        <sourceFileIncludes>
+                            <include>org/mpisws/p2p/**/*.java</include>
+                            <include>rice/*.java</include>
+                            <include>rice/environment/**/*.java</include>
+                            <include>rice/p2p/commonapi/**/*.java</include>
+                            <include>rice/p2p/glacier/*.java</include>
+                            <include>rice/p2p/glacier/v2/**/*.java</include>
+                            <include>rice/p2p/aggregation/**/*.java</include>
+                            <include>rice/p2p/multiring/**/*.java</include>
+                            <include>rice/p2p/past/**/*.java</include>
+                            <include>rice/p2p/replication/**/*.java</include>
+                            <include>rice/p2p/scribe/**/*.java</include>
+                            <include>rice/p2p/splitstream/**/*.java</include>
+                            <include>rice/p2p/util/**/*.java</include>
+                            <include>rice/pastry/**/*.java</include>
+                            <include>rice/persistence/**/*.java</include>
+                            <include>rice/selector/**/*.java</include>
+                            <include>rice/tutorial/**/*.java</include>
+                        </sourceFileIncludes>
+                        <sourceFileExcludes>
+                            <exclude>rice/p2p/saar/**/*.java</exclude>
+                        </sourceFileExcludes>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Surefire Plugin for running tests -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.6.1</version>
+                    <configuration>
+                        <includes>
+                            <include>**/*Test.java</include>
+                        </includes>
+                        <!-- Run tests sequentially to avoid port conflicts -->
+                        <forkCount>1</forkCount>
+                        <reuseForks>false</reuseForks>
+                        <!-- Give tests more time and memory -->
+                        <forkedProcessTimeoutInSeconds>${surefire.forkTimeout}</forkedProcessTimeoutInSeconds>
+                        <argLine>-Xmx1024m</argLine>
+                        <!-- Long simulations and real-network tests are tagged "integration" and run with -Pintegration -->
+                        <groups>${surefire.groups}</groups>
+                        <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Assembly Plugin, used by freepastry-all for the jar-with-dependencies -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>3.8.0</version>
+                    <configuration>
+                        <descriptorRefs>
+                            <descriptorRef>jar-with-dependencies</descriptorRef>
+                        </descriptorRefs>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <!-- Enforce the toolchain this build is verified with -->
             <plugin>
@@ -104,104 +323,23 @@
                 </executions>
             </plugin>
 
-            
-            <!-- Maven Compiler Plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.16.0</version>
-                <configuration>
-                    <release>${maven.compiler.release}</release>
-                    <compilerArgs>
-                        <!-- No raw (untyped) generics and no deprecated API usage: either fails the build -->
-                        <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
-                        <arg>-Werror</arg>
-                    </compilerArgs>
-                    <showDeprecation>true</showDeprecation>
-                    <debuglevel>lines,vars,source</debuglevel>
-                    <debug>true</debug>
-                </configuration>
-            </plugin>
-
-            <!-- Maven JAR Plugin -->
+            <!-- Every module publishes its test classes as a test-jar, so other modules can reuse shared test helpers (TLTest, FreePorts, CommonAPITest, ...) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.5.1</version>
-                <configuration>
-                    <archive>
-                        <manifestFile>META-INF/MANIFEST.MF</manifestFile>
-                    </archive>
-                    <finalName>freepastry-${project.version}</finalName>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                        <configuration>
+                            <skipIfEmpty>true</skipIfEmpty>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
-            <!-- Maven Javadoc Plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.12.0</version>
-                <configuration>
-                    <doctitle>Rice Pastry API</doctitle>
-                    <windowtitle>Rice Pastry - API Specifications</windowtitle>
-                    <bottom><![CDATA[<i>Copyright &#169; 2001-2025 - Rice Pastry.</i>]]></bottom>
-                    <sourceFileIncludes>
-                        <include>org/mpisws/p2p/**/*.java</include>
-                        <include>rice/*.java</include>
-                        <include>rice/environment/**/*.java</include>
-                        <include>rice/p2p/commonapi/**/*.java</include>
-                        <include>rice/p2p/glacier/*.java</include>
-                        <include>rice/p2p/glacier/v2/**/*.java</include>
-                        <include>rice/p2p/aggregation/**/*.java</include>
-                        <include>rice/p2p/multiring/**/*.java</include>
-                        <include>rice/p2p/past/**/*.java</include>
-                        <include>rice/p2p/replication/**/*.java</include>
-                        <include>rice/p2p/scribe/**/*.java</include>
-                        <include>rice/p2p/splitstream/**/*.java</include>
-                        <include>rice/p2p/util/**/*.java</include>
-                        <include>rice/pastry/**/*.java</include>
-                        <include>rice/persistence/**/*.java</include>
-                        <include>rice/selector/**/*.java</include>
-                        <include>rice/tutorial/**/*.java</include>
-                    </sourceFileIncludes>
-                    <sourceFileExcludes>
-                        <exclude>rice/p2p/saar/**/*.java</exclude>
-                    </sourceFileExcludes>
-                </configuration>
-            </plugin>
-
-            <!-- Maven Surefire Plugin for running tests -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.6.1</version>
-                <configuration>
-                    <includes>
-                        <include>**/*Test.java</include>
-                    </includes>
-                    <!-- Run tests sequentially to avoid port conflicts -->
-                    <forkCount>1</forkCount>
-                    <reuseForks>false</reuseForks>
-                    <!-- Give tests more time and memory -->
-                    <forkedProcessTimeoutInSeconds>${surefire.forkTimeout}</forkedProcessTimeoutInSeconds>
-                    <argLine>-Xmx1024m</argLine>
-                    <!-- Long simulations and real-network tests are tagged "integration" and run with -Pintegration -->
-                    <groups>${surefire.groups}</groups>
-                    <excludedGroups>${surefire.excludedGroups}</excludedGroups>
-                </configuration>
-            </plugin>
-
-            <!-- Maven Assembly Plugin for creating distribution -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.8.0</version>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                </configuration>
-            </plugin>
             <!-- Light formatting only: no reflow. ./mvnw spotless:apply fixes violations. -->
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
@@ -248,4 +386,3 @@
         </profile>
     </profiles>
 </project>
-
