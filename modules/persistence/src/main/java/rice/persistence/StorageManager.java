@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
-/*
+/**
  * @(#) StorageManager.java
  *
  * This interface represents a "smart" storage manger, which represents a storage

@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.persistence;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -73,7 +73,7 @@ public class LockManagerImpl implements LockManager {
         if (locklist.size() > 10) logger.info("locking on id {}; {} continuations in queue.  That seems large", id, locklist.size());
         locklist.add(c);
       } else {
-        locks.put(id, new LinkedList<Continuation<?, ?>>());
+        locks.put(id, new ArrayList<Continuation<?, ?>>());
         logger.trace("locking on id {}; no contention so running {}", id, c);
         torun = c;
       }

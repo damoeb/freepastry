@@ -57,7 +57,7 @@ import rice.persistence.PersistentStorage;
  */
 public class PersistentStorageTest extends MemoryStorageTest {
 
-  private static IdFactory FACTORY;
+  private IdFactory FACTORY;
 
   /**
    * Builds a MemoryStorageTest

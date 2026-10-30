@@ -290,7 +290,7 @@ final class MetadataIndex {
    * @param file The directory to write the file to
    * @param map The data to write
    */
-  private void writeMetadataFile(Path file, HashMap<Id, Object> map) throws IOException {
+  private void writeMetadataFile(Path file, Map<Id, Object> map) throws IOException {
     SimpleOutputBuffer buf = new SimpleOutputBuffer();
     buf.writeLong(METADATA_CACHE_MAGIC);
     buf.writeInt(METADATA_CACHE_VERSION);

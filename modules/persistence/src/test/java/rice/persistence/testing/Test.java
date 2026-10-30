@@ -147,6 +147,8 @@ public abstract class Test {
   /**
    * Runs the test as a program: exits with 0 if all steps passed, 1 otherwise.
    */
+  // printStackTrace is intended: this is the standalone runner, which reports to the console and exits
+  @SuppressWarnings("CatchAndPrintStackTrace")
   protected static void runMain(Test test) {
     int status = 1;
     try {

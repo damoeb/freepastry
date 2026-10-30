@@ -131,7 +131,7 @@ final class StorageRecovery {
    * temporary file during start-up, it is likely that the file is corrupted
    * and should be deleted.
    *
-   * @returns Whether or not the file was a temporary file
+   * @return Whether or not the file was a temporary file
    */
   private boolean initTemporaryFile(Path parent, String name) throws IOException {
     if (! layout.isTemporaryFile(name))

@@ -618,11 +618,11 @@ final class StorageLayout {
   private static class CharacterHashSet {
     private final boolean[] bitMap = new boolean[256];
 
-    public void put(char a) {
+    void put(char a) {
       bitMap[(int) a] = true;
     }
 
-    public char[] get() {
+    char[] get() {
       int[] nums = getOffsets();
       char[] result = new char[nums.length];
 
@@ -634,7 +634,6 @@ final class StorageLayout {
 
     private int[] getOffsets() {
       int[] result = new int[count()];
-      int index = 0;
 
       for (int i=0; i<result.length; i++)
         result[i] = getOffset(i);

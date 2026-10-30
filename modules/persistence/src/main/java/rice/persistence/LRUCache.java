@@ -70,10 +70,10 @@ public class LRUCache implements Cache {
   private int maximumSize;
 
   // the back-end storage used by this cache
-  private Storage storage;
+  private final Storage storage;
 
   // the list of keys, in MRU -> LRU order
-  private LinkedList<Id> order;
+  private final LinkedList<Id> order;
 
   private final Environment environment;
 
@@ -89,7 +89,10 @@ public class LRUCache implements Cache {
     this.storage = storage;
     this.maximumSize = maximumSize;
 
-    this.order = new LinkedList<Id>();
+    // LinkedList, not ArrayDeque: a null key is accepted (and tested), which ArrayDeque rejects
+    @SuppressWarnings("JdkObsolete")
+    LinkedList<Id> list = new LinkedList<Id>();
+    this.order = list;
     Iterator<Id> i = storage.scan().getIterator();
 
     while (i.hasNext())
@@ -406,8 +409,6 @@ public class LRUCache implements Cache {
    */
   private void resize(final int size, Continuation<? super Boolean, Exception> c) {
     final Continuation<Boolean, Exception> remove = new StandardContinuation<Boolean, Boolean, Exception>(c) {
-      private boolean waitingForSize = true;
-
       @Override
       public void receiveResult(Boolean o) {
         if (storage.getTotalSize() > size) {

@@ -407,17 +407,6 @@ public class MemoryStorageTest extends Test {
     };
 
 
-    final Continuation<Object, Exception> retrieve1 = new Continuation<Object, Exception>() {
-      @Override
-      public void receiveResult(Object o) {
-
-      }
-
-      @Override
-      public void receiveException(Exception e) {
-        stepException(e);
-      }
-    };
 
     final Continuation<Object, Exception> check1 = new Continuation<Object, Exception>() {
       @Override
@@ -626,8 +615,6 @@ public class MemoryStorageTest extends Test {
     };
 
     final Continuation<Object, Exception> checkScan = new Continuation<Object, Exception>() {
-
-      private int count = START_NUM;
 
       @Override
       public void receiveResult(Object o) {
