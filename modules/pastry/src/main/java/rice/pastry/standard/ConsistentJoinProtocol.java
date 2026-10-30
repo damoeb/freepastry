@@ -126,7 +126,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     public int compareTo(FailedTime arg0) {
       FailedTime ft = (FailedTime)arg0;
       // note this is backwards, because we want them sorted in reverse order
-      return (int)(ft.time-this.time);
+      return Long.compare(ft.time, this.time);
     }
 
     @Override
