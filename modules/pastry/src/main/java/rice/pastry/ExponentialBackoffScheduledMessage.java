@@ -48,7 +48,6 @@ import rice.selector.TimerTask;
  * @author jeffh
  */
 public class ExponentialBackoffScheduledMessage extends ScheduledMessage {
-  boolean cancelled = false;
   EBTimerTask myTask;
   Timer timer;
   long initialPeriod;
@@ -74,14 +73,12 @@ public class ExponentialBackoffScheduledMessage extends ScheduledMessage {
 
   @Override
   public boolean cancel() {
-    super.cancel();
+    boolean wasCancelled = super.cancel();
     if (myTask!=null) {
       myTask.cancel();
       myTask = null;
     }
-    boolean temp = cancelled;
-    cancelled = true;
-    return temp;
+    return wasCancelled;
   }
 
   @Override
