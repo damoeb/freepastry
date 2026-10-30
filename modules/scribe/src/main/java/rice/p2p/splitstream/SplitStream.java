@@ -79,5 +79,6 @@ public interface SplitStream extends Destructable {
 
   public Environment getEnvironment();
 
+  @Override
   public void destroy();
 }

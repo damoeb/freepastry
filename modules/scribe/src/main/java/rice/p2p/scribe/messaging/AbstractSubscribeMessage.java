@@ -97,6 +97,7 @@ public sealed abstract class AbstractSubscribeMessage implements RawMessage, Scr
     return id;
   }
 
+  @Override
   public int getPriority() {
     return MEDIUM_HIGH_PRIORITY;
   }
@@ -115,6 +116,7 @@ public sealed abstract class AbstractSubscribeMessage implements RawMessage, Scr
     return topics;
   }
 
+  @Override
   public String toString() {
     String s = source + ","+id;
     if (topics.size() <= 3) {
@@ -136,6 +138,7 @@ public sealed abstract class AbstractSubscribeMessage implements RawMessage, Scr
     id = buf.readInt();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     source.serialize(buf);
     buf.writeInt(id);

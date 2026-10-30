@@ -76,8 +76,6 @@ public class SplitStreamDistTest {
   /**
    * Usage java rice.p2p.splitstream.testing.SplitStreamDistTest [artificialchurn] [bootstrap] [port] [bootport]
    *
-   * @param args
-   * @throws Exception
    */
   public static void main(String[] args) throws Exception {
 
@@ -200,6 +198,7 @@ public class SplitStreamDistTest {
     System.out.println("Node "+node+" created.");
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
       public void run() { System.out.println("SHUTDOWN "+env.getTimeSource().currentTimeMillis()+" "+node); }
     });
 

@@ -130,7 +130,6 @@ final class TopicRegistry {
 
   /**
    * Lazy constructor.
-   * @param topic
    * @return never null
    */
   TopicManager getOrCreate(Topic topic) {
@@ -217,8 +216,6 @@ final class TopicRegistry {
    *
    * Need to be holding lock: topicManagers
    *
-   * @param t
-   * @param child
    */
   void addToAllChildren(Topic t, NodeHandle child) {
     logger.info("addToAllChildren({},{})", t, child);
@@ -243,8 +240,6 @@ final class TopicRegistry {
   /**
    * Need to be holding lock: topicManagers
    *
-   * @param t
-   * @param child
    */
   void removeFromAllChildren(Topic t, NodeHandle child) {
     logger.info("removeFromAllChildren({},{})", t, child);

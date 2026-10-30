@@ -61,15 +61,18 @@ public record UnsubscribeMessage(NodeHandle source, List<Topic> topics) implemen
   /**
    * @return MEDIUM_HIGH_PRIORITY, see {@link rice.p2p.commonapi.Message#getPriority()}
    */
+  @Override
   public int getPriority() {
     return MEDIUM_HIGH_PRIORITY;
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ScribeMessageType.UNSUBSCRIBE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)1); // version
     boolean hasSource = (source != null);

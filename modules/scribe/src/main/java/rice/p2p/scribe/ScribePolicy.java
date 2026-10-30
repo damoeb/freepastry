@@ -174,6 +174,7 @@ public interface ScribePolicy {
      * @param content the content that came with the message
      * @return the topics to accept
      */
+    @Override
     public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
       return topics;
     }
@@ -186,6 +187,7 @@ public interface ScribePolicy {
      * @param parent Our current parent for this message's topic
      * @param theChildren Our current children for this message's topic
      */
+    @Override
     public void directAnycast(AnycastMessage message, NodeHandle parent, Collection<NodeHandle> theChildren) {
       if (parent != null) {
         message.addLast(parent);
@@ -210,6 +212,7 @@ public interface ScribePolicy {
      * @param topic The topic the child was added to
      * @param child The child that was added
      */
+    @Override
     public void childAdded(Topic topic, NodeHandle child) {
     }
 
@@ -220,12 +223,16 @@ public interface ScribePolicy {
      * @param topic The topic the child was removed from
      * @param child The child that was removed
      */
+    @Override
     public void childRemoved(Topic topic, NodeHandle child) {
     }
+    @Override
     public void intermediateNode(ScribeMessage message) {
     }
+    @Override
     public void recvAnycastFail(Topic topic, NodeHandle failedAtNode, ScribeContent content) {
     }
+    @Override
     public ScribeContent divideContent(List<Topic> theTopics, ScribeContent content) {
       return content;
     }

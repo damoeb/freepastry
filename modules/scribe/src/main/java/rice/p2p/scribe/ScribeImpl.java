@@ -200,6 +200,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     logger.trace("Starting up Scribe");
   }
 
+  @Override
   public Environment getEnvironment() {
     return environment;
   }
@@ -209,6 +210,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    *
    * @return The current policy for this scribe
    */
+  @Override
   public ScribePolicy getPolicy() {
     return policy;
   }
@@ -218,14 +220,17 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    *
    * @param policy The current policy for this scribe
    */
+  @Override
   public void setPolicy(ScribePolicy policy) {
     this.policy = policy;
   }
 
+  @Override
   public Collection<ScribeMultiClient> getClientsByTopic(Topic topic) {
     return registry.getClientsByTopic(topic);
   }
 
+  @Override
   public Collection<NodeHandle> getChildrenOfTopic(Topic topic) {
     return registry.getChildrenOfTopic(topic);
   }
@@ -237,6 +242,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param topic The topic to return the parent of
    * @return The parent of the topic
    */
+  @Override
   public NodeHandle getParent(Topic topic) {
     return registry.getParent(topic);
   }
@@ -247,6 +253,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param topic The topic in question
    * @return Whether or not we are currently the root
    */
+  @Override
   public boolean isRoot(Topic topic) {
     return registry.isRoot(topic);
   }
@@ -260,9 +267,11 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param content The content to include in the subscribe
    * @param hint The first hop of the message, or null
    */
+  @Override
   public void subscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
     doSubscribe(Collections.singletonList(topic), client, content, hint);
   }
+  @Override
   public void subscribe(Collection<Topic> theTopics, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
     doSubscribe(theTopics, client, content, hint);
   }
@@ -289,6 +298,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param topic The topic to publish to
    * @param content The content to publish
    */
+  @Override
   public void publish(Topic topic, ScribeContent content) {
     publisher.publish(topic, content);
   }
@@ -299,6 +309,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param topic The topic to anycast to
    * @param content The content to anycast
    */
+  @Override
   public void anycast(Topic topic, ScribeContent content) {
     anycast(topic, content, null);
   }
@@ -313,6 +324,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param topic The topic to add the child to
    * @param child The child to add
    */
+  @Override
   public void addChild(Topic topic, NodeHandle child) {
     children.addChild(topic, child);
   }
@@ -323,6 +335,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param topic The topic to remove the child from
    * @param child The child to remove
    */
+  @Override
   public void removeChild(Topic topic, NodeHandle child) {
     removeChild(topic, child, true);
   }
@@ -368,6 +381,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    *      key and nodeHandle next hop.
    * @return Whether or not to forward the message further
    */
+  @Override
   public boolean forward(final RouteMessage message) {
 
     Message internalMessage;
@@ -377,20 +391,18 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       throw new RuntimeException(ioe);
     }
     logger.trace("Forward called with {} {}", internalMessage, internalMessage.getClass().getName());
-    if(internalMessage instanceof ScribeMessage) {
-      policy.intermediateNode((ScribeMessage)internalMessage);
+    if(internalMessage instanceof ScribeMessage scribeMessage) {
+      policy.intermediateNode(scribeMessage);
     }
 
-    if (internalMessage instanceof AnycastMessage) {
-      AnycastMessage aMessage = (AnycastMessage) internalMessage;
+    if (internalMessage instanceof AnycastMessage aMessage) {
 
       // get the topic manager associated with this topic
       if (aMessage.getTopic() == null) {
         throw new RuntimeException("topic is null!");
       }
       // if it's a subscribe message, we must handle it differently
-      if (internalMessage instanceof SubscribeMessage) {
-        SubscribeMessage sMessage = (SubscribeMessage) internalMessage;
+      if (internalMessage instanceof SubscribeMessage sMessage) {
         return handleForwardSubscribeMessage(sMessage);
       }
       return anycasts.forward(message, aMessage);
@@ -412,6 +424,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param id The destination id of the message
    * @param message The message being sent
    */
+  @Override
   public void deliver(Id id, Message message) {
     logger.trace("Deliver called with {} {}", id, message);
 
@@ -470,6 +483,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * Called when a Node's liveness changes
    *
    */
+  @Override
   public void nodeHandleUpdate(NodeHandle handle, Object arg) {
     repair.nodeHandleUpdate(handle, arg);
   }
@@ -481,6 +495,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param handle The handle that has joined/left
    * @param joined Whether the node has joined or left
    */
+  @Override
   public void update(NodeHandle handle, boolean joined) {
     repair.update(handle, joined);
   }
@@ -491,6 +506,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     return "ScribeImpl["+localHandle+"]";
   }
 
+  @Override
   public void destroy() {
     if (environment.getSelectorManager().isSelectorThread()) {
       logger.info("Destroying {}", this);
@@ -500,14 +516,17 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     }
   }
 
+  @Override
   public Endpoint getEndpoint() {
     return endpoint;
   }
 
+  @Override
   public void setContentDeserializer(ScribeContentDeserializer deserializer) {
     contentDeserializer = deserializer;
   }
 
+  @Override
   public Collection<Topic> getTopics() {
     return registry.topics();
   }

@@ -86,6 +86,7 @@ public final class SubscribeLostMessage implements ScribeProtocolMessage {
     return id;
   }
 
+  @Override
   public int getPriority() {
     return DEFAULT_PRIORITY;
   }

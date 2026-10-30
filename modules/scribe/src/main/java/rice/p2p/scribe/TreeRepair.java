@@ -116,7 +116,7 @@ final class TreeRepair {
     if (joined) {
       // NOTE: we could clean this up to use roots/pending, but this impl seems pretty safe
       List<Topic> notRoot = new ArrayList<Topic>();
-      for(TopicManager manager : (new ArrayList<TopicManager>(registry.managers()))) {
+      for(TopicManager manager : new ArrayList<TopicManager>(registry.managers())) {
         Topic topic = manager.getTopic();
         // check if new guy is root, we were old root, then subscribe
         if (!registry.isRoot(topic) && manager.getParent() == null){ // maybe we are already subscribing?

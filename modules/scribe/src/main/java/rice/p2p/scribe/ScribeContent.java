@@ -62,5 +62,6 @@ public interface ScribeContent extends RawSerializable {
    *
    * @param buf where to write the content
    */
+  @Override
   public void serialize(OutputBuffer buf) throws IOException;
 }

@@ -114,6 +114,7 @@ public interface ScribeMaintenancePolicy {
     public DefaultScribeMaintenancePolicy(Environment environment) {
     }
 
+    @Override
     public void doMaintenance(MaintainableScribe scribe) {
       HashMap<NodeHandle, List<Topic>> manifest = new HashMap<NodeHandle, List<Topic>>();
 
@@ -154,16 +155,19 @@ public interface ScribeMaintenancePolicy {
       }
     }
 
+    @Override
     public void noLongerRoot(MaintainableScribe scribe, List<Topic> topics) {
       scribe.subscribe(topics,null,implicitSubscribe(Collections.unmodifiableList(topics)),null);
     }
 
+    @Override
     public void nodeFaulty(MaintainableScribe scribe, NodeHandle handle,
         List<Topic> nodeWasParent, List<Topic> nodeWasChild) {
       scribe.subscribe(nodeWasParent,null,implicitSubscribe(Collections.unmodifiableList(nodeWasParent)),null);
 
     }
 
+    @Override
     public void subscribeFailed(MaintainableScribe scribe, List<Topic> failedTopics) {
       scribe.subscribe(failedTopics, null, implicitSubscribe(Collections.unmodifiableList(failedTopics)), null);
     }
@@ -176,6 +180,7 @@ public interface ScribeMaintenancePolicy {
      * @param topics the topics we are implicitly subscribing to
      * @return the ScribeContent to put into the SubscribeMessage (null is ok)
      */
+    @Override
     public ScribeContent implicitSubscribe(List<Topic> topics) {
       return null;
     }

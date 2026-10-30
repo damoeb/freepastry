@@ -77,8 +77,6 @@ public class SplitStreamImpl implements SplitStream {
 
   /**
    * Convenience constructor which uses the default SplitStreamScribePolicy.
-   * @param node
-   * @param instance
    */
   public SplitStreamImpl(Node node, String instance) {
     this(node, instance, (scribe, splitstream) -> new SplitStreamScribePolicy(scribe, splitstream));
@@ -123,6 +121,7 @@ public class SplitStreamImpl implements SplitStream {
    * @param id The id of the channel to create
    * @return an instance of a Channel class.
    */
+  @Override
   public Channel createChannel(ChannelId id) {
     return attachChannel(id);
   }
@@ -140,6 +139,7 @@ public class SplitStreamImpl implements SplitStream {
    * @param id The id of the channel to create
    * @return An instance of Channel object.
    */
+  @Override
   public Channel attachChannel(ChannelId id) {
     Channel channel = (Channel) channels.get(id);
 
@@ -160,6 +160,7 @@ public class SplitStreamImpl implements SplitStream {
    *
    * @return All of the channels currently being received by this splitstream
    */
+  @Override
   public Channel[] getChannels() {
     return (Channel[]) channels.values().toArray(new Channel[0]);
   }
@@ -170,17 +171,20 @@ public class SplitStreamImpl implements SplitStream {
    * @return The Scribe policy
    */
   public SplitStreamScribePolicy getPolicy(){
-    return (SplitStreamScribePolicy)(scribe.getPolicy());
+    return (SplitStreamScribePolicy) scribe.getPolicy();
   }
 
+  @Override
   public int getStripeBaseBitLength() {
     return stripeBaseBitLength;
   }
 
+  @Override
   public Environment getEnvironment() {
     return scribe.getEnvironment();
   }
 
+  @Override
   public void destroy() {
     scribe.destroy();
   }

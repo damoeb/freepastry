@@ -203,7 +203,7 @@ final class ChildManager {
         }
       }
 
-      if ((sendDrop) && (endpoint.isAlive(child))) {
+      if (sendDrop && endpoint.isAlive(child)) {
         logger.debug("Informing child {} that he has been dropped from topic {}", child, topic);
 
         // now, we tell the child that he has been dropped
@@ -230,7 +230,6 @@ final class ChildManager {
    * Also, for every topic we don't accept, we must branch the SubscribeMessage based on the routing table.
    *
    *
-   * @param sMessage
    * @return true if it needs to be forward, false if we handled it
    */
   boolean handleForwardSubscribeMessage(SubscribeMessage sMessage) {
@@ -424,7 +423,7 @@ final class ChildManager {
         NodeHandle handle = aMessage.getNext();
 
         // make sure that the next node is alive
-        while ((handle != null) && (!endpoint.isAlive(handle))) {
+        while ((handle != null) && !endpoint.isAlive(handle)) {
           handle = aMessage.getNext();
         }
 

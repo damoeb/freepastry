@@ -118,10 +118,6 @@ final class SubscriptionManager {
    * This method prevents re-subscription to topics you are already a part of.
    * However it allows subscription if you were the root, but there is now a root.
    *
-   * @param theTopics
-   * @param client
-   * @param content
-   * @param hint
    */
   void doSubscribe(Collection<Topic> theTopics, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
     logger.trace("Subscribing client {} to {}.", client, theTopics);
@@ -139,7 +135,7 @@ final class SubscriptionManager {
           manager = registry.create(topic);
           toSubscribe.add(topic);
         } else {
-          if ((manager.getParent() == null) && (! registry.isRoot(topic))) {
+          if ((manager.getParent() == null) && ! registry.isRoot(topic)) {
             toSubscribe.add(topic);
           } else {
             // else, no need to subscribe
@@ -283,7 +279,6 @@ final class SubscriptionManager {
    *
    * Maintains the order of the Topics
    *
-   * @return
    */
   HashMap<NodeHandle, List<Topic>> buildManifests(List<Topic> topics) {
     HashMap<NodeHandle, List<Topic>> manifest = new HashMap<NodeHandle, List<Topic>>();

@@ -114,15 +114,18 @@ public final class SubscribeMessage extends AnycastMessage {
    *
    * @return A String of this message
    */
+  @Override
   public String toString() {
     return "[SubscribeMessage{"+System.identityHashCode(this)+"} " + topic + " subscriber " + subscriber + " ID " + id + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ScribeMessageType.SUBSCRIBE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)1); // version
     super.serializeHelper(buf);
@@ -207,8 +210,6 @@ public final class SubscribeMessage extends AnycastMessage {
   /**
    * Copies everything except changes the topics to the new list
    *
-   * @param newTopics
-   * @return
    */
   public SubscribeMessage copy(List<Topic> newTopics, ScribeContent content) {
     SubscribeMessage ret = new SubscribeMessage(getSource(), newTopics, getId(), content);

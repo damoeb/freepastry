@@ -99,6 +99,7 @@ public class ScribeRegrTest extends CommonAPITest {
     return new TestScribeContent(topic, numMessages);
   }
 
+  @Override
   public void setupParams(Environment env) {
     super.setupParams(env);
     // want to retry fast because of problems with isReady()
@@ -125,6 +126,7 @@ public class ScribeRegrTest extends CommonAPITest {
    * @param node The newly created node
    * @param num The number of this node
    */
+  @Override
   protected void processNode(int num, Node node) {
     scribes[num] = new ScribeImpl(node, INSTANCE);
     policies[num] = new TestScribePolicy(scribes[num]);
@@ -141,6 +143,7 @@ public class ScribeRegrTest extends CommonAPITest {
    * Method which should run the test - this is called once all of the nodes have been created and
    * are ready.
    */
+  @Override
   protected void runTest() {
     if (NUM_NODES < 2) {
       System.out.println("The DistScribeRegrTest must be run with at least 2 nodes for proper testing.  Use the '-nodes n' to specify the number of nodes.");
@@ -187,9 +190,9 @@ public class ScribeRegrTest extends CommonAPITest {
       throw new RuntimeException(ioe);
     }
     rice.pastry.NodeHandle bootstrap = getBootstrap();
-    if (bootstrap instanceof BogusNodeHandle) {
+    if (bootstrap instanceof BogusNodeHandle bogusNodeHandle) {
       // socket: the bootstrapper expects the addresses
-      pn.boot(((BogusNodeHandle) bootstrap).getAddress());
+      pn.boot(bogusNodeHandle.getAddress());
     } else {
       pn.boot(bootstrap);
     }
@@ -868,28 +871,33 @@ public class ScribeRegrTest extends CommonAPITest {
       this(new Topic(buf, endpoint), buf.readInt());
     }
 
+    @Override
     public short getType() {
       return TYPE;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       topic.serialize(buf);
       buf.writeInt(num);
     }
 
+    @Override
     public boolean equals(Object o) {
-      if (!(o instanceof TestScribeContent)) {
+      if (!(o instanceof TestScribeContent testScribeContent)) {
         return false;
       }
 
-      return (((TestScribeContent) o).topic.equals(topic) &&
-        ((TestScribeContent) o).num == num);
+      return (testScribeContent.topic.equals(topic) &&
+        testScribeContent.num == num);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hash(topic, num);
     }
 
+    @Override
     public String toString() {
       return "TestScribeContent(" + topic + ", " + num + ")";
     }
@@ -923,6 +931,7 @@ public class ScribeRegrTest extends CommonAPITest {
      *
      * @return The DestinationId value
      */
+    @Override
     public Id getDestinationId() {
       return id;
     }
@@ -932,10 +941,12 @@ public class ScribeRegrTest extends CommonAPITest {
      *
      * @return The NextHopHandle value
      */
+    @Override
     public NodeHandle getNextHopHandle() {
       return nextHop;
     }
 
+    @Override
     public Message getMessage(MessageDeserializer md) {
       return message;
     }
@@ -945,6 +956,7 @@ public class ScribeRegrTest extends CommonAPITest {
      *
      * @param id The new DestinationId value
      */
+    @Override
     public void setDestinationId(Id id) {
       this.id = id;
     }
@@ -954,6 +966,7 @@ public class ScribeRegrTest extends CommonAPITest {
      *
      * @param nextHop The new NextHopHandle value
      */
+    @Override
     public void setNextHopHandle(NodeHandle nextHop) {
       this.nextHop = nextHop;
     }
@@ -963,6 +976,7 @@ public class ScribeRegrTest extends CommonAPITest {
      *
      * @param message The new Message value
      */
+    @Override
     public void setMessage(RawMessage message) {
       this.message = message;
     }
@@ -1035,6 +1049,7 @@ public class ScribeRegrTest extends CommonAPITest {
       this.acceptAnycast = value;
     }
 
+    @Override
     public boolean anycast(Topic topic, ScribeContent content) {
       if (acceptAnycast)
         anycastMessages.add(content);
@@ -1042,16 +1057,20 @@ public class ScribeRegrTest extends CommonAPITest {
       return acceptAnycast;
     }
 
+    @Override
     public void deliver(Topic topic, ScribeContent content) {
       publishMessages.add(content);
     }
 
+    @Override
     public void childAdded(Topic topic, NodeHandle child) {
     }
 
+    @Override
     public void childRemoved(Topic topic, NodeHandle child) {
     }
 
+    @Override
     public void subscribeFailed(Collection<Topic> topics) {
       for (Topic topic : topics) {
         subscribeFailed = true;
@@ -1059,6 +1078,7 @@ public class ScribeRegrTest extends CommonAPITest {
       }
     }
 
+    @Override
     public void subscribeSuccess(Collection<Topic> topics) {
     }
 
@@ -1066,6 +1086,7 @@ public class ScribeRegrTest extends CommonAPITest {
       return subscribeFailed;
     }
 
+    @Override
     public String toString() {
       if (topics.size() == 1) {
         return topics.get(0).toString();
@@ -1101,11 +1122,12 @@ public class ScribeRegrTest extends CommonAPITest {
       this.neverAllowSubscribe = neverAllowSubscribe;
     }
 
+    @Override
     public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
       Iterator<Topic> i = topics.iterator();
       while (i.hasNext()) {
         Topic topic = i.next();
-        if (!((! neverAllowSubscribe) && (allowSubscribe || !scribe.getClientsByTopic(topic).isEmpty() || this.scribe.isRoot(topic)))) {
+        if (!(! neverAllowSubscribe && (allowSubscribe || !scribe.getClientsByTopic(topic).isEmpty() || this.scribe.isRoot(topic)))) {
           i.remove();
         }
       }

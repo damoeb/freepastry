@@ -76,6 +76,7 @@ final class ScribeMessageDeserializer implements MessageDeserializer {
     this.logger = logger;
   }
 
+  @Override
   public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
     ScribeContentDeserializer cd = contentDeserializer.get();
     try {

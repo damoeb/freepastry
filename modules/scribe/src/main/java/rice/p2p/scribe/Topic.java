@@ -86,6 +86,7 @@ public record Topic(Id id) implements Comparable<Topic> {
    *
    * @return A String representation of this topic
    */
+  @Override
   public String toString() {
     return "[TOPIC " + id + "]";
   }
@@ -95,6 +96,7 @@ public record Topic(Id id) implements Comparable<Topic> {
     id.serialize(buf);
   }
 
+  @Override
   public int compareTo(Topic that) {
     return this.id.compareTo(that.id);
   }

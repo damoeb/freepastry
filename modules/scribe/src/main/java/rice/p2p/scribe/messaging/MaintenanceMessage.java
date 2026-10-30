@@ -42,10 +42,12 @@ package rice.p2p.scribe.messaging;
  */
 public record MaintenanceMessage() implements ScribeProtocolMessage {
 
+  @Override
   public int getPriority() {
     return DEFAULT_PRIORITY;
   }
 
+  @Override
   public String toString() {
     return "MaintenanceMessage";
   }

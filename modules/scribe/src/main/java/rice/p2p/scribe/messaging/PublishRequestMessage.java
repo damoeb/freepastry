@@ -83,6 +83,7 @@ public final class PublishRequestMessage extends ScribeMessage {
     return content;
   }
 
+  @Override
   public String toString() {
     return "PRM{"+topic+"}:["+content+"]";
   }
@@ -93,10 +94,12 @@ public final class PublishRequestMessage extends ScribeMessage {
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ScribeMessageType.PUBLISH_REQUEST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

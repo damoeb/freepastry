@@ -72,6 +72,7 @@ public enum ScribeMessageType implements MessageTypeId {
     this.id = (short) id;
   }
 
+  @Override
   public short id() {
     return id;
   }

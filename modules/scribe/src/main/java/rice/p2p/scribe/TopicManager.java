@@ -247,6 +247,7 @@ public class TopicManager {
     }
   }
 
+  @Override
   public String toString() {
     return topic.toString();
   }

@@ -65,6 +65,7 @@ public final class AnycastFailureMessage extends ScribeMessage {
     return content;
   }
 
+  @Override
   public String toString() {
     String s = "AnycastFailureMessage: ";
     s = s + "Source= " + getSource() + " Topic= " + topic + "ScribeContent= "
@@ -73,10 +74,12 @@ public final class AnycastFailureMessage extends ScribeMessage {
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ScribeMessageType.ANYCAST_FAILURE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

@@ -145,7 +145,7 @@ final class AnycastHandler {
     // we let it go ahead
     if (aMessage.getSource().getId().equals(endpoint.getId()) &&
         (message.getNextHopHandle() != null) &&
-        (!localHandle.equals(message.getNextHopHandle()))) {
+        !localHandle.equals(message.getNextHopHandle())) {
       logger.trace("DEBUG: Anycast message.forward(2), before returning true");
       return true;
     }
@@ -165,7 +165,7 @@ final class AnycastHandler {
     NodeHandle handle = aMessage.getNext();
 
     // make sure that the next node is alive
-    while ((handle != null) && (!endpoint.isAlive(handle))) {
+    while ((handle != null) && !endpoint.isAlive(handle)) {
       handle = aMessage.getNext();
     }
 

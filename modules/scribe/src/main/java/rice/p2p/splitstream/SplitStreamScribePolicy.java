@@ -158,6 +158,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @param content the content that came with the message
    * @return the topics to accept
    */
+  @Override
   public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
     Iterator<Topic> i = topics.iterator();
     while(i.hasNext()) {
@@ -199,8 +200,8 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
 
     /* first see if we are in the 3rd stage of algorithm for locating parent. */
     /* this occurs if we are in the third stage of locating a parent */
-    if (content != null && (content instanceof SplitStreamSubscribeContent)) {
-      int stage = ((SplitStreamSubscribeContent) content).stage();
+    if (content != null && (content instanceof SplitStreamSubscribeContent splitStreamSubscribeContent)) {
+      int stage = splitStreamSubscribeContent.stage();
       if (stage == SplitStreamSubscribeContent.STAGE_FINAL) {
         if (!children.contains(source)) {
           return false;
@@ -216,8 +217,8 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       return true;
     } else {
       /* check if non-primary stripe */
-      if ((! topic.id().equals(channel.getPrimaryStripe().getStripeId().id())) &&
-          (! scribe.isRoot(topic))) {
+      if (! topic.id().equals(channel.getPrimaryStripe().getStripeId().id()) &&
+          ! scribe.isRoot(topic)) {
         return false;
       } else {
         /* find a victim child */
@@ -253,6 +254,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @param parent Our current parent for this message's topic
    * @param children Our current children for this message's topic
    */
+  @Override
   public void directAnycast(AnycastMessage message, NodeHandle parent, Collection<NodeHandle> children) {
     /* we add parent first if it shares prefix match */
     if (parent != null) {
@@ -263,7 +265,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     }
 
     /* if it's a subscribe */
-    if (message instanceof SubscribeMessage) {
+    if (message instanceof SubscribeMessage subscribeMessage) {
 
       /* First add children which match prefix with the stripe, then those which dont.
          Introduce some randomness so that load is balanced among children. */
@@ -293,7 +295,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       NodeHandle nextHop = message.getNext();
 
       /* make sure that the next node is alive */
-      while ((nextHop != null) && (!isAlive(nextHop))) {
+      while ((nextHop != null) && !isAlive(nextHop)) {
         nextHop = message.getNext();
       }
 
@@ -309,7 +311,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
 
           if (res != null) {
             scribe.removeChild(new Topic((Id)res.elementAt(1)), (NodeHandle)res.elementAt(0));
-            scribe.addChild(message.getTopic(),((SubscribeMessage)message).getSubscriber());
+            scribe.addChild(message.getTopic(),subscribeMessage.getSubscriber());
             return;
           }
         } else {
@@ -398,7 +400,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       tp = new Topic(stripe.getStripeId().id());
       if (!channel.getPrimaryStripe().getStripeId().id().equals(stripe.getStripeId().id()) &&
           !this.scribe.isRoot(tp) &&
-          (!scribe.getChildrenOfTopic(tp).isEmpty())) {
+          !scribe.getChildrenOfTopic(tp).isEmpty()) {
         candidateStripes.add(stripe.getStripeId().id());
       }
     }
@@ -407,9 +409,9 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     if(candidateStripes.size() == 0) {
       for (Stripe stripe : stripes){
         tp = new Topic(stripe.getStripeId().id());
-        if ((! channel.getPrimaryStripe().getStripeId().id().equals(stripe.getStripeId().id())) &&
-            (!scribe.getChildrenOfTopic(tp).isEmpty()) &&
-            (! stripe.getStripeId().id().equals(stripeId))) {
+        if (! channel.getPrimaryStripe().getStripeId().id().equals(stripe.getStripeId().id()) &&
+            !scribe.getChildrenOfTopic(tp).isEmpty() &&
+            ! stripe.getStripeId().id().equals(stripeId)) {
           candidateStripes.add(stripe.getStripeId().id());
         }
       }
@@ -489,6 +491,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @param topic The topic to unsubscribe from
    * @param child The child that was added
    */
+  @Override
   public void childAdded(Topic topic, NodeHandle child) {
   }
 
@@ -499,11 +502,14 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @param topic The topic to unsubscribe from
    * @param child The child that was removed
    */
+  @Override
   public void childRemoved(Topic topic, NodeHandle child) {
   }
 
+  @Override
   public void intermediateNode(ScribeMessage message) {
   }
+  @Override
   public void recvAnycastFail(Topic topic, NodeHandle failedAtNode, ScribeContent content) {
   }
 }

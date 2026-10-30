@@ -67,10 +67,12 @@ public final class SubscribeFailedMessage extends AbstractSubscribeMessage {
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ScribeMessageType.SUBSCRIBE_FAILED.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)1); // version
 

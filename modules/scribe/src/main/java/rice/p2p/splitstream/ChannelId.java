@@ -50,19 +50,22 @@ import rice.p2p.commonapi.Id;
  */
 public record ChannelId(Id id) {
 
+  @Override
   public String toString() {
     return "[ChannelId " + id + "]";
   }
 
+  @Override
   public int hashCode() {
     return id.hashCode();
   }
 
+  @Override
   public boolean equals(Object o) {
-    if (! (o instanceof ChannelId)) {
+    if (! (o instanceof ChannelId channelId)) {
       return false;
     }
 
-    return ((ChannelId) o).id.equals(id);
+    return channelId.id.equals(id);
   }
 }

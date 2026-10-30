@@ -57,10 +57,12 @@ public record SplitStreamSubscribeContent(int stage) implements ScribeContent {
   public static final int STAGE_FINAL = -9;
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return SplitStreamContentType.SUBSCRIBE_CONTENT.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0);
     buf.writeInt(stage);

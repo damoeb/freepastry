@@ -110,7 +110,7 @@ final class Publisher {
     // not come from our parent, send an unsubscribe message
     // otherwise, we deliver the message to all clients and forward the
     // message to all children
-    if ((manager != null) && ((manager.getParent() == null) || (manager.getParent().equals(pMessage.getSource())))) {
+    if ((manager != null) && ((manager.getParent() == null) || manager.getParent().equals(pMessage.getSource()))) {
       pMessage.setSource(localHandle);
 
       Collection<ScribeMultiClient> clients = manager.getClients();

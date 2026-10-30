@@ -102,16 +102,19 @@ public final class SubscribeAckMessage extends AbstractSubscribeMessage {
    *
    * @return A String
    */
+  @Override
   public String toString() {
     if (topics.size() == 1) return "SubscribeAckMessage{"+topics.get(0)+" ID:"+getId()+"}";
     return "SubscribeAckMessage{"+topics.size()+" ID:"+getId()+"}";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ScribeMessageType.SUBSCRIBE_ACK.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)1); // version
     super.serialize(buf);

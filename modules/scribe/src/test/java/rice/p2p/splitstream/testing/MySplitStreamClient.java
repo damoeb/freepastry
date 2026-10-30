@@ -163,6 +163,7 @@ public class MySplitStreamClient implements SplitStreamClient {
     System.out.println("MSSC.joinFailed("+s+"):"+n.getEnvironment().getTimeSource().currentTimeMillis());
   }
 
+  @Override
   public void deliver(Stripe s, byte[] data) {
     byte[] theInt = new byte[4];
     System.arraycopy(data, 0, theInt, 0, 4);
@@ -172,7 +173,7 @@ public class MySplitStreamClient implements SplitStreamClient {
     System.arraycopy(data, 4, material, 0, 20);
     Id publisher = rice.pastry.Id.build(material);
 
-    Id stripeId = (rice.pastry.Id) (s.getStripeId().id());
+    Id stripeId = (rice.pastry.Id) s.getStripeId().id();
     String stripeStr = stripeId.toString().substring(3, 4);
     System.out.println("deliver("+stripeStr+","+publisher+","+seq+"):"+n.getEnvironment().getTimeSource().currentTimeMillis()+" from "+s.getParent());
   }
@@ -182,6 +183,7 @@ public class MySplitStreamClient implements SplitStreamClient {
    */
   public void startPublishTask() {
     publishTask = new TimerTask() {
+      @Override
       public void run() {
         publishNext();
       }

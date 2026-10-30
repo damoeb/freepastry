@@ -84,6 +84,7 @@ public sealed abstract class ScribeMessage implements RawMessage, ScribeProtocol
    *
    * @return This message's priority
    */
+  @Override
   public int getPriority() {
     return MEDIUM_HIGH_PRIORITY;
   }
@@ -125,6 +126,7 @@ public sealed abstract class ScribeMessage implements RawMessage, ScribeProtocol
     topic = new Topic(buf, endpoint);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     boolean hasSource = (source != null);
     buf.writeBoolean(hasSource);

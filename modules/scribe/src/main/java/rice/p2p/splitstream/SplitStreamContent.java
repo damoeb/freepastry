@@ -50,10 +50,12 @@ import rice.p2p.scribe.ScribeContent;
 public record SplitStreamContent(byte[] data) implements ScribeContent {
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return SplitStreamContentType.CONTENT.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0);
     buf.writeInt(data.length);

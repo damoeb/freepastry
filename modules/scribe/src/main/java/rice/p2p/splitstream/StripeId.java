@@ -50,19 +50,22 @@ import rice.p2p.commonapi.Id;
  */
 public record StripeId(Id id) {
 
+  @Override
   public String toString() {
     return "[StripeId " + id + "]";
   }
 
+  @Override
   public int hashCode() {
     return id.hashCode();
   }
 
+  @Override
   public boolean equals(Object o) {
-    if (! (o instanceof StripeId)) {
+    if (! (o instanceof StripeId stripeId)) {
       return false;
     }
 
-    return ((StripeId) o).id.equals(id);
+    return stripeId.id.equals(id);
   }
 }

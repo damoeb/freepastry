@@ -99,6 +99,7 @@ public class SplitStreamRegrTest extends CommonAPITest {
    * @param node The newly created node
    * @param num The number of this node
    */
+  @Override
   protected void processNode(int num, Node node) {
     splitstreams[num] = new SplitStreamImpl(node, INSTANCE);
     ssclients[num] = new SplitStreamTestClient(node, splitstreams[num]);
@@ -108,6 +109,7 @@ public class SplitStreamRegrTest extends CommonAPITest {
    * Method which should run the test - this is called once all of the nodes
    * have been created and are ready.
    */
+  @Override
   protected void runTest() {
     if (NUM_NODES < 2) {
       System.out
@@ -366,6 +368,7 @@ public class SplitStreamRegrTest extends CommonAPITest {
       log("Join Failed on " + s);
     }
 
+    @Override
     public void deliver(Stripe s, byte[] data) {
       log("Data recieved on " + s);
       numMesgsReceived++;

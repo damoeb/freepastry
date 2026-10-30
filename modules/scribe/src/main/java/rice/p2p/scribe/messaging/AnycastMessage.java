@@ -157,7 +157,7 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
       return;
     }
 
-    if ((!toVisit.contains(handle)) && (!visited.contains(handle))) {
+    if (!toVisit.contains(handle) && !visited.contains(handle)) {
       toVisit.addFirst(handle);
     }
   }
@@ -172,11 +172,12 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
       return;
     }
 
-    if ((!toVisit.contains(handle)) && (!visited.contains(handle))) {
+    if (!toVisit.contains(handle) && !visited.contains(handle)) {
       toVisit.addLast(handle);
     }
   }
 
+  @Override
   public String toString() {
     return "Anycast["+getTopic()+" "+content+"]";
   }
@@ -212,10 +213,12 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
   }
 
   /** *************** Raw Serialization ************************************** */
+  @Override
   public short getType() {
     return ScribeMessageType.ANYCAST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     // no super.serialize(buf): the version byte comes first, and a deserializing constructor's super(...) call can't read it
     buf.writeByte((byte)1); // version

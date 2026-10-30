@@ -165,6 +165,7 @@ public class Stripe implements ScribeMultiClient {
    * @param content The content which was anycasted
    * @return Whether or not the anycast should continue
    */
+  @Override
   public boolean anycast(Topic topic, ScribeContent content) {
       return false;
   }
@@ -175,10 +176,11 @@ public class Stripe implements ScribeMultiClient {
    * @param topic The topic the message was published to
    * @param content The content which was published
    */
+  @Override
   public void deliver(Topic topic, ScribeContent content) {
     if (this.topic.equals(topic)) {
-      if (content instanceof SplitStreamContent) {
-        byte[] data = ((SplitStreamContent) content).data();
+      if (content instanceof SplitStreamContent splitStreamContent) {
+        byte[] data = splitStreamContent.data();
 
         SplitStreamClient[] clients = (SplitStreamClient[]) this.clients.toArray(new SplitStreamClient[0]);
 
@@ -199,6 +201,7 @@ public class Stripe implements ScribeMultiClient {
    * @param topic The topic to unsubscribe from
    * @param child The child that was added
    */
+  @Override
   public void childAdded(Topic topic, NodeHandle child) {
     logger.debug("childAdded({},{})", topic, child);
   }
@@ -209,6 +212,7 @@ public class Stripe implements ScribeMultiClient {
    * @param topic The topic to unsubscribe from
    * @param child The child that was removed
    */
+  @Override
   public void childRemoved(Topic topic, NodeHandle child) {
     logger.debug("childRemoved({},{})", topic, child);
   }
@@ -219,6 +223,7 @@ public class Stripe implements ScribeMultiClient {
    *
    * @param topics The topics that failed
    */
+  @Override
   public void subscribeFailed(Collection<Topic> topics) {
     for (Topic topic : topics) {
       retrySubscribe(topic);
@@ -230,6 +235,7 @@ public class Stripe implements ScribeMultiClient {
    *
    * @param topics The topics that succeeded
    */
+  @Override
   public void subscribeSuccess(Collection<Topic> topics) {
     for (Topic topic : topics) {
       failed.remove(topic);
@@ -258,6 +264,7 @@ public class Stripe implements ScribeMultiClient {
     } else {
       // TODO: retry with a random exponential backoff instead of a fixed delay
       TimerTask resubscribeTask = new TimerTask() {
+        @Override
         public void run() {
           if (getParent() == null) {
             scribe.subscribe(topic, Stripe.this, (ScribeContent) null, null);
@@ -274,6 +281,7 @@ public class Stripe implements ScribeMultiClient {
    *
    * @return A String representing this stripe
    */
+  @Override
   public String toString() {
     return "Stripe " + stripeId;
   }
