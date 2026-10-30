@@ -299,15 +299,11 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
           }
         } else {
           logger.debug("Retransmitting investigation requests for {} at {}", aii.getTarget(), aii.getSince());
-          sendInvestigation(aii.getTarget());
+          sendInvestigation(aii);
           aii.extendTimeout(INVESTIGATION_INTERVAL_MILLIS);
         }
       }
     }
-  }
-
-  private void sendInvestigation(Handle target) {
-
   }
 
 
