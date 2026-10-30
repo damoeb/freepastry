@@ -82,9 +82,6 @@ import rice.pastry.transport.SocketAdapter;
  */
 public class ProfileFileTest {
 
-  /**
-   * @param args
-   */
   public static void main(String[] args) throws Exception {
     // globals
     Path f = Path.of("delme.txt");
@@ -118,21 +115,25 @@ public class ProfileFileTest {
 
     etl1.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
 
+      @Override
       public void messageReceived(InetSocketAddress i, ByteBuffer m,
           Map<String, Object> options) throws IOException {
 
       }
 
+      @Override
       public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
         // we got a socket, convert it to an AppSocket, then a FileTransfer
         logger.info("incomingSocket({})", s);
         final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
         FileTransfer ft = new FileTransferImpl(sock,new FileTransferCallback() {
 
+          @Override
           public void messageReceived(ByteBuffer bb) {
 
           }
 
+          @Override
           public void fileReceived(Path f, ByteBuffer metadata) {
             try {
               String name = new SimpleInputBuffer(metadata).readUTF();
@@ -142,6 +143,7 @@ public class ProfileFileTest {
             }
           }
 
+          @Override
           public void receiveException(Exception ioe) {
             logger.warn("Receiver FTC.receiveException()", ioe);
           }
@@ -153,6 +155,7 @@ public class ProfileFileTest {
         ft.addListener(new FileTransferListener() {
           Map<FileReceipt, Long> startTimes = new HashMap<FileReceipt, Long>();
 
+          @Override
           public void fileTransferred(FileReceipt receipt,
               long bytesTransferred, long total, boolean incoming) {
             synchronized(startTimes) {
@@ -175,6 +178,7 @@ public class ProfileFileTest {
             }
           }
 
+          @Override
           public void msgTransferred(BBReceipt receipt, int bytesTransferred,
               int total, boolean incoming) {
             if (bytesTransferred == total) {
@@ -188,10 +192,12 @@ public class ProfileFileTest {
             }
           }
 
+          @Override
           public void transferCancelled(Receipt receipt, boolean incoming) {
 
           }
 
+          @Override
           public void transferFailed(Receipt receipt, boolean incoming) {
 
           }
@@ -216,6 +222,7 @@ public class ProfileFileTest {
 
     etl2.openSocket(addr1, new SocketCallback<InetSocketAddress>() {
 
+      @Override
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> s) {
         logger.info("opened Socket {}", s);
@@ -224,14 +231,17 @@ public class ProfileFileTest {
         final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
         FileTransfer ft = new FileTransferImpl(sock, new FileTransferCallback() {
 
+          @Override
           public void messageReceived(ByteBuffer bb) {
 
           }
 
+          @Override
           public void fileReceived(Path f, ByteBuffer metadata) {
 
           }
 
+          @Override
           public void receiveException(Exception ioe) {
             logger.warn("Sender FTC.receiveException()", ioe);
           }
@@ -243,10 +253,12 @@ public class ProfileFileTest {
           sob.writeUTF("foo");
           ft.sendFile(Path.of("delme.txt"), sob.getByteBuffer(), (byte)0, new Continuation<FileReceipt, Exception>() {
 
+            @Override
             public void receiveResult(FileReceipt result) {
               System.out.println("Send success "+result);
             }
 
+            @Override
             public void receiveException(Exception exception) {
               System.out.println("Send Failed");
             }
@@ -258,6 +270,7 @@ public class ProfileFileTest {
 
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         logger.warn("receiveException({})", s, ex);

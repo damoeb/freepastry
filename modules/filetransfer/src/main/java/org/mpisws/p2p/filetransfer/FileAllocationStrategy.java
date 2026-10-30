@@ -51,8 +51,6 @@ public interface FileAllocationStrategy {
    * @param metadata application specific, often the file name
    * @param offset the first byte intended to transfer
    * @param length the number of bytes intended to transfer
-   * @return
-   * @throws IOException
    */
   public Path getFile(ByteBuffer metadata, long offset, long length) throws IOException;
 

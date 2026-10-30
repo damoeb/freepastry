@@ -71,9 +71,6 @@ import rice.pastry.transport.SocketAdapter;
 
 public class EncryptedFileTest {
 
-  /**
-   * @param args
-   */
   public static void main(String[] args) throws Exception {
     // globals
     final Environment env = new Environment();
@@ -94,21 +91,25 @@ public class EncryptedFileTest {
 
     etl1.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
 
+      @Override
       public void messageReceived(InetSocketAddress i, ByteBuffer m,
           Map<String, Object> options) throws IOException {
 
       }
 
+      @Override
       public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
         // we got a socket, convert it to an AppSocket, then a FileTransfer
         logger.info("incomingSocket({})", s);
         final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
         FileTransfer ft = new FileTransferImpl(sock,new FileTransferCallback() {
 
+          @Override
           public void messageReceived(ByteBuffer bb) {
 
           }
 
+          @Override
           public void fileReceived(Path f, ByteBuffer metadata) {
             try {
               String name = new SimpleInputBuffer(metadata).readUTF();
@@ -118,6 +119,7 @@ public class EncryptedFileTest {
             }
           }
 
+          @Override
           public void receiveException(Exception ioe) {
             logger.warn("Receiver FTC.receiveException()", ioe);
           }
@@ -153,6 +155,7 @@ public class EncryptedFileTest {
 
     etl2.openSocket(addr1, new SocketCallback<InetSocketAddress>() {
 
+      @Override
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> s) {
         logger.info("opened Socket {}", s);
@@ -161,14 +164,17 @@ public class EncryptedFileTest {
         final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
         FileTransfer ft = new FileTransferImpl(sock, new FileTransferCallback() {
 
+          @Override
           public void messageReceived(ByteBuffer bb) {
 
           }
 
+          @Override
           public void fileReceived(Path f, ByteBuffer metadata) {
 
           }
 
+          @Override
           public void receiveException(Exception ioe) {
             logger.warn("Sender FTC.receiveException()", ioe);
           }
@@ -190,10 +196,12 @@ public class EncryptedFileTest {
           sob.writeUTF("foo");
           ft.sendFile(Path.of("delme.txt"), sob.getByteBuffer(), (byte)0, new Continuation<FileReceipt, Exception>() {
 
+            @Override
             public void receiveResult(FileReceipt result) {
               System.out.println("Send success "+result);
             }
 
+            @Override
             public void receiveException(Exception exception) {
               System.out.println("Send Failed");
             }
@@ -205,6 +213,7 @@ public class EncryptedFileTest {
 
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         logger.warn("receiveException({})", s, ex);

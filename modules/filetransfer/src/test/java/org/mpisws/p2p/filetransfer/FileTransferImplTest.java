@@ -43,25 +43,33 @@ class FileTransferImplTest {
   static class RecordingProcessor implements Processor {
     final List<WorkRequest<?>> blockingIO = new ArrayList<WorkRequest<?>>();
 
+    @Override
     public <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, SelectorManager selector, TimeSource ts, LogManager log) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public Cancellable processBlockingIO(WorkRequest<?> request) {
       blockingIO.add(request);
       return () -> true;
     }
 
+    @Override
     public void destroy() {
     }
   }
 
   /** A socket that accepts registrations and does no IO. */
   static class IdleSocket implements AppSocket {
+    @Override
     public long read(ByteBuffer dst) { return 0; }
+    @Override
     public long write(ByteBuffer src) { return 0; }
+    @Override
     public void register(boolean wantToRead, boolean wantToWrite, int timeout, AppSocketReceiver receiver) { }
+    @Override
     public void shutdownOutput() { }
+    @Override
     public void close() { }
   }
 

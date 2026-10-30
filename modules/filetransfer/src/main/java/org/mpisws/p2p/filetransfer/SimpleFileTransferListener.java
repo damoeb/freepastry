@@ -49,6 +49,7 @@ public class SimpleFileTransferListener implements FileTransferListener {
     this.prefix = prefix;
   }
 
+  @Override
   public void fileTransferred(FileReceipt receipt,
       long bytesTransferred, long total, boolean incoming) {
     String s;
@@ -61,6 +62,7 @@ public class SimpleFileTransferListener implements FileTransferListener {
     System.out.println(prefix+s+percent+"% of "+receipt);
   }
 
+  @Override
   public void msgTransferred(BBReceipt receipt, int bytesTransferred,
       int total, boolean incoming) {
     String s;
@@ -73,6 +75,7 @@ public class SimpleFileTransferListener implements FileTransferListener {
     System.out.println(prefix+s+percent+"% of "+receipt);
   }
 
+  @Override
   public void transferCancelled(Receipt receipt, boolean incoming) {
     String s;
     if (incoming) {
@@ -83,6 +86,7 @@ public class SimpleFileTransferListener implements FileTransferListener {
     System.out.println(prefix+": Cancelled "+s+" of "+receipt);
   }
 
+  @Override
   public void transferFailed(Receipt receipt, boolean incoming) {
     String s;
     if (incoming) {

@@ -42,14 +42,12 @@ public interface Receipt extends Cancellable {
   /**
    * Unique on a simplex connection.
    * Also used to disambiguate the priority of 2 items of the same priority
-   * @return
    */
   public int getUID();
   public long getSize();
 
   /**
    * Unknown on receiver.
-   * @return
    */
   public byte getPriority();
 }

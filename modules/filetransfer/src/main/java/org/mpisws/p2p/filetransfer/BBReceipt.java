@@ -39,7 +39,6 @@ package org.mpisws.p2p.filetransfer;
 public interface BBReceipt extends Receipt {
   /**
    * Do not write to these!
-   * @return
    */
   byte[] getBytes();
 }

@@ -66,12 +66,14 @@ public class TempFileAllocationStrategy implements FileAllocationStrategy {
     this.dir = directory;
   }
 
+  @Override
   public synchronized Path getFile(ByteBuffer metadata, long offset, long length) throws IOException {
     // without a directory, File.createTempFile used java.io.tmpdir, as Files.createTempFile does
     Path temp = (dir == null) ? Files.createTempFile(prefix, suffix) : Files.createTempFile(dir, prefix, suffix);
     return temp;
   }
 
+  @Override
   public void fileCancelled(ByteBuffer metadata, Path f, long offset,
       long downloadedLength, long requestedLength, Exception reason) {
     // as with File.delete, a failure is ignored
