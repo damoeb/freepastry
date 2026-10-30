@@ -49,8 +49,8 @@ public class BlockingIOThread extends Thread {
 
   volatile boolean running = true;
 
-  public BlockingIOThread(WorkQueue workQ) {
-    super("Persistence Worker Thread");
+  public BlockingIOThread(String name, WorkQueue workQ) {
+    super(name);
     this.workQ = workQ;
   }
 

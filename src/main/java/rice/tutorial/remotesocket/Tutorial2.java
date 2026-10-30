@@ -146,7 +146,7 @@ public class Tutorial2 {
           } catch (IOException ioe) {
             ioe.printStackTrace();
           }
-        }).start();
+        }, "Tutorial2 Blocking Writer").start();
       }
 
       /**

@@ -68,11 +68,11 @@ public class SimpleProcessor implements Processor {
 
   public SimpleProcessor(String name) {
     QUEUE = new PriorityBlockingQueue<ProcessingRequest<?, ?>>();
-    THREAD = new ProcessingThread(name + ".ProcessingThread", QUEUE);
+    THREAD = new ProcessingThread("FreePastry Processing -- " + name, QUEUE);
     THREAD.start();
     THREAD.setPriority(Thread.MIN_PRIORITY);
     workQueue = new WorkQueue();
-    bioThread = new BlockingIOThread(workQueue);
+    bioThread = new BlockingIOThread("FreePastry Blocking IO -- " + name, workQueue);
     bioThread.start();
   }
 

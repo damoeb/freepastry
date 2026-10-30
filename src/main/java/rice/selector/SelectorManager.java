@@ -122,7 +122,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    */
   public SelectorManager(String instance,
       TimeSource timeSource, LogManager log, RandomSource random) {
-    super(instance == null ? "Selector Thread" : "Selector Thread -- "
+    super(instance == null ? "FreePastry Selector" : "FreePastry Selector -- "
         + instance);
     this.random = random;
     if (this.random == null) this.random = new SimpleRandomSource(log);
