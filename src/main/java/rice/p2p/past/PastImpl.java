@@ -1077,25 +1077,13 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         final LookupMessage lmsg = (LookupMessage) msg;
         lookups++;
 
-        // if the data is here, we send the reply, as well as push a cached copy
-        // back to the previous node
+        // if the data is here, we send the reply; the requester caches it (see lookup())
         storage.getObject(lmsg.getId(), new StandardContinuation<Serializable, Object, Exception>(getResponseContinuation(lmsg)) {
           public void receiveResult(Serializable o) {
             logger.debug("Received object {} for id {}", o, lmsg.getId());
 
             // send result back
             parent.receiveResult(o);
-
-            // if possible, pushed copy into previous hop cache
-            if ((lmsg.getPreviousNodeHandle() != null) &&
-                (o != null) &&
-                (! ((PastContent) o).isMutable())) {
-              NodeHandle handle = lmsg.getPreviousNodeHandle();
-              logger.atDebug().log(() -> "Pushing cached copy of " + ((PastContent) o).getId() + " to " + handle);
-
-              CacheMessage cmsg = new CacheMessage(getUID(), (PastContent) o, getLocalNodeHandle(), handle.getId());
-              // TODO: cmsg is never sent, so the copy is not actually pushed (sending it was disabled)
-            }
           }
         });
       } else if (msg instanceof LookupHandlesMessage) {
