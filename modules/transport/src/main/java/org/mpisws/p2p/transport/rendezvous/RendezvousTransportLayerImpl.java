@@ -234,7 +234,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       }, options);
       return handle;
     } else {
-      if (options.containsKey(OPTION_USE_PILOT)) {
+      if (options != null && options.containsKey(OPTION_USE_PILOT)) {
         HighIdentifier middleMan = (HighIdentifier)options.get(OPTION_USE_PILOT);
         // this is normally used when a node is joining, wo you can't route to
         logger.trace("Opening socket to {} OPTION_USE_PILOT->{}", contact, middleMan);
@@ -894,7 +894,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   @Override
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
     logger.debug("messageReceived({},{},{})", i, m, options);
-    if (options.containsKey(FROM_OVERLAY) && ((Boolean)options.get(FROM_OVERLAY)) == true) {
+    if (options != null && options.containsKey(FROM_OVERLAY) && ((Boolean)options.get(FROM_OVERLAY)) == true) {
       // do nothing
     } else {
       // this will be the ephemeral UDP port

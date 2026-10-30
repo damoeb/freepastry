@@ -669,7 +669,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         new MessageRequestHandleImpl<LowerIdentifier, ByteBuffer>(i, m, options);
 
       byte[] msgWithHeader;
-      if (options.containsKey(NODE_HANDLE_FROM_INDEX)) {
+      if (options != null && options.containsKey(NODE_HANDLE_FROM_INDEX)) {
         // don't include an id
         msgWithHeader = new byte[1+localIdentifier.length+m.remaining()];
         msgWithHeader[0] = NO_ID;
