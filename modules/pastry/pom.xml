@@ -17,11 +17,6 @@
     <name>FreePastry Pastry</name>
     <description>The Pastry overlay: node ids, routing, leaf sets, the socket and direct (simulated) node factories</description>
 
-    <properties>
-        <!-- TODO phase 2 (D7): fix this module's Error Prone warnings, then drop this override -->
-        <errorprone.module.flags>-XepDisableAllWarnings</errorprone.module.flags>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
