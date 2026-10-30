@@ -1057,6 +1057,9 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           if (storageF instanceof PersistentStorage)
             statistics.fragmentStorageSize = ((PersistentStorage)storageF).getTotalSize();
 
+          if (trashStorage != null)
+            statistics.numObjectsInTrash = trashStorage.scan().numElements();
+
           Storage storageT = (trashStorage == null) ? null : trashStorage.getStorage();
           if (storageT instanceof PersistentStorage)
             statistics.trashStorageSize = ((PersistentStorage)storageT).getTotalSize();
