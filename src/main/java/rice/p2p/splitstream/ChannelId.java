@@ -50,15 +50,6 @@ import rice.p2p.commonapi.Id;
  */
 public record ChannelId(Id id) {
 
-  /**
-   * Constructor that takes in a String and makes a ChannelId
-   *
-   * @param name The name to create this channelId from
-   */
-  public ChannelId(String name) {
-    this((Id) null);
-  }
-
   public String toString() {
     return "[ChannelId " + id + "]";
   }

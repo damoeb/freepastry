@@ -59,10 +59,6 @@ public interface Scribe extends BaseScribe {
 
   public void anycast(Topic topic, ScribeContent content);
 
-  public void anycast(Topic topic, ScribeContent content, NodeHandle hint);
-
   // ********************* Application management functions **************
   public void setContentDeserializer(ScribeContentDeserializer deserializer);
-
-  public ScribeContentDeserializer getContentDeserializer();
 }

@@ -51,15 +51,6 @@ import rice.p2p.commonapi.NodeHandle;
  *
  */
 public interface BaseScribe extends Destructable {
-  // ***************** Membership functions messages **************
-  /**
-   * Unsubscribes the given client from the provided topic.
-   *
-   * @param topic The topic to unsubscribe from
-   * @param client The client to unsubscribe
-   */
-  public void unsubscribe(Topic topic, ScribeMultiClient client);
-  public void unsubscribe(Collection<Topic> topicsToUnsubscribe, ScribeMultiClient client);
 
   /**
    * Adds a child to the given topic
@@ -87,14 +78,6 @@ public interface BaseScribe extends Destructable {
   public boolean isRoot(Topic topic);
 
   /**
-   * Returns the root of the topic, if we can determine it.
-   *
-   * @param topic
-   * @return null if beyond our knowledge range
-   */
-  public NodeHandle getRoot(Topic topic);
-
-  /**
    * Returns the list of children for a given topic
    *
    * @param topic The topic to return the children of
@@ -110,26 +93,7 @@ public interface BaseScribe extends Destructable {
    */
   public NodeHandle getParent(Topic topic);
 
-  /**
-   * Returns the list of topics the given client is subscribed
-   * to.
-   *
-   * @param client The client in question
-   * @return The list of topics
-   */
-  public Collection<Topic> getTopicsByClient(ScribeMultiClient client);
-
-  public int numChildren(Topic topic);
-
   Collection<ScribeMultiClient> getClientsByTopic(Topic topic);
-
-  /**
-   *  Returns true if there is a TopicManager object corresponding to this topic
-   */
-  public boolean containsTopic(Topic topic);
-
-  public boolean containsChild(Topic topic, NodeHandle child);
-
 
 
 

@@ -78,8 +78,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final Endpoint endpoint;
   private final Past objectStore;
   private final String instance;
-  private final IdFactory factory;
-  private final Node node;
 
   private final char tiFlush = 1;
   private final char tiMonitor = 2;
@@ -104,13 +102,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final Logger logger;
 
   private PastContentDeserializer contentDeserializer;
-  private PastContentHandleDeserializer contentHandleDeserializer;
 
   private AggregateFactory aggregateFactory;
-
-  public AggregationImpl(Node node, Past aggregateStore, Past objectStore, StorageManager waitingList, String configFileName, IdFactory factory, String instance) throws IOException {
-    this(node, aggregateStore, objectStore, waitingList, configFileName, factory, instance, null, null);
-  }
 
   public AggregationImpl(Node node, Past aggregateStore, Past objectStore, StorageManager waitingList, String configFileName, IdFactory factory, String instance, AggregationPolicy policy, AggregateFactory aggregateFactory) throws IOException {
     this.environment = node.getEnvironment();
@@ -133,7 +126,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.instance = instance;
 
     this.contentDeserializer = PastContentDeserializer.NONE;
-    this.contentHandleDeserializer = PastContentHandleDeserializer.CONTENT_HASH;
 
     this.aggregateStore = aggregateStore;
     this.aggregateStore.setContentDeserializer((buf, endpoint, contentType) -> {
@@ -163,7 +155,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     });
 
     this.objectStore = objectStore;
-    this.node = node;
     this.timers = new Hashtable<Integer, CancellableTask>();
     this.aggregateList = new AggregateList(configFileName, getLocalNodeHandle().getId().toString(), factory, config.isAggregateLogEnabled(), instance, environment);
     this.storer = new AggregateStorer(endpoint, factory, aggregateStore, aggregateList, environment.getTimeSource(), logger);
@@ -174,7 +165,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       this.policy = policy;
     }
 
-    this.factory = factory;
     this.consolidator = new AggregateConsolidator(aggregateStore, aggregateList, this.aggregateFactory, storer, config, environment.getTimeSource(), environment.getRandomSource(), logger);
     this.retriever = new ObjectRetriever(objectStore, aggregateStore, aggregateList, endpoint, factory, environment.getTimeSource(), logger);
     this.refresher = new ObjectRefresher(objectStore, waitingList, aggregateList, this.policy, config, logger);
@@ -227,19 +217,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
      */
     CancellableTask timer = endpoint.scheduleMessage(new AggregationTimeoutMessage(timeoutID, getLocalNodeHandle()), timeoutMsec);
     timers.put(Integer.valueOf(timeoutID), timer);
-  }
-
-  /**
-   * Cancel a timer event that has not yet occurred
-   *
-   * @param timeoutID Identifier of the timer event to be cancelled
-   */
-  private void removeTimer(int timeoutID) {
-    CancellableTask timer = (CancellableTask) timers.remove(Integer.valueOf(timeoutID));
-
-    if (timer != null) {
-      timer.cancel();
-    }
   }
 
   private void panic(String s) throws Error {
@@ -327,10 +304,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
   public void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
     refresher.refresh(ids, versions, expirations, command);
-  }
-
-  public Id getHandle() {
-    return aggregateList.getRoot();
   }
 
   public void setHandle(Id handle, Continuation<? super Boolean, Exception> command) {
@@ -441,16 +414,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       objectStore.fetch(handle, command);
   }
 
-  public void flush(Id id, Continuation<? super Boolean, Exception> command) {
-    flusher.flush(id, command);
-  }
-
   public void flush(final Continuation<? super Boolean, Exception> command) {
     flusher.formAggregates(command);
-  }
-
-  public void rollback(Id id, Continuation<? super PastContent, Exception> command) {
-    retriever.rollback(id, command);
   }
 
   public void reset(Continuation<? super Boolean, Exception> command) {
@@ -494,60 +459,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
   }
 
-  public void setFlushInterval(int flushIntervalSec) {
-    config.setFlushInterval(flushIntervalSec * AggregationConfig.SECONDS);
-  }
-
-  public void setMaxAggregateSize(int maxAggregateSize) {
-    config.setMaxAggregateSize(maxAggregateSize);
-  }
-
-  public void setMaxObjectsInAggregate(int maxObjectsInAggregate) {
-    config.setMaxObjectsInAggregate(maxObjectsInAggregate);
-  }
-
-  public void setRenewThreshold(int expirationRenewThresholdHrs) {
-    config.setExpirationRenewThreshold(expirationRenewThresholdHrs * AggregationConfig.HOURS);
-  }
-
-  public void setConsolidationInterval(long consolidationIntervalSec) {
-    config.setConsolidationInterval(consolidationIntervalSec * AggregationConfig.SECONDS);
-  }
-
-  public void setConsolidationThreshold(long consolidationThresholdSec) {
-    config.setConsolidationThreshold(consolidationThresholdSec * AggregationConfig.SECONDS);
-  }
-
-  public void setConsolidationMinObjectsPerAggregate(int minObjectsInAggregateArg) {
-    config.setConsolidationMinObjectsInAggregate(minObjectsInAggregateArg);
-  }
-
-  public void setConsolidationMinUtilization(double minUtilization) {
-    config.setConsolidationMinComponentsAlive(minUtilization);
-  }
-
-  public Past getAggregateStore() {
-    return aggregateStore;
-  }
-
-  public Past getObjectStore() {
-    return objectStore;
-  }
-
   public int getNumObjectsWaiting() {
     return waitingList.scan().numElements();
   }
 
   public AggregationStatistics getStatistics() {
     return stats;
-  }
-
-  public String getInstance() {
-    return instance;
-  }
-
-  public Environment getEnvironment() {
-    return environment;
   }
 
   public void setContentDeserializer(PastContentDeserializer deserializer) {
@@ -564,7 +481,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {
-    contentHandleDeserializer = deserializer;
     objectStore.setContentHandleDeserializer(deserializer);
   }
 }

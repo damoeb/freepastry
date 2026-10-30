@@ -58,11 +58,6 @@ public abstract class GlacierContinuation {
       receiveResult(result);
   }
 
-  public void syncReceiveException(Exception exception) {
-    if (!terminated)
-      receiveException(exception);
-  }
-
   public void syncTimeoutExpired() {
     if (!terminated)
       timeoutExpired();

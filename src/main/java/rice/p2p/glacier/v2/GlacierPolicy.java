@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import rice.Continuation;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.VersionKey;
@@ -54,8 +53,5 @@ public interface GlacierPolicy {
   public Manifest updateManifest(VersionKey key, Manifest manifest, long newExpiration);
 
   public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer pcd);
-
-  @SuppressWarnings("unchecked")
-  public void prefetchLocalObject(VersionKey key, Continuation<? super PastContent, Exception> command);
 
 }

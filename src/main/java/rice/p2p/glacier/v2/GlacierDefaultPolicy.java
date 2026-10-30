@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.glacier.ErasureCodec;
@@ -54,13 +53,11 @@ import rice.p2p.util.HashUtils;
 public class GlacierDefaultPolicy implements GlacierPolicy {
 
   private final ErasureCodec codec;
-  private final String instance;
   private final Environment environment;
   private final Logger logger;
 
   public GlacierDefaultPolicy(ErasureCodec codec, String instance, Environment env) {
     this.codec = codec;
-    this.instance = instance;
     this.environment = env;
     logger = environment.getLogManager().getLogger(GlacierDefaultPolicy.class, instance);
   }
@@ -74,11 +71,6 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
 
   protected void signManifest(Manifest manifest, VersionKey key) {
     manifest.setSignature(key.toByteArray());
-  }
-
-  @SuppressWarnings("unchecked")
-  public void prefetchLocalObject(VersionKey key, Continuation<? super PastContent, Exception> command) {
-    command.receiveResult(null);
   }
 
   public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer pcd) {

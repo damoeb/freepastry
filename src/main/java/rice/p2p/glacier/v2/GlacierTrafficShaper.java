@@ -122,11 +122,6 @@ final class GlacierTrafficShaper {
     this.rateLimitedRequestsPerSecond = rps;
   }
 
-  void setBandwidthLimit(long bytesPerSecond, long maxBurst) {
-    this.bucketTokensPerSecond = bytesPerSecond;
-    this.bucketMaxBurstSize = maxBurst;
-  }
-
   /**
    * Takes the size of an incoming data message out of the token bucket.
    */
@@ -175,8 +170,6 @@ final class GlacierTrafficShaper {
     statistics.setBucketMin(bucketMin);
     statistics.setBucketMax(bucketMax);
     statistics.setBucketConsumed(bucketConsumed);
-    statistics.setBucketTokensPerSecond(bucketTokensPerSecond);
-    statistics.setBucketMaxBurstSize(bucketMaxBurstSize);
     bucketMin = tokenBucket;
     bucketMax = tokenBucket;
     bucketConsumed = 0;

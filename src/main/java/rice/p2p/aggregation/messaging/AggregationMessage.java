@@ -48,9 +48,6 @@ public sealed abstract class AggregationMessage implements Message permits Aggre
   // the source Id of this message
   private final NodeHandle source;
 
-  // the destination of this message
-  private final Id dest;
-
   /**
    * Constructor which takes a unique integer Id
    *
@@ -61,7 +58,6 @@ public sealed abstract class AggregationMessage implements Message permits Aggre
   protected AggregationMessage(int id, NodeHandle source, Id dest) {
     this.id = id;
     this.source = source;
-    this.dest = dest;
   }
 
   /**
@@ -95,14 +91,5 @@ public sealed abstract class AggregationMessage implements Message permits Aggre
    */
   public NodeHandle getSource() {
     return source;
-  }
-
-  /**
-   * Method which returns this messages' destination address
-   *
-   * @return The dest of this message
-   */
-  public Id getDestination() {
-    return dest;
   }
 }

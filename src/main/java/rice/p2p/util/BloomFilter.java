@@ -75,11 +75,6 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 public class BloomFilter {
 
   /**
-   * The length of the random byte arrays which are generated
-   */
-  public static final int PARAMETER_LENGTH = 4;
-
-  /**
    * The parameters to the hash functions for this bloom filter
    */
   private final int[] parameters;
@@ -164,25 +159,6 @@ public class BloomFilter {
     System.arraycopy(array, 0, tmp, 4, array.length);
 
     return MathUtils.simpleHash(tmp);
-  }
-
-  /**
-   * Method which returns what the internal bit set looks like as a string
-   *
-   * @return The internal bit set as a string
-   */
-  public String getBitSet() {
-    StringBuilder buffer = new StringBuilder();
-    buffer.append("[BloomFilter ");
-    for (int i=0; i<length; i++)
-      if (set.get(i))
-        buffer.append("1");
-      else
-        buffer.append("0");
-
-    buffer.append("]");
-
-    return buffer.toString();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

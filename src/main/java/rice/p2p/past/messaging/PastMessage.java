@@ -154,15 +154,6 @@ public sealed abstract class PastMessage implements RawMessage
    */
   public abstract void returnResponse(Continuation<Object, Exception> c, Environment env, String instance);
 
-  /**
-   * Method which is designed to be overridden by subclasses if they need
-   * to keep track of where they've been.
-   *
-   * @param handle The current local handle
-   */
-  public void addHop(NodeHandle handle) {
-  }
-
   public PastMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     id = buf.readInt();
     dest = endpoint.readId(buf, buf.readShort());

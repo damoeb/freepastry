@@ -45,7 +45,6 @@ import rice.p2p.commonapi.Endpoint;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
-import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
  * Erasure code over GF(2^10) that encodes an object into <code>numFragments</code> fragments, any
@@ -83,46 +82,6 @@ public class ErasureCodec {
     numSurvivors = _numSurvivors;
 
   }
-
-  public void dump(byte[] data) {
-    String hex = "0123456789ABCDEF";
-    String s = "";
-    for (int i=0; i<data.length; i++) {
-      int d = data[i];
-      if (d<0)
-        d+= 256;
-      int hi = (d>>4);
-      int lo = (d&15);
-
-      s+=hex.charAt(hi)+""+hex.charAt(lo);
-      if (((i%16)==15) || (i==(data.length-1)))
-        s+="\n";
-      else
-        s+=" ";
-    }
-    logger.info(s);
-  }
-  /**
-   * Serializes the object.
-   *
-   * @param obj
-   * @param generateFragment
-   * @return
-   */
-  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
-    logger.trace("Serialize object: {}", obj);
-
-    try {
-      SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      sob.writeShort(obj.getType());
-      obj.serialize(sob);
-      return encode(sob.getBytes(), sob.getWritten(), generateFragment);
-    } catch (IOException ioe) {
-      logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
-      return null;
-    }
-  }
-
 
   /**
    * Input: buffer of size {@code numFragments*Lfield}; first {@code numSurvivors*Lfield} words contain message, rest is zeroes

@@ -78,15 +78,6 @@ public class MultiringRouteMessage implements RouteMessage {
   }
 
   /**
-   * Returns the internal route message
-   *
-   * @return The internal route message
-   */
-  protected RouteMessage getRouteMessage() {
-    return message;
-  }
-
-  /**
    * Returns the destination Id for this message
    *
    * @return The destination Id

@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import rice.p2p.commonapi.Endpoint;
-import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -87,21 +86,6 @@ public class RingMessage implements ScribeContent {
   }
 
   /**
-   * Method which should return the priority level of this message.  The messages
-   * can range in priority from 0 (highest priority) to Integer.MAX_VALUE (lowest) -
-   * when sending messages across the wire, the queue is sorted by message priority.
-   * If the queue reaches its limit, the lowest priority messages are discarded.  Thus,
-   * applications which are very verbose should have LOW_PRIORITY or lower, and
-   * applications which are somewhat quiet are allowed to have MEDIUM_PRIORITY or
-   * possibly even HIGH_PRIORITY.
-   *
-   * @return This message's priority
-   */
-  public int getPriority() {
-    return message.getPriority();
-  }
-
-  /**
    * Method which returns this messages'  id
    *
    * @return The id of this message
@@ -116,10 +100,6 @@ public class RingMessage implements ScribeContent {
    * @return The internal message of this message
    */
   public RawMessage getRawMessage() {
-    return message;
-  }
-
-  public Message getMessage() {
     return message;
   }
 

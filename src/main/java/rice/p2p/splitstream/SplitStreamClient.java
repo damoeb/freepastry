@@ -47,14 +47,6 @@ package rice.p2p.splitstream;
 public interface SplitStreamClient {
 
   /**
-   * This is a call back into the application to notify it that one of the stripes was unable to to
-   * find a parent, and thus unable to recieve data.
-   *
-   * @param s The stripe which the join failed on
-   */
-  public void joinFailed(Stripe s);
-
-  /**
    * Is called when data is received on a stripe which this client has registered interest
    *
    * @param data The data that was received

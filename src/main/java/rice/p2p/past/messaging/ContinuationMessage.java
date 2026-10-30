@@ -115,15 +115,6 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
   }
 
   /**
-   * Returns the response
-   *
-   * @return The response
-   */
-  public Object getResponse() {
-    return response;
-  }
-
-  /**
    * No response or exception.
    */
   public static final byte S_EMPTY = 0;

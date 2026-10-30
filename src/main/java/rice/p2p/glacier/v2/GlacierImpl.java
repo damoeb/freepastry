@@ -83,7 +83,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final GlacierMaintenance maintenance;
   private final GlacierMessageDispatcher dispatcher;
   private final GlacierDebugCommands debugCommands;
-  private PastContentHandleDeserializer contentHandleDeserializer;
 
   public GlacierImpl(Node node, StorageManager fragmentStorage, StorageManager neighborStorage, int numFragments, int numSurvivors, IdFactory factory, String instance, GlacierPolicy policy) {
     this.environment = node.getEnvironment();
@@ -97,7 +96,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.endpoint = node.buildEndpoint(this, instance);
     this.scheduler = new GlacierScheduler(endpoint, environment, logger);
     this.endpoint.setDeserializer(GlacierMessageDispatcher.deserializer(endpoint));
-    this.contentHandleDeserializer = PastContentHandleDeserializer.CONTENT_HASH;
 
     FragmentLocator locator = new FragmentLocator(factory, numFragments);
     this.neighborhood = new GlacierNeighborhood(neighborStorage, factory, endpoint.getLocalNodeHandle().getId(), config.neighborTimeout(), environment, logger);
@@ -132,10 +130,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     scheduler.addContinuation(statisticsCollector.newReportingTask());
   }
 
-  public void setTrashcan(StorageManager trashStorage) {
-    trash.setTrashcan(trashStorage);
-  }
-
   public String handleDebugCommand(String command) {
     return debugCommands.handleDebugCommand(command);
   }
@@ -152,12 +146,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     long[] versions = new long[ids.length];
     Arrays.fill(versions, 0);
     refresh(ids, versions, expirations, command);
-  }
-
-  public void refresh(Id[] ids, long expiration, Continuation<? super Object[], Exception> command) {
-    long[] expirations = new long[ids.length];
-    Arrays.fill(expirations, expiration);
-    refresh(ids, expirations, command);
   }
 
   public void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
@@ -255,10 +243,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     return endpoint.getLocalNodeHandle();
   }
 
-  public void setSyncInterval(int syncIntervalSec) {
-    syncProtocol.setSyncInterval(syncIntervalSec * GlacierConfig.SECONDS);
-  }
-
   public void setSyncMaxFragments(int syncMaxFragments) {
     syncProtocol.setSyncMaxFragments(syncMaxFragments);
   }
@@ -267,20 +251,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     trafficShaper.setRateLimit(rps);
   }
 
-  public void setNeighborTimeout(long neighborTimeoutMin) {
-    neighborhood.setNeighborTimeout(neighborTimeoutMin * GlacierConfig.MINUTES);
-  }
-
-  public void setBandwidthLimit(long bytesPerSecond, long maxBurst) {
-    trafficShaper.setBandwidthLimit(bytesPerSecond, maxBurst);
-  }
-
   public long getTrashSize() {
     return trash.getTrashSize();
-  }
-
-  public void emptyTrash(final Continuation<? super Boolean, Exception> c) {
-    trash.emptyTrash(c);
   }
 
   public void addStatisticsListener(GlacierStatisticsListener gsl) {
@@ -289,10 +261,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   public void removeStatisticsListener(GlacierStatisticsListener gsl) {
     statisticsCollector.removeListener(gsl);
-  }
-
-  public Environment getEnvironment() {
-    return environment;
   }
 
   public String getInstance() {
@@ -304,6 +272,5 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {
-    contentHandleDeserializer = deserializer;
   }
 }

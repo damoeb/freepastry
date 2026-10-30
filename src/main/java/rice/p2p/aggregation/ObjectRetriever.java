@@ -254,26 +254,6 @@ final class ObjectRetriever {
     });
   }
 
-  void rollback(Id id, Continuation<? super PastContent, Exception> command) {
-    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(id);
-
-    if (adc!=null) {
-      int objDescIndex = adc.lookupNewest(id);
-      if (objDescIndex < 0) {
-        logger.warn("Rollback: Aggregate found, but object not found in aggregate?!? -- aborted");
-        command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
-        return;
-      }
-
-      logger.debug("Rollback: Found {}v{}", adc.getObjects()[objDescIndex].getKey(), adc.getObjects()[objDescIndex].getVersion());
-      retrieveObjectFromAggregate(adc, objDescIndex, command);
-      return;
-    }
-
-    logger.debug("Rollback: No version of {} found", id);
-    command.receiveResult(null);
-  }
-
   /**
    * Fetches the aggregate, validates its content hash (on the processing thread), reinserts the object into
    * the object store and returns it.

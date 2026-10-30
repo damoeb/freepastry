@@ -103,10 +103,6 @@ final class GlacierSyncProtocol {
     return syncInterval;
   }
 
-  void setSyncInterval(long syncInterval) {
-    this.syncInterval = syncInterval;
-  }
-
   int getSyncMaxFragments() {
     return syncMaxFragments;
   }

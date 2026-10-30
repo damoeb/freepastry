@@ -143,27 +143,12 @@ public class TopicManager {
   }
 
   /**
-   * Returns whether or not this topic manager contains the given
-   * client.
-   *
-   * @param client The client in question
-   * @return Whether or not this manager contains the client
-   */
-  public boolean containsClient(ScribeMultiClient client) {
-    return clients.contains(client);
-  }
-
-  /**
    * Gets the Children attribute of the TopicManager object
    *
    * @return The Children value
    */
   public Collection<NodeHandle> getChildren() {
     return Collections.unmodifiableCollection(children);
-  }
-
-  public int numChildren() {
-    return children.size();
   }
 
   /**
@@ -289,14 +274,6 @@ public class TopicManager {
     boolean unsub = ((clients.size() == 0) && (children.size() == 0));
 
     return unsub;
-  }
-
-  public boolean containsChild(NodeHandle child) {
-    if (children.contains(child)) {
-      return true;
-    } else {
-      return false;
-    }
   }
 
   /**

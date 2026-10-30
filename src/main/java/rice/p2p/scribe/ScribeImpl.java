@@ -40,7 +40,6 @@ package rice.p2p.scribe;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -51,7 +50,6 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleListener;
-import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.scribe.maintenance.MaintainableScribe;
 import rice.p2p.scribe.maintenance.ScribeMaintenancePolicy;
@@ -141,10 +139,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
   Logger logger;
 
-  private String instance;
-
-  private final Node node;
-
   ScribeContentDeserializer contentDeserializer;
 
   /**
@@ -177,13 +171,11 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   public ScribeImpl(Node node, ScribePolicy policy, String instance, ScribeMaintenancePolicy maintenancePolicy) {
     this.environment = node.getEnvironment();
-    this.node = node;
     logger = environment.getLogManager().getLogger(ScribeImpl.class, instance);
 
     ScribeConfig config = ScribeConfig.fromParameters(environment.getParameters());
     MAINTENANCE_INTERVAL = config.maintenanceInterval();
     MESSAGE_TIMEOUT = config.messageTimeout();
-    this.instance = instance;
     this.endpoint = node.buildEndpoint(this, instance);
     // until the application sets its own, content cannot be read
     this.contentDeserializer = (buf, ep, contentType) -> {
@@ -230,27 +222,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.policy = policy;
   }
 
-  /**
-   * Returns the Id of the local node
-   *
-   * @return The Id of the local node
-   */
-  public Id getId() {
-    return endpoint.getId();
-  }
-
-  public int numChildren(Topic topic) {
-    return registry.numChildren(topic);
-  }
-
-  /**
-   * Returns true if there is a TopicManager associated with this topic (any
-   * parent/children/client exists)
-   */
-  public boolean containsTopic(Topic topic) {
-    return registry.containsTopic(topic);
-  }
-
   public Collection<ScribeMultiClient> getClientsByTopic(Topic topic) {
     return registry.getClientsByTopic(topic);
   }
@@ -278,35 +249,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   public boolean isRoot(Topic topic) {
     return registry.isRoot(topic);
-  }
-
-  public NodeHandle getRoot(Topic topic) {
-    NodeHandleSet set = endpoint.replicaSet(topic.id(), 1);
-
-    if (set.size() == 0)
-      return null;
-    else
-      return set.getHandle(0);
-  }
-
-  // ----- SCRIBE METHODS -----
-  public boolean containsChild(Topic topic, NodeHandle child) {
-    return registry.containsChild(topic, child);
-  }
-
-  public void subscribe(Collection<Topic> topics) {
-    doSubscribe(topics, null, null, null);
-  }
-
-  /**
-   * Subscribes the given client to the provided topic. Any message published to the topic will be
-   * delivered to the Client via the deliver() method.
-   *
-   * @param topic The topic to subscribe to
-   * @param client The client to give messages to
-   */
-  public void subscribe(Topic topic, ScribeMultiClient client) {
-    doSubscribe(Collections.singletonList(topic), client, null, null);
   }
 
   /**
@@ -375,29 +317,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     children.addChild(topic, child);
   }
 
-  public void setParent(Topic topic, NodeHandle parent, List<Id> pathToRoot) {
-    TopicManager manager = getTopicManager(topic);
-    manager.setParent(parent, pathToRoot);
-  }
-
-  /**
-   * Lazy constructor.
-   * @param topic
-   * @return never null
-   */
-  public TopicManager getTopicManager(Topic topic) {
-    return registry.getOrCreate(topic);
-  }
-
-  /**
-   * Adds a child to the given topic and notifies the policy and the topic's clients.
-   *
-   * @return true if we need to subscribe to this topic because implicitly subscribing
-   */
-  protected boolean addChildHelper(Topic topic, NodeHandle child) {
-    return children.addChildHelper(topic, child);
-  }
-
   /**
    * Removes a child from the given topic
    *
@@ -419,35 +338,13 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     children.removeChild(topic, child, sendDrop);
   }
 
-  public Collection<Topic> getTopicsByClient(ScribeMultiClient client) {
-    return registry.getTopicsByClient(client);
-  }
-
   protected void recvAnycastFail(Topic topic, NodeHandle failedAtNode,
       ScribeContent content) {
     anycasts.recvAnycastFail(topic, failedAtNode, content);
   }
 
-  /**
-   * Need to be holding lock: topicManagers
-   */
-  protected void addToAllChildren(Topic t, NodeHandle child) {
-    registry.addToAllChildren(t, child);
-  }
-
-  /**
-   * Need to be holding lock: topicManagers
-   */
-  protected void removeFromAllChildren(Topic t, NodeHandle child) {
-    registry.removeFromAllChildren(t, child);
-  }
-
   protected void addToAllParents(Topic t, NodeHandle parent) {
     registry.addToAllParents(t, parent);
-  }
-
-  protected void removeFromAllParents(Topic t, NodeHandle parent) {
-    registry.removeFromAllParents(t, parent);
   }
 
   public boolean allParentsContains(Topic t, NodeHandle parent) {
@@ -457,25 +354,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   public boolean allParentsContainsParent(NodeHandle parent) {
     return registry.allParentsContainsParent(parent);
   }
-
-  public void printAllParentsDataStructure() {
-    registry.printAllParentsDataStructure();
-  }
-
-  public void printAllChildrenDataStructure() {
-    registry.printAllChildrenDataStructure();
-  }
-
-  // This returns the topics for which the parameter 'parent' is a Scribe tree parent of the local node
-  public Collection<Topic> getTopicsByParent(NodeHandle parent) {
-    return registry.getTopicsByParent(parent);
-  }
-
-  // This returns the topics for which the parameter 'child' is a Scribe tree child of the local node
-  public Collection<Topic> getTopicsByChild(NodeHandle child) {
-    return registry.getTopicsByChild(child);
-  }
-
 
 
   // ----- COMMON API METHODS -----
@@ -630,15 +508,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     contentDeserializer = deserializer;
   }
 
-  public ScribeContentDeserializer getContentDeserializer() {
-    return contentDeserializer;
-  }
-
   public Collection<Topic> getTopics() {
     return registry.topics();
-  }
-
-  public List<Id> getPathToRoot(Topic topic) {
-    return registry.getPathToRoot(topic);
   }
 }

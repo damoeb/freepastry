@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication;
 
-import java.util.Iterator;
 
 import org.slf4j.Logger;
 import rice.Destructable;
@@ -182,31 +181,6 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     // inject the first reminder message, which will cause the replication to begin
     // and the next maintenance message to be scheduled
     endpoint.scheduleMessage(new ReminderMessage(handle), environment.getRandomSource().nextInt(MAINTENANCE_INTERVAL), MAINTENANCE_INTERVAL);
-  }
-
-  /**
-   * Internal method which takes returns set A + set B, or all of the members
-   * of set A and set B.
-   *
-   * @param a The first set
-   * @param b The second set
-   * @return The merge, a+b
-   */
-  public static IdSet merge(IdFactory factory, IdSet a, IdSet b) {
-    IdSet result = factory.buildIdSet();
-    Iterator<Id> i = a.getIterator();
-
-    while (i.hasNext()) {
-      result.addId((Id) i.next());
-    }
-
-    i = b.getIterator();
-
-    while (i.hasNext()) {
-      result.addId((Id) i.next());
-    }
-
-    return result;
   }
 
   /**

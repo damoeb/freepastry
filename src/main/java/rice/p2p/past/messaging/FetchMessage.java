@@ -93,22 +93,6 @@ public final class FetchMessage extends ContinuationMessage {
   }
 
   /**
-   * Returns whether or not this message has been cached
-   *
-   * @return Whether or not this message has been cached
-   */
-  public boolean isCached() {
-    return cached;
-  }
-
-  /**
-   * Sets this message as having been cached.
-   */
-  public void setCached() {
-    cached = true;
-  }
-
-  /**
     * Returns a string representation of this message
    *
    * @return A string representing this message

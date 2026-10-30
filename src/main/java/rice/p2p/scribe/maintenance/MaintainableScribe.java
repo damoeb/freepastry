@@ -38,10 +38,8 @@ advised of the possibility of such damage.
 package rice.p2p.scribe.maintenance;
 
 import java.util.Collection;
-import java.util.List;
 
 import rice.p2p.commonapi.Endpoint;
-import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.BaseScribe;
 import rice.p2p.scribe.ScribeMultiClient;
@@ -61,24 +59,6 @@ public interface MaintainableScribe extends BaseScribe {
   public Collection<Topic> getTopics();
   public Endpoint getEndpoint();
 
-  /**
-   * This returns the topics for which the parameter 'parent' is a Scribe tree
-   * parent of the local node
-   *
-   * @param parent null/localHandle for topics rooted by us
-   */
-  public Collection<Topic> getTopicsByParent(NodeHandle parent);
-
-  /**
-   * This returns the topics for which the parameter 'child' is a Scribe tree
-   * child of the local node
-   */
-  public Collection<Topic> getTopicsByChild(NodeHandle child);
-
   public void subscribe(Collection<Topic> nodeWasParent, ScribeMultiClient client, ScribeContent content, NodeHandle hint);
-
-  public void setParent(Topic topic, NodeHandle parent, List<Id> pathToRoot);
-
-  public List<Id> getPathToRoot(Topic topic);
 
 }

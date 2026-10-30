@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import rice.Continuation;
-import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
@@ -184,13 +183,6 @@ public interface Past {
    * @return the number of replicas for each object
    */
   public int getReplicationFactor();
-
-  public Environment getEnvironment();
-
-  /**
-   * @return
-   */
-  public String getInstance();
 
   public void setContentDeserializer(PastContentDeserializer deserializer);
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer);

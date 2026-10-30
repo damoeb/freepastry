@@ -73,12 +73,10 @@ public class AggregateList {
   private Id rootKey;
   private final boolean wasReadOK;
   private long nextSerial;
-  private final String instance;
   private final Environment environment;
   private final Logger logger;
 
   public AggregateList(String configFileName, String label, IdFactory factory, boolean loggingEnabled, String instance, Environment env) throws IOException {
-    this.instance = instance;
     this.configFileName = configFileName;
     this.aggregateList = new Hashtable<Id, AggregateDescriptor>();
     this.factory = factory;
@@ -617,9 +615,5 @@ public class AggregateList {
     }
 
     return stats;
-  }
-
-  private String getLogPrefix() {
-    return "COUNT: " + environment.getTimeSource().currentTimeMillis() + " AL";
   }
 }

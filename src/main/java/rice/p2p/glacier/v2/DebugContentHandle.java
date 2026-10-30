@@ -38,10 +38,8 @@ package rice.p2p.glacier.v2;
 
 import java.io.IOException;
 
-import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.gc.GCPastContentHandle;
 
@@ -62,17 +60,6 @@ public record DebugContentHandle(Id id, long version, long expiration, NodeHandl
 
   public long getExpiration() {
     return expiration;
-  }
-
-  /**
-   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
-   */
-  public DebugContentHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
-    Id id = endpoint.readId(buf, buf.readShort());
-    long version = buf.readLong();
-    long expiration = buf.readLong();
-    NodeHandle nodeHandle = endpoint.readNodeHandle(buf);
-    this(id, version, expiration, nodeHandle);
   }
 
   public short getType() {

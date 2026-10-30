@@ -68,22 +68,6 @@ public class MathUtils {
   }
 
   /**
-   * Utility method which xors two given byte arrays, of equal length, and returns the results
-   *
-   * @param a The first array
-   * @param b The second array
-   * @return A new byte array, xored
-   */
-  public static byte[] xor(byte[] a, byte[] b) {
-    byte[] result = new byte[a.length];
-
-    for (int i=0; i<result.length; i++)
-      result[i] = (byte) (a[i] ^ b[i]);
-
-    return result;
-  }
-
-  /**
    * Method which returns a specified number of random bytes
    *
    * @param len The number of random bytes to generate
@@ -197,21 +181,6 @@ public class MathUtils {
     return result;
   }
 
-  public static short byteArrayToShort(byte[] input) {
-    return byteArrayToShort(input,0);
-  }
-
-  public static short byteArrayToShort(byte[] input, int offset) {
-    input = correctLength(input, offset+2);
-
-    short result;
-    result  = (short)((input[offset+0] & 0xFF) << 8);
-    result |= (short)((input[offset+1] & 0xFF));
-
-    return result;
-  }
-
-
   /**
    * Utility method for converting a long into a byte[]
    *
@@ -299,10 +268,5 @@ public class MathUtils {
 
   public static int uShortToInt(short b) {
     return (int) b & 0xFFFF;
-  }
-
-  public static byte intToUByte(int i) {
-    if ((i > 255) || (i < 0)) throw new RuntimeException("can't convert "+i+" to an unsigned byte");
-    return (byte)i;
   }
 }

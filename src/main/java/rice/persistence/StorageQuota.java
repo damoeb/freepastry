@@ -65,26 +65,6 @@ final class StorageQuota {
   }
 
   /**
-   * Sets the amount of storage that the persistence Manager uses
-   *
-   * @param size the amount of storage available to use in bytes
-   * @return boolean, true if the operation succeeds false if it doesn't
-   */
-  boolean setStorageSize(long size) {
-    if(storageSize <= size){
-        storageSize = size;
-        return true;
-    }
-    else if( size > usedSize){
-        storageSize = size;
-        return true;
-    }
-    else {
-       return false;
-    }
-  }
-
-  /**
    *
    * Increases the amount of storage recorded as used
    *

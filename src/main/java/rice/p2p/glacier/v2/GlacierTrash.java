@@ -61,10 +61,6 @@ final class GlacierTrash {
     this.trashStorage = null;
   }
 
-  void setTrashcan(StorageManager trashStorage) {
-    this.trashStorage = trashStorage;
-  }
-
   void deleteFragment(final Id fkey, final Continuation<? super Boolean, Exception> command) {
     if (trashStorage != null) {
       logger.atInfo().log(() -> "Moving fragment "+fkey.toStringFull()+" to trash");
@@ -137,16 +133,6 @@ final class GlacierTrash {
       return 0;
 
     return trashStorage.getStorage().getTotalSize();
-  }
-
-  void emptyTrash(final Continuation<? super Boolean, Exception> c) {
-    if (trashStorage != null) {
-      logger.info("Emptying trash (removing all objects)");
-
-      trashStorage.flush(c);
-    } else {
-      c.receiveResult(null);
-    }
   }
 
   void addStatistics(GlacierStatistics statistics) {

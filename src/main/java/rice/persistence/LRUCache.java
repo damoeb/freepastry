@@ -97,15 +97,6 @@ public class LRUCache implements Cache {
   }
 
   /**
-   * Returns the backing storage object
-   *
-   * @return The storage backing this cache
-   */
-  public Storage getStorage() {
-    return storage;
-  }
-
-  /**
    * Renames the given object to the new id.  This method is potentially faster
    * than store/cache and unstore/uncache.
    *

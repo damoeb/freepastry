@@ -73,29 +73,6 @@ final class AggregateFlusher {
     this.flushWait = null;
   }
 
-  /**
-   * Flushes the waiting list if it contains a version of the given object.
-   */
-  void flush(Id id, Continuation<? super Boolean, Exception> command) {
-    Iterator<Id> iter = waitingList.scan().getIterator();
-    boolean objectIsWaiting = false;
-
-    logger.info("flush({}) invoked", id);
-
-    while (iter.hasNext()) {
-      VersionKey thisKey = (VersionKey) iter.next();
-      if (thisKey.id().equals(id)) {
-        objectIsWaiting = true;
-        break;
-      }
-    }
-
-    if (objectIsWaiting)
-      formAggregates(command);
-    else
-      command.receiveResult(Boolean.valueOf(true));
-  }
-
   void formAggregates(final Continuation<? super Boolean, Exception> command) {
     if (flushWait != null) {
       logger.info("Flush in progress... daisy-chaining continuation");

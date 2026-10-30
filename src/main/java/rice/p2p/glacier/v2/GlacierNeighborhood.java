@@ -81,10 +81,6 @@ final class GlacierNeighborhood {
     return neighborTimeout;
   }
 
-  void setNeighborTimeout(long neighborTimeout) {
-    this.neighborTimeout = neighborTimeout;
-  }
-
   void determineResponsibleRange() {
     Id cwPeer = null, ccwPeer = null, xcwPeer = null, xccwPeer = null, myNodeId = localId;
 

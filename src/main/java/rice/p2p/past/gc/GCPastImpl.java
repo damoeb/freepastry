@@ -129,21 +129,6 @@ public class GCPastImpl extends PastImpl implements GCPast {
    *
    * @param node The node below this Past implementation
    * @param manager The storage manager to be used by Past
-   * @param replicas The number of object replicas
-   * @param instance The unique instance name of this Past
-   * @param policy The policy this past instance should use
-   * @param collectionInterval The frequency with which GCPast should collection local expired objects
-   */
-  public GCPastImpl(Node node, StorageManager manager, int replicas, String instance, PastPolicy policy, long collectionInterval) {
-    this(node, manager, null, replicas, instance, policy, collectionInterval, null);
-  }
-
-
-  /**
-   * Constructor for GCPast
-   *
-   * @param node The node below this Past implementation
-   * @param manager The storage manager to be used by Past
    * @param backup The cache used for previously-responsible objects (can be null)
    * @param replicas The number of object replicas
    * @param instance The unique instance name of this Past
@@ -202,32 +187,6 @@ public class GCPastImpl extends PastImpl implements GCPast {
 
     doInsert(obj.getId(), () -> new GCInsertMessage(getUID(), obj, expiration, getLocalNodeHandle(), obj.getId()), command,
     socketStrategy.sendAlongSocket(SocketStrategy.TYPE_INSERT, obj));
-  }
-
-  /**
-   * Updates the objects stored under the provided keys id to expire no
-   * earlier than the provided expiration time.  Asyncroniously returns
-   * the result to the caller via the provided continuation.
-   *
-   * The result of this operation is an Object[], which is the same length
-   * as the input array of Ids.  Each element in the array is either
-   * Boolean(true), representing that the refresh succeeded for the
-   * cooresponding Id, or an Exception describing why the refresh failed.
-   * Specifically, the possible exceptions which can be returned are:
-   *
-   * ObjectNotFoundException - if no object was found under the given key
-   * RefreshFailedException - if the refresh operation failed for any other
-   *   reason (the getMessage() will describe the failure)
-   *
-   * @param array The keys which to refresh
-   * @param expiration The time to extend the lifetime to
-   * @param command Command to be performed when the result is received
-   */
-  public void refresh(Id[] array, long expiration, Continuation<? super Object[], Exception> command) {
-    long[] expirations = new long[array.length];
-    Arrays.fill(expirations, expiration);
-
-    refresh(array, expirations, command);
   }
 
   /**
@@ -631,15 +590,6 @@ public class GCPastImpl extends PastImpl implements GCPast {
   public IdSet scan(IdRange range) {
     GCIdRange gcRange = (GCIdRange) range;
     return new GCIdSet(storage.getStorage().scan(gcRange.range()), storage.getStorage().scanMetadata(gcRange.range()));
-  }
-
-  /**
-   * This upcall should return the set of keys that the application
-   * currently stores.  Should return a empty IdSet (not null),
-   * in the case that no keys are stored.
-   */
-  public IdSet scan() {
-    return new GCIdSet(storage.getStorage().scan(), storage.getStorage().scanMetadata());
   }
 
   /**

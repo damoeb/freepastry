@@ -55,8 +55,6 @@ public class GlacierStatistics {
   private long bucketMin;
   private long bucketMax;
   private long bucketConsumed;
-  private long bucketTokensPerSecond;
-  private long bucketMaxBurstSize;
   private final Environment environment;
 
   public GlacierStatistics(int numTags, Environment env) {
@@ -130,14 +128,6 @@ public class GlacierStatistics {
 
   public void setBucketConsumed(long bucketConsumed) {
     this.bucketConsumed = bucketConsumed;
-  }
-
-  public void setBucketTokensPerSecond(long bucketTokensPerSecond) {
-    this.bucketTokensPerSecond = bucketTokensPerSecond;
-  }
-
-  public void setBucketMaxBurstSize(long bucketMaxBurstSize) {
-    this.bucketMaxBurstSize = bucketMaxBurstSize;
   }
 
   public void setFragmentStorageSize(long fragmentStorageSize) {

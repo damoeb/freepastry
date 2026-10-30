@@ -92,41 +92,6 @@ public final class LookupMessage extends ContinuationMessage {
   }
 
   /**
-   * Returns whether or not this message has been cached
-   *
-   * @return Whether or not this message has been cached
-   */
-  public boolean isCached() {
-    return cached;
-  }
-
-  /**
-   * Sets this message as having been cached.
-   */
-  public void setCached() {
-    cached = true;
-  }
-
-  /**
-   * Method which is designed to be overridden by subclasses if they need
-   * to keep track of where they've been.
-   *
-   * @param handle The current local handle
-   */
-  public void addHop(NodeHandle handle) {
-    this.handle = handle;
-  }
-
-  /**
-   * Method which returns the previous hop (where the message was just at)
-   *
-   * @return The previous hop
-   */
-  public NodeHandle getPreviousNodeHandle() {
-    return handle;
-  }
-
-  /**
     * Returns a string representation of this message
    *
    * @return A string representing this message

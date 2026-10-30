@@ -421,21 +421,6 @@ final class StorageLayout {
   }
 
   /**
-   * Returns whether or not the provided file is an acestor of the other file.
-   *
-   * @param file The file to check
-   * @param ancestor The potential ancestor
-   * @return Whether or not the file is an ancestor
-   */
-  private boolean isAncestor(Path file, Path ancestor) {
-    while ((file != null) && (! file.equals(ancestor))) {
-      file = file.getParent();
-    }
-
-    return (file != null);
-  }
-
-  /**
    * Gets the file for a certain id from the disk
    *
    * @param id the id to get a file for
@@ -528,17 +513,6 @@ final class StorageLayout {
   }
 
   /**
-   * Internal method which returns the postfix for a given id
-   *
-   * @param id The id to return the postfix for
-   * @param file The directory the id will be stored in
-   * @return The postfix
-   */
-  private String getPostfix(Id id, Path file) {
-    return id.toStringFull().substring(getPrefix(file).length());
-  }
-
-  /**
    * Internal method which returns the prefix of a given directory
    *
    * @param file The directory to return the prefix for
@@ -596,17 +570,6 @@ final class StorageLayout {
   }
 
   /**
-   * Returns whether a directory contains subdirectories
-   *
-   * @param dir the directory to check
-   * @return boolean whether directory contains subdirectories
-   *
-   */
-  private boolean containsDir(Path dir) throws IOException {
-    return (StorageFiles.list(dir, DIRECTORIES).length != 0);
-  }
-
-  /**
    * Utility function which returns the range of keys which a directory
    * corresponds to.
    *
@@ -657,14 +620,6 @@ final class StorageLayout {
 
     public void put(char a) {
       bitMap[(int) a] = true;
-    }
-
-    public boolean contains(char a) {
-      return bitMap[(int) a];
-    }
-
-    public void remove(char a) {
-      bitMap[(int) a] = false;
     }
 
     public char[] get() {

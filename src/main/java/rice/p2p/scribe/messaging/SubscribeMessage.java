@@ -40,7 +40,6 @@ package rice.p2p.scribe.messaging;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -90,17 +89,6 @@ public final class SubscribeMessage extends AnycastMessage {
     this.id = id;
     this.subscriber = source;
     this.topics = new ArrayList<Topic>(topics);
-  }
-
-  /**
-   *
-   * @param source
-   * @param topic to subscribe to only 1 topic
-   * @param id
-   * @param content
-   */
-  public SubscribeMessage(NodeHandle source, Topic topic, int id, ScribeContent content) {
-    this(source, Collections.singletonList(topic), id, content);
   }
 
   /**

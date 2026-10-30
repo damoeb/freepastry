@@ -192,17 +192,6 @@ public class ReverseTreeMap<K,V> {
   }
 
   /**
-   * Method which returns a *cloned* head map, or all of the values
-   * up to the specified value
-   *
-   * @param value The start value
-   * @return a head map
-   */
-  public SortedMap<K,V> keyHeadMap(K value) {
-    return normal.headMap(value);
-  }
-
-  /**
    * Method which returns a *cloned* tail map, or all of the values
    * after a the specified value
    *
@@ -233,28 +222,6 @@ public class ReverseTreeMap<K,V> {
    */
   public SortedMap<K,V> valueHeadMap(V value) {
     return convert(reverse.headMap(value));
-  }
-
-  /**
-   * Method which returns a tailset of the values, or all the
-   * keys with values after to the specified value
-   *
-   * @param value The minimal value
-   */
-  public SortedMap<K,V> valueTailMap(V value) {
-    return convert(reverse.tailMap(value));
-  }
-
-  /**
-   * Method which returns a subset of the values, or all the
-   * keys with values from start (inclusive) up to end (exclusive)
-   *
-   * @param start The minimal value
-   * @param end The maximal value
-   * @return the keys with values in that range, and their values
-   */
-  public SortedMap<K,V> valueSubMap(V start, V end) {
-    return convert(reverse.subMap(start, end));
   }
 
   /**

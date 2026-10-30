@@ -42,7 +42,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.Topic;
@@ -112,10 +111,7 @@ public interface ScribeMaintenancePolicy {
   public class DefaultScribeMaintenancePolicy implements
       ScribeMaintenancePolicy {
 
-    Logger logger;
-
     public DefaultScribeMaintenancePolicy(Environment environment) {
-      logger = environment.getLogManager().getLogger(DefaultScribeMaintenancePolicy.class, null);
     }
 
     public void doMaintenance(MaintainableScribe scribe) {

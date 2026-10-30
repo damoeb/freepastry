@@ -39,7 +39,6 @@ package rice.p2p.scribe;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import rice.environment.Environment;
@@ -229,49 +228,6 @@ public interface ScribePolicy {
     }
     public ScribeContent divideContent(List<Topic> theTopics, ScribeContent content) {
       return content;
-    }
-  }
-
-  /**
-   * An optional policy for Scribe, which allows up to a specified number of children per topic.
-   *
-   * @version $Id: ScribePolicy.java 4098 2008-02-13 09:36:33Z jeffh $
-   * @author amislove
-   */
-  public static class LimitedScribePolicy extends DefaultScribePolicy {
-
-    /**
-     * The number of children to allow per topic
-     */
-    private final int maxChildren;
-
-    /**
-     * Constructor which takes a maximum number
-     *
-     * @param max The maximum number of children
-     */
-    public LimitedScribePolicy(int max, Environment env) {
-      super(env);
-      this.maxChildren = max;
-    }
-
-    /**
-     * Accepts a topic while it has fewer than {@code maxChildren - 1} children.
-     *
-     * @param scribe the Scribe that is making the request
-     * @param source the subscriber
-     * @param topics the topics that are requested; rejected topics are removed from this list
-     * @param content the content that came with the message
-     * @return the topics to accept
-     */
-    public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
-      Iterator<Topic> i = topics.iterator();
-      while (i.hasNext()) {
-        if (scribe.getChildrenOfTopic(i.next()).size() >= maxChildren - 1) {
-          i.remove();
-        }
-      }
-      return topics;
     }
   }
 }

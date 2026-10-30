@@ -65,9 +65,6 @@ import rice.p2p.commonapi.IdSet;
 @SuppressWarnings("unchecked")
 public class StorageManagerImpl implements StorageManager {
 
-  // the factory used to manipulate ids
-  private IdFactory factory;
-
   // the storage used by this manager
   private Storage storage;
 
@@ -85,7 +82,6 @@ public class StorageManagerImpl implements StorageManager {
    * @param cache The Cache object which will serve as the cache.
    */
   public StorageManagerImpl(IdFactory factory, Storage storage, Cache cache) {
-    this.factory = factory;
     this.storage = storage;
     this.cache = cache;
   }

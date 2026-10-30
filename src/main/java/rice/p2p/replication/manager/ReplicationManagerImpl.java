@@ -170,23 +170,6 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
   // ----- INTERNAL METHODS -----
 
   /**
-   * Internal method which clones an IdSet, so that iterators work as expected
-   *
-   * @param keySet The set to clone
-   * @return The cloned set
-   */
-  protected IdSet clone(IdSet keySet) {
-    IdSet result = factory.buildIdSet();
-    Iterator<Id> i = keySet.getIterator();
-
-    while (i.hasNext()) {
-      result.addId((Id) i.next());
-    }
-
-    return result;
-  }
-
-  /**
    * Internal method which informs the client of the next id to fetch
    *
    * @param id The id which the client should fetch
@@ -419,16 +402,6 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
         set.removeId(id);
         hints.remove(id);
       }
-    }
-
-    /**
-     * In this case, it returns the list of keys the client has, along with the
-     * keys which we have yet to tell the client to fetch.
-     *
-     * @param range the requested range
-     */
-    public IdSet scan(IdRange range) {
-      return set.subSet(range);
     }
 
     /**

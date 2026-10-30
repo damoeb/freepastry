@@ -50,10 +50,6 @@ import rice.p2p.scribe.ScribeContent;
  * @author Alan Mislove
  */
 public record SplitStreamSubscribeContent(int stage) implements ScribeContent {
-  /**
-   * The first stage of the join process
-   */
-  public static final int STAGE_NON_FINAL = -10;
 
   /**
    * The final stage of the join process

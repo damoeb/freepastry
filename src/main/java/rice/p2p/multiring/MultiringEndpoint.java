@@ -77,11 +77,6 @@ public class MultiringEndpoint implements Endpoint {
   private final MultiringNode node;
 
   /**
-   * The application this endpoint is for
-   */
-  private final Application application;
-
-  /**
    * The endpoint which this multiring endpoint is wrapping
    */
   private final Endpoint endpoint;
@@ -96,7 +91,6 @@ public class MultiringEndpoint implements Endpoint {
   protected MultiringEndpoint(MultiringNode node, Endpoint endpoint, Application application) {
     this.node = node;
     this.endpoint = endpoint;
-    this.application = application;
   }
 
   /**
@@ -323,16 +317,6 @@ public class MultiringEndpoint implements Endpoint {
    */
   public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
     endpoint.process(task, command);
-  }
-
-  /**
-   * Internal method which delivers the message to the application
-   *
-   * @param id The target id
-   * @param target The message to deliver
-   */
-  protected void deliver(RingId id, Message target) {
-    application.deliver(id, target);
   }
 
   /**

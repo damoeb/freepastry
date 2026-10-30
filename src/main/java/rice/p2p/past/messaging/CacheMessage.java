@@ -42,8 +42,6 @@ import java.io.IOException;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
-import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.PastContent;
@@ -64,17 +62,6 @@ public final class CacheMessage extends PastMessage {
 
   // the content to be cached
   private final PastContent content;
-
-  /**
-   * Constructor which takes a unique integer Id and the local id
-   *
-   * @param uid The unique id
-   */
-  public CacheMessage(int uid, PastContent content, NodeHandle source, Id dest) {
-    super(uid, source, dest);
-
-    this.content = content;
-  }
 
   /**
    * Method which returns the content

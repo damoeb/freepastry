@@ -39,7 +39,6 @@ package rice.p2p.glacier.v2;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.slf4j.Logger;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -48,12 +47,6 @@ public class BloomFilter {
 
   private byte bitfield[];
   private int hashParams[];
-
-  public BloomFilter(int length, int[] hashParams) {
-    bitfield = new byte[(length+7)/8];
-    Arrays.fill(bitfield, (byte)0);
-    this.hashParams = hashParams;
-  }
 
   public BloomFilter(int length, int numHashes, RandomSource rand) {
     bitfield = new byte[(length+7)/8];
@@ -108,17 +101,6 @@ public class BloomFilter {
       hash[j] = hash[j] % hashParams[j];
 
     return hash;
-  }
-
-  private void dump(Logger logger) {
-    String s = "";
-    for (int i=0; i<bitfield.length*8; i++)
-      if ((bitfield[i/8] & (1<<(i&7))) == 0)
-        s+="0";
-      else
-        s+="1";
-    s+="\n";
-    logger.info(s);
   }
 
   public void add(byte[] data) {

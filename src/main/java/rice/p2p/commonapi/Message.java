@@ -58,7 +58,6 @@ public interface Message {
   public static final int MEDIUM_PRIORITY = 0;
   public static final int MEDIUM_LOW_PRIORITY = 5;
   public static final int LOW_PRIORITY = 10;
-  public static final int LOWEST_PRIORITY = 15;
   public static final int DEFAULT_PRIORITY = MEDIUM_PRIORITY;
 
   /**

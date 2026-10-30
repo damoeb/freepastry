@@ -157,24 +157,12 @@ final class AggregationSettings {
     return flushInterval;
   }
 
-  void setFlushInterval(long flushInterval) {
-    this.flushInterval = flushInterval;
-  }
-
   int getMaxAggregateSize() {
     return maxAggregateSize;
   }
 
-  void setMaxAggregateSize(int maxAggregateSize) {
-    this.maxAggregateSize = maxAggregateSize;
-  }
-
   int getMaxObjectsInAggregate() {
     return maxObjectsInAggregate;
-  }
-
-  void setMaxObjectsInAggregate(int maxObjectsInAggregate) {
-    this.maxObjectsInAggregate = maxObjectsInAggregate;
   }
 
   int getMaxAggregatesPerRun() {
@@ -217,10 +205,6 @@ final class AggregationSettings {
     return expirationRenewThreshold;
   }
 
-  void setExpirationRenewThreshold(long expirationRenewThreshold) {
-    this.expirationRenewThreshold = expirationRenewThreshold;
-  }
-
   boolean isMonitorEnabled() {
     return monitorEnabled;
   }
@@ -237,32 +221,16 @@ final class AggregationSettings {
     return consolidationInterval;
   }
 
-  void setConsolidationInterval(long consolidationInterval) {
-    this.consolidationInterval = consolidationInterval;
-  }
-
   long getConsolidationThreshold() {
     return consolidationThreshold;
-  }
-
-  void setConsolidationThreshold(long consolidationThreshold) {
-    this.consolidationThreshold = consolidationThreshold;
   }
 
   int getConsolidationMinObjectsInAggregate() {
     return consolidationMinObjectsInAggregate;
   }
 
-  void setConsolidationMinObjectsInAggregate(int consolidationMinObjectsInAggregate) {
-    this.consolidationMinObjectsInAggregate = consolidationMinObjectsInAggregate;
-  }
-
   double getConsolidationMinComponentsAlive() {
     return consolidationMinComponentsAlive;
-  }
-
-  void setConsolidationMinComponentsAlive(double consolidationMinComponentsAlive) {
-    this.consolidationMinComponentsAlive = consolidationMinComponentsAlive;
   }
 
   int getReconstructionMaxConcurrentLookups() {

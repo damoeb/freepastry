@@ -55,7 +55,6 @@ import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.Message;
@@ -150,9 +149,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
   // the hashtable of outstanding timer tasks
   private final Map<Integer, CancellableTask> timers;
-
-  // the factory for manipulating ids
-  private final IdFactory factory;
 
   // the instance name we are running with
   private final String instance;
@@ -272,7 +268,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     this.contentHandleDeserializer = PastContentHandleDeserializer.CONTENT_HASH;
     this.endpoint = node.buildEndpoint(this, instance);
     this.endpoint.setDeserializer(new PastDeserializer());
-    this.factory = node.getIdFactory();
     this.policy = policy;
     this.instance = instance;
     this.trash = trash;
@@ -392,15 +387,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   protected ReplicationManager buildReplicationManager(Node node, String instance) {
     return new ReplicationManagerImpl(node, this, replicationFactor, instance);
-  }
-
-  /**
-   * Returns of the outstanding messages.  This is a DEBUGGING method ONLY!
-   *
-   * @return The list of all the outstanding messages
-   */
-  public Continuation<?, ?>[] getOutstandingMessages() {
-    return outstanding.values().toArray(new Continuation<?, ?>[0]);
   }
 
   /**
@@ -1202,15 +1188,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   public IdSet scan(IdRange range) {
     return storage.getStorage().scan(range);
-  }
-
-  /**
-   * This upcall should return the set of keys that the application
-   * currently stores.  Should return a empty IdSet (not null),
-   * in the case that no keys are stored.
-   */
-  public IdSet scan() {
-    return storage.getStorage().scan();
   }
 
   /**

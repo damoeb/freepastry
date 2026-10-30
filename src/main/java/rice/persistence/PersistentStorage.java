@@ -46,12 +46,10 @@ package rice.persistence;
  * @version $Id: PersistentStorage.java 4654 2009-01-08 16:33:07Z jeffh $
  */
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.SortedMap;
 
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Continuation.ListenerContinuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -115,18 +113,11 @@ public class PersistentStorage implements Storage {
   public static final int MAX_DIRECTORIES = 32;
 
   /**
-   * The amount of time before re-writing the metadata file
-   */
-  public static final int METADATA_SYNC_TIME = 300000;
-
-  /**
    * Special placeholder for the file whose name should be zero-length
    */
    public static final String ZERO_LENGTH_NAME = "!";
 
   private IdFactory factory;        // the factory used for creating ids
-
-  private String name;              // the name of this instance
 
   private boolean index;            // whether or not we are indexing the objects
   private final StorageLayout layout; // the directory tree
@@ -134,8 +125,6 @@ public class PersistentStorage implements Storage {
   private final BlockingIO blockingIO; // runs them on the blocking IO thread
 
   private MetadataIndex metadataIndex; // the in-memory cache of object metadata (if indexing)
-
-  private String rootDir;           // rootDirectory
 
   private final StorageQuota quota; // the quota and the space in use
   private final StorageStatistics stats; // the request counts
@@ -185,8 +174,6 @@ public class PersistentStorage implements Storage {
     this.environment = env;
     logger = environment.getLogManager().getLogger(PersistentStorage.class, null);
     this.factory = factory;
-    this.name = name;
-    this.rootDir = rootDir;
     this.quota = new StorageQuota(size);
     this.index = index;
     this.stats = new StorageStatistics(name, environment.getTimeSource(), logger);
@@ -207,27 +194,6 @@ public class PersistentStorage implements Storage {
 
   private void printStats() {
     stats.printStats(() -> (index ? "" + metadataIndex.keyCountUnlocked() : "?"), this::getTotalSize);
-  }
-
-  /**
-   * Method which allows the persistence root to schedule an event which will tell it to
-   * sync the metadata cached. Should be called exactly once after the persistence root is
-   * created.
-   *
-   * @param timer The timer to use to schedule the events
-   */
-  public void setTimer(rice.selector.Timer timer) {
-    if (index) {
-      timer.scheduleAtFixedRate(new rice.selector.TimerTask() {
-        public String toString() { return "persistence dirty purge enqueue"; }
-        public void run() {
-          blockingIO.run(() -> "persistence dirty purge", new ListenerContinuation<Boolean, Exception>("Enqueue of writeMetadataFile", environment), () -> {
-            writeDirty();
-            return Boolean.TRUE;
-          });
-        }
-      }, environment.getRandomSource().nextInt(METADATA_SYNC_TIME), METADATA_SYNC_TIME);
-    }
   }
 
   /**
@@ -496,98 +462,6 @@ public class PersistentStorage implements Storage {
    */
   public void flush(Continuation<? super Boolean, Exception> c) {
     blockingIO.run(() -> "flush", c, () -> objectFiles.flush());
-  }
-
-  /*****************************************************************/
-  /* Helper functions for Directory Splitting Management           */
-  /*****************************************************************/
-
-  /*****************************************************************/
-  /* Helper functions for File Management                          */
-  /*****************************************************************/
-
-
-  /*****************************************************************/
-  /* Helper functions for Metadata Storage                         */
-  /*****************************************************************/
-
-  /**
-   * Function which writes out all of the dirty metadata files and marks
-   * them as clean.
-   */
-  protected void writeDirty() {
-    metadataIndex.writeDirty(layout::getRangeForDirectory);
-  }
-
-
-  /*****************************************************************/
-  /* Helper functions for Object Input/Output                      */
-  /*****************************************************************/
-
-
-  /**
-   * Utility function which returns the range of keys which a directory
-   * corresponds to.
-   *
-   * @param dir The directory
-   */
-  protected IdRange getRangeForDirectory(Path dir) {
-    return layout.getRangeForDirectory(dir);
-  }
-
-  /*****************************************************************/
-  /* Functions for Configuration Management                        */
-  /*****************************************************************/
-
-
-  /**
-   * Sets the root directory that the persistence Manager uses
-   *
-   * @param dir the String representing the directory to use
-   * @return boolean, true if the operation succeeds false if it doesn't
-   */
-  public boolean setRoot(String dir) {
-    // TODO: files stored under the old root are neither moved nor reloaded
-    rootDir = dir;
-    return true;
-  }
-
-  /**
-   * gets the root directory that the persistence Manager uses
-   *
-   * @return String the directory for the root
-   */
-  public String getRoot() {
-    return rootDir;
-  }
-
-  /**
-   * gets the amount of storage that the persistence Manager uses
-   *
-   * @return int the amount of storage in bytes allocated for use
-   */
-  public long getStorageSize() {
-    return quota.getStorageSize();
-  }
-
-  /**
-   * Sets the amount of storage that the persistence Manager uses
-   *
-   * @param size the amount of storage available to use in bytes
-   * @return boolean, true if the operation succeeds false if it doesn't
-   */
-  public boolean setStorageSize(long size) {
-    return quota.setStorageSize(size);
-  }
-
-  /**
-   * Gets the name of this instance
-   *
-   * @return String the name of the instance
-   *
-   */
-  public String getName(){
-    return name;
   }
 
   /*****************************************************************/

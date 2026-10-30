@@ -85,11 +85,6 @@ public class Stripe implements ScribeMultiClient {
   private final Scribe scribe;
 
   /**
-   * A flag whether or not this stripe is the primary stripe for this node
-   */
-  private boolean isPrimary;
-
-  /**
    * The list of SplitStreamClients interested in data from this client
    */
   private final Vector<SplitStreamClient> clients;
@@ -103,8 +98,6 @@ public class Stripe implements ScribeMultiClient {
    * The count of failed subscribe messages
    */
   private final Hashtable<Topic, Integer> failed;
-
-  private final String instance;
 
   Logger logger;
 
@@ -120,18 +113,13 @@ public class Stripe implements ScribeMultiClient {
    * @param scribe the scribe the stripe is running on top of
    */
   public Stripe(StripeId stripeId, Scribe scribe, String instance, Channel channel, int maxFailedSubscriptions) {
-    this.instance = instance;
     this.MAX_FAILED_SUBSCRIPTION = maxFailedSubscriptions;
     this.retryDelay = SplitStreamConfig.fromParameters(scribe.getEnvironment().getParameters()).maxFailedSubscriptionRetryDelay();
     this.stripeId = stripeId;
     this.scribe = scribe;
     logger = scribe.getEnvironment().getLogManager().getLogger(Stripe.class, instance);
     this.channel = channel;
-    this.isPrimary = false;
     this.failed = new Hashtable<Topic, Integer>();
-    if(SplitStreamScribePolicy.getPrefixMatch(this.channel.getLocalId(), stripeId.id(), channel.getStripeBase()) > 0)
-      this.isPrimary = true;
-
     this.clients = new Vector<SplitStreamClient>();
     this.topic = new Topic(stripeId.id());
   }
@@ -146,24 +134,6 @@ public class Stripe implements ScribeMultiClient {
   }
 
   /**
-   * Returns whether or not this stripe is the primary stripe for the local node
-   *
-   * @return Whether or not this stripe is primary
-   */
-  public boolean isPrimary() {
-    return isPrimary;
-  }
-
-  /**
-   * get the state of the Stripe
-   *
-   * @return the State the stripe is in
-   */
-  public boolean isSubscribed() {
-    return (clients.size() != 0);
-  }
-
-  /**
    * Adds a client to this stripe - the client will be informed whenever data arrives for this stripe
    *
    * @param client The client to add
@@ -175,21 +145,6 @@ public class Stripe implements ScribeMultiClient {
       }
 
       clients.add(client);
-    }
-  }
-
-  /**
-   * Removes a client from this stripe - the client will no longer be informed whenever data arrives for this stripe
-   *
-   * @param client The client to remove
-   */
-  public void unsubscribe(SplitStreamClient client) {
-    if (clients.contains(client)) {
-      clients.remove(client);
-
-      if (clients.size() == 0) {
-        scribe.unsubscribe(topic, this);
-      }
     }
   }
 

@@ -93,12 +93,4 @@ public class AttachableCancellable implements Cancellable {
       c.cancel();
     }
   }
-
-  public void detach(Cancellable c) {
-    if (c == null) return;
-    synchronized(lock) {
-      if (subCancellable == null) return;
-      subCancellable.remove(c);
-    }
-  }
 }

@@ -115,19 +115,6 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
   }
 
   /**
-   * Returns the next handle to visit
-   *
-   * @return The next handle to visit
-   */
-  public NodeHandle peekNext() {
-    if (toVisit.size() == 0) {
-      return null;
-    }
-
-    return (NodeHandle) toVisit.getFirst();
-  }
-
-  /**
    * Returns the next handle to visit and removes the
    * node from the list.
    *
@@ -139,10 +126,6 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
     }
 
     return (NodeHandle) toVisit.removeFirst();
-  }
-
-  public NodeHandle peekLastToVisit() {
-    return toVisit.getLast();
   }
 
   /**
@@ -226,16 +209,6 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
 
   public int getVisitedSize() {
     return visited.size();
-  }
-
-  // This method will be called on the intermediate hops to check if the list is
-  // already big, in which case it will not append to this list
-  public int getToVisitSize() {
-    return toVisit.size();
-  }
-
-  public boolean hasVisited(NodeHandle handle) {
-    return visited.contains(handle);
   }
 
   /** *************** Raw Serialization ************************************** */

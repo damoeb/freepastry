@@ -42,15 +42,12 @@ package rice.p2p.aggregation.messaging;
 import java.io.IOException;
 
 import rice.p2p.aggregation.AggregationContentType;
-import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.PastException;
-import rice.p2p.past.rawserialization.PastContentDeserializer;
 
 /**
  * Just wraps a header in Past to know that it is something other than an Aggregate
@@ -90,17 +87,5 @@ public class NonAggregate implements PastContent {
     buf.writeByte((byte)0); // version
     buf.writeShort(content.getType());
     content.serialize(buf);
-  }
-
-  public NonAggregate(InputBuffer buf, Endpoint endpoint, PastContent subContent, PastContentDeserializer pcd) throws IOException {
-    byte version = buf.readByte();
-    switch(version) {
-      case 0:
-        short subType = buf.readShort();
-        this.content = pcd.deserializePastContent(buf, endpoint, subType);
-        break;
-      default:
-        throw new IOException("Unknown Version: "+version);
-    }
   }
 }

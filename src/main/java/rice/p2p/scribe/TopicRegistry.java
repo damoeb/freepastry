@@ -43,12 +43,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.Endpoint;
-import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.NodeHandleSet;
@@ -185,25 +183,6 @@ final class TopicRegistry {
 
   // ----- per-topic queries -----
 
-  int numChildren(Topic topic) {
-    if (topicManagers.get(topic) != null) {
-      return topicManagers.get(topic).numChildren();
-    }
-    return 0;
-  }
-
-  /**
-   * Returns true if there is a TopicManager associated with this topic (any
-   * parent/children/client exists)
-   */
-  boolean containsTopic(Topic topic) {
-    if (topicManagers.get(topic) != null) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   Collection<ScribeMultiClient> getClientsByTopic(Topic topic) {
     TopicManager manager = topicManagers.get(topic);
     if (manager != null) {
@@ -227,33 +206,6 @@ final class TopicRegistry {
     }
 
     return null;
-  }
-
-  boolean containsChild(Topic topic, NodeHandle child) {
-    TopicManager manager = topicManagers.get(topic);
-    if (manager == null) {
-      return false;
-    } else {
-      return manager.containsChild(child);
-
-    }
-  }
-
-  Collection<Topic> getTopicsByClient(ScribeMultiClient client) {
-    ArrayList<Topic> result = new ArrayList<Topic>();
-
-    for (TopicManager topicManager : topicManagers.values()) {
-      if (topicManager.containsClient(client))
-        result.add(topicManager.getTopic());
-    }
-
-    return result;
-  }
-
-  List<Id> getPathToRoot(Topic topic) {
-    TopicManager manager = topicManagers.get(topic);
-    if (manager == null) return null;
-    return manager.getPathToRoot();
   }
 
   // ----- parent/child indexes -----
@@ -394,30 +346,6 @@ final class TopicRegistry {
       return true;
     } else {
       return false;
-    }
-  }
-
-  void printAllParentsDataStructure() {
-    String s = "printAllParentsDataStructure()";
-    for (NodeHandle parent: allParents.keySet()) {
-      s+="\n  parent: " + parent + " (Topics,TopicExists,ActualParent) are as follows: ";
-      for (Topic t : allParents.get(parent)) {
-        boolean topicExists = containsTopic(t);
-        NodeHandle actualParent = getParent(t);
-          s+="\n    (" + t + ", " + topicExists + ", " + actualParent + ")";
-      }
-    }
-  }
-
-  void printAllChildrenDataStructure() {
-    String s = "printAllChildrenDataStructure()";
-    for (NodeHandle child: allChildren.keySet()) {
-      s+="\n  child: " + child + " (Topics,TopicExists, containsChild) are as follows: ";
-      for (Topic t : allChildren.get(child)) {
-        boolean topicExists = containsTopic(t);
-        boolean containsChild = containsChild(t, child);
-        s+="\n    (" + t + ", " + topicExists + ", " + containsChild + ")";
-      }
     }
   }
 

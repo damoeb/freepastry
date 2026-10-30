@@ -152,11 +152,6 @@ public class SecurityUtils {
   public final static int PASSWORD_SALT_LENGTH = 16;
 
   /**
-   * The name of the hash function.
-   */
-  public final static String HASH_ALGORITHM = HashUtils.ALGORITHM;
-
-  /**
    * The name of the hmac function (RFC 2104 HMAC over SHA-256).
    */
   public final static String HMAC_ALGORITHM = "HmacSHA256";
