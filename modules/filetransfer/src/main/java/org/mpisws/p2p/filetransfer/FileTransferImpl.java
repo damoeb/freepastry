@@ -123,7 +123,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   private int fileChunksInMemory = 0;
 
   public FileTransferImpl(AppSocket socket, FileTransferCallback callback, FileAllocationStrategy fileAllocater, Environment env, Processor p) {
-    this(socket,callback,fileAllocater,env,null,-1,-1);
+    this(socket,callback,fileAllocater,env,p,-1,-1);
   }
 
   public FileTransferImpl(AppSocket socket, FileTransferCallback callback,

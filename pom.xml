@@ -73,7 +73,6 @@
         <errorprone.pending.flags>
             -Xep:ArrayToString:OFF
             -Xep:BoxedPrimitiveEquality:OFF
-            -Xep:ChainingConstructorIgnoresParameter:OFF
             -Xep:CollectionIncompatibleType:OFF
             -Xep:CompareToZero:OFF
             -Xep:ComparisonOutOfRange:OFF
