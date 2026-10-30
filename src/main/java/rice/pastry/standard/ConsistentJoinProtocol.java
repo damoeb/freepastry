@@ -60,6 +60,7 @@ import rice.pastry.NodeSetListener;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeListener;
 import rice.pastry.ReadyStrategy;
+import rice.pastry.join.JoinMessageType;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
 import rice.pastry.routing.RoutingTable;
@@ -161,9 +162,8 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
 
     @Override
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-      switch(type) {
-        case ConsistentJoinMsg.TYPE:
-          return new ConsistentJoinMsg(buf,pn,(NodeHandle)sender);
+      if (JoinMessageType.find(type) == JoinMessageType.CONSISTENT_JOIN) {
+        return new ConsistentJoinMsg(buf,pn,(NodeHandle)sender);
       }
       return super.deserialize(buf, type, priority, sender);
     }

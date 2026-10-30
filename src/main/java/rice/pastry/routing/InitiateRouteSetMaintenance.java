@@ -47,7 +47,7 @@ import rice.pastry.messaging.Message;
  * @author Peter Druschel
  */
 
-public class InitiateRouteSetMaintenance extends Message {
+public final class InitiateRouteSetMaintenance extends Message implements RouteSetProtocolMessage {
   /**
    * Constructor.
    *

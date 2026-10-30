@@ -49,9 +49,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Jeff Hoye
  *
  */
-public class ByteBufferMsg extends PRawMessage {
-  public static final short TYPE = 1;
-
+public final class ByteBufferMsg extends PRawMessage implements RendezvousMessage {
   NodeHandle originalSender;
   ByteBuffer buffer;
 
@@ -68,7 +66,7 @@ public class ByteBufferMsg extends PRawMessage {
   }
 
   public short getType() {
-    return TYPE;
+    return RendezvousMessageType.BYTE_BUFFER.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

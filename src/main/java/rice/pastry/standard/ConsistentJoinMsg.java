@@ -47,6 +47,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.join.JoinAddress;
+import rice.pastry.join.JoinMessageType;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.PRawMessage;
 
@@ -54,8 +55,6 @@ import rice.pastry.messaging.PRawMessage;
  * @author Jeff Hoye
  */
 public class ConsistentJoinMsg extends PRawMessage {
-  public static final short TYPE = 2;
-
   LeafSet ls;
   boolean request;
   HashSet<NodeHandle> failed;
@@ -76,7 +75,7 @@ public class ConsistentJoinMsg extends PRawMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return JoinMessageType.CONSISTENT_JOIN.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

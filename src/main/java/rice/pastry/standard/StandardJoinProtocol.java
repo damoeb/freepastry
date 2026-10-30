@@ -52,6 +52,7 @@ import rice.pastry.ScheduledMessage;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.join.InitiateJoin;
 import rice.pastry.join.JoinAddress;
+import rice.pastry.join.JoinMessageType;
 import rice.pastry.join.JoinProtocol;
 import rice.pastry.join.JoinRequest;
 import rice.pastry.leafset.BroadcastLeafSet;
@@ -99,11 +100,12 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
 
     @Override
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-      switch(type) {
-        case JoinRequest.TYPE:
-          return new JoinRequest(buf,pn, (NodeHandle)sender, pn);
-      }
-      return null;
+      return switch (JoinMessageType.find(type)) {
+        case JOIN_REQUEST -> new JoinRequest(buf,pn, (NodeHandle)sender, pn);
+        // read by the subclasses' deserializers
+        case CONSISTENT_JOIN, RENDEZVOUS_JOIN_REQUEST -> null;
+        case null -> null;
+      };
     }
   }
 

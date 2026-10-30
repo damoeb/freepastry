@@ -53,8 +53,6 @@ import rice.pastry.messaging.PRawMessage;
  */
 
 public class RequestLeafSet extends PRawMessage {
-  public static final short TYPE = 1;
-
   long timeStamp;
 
   /**
@@ -101,7 +99,7 @@ public class RequestLeafSet extends PRawMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return LeafSetMessageType.REQUEST_LEAF_SET.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

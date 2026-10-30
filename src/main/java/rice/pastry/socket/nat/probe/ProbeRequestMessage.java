@@ -45,8 +45,6 @@ import rice.pastry.messaging.PRawMessage;
 
 public class ProbeRequestMessage extends PRawMessage {
 
-  public static final short TYPE = 1;
-
   MultiInetSocketAddress probeRequestor;
   long uid;
 
@@ -73,7 +71,7 @@ public class ProbeRequestMessage extends PRawMessage {
 
   // ***************** Raw Serialization ****************
   public short getType() {
-    return TYPE;
+    return ProbeMessageType.PROBE_REQUEST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

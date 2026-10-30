@@ -86,8 +86,10 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type,
           int priority, NodeHandle sender) throws IOException {
         byte version;
-        switch (type) {
-        case ByteBufferMsg.TYPE:
+        switch (RendezvousMessageType.find(type)) {
+        case null:
+          throw new IllegalArgumentException("Unknown type: "+type);
+        case BYTE_BUFFER:
           version = buf.readByte();
           if (version == 0) { // version 0
             NodeHandle originalSender = thePastryNode.readNodeHandle(buf);
@@ -98,16 +100,16 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
           } else {
             throw new IllegalArgumentException("Unknown version for ByteBufferMsg: "+version);
           }
-        case PilotForwardMsg.TYPE:
+        case PILOT_FORWARD:
           version = buf.readByte();
           if (version == 0) { // version 0
             RendezvousSocketNodeHandle target = (RendezvousSocketNodeHandle)thePastryNode.readNodeHandle(buf);
-            ByteBufferMsg subMsg = (ByteBufferMsg)deserialize(buf, ByteBufferMsg.TYPE, priority, sender);
+            ByteBufferMsg subMsg = (ByteBufferMsg)deserialize(buf, RendezvousMessageType.BYTE_BUFFER.id(), priority, sender);
             return new PilotForwardMsg(getAddress(), subMsg, target);
           } else {
             throw new IllegalArgumentException("Unknown version for PilotForwardMsg: "+version);
           }
-        case OpenChannelMsg.TYPE:
+        case OPEN_CHANNEL:
           version = buf.readByte();
           if (version == 0) { // version 0
             RendezvousSocketNodeHandle rendezvous = (RendezvousSocketNodeHandle)thePastryNode.readNodeHandle(buf);
@@ -117,8 +119,6 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
           } else {
             throw new IllegalArgumentException("Unknown version for PilotForwardMsg: "+version);
           }
-        default:
-          throw new IllegalArgumentException("Unknown type: "+type);
         }
       }
     }); // this constructor doesn't auto-register
@@ -142,27 +142,26 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
 
   @Override
   public void messageForAppl(Message msg) {
-    if (msg instanceof ByteBufferMsg) {
-      ByteBufferMsg bbm = (ByteBufferMsg)msg;
-      logger.debug("messageForAppl({})", bbm);
-      try {
-        tl.messageReceivedFromOverlay((RendezvousSocketNodeHandle)bbm.getOriginalSender(), bbm.buffer, null);
-      } catch (IOException ioe) {
-        logger.warn("dropping {}", bbm, ioe);
+    if (!(msg instanceof RendezvousMessage rendezvousMessage)) {
+      return;
+    }
+    switch (rendezvousMessage) {
+      case ByteBufferMsg bbm -> {
+        logger.debug("messageForAppl({})", bbm);
+        try {
+          tl.messageReceivedFromOverlay((RendezvousSocketNodeHandle)bbm.getOriginalSender(), bbm.buffer, null);
+        } catch (IOException ioe) {
+          logger.warn("dropping {}", bbm, ioe);
+        }
       }
-      return;
-    }
-    if (msg instanceof PilotForwardMsg) {
-      PilotForwardMsg pfm = (PilotForwardMsg)msg;
-      logger.trace("Forwarding message {}", pfm);
-      thePastryNode.send(pfm.getTarget(), pfm.getBBMsg(), null, null);
-      return;
-    }
-    if (msg instanceof OpenChannelMsg) {
-      OpenChannelMsg ocm = (OpenChannelMsg)msg;
-      // we're a NATted node who needs to open a channel
-      tl.openChannel(ocm.getSource(),  ocm.getRendezvous(), ocm.getUid());
-      return;
+      case PilotForwardMsg pfm -> {
+        logger.trace("Forwarding message {}", pfm);
+        thePastryNode.send(pfm.getTarget(), pfm.getBBMsg(), null, null);
+      }
+      case OpenChannelMsg ocm -> {
+        // we're a NATted node who needs to open a channel
+        tl.openChannel(ocm.getSource(),  ocm.getRendezvous(), ocm.getUid());
+      }
     }
   }
 

@@ -54,14 +54,12 @@ import rice.pastry.messaging.PRawMessage;
  * @author Andrew Ladd
  */
 
-public class BroadcastRouteRow extends PRawMessage {
+public final class BroadcastRouteRow extends PRawMessage implements RouteSetProtocolMessage {
 
 
   private NodeHandle fromNode;
 
   private RouteSet[] row;
-
-  public static final short TYPE = 2;
 
 
 
@@ -125,7 +123,7 @@ public class BroadcastRouteRow extends PRawMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return RouteSetMessageType.BROADCAST_ROUTE_ROW.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

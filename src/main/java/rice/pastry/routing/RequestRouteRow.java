@@ -52,9 +52,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Andrew Ladd
  */
 
-public class RequestRouteRow extends PRawMessage {
-  public static final short TYPE = 1;
-
+public final class RequestRouteRow extends PRawMessage implements RouteSetProtocolMessage {
   private short row;
 
   /**
@@ -112,7 +110,7 @@ public class RequestRouteRow extends PRawMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return RouteSetMessageType.REQUEST_ROUTE_ROW.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

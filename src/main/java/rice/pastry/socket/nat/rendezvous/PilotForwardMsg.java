@@ -41,9 +41,7 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.messaging.PRawMessage;
 
-public class PilotForwardMsg extends PRawMessage {
-
-  public static final short TYPE = 2;
+public final class PilotForwardMsg extends PRawMessage implements RendezvousMessage {
 
   private final ByteBufferMsg msg;
   private final RendezvousSocketNodeHandle target;
@@ -55,7 +53,7 @@ public class PilotForwardMsg extends PRawMessage {
   }
 
   public short getType() {
-    return TYPE;
+    return RendezvousMessageType.PILOT_FORWARD.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

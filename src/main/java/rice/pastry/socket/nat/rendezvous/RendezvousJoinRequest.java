@@ -43,6 +43,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
+import rice.pastry.join.JoinMessageType;
 import rice.pastry.join.JoinRequest;
 
 /**
@@ -52,8 +53,6 @@ import rice.pastry.join.JoinRequest;
  *
  */
 public class RendezvousJoinRequest extends JoinRequest {
-  public static final short TYPE = 4;
-
   /**
    * The joiner has created a pilot connection to the pilot node.
    */
@@ -72,7 +71,7 @@ public class RendezvousJoinRequest extends JoinRequest {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return JoinMessageType.RENDEZVOUS_JOIN_REQUEST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

@@ -41,9 +41,7 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.messaging.PRawMessage;
 
-public class OpenChannelMsg extends PRawMessage {
-
-  public static final short TYPE = 3;
+public final class OpenChannelMsg extends PRawMessage implements RendezvousMessage {
 
   RendezvousSocketNodeHandle rendezvous;
   RendezvousSocketNodeHandle source;
@@ -75,7 +73,7 @@ public class OpenChannelMsg extends PRawMessage {
   /************** Serialization **************/
 
   public short getType() {
-    return TYPE;
+    return RendezvousMessageType.OPEN_CHANNEL.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

@@ -45,9 +45,8 @@ import rice.pastry.PastryNode;
 import rice.pastry.messaging.PRawMessage;
 import rice.pastry.routing.RouteSet;
 
-public class RouteRowResponse extends PRawMessage {
+public final class RouteRowResponse extends PRawMessage implements PNSMessage {
 
-  public static final short TYPE = 4;
   private final short index;
   private final RouteSet[] row;
 
@@ -99,7 +98,7 @@ public class RouteRowResponse extends PRawMessage {
   }
 
   public short getType() {
-    return TYPE;
+    return PNSMessageType.ROUTE_ROW_RESPONSE.id();
   }
 
   public short getIndex() {

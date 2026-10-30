@@ -43,9 +43,7 @@ import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.messaging.PRawMessage;
 
-public class FetchLeafsetRequest extends PRawMessage {
-  public static final short TYPE = 1;
-
+public final class FetchLeafsetRequest extends PRawMessage implements FetchLeafsetMessage {
   /**
    * Stored in the RouteMessage
    */
@@ -59,7 +57,7 @@ public class FetchLeafsetRequest extends PRawMessage {
   }
 
   public short getType() {
-    return TYPE;
+    return FetchLeafsetMessageType.REQUEST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

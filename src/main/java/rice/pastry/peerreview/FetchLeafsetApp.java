@@ -66,14 +66,16 @@ public class FetchLeafsetApp extends PastryAppl {
 
   public FetchLeafsetApp(final PastryNode pn, int numNeighbors) {
     super(pn, null, APP_ID, (buf, type, priority, sender) -> {
-      switch(type) {
-      case FetchLeafsetRequest.TYPE:
-        if (sender == null) throw new IOException("Sender is null for FetchLeafsetRequest");
-        return new FetchLeafsetRequest((rice.pastry.NodeHandle)sender,Id.build(buf));
-      case FetchLeafsetResponse.TYPE:
-        return new FetchLeafsetResponse(buf,pn,(rice.pastry.NodeHandle)sender);
+      switch (FetchLeafsetMessageType.find(type)) {
+        case REQUEST -> {
+          if (sender == null) throw new IOException("Sender is null for FetchLeafsetRequest");
+          return new FetchLeafsetRequest((rice.pastry.NodeHandle)sender,Id.build(buf));
+        }
+        case RESPONSE -> {
+          return new FetchLeafsetResponse(buf,pn,(rice.pastry.NodeHandle)sender);
+        }
+        case null -> throw new IOException("Unknown type:"+type);
       }
-      throw new IOException("Unknown type:"+type);
     });
     routeMsgVersion = thePastryNode.getConfig().routeMsgVersion();
     this.numNeighbors = numNeighbors;
@@ -81,17 +83,17 @@ public class FetchLeafsetApp extends PastryAppl {
 
   @Override
   public void messageForAppl(Message msg) {
-    PRawMessage m = (PRawMessage)msg;
-    switch(m.getType()) {
-    case FetchLeafsetRequest.TYPE:
-      FetchLeafsetRequest req = (FetchLeafsetRequest)m;
-      logger.info("getNeighbors({}) sending response", req.getSubject());
+    PRawMessage pm = (PRawMessage)msg;
+    if (!(pm instanceof FetchLeafsetMessage m)) {
+      return;
+    }
+    switch (m) {
+      case FetchLeafsetRequest req -> {
+        logger.info("getNeighbors({}) sending response", req.getSubject());
 
-      thePastryNode.send(req.getSender(),new FetchLeafsetResponse(req.getSubject(),thePastryNode.getLeafSet()),null,null);
-      return;
-    case FetchLeafsetResponse.TYPE:
-      handleResponse((FetchLeafsetResponse)m);
-      return;
+        thePastryNode.send(req.getSender(),new FetchLeafsetResponse(req.getSubject(),thePastryNode.getLeafSet()),null,null);
+      }
+      case FetchLeafsetResponse response -> handleResponse(response);
     }
   }
 

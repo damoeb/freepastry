@@ -57,6 +57,7 @@ import rice.pastry.client.PastryAppl;
 import rice.pastry.leafset.BroadcastLeafSet;
 import rice.pastry.leafset.InitiateLeafSetMaintenance;
 import rice.pastry.leafset.LeafSet;
+import rice.pastry.leafset.LeafSetMessageType;
 import rice.pastry.leafset.LeafSetProtocol;
 import rice.pastry.leafset.LeafSetProtocolAddress;
 import rice.pastry.leafset.RequestLeafSet;
@@ -111,13 +112,11 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     }
 
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-      switch (type) {
-        case RequestLeafSet.TYPE:
-          return new RequestLeafSet(sender, buf);
-        case BroadcastLeafSet.TYPE:
-          return new BroadcastLeafSet(buf, pn);
-      }
-      return null;
+      return switch (LeafSetMessageType.find(type)) {
+        case REQUEST_LEAF_SET -> new RequestLeafSet(sender, buf);
+        case BROADCAST_LEAF_SET -> new BroadcastLeafSet(buf, pn);
+        case null -> null;
+      };
     }
 
   }

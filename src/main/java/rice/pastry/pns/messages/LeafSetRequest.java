@@ -43,9 +43,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.messaging.PRawMessage;
 
-public class LeafSetRequest extends PRawMessage {
-  public static final short TYPE = 1;
-
+public final class LeafSetRequest extends PRawMessage implements PNSMessage {
   public LeafSetRequest(NodeHandle nodeHandle, int dest) {
     super(dest);
     if (nodeHandle == null) throw new IllegalArgumentException("nodeHandle == null!");
@@ -61,7 +59,7 @@ public class LeafSetRequest extends PRawMessage {
   }
 
   public short getType() {
-    return TYPE;
+    return PNSMessageType.LEAF_SET_REQUEST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

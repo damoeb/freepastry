@@ -68,7 +68,15 @@ class MessageTypeIdTest {
       "rice.p2p.glacier.v2.messaging.GlacierMessageType",
       "rice.p2p.aggregation.AggregationContentType",
       "rice.p2p.aggregation.AggregationHandleType",
-      "org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType");
+      "org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType",
+      "rice.pastry.join.JoinMessageType",
+      "rice.pastry.leafset.LeafSetMessageType",
+      "rice.pastry.routing.RouteSetMessageType",
+      "rice.pastry.routing.RouterMessageType",
+      "rice.pastry.pns.messages.PNSMessageType",
+      "rice.pastry.peerreview.FetchLeafsetMessageType",
+      "rice.pastry.socket.nat.rendezvous.RendezvousMessageType",
+      "rice.pastry.socket.nat.probe.ProbeMessageType");
 
   private enum Clean implements MessageTypeId {
     ONE(1), TWO(2);

@@ -63,8 +63,6 @@ import rice.pastry.messaging.PRawMessage;
  */
 
 public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.RouteMessage {
-  public static final short TYPE = -23525;
-
   private Id target;
   private NodeHandle destinationHandle;
   private byte version;
@@ -458,7 +456,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
   }
 
   public short getType() {
-    return TYPE;
+    return RouterMessageType.ROUTE.id();
   }
 
   class RMDeserializer extends PMessageDeserializer {

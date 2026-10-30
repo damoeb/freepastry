@@ -43,8 +43,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.messaging.PRawMessage;
 
-public class RouteRowRequest extends PRawMessage {
-  public static final short TYPE = 3;
+public final class RouteRowRequest extends PRawMessage implements PNSMessage {
   private final short index;
 
   public RouteRowRequest(NodeHandle nodeHandle, short index, int dest) {
@@ -68,7 +67,7 @@ public class RouteRowRequest extends PRawMessage {
   }
 
   public short getType() {
-    return TYPE;
+    return PNSMessageType.ROUTE_ROW_REQUEST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

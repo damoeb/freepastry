@@ -52,7 +52,9 @@ import rice.pastry.routing.InitiateRouteSetMaintenance;
 import rice.pastry.routing.RequestRouteRow;
 import rice.pastry.routing.RouteProtocolAddress;
 import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.RouteSetMessageType;
 import rice.pastry.routing.RouteSetProtocol;
+import rice.pastry.routing.RouteSetProtocolMessage;
 import rice.pastry.routing.RoutingTable;
 
 /**
@@ -80,13 +82,11 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
     }
 
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-      switch (type) {
-        case RequestRouteRow.TYPE:
-          return new RequestRouteRow(sender,buf);
-        case BroadcastRouteRow.TYPE:
-          return new BroadcastRouteRow(buf,pn,pn);
-      }
-      return null;
+      return switch (RouteSetMessageType.find(type)) {
+        case REQUEST_ROUTE_ROW -> new RequestRouteRow(sender,buf);
+        case BROADCAST_ROUTE_ROW -> new BroadcastRouteRow(buf,pn,pn);
+        case null -> null;
+      };
     }
   }
 
@@ -115,53 +115,50 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
    */
 
   public void messageForAppl(Message msg) {
-    if (msg instanceof BroadcastRouteRow) {
-      BroadcastRouteRow brr = (BroadcastRouteRow) msg;
-      if (logger.isTraceEnabled()) logger.trace("Received "+brr.toStringFull());
-
-      RouteSet[] row = brr.getRow();
-
-      NodeHandle nh = brr.from();
-      if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
-        routeTable.put(nh);
-
-      for (RouteSet routeSet : row) {
-        RouteSet rs = routeSet;
-
-        for (int j = 0; rs != null && j < rs.size(); j++) {
-          nh = rs.get(j);
-          if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
-            continue;
-          routeTable.put(nh);
-        }
-      }
-    }
-
-    else if (msg instanceof RequestRouteRow) { // a remote node request one of
-                                               // our routeTable rows
-      RequestRouteRow rrr = (RequestRouteRow) msg;
-
-      int reqRow = rrr.getRow();
-      NodeHandle nh = rrr.returnHandle();
-
-      RouteSet row[] = routeTable.getRow(reqRow);
-      BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
-      if (logger.isTraceEnabled()) logger.trace("Responding to "+rrr+" with "+brr.toStringFull());
-      thePastryNode.send(nh,brr,null,options);
-    }
-
-    else if (msg instanceof InitiateRouteSetMaintenance) { // request for
-                                                           // routing table
-                                                           // maintenance
-
-      // perform routing table maintenance
-      maintainRouteSet();
-
-    }
-
-    else
+    if (!(msg instanceof RouteSetProtocolMessage routeSetMessage)) {
       throw new Error(
           "StandardRouteSetProtocol: received message is of unknown type");
+    }
+    switch (routeSetMessage) {
+      case BroadcastRouteRow brr -> {
+        if (logger.isTraceEnabled()) logger.trace("Received "+brr.toStringFull());
+
+        RouteSet[] row = brr.getRow();
+
+        NodeHandle nh = brr.from();
+        if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
+          routeTable.put(nh);
+
+        for (RouteSet routeSet : row) {
+          RouteSet rs = routeSet;
+
+          for (int j = 0; rs != null && j < rs.size(); j++) {
+            nh = rs.get(j);
+            if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
+              continue;
+            routeTable.put(nh);
+          }
+        }
+      }
+
+      // a remote node request one of our routeTable rows
+      case RequestRouteRow rrr -> {
+
+        int reqRow = rrr.getRow();
+        NodeHandle nh = rrr.returnHandle();
+
+        RouteSet row[] = routeTable.getRow(reqRow);
+        BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
+        if (logger.isTraceEnabled()) logger.trace("Responding to "+rrr+" with "+brr.toStringFull());
+        thePastryNode.send(nh,brr,null,options);
+      }
+
+      // request for routing table maintenance
+      case InitiateRouteSetMaintenance irsm -> {
+        // perform routing table maintenance
+        maintainRouteSet();
+      }
+    }
 
   }
 

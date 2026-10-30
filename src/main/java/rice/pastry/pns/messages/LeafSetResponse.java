@@ -44,9 +44,7 @@ import rice.pastry.NodeHandleFactory;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.PRawMessage;
 
-public class LeafSetResponse extends PRawMessage {
-  public static final short TYPE = 2;
-
+public final class LeafSetResponse extends PRawMessage implements PNSMessage {
   private final LeafSet leafset;
 
   public LeafSetResponse(LeafSet leafset, int dest) {
@@ -56,7 +54,7 @@ public class LeafSetResponse extends PRawMessage {
   }
 
   public short getType() {
-    return TYPE;
+    return PNSMessageType.LEAF_SET_RESPONSE.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

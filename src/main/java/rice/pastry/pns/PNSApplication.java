@@ -66,6 +66,8 @@ import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
 import rice.pastry.pns.messages.LeafSetRequest;
 import rice.pastry.pns.messages.LeafSetResponse;
+import rice.pastry.pns.messages.PNSMessage;
+import rice.pastry.pns.messages.PNSMessageType;
 import rice.pastry.pns.messages.RouteRowRequest;
 import rice.pastry.pns.messages.RouteRowResponse;
 import rice.pastry.routing.RouteSet;
@@ -135,68 +137,63 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
   public void messageForAppl(Message msg) {
     logger.trace("messageForAppl({})", msg);
 
-    if (msg instanceof LeafSetRequest) {
-      LeafSetRequest req = (LeafSetRequest)msg;
-      thePastryNode.send(req.getSender(), new LeafSetResponse(thePastryNode.getLeafSet(), getAddress()), null, null);
+    if (!(msg instanceof PNSMessage pnsMessage)) {
+      logger.warn("unrecognized message in messageForAppl({})", msg);
       return;
     }
-
-    if (msg instanceof LeafSetResponse) {
-      LeafSetResponse response = (LeafSetResponse)msg;
-      synchronized (waitingForLeafSet) {
-        LeafSet ls = response.getLeafset();
-        Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>> waiters = waitingForLeafSet.remove(ls.get(0));
-        if (waiters != null) {
-          for (Tuple<Continuation<LeafSet, Exception>, Cancellable> w : waiters) {
-            w.b().cancel();
-            w.a().receiveResult(ls);
-          }
-        }
+    switch (pnsMessage) {
+      case LeafSetRequest req -> {
+        thePastryNode.send(req.getSender(), new LeafSetResponse(thePastryNode.getLeafSet(), getAddress()), null, null);
       }
-      return;
-    }
 
-    if (msg instanceof RouteRowRequest) {
-      RouteRowRequest req = (RouteRowRequest)msg;
-      thePastryNode.send(req.getSender(),
-          new RouteRowResponse(
-              thePastryNode.getLocalHandle(),
-              req.getIndex(),
-              thePastryNode.getRoutingTable().getRow(req.getIndex()), getAddress()), null, null);
-      return;
-    }
-
-    if (msg instanceof RouteRowResponse) {
-      RouteRowResponse response = (RouteRowResponse)msg;
-      synchronized (waitingForRouteRow) {
-        Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] waiters = waitingForRouteRow.get(response.getSender());
-        if (waiters != null) {
-          if (waiters[response.getIndex()] != null) {
-            for (Tuple<Continuation<RouteSet[], Exception>, Cancellable> w : new ArrayList<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>(waiters[response.getIndex()])) {
+      case LeafSetResponse response -> {
+        synchronized (waitingForLeafSet) {
+          LeafSet ls = response.getLeafset();
+          Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>> waiters = waitingForLeafSet.remove(ls.get(0));
+          if (waiters != null) {
+            for (Tuple<Continuation<LeafSet, Exception>, Cancellable> w : waiters) {
               w.b().cancel();
-              w.a().receiveResult(response.getRow());
+              w.a().receiveResult(ls);
             }
-            waiters[response.getIndex()].clear();
-            waiters[response.getIndex()] = null;
-
-            // remove the entry if all rows empty
-            boolean deleteIt = true;
-            for (int i = 0; i < depth; i++) {
-              if (waiters[i] != null) {
-                deleteIt = false;
-                break;
-              }
-            }
-
-            if (deleteIt) waitingForRouteRow.remove(response.getSender());
           }
         }
       }
-      return;
+
+      case RouteRowRequest req -> {
+        thePastryNode.send(req.getSender(),
+            new RouteRowResponse(
+                thePastryNode.getLocalHandle(),
+                req.getIndex(),
+                thePastryNode.getRoutingTable().getRow(req.getIndex()), getAddress()), null, null);
+      }
+
+      case RouteRowResponse response -> {
+        synchronized (waitingForRouteRow) {
+          Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] waiters = waitingForRouteRow.get(response.getSender());
+          if (waiters != null) {
+            if (waiters[response.getIndex()] != null) {
+              for (Tuple<Continuation<RouteSet[], Exception>, Cancellable> w : new ArrayList<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>(waiters[response.getIndex()])) {
+                w.b().cancel();
+                w.a().receiveResult(response.getRow());
+              }
+              waiters[response.getIndex()].clear();
+              waiters[response.getIndex()] = null;
+
+              // remove the entry if all rows empty
+              boolean deleteIt = true;
+              for (int i = 0; i < depth; i++) {
+                if (waiters[i] != null) {
+                  deleteIt = false;
+                  break;
+                }
+              }
+
+              if (deleteIt) waitingForRouteRow.remove(response.getSender());
+            }
+          }
+        }
+      }
     }
-
-
-    logger.warn("unrecognized message in messageForAppl({})", msg);
   }
 
   public Cancellable getNearHandles(final Collection<NodeHandle> bootHandles, final Continuation<Collection<NodeHandle>, Exception> deliverResultToMe) {
@@ -805,17 +802,13 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
   class PNSDeserializer implements MessageDeserializer {
     public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
-      switch(type) {
-      case LeafSetRequest.TYPE:
-        return LeafSetRequest.build(buf, (NodeHandle)sender, getAddress());
-      case LeafSetResponse.TYPE:
-        return LeafSetResponse.build(buf, thePastryNode, getAddress());
-      case RouteRowRequest.TYPE:
-        return RouteRowRequest.build(buf, (NodeHandle)sender, getAddress());
-      case RouteRowResponse.TYPE:
-        return new RouteRowResponse(buf, thePastryNode, (NodeHandle)sender, getAddress());
-      }
-      return null;
+      return switch (PNSMessageType.find(type)) {
+        case LEAF_SET_REQUEST -> LeafSetRequest.build(buf, (NodeHandle)sender, getAddress());
+        case LEAF_SET_RESPONSE -> LeafSetResponse.build(buf, thePastryNode, getAddress());
+        case ROUTE_ROW_REQUEST -> RouteRowRequest.build(buf, (NodeHandle)sender, getAddress());
+        case ROUTE_ROW_RESPONSE -> new RouteRowResponse(buf, thePastryNode, (NodeHandle)sender, getAddress());
+        case null -> null;
+      };
     }
 
   }

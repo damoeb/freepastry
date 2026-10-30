@@ -66,12 +66,10 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
     this.addressStrategy = addressStrategy;
 
     setDeserializer((buf, type, priority, sender) -> {
-      switch(type) {
-      case ProbeRequestMessage.TYPE:
-        return ProbeRequestMessage.build(buf, getAddress());
-      default:
-        throw new IllegalArgumentException("Unknown type: "+type);
-      }
+      return switch (ProbeMessageType.find(type)) {
+        case PROBE_REQUEST -> ProbeRequestMessage.build(buf, getAddress());
+        case null -> throw new IllegalArgumentException("Unknown type: "+type);
+      };
     });
   }
 

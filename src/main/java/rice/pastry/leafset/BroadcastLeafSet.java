@@ -54,8 +54,6 @@ import rice.pastry.messaging.PRawMessage;
  */
 
 public class BroadcastLeafSet extends PRawMessage {
-  public static final short TYPE = 2;
-
   public static final int Update = 0;
 
   public static final int JoinInitial = 1;
@@ -135,7 +133,7 @@ public class BroadcastLeafSet extends PRawMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return LeafSetMessageType.BROADCAST_LEAF_SET.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

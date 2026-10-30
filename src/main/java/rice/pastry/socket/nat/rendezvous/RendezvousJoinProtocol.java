@@ -49,6 +49,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.ReadyStrategy;
+import rice.pastry.join.JoinMessageType;
 import rice.pastry.join.JoinRequest;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
@@ -160,9 +161,8 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
 
     @Override
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-      switch(type) {
-        case RendezvousJoinRequest.TYPE:
-          return new RendezvousJoinRequest(buf,pn, (NodeHandle)sender, pn);
+      if (JoinMessageType.find(type) == JoinMessageType.RENDEZVOUS_JOIN_REQUEST) {
+        return new RendezvousJoinRequest(buf,pn, (NodeHandle)sender, pn);
       }
       return super.deserialize(buf, type, priority, sender);
     }

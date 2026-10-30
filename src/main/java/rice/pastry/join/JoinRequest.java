@@ -65,8 +65,6 @@ public class JoinRequest extends PRawMessage {
   public static final byte HAS_JOIN_HANDLE = 0x02;
   public static final byte HAS_LEAFSET = 0x02;
 
-  public static final short TYPE = 1;
-
   private final NodeHandle handle;
 
   private NodeHandle joinHandle;
@@ -214,7 +212,7 @@ public class JoinRequest extends PRawMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return JoinMessageType.JOIN_REQUEST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
