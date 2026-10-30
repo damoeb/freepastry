@@ -64,14 +64,14 @@ import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
  */
 @SuppressWarnings("unchecked")
 public class Moraine implements GCPast, VersioningPast {
-  protected GCPast newPast;
-  protected GCPast oldPast;
+  private final GCPast newPast;
+  private final GCPast oldPast;
   // convenience variables to prevent casting everywhere
   // identical to the above vars, just different types
-  protected VersioningPast vNewPast;
-  protected VersioningPast vOldPast;
+  private final VersioningPast vNewPast;
+  private final VersioningPast vOldPast;
 
-  protected Logger logger;
+  private final Logger logger;
 
   public Moraine(GCPast newPast, GCPast oldPast) {
     this.newPast = newPast;

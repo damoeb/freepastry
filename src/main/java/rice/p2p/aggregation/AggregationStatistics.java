@@ -43,17 +43,17 @@ import rice.environment.Environment;
 
 public class AggregationStatistics {
   public final long granularity;
-  public int numObjectsTotal;
-  public int numObjectsAlive;
-  public int numAggregatesTotal;
-  public int numPointerArrays;
-  public int criticalAggregates;
-  public int orphanedAggregates;
-  public int[] objectLifetimeHisto;
-  public int[] aggregateLifetimeHisto;
-  public long totalObjectsSize;
-  public long liveObjectsSize;
-  public long time;
+  private int numObjectsTotal;
+  private int numObjectsAlive;
+  private int numAggregatesTotal;
+  private int numPointerArrays;
+  private int criticalAggregates;
+  private int orphanedAggregates;
+  private final int[] objectLifetimeHisto;
+  private final int[] aggregateLifetimeHisto;
+  private long totalObjectsSize;
+  private long liveObjectsSize;
+  private final long time;
   private Environment environment;
 
   public AggregationStatistics(int histoLength, long granularityArg, Environment env) {
@@ -72,11 +72,58 @@ public class AggregationStatistics {
     time = environment.getTimeSource().currentTimeMillis();
   }
 
+  /** Counts one aggregate whose lifetime falls into the given histogram slot. */
+  public void addAggregate(int numObjects, int referenceCount, int nominalReferenceCount, int lifetimeHistoIndex) {
+    numAggregatesTotal ++;
+    numObjectsTotal += numObjects;
+    if (numObjects == 0)
+      numPointerArrays ++;
+    if (referenceCount < nominalReferenceCount)
+      criticalAggregates ++;
+    if (referenceCount < 1)
+      orphanedAggregates ++;
+    aggregateLifetimeHisto[lifetimeHistoIndex] ++;
+  }
+
+  /** Counts one object whose refreshed lifetime falls into the given histogram slot. */
+  public void addObject(int size, boolean alive, int lifetimeHistoIndex) {
+    totalObjectsSize += size;
+    if (alive) {
+      numObjectsAlive ++;
+      liveObjectsSize += size;
+    }
+    objectLifetimeHisto[lifetimeHistoIndex] ++;
+  }
+
   public void dump(Logger logger) {
     String s = "@L.AG interval="+time+"-"+environment.getTimeSource().currentTimeMillis()+" granularity="+granularity+"\n";
     s+="@L.AG   objsTotal="+numObjectsTotal+" objsAlive="+numObjectsAlive+"\n";
     s+="@L.AG   objBytesTotal="+totalObjectsSize+" objBytesAlive="+liveObjectsSize+"\n";
     s+="@L.AG   aggrTotal="+numAggregatesTotal+" ptrArrays="+numPointerArrays+" critical="+criticalAggregates+" orphaned="+orphanedAggregates;
     logger.info(s);
+  }
+
+  public int getCriticalAggregates() {
+    return criticalAggregates;
+  }
+
+  public int getNumAggregatesTotal() {
+    return numAggregatesTotal;
+  }
+
+  public int getNumObjectsAlive() {
+    return numObjectsAlive;
+  }
+
+  public int getNumObjectsTotal() {
+    return numObjectsTotal;
+  }
+
+  public int getNumPointerArrays() {
+    return numPointerArrays;
+  }
+
+  public int getOrphanedAggregates() {
+    return orphanedAggregates;
   }
 }

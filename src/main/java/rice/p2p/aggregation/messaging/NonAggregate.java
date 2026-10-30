@@ -61,7 +61,7 @@ import rice.p2p.past.rawserialization.RawPastContent;
 public class NonAggregate implements RawPastContent {
   public static final short TYPE = 2;
 
-  public RawPastContent content;
+  private RawPastContent content;
 
   public NonAggregate(PastContent content) {
     this(content instanceof RawPastContent ? (RawPastContent)content : new JavaSerializedPastContent(content));

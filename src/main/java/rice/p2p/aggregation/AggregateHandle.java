@@ -49,10 +49,10 @@ public class AggregateHandle implements RawGCPastContentHandle {
 
   public static final short TYPE = 1;
 
-  protected Id id;
-  protected NodeHandle handle;
-  protected long version;
-  protected long expiration;
+  private final Id id;
+  private final NodeHandle handle;
+  private final long version;
+  private final long expiration;
 
   public AggregateHandle(NodeHandle handle, Id id, long version, long expiration) {
     this.id = id;

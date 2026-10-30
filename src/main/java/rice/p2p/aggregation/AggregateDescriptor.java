@@ -40,12 +40,12 @@ import rice.p2p.commonapi.Id;
 
 class AggregateDescriptor {
 
-  public Id key;
-  public long currentLifetime;
-  public ObjectDescriptor[] objects;
-  public Id[] pointers;
-  public boolean marker;
-  public int referenceCount;
+  private final Id key;
+  private long currentLifetime;
+  private final ObjectDescriptor[] objects;
+  private final Id[] pointers;
+  private boolean marker;
+  private int referenceCount;
 
   public AggregateDescriptor(Id key, long currentLifetime, ObjectDescriptor[] objects, Id[] pointers) {
     this.key = key;
@@ -59,18 +59,30 @@ class AggregateDescriptor {
   public int lookupNewest(Id id) {
     int result = -1;
     for (int i=0; i<objects.length; i++)
-      if (objects[i].key.equals(id))
-        if ((result == -1) || (objects[i].version > objects[result].version))
+      if (objects[i].getKey().equals(id))
+        if ((result == -1) || (objects[i].getVersion() > objects[result].getVersion()))
           result = i;
     return result;
   }
 
   public int lookupSpecific(Id id, long version) {
     for (int i=0; i<objects.length; i++)
-      if (objects[i].key.equals(id) && (objects[i].version == version))
+      if (objects[i].getKey().equals(id) && (objects[i].getVersion() == version))
         return i;
 
     return -1;
+  }
+
+  public void resetReferenceCount() {
+    referenceCount = 0;
+  }
+
+  public void setCurrentLifetime(long currentLifetime) {
+    this.currentLifetime = currentLifetime;
+  }
+
+  public void setMarker(boolean marker) {
+    this.marker = marker;
   }
 
   public void addReference() {
@@ -89,7 +101,31 @@ class AggregateDescriptor {
     int result = 0;
     for (int i=0; i<objects.length; i++)
       if (objects[i].isAliveAt(pointInTime))
-        result += objects[i].size;
+        result += objects[i].getSize();
     return result;
+  }
+
+  public long getCurrentLifetime() {
+    return currentLifetime;
+  }
+
+  public Id getKey() {
+    return key;
+  }
+
+  public boolean isMarker() {
+    return marker;
+  }
+
+  public ObjectDescriptor[] getObjects() {
+    return objects;
+  }
+
+  public Id[] getPointers() {
+    return pointers;
+  }
+
+  public int getReferenceCount() {
+    return referenceCount;
   }
 }

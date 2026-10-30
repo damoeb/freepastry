@@ -44,11 +44,11 @@ public class ObjectDescriptor implements Serializable, Comparable<ObjectDescript
 
   private static final long serialVersionUID = -3035115249019556223L;
 
-  public Id key;
-  public long version;
-  public long currentLifetime;
-  public long refreshedLifetime;
-  public int size;
+  private final Id key;
+  private final long version;
+  private long currentLifetime;
+  private long refreshedLifetime;
+  private final int size;
 
   public ObjectDescriptor(Id key, long version, long currentLifetime, long refreshedLifetime, int size) {
     this.key = key;
@@ -94,5 +94,33 @@ public class ObjectDescriptor implements Serializable, Comparable<ObjectDescript
       return 1;
 
     return 0;
+  }
+
+  public void setCurrentLifetime(long currentLifetime) {
+    this.currentLifetime = currentLifetime;
+  }
+
+  public void setRefreshedLifetime(long refreshedLifetime) {
+    this.refreshedLifetime = refreshedLifetime;
+  }
+
+  public long getCurrentLifetime() {
+    return currentLifetime;
+  }
+
+  public Id getKey() {
+    return key;
+  }
+
+  public long getRefreshedLifetime() {
+    return refreshedLifetime;
+  }
+
+  public int getSize() {
+    return size;
+  }
+
+  public long getVersion() {
+    return version;
   }
 };

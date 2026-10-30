@@ -43,13 +43,13 @@ import rice.p2p.commonapi.NodeHandle;
 public abstract class AggregationMessage implements Message {
 
   // the unique id for this message
-  protected int id;
+  private final int id;
 
   // the source Id of this message
-  protected NodeHandle source;
+  private final NodeHandle source;
 
   // the destination of this message
-  protected Id dest;
+  private final Id dest;
 
   /**
    * Constructor which takes a unique integer Id
