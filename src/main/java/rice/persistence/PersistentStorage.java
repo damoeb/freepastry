@@ -309,7 +309,7 @@ public class PersistentStorage implements Storage {
 
         if ((f != null) && (f.exists())) {
           File g = getFile(newId);
-          renameFile(f, g);
+          StorageFiles.renameFile(f, g);
 
           checkDirectory(g.getParentFile());
 
@@ -373,23 +373,23 @@ public class PersistentStorage implements Storage {
           logger.atTrace().log(() -> "Done writing object " + obj + " under id " + id.toStringFull() + " in root " + appDirectory);
 
           /* abort if this will put us over quota */
-          if (getUsedSpace() + getFileLength(transcFile) > getStorageSize())
+          if (getUsedSpace() + StorageFiles.getFileLength(transcFile) > getStorageSize())
             throw new OutofDiskSpaceException();
         } catch (Exception e) {
           /* if an IOException is thrown, delete the temporary file and abort */
           logger.warn("", e);
-          deleteFile(transcFile);
+          StorageFiles.deleteFile(transcFile);
           throw e;
         }
 
         logger.atTrace().log(() -> "COUNT: Storing data of class " + obj.getClass().getName() + " under " + id.toStringFull() + " of size " + transcFile.length() + " in " + name);
 
         /* recalculate amount used */
-        decreaseUsedSpace(getFileLength(objFile));
-        increaseUsedSpace(getFileLength(transcFile));
+        decreaseUsedSpace(StorageFiles.getFileLength(objFile));
+        increaseUsedSpace(StorageFiles.getFileLength(transcFile));
 
         /* now, rename the temporary file to be the real file */
-        renameFile(transcFile, objFile);
+        StorageFiles.renameFile(transcFile, objFile);
 
         /* mark the metadata cache of this file to be dirty */
         if (index) {
@@ -449,7 +449,7 @@ public class PersistentStorage implements Storage {
 
         /* record the space collected and delete the file */
         decreaseUsedSpace(objFile.length());
-        deleteFile(objFile);
+        StorageFiles.deleteFile(objFile);
 
         return Boolean.TRUE;
       }
@@ -761,16 +761,16 @@ public class PersistentStorage implements Storage {
    */
   private void initDirectories() throws IOException {
     rootDirectory = new File(rootDir);
-    createDirectory(rootDirectory);
+    StorageFiles.createDirectory(rootDirectory);
 
     backupDirectory = new File(rootDirectory, BACKUP_DIRECTORY);
-    createDirectory(backupDirectory);
+    StorageFiles.createDirectory(backupDirectory);
 
     appDirectory = new File(backupDirectory, getName());
-    createDirectory(appDirectory);
+    StorageFiles.createDirectory(appDirectory);
 
     lostDirectory = new File(backupDirectory, LOST_AND_FOUND_DIRECTORY);
-    createDirectory(lostDirectory);
+    StorageFiles.createDirectory(lostDirectory);
   }
 
   /**
@@ -818,7 +818,7 @@ public class PersistentStorage implements Storage {
 
     /* and delete the old metadata file, if it exists */
     if (dirs.length > 0)
-      deleteFile(new File(dir, METADATA_FILENAME));
+      StorageFiles.deleteFile(new File(dir, METADATA_FILENAME));
   }
 
   /**
@@ -879,7 +879,7 @@ public class PersistentStorage implements Storage {
     for (int i=0; i<files.length; i++) {
       try {
         Id id = readKey(files[i]);
-        long len = getFileLength(files[i]);
+        long len = StorageFiles.getFileLength(files[i]);
 
         if (id == null)
           logger.info("READING {} RETURNED NULL!", files[i]);
@@ -926,20 +926,20 @@ public class PersistentStorage implements Storage {
    */
   private void resolveConflict(File file1, File file2, File output) throws IOException {
     if (! file2.exists()) {
-      renameFile(file1, output);
+      StorageFiles.renameFile(file1, output);
     } else if (! file1.exists()) {
-      renameFile(file2, output);
+      StorageFiles.renameFile(file2, output);
     } else if (file1.equals(file2)) {
-      renameFile(file1, output);
+      StorageFiles.renameFile(file1, output);
     } else {
       logger.debug("resolving conflict between {} and {}", file1, file2);
 
       if (readVersion(file1) < readVersion(file2)) {
         moveToLost(file1);
-        renameFile(file2, output);
+        StorageFiles.renameFile(file2, output);
       } else {
         moveToLost(file2);
-        renameFile(file1, output);
+        StorageFiles.renameFile(file1, output);
       }
     }
   }
@@ -951,7 +951,7 @@ public class PersistentStorage implements Storage {
    *
    */
   private void moveToLost(File file) throws IOException {
-    renameFile(file, new File(lostDirectory, getPrefix(file.getParentFile()) + file.getName()));
+    StorageFiles.renameFile(file, new File(lostDirectory, getPrefix(file.getParentFile()) + file.getName()));
   }
 
   /*****************************************************************/
@@ -995,10 +995,10 @@ public class PersistentStorage implements Storage {
     logger.debug("Pruning directory {} due to emptiness", dir);
 
     /* First delete the metadata file, if it exists */
-    deleteFile(new File(dir, METADATA_FILENAME));
+    StorageFiles.deleteFile(new File(dir, METADATA_FILENAME));
 
     /* Then remove the directory */
-    deleteDirectory(dir);
+    StorageFiles.deleteDirectory(dir);
 
     /* Finally update the metadata */
     directories.remove(dir);
@@ -1039,7 +1039,7 @@ public class PersistentStorage implements Storage {
     /* create the new directories, move the old ones */
     for (int i=0; i<newDirNames.length; i++) {
       newDirs[i] = new File(dir, newDirNames[i]);
-      createDirectory(newDirs[i]);
+      StorageFiles.createDirectory(newDirs[i]);
       logger.debug("Creating directory {}", newDirNames[i]);
 
       /* now look through the original directory and move any matching dirs */
@@ -1051,7 +1051,7 @@ public class PersistentStorage implements Storage {
         File oldDir = new File(dir, subDirNames[j]);
         newSubDirs[j] = new File(newDirs[i], subDirNames[j].substring(newDirNames[i].length()));
         logger.debug("Moving the old direcotry {} to {}", oldDir, newSubDirs[j]);
-        renameFile(oldDir, newSubDirs[j]);
+        StorageFiles.renameFile(oldDir, newSubDirs[j]);
 
         /* remove the stale entry, add the new one */
         this.directories.remove(oldDir);
@@ -1106,9 +1106,9 @@ public class PersistentStorage implements Storage {
       directories.put(dirs[i], new File[0]);
 
       if (dirs[i].exists() && dirs[i].isFile())
-        renameFile(dirs[i], new File(dir, dirs[i].getName() + ZERO_LENGTH_NAME));
+        StorageFiles.renameFile(dirs[i], new File(dir, dirs[i].getName() + ZERO_LENGTH_NAME));
 
-      createDirectory(dirs[i]);
+      StorageFiles.createDirectory(dirs[i]);
       logger.debug("Creating directory {}", dirNames[i]);
 
       /* mark this directory for metadata syncing */
@@ -1125,14 +1125,14 @@ public class PersistentStorage implements Storage {
       for (int j = 0; j < dirs.length; j++) {
         if (files[i].getName().startsWith(dirs[j].getName())) {
           if (logger.isTraceEnabled()) logger.trace("Renaming file " + files[i] + " to " + new File(dirs[j], files[i].getName().substring(dirs[j].getName().length())));
-          renameFile(files[i], new File(dirs[j], files[i].getName().substring(dirs[j].getName().length())));
+          StorageFiles.renameFile(files[i], new File(dirs[j], files[i].getName().substring(dirs[j].getName().length())));
           break;
         }
       }
     }
 
     /* and remove the metadata file */
-    deleteFile(new File(dir, METADATA_FILENAME));
+    StorageFiles.deleteFile(new File(dir, METADATA_FILENAME));
 
     logger.debug("Done expanding directory {}", dir);
   }
@@ -1240,7 +1240,7 @@ public class PersistentStorage implements Storage {
 
       /* record the space collected and delete the file */
       decreaseUsedSpace(dir.length());
-      deleteFile(dir);
+      StorageFiles.deleteFile(dir);
     } else {
       File[] dirs = dir.listFiles();
 
@@ -1253,7 +1253,7 @@ public class PersistentStorage implements Storage {
         prefixes.remove(dirs[i]);
 
         /* delete the dir */
-        deleteFile(dirs[i]);
+        StorageFiles.deleteFile(dirs[i]);
       }
     }
   }
@@ -1261,69 +1261,6 @@ public class PersistentStorage implements Storage {
   /*****************************************************************/
   /* Helper functions for File Management                          */
   /*****************************************************************/
-
-  /**
-   * Create a directory given its name
-   *
-   * @param directory The directory to be created
-   * @throws IOException if the directory cannot be created
-   */
-  private static void createDirectory(File directory) throws IOException {
-    if ((directory == null) || (directory.exists() && directory.isFile()) || (! (directory.exists()) && (! directory.mkdirs())))
-      throw new IOException("Creation of directory " + directory + " failed!");
-  }
-
-  /**
-   * Removes an empty directory given its name
-   *
-   * @param directory The directory to be deleted
-   * @throws IOException if the directory is not empty or cannot be deleted
-   */
-  private static void deleteDirectory(File directory) throws IOException {
-    if ((directory != null) && directory.exists()) {
-      if (directory.listFiles().length > 0)
-        throw new IOException("Cannot delete " + directory + " - directory is not empty!");
-
-      if (! directory.delete())
-        throw new IOException("Deletion of directory " + directory + " failed!");
-    }
-  }
-
-  /**
-   *
-   * Returns the length of a file in bytes
-   *
-   * @param file file whose length to get
-   */
-  private static long getFileLength(File file) {
-    return (((file != null) && file.exists()) ? file.length() : 0);
-  }
-
-  /**
-   * Renames a given file on disk.
-   *
-   * @param oldFile The old name
-   * @param newFile The new name
-   */
-  private static void renameFile(File oldFile, File newFile) throws IOException {
-    if ((oldFile != null) && oldFile.exists() && (! oldFile.equals(newFile))) {
-      deleteFile(newFile);
-
-      if (! oldFile.renameTo(newFile))
-        throw new IOException("Rename of " + oldFile + " to " + newFile + " failed!");
-    }
-  }
-
-  /**
-   * deletes a given file from disk
-   *
-   * @param file file to be deleted.
-   *
-   */
-  private static void deleteFile(File file) throws IOException {
-    if ((file != null) && file.exists() && (! file.delete()))
-      throw new IOException("Delete of " + file + " failed!");
-  }
 
   /**
    * Returns whether or not the given file is a temporary file.
@@ -1431,7 +1368,7 @@ public class PersistentStorage implements Storage {
       if ((name.length() >= subDirs[0].getName().length()) || ((name.length() == 0) && (subDirs[0].getName().length() == 1))) {
         File newDir = new File(dir, (name.length() == 0 ? ZERO_LENGTH_NAME : name.substring(0, subDirs[0].getName().length())));
         logger.debug("Necessarily creating dir {}", newDir.getName());
-        createDirectory(newDir);
+        StorageFiles.createDirectory(newDir);
         this.directories.put(dir, append(subDirs, newDir));
         this.directories.put(newDir, new File[0]);
 
@@ -1653,11 +1590,11 @@ public class PersistentStorage implements Storage {
         return metadata.lastModified();
       } catch (ClassNotFoundException e) {
         logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
-        deleteFile(metadata);
+        StorageFiles.deleteFile(metadata);
         return 0L;
       } catch (IOException e) {
         logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
-        deleteFile(metadata);
+        StorageFiles.deleteFile(metadata);
         return 0L;
       }
     } finally {
