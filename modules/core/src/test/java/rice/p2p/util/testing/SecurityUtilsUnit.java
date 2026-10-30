@@ -86,7 +86,7 @@ public class SecurityUtilsUnit {
     } else {
       System.out.println("[ FAILED ]");
       System.out.println("    Input: \t" + testString);
-      System.out.println("    Output:\t" + testStringHash);
+      System.out.println("    Output:\t" + Arrays.toString(testStringHash));
 
       if (testStringHash != null) {
         System.out.println("    Length:\t" + testStringHash.length);

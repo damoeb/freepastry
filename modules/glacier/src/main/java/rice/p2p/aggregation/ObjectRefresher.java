@@ -139,7 +139,7 @@ final class ObjectRefresher {
               if ((result[i] instanceof Boolean) && !(subresult[i] instanceof Boolean))
                 result[i] = subresult[i];
           } else {
-            Exception e = new AggregationException("Object store returns unexpected result: "+o);
+            Exception e = new AggregationException("Object store returns unexpected result: "+Arrays.toString(o));
             for (int i=0; i<result.length; i++)
               result[i] = e;
           }

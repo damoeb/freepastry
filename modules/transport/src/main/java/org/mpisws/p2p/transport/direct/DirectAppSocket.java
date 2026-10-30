@@ -230,7 +230,7 @@ public class DirectAppSocket<Identifier, MessageType> {
           return mySeq;
         }
         public String toString() {
-          return DirectAppSocketEndpoint.this.toString()+" deliver msg "+msg;
+          return DirectAppSocketEndpoint.this.toString()+" deliver msg of "+msg.length+" bytes";
         }
       }, (int)Math.round(simulator.networkDelay(localNodeHandle, counterpart.localNodeHandle)));
       return lengthToWrite;

@@ -178,7 +178,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
       logger.atTrace().log(() -> "Signature of "+MathUtils.toBase64(bytes)+" was "+MathUtils.toBase64(ret));
       return ret;
     } catch (SignatureException se) {
-      RuntimeException throwMe = new RuntimeException("Couldn't sign "+bytes);
+      RuntimeException throwMe = new RuntimeException("Couldn't sign "+bytes.length+" bytes");
       throwMe.initCause(se);
       throw throwMe;
     }

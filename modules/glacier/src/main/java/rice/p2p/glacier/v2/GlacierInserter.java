@@ -137,7 +137,7 @@ final class GlacierInserter {
             }
           });
         } else {
-          logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - returned o="+o);
+          logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - returned o="+Arrays.toString(o));
           command.receiveException(new GlacierException("Cannot create manifests in insert()"));
         }
       }

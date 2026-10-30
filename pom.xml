@@ -71,7 +71,6 @@
         <errorprone.module.flags></errorprone.module.flags>
         <!-- TODO D7: the ERROR-level checks that still fire; the following commits fix them and remove them from this list one by one -->
         <errorprone.pending.flags>
-            -Xep:ArrayToString:OFF
             -Xep:BoxedPrimitiveEquality:OFF
             -Xep:CollectionIncompatibleType:OFF
             -Xep:CompareToZero:OFF

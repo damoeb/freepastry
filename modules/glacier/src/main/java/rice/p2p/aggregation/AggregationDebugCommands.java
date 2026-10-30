@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.aggregation;
 
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.TreeSet;
@@ -314,7 +315,7 @@ final class AggregationDebugCommands {
           for (int i=0; i<oA.length; i++)
             text = text + "#"+i+" "+oA[i]+"\n";
           ret.complete(text + oA.length + " handle(s) returned\n");
-        } else ret.complete("result("+o+") -- no handles returned!");
+        } else ret.complete("result("+Arrays.toString(o)+") -- no handles returned!");
       }
       public void receiveException(Exception e) {
         ret.complete("exception("+e+")");

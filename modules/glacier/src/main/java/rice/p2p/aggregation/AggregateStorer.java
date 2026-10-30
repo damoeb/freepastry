@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.aggregation;
 
+import java.util.Arrays;
 import java.io.IOException;
 
 import org.slf4j.Logger;
@@ -156,8 +157,8 @@ final class AggregateStorer {
       logger.debug("Aggregate inserted successfully");
       command.receiveResult(Boolean.valueOf(true));
     } else {
-      logger.warn("Unexpected result in aggregate insert (commit): {}", (Object) o);
-      command.receiveException(new AggregationException("Unexpected result (commit): "+o));
+      logger.warn("Unexpected result in aggregate insert (commit): {}", Arrays.toString(o));
+      command.receiveException(new AggregationException("Unexpected result (commit): "+Arrays.toString(o)));
     }
   }
 }

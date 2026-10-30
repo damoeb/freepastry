@@ -40,6 +40,7 @@ advised of the possibility of such damage.
  */
 package rice.p2p.util.testing;
 
+import java.util.Arrays;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.util.MathUtils;
@@ -65,7 +66,7 @@ public class MathUtilsUnit {
       System.out.println("[ PASSED ]");
     } else {
       System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + testHexBytes);
+      System.out.println("    Input: \t" + Arrays.toString(testHexBytes));
       System.out.println("    Output:\t" + result);
     }
 

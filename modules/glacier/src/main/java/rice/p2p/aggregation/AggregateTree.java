@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.aggregation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -188,7 +189,7 @@ final class AggregateTree {
 
     private void handlesReceived(final Id fromKey, PastContentHandle[] o) {
       if (!(o instanceof PastContentHandle[])) {
-        failed(fromKey, new AggregationException("LookupHandles for "+fromKey+" failed, returned o="+o));
+        failed(fromKey, new AggregationException("LookupHandles for "+fromKey+" failed, returned o="+Arrays.toString(o)));
         return;
       }
 
@@ -285,7 +286,7 @@ final class AggregateTree {
       objectStore.lookupHandles(objData.getId(), 1, new Continuation<PastContentHandle[], Exception>() {
         public void receiveResult(PastContentHandle[] o) {
           PastContentHandle[] result = (o instanceof PastContentHandle[]) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
-          logger.atDebug().log(() -> "Handles for "+objData.getId()+"v"+objData.getVersion()+": "+result+" ("+result.length+", PCH="+(o instanceof PastContentHandle[])+")");
+          logger.atDebug().log(() -> "Handles for "+objData.getId()+"v"+objData.getVersion()+": "+Arrays.toString(result)+" ("+result.length+", PCH="+(o instanceof PastContentHandle[])+")");
           boolean gotOne = false;
           for (int i=0; i<result.length; i++) {
             if (result[i] != null) {
