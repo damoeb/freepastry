@@ -65,7 +65,7 @@ public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
 
   public EvtSend(Identifier receiverId, ByteBuffer payload, int relevantPayload, HashProvider hasher) {
     this.receiverId = receiverId;
-    this.payload = ByteBuffer.wrap(payload.array(), payload.position(), relevantPayload);
+    this.payload = ByteBuffer.wrap(payload.array(), payload.arrayOffset()+payload.position(), relevantPayload);
     // the irrelevant rest of the payload is logged as its hash
     ByteBuffer irrelevant = payload.duplicate();
     irrelevant.position(payload.position()+relevantPayload);
@@ -74,7 +74,7 @@ public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
 
   public EvtSend(Identifier receiverId, ByteBuffer payload) {
     this.receiverId = receiverId;
-    this.payload = ByteBuffer.wrap(payload.array(), payload.position(), payload.remaining());
+    this.payload = ByteBuffer.wrap(payload.array(), payload.arrayOffset()+payload.position(), payload.remaining());
   }
 
   public EvtSend(InputBuffer buf, Serializer<Identifier> idSerializer, int hashSize) throws IOException {

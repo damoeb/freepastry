@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport.peerreview.replay.record;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -213,7 +214,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
   @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
     if (logger.isTraceEnabled()) {
-      logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));
+      logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(Arrays.copyOfRange(m.array(), m.arrayOffset()+m.position(), m.arrayOffset()+m.limit())), new Exception("Stack Trace"));
     } else logger.debug("sendMessage({},{})", i, m);
     // If the 'RELEVANT_MSG' flag is set to false, the message is passed through to the transport
     // layer. This is used e.g. for liveness/proximity pings in Pastry.

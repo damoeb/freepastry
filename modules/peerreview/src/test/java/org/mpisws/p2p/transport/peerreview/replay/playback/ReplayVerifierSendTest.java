@@ -63,6 +63,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
@@ -269,6 +270,42 @@ public class ReplayVerifierSendTest {
     verifier.send(TARGET, ByteBuffer.wrap(other), 3);
 
     assertFalse(verifier.verifiedOK());
+  }
+
+  /** The message as a view into a larger array: arrayOffset() == 2, position() == 0. */
+  static ByteBuffer sliced(byte[] message) {
+    byte[] padded = new byte[message.length + 2];
+    padded[0] = 99;
+    padded[1] = 98;
+    System.arraycopy(message, 0, padded, 2, message.length);
+    return ByteBuffer.wrap(padded, 2, message.length).slice();
+  }
+
+  @Test
+  public void hashedSendMatchesTheSameMessageWithAnArrayOffset() throws IOException {
+    history.appendHash(EVT_SEND, hashProv.hash(ByteBuffer.wrap(sendEntry(TARGET, MESSAGE))));
+    SendVerifier verifier = new SendVerifier(hashProv, history);
+
+    verifier.send(TARGET, sliced(MESSAGE), -1);
+
+    assertTrue(verifier.verifiedOK());
+  }
+
+  @Test
+  public void hashedPartlyRelevantSendMatchesTheSameMessageWithAnArrayOffset() throws IOException {
+    history.appendHash(EVT_SEND, hashProv.hash(ByteBuffer.wrap(partlyHashedSendEntry(TARGET, MESSAGE, 3))));
+    SendVerifier verifier = new SendVerifier(hashProv, history);
+
+    verifier.send(TARGET, sliced(MESSAGE), 3);
+
+    assertTrue(verifier.verifiedOK());
+  }
+
+  @Test
+  public void historyStoresAnEntryWithAnArrayOffset() throws IOException {
+    history.appendEntry(EVT_SEND, true, sliced(MESSAGE));
+
+    assertArrayEquals(MESSAGE, history.getEntry(history.getNumEntries() - 1, MESSAGE.length));
   }
 
   @Test

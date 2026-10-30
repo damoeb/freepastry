@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport.peerreview.replay.playback;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -109,7 +110,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
   @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
     if (logger.isTraceEnabled()) {
-      logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));
+      logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(Arrays.copyOfRange(m.array(), m.arrayOffset()+m.position(), m.arrayOffset()+m.limit())), new Exception("Stack Trace"));
     } else logger.debug("sendMessage({},{})", i, m);
     MessageRequestHandleImpl<Identifier, ByteBuffer> ret = new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
     try {

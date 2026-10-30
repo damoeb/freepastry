@@ -245,7 +245,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       SimpleOutputBuffer buf = new SimpleOutputBuffer();
       serializer.serialize(target, buf);
       if (useLogHashFlag) buf.writeBoolean(relevantLen<msgLen);
-      buf.write(message.array(), message.position(), relevantLen);
+      buf.write(message.array(), message.arrayOffset()+message.position(), relevantLen);
 
       if (relevantLen<msgLen) {
         // the irrelevant part is logged as its hash
@@ -426,7 +426,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       return 0;
     }
 
-    nextEvent.read(dst.array(), dst.position(), ret);
+    nextEvent.read(dst.array(), dst.arrayOffset()+dst.position(), ret);
     dst.position(dst.position()+ret);
     fetchNextEvent();
     return ret;

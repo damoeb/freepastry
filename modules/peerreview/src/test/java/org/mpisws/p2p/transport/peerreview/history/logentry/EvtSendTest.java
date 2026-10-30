@@ -80,4 +80,24 @@ public class EvtSendTest {
     assertArrayEquals(udm.getInnerHash(receiver, hasher), logged,
         "the SEND entry must hold the hash of the irrelevant part");
   }
+
+  @Test
+  public void sendWithAnArrayOffsetMatchesWhatTheReceiverSigns() throws Exception {
+    HashProvider hasher = new SHA256HashProvider();
+    Id receiver = new Id(2);
+    byte[] expected = hasher.hash(new EvtSend<Id>(receiver, ByteBuffer.wrap(MESSAGE), RELEVANT, hasher).serialize());
+
+    EvtSend<Id> evtSend = new EvtSend<Id>(receiver, sliced(), RELEVANT, hasher);
+    UserDataMessage<Id> udm = new UserDataMessage<Id>(1, new Id(1), new byte[0], new byte[0], sliced(), RELEVANT);
+
+    assertArrayEquals(expected, hasher.hash(evtSend.serialize()));
+    assertArrayEquals(expected, udm.getInnerHash(receiver, hasher));
+  }
+
+  /** MESSAGE as a view into a larger array: arrayOffset() == 2, position() == 0. */
+  static ByteBuffer sliced() {
+    byte[] padded = new byte[MESSAGE.length + 2];
+    System.arraycopy(MESSAGE, 0, padded, 2, MESSAGE.length);
+    return ByteBuffer.wrap(padded, 2, MESSAGE.length).slice();
+  }
 }

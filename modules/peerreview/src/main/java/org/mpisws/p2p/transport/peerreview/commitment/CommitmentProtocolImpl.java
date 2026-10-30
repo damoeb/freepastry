@@ -490,9 +490,9 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
 
     ByteBuffer relevantMsg = message;
     if (relevantlen < message.remaining()) {
-      relevantMsg = ByteBuffer.wrap(message.array(), message.position(), relevantlen);
+      relevantMsg = ByteBuffer.wrap(message.array(), message.arrayOffset()+message.position(), relevantlen);
     } else {
-      relevantMsg = ByteBuffer.wrap(message.array(), message.position(), message.remaining());
+      relevantMsg = ByteBuffer.wrap(message.array(), message.arrayOffset()+message.position(), message.remaining());
     }
     try {
       history.appendEntry(EVT_SENDSIGN, true, relevantMsg, ByteBuffer.wrap(signature));

@@ -67,7 +67,7 @@ public class EvtRecv<Handle extends RawSerializable> extends HistoryEvent {
     this.senderHandle = senderHandle;
     this.senderSeq = topSeq;
     this.payload = new byte[payload.remaining()];
-    System.arraycopy(payload.array(), payload.position(), this.payload, 0, payload.remaining());
+    System.arraycopy(payload.array(), payload.arrayOffset()+payload.position(), this.payload, 0, payload.remaining());
   }
 
   public EvtRecv(Handle senderHandle, long topSeq, ByteBuffer payload,
@@ -75,7 +75,7 @@ public class EvtRecv<Handle extends RawSerializable> extends HistoryEvent {
     this.senderHandle = senderHandle;
     this.senderSeq = topSeq;
     this.payload = new byte[payload.remaining()];
-    System.arraycopy(payload.array(), payload.position(), this.payload, 0, relevantLen);
+    System.arraycopy(payload.array(), payload.arrayOffset()+payload.position(), this.payload, 0, relevantLen);
     hash = hasher.hash(ByteBuffer.wrap(this.payload));
   }
 

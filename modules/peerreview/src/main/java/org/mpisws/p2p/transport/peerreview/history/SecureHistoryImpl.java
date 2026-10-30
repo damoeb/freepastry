@@ -163,7 +163,7 @@ public class SecureHistoryImpl implements SecureHistory {
       e.sizeInFile = 0;
       for (ByteBuffer ent : entry) {
         e.sizeInFile += ent.remaining();
-        dataFile.write(ent.array(), ent.position(), ent.remaining());
+        dataFile.write(ent.array(), ent.arrayOffset()+ent.position(), ent.remaining());
       }
     } else {
       e.sizeInFile = -1;
@@ -444,7 +444,7 @@ public class SecureHistoryImpl implements SecureHistory {
     ie.fileIndex = dataFile.getFilePointer();
     ie.sizeInFile = entry.remaining();
 
-    dataFile.write(entry.array(), entry.position(), entry.remaining());
+    dataFile.write(entry.array(), entry.arrayOffset()+entry.position(), entry.remaining());
 
     indexFile.seek(idx*indexFactory.getSerializedSize());
     ie.serialize(indexFile);

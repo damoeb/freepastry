@@ -91,7 +91,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
       this.payload = message.array();
     } else {
       this.payload = new byte[message.remaining()];
-      System.arraycopy(message.array(), message.position(), payload, 0, payload.length);
+      System.arraycopy(message.array(), message.arrayOffset()+message.position(), payload, 0, payload.length);
     }
   }
 

@@ -89,7 +89,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
       }
     } else {
       // wrap the read bytes with a new BB
-      ByteBuffer bits = ByteBuffer.wrap(dsts.array());
+      ByteBuffer bits = dsts.duplicate();
       bits.position(pos);
       bits.limit(pos+ret);
 
@@ -122,7 +122,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
       }
     } else {
       // wrap the read bytes with a new BB
-      ByteBuffer bits = ByteBuffer.wrap(srcs.array());
+      ByteBuffer bits = srcs.duplicate();
       bits.position(pos);
       bits.limit(pos+ret);
 
