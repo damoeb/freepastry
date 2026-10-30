@@ -138,7 +138,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
             break;
           }
           case EVT_SIGN : /* No certificates needed */
-            new EvtSign(sib, signatureSize, hashSize);
+            new EvtSign(sib, hashSize, signatureSize);
             break;
           case EVT_ACK : /* We may need the certificate for the sender */
             EvtAck<Identifier> evtAck = new EvtAck<Identifier>(sib,idSerializer,hashSize,signatureSize);
