@@ -116,6 +116,7 @@ public class LookupServiceTest {
       final Id id = nidFactory.generateNodeId();
       System.out.println("Requesting id "+id);
       ls.requestNodeHandles(id, 3, new Continuation<NodeHandleSet,Exception>() {
+        @Override
         public void receiveException(Exception exception) {
           if (exception instanceof LookupService.NodeLookupTimeoutException) {
             System.out.println("Request for "+id+" timed out");
@@ -125,6 +126,7 @@ public class LookupServiceTest {
           }
         }
 
+        @Override
         public void receiveResult(NodeHandleSet result) {
           System.out.println("ReplicaSet for "+id+": "+result);
         }

@@ -130,8 +130,8 @@ public class Tutorial {
 
       /**
        * Receive the new AppSocket.
-       * @param result
        */
+      @Override
       public void receiveResult(AppSocket result) {
         System.out.println("Opened AppSocket "+result);
         final ByteBuffer out = ByteBuffer.wrap(rice.pastry.Id.build().toByteArray());
@@ -141,6 +141,7 @@ public class Tutorial {
           /**
            * Example of how to write some bytes
            */
+          @Override
           public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {
             try {
               long ret = socket.write(out);
@@ -161,6 +162,7 @@ public class Tutorial {
           /**
            * Called if there is a problem.
            */
+          @Override
           public void receiveException(AppSocket socket, Exception e) {
             e.printStackTrace();
           }
@@ -168,6 +170,7 @@ public class Tutorial {
           /**
            * Called when the socket comes available.
            */
+          @Override
           public void receiveSocket(AppSocket socket) {
             // register for writing
             throw new RuntimeException("Should never be called.");
@@ -178,8 +181,8 @@ public class Tutorial {
 
       /**
        * Handle a problem connecting.
-       * @param exception
        */
+      @Override
       public void receiveException(Exception exception) {
         exception.printStackTrace();
         throw new RuntimeException("Not implemented. ");

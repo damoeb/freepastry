@@ -102,6 +102,7 @@ public class DistTutorial {
       PriorityTransportLayer<MultiInetSocketAddress> ptl = (PriorityTransportLayer<MultiInetSocketAddress>)node.getVars().get(SocketPastryNodeFactory.PRIORITY_TL);
       ptl.addPriorityTransportLayerListener(new PriorityTransportLayerListener<MultiInetSocketAddress>() {
 
+        @Override
         public void wrote(int bytes, MultiInetSocketAddress i,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           int address = 0;
@@ -119,12 +120,14 @@ public class DistTutorial {
           System.out.println(node+" wrote a "+messageClass+" of size "+bytes+" to "+i+" addr:"+address+" type:"+type+" "+toString);
         }
 
+        @Override
         public void read(int bytes, MultiInetSocketAddress i,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           System.out.println(node+" read a message of size "+bytes+" from "+i);
 
         }
 
+        @Override
         public void enqueued(int bytes, MultiInetSocketAddress i,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           int address = 0;
@@ -142,6 +145,7 @@ public class DistTutorial {
           System.out.println(node+" enqueued a "+messageClass+" of size "+bytes+" to "+i+" addr:"+address+" type:"+type+" "+toString);
         }
 
+        @Override
         public void dropped(int bytes, MultiInetSocketAddress i,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           int address = 0;

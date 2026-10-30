@@ -124,6 +124,7 @@ public class DistTutorial {
       @Override
       protected BindStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>, SourceRoute<MultiInetSocketAddress>> getBindStrategy() {
         return new BindStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>, SourceRoute<MultiInetSocketAddress>>() {
+          @Override
           public boolean accept(TransportLayerNodeHandle<MultiInetSocketAddress> u,
               SourceRoute<MultiInetSocketAddress> l, Map<String, Object> options) {
 

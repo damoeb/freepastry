@@ -152,12 +152,14 @@ public class RoutingTableTest {
   public void startLoggerTask() {
     env.getSelectorManager().getTimer().schedule(new TimerTask() {
       int ctr = 0;
+      @Override
       public void run() {
         testRoutingTables(ctr++);
       }
     },reportRate,reportRate);
 
     env.getSelectorManager().getTimer().schedule(new TimerTask() {
+      @Override
       public void run() {
         env.destroy();
       }
@@ -169,6 +171,7 @@ public class RoutingTableTest {
     }
 
     int ctr = 0;
+    @Override
     public void run() {
       try {
         createNode();
@@ -247,28 +250,33 @@ public class RoutingTableTest {
       this(new Topic(buf, endpoint), buf.readInt());
     }
 
+    @Override
     public short getType() {
       return TYPE;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       topic.serialize(buf);
       buf.writeInt(num);
     }
 
+    @Override
     public boolean equals(Object o) {
-      if (!(o instanceof TestScribeContent)) {
+      if (!(o instanceof TestScribeContent testScribeContent)) {
         return false;
       }
 
-      return (((TestScribeContent) o).topic.equals(topic) &&
-        ((TestScribeContent) o).num == num);
+      return (testScribeContent.topic.equals(topic) &&
+        testScribeContent.num == num);
     }
 
+    @Override
     public int hashCode() {
       return Objects.hash(topic, num);
     }
 
+    @Override
     public String toString() {
       return "TestScribeContent(" + topic + ", " + num + ")";
     }
@@ -289,10 +297,12 @@ public class RoutingTableTest {
 
     node.addPastryNodeListener(new PastryNodeListener() {
 
+      @Override
       public void pastryNodeReady(PastryNode o, boolean ready) {
         System.out.println("Observing "+o+" "+ready);
       }
 
+      @Override
       public void pastryNodeJoinFailed(PastryNode o, JoinFailedException reason) {
         System.out.println("Observing "+o+" "+reason);
       }
@@ -322,6 +332,7 @@ public class RoutingTableTest {
       } else {
       node.addPastryNodeListener(new PastryNodeListener() {
 
+      @Override
       public void pastryNodeReady(PastryNode o, boolean ready) {
         if (!ready) return;
 
@@ -329,6 +340,7 @@ public class RoutingTableTest {
         finishNode(node);
       }
 
+      @Override
       public void pastryNodeJoinFailed(PastryNode o, JoinFailedException arg) {
           node.destroy();
       }
@@ -720,6 +732,7 @@ public class RoutingTableTest {
     /**
      * Called when we receive a message.
      */
+    @Override
     public void deliver(Id id, Message message) {
       if (logHeavy)
         System.out.println(this+" received "+message);
@@ -729,6 +742,7 @@ public class RoutingTableTest {
      * Called when you hear about a new neighbor.
      * Don't worry about this method for now.
      */
+    @Override
     public void update(rice.p2p.commonapi.NodeHandle handle, boolean joined) {
     }
 
@@ -736,6 +750,7 @@ public class RoutingTableTest {
      * Called a message travels along your path.
      * Don't worry about this method for now.
      */
+    @Override
     public boolean forward(RouteMessage message) {
       if (logHeavy) {
         try {
@@ -747,6 +762,7 @@ public class RoutingTableTest {
       return true;
     }
 
+    @Override
     public String toString() {
       return "MyApp "+endpoint.getId();
     }
@@ -786,24 +802,30 @@ public class RoutingTableTest {
       this.acceptAnycast = value;
     }
 
+    @Override
     public boolean anycast(Topic topic, ScribeContent content) {
       return acceptAnycast;
     }
 
+    @Override
     public void deliver(Topic topic, ScribeContent content) {
 
     }
 
+    @Override
     public void childAdded(Topic topic, rice.p2p.commonapi.NodeHandle child) {
     }
 
+    @Override
     public void childRemoved(Topic topic, rice.p2p.commonapi.NodeHandle child) {
     }
 
+    @Override
     public void subscribeFailed(Collection<Topic> topics) {
       if (!topics.isEmpty()) subscribeFailed = true;
     }
 
+    @Override
     public void subscribeSuccess(Collection<Topic> topics) {
     }
 

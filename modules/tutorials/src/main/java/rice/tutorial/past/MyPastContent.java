@@ -79,10 +79,12 @@ public class MyPastContent extends ContentHashPastContent {
     content = buf.readUTF();
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(getId().getType());
     getId().serialize(buf);
@@ -92,6 +94,7 @@ public class MyPastContent extends ContentHashPastContent {
   /**
    * A descriptive toString()
    */
+  @Override
   public String toString() {
     return "MyPastContent ["+content+"]";
   }

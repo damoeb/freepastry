@@ -91,6 +91,7 @@ public class MyApp implements Application {
       /**
        * When we accept a new socket.
        */
+      @Override
       public void receiveSocket(AppSocket socket) {
         // this code reuses "this" AppSocketReceiver, and registers for reading only, and a timeout of 30000.
         socket.register(true, false, 30000, this);
@@ -102,6 +103,7 @@ public class MyApp implements Application {
       /**
        * Called when the socket is ready for reading or writing.
        */
+      @Override
       public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {
         in.clear();
         try {
@@ -124,6 +126,7 @@ public class MyApp implements Application {
       /**
        * Called if we have a problem.
        */
+      @Override
       public void receiveException(AppSocket socket, Exception e) {
         e.printStackTrace();
       }
@@ -143,6 +146,7 @@ public class MyApp implements Application {
   /**
    * Called when we receive a message.
    */
+  @Override
   public void deliver(Id id, Message message) {
     System.out.println(this+" received "+message);
   }
@@ -151,6 +155,7 @@ public class MyApp implements Application {
    * Called when you hear about a new neighbor.
    * Don't worry about this method for now.
    */
+  @Override
   public void update(NodeHandle handle, boolean joined) {
   }
 
@@ -158,10 +163,12 @@ public class MyApp implements Application {
    * Called a message travels along your path.
    * Don't worry about this method for now.
    */
+  @Override
   public boolean forward(RouteMessage message) {
     return true;
   }
 
+  @Override
   public String toString() {
     return "MyApp "+endpoint.getId();
   }

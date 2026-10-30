@@ -121,6 +121,7 @@ public class DirectTutorial {
 
           // track when the node is finished booting
           node.addPastryNodeListener(new PastryNodeListener() {
+            @Override
             public void pastryNodeReady(PastryNode o, boolean ready) {
               try {
                 System.out.println("Finished creating new node "+node+" at "+env.getTimeSource().currentTimeMillis());
@@ -136,6 +137,7 @@ public class DirectTutorial {
               }
             }
 
+            @Override
             public void pastryNodeJoinFailed(PastryNode o, JoinFailedException jfe) {
               try {
                 jfe.printStackTrace();

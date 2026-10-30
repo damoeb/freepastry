@@ -73,6 +73,7 @@ public class MyMsg implements RawMessage {
     this.to = to;
   }
 
+  @Override
   public String toString() {
     return "MyMsg from "+from+" to "+to;
   }
@@ -80,10 +81,12 @@ public class MyMsg implements RawMessage {
   /**
    * Use low priority to prevent interference with overlay maintenance traffic.
    */
+  @Override
   public int getPriority() {
     return Message.LOW_PRIORITY;
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
@@ -96,6 +99,7 @@ public class MyMsg implements RawMessage {
     to = endpoint.readId(buf, buf.readShort());
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(from.getType());
     from.serialize(buf);

@@ -124,8 +124,8 @@ public class Tutorial2 {
 
       /**
        * Receive the new SocketChannel.
-       * @param result
        */
+      @Override
       public void receiveResult(final SocketChannel socket) {
         System.out.println("Opened SocketChannel "+socket);
         // we're going to write in a blocking mode, so make sure to do this on another thread
@@ -150,8 +150,8 @@ public class Tutorial2 {
 
       /**
        * Handle a problem connecting.
-       * @param exception
        */
+      @Override
       public void receiveException(Exception exception) {
         exception.printStackTrace();
         throw new RuntimeException("Not implemented. ");

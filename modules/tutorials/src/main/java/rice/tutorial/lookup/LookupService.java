@@ -135,13 +135,14 @@ public class LookupService implements Application {
    *
    * @see rice.p2p.commonapi.Application#forward(rice.p2p.commonapi.RouteMessage)
    */
+  @Override
   public boolean forward(RouteMessage message) {
     return true;
   }
 
+  @Override
   public void deliver(Id id, Message message) {
-    if (message instanceof NodeLookupQuery) {
-      NodeLookupQuery query = (NodeLookupQuery) message;
+    if (message instanceof NodeLookupQuery query) {
 
       logger.trace("NodeLookup query received for {} with sequence number {}", id, query.seqno);
 
@@ -150,8 +151,7 @@ public class LookupService implements Application {
       // get our local replica set and ship it back in a response message
       endpoint.route(null, new NodeLookupResponse(endpoint.replicaSet(id, query.numNodes), query.seqno), query.source);
 
-    } else if (message instanceof NodeLookupResponse) {
-      NodeLookupResponse response = (NodeLookupResponse) message;
+    } else if (message instanceof NodeLookupResponse response) {
 
       if (pending.containsKey(response.seqno)) {
 
@@ -163,8 +163,7 @@ public class LookupService implements Application {
         logger.info("NodeLookup received response for non-existent or expired lookup {}", response.seqno);
       }
 
-    } else if (message instanceof NodeLookupTimeout) {
-      NodeLookupTimeout response = (NodeLookupTimeout) message;
+    } else if (message instanceof NodeLookupTimeout response) {
 
       // if it's not in pending, then a message has already been delivered
       if (pending.containsKey(response.seqno)) {
@@ -180,6 +179,7 @@ public class LookupService implements Application {
     }
   }
 
+  @Override
   public void update(NodeHandle handle, boolean joined) {
     // do nothing
     // this is part of the Application interface, but we don't care about
@@ -214,6 +214,7 @@ public class LookupService implements Application {
 
       long cum = 0; // how long we've been waiting total
 
+      @Override
       public void receiveException(Exception exception) {
         if (exception instanceof NodeLookupTimeoutException) {
           cum += t;
@@ -237,6 +238,7 @@ public class LookupService implements Application {
         }
       }
 
+      @Override
       public void receiveResult(NodeHandleSet result) {
         cont.receiveResult(result);
       }
@@ -281,10 +283,12 @@ public class LookupService implements Application {
   public void requestNodeHandle(final Id id, final Continuation<NodeHandle, Exception> cont) {
     endpoint.getEnvironment().getSelectorManager().invoke(() -> {
       sendMessageWithRetries(id, 1, new Continuation<NodeHandleSet, Exception>() {
+        @Override
         public void receiveException(Exception exception) {
           cont.receiveException(exception);
         }
 
+        @Override
         public void receiveResult(NodeHandleSet result) {
           if (result.size() != 1) {
             // this really shouldn't happen
@@ -309,6 +313,7 @@ public class LookupService implements Application {
       this.seqno = seqno;
     }
 
+    @Override
     public int getPriority() {
       return 0;
     }
@@ -338,14 +343,17 @@ public class LookupService implements Application {
       seqno = buf.readInt();
     }
 
+    @Override
     public int getPriority() {
       return 0;
     }
 
+    @Override
     public short getType() {
       return TYPE;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       source.serialize(buf);
       buf.writeInt(numNodes);
@@ -373,14 +381,17 @@ public class LookupService implements Application {
       seqno = buf.readInt();
     }
 
+    @Override
     public int getPriority() {
       return 0;
     }
 
+    @Override
     public short getType() {
       return TYPE;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       buf.writeShort(nodes.getType());
       nodes.serialize(buf);

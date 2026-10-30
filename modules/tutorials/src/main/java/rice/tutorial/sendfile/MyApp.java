@@ -96,13 +96,16 @@ public class MyApp implements Application {
       /**
        * When we accept a new socket.
        */
+      @Override
       public void receiveSocket(AppSocket socket) {
         fileTransfer = new FileTransferImpl(socket,new FileTransferCallback() {
 
+          @Override
           public void messageReceived(ByteBuffer bb) {
             System.out.println("Message received: "+bb);
           }
 
+          @Override
           public void fileReceived(Path f, ByteBuffer metadata) {
             try {
               String originalFileName = new SimpleInputBuffer(metadata).readUTF();
@@ -114,6 +117,7 @@ public class MyApp implements Application {
             }
           }
 
+          @Override
           public void receiveException(Exception ioe) {
             System.out.println("FTC.receiveException() "+ioe);
           }
@@ -128,6 +132,7 @@ public class MyApp implements Application {
       /**
        * Called when the socket is ready for reading or writing.
        */
+      @Override
       public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {
         throw new RuntimeException("Shouldn't be called.");
       }
@@ -135,6 +140,7 @@ public class MyApp implements Application {
       /**
        * Called if we have a problem.
        */
+      @Override
       public void receiveException(AppSocket socket, Exception e) {
         e.printStackTrace();
       }
@@ -152,6 +158,7 @@ public class MyApp implements Application {
    *
    */
   class MyFileListener implements FileTransferListener {
+    @Override
     public void fileTransferred(FileReceipt receipt,
         long bytesTransferred, long total, boolean incoming) {
       String s;
@@ -164,6 +171,7 @@ public class MyApp implements Application {
       System.out.println(MyApp.this+s+percent+"% of "+receipt);
     }
 
+    @Override
     public void msgTransferred(BBReceipt receipt, int bytesTransferred,
         int total, boolean incoming) {
       String s;
@@ -176,6 +184,7 @@ public class MyApp implements Application {
       System.out.println(MyApp.this+s+percent+"% of "+receipt);
     }
 
+    @Override
     public void transferCancelled(Receipt receipt, boolean incoming) {
       String s;
       if (incoming) {
@@ -186,6 +195,7 @@ public class MyApp implements Application {
       System.out.println(MyApp.this+": Cancelled "+s+" of "+receipt);
     }
 
+    @Override
     public void transferFailed(Receipt receipt, boolean incoming) {
       String s;
       if (incoming) {
@@ -214,6 +224,7 @@ public class MyApp implements Application {
       /**
        * Called when the socket comes available.
        */
+      @Override
       public void receiveSocket(AppSocket socket) {
         // create the FileTransfer object
         FileTransfer sender = new FileTransferImpl(socket, null, node.getEnvironment());
@@ -252,10 +263,12 @@ public class MyApp implements Application {
           // request transfer of the file with priority 2
           sender.sendFile(f,sob.getByteBuffer(),(byte)2,new Continuation<FileReceipt, Exception>() {
 
+            @Override
             public void receiveException(Exception exception) {
               System.out.println("Error sending: "+f+" "+exception);
             }
 
+            @Override
             public void receiveResult(FileReceipt result) {
               System.out.println("Send complete: "+result);
             }
@@ -269,6 +282,7 @@ public class MyApp implements Application {
       /**
        * Called if there is a problem.
        */
+      @Override
       public void receiveException(AppSocket socket, Exception e) {
         e.printStackTrace();
       }
@@ -276,6 +290,7 @@ public class MyApp implements Application {
       /**
        * Example of how to write some bytes
        */
+      @Override
       public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {
         throw new RuntimeException("Shouldn't be called.");
       }
@@ -285,6 +300,7 @@ public class MyApp implements Application {
   /**
    * Called when we receive a message.
    */
+  @Override
   public void deliver(Id id, Message message) {
     System.out.println(this+" received "+message);
   }
@@ -293,6 +309,7 @@ public class MyApp implements Application {
    * Called when you hear about a new neighbor.
    * Don't worry about this method for now.
    */
+  @Override
   public void update(NodeHandle handle, boolean joined) {
   }
 
@@ -300,10 +317,12 @@ public class MyApp implements Application {
    * Called a message travels along your path.
    * Don't worry about this method for now.
    */
+  @Override
   public boolean forward(RouteMessage message) {
     return true;
   }
 
+  @Override
   public String toString() {
     return "MyApp "+endpoint.getId();
   }

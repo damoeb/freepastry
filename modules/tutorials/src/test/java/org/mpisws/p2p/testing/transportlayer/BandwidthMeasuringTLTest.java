@@ -65,14 +65,17 @@ public class BandwidthMeasuringTLTest implements Application {
   static class MyMsg implements RawMessage {
     static final short TYPE = 1;
 
+    @Override
     public int getPriority() {
       return 0;
     }
 
+    @Override
     public short getType() {
       return TYPE;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) {
       // no payload
     }
@@ -88,13 +91,16 @@ public class BandwidthMeasuringTLTest implements Application {
     ep.register();
   }
 
+  @Override
   public void deliver(Id id, Message message) {
   }
 
+  @Override
   public boolean forward(RouteMessage message) {
     return true;
   }
 
+  @Override
   public void update(NodeHandle handle, boolean joined) {
 
   }
@@ -102,7 +108,6 @@ public class BandwidthMeasuringTLTest implements Application {
 
 
   /**
-   * @param args
    */
   public static void main(String[] args) throws Exception {
     int bindPort = 9001;

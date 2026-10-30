@@ -75,6 +75,7 @@ public class MyMsg implements RawMessage {
     this.to = to;
   }
 
+  @Override
   public String toString() {
     String path = "";
     for (int i = 0; i < passport.size(); i++) {
@@ -86,6 +87,7 @@ public class MyMsg implements RawMessage {
   /**
    * Use low priority to prevent interference with overlay maintenance traffic.
    */
+  @Override
   public int getPriority() {
     return Message.LOW_PRIORITY;
   }
@@ -95,6 +97,7 @@ public class MyMsg implements RawMessage {
     passport.add(hop);
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
@@ -111,6 +114,7 @@ public class MyMsg implements RawMessage {
     }
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(from.getType());
     from.serialize(buf);

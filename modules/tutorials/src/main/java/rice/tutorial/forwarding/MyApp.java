@@ -113,6 +113,7 @@ public class MyApp implements Application {
   /**
    * Called when we receive a message.
    */
+  @Override
   public void deliver(Id id, Message message) {
     System.out.println(this+" received "+message);
   }
@@ -121,12 +122,14 @@ public class MyApp implements Application {
    * Called when you hear about a new neighbor.
    * Don't worry about this method for now.
    */
+  @Override
   public void update(NodeHandle handle, boolean joined) {
   }
 
   /**
    * @return true if it should continue along the path.  false will deliver it locally
    */
+  @Override
   public boolean forward(RouteMessage message) {
     try {
       MyMsg msg = (MyMsg)message.getMessage(endpoint.getDeserializer());
@@ -137,6 +140,7 @@ public class MyApp implements Application {
     return true;
   }
 
+  @Override
   public String toString() {
     return "MyApp "+endpoint.getId();
   }

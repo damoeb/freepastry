@@ -168,6 +168,7 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
   /**
    * Part of the Application interface.  Will receive PublishContent every so often.
    */
+  @Override
   public void deliver(Id id, Message message) {
     if (message instanceof PublishContent) {
       publish();
@@ -208,8 +209,6 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
   /**
    * Converts the data into a string.
    *
-   * @param data
-   * @return
    */
   private String printData(byte[] data) {
     StringBuilder sb = new StringBuilder();
@@ -224,11 +223,13 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
   /**
    * Called whenever we receive a published message.
    */
+  @Override
   public void deliver(Stripe s, byte[] data) {
     System.out.println(endpoint.getId()+" deliver("+s+"):seq:"+data[0]+" stripe:"+data[1]+" "+printData(data)+")");
   }
 
   static class PublishContent implements Message {
+    @Override
     public int getPriority() {
       return Message.MEDIUM_PRIORITY;
     }
@@ -240,10 +241,12 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
   }
 
   // rest of the Application Interface
+  @Override
   public boolean forward(RouteMessage message) {
     throw new RuntimeException("Cant happen.");
   }
 
+  @Override
   public void update(NodeHandle handle, boolean joined) {
   }
 

@@ -168,6 +168,7 @@ public class PastTutorial {
       // insert the data
       p.insert(myContent, new Continuation<Boolean[], Exception>() {
         // the result is an Array of Booleans for each insert
+        @Override
         public void receiveResult(Boolean[] results) {
           int numSuccessfulStores = 0;
           for (int ctr = 0; ctr < results.length; ctr++) {
@@ -178,6 +179,7 @@ public class PastTutorial {
               numSuccessfulStores + " locations.");
         }
 
+        @Override
         public void receiveException(Exception result) {
           System.out.println("Error storing "+myContent);
           result.printStackTrace();
@@ -200,10 +202,12 @@ public class PastTutorial {
 
       System.out.println("Looking up " + lookupKey + " at node "+p.getLocalNodeHandle());
       p.lookup(lookupKey, new Continuation<PastContent, Exception>() {
+        @Override
         public void receiveResult(PastContent result) {
           System.out.println("Successfully looked up " + result + " for key "+lookupKey+".");
         }
 
+        @Override
         public void receiveException(Exception result) {
           System.out.println("Error looking up "+lookupKey);
           result.printStackTrace();
@@ -223,11 +227,13 @@ public class PastTutorial {
 
     System.out.println("Looking up bogus key " + bogusKey + " at node "+p.getLocalNodeHandle());
     p.lookup(bogusKey, new Continuation<PastContent, Exception>() {
+      @Override
       public void receiveResult(PastContent result) {
         System.out.println("Successfully looked up " + result + " for key "+bogusKey+".  Notice that the result is null.");
         env.destroy();
       }
 
+      @Override
       public void receiveException(Exception result) {
         System.out.println("Error looking up "+bogusKey);
         result.printStackTrace();

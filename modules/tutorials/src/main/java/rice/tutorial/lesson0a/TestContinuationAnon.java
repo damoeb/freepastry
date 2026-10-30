@@ -58,11 +58,13 @@ public class TestContinuationAnon {
     // same code as TestContinuation and MyContinuation combined
     past.lookup(id, new Continuation<PastContent, Exception>() {
       // will be called if success in the lookup
+      @Override
       public void receiveResult(PastContent pc) {
         System.out.println("Received a "+pc);
       }
 
       // will be called if failure in the lookup
+      @Override
       public void receiveException(Exception result) {
         System.out.println("There was an error: "+result);
       }

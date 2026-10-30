@@ -83,10 +83,12 @@ public class MyScribeContent implements ScribeContent {
     seq = buf.readInt();
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     from.serialize(buf);
     buf.writeInt(seq);
@@ -95,6 +97,7 @@ public class MyScribeContent implements ScribeContent {
   /**
    * Ye ol' toString()
    */
+  @Override
   public String toString() {
     return "MyScribeContent #"+seq+" from "+from;
   }
