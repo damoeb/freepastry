@@ -58,11 +58,11 @@ public class VersionKey implements Id, Serializable {
   /**
    * The id of the object
    */
-  protected Id id;
+  private final Id id;
   /**
    * The version of the object
    */
-  protected long version;
+  private final long version;
 
   private static final long serialVersionUID = -7473630685140924130L;
 

@@ -38,9 +38,9 @@ package rice.p2p.glacier.v2;
 
 public abstract class GlacierContinuation {
 
-  protected int myUID;
+  private int myUID;
 
-  protected boolean terminated;
+  private boolean terminated;
 
   abstract public void receiveResult(Object result);
 

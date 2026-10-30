@@ -48,7 +48,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 public class GlacierNeighborRequestMessage extends GlacierMessage {
   public static final short TYPE = 3;
 
-  protected IdRange requestedRange;
+  private final IdRange requestedRange;
 
   public GlacierNeighborRequestMessage(int uid, IdRange requestedRange, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, false, tag);

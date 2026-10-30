@@ -87,10 +87,10 @@ public class GlacierPersistentStorageTest {
         if (o instanceof FragmentAndManifest) {
           FragmentAndManifest fm = (FragmentAndManifest) o;
 
-          int total = fm.fragment.payload.length + 24;
+          int total = fm.getFragment().getPayload().length + 24;
 
-          total += fm.manifest.getObjectHash().length + fm.manifest.getSignature().length;
-          total += fm.manifest.getFragmentHashes().length * fm.manifest.getFragmentHashes()[0].length;
+          total += fm.getManifest().getObjectHash().length + fm.getManifest().getSignature().length;
+          total += fm.getManifest().getFragmentHashes().length * fm.getManifest().getFragmentHashes()[0].length;
           System.out.println(files[i].getName() + "\t" + total + "\t" + files[i].length());
         } else {
           System.out.println("ERROR: Found class " + o.getClass().getName());

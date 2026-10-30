@@ -48,8 +48,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 public class GlacierRefreshResponseMessage extends GlacierMessage {
   public static final short TYPE = 12;
 
-  protected IdRange range;
-  protected boolean online;
+  private final IdRange range;
+  private final boolean online;
 
   public GlacierRefreshResponseMessage(int uid, IdRange range, boolean online, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, true, tag);

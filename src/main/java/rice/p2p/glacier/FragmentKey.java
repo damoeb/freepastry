@@ -56,11 +56,11 @@ public class FragmentKey implements Id {
   /**
    * The key of the object version this fragment belongs to
    */
-  protected VersionKey key;
+  private final VersionKey key;
   /**
    * The fragment number
    */
-  protected int id;
+  private final int id;
 
   private static final long serialVersionUID = 5373228569261524536L;
 

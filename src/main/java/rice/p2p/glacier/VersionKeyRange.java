@@ -55,7 +55,7 @@ public class VersionKeyRange implements IdRange {
   /**
    * The actual IdRange
    */
-  protected IdRange range;
+  private IdRange range;
 
   /**
    * Constructor
@@ -110,7 +110,7 @@ public class VersionKeyRange implements IdRange {
    * @return true if the key lies within this range, false otherwise
    */
   public boolean containsId(Id key) {
-    return range.containsId(((VersionKey)key).id);
+    return range.containsId(((VersionKey)key).getId());
   }
 
   /**

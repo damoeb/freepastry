@@ -41,23 +41,23 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.IdRange;
 
 public class GlacierStatistics {
-  public int messagesSentByTag[];
-  public int pendingRequests;
-  public int numNeighbors;
-  public int numFragments;
-  public int numContinuations;
-  public int numObjectsInTrash;
-  public int activeFetches;
-  public IdRange responsibleRange;
-  public long fragmentStorageSize;
-  public long trashStorageSize;
-  public long tbegin;
-  public long bucketMin;
-  public long bucketMax;
-  public long bucketConsumed;
-  public long bucketTokensPerSecond;
-  public long bucketMaxBurstSize;
-  public Environment environment;
+  private final int messagesSentByTag[];
+  private int pendingRequests;
+  private int numNeighbors;
+  private int numFragments;
+  private int numContinuations;
+  private int numObjectsInTrash;
+  private int activeFetches;
+  private IdRange responsibleRange;
+  private long fragmentStorageSize;
+  private long trashStorageSize;
+  private final long tbegin;
+  private long bucketMin;
+  private long bucketMax;
+  private long bucketConsumed;
+  private long bucketTokensPerSecond;
+  private long bucketMaxBurstSize;
+  private final Environment environment;
 
   public GlacierStatistics(int numTags, Environment env) {
     this.environment = env;
@@ -90,5 +90,65 @@ public class GlacierStatistics {
       s+=messagesSentByTag[i]+" ";
     s+="\n";
     logger.info(s);
+  }
+
+  public void countMessageSent(int tag) {
+    messagesSentByTag[tag] ++;
+  }
+
+  public void setPendingRequests(int pendingRequests) {
+    this.pendingRequests = pendingRequests;
+  }
+
+  public void setNumNeighbors(int numNeighbors) {
+    this.numNeighbors = numNeighbors;
+  }
+
+  public void setNumFragments(int numFragments) {
+    this.numFragments = numFragments;
+  }
+
+  public void setNumContinuations(int numContinuations) {
+    this.numContinuations = numContinuations;
+  }
+
+  public void setResponsibleRange(IdRange responsibleRange) {
+    this.responsibleRange = responsibleRange;
+  }
+
+  public void setActiveFetches(int activeFetches) {
+    this.activeFetches = activeFetches;
+  }
+
+  public void setBucketMin(long bucketMin) {
+    this.bucketMin = bucketMin;
+  }
+
+  public void setBucketMax(long bucketMax) {
+    this.bucketMax = bucketMax;
+  }
+
+  public void setBucketConsumed(long bucketConsumed) {
+    this.bucketConsumed = bucketConsumed;
+  }
+
+  public void setBucketTokensPerSecond(long bucketTokensPerSecond) {
+    this.bucketTokensPerSecond = bucketTokensPerSecond;
+  }
+
+  public void setBucketMaxBurstSize(long bucketMaxBurstSize) {
+    this.bucketMaxBurstSize = bucketMaxBurstSize;
+  }
+
+  public void setFragmentStorageSize(long fragmentStorageSize) {
+    this.fragmentStorageSize = fragmentStorageSize;
+  }
+
+  public void setNumObjectsInTrash(int numObjectsInTrash) {
+    this.numObjectsInTrash = numObjectsInTrash;
+  }
+
+  public void setTrashStorageSize(long trashStorageSize) {
+    this.trashStorageSize = trashStorageSize;
   }
 };

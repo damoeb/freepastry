@@ -42,10 +42,10 @@ import rice.p2p.past.gc.GCPastContentHandle;
 
 public class GlacierContentHandle implements GCPastContentHandle {
 
-  protected Id id;
-  protected NodeHandle nodeHandle;
-  protected Manifest manifest;
-  protected long version;
+  private final Id id;
+  private final NodeHandle nodeHandle;
+  private final Manifest manifest;
+  private final long version;
 
   public GlacierContentHandle(Id id, long version, NodeHandle nodeHandle, Manifest manifest) {
     this.id = id;
@@ -67,7 +67,7 @@ public class GlacierContentHandle implements GCPastContentHandle {
   }
 
   public long getExpiration() {
-    return manifest.expirationDate;
+    return manifest.getExpiration();
   }
 
   public Manifest getManifest() {

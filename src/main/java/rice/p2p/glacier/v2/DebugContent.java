@@ -52,10 +52,10 @@ import rice.p2p.past.gc.GCPastMetadata;
 
 public class DebugContent implements GCPastContent {
 
-  protected Id myId;
-  protected boolean isMutable;
-  protected long version;
-  protected transient byte[] payload;
+  private final Id myId;
+  private final boolean isMutable;
+  private final long version;
+  private transient byte[] payload;
 
   public DebugContent(Id id, boolean isMutable, long version, byte[] payload) {
     myId = id;

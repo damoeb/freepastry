@@ -48,10 +48,10 @@ import rice.p2p.glacier.FragmentKey;
 public class GlacierResponseMessage extends GlacierMessage {
   public static final short TYPE = 13;
 
-  protected FragmentKey[] keys;
-  protected long[] lifetimes;
-  protected boolean[] haveIt;
-  protected boolean[] authoritative;
+  private final FragmentKey[] keys;
+  private final long[] lifetimes;
+  private final boolean[] haveIt;
+  private final boolean[] authoritative;
 
   public GlacierResponseMessage(int uid, FragmentKey key, boolean haveIt, long lifetime, boolean authoritative, NodeHandle source, Id dest, boolean isResponse, char tag) {
     this(uid, new FragmentKey[] { key }, new boolean[] { haveIt }, new long[] { lifetime }, new boolean[] { authoritative }, source, dest, isResponse, tag);

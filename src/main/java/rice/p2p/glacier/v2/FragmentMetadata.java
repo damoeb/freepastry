@@ -42,9 +42,9 @@ public class FragmentMetadata implements Serializable, Comparable<FragmentMetada
 
   private static final long serialVersionUID = 3380538644355999384L;
 
-  protected long currentExpirationDate;
-  protected long previousExpirationDate;
-  protected long storedSince;
+  private final long currentExpirationDate;
+  private final long previousExpirationDate;
+  private final long storedSince;
 
   public FragmentMetadata(long currentExpirationDate, long previousExpirationDate, long storedSince) {
     this.currentExpirationDate = currentExpirationDate;

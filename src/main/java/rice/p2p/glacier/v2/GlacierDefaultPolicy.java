@@ -56,10 +56,10 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 public class GlacierDefaultPolicy implements GlacierPolicy {
 
-  protected ErasureCodec codec;
-  protected String instance;
-  protected Environment environment;
-  protected Logger logger;
+  private final ErasureCodec codec;
+  private final String instance;
+  private final Environment environment;
+  private final Logger logger;
 
   public GlacierDefaultPolicy(ErasureCodec codec, String instance, Environment env) {
     this.codec = codec;

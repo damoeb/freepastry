@@ -48,8 +48,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 public class GlacierRangeForwardMessage extends GlacierMessage {
   public static final short TYPE = 6;
 
-  protected IdRange requestedRange;
-  protected NodeHandle requestor;
+  private final IdRange requestedRange;
+  private final NodeHandle requestor;
 
   public GlacierRangeForwardMessage(int uid, IdRange requestedRange, NodeHandle requestor, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, false, tag);

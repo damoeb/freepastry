@@ -49,9 +49,9 @@ import rice.p2p.glacier.v2.BloomFilter;
 public class GlacierSyncMessage extends GlacierMessage {
   public static final short TYPE = 14;
 
-  protected IdRange range;
-  protected int offsetFID;
-  protected BloomFilter BloomFilter;
+  private final IdRange range;
+  private final int offsetFID;
+  private final BloomFilter BloomFilter;
 
   public GlacierSyncMessage(int uid, IdRange range, int offsetFID, BloomFilter BloomFilter, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, false, tag);

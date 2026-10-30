@@ -49,9 +49,9 @@ public class GlacierRefreshPatchMessage extends GlacierMessage {
   public static final short TYPE = 10;
 
 
-  protected VersionKey[] keys;
-  protected long[] lifetimes;
-  protected byte[][] signatures;
+  private final VersionKey[] keys;
+  private final long[] lifetimes;
+  private final byte[][] signatures;
 
   public GlacierRefreshPatchMessage(int uid, VersionKey[] keys, long[] lifetimes, byte[][] signatures, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, false, tag);

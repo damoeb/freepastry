@@ -48,8 +48,8 @@ import rice.p2p.glacier.FragmentKey;
 public class GlacierFetchMessage extends GlacierMessage {
   public static final short TYPE = 2;
 
-  protected FragmentKey[] keys;
-  protected int request;
+  private final FragmentKey[] keys;
+  private final int request;
 
   public static final int FETCH_FRAGMENT = 1;
   public static final int FETCH_MANIFEST = 2;

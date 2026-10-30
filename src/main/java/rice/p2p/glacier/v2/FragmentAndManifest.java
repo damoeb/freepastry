@@ -41,11 +41,23 @@ import java.io.Serializable;
 import rice.p2p.glacier.Fragment;
 
 public class FragmentAndManifest implements Serializable {
-  public Fragment fragment;
-  public Manifest manifest;
+  private final Fragment fragment;
+  private Manifest manifest;
 
   public FragmentAndManifest(Fragment fragment, Manifest manifest) {
     this.fragment = fragment;
     this.manifest = manifest;
+  }
+
+  public Fragment getFragment() {
+    return fragment;
+  }
+
+  public void replaceManifest(Manifest manifest) {
+    this.manifest = manifest;
+  }
+
+  public Manifest getManifest() {
+    return manifest;
   }
 }

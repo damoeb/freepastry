@@ -47,7 +47,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 public class GlacierRefreshProbeMessage extends GlacierMessage {
   public static final short TYPE = 11;
 
-  protected Id requestedId;
+  private final Id requestedId;
 
   public GlacierRefreshProbeMessage(int uid, Id requestedId, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, false, tag);

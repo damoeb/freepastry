@@ -52,10 +52,10 @@ public class Manifest implements Serializable {
 
   static final long serialVersionUID = -436805143199825662L;
 
-  protected transient byte[] objectHash;
-  protected transient byte[][] fragmentHash;
-  protected transient byte[] signature;
-  protected long expirationDate;
+  private transient byte[] objectHash;
+  private transient byte[][] fragmentHash;
+  private transient byte[] signature;
+  private long expirationDate;
 
   public Manifest(byte[] objectHash, byte[][] fragmentHash, long expirationDate) {
     this.objectHash = objectHash;

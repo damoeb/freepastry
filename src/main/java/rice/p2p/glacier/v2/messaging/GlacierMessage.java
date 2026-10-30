@@ -51,19 +51,19 @@ public abstract class GlacierMessage implements RawMessage {
   private static final long serialVersionUID = -5849182107707420256L;
 
   // the unique id for this message
-  protected int id;
+  private final int id;
 
   // the tag of this message
-  protected char tag;
+  private final char tag;
 
   // the source Id of this message
-  protected NodeHandle source;
+  private final NodeHandle source;
 
   // the destination of this message
-  protected Id dest;
+  private final Id dest;
 
   // true if this is a response to a previous message
-  protected boolean isResponse;
+  private final boolean isResponse;
 
   /**
    * Constructor which takes a unique integer Id

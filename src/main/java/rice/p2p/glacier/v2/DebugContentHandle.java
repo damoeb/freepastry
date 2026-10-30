@@ -41,10 +41,10 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.past.gc.GCPastContentHandle;
 
 public class DebugContentHandle implements GCPastContentHandle {
-  protected Id myId;
-  protected rice.p2p.commonapi.NodeHandle myNodeHandle;
-  protected long myExpiration;
-  protected long myVersion;
+  private final Id myId;
+  private final rice.p2p.commonapi.NodeHandle myNodeHandle;
+  private final long myExpiration;
+  private final long myVersion;
 
   DebugContentHandle(Id id, long version, long expiration, NodeHandle nodeHandle) {
     myId = id;

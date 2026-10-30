@@ -48,8 +48,8 @@ import rice.p2p.glacier.VersionKey;
 public class GlacierRefreshCompleteMessage extends GlacierMessage {
   public static final short TYPE = 9;
 
-  protected VersionKey[] keys;
-  protected int[] updates;
+  private final VersionKey[] keys;
+  private final int[] updates;
 
   public GlacierRefreshCompleteMessage(int uid, VersionKey[] keys, int[] updates, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, true, tag);

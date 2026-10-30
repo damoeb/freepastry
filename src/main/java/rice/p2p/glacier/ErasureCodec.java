@@ -58,8 +58,8 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  */
 public class ErasureCodec {
 
-  protected int numFragments;
-  protected int numSurvivors;
+  private final int numFragments;
+  private final int numSurvivors;
 
   final static int Lfield = 10;
   final static int MultField = (1 << Lfield) - 1;
@@ -68,8 +68,8 @@ public class ErasureCodec {
   static final int[] ExpToFieldElt = buildExpToFieldElt();
   static final int[] FieldEltToExp = buildFieldEltToExp(ExpToFieldElt);
 
-  protected Environment environment;
-  protected Logger logger;
+  private final Environment environment;
+  private final Logger logger;
 
   /**
    * Constructor for ErasureCodec.
@@ -191,10 +191,10 @@ public class ErasureCodec {
       for (int i=0; i<numFragments; i++) {
         if (generateFragment[i]) {
           for (int j=0; j<Lfield; j++) {
-            frag[i].payload[4*(g*Lfield + j) + 0] = (byte) ((buffer[i * Lfield + j]      ) & 0xFF);
-            frag[i].payload[4*(g*Lfield + j) + 1] = (byte) ((buffer[i * Lfield + j] >>  8) & 0xFF);
-            frag[i].payload[4*(g*Lfield + j) + 2] = (byte) ((buffer[i * Lfield + j] >> 16) & 0xFF);
-            frag[i].payload[4*(g*Lfield + j) + 3] = (byte) ((buffer[i * Lfield + j] >> 24) & 0xFF);
+            frag[i].getPayload()[4*(g*Lfield + j) + 0] = (byte) ((buffer[i * Lfield + j]      ) & 0xFF);
+            frag[i].getPayload()[4*(g*Lfield + j) + 1] = (byte) ((buffer[i * Lfield + j] >>  8) & 0xFF);
+            frag[i].getPayload()[4*(g*Lfield + j) + 2] = (byte) ((buffer[i * Lfield + j] >> 16) & 0xFF);
+            frag[i].getPayload()[4*(g*Lfield + j) + 3] = (byte) ((buffer[i * Lfield + j] >> 24) & 0xFF);
           }
         }
       }
@@ -252,7 +252,7 @@ public class ErasureCodec {
       if (frag[i] != null)
         firstFragment = i;
 
-    int wordsPerFragment = (frag[firstFragment].payload.length + 3) / 4;
+    int wordsPerFragment = (frag[firstFragment].getPayload().length + 3) / 4;
     int numGroups = wordsPerFragment / Lfield;
 
     boolean haveFragment[] = new boolean[numFragments];
@@ -329,10 +329,10 @@ public class ErasureCodec {
         if (haveFragment[i]) {
           for (int j=0; j < Lfield; j++) {
             buffer[i*Lfield + j] =
-              ((frag[i].payload[4*(g*Lfield + j) + 0]      ) & 0x0000FF) +
-              ((frag[i].payload[4*(g*Lfield + j) + 1] <<  8) & 0x00FF00) +
-              ((frag[i].payload[4*(g*Lfield + j) + 2] << 16) & 0xFF0000) +
-               (frag[i].payload[4*(g*Lfield + j) + 3] << 24);
+              ((frag[i].getPayload()[4*(g*Lfield + j) + 0]      ) & 0x0000FF) +
+              ((frag[i].getPayload()[4*(g*Lfield + j) + 1] <<  8) & 0x00FF00) +
+              ((frag[i].getPayload()[4*(g*Lfield + j) + 2] << 16) & 0xFF0000) +
+               (frag[i].getPayload()[4*(g*Lfield + j) + 3] << 24);
           }
         }
       }

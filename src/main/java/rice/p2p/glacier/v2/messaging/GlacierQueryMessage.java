@@ -54,7 +54,7 @@ import rice.p2p.glacier.FragmentKey;
 public class GlacierQueryMessage extends GlacierMessage {
   public static final short TYPE = 5;
 
-  protected FragmentKey keys[];
+  private final FragmentKey keys[];
 
   public GlacierQueryMessage(int uid, FragmentKey keys[], NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, false, tag);
