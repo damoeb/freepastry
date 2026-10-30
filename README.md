@@ -159,12 +159,58 @@ Everything on the wire and on disk is raw-serialized; there is no Java serializa
 
 ## Applications
 
-FreePastry includes several P2P applications:
+The applications are libraries, not standalone programs. Each one runs inside a Pastry node: you create a node with a `PastryNodeFactory`, construct the application on it (for example `new ScribeImpl(node, "myInstance")`), and boot the node. Every node in the ring that takes part runs its own instance of the application. The tutorials below show this end to end and are the quickest way to start each application.
 
-- **PAST** - Distributed hash table and archival storage
-- **Scribe** - Application-level multicast
-- **SplitStream** - High-bandwidth multicast
-- **Glacier** - Archival storage with high durability
+| Application | Module | Purpose | Entry point |
+|---|---|---|---|
+| **Pastry** | `freepastry-pastry` | The overlay itself: a self-organizing ring of nodes with 160-bit ids. It routes a message to the live node whose id is numerically closest to a key in O(log N) hops, and repairs its routing tables as nodes join and fail. All other applications build on it. | `SocketPastryNodeFactory`, `DirectPastryNodeFactory` (simulator) |
+| **PAST** | `freepastry-past` | Distributed hash table: `insert` stores an object on the k nodes closest to its id, `lookup` fetches it from the nearest replica. Content is immutable; a cache along the route speeds up repeated lookups. | `PastImpl(node, storageManager, replicas, instance)` |
+| **GCPast** | `freepastry-past` | PAST with expiration times: objects are refreshed by their owner and garbage-collected after they expire. | `GCPastImpl` |
+| **Replication** | `freepastry-past` | Keeps a set of keys replicated on the k closest nodes as the leaf set changes, by periodically comparing Bloom filters with neighbours. PAST uses it; you can use it for your own storage. | `ReplicationImpl(node, client, replicationFactor, instance)` |
+| **Scribe** | `freepastry-scribe` | Publish/subscribe and multicast: nodes subscribe to a topic, Scribe builds a multicast tree rooted at the node closest to the topic id, and `publish` delivers a message to all subscribers. It also supports anycast (deliver to one subscriber). | `ScribeImpl(node, instance)` |
+| **SplitStream** | `freepastry-scribe` | High-bandwidth streaming on top of Scribe: a channel is split into 16 stripes, each with its own tree, so the forwarding load is spread over all nodes instead of a few interior nodes. | `SplitStreamImpl(node, instance)` |
+| **Multiring** | `freepastry-multiring` | Lets one node be part of several Pastry rings (for example an organization ring and a global ring) and route between them with ring-qualified ids. | `MultiringNode(ringId, node)` |
+| **Glacier** | `freepastry-glacier` | Durable archival storage: objects are erasure-coded into fragments spread over many nodes, so they survive large correlated failures. | `GlacierImpl` |
+| **Aggregation** | `freepastry-glacier` | Bundles many small objects into larger aggregates before storing them in Glacier or PAST, which keeps the per-object overhead low. | `AggregationImpl` |
+| **PeerReview** | `freepastry-peerreview` | Accountability: each node keeps a tamper-evident, signed log of its messages; peers audit each other's logs and expose nodes that deviate from the protocol. | `PeerReviewImpl` |
+| **File transfer** | `freepastry-filetransfer` | Sends files and large byte buffers between two nodes over an application socket, with priorities and progress callbacks. | `FileTransferImpl` |
+
+### Start the applications
+
+Build the jar with dependencies first (see [Create JAR with Dependencies](#create-jar-with-dependencies)). The jar contains no SLF4J backend, so the tutorials only show their own console output. To also see FreePastry's log, add a backend to the classpath, for example the slf4j-simple jar that the build has already downloaded:
+
+```bash
+JAR=modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar
+CP=$JAR:$HOME/.m2/repository/org/slf4j/slf4j-simple/2.0.20/slf4j-simple-2.0.20.jar
+```
+
+Networked tutorials take `localbindport bootIP bootPort [numNodes]`. The first node of a new ring boots from its own address; further nodes, in the same or another JVM or on another machine, boot from any running node. `numNodes` starts that many nodes in one JVM, on consecutive ports. For example, start a ring of 10 PAST nodes and add 5 more:
+
+```bash
+java -cp $CP rice.tutorial.past.PastTutorial 9001 <your-ip> 9001 10
+java -cp $CP rice.tutorial.past.PastTutorial 9100 <your-ip> 9001 5
+```
+
+Simulator tutorials (`-direct` or `DirectTutorial`) run all nodes in one JVM over a simulated network and need no ports.
+
+| Tutorial | Shows | Command (after `java -cp $CP`) |
+|---|---|---|
+| `rice.tutorial.lesson1.DistTutorial` | Starting one node and joining a ring | `rice.tutorial.lesson1.DistTutorial 9001 <boot-ip> 9001` |
+| `rice.tutorial.lesson3.DistTutorial` | A minimal application that routes messages by key and directly to a node | `rice.tutorial.lesson3.DistTutorial 9001 <boot-ip> 9001` |
+| `rice.tutorial.lesson4.DistTutorial` | Several nodes in one JVM | `rice.tutorial.lesson4.DistTutorial 9001 <boot-ip> 9001 10` |
+| `rice.tutorial.direct.DirectTutorial` | The same application on the network simulator | `rice.tutorial.direct.DirectTutorial 20` |
+| `rice.tutorial.deterministicsimulator.DirectTutorial` | A reproducible simulation from a seed | `rice.tutorial.deterministicsimulator.DirectTutorial 20 42` |
+| `rice.tutorial.past.PastTutorial` | PAST: insert objects, then look them up from other nodes | `rice.tutorial.past.PastTutorial 9001 <boot-ip> 9001 10` |
+| `rice.tutorial.scribe.ScribeTutorial` | Scribe: subscribe to a topic, publish and anycast | `rice.tutorial.scribe.ScribeTutorial 9001 <boot-ip> 9001 10` |
+| `rice.tutorial.splitstream.SplitStreamTutorial` | SplitStream: a channel with stripes | `rice.tutorial.splitstream.SplitStreamTutorial 9001 <boot-ip> 9001 10`, or `-direct 20` |
+| `rice.tutorial.lookup.LookupServiceTest` | Find the node responsible for an id | `rice.tutorial.lookup.LookupServiceTest 9001 <boot-ip> 9001 10` |
+| `rice.tutorial.sendfile.Tutorial` | File transfer between two nodes | `rice.tutorial.sendfile.Tutorial 9001 <boot-ip> 9001 2`, or `-direct 2` |
+| `rice.tutorial.appsocket.Tutorial` | Stream sockets between applications | `rice.tutorial.appsocket.Tutorial 9001 <boot-ip> 9001 2`, or `-direct 2` |
+| `rice.tutorial.timer.DistTutorial` | Scheduling periodic tasks on the selector thread | `rice.tutorial.timer.DistTutorial 9001 <boot-ip> 9001` |
+| `rice.tutorial.ssl.DistTutorial` | Nodes that authenticate each other with TLS | `rice.tutorial.ssl.DistTutorial 9001 <boot-ip> 9001 <keystore.p12>` |
+| `rice.tutorial.transportlayer.DistTutorial` | Adding your own transport layer (here a bandwidth limiter) | `rice.tutorial.transportlayer.DistTutorial 9001 <boot-ip> 9001 10 1000` |
+
+The step-by-step explanations for these programs are in `html/rawtutorial/index.html`, and their sources are in `modules/tutorials/src/main/java/rice/tutorial/`. Glacier, Aggregation, Multiring and PeerReview have no tutorial; their tests (`modules/<module>/src/test/java`) show how to set them up.
 
 ## License
 
