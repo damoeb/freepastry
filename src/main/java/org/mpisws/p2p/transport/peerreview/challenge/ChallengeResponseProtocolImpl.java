@@ -60,6 +60,7 @@ import org.mpisws.p2p.transport.peerreview.message.AccusationMessage;
 import org.mpisws.p2p.transport.peerreview.message.AckMessage;
 import org.mpisws.p2p.transport.peerreview.message.ChallengeMessage;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
+import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType;
 import org.mpisws.p2p.transport.peerreview.message.ResponseMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.slf4j.Logger;
@@ -72,8 +73,6 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKP
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACCUSATION;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_RESPONSE;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
@@ -160,13 +159,13 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       /* AUDIT challenges: We respond with a serialized log snippet */
 
       case CHAL_AUDIT: {
-        ChallengeAudit audit = (ChallengeAudit)challenge.getChallenge();
+        ChallengeAudit audit = (ChallengeAudit)challenge.challenge();
 
         byte flags = audit.getFlags();
         long seqFrom = audit.getFrom().getSeq();
         long seqTo = audit.getTo().getSeq();
         logger.atTrace().log(() -> "Received an AUDIT challenge for ["+seqFrom+","+seqTo+"] from "+source+
-            " (eseq="+challenge.getEvidenceSeq()+", flags="+audit.getFlags()+")");
+            " (eseq="+challenge.evidenceSeq()+", flags="+audit.getFlags()+")");
 
         if (seqTo < seqFrom) {
           logger.warn("Received an AUDIT challenge with seqTo<seqFrom:{}<{}", seqTo, seqFrom);
@@ -227,12 +226,12 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
           /* Serialize the requested log snippet */
 
-          HashPolicy hashPolicy = new ChallengeHashPolicy<Identifier>(flags, challenge.getOriginator(), peerreview.getIdSerializer());
+          HashPolicy hashPolicy = new ChallengeHashPolicy<Identifier>(flags, challenge.originator(), peerreview.getIdSerializer());
           LogSnippet snippet;
           if ((snippet = history.serializeRange(idxFrom, idxTo, hashPolicy)) != null) {
             /* Put together a RESPONSE message */
             ResponseMessage<Identifier> response = new ResponseMessage<Identifier>(
-                challenge.getOriginator(),peerreview.getLocalId(),challenge.getEvidenceSeq(),new AuditResponse<Handle>(peerreview.getLocalHandle(),snippet));
+                challenge.originator(),peerreview.getLocalId(),challenge.evidenceSeq(),new AuditResponse<Handle>(peerreview.getLocalHandle(),snippet));
 
             /* ... and send it back to the challenger */
 
@@ -253,7 +252,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
       case CHAL_SEND:
       {
-        UserDataMessage<Handle> udm = (UserDataMessage<Handle>)challenge.getChallenge();
+        UserDataMessage<Handle> udm = (UserDataMessage<Handle>)challenge.challenge();
 
         logger.info("Received a SEND challenge");
 
@@ -271,7 +270,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
         /* Put together a RESPONSE with an authenticator for the message in the challenge */
 
-        ResponseMessage<Identifier> rMsg = new ResponseMessage<Identifier>(challenge.getOriginator(),peerreview.getLocalId(),challenge.getEvidenceSeq(),ret.a());
+        ResponseMessage<Identifier> rMsg = new ResponseMessage<Identifier>(challenge.originator(),peerreview.getLocalId(),challenge.evidenceSeq(),ret.a());
 
         /* ... and send it back to the challenger */
 
@@ -455,14 +454,14 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
    * @throws IOException */
 
   public void handleStatement(Handle source, PeerReviewMessage m, Map<String, Object> options) throws IOException {
-    assert(m.getType() == MSG_ACCUSATION || m.getType() == MSG_RESPONSE);
+    assert(m instanceof AccusationMessage || m instanceof ResponseMessage);
 
     /* We get called from the StatementProtocol, so we already know that the statement
        is well-formed, and that we have acquired all the necessary supplementary material,
        such as certificates or hash maps */
 
-    switch(m.getType()) {
-    case MSG_RESPONSE: {
+    switch(PeerReviewMessageType.find(m.getType())) {
+    case RESPONSE: {
         ResponseMessage<Identifier> message = (ResponseMessage<Identifier>)m;
         logger.debug("Statement completed: RESPONSE  (orig={}, subject={}, ts={})", message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
         handleResponse(message, options);
@@ -472,7 +471,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
         }
         return;
       }
-    case MSG_ACCUSATION:
+    case ACCUSATION:
       AccusationMessage<Identifier> message = (AccusationMessage<Identifier>)m;
       logger.debug("Statement completed: ACCUSATION  (orig={}, subject={}, ts={})", message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
 

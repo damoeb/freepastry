@@ -60,6 +60,7 @@ import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.PeerInfoStore;
 import org.mpisws.p2p.transport.peerreview.message.AuthRequest;
 import org.mpisws.p2p.transport.peerreview.message.AuthResponse;
+import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType;
 import org.mpisws.p2p.transport.peerreview.message.ChallengeMessage;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
@@ -76,8 +77,6 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_LO
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_FULL_MESSAGES_SENDER;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.INVESTIGATION_INTERVAL_MILLIS;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHREQ;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRESP;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROGRESS_INTERVAL_MILLIS;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
 
@@ -269,11 +268,11 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         logger.warn("No response to AUDIT request; filing as evidence {}", foo.getEvidenceSeq());
         try {
           infoStore.addEvidence(peerreview.getLocalId(), i, foo.getEvidenceSeq(),
-              foo.getRequest().getChallenge());
+              foo.getRequest().challenge());
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
-        peerreview.sendEvidenceToWitnesses(i, foo.getEvidenceSeq(), foo.getRequest().getChallenge());
+        peerreview.sendEvidenceToWitnesses(i, foo.getEvidenceSeq(), foo.getRequest().challenge());
 
         terminateAudit(foo.getTarget());
       }
@@ -381,7 +380,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
     /* Read the header of the log snippet */
 
-    ChallengeAudit challengeAudit = (ChallengeAudit)aai.getRequest().getChallenge();
+    ChallengeAudit challengeAudit = (ChallengeAudit)aai.getRequest().challenge();
     long fromSeq = challengeAudit.getFrom().getSeq();
     Authenticator toAuthenticator = challengeAudit.getTo();
     long toSeq = toAuthenticator.getSeq();
@@ -594,7 +593,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     /* Terminate the audit, and remember the last authenticator for further reference */
 
     logger.debug("Audit completed; terminating");
-    infoStore.setLastCheckedAuth(peerreview.getIdentifierExtractor().extractIdentifier(aai.getTarget()), ((ChallengeAudit)aai.getRequest().getChallenge()).getTo());
+    infoStore.setLastCheckedAuth(peerreview.getIdentifierExtractor().extractIdentifier(aai.getTarget()), ((ChallengeAudit)aai.getRequest().challenge()).getTo());
     terminateAudit(aai.getTarget());
   }
 
@@ -610,67 +609,67 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
   public Evidence statOngoingAudit(Identifier subject, long evidenceSeq) {
     ActiveAuditInfo<Handle, Identifier> aii = findOngoingAudit(subject, evidenceSeq);
     if (aii == null) return null;
-    return aii.getRequest().getChallenge();
+    return aii.getRequest().challenge();
   }
 
   /* Handle an incoming datagram, which could be either a request for authenticators, or a response to such a request */
 
   public void handleIncomingDatagram(Handle handle, PeerReviewMessage message) {
 
-    switch (message.getType()) {
-      case MSG_AUTHREQ: { /* Request for authenticators */
+    switch (PeerReviewMessageType.find(message.getType())) {
+      case AUTHREQ: { /* Request for authenticators */
         AuthRequest<Identifier> request = (AuthRequest<Identifier>)message;
 
           /* The request contains a timestamp T; we're being asked to return two authenticators,
              one has to be older than T, and the other must be as recent as possible */
 
-          logger.info("Received authenticator request for {} (since {})", request.getSubject(), request.getTimestamp());
+          logger.info("Received authenticator request for {} (since {})", request.subject(), request.timestamp());
 
           /* There are several places we might find 'old' authenticators. Check all of them,
              and pick the authenticator that is closest to T */
 
-          Authenticator a1 = authInStore.getLastAuthenticatorBefore(request.getSubject(), request.getTimestamp());
-          Authenticator a2 = authCacheStore.getLastAuthenticatorBefore(request.getSubject(), request.getTimestamp());
-          Authenticator a3 = authInStore.getOldestAuthenticator(request.getSubject());
+          Authenticator a1 = authInStore.getLastAuthenticatorBefore(request.subject(), request.timestamp());
+          Authenticator a2 = authCacheStore.getLastAuthenticatorBefore(request.subject(), request.timestamp());
+          Authenticator a3 = authInStore.getOldestAuthenticator(request.subject());
 
           Authenticator best = null;
 
-          if (a1 != null && (best == null || (!(best.getSeq()<request.getTimestamp()) && (a1.getSeq()<request.getTimestamp())) || ((best.getSeq()<request.getTimestamp()) && (a1.getSeq()<request.getTimestamp()) && (best.getSeq()<a1.getSeq())))) {
+          if (a1 != null && (best == null || (!(best.getSeq()<request.timestamp()) && (a1.getSeq()<request.timestamp())) || ((best.getSeq()<request.timestamp()) && (a1.getSeq()<request.timestamp()) && (best.getSeq()<a1.getSeq())))) {
             best = a1;
           }
 
-          if (a2 != null && (best == null || (!(best.getSeq()<request.getTimestamp()) && (a2.getSeq()<request.getTimestamp())) || ((best.getSeq()<request.getTimestamp()) && (a2.getSeq()<request.getTimestamp()) && (best.getSeq()<a2.getSeq())))) {
+          if (a2 != null && (best == null || (!(best.getSeq()<request.timestamp()) && (a2.getSeq()<request.timestamp())) || ((best.getSeq()<request.timestamp()) && (a2.getSeq()<request.timestamp()) && (best.getSeq()<a2.getSeq())))) {
             best = a2;
           }
 
-          if (a3 != null && (best == null || (!(best.getSeq()<request.getTimestamp()) && (a3.getSeq()<request.getTimestamp())) || ((best.getSeq()<request.getTimestamp()) && (a3.getSeq()<request.getTimestamp()) && (best.getSeq()<a3.getSeq())))) {
+          if (a3 != null && (best == null || (!(best.getSeq()<request.timestamp()) && (a3.getSeq()<request.timestamp())) || ((best.getSeq()<request.timestamp()) && (a3.getSeq()<request.timestamp()) && (best.getSeq()<a3.getSeq())))) {
             best = a3;
           }
 
           /* Recent authenticators can be found in two places; check both */
 
-          Authenticator foo = authInStore.getMostRecentAuthenticator(request.getSubject());
+          Authenticator foo = authInStore.getMostRecentAuthenticator(request.subject());
           if (foo == null) {
-            foo = authCacheStore.getMostRecentAuthenticator(request.getSubject());
+            foo = authCacheStore.getMostRecentAuthenticator(request.subject());
           }
 
           if (best != null && foo != null) {
-            AuthResponse<Identifier> response = new AuthResponse<Identifier>(request.getSubject(),best,foo);
+            AuthResponse<Identifier> response = new AuthResponse<Identifier>(request.subject(),best,foo);
             peerreview.transmit(handle, response, null, null);
           } else {
-            logger.warn("Cannot respond to this request; we don't have any authenticators for {}", request.getSubject());
+            logger.warn("Cannot respond to this request; we don't have any authenticators for {}", request.subject());
           }
         }
 
         break;
-      case MSG_AUTHRESP: { /* Response to a request for authenticators */
+      case AUTHRESP: { /* Response to a request for authenticators */
         AuthResponse<Identifier> response = (AuthResponse<Identifier>)message;
-          logger.debug("Received AUTHRESP(<{}>, {}..{}) from {}", response.getSubject(), response.getAuthFrom(), response.getAuthTo(), handle);
+          logger.debug("Received AUTHRESP(<{}>, {}..{}) from {}", response.subject(), response.authFrom(), response.authTo(), handle);
 
           // TODO: check the signatures of response.authFrom and response.authTo
-          ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(response.getSubject());
+          ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(response.subject());
           if (investigation != null) {
-            investigation.offerAuthenticators(response.getAuthFrom(), response.getAuthTo());
+            investigation.offerAuthenticators(response.authFrom(), response.authTo());
           } else {
             logger.warn("AUTH response does not match any ongoing investigations; ignoring");
           }

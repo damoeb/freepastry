@@ -45,8 +45,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_CHALLENGE;
-
 /**
  * MSG_CHALLENGE
   byte type = MSG_CHALLENGE
@@ -58,21 +56,10 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_CHALLE
  * @author Jeff Hoye
  *
  */
-public class ChallengeMessage<Identifier extends RawSerializable> implements PeerReviewMessage {
-  public static final short TYPE = MSG_CHALLENGE;
-
-  private final Identifier originator;
-  private final long evidenceSeq;
-  private final Evidence challenge;
-
-  public ChallengeMessage(Identifier originator, long evidenceSeq, Evidence challenge) {
-    this.originator = originator;
-    this.evidenceSeq = evidenceSeq;
-    this.challenge = challenge;
-  }
+public record ChallengeMessage<Identifier extends RawSerializable>(Identifier originator, long evidenceSeq, Evidence challenge) implements PeerReviewMessage {
 
   public short getType() {
-    return TYPE;
+    return PeerReviewMessageType.CHALLENGE.id();
   }
 
   public short getChallengeType() {
@@ -80,10 +67,11 @@ public class ChallengeMessage<Identifier extends RawSerializable> implements Pee
   }
 
   public ChallengeMessage(InputBuffer buf, Serializer<Identifier> idSerializer, EvidenceSerializer evidenceSerializer) throws IOException {
-    originator = idSerializer.deserialize(buf);
-    evidenceSeq = buf.readLong();
+    Identifier originator = idSerializer.deserialize(buf);
+    long evidenceSeq = buf.readLong();
     byte chalType = buf.readByte();
-    challenge = evidenceSerializer.deserialize(buf,chalType,false);
+    Evidence challenge = evidenceSerializer.deserialize(buf,chalType,false);
+    this(originator, evidenceSeq, challenge);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
@@ -91,17 +79,5 @@ public class ChallengeMessage<Identifier extends RawSerializable> implements Pee
     buf.writeLong(evidenceSeq);
     buf.writeByte((byte)challenge.getEvidenceType());
     challenge.serialize(buf);
-  }
-
-  public Evidence getChallenge() {
-    return challenge;
-  }
-
-  public long getEvidenceSeq() {
-    return evidenceSeq;
-  }
-
-  public Identifier getOriginator() {
-    return originator;
   }
 }

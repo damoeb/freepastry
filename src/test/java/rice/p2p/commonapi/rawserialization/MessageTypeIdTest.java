@@ -67,7 +67,8 @@ class MessageTypeIdTest {
       "rice.p2p.past.messaging.PastMessageType",
       "rice.p2p.glacier.v2.messaging.GlacierMessageType",
       "rice.p2p.aggregation.AggregationContentType",
-      "rice.p2p.aggregation.AggregationHandleType");
+      "rice.p2p.aggregation.AggregationHandleType",
+      "org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType");
 
   private enum Clean implements MessageTypeId {
     ONE(1), TWO(2);

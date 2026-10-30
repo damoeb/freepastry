@@ -38,7 +38,8 @@ package org.mpisws.p2p.transport.peerreview.message;
 
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-public interface PeerReviewMessage extends RawSerializable {
+public sealed interface PeerReviewMessage extends RawSerializable
+    permits Statement, AckMessage, AuthRequest, AuthResponse, AuthPushMessage, ChallengeMessage, UserDataMessage {
 
   public short getType();
 

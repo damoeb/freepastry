@@ -40,12 +40,10 @@ import java.io.IOException;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceRecord;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceSerializer;
-import org.mpisws.p2p.transport.peerreview.statement.Statement;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACCUSATION;
 
 /**
     MSG_ACCUSATION
@@ -55,7 +53,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACCUSA
     long long evidenceSeq
     [evidence bytes follow]
 */
-public class AccusationMessage<Identifier extends RawSerializable> extends Statement<Identifier> {
+public final class AccusationMessage<Identifier extends RawSerializable> extends Statement<Identifier> {
 
   public AccusationMessage(Identifier originator, Identifier subject,
       long evidenceSeq, Evidence evidence) {
@@ -77,7 +75,7 @@ public class AccusationMessage<Identifier extends RawSerializable> extends State
 
 
   public short getType() {
-    return MSG_ACCUSATION;
+    return PeerReviewMessageType.ACCUSATION.id();
   }
 
 

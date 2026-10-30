@@ -40,12 +40,10 @@ import java.io.IOException;
 
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceSerializer;
-import org.mpisws.p2p.transport.peerreview.statement.Statement;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_RESPONSE;
 
 /**
  *
@@ -60,7 +58,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_RESPON
  * @author Jeff Hoye
  *
  */
-public class ResponseMessage<Identifier extends RawSerializable> extends Statement<Identifier> {
+public final class ResponseMessage<Identifier extends RawSerializable> extends Statement<Identifier> {
 
   public ResponseMessage(Identifier originator, Identifier subject,
       long evidenceSeq, Evidence response) {
@@ -72,7 +70,7 @@ public class ResponseMessage<Identifier extends RawSerializable> extends Stateme
   }
 
   public short getType() {
-    return MSG_RESPONSE;
+    return PeerReviewMessageType.RESPONSE.id();
   }
 
   @Override

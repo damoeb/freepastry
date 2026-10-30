@@ -49,7 +49,6 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_AUDIT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_USERDATA;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_INCONSISTENT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONCONFORMANT;
 
@@ -78,7 +77,7 @@ public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier e
         return new ChallengeAudit(buf, hashSize, signatureSize);
       }
     case CHAL_SEND:
-    case (byte)MSG_USERDATA:
+    case 16: // PeerReviewMessageType.USERDATA, accepted as an alias of CHAL_SEND
       if (response) {
         return AckMessage.build(buf, idSerializer, hashSize, signatureSize);
       } else {

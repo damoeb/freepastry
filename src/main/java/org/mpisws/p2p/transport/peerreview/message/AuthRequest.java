@@ -43,8 +43,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHREQ;
-
 /**
  * MSG_AUTHREQ
   byte type = MSG_AUTHREQ
@@ -54,34 +52,20 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRE
  * @author Jeff Hoye
  *
  */
-public class AuthRequest<Identifier extends RawSerializable> implements PeerReviewMessage {
-  private final long timestamp;
-  private final Identifier subject;
-
-  public AuthRequest(long timestamp, Identifier subject) {
-    this.timestamp = timestamp;
-    this.subject = subject;
-  }
+public record AuthRequest<Identifier extends RawSerializable>(long timestamp, Identifier subject) implements PeerReviewMessage {
 
   public short getType() {
-    return MSG_AUTHREQ;
+    return PeerReviewMessageType.AUTHREQ.id();
   }
 
   public AuthRequest(InputBuffer buf, Serializer<Identifier> serializer) throws IOException {
-    timestamp = buf.readLong();
-    subject = serializer.deserialize(buf);
+    long timestamp = buf.readLong();
+    Identifier subject = serializer.deserialize(buf);
+    this(timestamp, subject);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeLong(timestamp);
     subject.serialize(buf);
-  }
-
-  public Identifier getSubject() {
-    return subject;
-  }
-
-  public long getTimestamp() {
-    return timestamp;
   }
 }

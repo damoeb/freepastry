@@ -49,7 +49,6 @@ import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_USERDATA;
 
 /**
  *
@@ -67,8 +66,8 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_USERDA
  * @author Jeff Hoye
  *
  */
-public class UserDataMessage<Handle extends RawSerializable> implements PeerReviewMessage, Evidence {
-  public static final short TYPE = MSG_USERDATA;
+public sealed class UserDataMessage<Handle extends RawSerializable> implements PeerReviewMessage, Evidence
+    permits OutgoingUserDataMessage {
   long topSeq;
   Handle senderHandle;
   byte[] hTopMinusOne;
@@ -98,7 +97,7 @@ public class UserDataMessage<Handle extends RawSerializable> implements PeerRevi
   }
 
   public short getType() {
-    return TYPE;
+    return PeerReviewMessageType.USERDATA.id();
   }
 
   public byte getRelevantCode() {

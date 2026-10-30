@@ -45,7 +45,7 @@ import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.peerreview.commitment.PeerInfo;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-public class OutgoingUserDataMessage<Handle extends RawSerializable> extends UserDataMessage<Handle> implements MessageRequestHandle<Handle, ByteBuffer> {
+public final class OutgoingUserDataMessage<Handle extends RawSerializable> extends UserDataMessage<Handle> implements MessageRequestHandle<Handle, ByteBuffer> {
   PeerInfo<Handle> pi;
   MessageCallback<Handle, ByteBuffer> deliverAckToMe;
   Map<String, Object> options;

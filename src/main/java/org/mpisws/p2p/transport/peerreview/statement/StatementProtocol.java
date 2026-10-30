@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.peerreview.statement;
 import java.util.Map;
 
 import rice.p2p.commonapi.rawserialization.RawSerializable;
+import org.mpisws.p2p.transport.peerreview.message.Statement;
 
 /**
  * The purpose of this protocol is to make sure that we have all the nodeID

@@ -48,13 +48,13 @@ import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceTransferProtocol;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.message.AuthResponse;
+import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRESP;
 
 /**
  * Tests that an AUTHRESP widens the range of the ongoing investigation of its subject.
@@ -140,7 +140,7 @@ public class AuditProtocolImplAuthResponseTest {
 
   @Test
   public void authResponseHasItsOwnType() {
-    assertEquals(MSG_AUTHRESP, new AuthResponse<Id>(new Id(1), auth(1), auth(2)).getType());
+    assertEquals(PeerReviewMessageType.AUTHRESP.id(), new AuthResponse<Id>(new Id(1), auth(1), auth(2)).getType());
   }
 
   @Test

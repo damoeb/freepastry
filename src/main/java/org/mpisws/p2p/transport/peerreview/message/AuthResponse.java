@@ -44,8 +44,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRESP;
-
 /**
  *MSG_AUTHRESP
   byte type = MSG_AUTHRESP
@@ -57,42 +55,22 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRE
  *
  * @param <Identifier>
  */
-public class AuthResponse<Identifier extends RawSerializable> implements PeerReviewMessage {
-  private final Identifier subject;
-  private final Authenticator authFrom;
-  private final Authenticator authTo;
-
-  public AuthResponse(Identifier subject, Authenticator authFrom, Authenticator authTo) {
-    this.subject = subject;
-    this.authFrom = authFrom;
-    this.authTo = authTo;
-  }
+public record AuthResponse<Identifier extends RawSerializable>(Identifier subject, Authenticator authFrom, Authenticator authTo) implements PeerReviewMessage {
 
   public short getType() {
-    return MSG_AUTHRESP;
+    return PeerReviewMessageType.AUTHRESP.id();
   }
 
   public AuthResponse(InputBuffer buf, Serializer<Identifier> serializer, int hashSize, int signatureSize) throws IOException {
-    subject = serializer.deserialize(buf);
-    authFrom = new Authenticator(buf,hashSize,signatureSize);
-    authTo = new Authenticator(buf,hashSize,signatureSize);
+    Identifier subject = serializer.deserialize(buf);
+    Authenticator authFrom = new Authenticator(buf,hashSize,signatureSize);
+    Authenticator authTo = new Authenticator(buf,hashSize,signatureSize);
+    this(subject, authFrom, authTo);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
     subject.serialize(buf);
     authFrom.serialize(buf);
     authTo.serialize(buf);
-  }
-
-  public Authenticator getAuthFrom() {
-    return authFrom;
-  }
-
-  public Authenticator getAuthTo() {
-    return authTo;
-  }
-
-  public Identifier getSubject() {
-    return subject;
   }
 }

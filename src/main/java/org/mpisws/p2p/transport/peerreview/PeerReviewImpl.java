@@ -86,13 +86,14 @@ import org.mpisws.p2p.transport.peerreview.message.AuthPushMessage;
 import org.mpisws.p2p.transport.peerreview.message.AuthRequest;
 import org.mpisws.p2p.transport.peerreview.message.AuthResponse;
 import org.mpisws.p2p.transport.peerreview.message.ChallengeMessage;
+import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.peerreview.message.ResponseMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactory;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactoryImpl;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordSM;
-import org.mpisws.p2p.transport.peerreview.statement.Statement;
+import org.mpisws.p2p.transport.peerreview.message.Statement;
 import org.mpisws.p2p.transport.peerreview.statement.StatementProtocolImpl;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -112,14 +113,6 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_TI
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MAINTENANCE_INTERVAL_MILLIS;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACCUSATION;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACK;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHPUSH;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHREQ;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRESP;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_CHALLENGE;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_RESPONSE;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_USERDATA;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_BAD;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_OK;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
@@ -335,35 +328,34 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       updateLogTime();
       byte type = message.get();
       SimpleInputBuffer sib = new SimpleInputBuffer(message);
-      switch (type) {
-      case MSG_AUTHPUSH :
-        authPushProtocol.handleIncomingAuthenticators(handle, AuthPushMessage.build(new SimpleInputBuffer(message),idSerializer,authenticatorSerialilzer));
-        break;
-      case MSG_AUTHREQ :
-        auditProtocol.handleIncomingDatagram(handle, new AuthRequest<Identifier>(new SimpleInputBuffer(message),idSerializer));
-        break;
-      case MSG_AUTHRESP :
-        auditProtocol.handleIncomingDatagram(handle, new AuthResponse<Identifier>(new SimpleInputBuffer(message),idSerializer,transport.getHashSizeBytes(),transport.getSignatureSizeBytes()));
-        break;
-      case MSG_ACK:
-        commitmentProtocol.handleIncomingAck(handle, AckMessage.build(sib,idSerializer,transport.getHashSizeBytes(),transport.getSignatureSizeBytes()), options);
-        break;
-      case MSG_CHALLENGE:
-        ChallengeMessage<Identifier> challenge = new ChallengeMessage<Identifier>(sib,idSerializer,evidenceSerializer);
-        challengeProtocol.handleChallenge(handle, challenge, options);
-        break;
-      case MSG_ACCUSATION:
-        statementProtocol.handleIncomingStatement(handle, new AccusationMessage<Identifier>(sib, idSerializer, evidenceSerializer), options);
-        break;
-      case MSG_RESPONSE:
-        statementProtocol.handleIncomingStatement(handle, new ResponseMessage<Identifier>(sib, idSerializer, evidenceSerializer), options);
-        break;
-      case MSG_USERDATA:
-        UserDataMessage<Handle> udm = UserDataMessage.build(sib, handleSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
-        challengeProtocol.handleIncomingMessage(handle, udm, options);
-        break;
-      default:
+      PeerReviewMessageType messageType = PeerReviewMessageType.find(type);
+      if (messageType == null) {
         throw new RuntimeException("Unknown message type in PeerReview: #"+ type);
+      }
+      switch (messageType) {
+        case AUTHPUSH ->
+          authPushProtocol.handleIncomingAuthenticators(handle, AuthPushMessage.build(new SimpleInputBuffer(message),idSerializer,authenticatorSerialilzer));
+        case AUTHREQ ->
+          auditProtocol.handleIncomingDatagram(handle, new AuthRequest<Identifier>(new SimpleInputBuffer(message),idSerializer));
+        case AUTHRESP ->
+          auditProtocol.handleIncomingDatagram(handle, new AuthResponse<Identifier>(new SimpleInputBuffer(message),idSerializer,transport.getHashSizeBytes(),transport.getSignatureSizeBytes()));
+        case ACK ->
+          commitmentProtocol.handleIncomingAck(handle, AckMessage.build(sib,idSerializer,transport.getHashSizeBytes(),transport.getSignatureSizeBytes()), options);
+        case CHALLENGE -> {
+          ChallengeMessage<Identifier> challenge = new ChallengeMessage<Identifier>(sib,idSerializer,evidenceSerializer);
+          challengeProtocol.handleChallenge(handle, challenge, options);
+        }
+        case ACCUSATION ->
+          statementProtocol.handleIncomingStatement(handle, new AccusationMessage<Identifier>(sib, idSerializer, evidenceSerializer), options);
+        case RESPONSE ->
+          statementProtocol.handleIncomingStatement(handle, new ResponseMessage<Identifier>(sib, idSerializer, evidenceSerializer), options);
+        case USERDATA -> {
+          UserDataMessage<Handle> udm = UserDataMessage.build(sib, handleSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
+          challengeProtocol.handleIncomingMessage(handle, udm, options);
+        }
+        // datagrams are passed through above, never committed
+        case USERDGRAM ->
+          throw new RuntimeException("Unknown message type in PeerReview: #"+ type);
       }
     }
   }

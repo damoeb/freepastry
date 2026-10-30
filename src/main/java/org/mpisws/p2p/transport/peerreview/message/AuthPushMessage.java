@@ -50,23 +50,15 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHPUSH;
-
 /**
  * Builds the message to a target size.
  *
  * @author Jeff Hoye
  */
-public class AuthPushMessage<Identifier extends RawSerializable> implements PeerReviewMessage {
-
-  private final Map<Identifier, List<Authenticator>> authenticators;
-
-  public AuthPushMessage(Map<Identifier, List<Authenticator>> authenticators) {
-    this.authenticators = authenticators;
-  }
+public record AuthPushMessage<Identifier extends RawSerializable>(Map<Identifier, List<Authenticator>> authenticators) implements PeerReviewMessage {
 
   public short getType() {
-    return MSG_AUTHPUSH;
+    return PeerReviewMessageType.AUTHPUSH.id();
   }
 
   public static <I extends RawSerializable> AuthPushMessage<I> build(InputBuffer buf, Serializer<I> idSerializer, AuthenticatorSerializer authSerializer) throws IOException {
@@ -93,9 +85,5 @@ public class AuthPushMessage<Identifier extends RawSerializable> implements Peer
         a.serialize(buf);
       }
     }
-  }
-
-  public Map<Identifier, List<Authenticator>> getAuthenticators() {
-    return authenticators;
   }
 }

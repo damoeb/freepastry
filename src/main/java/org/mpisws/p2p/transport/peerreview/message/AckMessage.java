@@ -43,7 +43,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACK;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.RESP_SEND;
 
 /**
@@ -59,7 +58,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.RESP_SEND;
  *
  * @param <Identifier>
  */
-public class AckMessage<Identifier extends RawSerializable> implements PeerReviewMessage, Evidence {
+public final class AckMessage<Identifier extends RawSerializable> implements PeerReviewMessage, Evidence {
 
   Identifier nodeId;
   long sendEntrySeq;
@@ -77,7 +76,7 @@ public class AckMessage<Identifier extends RawSerializable> implements PeerRevie
   }
 
   public short getType() {
-    return MSG_ACK;
+    return PeerReviewMessageType.ACK.id();
   }
 
   public short getEvidenceType() {

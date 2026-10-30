@@ -34,19 +34,19 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview.statement;
+package org.mpisws.p2p.transport.peerreview.message;
 
 import java.io.IOException;
 
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceSerializer;
-import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-public abstract class Statement<Identifier extends RawSerializable> implements PeerReviewMessage {
+public sealed abstract class Statement<Identifier extends RawSerializable> implements PeerReviewMessage
+    permits AccusationMessage, ResponseMessage {
   private final Identifier originator;
   private final Identifier subject;
   private final long evidenceSeq;

@@ -57,7 +57,10 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.PeerInfoStore;
+import org.mpisws.p2p.transport.peerreview.message.AccusationMessage;
 import org.mpisws.p2p.transport.peerreview.message.AckMessage;
+import org.mpisws.p2p.transport.peerreview.message.ResponseMessage;
+import org.mpisws.p2p.transport.peerreview.message.Statement;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.slf4j.Logger;
@@ -71,8 +74,6 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.INVALID;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACCUSATION;
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_RESPONSE;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_INCONSISTENT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONCONFORMANT;
 
@@ -155,9 +156,9 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
    * the sender.
    */
   public void handleIncomingStatement(Handle source, Statement<Identifier> statement, Map<String, Object> options) {
-    assert((statement.getType() == MSG_ACCUSATION) || (statement.getType() == MSG_RESPONSE));
+    assert((statement instanceof AccusationMessage) || (statement instanceof ResponseMessage));
 
-    logger.atInfo().log(() -> "Incoming "+((statement.getType() == MSG_ACCUSATION) ? "accusation" : "response")+" from "+source);
+    logger.atInfo().log(() -> "Incoming "+((statement instanceof AccusationMessage) ? "accusation" : "response")+" from "+source);
 
     /* Find an empty spot in our message buffer and store the message there */
     IncompleteStatementInfo<Handle, Identifier> idx = new IncompleteStatementInfo<Handle, Identifier>(false,source,peerreview.getTime() + STATEMENT_COMPLETION_TIMEOUT_MILLIS,statement,false,null,options);
@@ -227,7 +228,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
    /* Further checking depends on the type of the statement. At this point, we may still request
       additional material from the sender, if it becomes necessary. */
 
-   if (statement.getType() == MSG_ACCUSATION) {
+   if (statement instanceof AccusationMessage) {
 
      /* === CHECK ACCUSATIONS === */
 
