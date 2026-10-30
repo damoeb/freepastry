@@ -143,6 +143,7 @@ public class PersistentStorage implements Storage {
 
   private boolean index;            // whether or not we are indexing the objects
   private final StorageLayout layout; // the directory tree
+  private final ObjectFiles objectFiles; // the object operations on disk
 
   private MetadataIndex metadataIndex; // the in-memory cache of object metadata (if indexing)
 
@@ -206,6 +207,8 @@ public class PersistentStorage implements Storage {
 
     logger.info("Launching persistent storage in {} with name {} spliting factor {}", rootDir, name, MAX_FILES);
 
+    this.objectFiles = new ObjectFiles(layout, metadataIndex, quota, stats, name, environment.getTimeSource(), logger);
+
     new StorageRecovery(layout, metadataIndex, quota, logger).init();
   }
 
@@ -251,24 +254,7 @@ public class PersistentStorage implements Storage {
     environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "rename " + oldId + " " + newId; }
       public Boolean doWork() throws Exception {
-        stats.countRename();
-
-        File f = layout.getFile(oldId);
-
-        if ((f != null) && (f.exists())) {
-          File g = layout.getFile(newId);
-          StorageFiles.renameFile(f, g);
-
-          layout.checkDirectory(g.getParentFile());
-
-          if (index) {
-            metadataIndex.rename(oldId, newId);
-          }
-
-          return Boolean.TRUE;
-        } else {
-          return Boolean.FALSE;
-        }
+        return objectFiles.rename(oldId, newId);
       }
     });
   }
@@ -302,49 +288,7 @@ public class PersistentStorage implements Storage {
     environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "store " + id; }
       public Boolean doWork() throws Exception {
-        stats.countWrite();
-
-        logger.atTrace().log(() -> "Storing object " + obj + " under id " + id.toStringFull() + " in root " + layout.getAppDirectory());
-
-        /* first, create a temporary file */
-        File objFile = layout.getFile(id);
-        File transcFile = layout.makeTemporaryFile(id);
-
-        logger.trace("Writing object {} to temporary file {} and renaming to {}", obj, transcFile, objFile);
-
-        /* next, write out the data to a new copy of the original file */
-        try {
-          ObjectFileFormat.writeObject(obj, metadata, id, environment.getTimeSource().currentTimeMillis(), transcFile);
-          logger.atTrace().log(() -> "Done writing object " + obj + " under id " + id.toStringFull() + " in root " + layout.getAppDirectory());
-
-          /* abort if this will put us over quota */
-          if (quota.getUsedSpace() + StorageFiles.getFileLength(transcFile) > quota.getStorageSize())
-            throw new OutofDiskSpaceException();
-        } catch (Exception e) {
-          /* if an IOException is thrown, delete the temporary file and abort */
-          logger.warn("", e);
-          StorageFiles.deleteFile(transcFile);
-          throw e;
-        }
-
-        logger.atTrace().log(() -> "COUNT: Storing data of class " + obj.getClass().getName() + " under " + id.toStringFull() + " of size " + transcFile.length() + " in " + name);
-
-        /* recalculate amount used */
-        quota.decreaseUsedSpace(StorageFiles.getFileLength(objFile));
-        quota.increaseUsedSpace(StorageFiles.getFileLength(transcFile));
-
-        /* now, rename the temporary file to be the real file */
-        StorageFiles.renameFile(transcFile, objFile);
-
-        /* mark the metadata cache of this file to be dirty */
-        if (index) {
-          metadataIndex.put(id, metadata, objFile.getParentFile());
-        }
-
-        /* finally, check to see if this directory needs to be split */
-        layout.checkDirectory(objFile.getParentFile());
-
-        return Boolean.TRUE;
+        return objectFiles.store(id, metadata, obj);
       }
     });
   }
@@ -370,27 +314,7 @@ public class PersistentStorage implements Storage {
     environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "unstore " + id; }
       public Boolean doWork() throws Exception {
-        stats.countDelete();
-
-        /* first get the file */
-        File objFile = layout.getFile(id);
-
-        logger.atTrace().log(() -> "COUNT: Unstoring data under " + id.toStringFull() + " of size " + objFile.length() + " in " + name);
-
-        /* remove id from stored list */
-        if (index) {
-          metadataIndex.remove(id, objFile.getParentFile());
-        }
-
-        /* check to make sure file exists */
-        if ((objFile == null) || (! objFile.exists()))
-          return Boolean.FALSE;
-
-        /* record the space collected and delete the file */
-        quota.decreaseUsedSpace(objFile.length());
-        StorageFiles.deleteFile(objFile);
-
-        return Boolean.TRUE;
+        return objectFiles.unstore(id);
       }
     });
   }
@@ -443,20 +367,7 @@ public class PersistentStorage implements Storage {
       environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
         public String toString() { return "setMetadata " + id; }
         public Boolean doWork() throws Exception {
-          stats.countMetadataWrite();
-
-          logger.atTrace().log(() -> "COUNT: Updating metadata for " + id.toStringFull() + " in " + name);
-
-          /* write the metadata to the file */
-          File objFile = layout.getFile(id);
-          ObjectFileFormat.writeMetadata(objFile, metadata);
-
-          /* then update our cache */
-          if (index) {
-            metadataIndex.put(id, metadata, objFile.getParentFile());
-          }
-
-          return Boolean.TRUE;
+          return objectFiles.setMetadata(id, metadata);
         }
       });
     }
@@ -477,29 +388,7 @@ public class PersistentStorage implements Storage {
       environment.getProcessor().processBlockingIO(new WorkRequest<Serializable>(c, environment.getSelectorManager()) {
         public String toString() { return "getObject " + id; }
         public Serializable doWork() throws Exception {
-          stats.countRead();
-
-          /* get the file */
-          File objFile = layout.getFile(id);
-
-          try {
-            /* and make sure that it exists */
-            if ((objFile == null) || (! objFile.exists()))
-              return null;
-
-            logger.atTrace().log(() -> "COUNT: Fetching data under " + id.toStringFull() + " of size " + objFile.length() + " in " + name);
-            return ObjectFileFormat.readData(objFile);
-          } catch (Exception e) {
-            /* remove our index for this file */
-            if (index) {
-              metadataIndex.remove(id, objFile.getParentFile());
-            }
-
-            /* if there's a problem, move the file to the lost+found */
-            layout.moveToLost(objFile);
-
-            throw e;
-          }
+          return objectFiles.getObject(id);
         }
       });
     }
@@ -644,10 +533,7 @@ public class PersistentStorage implements Storage {
     environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "flush"; }
       public Boolean doWork() throws Exception {
-        logger.trace("COUNT: Flushing all data in {}", name);
-
-        flushDirectory(layout.getAppDirectory());
-        return Boolean.TRUE;
+        return objectFiles.flush();
       }
     });
   }
@@ -655,41 +541,6 @@ public class PersistentStorage implements Storage {
   /*****************************************************************/
   /* Helper functions for Directory Splitting Management           */
   /*****************************************************************/
-
-  /**
-   * Method which recursively flushes a directory hierarchy, removing all data.  Be careful!
-   *
-   * @param dir The directory to flush
-   */
-  private void flushDirectory(File dir) throws IOException {
-    logger.debug("Flushing file {}", dir);
-
-    if (! dir.isDirectory()) {
-      Id id = layout.readKey(dir);
-
-      /* remove id from stored list */
-      if (index) {
-        metadataIndex.remove(id);
-      }
-
-      /* record the space collected and delete the file */
-      quota.decreaseUsedSpace(dir.length());
-      StorageFiles.deleteFile(dir);
-    } else {
-      File[] dirs = dir.listFiles();
-
-      /* remove all subdirectories */
-      for (int i=0; i<dirs.length; i++) {
-        flushDirectory(dirs[i]);
-
-        /* update the metadata */
-        layout.forgetDirectory(dirs[i]);
-
-        /* delete the dir */
-        StorageFiles.deleteFile(dirs[i]);
-      }
-    }
-  }
 
   /*****************************************************************/
   /* Helper functions for File Management                          */
@@ -783,13 +634,4 @@ public class PersistentStorage implements Storage {
   /* Inner Classes for FileName filtering                          */
   /*****************************************************************/
 
-  /*****************************************************************/
-  /* Inner Classes for Worker Thread                               */
-  /*****************************************************************/
-
-  private static class PersistenceException extends Exception {
-  }
-
-  private static class OutofDiskSpaceException extends PersistenceException {
-  }
 }
