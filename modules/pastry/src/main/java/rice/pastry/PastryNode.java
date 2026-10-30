@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
@@ -128,7 +129,8 @@ public class PastryNode implements
 
   protected NodeHandle localhandle;
 
-  private final Vector<PastryAppl> apps;
+  @SuppressWarnings("JdkObsolete") // apps register from any thread; Vector's synchronization guards the list
+  private final Vector<PastryAppl> apps = new Vector<PastryAppl>();
 
   private final Logger logger;
 
@@ -181,7 +183,6 @@ public class PastryNode implements
 
     readyStrategy = getDefaultReadyStrategy();
 
-    apps = new Vector<PastryAppl>();
     logger = e.getLogManager().getLogger(getClass(), null);
     e.addDestructable(this);
   }
@@ -384,7 +385,7 @@ public class PastryNode implements
         // notify applications
         // we iterate over private copy to allow addition of new apps in the
         // context of notifyReady()
-        Vector<PastryAppl> tmpApps = new Vector<PastryAppl>(apps);
+        List<PastryAppl> tmpApps = new ArrayList<PastryAppl>(apps);
         for (PastryAppl pastryAppl : tmpApps)
           pastryAppl.notifyReady();
         neverBeenReady = false;
@@ -622,6 +623,7 @@ public class PastryNode implements
         handle.setSubCancellable(tl.openSocket(i,
           new SocketCallback<NodeHandle>(){
             @Override
+            @SuppressWarnings("ReferenceEquality") // the same instance is meant
             public void receiveResult(SocketRequestHandle<NodeHandle> c,
                 P2PSocket<NodeHandle> result) {
 
@@ -1093,13 +1095,13 @@ public class PastryNode implements
     if (routeSetMaintFreq > 0) {
       // schedule the routeset maintenance event
       scheduleMsgAtFixedRate(new InitiateRouteSetMaintenance(),
-        routeSetMaintFreq * 1000, routeSetMaintFreq * 1000);
+        routeSetMaintFreq * 1000L, routeSetMaintFreq * 1000L);
       logger.atInfo().log(() -> "Scheduling routeSetMaint for "+routeSetMaintFreq * 1000+","+routeSetMaintFreq * 1000);
     }
     if (leafSetMaintFreq > 0) {
       // schedule the leafset maintenance event
       scheduleMsgAtFixedRate(new InitiateLeafSetMaintenance(),
-        leafSetMaintFreq * 1000, leafSetMaintFreq * 1000);
+        leafSetMaintFreq * 1000L, leafSetMaintFreq * 1000L);
       logger.atInfo().log(() -> "Scheduling leafSetMaint for "+leafSetMaintFreq * 1000+","+leafSetMaintFreq * 1000);
     }
 
@@ -1119,7 +1121,7 @@ public class PastryNode implements
     notifyLivenessListeners((NodeHandle)i, val, options);
   }
 
-  Collection<LivenessListener<NodeHandle>> livenessListeners = new ArrayList<LivenessListener<NodeHandle>>();
+  final Collection<LivenessListener<NodeHandle>> livenessListeners = new ArrayList<LivenessListener<NodeHandle>>();
   @Override
   public void addLivenessListener(LivenessListener<NodeHandle> name) {
     synchronized(livenessListeners) {

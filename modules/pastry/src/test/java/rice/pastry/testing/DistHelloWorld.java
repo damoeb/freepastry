@@ -40,7 +40,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Vector;
+import java.util.ArrayList;
 
 import rice.environment.Environment;
 import rice.pastry.NodeHandle;
@@ -70,9 +70,9 @@ import rice.pastry.standard.IPNodeIdFactory;
 public class DistHelloWorld {
   private PastryNodeFactory factory;
 
-  private Vector<PastryNode> pastryNodes;
+  private ArrayList<PastryNode> pastryNodes;
 
-  private Vector<Object> helloClients;
+  private ArrayList<Object> helloClients;
 
   private static int port = 5009;
 
@@ -95,8 +95,8 @@ public class DistHelloWorld {
     environment = env;
     factory = DistPastryNodeFactory.getFactory(new IPNodeIdFactory(InetAddress.getLocalHost(), port, env),
         protocol, port, env);
-    pastryNodes = new Vector<PastryNode>();
-    helloClients = new Vector<Object>();
+    pastryNodes = new ArrayList<PastryNode>();
+    helloClients = new ArrayList<Object>();
   }
 
   /**
@@ -220,10 +220,10 @@ public class DistHelloWorld {
       throw new RuntimeException(ioe);
     }
     pn.boot(((rice.pastry.transport.BogusNodeHandle) bootstrap).getAddress()); // internally initiateJoins
-    pastryNodes.addElement(pn);
+    pastryNodes.add(pn);
 
     HelloWorldApp app = new HelloWorldApp(pn);
-    helloClients.addElement(app);
+    helloClients.add(app);
     System.out.println("created " + pn);
     return pn;
   }

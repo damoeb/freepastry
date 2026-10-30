@@ -82,7 +82,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
     cw = ccw;
   }
 
-  /*
+  /**
    * Constructs an empty/full range
    *
    * @param type - if type is true then constructs an empty range, else

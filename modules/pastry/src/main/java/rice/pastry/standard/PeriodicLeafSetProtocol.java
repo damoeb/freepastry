@@ -195,6 +195,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    * @param msg the message.
    */
   @Override
+  @SuppressWarnings("ReferenceEquality") // the local node handle is a single instance
   public void receiveMessage(Message msg) {
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "the leaf set is modified on the selector thread only";
     if (msg instanceof BroadcastLeafSet bls) {
@@ -339,6 +340,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   NodeHandle lastLeft;
   NodeHandle lastRight;
   @Override
+  @SuppressWarnings("ReferenceEquality") // node handles are coalesced, so a new instance is a new neighbor
   public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
     NodeHandle newLeft = leafSet.get(-1);
     if (newLeft != null && (lastLeft != newLeft)) {
@@ -506,6 +508,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    * Only remove the item if you did not give a lease.
    */
   @Override
+  @SuppressWarnings("ReferenceEquality") // DECLARED_DEAD is a sentinel instance
   public void nodeHandleUpdate(final rice.p2p.commonapi.NodeHandle o, final Object arg) {
     if (destroyed) return;
     if (o instanceof NodeHandle nodeHandle) {

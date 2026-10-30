@@ -41,6 +41,7 @@ package rice.pastry.standard;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Set;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -57,12 +58,12 @@ import rice.pastry.messaging.PRawMessage;
 public class ConsistentJoinMsg extends PRawMessage {
   LeafSet ls;
   boolean request;
-  HashSet<NodeHandle> failed;
+  Set<NodeHandle> failed;
 
   /**
    *
    */
-  public ConsistentJoinMsg(LeafSet ls, HashSet<NodeHandle> failed, boolean request) {
+  public ConsistentJoinMsg(LeafSet ls, Set<NodeHandle> failed, boolean request) {
     super(JoinAddress.getCode());
     this.ls = ls;
     this.request = request;

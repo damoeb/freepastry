@@ -84,11 +84,7 @@ public class ScheduledMessage extends TimerTask {
     return "SchedMsg for " + msg;
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see rice.p2p.commonapi.CancellableTask#cancel()
-   */
+  // see rice.p2p.commonapi.CancellableTask#cancel()
   @Override
   public boolean cancel() {
     // memory management

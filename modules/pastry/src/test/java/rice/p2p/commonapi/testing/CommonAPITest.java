@@ -220,7 +220,9 @@ public abstract class CommonAPITest {
 
     try {
       environment.getTimeSource().sleep(time);
-    } catch (InterruptedException e) {}
+    } catch (InterruptedException e) {
+      // a pause cut short is fine here
+    }
   }
 
   public void setupParams(Environment env) {
@@ -294,9 +296,10 @@ public abstract class CommonAPITest {
    *
    * @param numOps the approximate number of operations that will occur during this time, an operation is a network hop for example
    */
+  @SuppressWarnings("WaitNotInLoop") // a timed pause; a spurious wake-up only shortens it
   protected void simulate(int numOps) {
     if (environment.getSelectorManager().isSelectorThread()) return;
-    synchronized(this) {try { wait(500*numOps); } catch (InterruptedException e) {}}
+    synchronized(this) {try { wait(500L*numOps); } catch (InterruptedException e) { /* a pause cut short is fine here */ }}
   }
 
 
@@ -365,7 +368,9 @@ public abstract class CommonAPITest {
   protected synchronized void pause(int ms) {
     try {
       environment.getTimeSource().sleep(ms);
-    } catch (InterruptedException e) {}
+    } catch (InterruptedException e) {
+      // a pause cut short is fine here
+    }
   }
 
   /**

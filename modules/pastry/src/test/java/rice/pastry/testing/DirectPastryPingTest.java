@@ -39,6 +39,7 @@ package rice.pastry.testing;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.StringTokenizer;
 
 import rice.environment.Environment;
@@ -89,7 +90,7 @@ public class DirectPastryPingTest {
   public static void main(String args[]) throws IOException {
     boolean quit = false;
     Environment env = Environment.directEnvironment();
-    BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+    BufferedReader input = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
     String command = null;
 
     System.out.println("Usage: s - run standalone test");

@@ -96,7 +96,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
 
   private final RoutingTable routeTable;
 
-  protected LeafSet leafSet;
+  protected final LeafSet leafSet;
 
   public static class SJPDeserializer extends PMessageDeserializer {
     public SJPDeserializer(PastryNode pn) {

@@ -107,6 +107,7 @@ public class RegrTestApp extends CommonAPIAppl {
    * sorted nodes list in the simulator.
    */
   @Override
+  @SuppressWarnings("ReferenceEquality") // Ids are coalesced, one instance per value
   public void deliver(Id key, Message msg) {
 
     // check if numerically closest
@@ -138,6 +139,7 @@ public class RegrTestApp extends CommonAPIAppl {
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // the same message, and Ids are coalesced
   public void forward(RouteMessage rm) {
     Message msg;
     try {
@@ -173,6 +175,7 @@ public class RegrTestApp extends CommonAPIAppl {
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // Ids are coalesced, one instance per value
   public void update(NodeHandle nh, boolean wasAdded) {
     final Id nid = nh.getNodeId();
 
@@ -206,8 +209,8 @@ public class RegrTestApp extends CommonAPIAppl {
 
     if ((inBetween > lsSize && wasAdded
         && !prg.pastryNodesLastAdded.contains(thePastryNode) && !prg.inConcJoin)
-        || (inBetween <= lsSize && !wasAdded && !getLeafSet().member(nh))
-        && prg.pastryNodesSorted.containsKey(nh.getNodeId())) {
+        || ((inBetween <= lsSize && !wasAdded && !getLeafSet().member(nh))
+        && prg.pastryNodesSorted.containsKey(nh.getNodeId()))) {
 
       // "leafSetChange failure 3" is not reported: the ConsistentJoinProtocol can violate it.
       // Perhaps we need a more intricate mechanism to merge the leafsets.

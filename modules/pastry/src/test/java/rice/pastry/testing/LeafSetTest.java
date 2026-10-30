@@ -128,7 +128,7 @@ public class LeafSetTest {
     }
   }
 
-  class MyObserver implements NodeSetListener {
+  static class MyObserver implements NodeSetListener {
     LeafSet ls;
 
     public MyObserver(LeafSet ls) {
@@ -203,7 +203,7 @@ public class LeafSetTest {
             try {
               range = leafset.range(leafset.get(pos), q);
             } catch (RangeCannotBeDeterminedException rcbde) {
-
+              // range stays null, which the check below handles
             }
             if ((q < size / 2 - abs(pos)) || (size + 1 > nodes)) {
               assertTrue("Range of node " + pos + " with q " + q + " nodes "
@@ -247,6 +247,7 @@ public class LeafSetTest {
             try {
               range = leafset.range(leafset.get(pos), q, true);
             } catch (RangeCannotBeDeterminedException rcbde) {
+              // range stays null, which the check below handles
             }
             if ((q < size / 2 - abs(pos)) || (size + 1 > nodes)) {
               assertTrue("Range of node " + pos + " with q " + q + " nodes "

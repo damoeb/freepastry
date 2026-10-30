@@ -72,6 +72,7 @@ public class MergeTest {
    * Input of the form:
    * <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..> [ <0xEA5EAF..> ] <0xEBC2BB..><0xEBD2CB..><0xEF7F43..><0xF09044..><0xF10B96..><0xF33C36..><0xF64DA9..><0xF66CD9..><0xF9E251..><0xFB7F46..><0xFC1B02..><0xFC4718..>
    */
+  @SuppressWarnings("StringSplitter") // dropping trailing empty entries is intended
   public static LeafSet getLeafSet(String str) {
     String a[] = str.split("\\[");
     assert(a.length == 2);
@@ -105,6 +106,7 @@ public class MergeTest {
    * Input of the form:
    * <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..>
    */
+  @SuppressWarnings("StringSplitter") // dropping trailing empty entries is intended
   public static NodeHandle[] getHandles(String str) {
     ArrayList<NodeHandle> list = new ArrayList<NodeHandle>();
     String a[] = str.split("[< ]");

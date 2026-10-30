@@ -590,7 +590,7 @@ public class InternetPastryNodeFactory extends
     case BOOT:
       // don't do it if we're the bootstrap node
       if (!bootstraps.contains(proxyAddress.getOutermostAddress())) return true;
-      // continue to PREFIX_MATCH
+      // fall through to PREFIX_MATCH
     case PREFIX_MATCH:
       return !isInternetRoutable(proxyAddress);
     case ALWAYS:

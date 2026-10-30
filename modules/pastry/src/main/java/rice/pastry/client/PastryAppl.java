@@ -72,7 +72,7 @@ public abstract class PastryAppl
   // private block
   protected String instance;
 
-  protected PastryNode thePastryNode;
+  protected final PastryNode thePastryNode;
 
   private int address;
 
@@ -189,6 +189,7 @@ public abstract class PastryAppl
    *
    * @param msg the message that is arriving.
    */
+  @SuppressWarnings("ReferenceEquality") // the local node handle is a single instance
   public void receiveMessage(Message msg) {
 
     logger.trace("[{}] recv {}", thePastryNode, msg);

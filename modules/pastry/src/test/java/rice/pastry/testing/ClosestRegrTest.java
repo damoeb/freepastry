@@ -38,9 +38,9 @@ advised of the possibility of such damage.
 package rice.pastry.testing;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.NoSuchElementException;
-import java.util.Vector;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -73,7 +73,7 @@ public class ClosestRegrTest {
 
   private PastryNodeFactory factory;
   private NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
-  private Vector<PastryNode> pastryNodes;
+  private ArrayList<PastryNode> pastryNodes;
 
   int incorrect = 0;
   double sum = 0;
@@ -86,7 +86,7 @@ public class ClosestRegrTest {
     environment = Environment.directEnvironment();
     simulator = new SphereNetwork<DirectNodeHandle, RawMessage>(environment);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, environment);
-    pastryNodes = new Vector<PastryNode>();
+    pastryNodes = new ArrayList<PastryNode>();
   }
 
   /**
@@ -96,9 +96,10 @@ public class ClosestRegrTest {
     NodeHandle bootstrap = null;
 
     try {
-      PastryNode lastnode = (PastryNode) pastryNodes.lastElement();
+      PastryNode lastnode = (PastryNode) pastryNodes.getLast();
       bootstrap = lastnode.getLocalHandle();
     } catch (NoSuchElementException e) {
+      // no node yet: boot without a bootstrap
     }
 
     return bootstrap;
@@ -153,7 +154,7 @@ public class ClosestRegrTest {
    * starts the testing process
    */
   protected void test(int i, DirectNodeHandle handle) {
-    PastryNode bootNode = (PastryNode) pastryNodes.elementAt(environment.getRandomSource().nextInt(i));
+    environment.getRandomSource().nextInt(i); // keeps the random sequence of the old bootstrap pick
 
     DirectNodeHandle closest = null; // TODO: fix this, old code: (DirectNodeHandle)factory.getNearest(handle, bootstrap)[0];
     DirectNodeHandle realClosest = simulator.getClosest(handle);

@@ -40,6 +40,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -142,7 +143,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
     int lineCount = 0;
     String line = null;
-    try (BufferedReader in = new BufferedReader(new InputStreamReader(fr))) {
+    try (BufferedReader in = new BufferedReader(new InputStreamReader(fr, StandardCharsets.UTF_8))) {
       while ((line = in.readLine()) != null) {
         String[] words;
         words = line.split("[ \t]+");

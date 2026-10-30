@@ -63,6 +63,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
   AppSocketReceiver reader = null;
   AppSocketReceiver writer = null;
   @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void register(boolean wantToRead, boolean wantToWrite, int timeout, AppSocketReceiver receiver) {
     if (wantToRead) {
       if (reader != null && reader != receiver) throw new IllegalStateException("Already registered "+reader+" for reading. Can't register "+receiver);
@@ -76,6 +77,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveException(P2PSocket<Identifier> s, Exception e) {
     if (writer != null) {
       if (writer == reader) {
@@ -98,6 +100,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveSelectResult(P2PSocket<Identifier> s,
       boolean canRead, boolean canWrite) throws IOException {
     logger.trace("{}rsr({},{},{})", this, internal, canRead, canWrite);

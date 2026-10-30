@@ -633,7 +633,7 @@ public class RoutingTable implements NodeSetEventSource {
     return set.size();
   }
 
-  ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
+  final ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
 
   @Override
   public void addNodeSetListener(NodeSetListener listener) {

@@ -45,6 +45,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -79,7 +80,7 @@ public class PartitionChecker {
    *
    * This list is reduced each time a node from this ring is identified
    */
-  HashSet<InetSocketAddress> unmatchedBootstraps;
+  final HashSet<InetSocketAddress> unmatchedBootstraps = new HashSet<InetSocketAddress>();
 
   /**
    * of InetSocketAddress.  This list is kept around.
@@ -117,13 +118,14 @@ public class PartitionChecker {
 
 
 
+  @SuppressWarnings("StringSplitter") // dropping trailing empty entries is intended
   protected void buildBootstrapSetFromCert(String ringIdString) throws Exception {
-    unmatchedBootstraps = new HashSet<InetSocketAddress>();
+    unmatchedBootstraps.clear();
     bootstraps = new HashSet<InetSocketAddress>();
 
 
 
-    BufferedReader in = new BufferedReader(new FileReader(ringIdString));
+    BufferedReader in = new BufferedReader(new FileReader(ringIdString, StandardCharsets.UTF_8));
 
     String line;
 
@@ -202,6 +204,7 @@ public class PartitionChecker {
                   ring.addFailure(handle,e);
                   dead.add(handle);
                 } catch (IOException e) {
+                  // any other failure: the finally block still accounts for the handle
                 } finally {
                   synchronized (unseen) {
                     numThreads--;
@@ -229,11 +232,11 @@ public class PartitionChecker {
     /**
      * of InetSocketAddress
      */
-    HashSet<InetSocketAddress> myBootstraps;
+    final HashSet<InetSocketAddress> myBootstraps;
     /**
      * of SocketNodeHandle
      */
-    HashSet<SocketNodeHandle> nodes;
+    final HashSet<SocketNodeHandle> nodes;
 
     String name;
 

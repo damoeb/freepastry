@@ -205,7 +205,7 @@ public class SimilarSet implements NodeSetEventSource {
     return true;
   }
 
-  ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
+  final ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
 
   @Override
   public void addNodeSetListener(NodeSetListener listener) {

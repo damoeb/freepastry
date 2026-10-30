@@ -213,7 +213,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     return t.record;
   }
 
-  List<LivenessListener<Identifier>> livenessListeners = new ArrayList<LivenessListener<Identifier>>();
+  final List<LivenessListener<Identifier>> livenessListeners = new ArrayList<LivenessListener<Identifier>>();
   @Override
   public void addLivenessListener(LivenessListener<Identifier> name) {
     synchronized(livenessListeners) {

@@ -113,7 +113,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    *
    * NodeHandle -> FailedTime
    */
-  HashMap<NodeHandle, FailedTime> failed;
+  final HashMap<NodeHandle, FailedTime> failed;
   TimerTask cleanupTask; // cleans up failed
   static class FailedTime implements Comparable<FailedTime> {
     long time;

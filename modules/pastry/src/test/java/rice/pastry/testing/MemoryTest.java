@@ -43,7 +43,7 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 
 import rice.environment.Environment;
 import rice.pastry.NodeIdFactory;
@@ -85,7 +85,7 @@ public class MemoryTest {
     int ringSize = 10;
     int numNodes = 100;
 
-    LinkedList<PastryNode> nodes = new LinkedList<PastryNode>();
+    ArrayDeque<PastryNode> nodes = new ArrayDeque<PastryNode>();
     Runtime run = Runtime.getRuntime();
     long memUsed = run.totalMemory()-run.freeMemory();
     System.out.println("Memory:"+memUsed);

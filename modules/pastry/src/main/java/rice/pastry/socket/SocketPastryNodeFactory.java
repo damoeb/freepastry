@@ -175,6 +175,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   public static final String MULTI_ADDRESS_STRATEGY = "SocketPastryNodeFactory.milti-inet-addressStrategy";
 
+  @SuppressWarnings("MutablePublicArray") // public API: the wire header that identifies Pastry
   public static final byte[] PASTRY_MAGIC_NUMBER = new byte[] {0x27, 0x40, 0x75, 0x3A};
   private int port;
   private final NodeIdFactory nidFactory;
@@ -251,11 +252,15 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         try {
           if (test2 != null)
             test2.close();
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+          // best effort: the bind result is already known
+        }
         try {
           if (temp != null)
             temp.close();
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+          // best effort: the bind result is already known
+        }
       }
       }
     }

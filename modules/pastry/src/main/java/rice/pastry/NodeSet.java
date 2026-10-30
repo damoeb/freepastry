@@ -57,11 +57,12 @@ public class NodeSet implements NodeSetI {
   /**
    * of NodeHandle
    */
-  private Vector<NodeHandle> set;
+  private final Vector<NodeHandle> set;
 
   /**
    * Constructor.
    */
+  @SuppressWarnings("JdkObsolete") // set is shared across threads; Vector's synchronization guards it
   public NodeSet() {
     set = new Vector<NodeHandle>();
   }
@@ -271,6 +272,7 @@ public class NodeSet implements NodeSetI {
     return getIndex((Id)id);
   }
 
+  @SuppressWarnings("JdkObsolete") // set is shared across threads; Vector's synchronization guards it
   public NodeSet(InputBuffer buf, NodeHandleFactory<? extends NodeHandle> nhf) throws IOException {
     short numNodes = buf.readShort();
     set = new Vector<NodeHandle>(numNodes);

@@ -204,6 +204,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     final AttachableCancellable ret = new AttachableCancellable();
 
     // when this goes empty, return what we have
+    @SuppressWarnings("ModifiedButNotUsed") // TODO: finish early once every ping has failed; nothing reads it yet
     final Collection<NodeHandle> remaining = new HashSet<NodeHandle>(bootHandles);
 
     thePastryNode.addProximityListener(this);
@@ -332,7 +333,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     return cancellable;
   }
 
-  Map<NodeHandle, Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>>> waitingForLeafSet =
+  final Map<NodeHandle, Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>>> waitingForLeafSet =
     new HashMap<NodeHandle, Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>>>();
 
   protected void addToWaitingForLeafSet(NodeHandle handle, Continuation<LeafSet, Exception> c, Cancellable cancelMeWhenSuccess) {
@@ -413,7 +414,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     return cancellable;
   }
 
-  Map<NodeHandle, Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[]> waitingForRouteRow =
+  final Map<NodeHandle, Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[]> waitingForRouteRow =
     new HashMap<NodeHandle, Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[]>();
 
   protected void addToWaitingForRouteRow(NodeHandle handle, int row, Continuation<RouteSet[], Exception> c, Cancellable cancelMeWhenSuccess) {
@@ -540,7 +541,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
   }
 
 
-  Map<NodeHandle, Collection<Continuation<Integer, IOException>>> waitingForPing =
+  final Map<NodeHandle, Collection<Continuation<Integer, IOException>>> waitingForPing =
     new HashMap<NodeHandle, Collection<Continuation<Integer, IOException>>>();
   @Override
   public void proximityChanged(NodeHandle i, int newProximity, Map<String, Object> options) {

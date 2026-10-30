@@ -39,8 +39,8 @@ package rice.pastry.testing;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
-import java.util.Vector;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -68,9 +68,9 @@ public class PastryTest {
 
   private NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
-  private Vector<PastryNode> pastryNodes;
+  private ArrayList<PastryNode> pastryNodes;
 
-  private Vector<Object> pingClients;
+  private ArrayList<Object> pingClients;
 
   private Environment environment;
 
@@ -80,16 +80,17 @@ public class PastryTest {
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(env), simulator,
         env);
 
-    pastryNodes = new Vector<PastryNode>();
-    pingClients = new Vector<Object>();
+    pastryNodes = new ArrayList<PastryNode>();
+    pingClients = new ArrayList<Object>();
   }
 
   private NodeHandle getBootstrap() {
     NodeHandle bootstrap = null;
     try {
-      PastryNode lastnode = (PastryNode) pastryNodes.lastElement();
+      PastryNode lastnode = (PastryNode) pastryNodes.getLast();
       bootstrap = lastnode.getLocalHandle();
     } catch (NoSuchElementException e) {
+      // no node yet: boot without a bootstrap
     }
     return bootstrap;
   }
@@ -103,16 +104,18 @@ public class PastryTest {
       throw new RuntimeException(ioe);
     }
     pn.boot(bootHandle);
-    pastryNodes.addElement(pn);
+    pastryNodes.add(pn);
 
     PingClient pc = new PingClient(pn);
-    pingClients.addElement(pc);
+    pingClients.add(pc);
 
     synchronized (pn) {
       while(!pn.isReady()) {
         try {
           pn.wait(500); // PastryNode no longer notifies its monitor, so poll
-        } catch (InterruptedException ie) {}
+        } catch (InterruptedException ie) {
+          // a pause cut short is fine here
+        }
       }
     }
 
@@ -138,7 +141,9 @@ public class PastryTest {
   }
 
   public boolean simulate() {
-    try { Thread.sleep(300); } catch (InterruptedException ie) {}
+    try { Thread.sleep(300); } catch (InterruptedException ie) {
+      // a pause cut short is fine here
+    }
     return false;
   }
 

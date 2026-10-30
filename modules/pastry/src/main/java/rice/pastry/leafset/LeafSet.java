@@ -130,6 +130,7 @@ public class LeafSet implements Iterable<NodeHandle> {
     if (nid.equals(baseId)) return false;
     if (member(handle)) return false;
 
+    @SuppressWarnings("ShortCircuitBoolean") // both sets must get the handle
     boolean res = cwSet.put(handle, suppressNotification) | ccwSet.put(handle, suppressNotification);
     return res;
   }
@@ -146,7 +147,7 @@ public class LeafSet implements Iterable<NodeHandle> {
     if (nid.equals(baseId)) return false;
     if (member(handle)) return false;
 
-    return cwSet.test(handle) | ccwSet.test(handle);
+    return cwSet.test(handle) || ccwSet.test(handle);
   }
 
   /**
@@ -823,6 +824,7 @@ public class LeafSet implements Iterable<NodeHandle> {
     return !member(handle);
   }
 
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   protected boolean testOtherSet(SimilarSet set, NodeHandle handle) {
     SimilarSet otherSet = ccwSet;
     if (otherSet == set) {

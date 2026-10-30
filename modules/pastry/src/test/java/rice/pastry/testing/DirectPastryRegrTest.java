@@ -83,9 +83,10 @@ public class DirectPastryRegrTest extends PastryRegrTest {
   protected NodeHandle getBootstrap(boolean firstNode) {
     NodeHandle bootstrap = null;
     try {
-      PastryNode lastnode = (PastryNode) pastryNodes.lastElement();
+      PastryNode lastnode = (PastryNode) pastryNodes.getLast();
       bootstrap = lastnode.getLocalHandle();
     } catch (NoSuchElementException e) {
+      // no node yet: boot without a bootstrap
     }
     return bootstrap;
   }
@@ -106,7 +107,9 @@ public class DirectPastryRegrTest extends PastryRegrTest {
    */
   @Override
   protected boolean simulate() {
-    try { Thread.sleep(300); } catch (InterruptedException ie) {}
+    try { Thread.sleep(300); } catch (InterruptedException ie) {
+      // a pause cut short is fine here
+    }
     return false;
   }
 

@@ -39,7 +39,6 @@ package rice.pastry.standard;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.pastry.IdSet;
 import rice.pastry.NodeHandle;
@@ -71,7 +70,6 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
   private final RoutingTable routeTable;
 
-  private final Logger logger;
 
   public StandardLeafSetProtocol(PastryNode ln, NodeHandle local,
       LeafSet ls, RoutingTable rt) {
@@ -82,7 +80,6 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     }
     cachedSet = new HashSet<NodeHandle>(leafSet.maxSize() * 2);
     routeTable = rt;
-    logger = ln.getEnvironment().getLogManager().getLogger(getClass(), null);
   }
 
   /**
@@ -348,6 +345,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    * If nodehandle is dead, remove it from the leafset.
    */
   @Override
+  @SuppressWarnings("ReferenceEquality") // DECLARED_DEAD is a sentinel instance
   public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle o, Object arg) {
       if (arg == NodeHandle.DECLARED_DEAD) {
         leafSet.remove((NodeHandle)o);

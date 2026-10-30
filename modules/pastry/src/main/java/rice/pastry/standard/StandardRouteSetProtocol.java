@@ -38,7 +38,6 @@ package rice.pastry.standard;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
@@ -74,7 +73,6 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
   private Environment environmet;
 
-  private final Logger logger;
 
   static class SRSPDeserializer extends PMessageDeserializer {
     public SRSPDeserializer(PastryNode pn) {
@@ -106,7 +104,6 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
     this.environmet = ln.getEnvironment();
     maxTrials = (1 << rt.baseBitLength()) / 2;
     routeTable = rt;
-    logger = environmet.getLogManager().getLogger(getClass(), null);
   }
 
   /**

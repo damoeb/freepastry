@@ -100,6 +100,7 @@ public class PMessageReceiptImpl implements PMessageReceipt {
    * See synchronization note on cancel()
    *
    */
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void setInternal(MessageRequestHandle<NodeHandle, RawMessage> name) {
     boolean callCancel = false;
     synchronized(lock) {

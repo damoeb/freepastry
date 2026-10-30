@@ -39,6 +39,7 @@ package rice.pastry;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.Locale;
 import java.util.Random;
 import java.util.WeakHashMap;
 
@@ -67,6 +68,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * The static translation array
    */
+  @SuppressWarnings("MutablePublicArray") // public API, read by RouteSet and RoutingTable
   public static final String tran[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
 
   /**
@@ -83,9 +85,13 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Distance constants
    */
+  @SuppressWarnings("MutablePublicArray") // public API, passed to Id.build
   public final static int[] Null = {0, 0, 0, 0, 0};
+  @SuppressWarnings("MutablePublicArray") // public API, passed to Id.build
   public final static int[] One = {1, 0, 0, 0, 0};
+  @SuppressWarnings("MutablePublicArray") // public API, passed to Id.build
   public final static int[] NegOne = {-1, -1, -1, -1, -1};
+  @SuppressWarnings("MutablePublicArray") // public API, passed to Id.build
   public final static int[] Half = {0, 0, 0, 0, 0x80000000};
 
   /**
@@ -182,7 +188,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     while (hex.length() < IdBitLength/4)
       hex = hex + "0";
 
-    return build(hex.toUpperCase().toCharArray(), 0, hex.length());
+    return build(hex.toUpperCase(Locale.ROOT).toCharArray(), 0, hex.length());
   }
 
   /**
@@ -268,20 +274,20 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Method which performs the coalescing and interaction with the weak hash map
    *
-   * @param id The Id to coalesce
+   * @param candidate The Id to coalesce
    * @return The Id to use
    */
-  protected static Id resolve(WeakHashMap<Id, WeakReference<Id>> map, Id id) {
+  protected static Id resolve(WeakHashMap<Id, WeakReference<Id>> map, Id candidate) {
     synchronized (map) {
-      WeakReference<Id> ref = map.get(id);
+      WeakReference<Id> ref = map.get(candidate);
       Id result = null;
 
       if ((ref != null) && ((result = ref.get()) != null)) {
         return result;
       } else {
-        map.put(id, new WeakReference<Id>(id));
+        map.put(candidate, new WeakReference<Id>(candidate));
 
-        return id;
+        return candidate;
       }
     }
   }
@@ -647,26 +653,6 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     return d;
   }
 
-
-  /**
-   * Equivalence relation for Ids.
-   *
-   * @param nid the other node id.
-   * @return true if they are equal, false otherwise.
-   */
-  public boolean equals(Id nid) {
-    if (nid == null) {
-      return false;
-    }
-
-    for (int i = 0; i < nlen; i++) {
-      if (Id[i] != nid.Id[i]) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 
   /**
    * Checks to see if the Id nid is clockwise or counterclockwise from this, on the ring. An Id is

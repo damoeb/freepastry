@@ -209,11 +209,13 @@ public class DistPastryRegrTest extends PastryRegrTest {
   }
 
   @Override
+  @SuppressWarnings("WaitNotInLoop") // a timed pause; a spurious wake-up only shortens it
   public synchronized void pause(int ms) {
     System.out.println("Waiting " + ms + "ms...");
     try {
       wait(ms);
     } catch (InterruptedException e) {
+      // a pause cut short is fine here
     }
   }
 

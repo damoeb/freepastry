@@ -43,6 +43,7 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 
 import rice.environment.Environment;
 import rice.pastry.NodeHandle;
@@ -85,7 +86,7 @@ public class PastryNetworkTest {
 
   int numThreads = 0;
 
-  protected HashMap<NodeHandle, LeafSet> fetchLeafSets() throws Exception {
+  protected Map<NodeHandle, LeafSet> fetchLeafSets() throws Exception {
     final HashMap<NodeHandle, LeafSet> leafsets = new HashMap<NodeHandle, LeafSet>();
     final HashSet<NodeHandle> unseen = new HashSet<NodeHandle>();
 
@@ -167,7 +168,7 @@ public class PastryNetworkTest {
   }
 
   protected void testLeafSets() throws Exception {
-    HashMap<NodeHandle, LeafSet> leafsets = fetchLeafSets();
+    Map<NodeHandle, LeafSet> leafsets = fetchLeafSets();
 
     Iterator<LeafSet> sets = leafsets.values().iterator();
 
@@ -193,7 +194,7 @@ public class PastryNetworkTest {
     System.out.println("Done testing...");
   }
 
-  protected HashMap<NodeHandle, Object> fetchRouteRow(int row) throws IOException {
+  protected Map<NodeHandle, Object> fetchRouteRow(int row) throws IOException {
     HashMap<NodeHandle, Object> routerows = new HashMap<NodeHandle, Object>();
     for (NodeHandle handle : nodes) {
 
@@ -211,7 +212,7 @@ public class PastryNetworkTest {
   }
 
   protected void testRouteRow(int row) throws IOException {
-    HashMap<NodeHandle, Object> routerows = fetchRouteRow(row);
+    Map<NodeHandle, Object> routerows = fetchRouteRow(row);
 
     for (NodeHandle node : nodes) {
       RoutingTable rt = new RoutingTable(node, 1, (byte)environment.getParameters().getInt("pastry_rtBaseBitLength"), ((SocketNodeHandle)node).getLocalNode());

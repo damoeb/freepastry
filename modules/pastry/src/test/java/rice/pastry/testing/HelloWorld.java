@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.testing;
 
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
-import java.util.Vector;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -63,9 +63,9 @@ public class HelloWorld {
 
   private NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
-  private Vector<PastryNode> pastryNodes;
+  private ArrayList<PastryNode> pastryNodes;
 
-  private Vector<Object> helloClients;
+  private ArrayList<Object> helloClients;
 
   private static int numnodes = 3;
 
@@ -84,8 +84,8 @@ public class HelloWorld {
     simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
     factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, environment);
 
-    pastryNodes = new Vector<PastryNode>();
-    helloClients = new Vector<Object>();
+    pastryNodes = new ArrayList<PastryNode>();
+    helloClients = new ArrayList<Object>();
   }
 
   /**
@@ -97,9 +97,10 @@ public class HelloWorld {
   private NodeHandle getBootstrap() {
     NodeHandle bootstrap = null;
     try {
-      PastryNode lastnode = (PastryNode) pastryNodes.lastElement();
+      PastryNode lastnode = (PastryNode) pastryNodes.getLast();
       bootstrap = lastnode.getLocalHandle();
     } catch (NoSuchElementException e) {
+      // no node yet: boot without a bootstrap
     }
     return bootstrap;
   }
@@ -117,16 +118,18 @@ public class HelloWorld {
       throw new RuntimeException(ioe);
     }
     pn.boot(bootHandle);
-    pastryNodes.addElement(pn);
+    pastryNodes.add(pn);
 
     HelloWorldApp app = new HelloWorldApp(pn);
-    helloClients.addElement(app);
+    helloClients.add(app);
 
     synchronized (pn) {
       while(!pn.isReady()) {
         try {
           pn.wait(300);
-        } catch (InterruptedException ie) {}
+        } catch (InterruptedException ie) {
+          // a pause cut short is fine here
+        }
       }
     }
 
@@ -226,7 +229,9 @@ public class HelloWorld {
       while (driver.simulate())
         ;
     }
-    try { Thread.sleep(5000); } catch (InterruptedException ie) {}
+    try { Thread.sleep(5000); } catch (InterruptedException ie) {
+      // a pause cut short is fine here
+    }
     env.destroy();
   }
 }

@@ -38,11 +38,11 @@ package rice.pastry.testing;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.Vector;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.RangeCannotBeDeterminedException;
@@ -73,7 +73,7 @@ import rice.pastry.routing.RoutingTable;
 public abstract class PastryRegrTest {
   protected PastryNodeFactory factory;
 
-  public Vector<PastryNode> pastryNodes;
+  public ArrayList<PastryNode> pastryNodes;
 
   /**
    * of Id
@@ -81,11 +81,11 @@ public abstract class PastryRegrTest {
   public SortedMap<Id, PastryNode> pastryNodesSorted;
   public SortedMap<Id, PastryNode> pastryNodesSortedReady;
 
-  public Vector<PastryNode> pastryNodesLastAdded;
+  public ArrayList<PastryNode> pastryNodesLastAdded;
 
   public boolean inConcJoin;
 
-  private Vector<Object> rtApps;
+  private ArrayList<Object> rtApps;
 
   public Message lastMsg;
 
@@ -131,12 +131,12 @@ public abstract class PastryRegrTest {
    */
   protected PastryRegrTest(Environment env) {
     this.environment = env;
-    pastryNodes = new Vector<PastryNode>();
+    pastryNodes = new ArrayList<PastryNode>();
     pastryNodesSorted = new TreeMap<Id, PastryNode>();
     pastryNodesSortedReady = new TreeMap<Id, PastryNode>();
-    pastryNodesLastAdded = new Vector<PastryNode>();
+    pastryNodesLastAdded = new ArrayList<PastryNode>();
     inConcJoin = false;
-    rtApps = new Vector<Object>();
+    rtApps = new ArrayList<Object>();
   }
 
   /**
@@ -184,12 +184,12 @@ public abstract class PastryRegrTest {
       bootstrap = getBootstrap(n == 0);
 
       PastryNode pn = generateNode(bootstrap);
-      pastryNodes.addElement(pn);
+      pastryNodes.add(pn);
       pastryNodesSorted.put(pn.getNodeId(), pn);
-      pastryNodesLastAdded.addElement(pn);
+      pastryNodesLastAdded.add(pn);
 
       rta[i] = new RegrTestApp(pn, this);
-      rtApps.addElement(rta[i]);
+      rtApps.add(rta[i]);
 
       registerapp(pn, rta[i]);
 
@@ -203,7 +203,9 @@ public abstract class PastryRegrTest {
             while (!pn.isReady()) {
               try {
                 pn.wait(500);
-              } catch (InterruptedException ie) {}
+              } catch (InterruptedException ie) {
+                // a pause cut short is fine here
+              }
             }
           }
         }
@@ -217,7 +219,9 @@ public abstract class PastryRegrTest {
         while (!pn.isReady()) {
           try {
             pn.wait(500);
-          } catch (InterruptedException ie) {}
+          } catch (InterruptedException ie) {
+            // a pause cut short is fine here
+          }
         }
       }
     }
@@ -408,14 +412,21 @@ public abstract class PastryRegrTest {
           try {
             range = rta.range(ls.get(k), maxRank, nearest, true);
           } catch (IllegalArgumentException iae) {
+            // range stays null, which the check below handles
           } catch (RangeCannotBeDeterminedException rcbde) {
-          } catch (NullPointerException npe) {}
+            // range stays null, which the check below handles
+          } catch (NullPointerException npe) {
+            // range stays null, which the check below handles
+          }
         else
           // check the individual rank ranges
           try {
             range = rta.range(ls.get(k), j / 2, nearest, false);
           } catch (NullPointerException npe) {
-          } catch (RangeCannotBeDeterminedException rcbde) {}
+            // range stays null, which the check below handles
+          } catch (RangeCannotBeDeterminedException rcbde) {
+            // range stays null, which the check below handles
+          }
 
         if (range == null) {
           if (maxRank >= 0) {
@@ -603,7 +614,9 @@ public abstract class PastryRegrTest {
       System.out.println("Killed " + pn.getNodeId());
       try {
         environment.getTimeSource().sleep(2000);
-      } catch (InterruptedException ie) {}
+      } catch (InterruptedException ie) {
+        // a pause cut short is fine here
+      }
     }
   }
 

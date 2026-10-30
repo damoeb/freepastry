@@ -255,6 +255,7 @@ public class JoinRequest extends PRawMessage {
     switch(version) {
       case 1:
         timestamp = buf.readLong();
+        // fall through: version 1 is version 0 plus the timestamp
       case 0:
         setSender(sender);
         rtBaseBitLength = buf.readByte();

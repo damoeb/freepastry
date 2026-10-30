@@ -515,6 +515,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * @param msg the message that is arriving.
    */
   @Override
+  @SuppressWarnings("ReferenceEquality") // the local node handle is a single instance
   public void receiveMessage(rice.pastry.messaging.Message msg) {
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "application upcalls run on the selector thread";
     logger.trace("[{}] recv {}", thePastryNode, msg);
@@ -599,9 +600,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     return instance;
   }
 
-  /* (non-Javadoc)
-   * @see rice.p2p.commonapi.Endpoint#getEnvironment()
-   */
+  // see rice.p2p.commonapi.Endpoint#getEnvironment()
   @Override
   public Environment getEnvironment() {
     return thePastryNode.getEnvironment();

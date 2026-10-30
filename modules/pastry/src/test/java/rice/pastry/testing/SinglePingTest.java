@@ -37,8 +37,8 @@ advised of the possibility of such damage.
 package rice.pastry.testing;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
-import java.util.Vector;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -69,9 +69,9 @@ public class SinglePingTest {
 
   private TestRecord testRecord;
 
-  private Vector<PastryNode> pastryNodes;
+  private ArrayList<PastryNode> pastryNodes;
 
-  private Vector<Object> pingClients;
+  private ArrayList<Object> pingClients;
 
   private Environment environment;
 
@@ -82,16 +82,17 @@ public class SinglePingTest {
     simulator.setTestRecord(tr);
     testRecord = tr;
 
-    pastryNodes = new Vector<PastryNode>();
-    pingClients = new Vector<Object>();
+    pastryNodes = new ArrayList<PastryNode>();
+    pingClients = new ArrayList<Object>();
   }
 
   private NodeHandle getBootstrap() {
     NodeHandle bootstrap = null;
     try {
-      PastryNode lastnode = (PastryNode) pastryNodes.lastElement();
+      PastryNode lastnode = (PastryNode) pastryNodes.getLast();
       bootstrap = lastnode.getLocalHandle();
     } catch (NoSuchElementException e) {
+      // no node yet: boot without a bootstrap
     }
     return bootstrap;
   }
@@ -105,17 +106,19 @@ public class SinglePingTest {
       throw new RuntimeException(ioe);
     }
     pn.boot(bootHandle);
-    pastryNodes.addElement(pn);
+    pastryNodes.add(pn);
 
     Ping pc = new Ping(pn);
-    pingClients.addElement(pc);
+    pingClients.add(pc);
 
     long start = System.currentTimeMillis();
     synchronized (pn) {
       while(!pn.isReady()) {
         try {
           pn.wait(300);
-        } catch (InterruptedException ie) {}
+        } catch (InterruptedException ie) {
+          // a pause cut short is fine here
+        }
       }
     }
     long now = System.currentTimeMillis();
@@ -176,7 +179,9 @@ public class SinglePingTest {
         while(!pn.isReady()) {
           try {
             pn.wait(500); // PastryNode no longer notifies its monitor, so poll
-          } catch (InterruptedException ie) {}
+          } catch (InterruptedException ie) {
+            // a pause cut short is fine here
+          }
         }
       }
 

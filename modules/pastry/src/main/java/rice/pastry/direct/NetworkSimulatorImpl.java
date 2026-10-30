@@ -114,7 +114,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
 
 
   /************** SimulatorListeners handling *******************/
-  List<GenericSimulatorListener<Identifier, MessageType>> listeners = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>();
+  final List<GenericSimulatorListener<Identifier, MessageType>> listeners = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>();
   @Override
   public boolean addSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl) {
     synchronized(listeners) {

@@ -79,6 +79,7 @@ public class NodeIdUnit {
     return nodeId;
   }
 
+  @SuppressWarnings("SelfEquals") // checks that equals() is reflexive
   public void equalityTest() {
     System.out.println("--------------------------");
     System.out.println("Creating oth");

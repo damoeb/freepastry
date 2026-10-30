@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -290,7 +291,7 @@ public class StandardRouter extends PastryAppl implements Router {
     return new Iterator<NodeHandle>() {
       Iterator<NodeHandle> rtIterator = null;
       Iterator<NodeHandle> iterator = null;
-      ArrayList<NodeHandle> lsCollection = null;
+      List<NodeHandle> lsCollection = null;
       NodeHandle next;
       RouteSet best;
       int k = 0; // used to iterate over best
@@ -313,6 +314,7 @@ public class StandardRouter extends PastryAppl implements Router {
         return (next != null);
       }
 
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       NodeHandle getNext() {
         // return best candidate first
         if (iterator == null && best != null) {
@@ -370,7 +372,7 @@ public class StandardRouter extends PastryAppl implements Router {
     };
   }
 
-  protected ArrayList<NodeHandle> getLSCollection(int lsPos) {
+  protected List<NodeHandle> getLSCollection(int lsPos) {
     ArrayList<NodeHandle> lsCollection = new ArrayList<NodeHandle>();
     if (lsPos > 0) {
       // search for someone between us who is alive

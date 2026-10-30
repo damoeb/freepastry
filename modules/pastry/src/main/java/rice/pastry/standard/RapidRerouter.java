@@ -72,7 +72,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
   /**
    * These messages should be rapidly rerouted if the node goes suspected.
    */
-  Map<NodeHandle, Collection<RouterNotification>> pending;
+  final Map<NodeHandle, Collection<RouterNotification>> pending;
 
   public RapidRerouter(PastryNode thePastryNode, MessageDispatch dispatch, RouterStrategy strategy) {
     super(thePastryNode, dispatch, strategy);
@@ -243,11 +243,8 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         logger.info("Send failed on message {} to {} rerouting.{}", rm, dest, msg, reason);
         rerouteMe(rm, dest, reason);
       } else {
-        if (rm.sendFailed(reason)) {
-          logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);
-        } else {
-          logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);
-        }
+        rm.sendFailed(reason);
+        logger.info("sendFailed({})=>{}", msg.getMessage(), msg.getIdentifier(), reason);
       }
     }
 
