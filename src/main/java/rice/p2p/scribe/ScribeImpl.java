@@ -1006,7 +1006,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @return true if we need to subscribe to this topic because implicitly subscribing
    */
   protected boolean addChildHelper(Topic topic, NodeHandle child) {
-    logger.trace("addChild({},{},{})", topic, child, id);
+    logger.trace("addChild({},{})", topic, child);
 
     boolean ret = false;
 
