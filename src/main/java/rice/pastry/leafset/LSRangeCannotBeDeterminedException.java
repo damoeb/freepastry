@@ -47,10 +47,10 @@ import rice.p2p.commonapi.RangeCannotBeDeterminedException;
  */
 public class LSRangeCannotBeDeterminedException extends RangeCannotBeDeterminedException {
 
-  public int r;
-  public int pos;
-  public int uniqueCount;
-  public NodeHandle nh;
+  private final int r;
+  private final int pos;
+  private final int uniqueCount;
+  private final NodeHandle nh;
 
   /**
    * @param string

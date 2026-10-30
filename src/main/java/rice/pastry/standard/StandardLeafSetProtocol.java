@@ -64,15 +64,15 @@ import rice.pastry.routing.RoutingTable;
  */
 
 public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtocol, NodeHandleListener {
-  protected final boolean failstop = true;
+  private final boolean failstop = true;
 
   // nodes are assumed to fail silently
 
-  protected LeafSet leafSet;
+  private final LeafSet leafSet;
 
-  protected RoutingTable routeTable;
+  private final RoutingTable routeTable;
 
-  protected Logger logger;
+  private final Logger logger;
 
   public StandardLeafSetProtocol(PastryNode ln, NodeHandle local,
       LeafSet ls, RoutingTable rt) {

@@ -74,9 +74,9 @@ import rice.selector.SelectorManager;
  *
  */
 public class RendezvousApp extends PastryAppl implements RendezvousStrategy<RendezvousSocketNodeHandle> {
-  protected LeafSet leafSet;
-  protected SelectorManager selectorManager;
-  protected RendezvousTransportLayer<RendezvousSocketNodeHandle> tl;
+  private final LeafSet leafSet;
+  private final SelectorManager selectorManager;
+  private RendezvousTransportLayer<RendezvousSocketNodeHandle> tl;
 
 
   public RendezvousApp(PastryNode pn) {

@@ -83,7 +83,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
 
   private transient NodeHandle nextHop;
 
-  public Message internalMsg;
+  private Message internalMsg;
   // optimization to not use instanceof in the normal new case
   private transient PRawMessage rawInternalMsg = null;
   private transient InputBuffer serializedMsg;
@@ -96,7 +96,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
   /**
    * This is used by the Rerouter to keep track of how many attempted reroutes of the message.
    */
-  public transient int numRetries = 0;
+  private transient int numRetries = 0;
 
   private RMDeserializer endpointDeserializer = new RMDeserializer();
 
@@ -582,5 +582,17 @@ public class RouteMessage extends PRawMessage implements Serializable,
   public boolean sendFailed(Exception e) {
     if (notifyMe != null) notifyMe.sendFailed(this, e);
     return notifyMe != null;
+  }
+
+  public Message getInternalMsg() {
+    return internalMsg;
+  }
+
+  public void incrementNumRetries() {
+    numRetries++;
+  }
+
+  public int getNumRetries() {
+    return numRetries;
   }
 }

@@ -69,9 +69,9 @@ public class JoinRequest extends PRawMessage {
 
   public static final short TYPE = 1;
 
-  protected NodeHandle handle;
+  private final NodeHandle handle;
 
-  protected NodeHandle joinHandle;
+  private NodeHandle joinHandle;
 
   private short rowCount;
 
@@ -81,7 +81,7 @@ public class JoinRequest extends PRawMessage {
 
   private byte rtBaseBitLength;
 
-  protected long timestamp;
+  private long timestamp;
 
   /**
    * Constructor.
@@ -305,5 +305,14 @@ public class JoinRequest extends PRawMessage {
       default:
         throw new IOException("Unknown Version: "+version);
     }
+  }
+
+  /**
+   * Returns the timestamp.
+   *
+   * @return the timestamp
+   */
+  protected long getTimestamp() {
+    return timestamp;
   }
 }

@@ -75,7 +75,7 @@ import rice.pastry.transport.PMessageReceipt;
 public class StandardRouter extends PastryAppl implements Router {
 
   MessageDispatch dispatch;
-  protected RouterStrategy routerStrategy;
+  private RouterStrategy routerStrategy;
 
   /**
    * Try to return someone who isn't suspected.  If they're all suspected,
@@ -190,7 +190,7 @@ public class StandardRouter extends PastryAppl implements Router {
         rm.sendFailed(new NoRouteToHostException(rm.getDestinationHandle().toString()));
         return true;
       }
-      thePastryNode.receiveMessage(rm.internalMsg);
+      thePastryNode.receiveMessage(rm.getInternalMsg());
       rm.sendSuccess(thePastryNode.getLocalHandle());
     } else {
       sendTheMessage(rm, handle);
@@ -469,12 +469,12 @@ public class StandardRouter extends PastryAppl implements Router {
     }
   }
 
-  protected int ROUTE_TABLE_PATCH_THROTTLE = 5000;
+  private final int ROUTE_TABLE_PATCH_THROTTLE = 5000;
   /**
    * We can end up causing a nasty feedback if we blast too many BRRs, so we're
    * going to throttle.
    */
-  protected Map<NodeHandle, Long> lastTimeSentRouteTablePatch = new HashMap<NodeHandle, Long>();
+  private final Map<NodeHandle, Long> lastTimeSentRouteTablePatch = new HashMap<NodeHandle, Long>();
 
 
   public boolean deliverWhenNotReady() {

@@ -64,13 +64,13 @@ public class LeafSetNHStrategy implements NextHopStrategy<MultiInetSocketAddress
     LeafSet leafset = ls;
     for (int i = 1; i < leafset.maxSize()/2; i++) {
       SocketNodeHandle snh = (SocketNodeHandle)leafset.get(-i);
-      if (snh != null && !snh.eaddress.equals(destination)) {
-        result.add(snh.eaddress);
+      if (snh != null && !snh.getAddress().equals(destination)) {
+        result.add(snh.getAddress());
         if (result.size() >= numRequested) return result;
       }
       snh = (SocketNodeHandle)leafset.get(i);
-      if (snh != null && !snh.eaddress.equals(destination)) {
-        result.add(snh.eaddress);
+      if (snh != null && !snh.getAddress().equals(destination)) {
+        result.add(snh.getAddress());
         if (result.size() >= numRequested) return result;
       }
     }

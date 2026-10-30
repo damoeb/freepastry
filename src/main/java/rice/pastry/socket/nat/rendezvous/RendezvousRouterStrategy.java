@@ -116,7 +116,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
       return 10;
     }
-    int connectionStatus = priority.connectionStatus(rnh.eaddress);
+    int connectionStatus = priority.connectionStatus(rnh.getAddress());
     int liveness = nh.getLiveness();
     boolean contactDirect = rnh.canContactDirect();
 
@@ -130,7 +130,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
       if (connectionStatus == PriorityTransportLayer.STATUS_CONNECTED) {
         ret--;
       } else {
-        priority.openPrimaryConnection(rnh.eaddress, getOptions(rnh)); // TODO: make proper options
+        priority.openPrimaryConnection(rnh.getAddress(), getOptions(rnh)); // TODO: make proper options
       }
       return ret;
 
@@ -139,7 +139,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     // !contactDirect
     if (connectionStatus > PriorityTransportLayer.STATUS_CONNECTING) {
       // connect if we can
-      priority.openPrimaryConnection(rnh.eaddress, getOptions(rnh)); // TODO: make proper options
+      priority.openPrimaryConnection(rnh.getAddress(), getOptions(rnh)); // TODO: make proper options
     }
 
     if (connectionStatus == PriorityTransportLayer.STATUS_CONNECTED) {

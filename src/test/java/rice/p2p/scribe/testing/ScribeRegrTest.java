@@ -181,7 +181,7 @@ public class ScribeRegrTest extends CommonAPITest {
     rice.pastry.NodeHandle bootstrap = getBootstrap();
     if (bootstrap instanceof BogusNodeHandle) {
       // socket: the bootstrapper expects the addresses
-      pn.boot(((BogusNodeHandle) bootstrap).addresses);
+      pn.boot(((BogusNodeHandle) bootstrap).getAddress());
     } else {
       pn.boot(bootstrap);
     }

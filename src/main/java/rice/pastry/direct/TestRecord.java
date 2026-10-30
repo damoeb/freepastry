@@ -37,9 +37,9 @@ advised of the possibility of such damage.
 package rice.pastry.direct;
 
 public abstract class TestRecord {
-  protected int nNodes;
+  private final int nNodes;
 
-  protected int nTests;
+  private final int nTests;
 
   /**
    * Constructor.

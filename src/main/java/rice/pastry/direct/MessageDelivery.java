@@ -50,13 +50,13 @@ import org.slf4j.Logger;
    * @author amislove
    */
   class MessageDelivery<Identifier, MessageType> implements Delivery {
-    protected MessageType msg;
-    protected Identifier node;
-    protected Logger logger;
-    protected int seq;
+    private final MessageType msg;
+    private final Identifier node;
+    private Logger logger;
+    private final int seq;
     BasicNetworkSimulator<Identifier, MessageType> networkSimulator;
     Identifier from;
-    protected Map<String, Object> options;
+    private final Map<String, Object> options;
 
     /**
      * Constructor for MessageDelivery.
@@ -99,5 +99,13 @@ import org.slf4j.Logger;
 
     public String toString() {
       return "MD["+msg+":"+from+"=>"+node+":"+seq+"]";
+    }
+
+    public MessageType getMsg() {
+      return msg;
+    }
+
+    public Identifier getNode() {
+      return node;
     }
   }

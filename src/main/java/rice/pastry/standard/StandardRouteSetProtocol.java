@@ -72,7 +72,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
   private Environment environmet;
 
-  protected Logger logger;
+  private final Logger logger;
 
   static class SRSPDeserializer extends PJavaSerializedDeserializer {
     public SRSPDeserializer(PastryNode pn) {

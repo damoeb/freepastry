@@ -65,7 +65,7 @@ public class DirectTimerTask extends TimerTask {
   }
 
   public String toString() {
-    return "DirectTT for " + md.msg + " to "+md.node;
+    return "DirectTT for " + md.getMsg() + " to "+md.getNode();
   }
 
 }

@@ -67,9 +67,9 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
   /**
    * Large period (in seconds) means infrequent, 0 means never.
    */
-  protected int leafSetMaintFreq;
+  private final int leafSetMaintFreq;
 
-  protected int routeSetMaintFreq;
+  private final int routeSetMaintFreq;
 
 
   /**

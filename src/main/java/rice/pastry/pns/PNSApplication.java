@@ -96,13 +96,13 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    * Hashtable which keeps track of temporary ping values, which are
    * only used during the getNearest() method
    */
-  protected Map<NodeHandle,Integer> pingCache = new HashMap<NodeHandle,Integer>();
+  private final Map<NodeHandle,Integer> pingCache = new HashMap<NodeHandle,Integer>();
 
-  protected final byte rtBase;
+  private final byte rtBase;
 
-  protected Environment environment;
+  private final Environment environment;
 
-  protected Timer timer;
+  private Timer timer;
 
   final short depth; // = (Id.IdBitLength / rtBase);
 
@@ -138,7 +138,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     if (msg instanceof LeafSetResponse) {
       LeafSetResponse response = (LeafSetResponse)msg;
       synchronized (waitingForLeafSet) {
-        LeafSet ls = response.leafset;
+        LeafSet ls = response.getLeafset();
         Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>> waiters = waitingForLeafSet.remove(ls.get(0));
         if (waiters != null) {
           for (Tuple<Continuation<LeafSet, Exception>, Cancellable> w : waiters) {
@@ -155,8 +155,8 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       thePastryNode.send(req.getSender(),
           new RouteRowResponse(
               thePastryNode.getLocalHandle(),
-              req.index,
-              thePastryNode.getRoutingTable().getRow(req.index), getAddress()), null, null);
+              req.getIndex(),
+              thePastryNode.getRoutingTable().getRow(req.getIndex()), getAddress()), null, null);
       return;
     }
 
@@ -165,13 +165,13 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       synchronized (waitingForRouteRow) {
         Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] waiters = waitingForRouteRow.get(response.getSender());
         if (waiters != null) {
-          if (waiters[response.index] != null) {
-            for (Tuple<Continuation<RouteSet[], Exception>, Cancellable> w : new ArrayList<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>(waiters[response.index])) {
+          if (waiters[response.getIndex()] != null) {
+            for (Tuple<Continuation<RouteSet[], Exception>, Cancellable> w : new ArrayList<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>(waiters[response.getIndex()])) {
               w.b().cancel();
-              w.a().receiveResult(response.row);
+              w.a().receiveResult(response.getRow());
             }
-            waiters[response.index].clear();
-            waiters[response.index] = null;
+            waiters[response.getIndex()].clear();
+            waiters[response.getIndex()] = null;
 
             // remove the entry if all rows empty
             boolean deleteIt = true;

@@ -47,7 +47,7 @@ import rice.pastry.messaging.PRawMessage;
 public class LeafSetResponse extends PRawMessage {
   public static final short TYPE = 2;
 
-  public LeafSet leafset;
+  private final LeafSet leafset;
 
   public LeafSetResponse(LeafSet leafset, int dest) {
     super(dest);
@@ -71,5 +71,9 @@ public class LeafSetResponse extends PRawMessage {
       return new LeafSetResponse(LeafSet.build(buf, nhf), dest);
     }
     throw new IllegalStateException("Unknown version:"+version);
+  }
+
+  public LeafSet getLeafset() {
+    return leafset;
   }
 }

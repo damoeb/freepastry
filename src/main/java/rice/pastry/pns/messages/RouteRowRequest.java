@@ -45,7 +45,7 @@ import rice.pastry.messaging.PRawMessage;
 
 public class RouteRowRequest extends PRawMessage {
   public static final short TYPE = 3;
-  public short index;
+  private final short index;
 
   public RouteRowRequest(NodeHandle nodeHandle, short index, int dest) {
     super(dest);
@@ -76,4 +76,7 @@ public class RouteRowRequest extends PRawMessage {
     buf.writeShort(index);
   }
 
+  public short getIndex() {
+    return index;
+  }
 }

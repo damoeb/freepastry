@@ -71,12 +71,12 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
 
   public static final String NODE_ID_FILENAME = "nodeId";
 
-  protected int port;
-  protected IPNodeIdFactory realFactory;
+  private final int port;
+  private final IPNodeIdFactory realFactory;
 
-  protected Environment environment;
+  private final Environment environment;
 
-  protected Logger logger;
+  private final Logger logger;
 
   /**
    * Constructor.

@@ -65,9 +65,9 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
     /**
      * The euclidean position.
      */
-    public int x, y;
+    private final int x, y;
 
-    public boolean alive;
+    private final boolean alive;
 
     /**
      * Constructor for NodeRecord.

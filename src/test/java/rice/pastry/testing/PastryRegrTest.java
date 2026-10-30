@@ -169,7 +169,7 @@ public abstract class PastryRegrTest {
     }
     // the socket factory hands out BogusNodeHandles, which have to be booted from their addresses
     if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle) {
-      pn.boot(((rice.pastry.transport.BogusNodeHandle)bootstrap).addresses);
+      pn.boot(((rice.pastry.transport.BogusNodeHandle)bootstrap).getAddress());
     } else {
       pn.boot(bootstrap);
     }

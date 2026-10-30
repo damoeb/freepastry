@@ -59,7 +59,7 @@ public class RandomNodeIdFactory implements NodeIdFactory {
 
   Environment environment;
 
-  protected Logger logger;
+  private final Logger logger;
   /**
    * Constructor.
    */

@@ -50,9 +50,9 @@ import rice.pastry.direct.NodeRecord;
 import rice.pastry.direct.ProximityGenerator;
 
 public class GenericProximityGenerator implements ProximityGenerator {
-  protected RandomSource random;
+  private RandomSource random;
 
-  protected Logger logger;
+  private final Logger logger;
 
   float MIN_DIST = 2.0f;
 
@@ -66,9 +66,9 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
   // This keeps track of the indices that have already been assigned
   // index -> ctr
-  public HashMap<Integer, Integer> assignedIndices = new HashMap<Integer, Integer>();
+  private final HashMap<Integer, Integer> assignedIndices = new HashMap<Integer, Integer>();
 
-  public File inFile_Matrix;
+  private File inFile_Matrix;
 
   public GenericProximityGenerator(Environment env, File inFile) throws IOException {
     logger = env.getLogManager().getLogger(GenericProximityGenerator.class, null);
@@ -93,7 +93,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
   }
 
   public class GNNodeRecord implements NodeRecord {
-    public int index; // index in the symmetric inter-host latency matrix
+    private int index; // index in the symmetric inter-host latency matrix
 
     public GNNodeRecord() {
       if (numNodes >= maxOverlaySize*nodesPerStub) throw new RuntimeException("No more nodes int he network.");

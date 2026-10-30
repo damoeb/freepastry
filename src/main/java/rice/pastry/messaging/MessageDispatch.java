@@ -70,14 +70,14 @@ public class MessageDispatch implements Destructable {
   // because objects constructed differently are not mapped to the same value
   private HashMap<Integer,PastryAppl> addressBook;
 
-  protected PastryNode localNode;
+  private final PastryNode localNode;
 
-  protected Logger logger;
+  private final Logger logger;
 
   /**
    * Also held by the transport layer to allow it to deserialize the messages.
    */
-  protected Deserializer deserializer;
+  private final Deserializer deserializer;
 
   /**
    * Constructor.

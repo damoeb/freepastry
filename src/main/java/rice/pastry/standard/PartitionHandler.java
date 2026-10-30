@@ -86,22 +86,22 @@ import rice.selector.TimerTask;
  */
 public class PartitionHandler extends TimerTask implements NodeSetListener {
 
-  protected PastryNode pastryNode;
+  private final PastryNode pastryNode;
 
   // maybe move this to a subclass
-  protected InetSocketAddress[] bootstraps;
+  private final InetSocketAddress[] bootstraps;
 
-  protected SocketPastryNodeFactory factory;
+  private final SocketPastryNodeFactory factory;
 
-  protected Logger logger;
+  private final Logger logger;
 
-  protected double bootstrapRate;
-  protected int maxGoneSize;
-  protected int maxGoneAge;
+  private final double bootstrapRate;
+  private final int maxGoneSize;
+  private final int maxGoneAge;
   // map from Id's -> NodeHandle's to keep things unique per NodeId
-  protected Map<rice.p2p.commonapi.Id,GoneSetEntry> gone;
+  private final Map<rice.p2p.commonapi.Id,GoneSetEntry> gone;
 
-  protected Environment env;
+  private final Environment env;
 
   /**
    * Constructs a PartitionHandler.  This will register the handler with the
@@ -286,8 +286,8 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
   }
 
   static private class GoneSetEntry {
-    public NodeHandle nh;
-    public long timestamp;
+    private NodeHandle nh;
+    private final long timestamp;
 
     public GoneSetEntry(NodeHandle nh, long timestamp) {
       this.nh = nh;

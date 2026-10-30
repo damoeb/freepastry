@@ -344,7 +344,7 @@ public class MultiringRegrTest {
     }
     if (bootstrap instanceof BogusNodeHandle) {
       // socket: the bootstrapper expects the addresses
-      pn.boot(((BogusNodeHandle) bootstrap).addresses);
+      pn.boot(((BogusNodeHandle) bootstrap).getAddress());
     } else {
       pn.boot(bootstrap);
     }
@@ -360,7 +360,7 @@ public class MultiringRegrTest {
     if (PROTOCOL == PROTOCOL_DIRECT) {
       return ((PastryNode) bootstrap).getLocalHandle();
     } else {
-      return ((SocketPastryNodeFactory) factory).getNodeHandle(((SocketNodeHandle) ((PastryNode) bootstrap).getLocalHandle()).eaddress.getInnermostAddress());
+      return ((SocketPastryNodeFactory) factory).getNodeHandle(((SocketNodeHandle) ((PastryNode) bootstrap).getLocalHandle()).getAddress().getInnermostAddress());
     }
   }
 

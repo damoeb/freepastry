@@ -86,18 +86,18 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    * This variable is set to prevent the process from going to sleep or not
    * being scheduled for too long.
    */
-  protected final int MAX_TIME_TO_BE_SCHEDULED;
+  private final int MAX_TIME_TO_BE_SCHEDULED;
 
   /**
    * The number of nodes needed to hear from to go live, can be up to the LeafSet.maxSize()
    */
-  protected final int MAX_NUM_TO_HEAR_FROM = 8;
+  private final int MAX_NUM_TO_HEAR_FROM = 8;
 
   /**
    * Suppresses sendTheMessage() if we are not ready to do this part of the join process,
    * or we are already done.
    */
-  protected boolean tryingToGoReady = false;
+  private boolean tryingToGoReady = false;
 
   /**
    * Set of NodeHandles that know about us. -> Object

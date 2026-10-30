@@ -92,7 +92,7 @@ public class RendezvousSocketNodeHandle extends SocketNodeHandle implements Rend
   }
 
   public String toString() {
-    String s = "[RSNH: " + nodeId + "/" + eaddress;
+    String s = "[RSNH: " + getNodeId() + "/" + getAddress();
     if (!canContactDirect()) s+="(FIREWALLED)";
     s+= "]";
     return s;

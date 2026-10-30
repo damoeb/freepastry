@@ -98,7 +98,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
    * Used for getSocketChannel.  The AppSocketFactroyLayer stores the channel here,
    * and then it is retrieved when the channel is opened.
    */
-  protected Map<Integer, SocketManager> socketTable = new HashMap<Integer, SocketManager>();
+  private final Map<Integer, SocketManager> socketTable = new HashMap<Integer, SocketManager>();
 
   public AppSocketPastryNodeFactory(NodeIdFactory nf, int startPort,
       Environment env) throws IOException {
@@ -116,7 +116,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
     TransportLayer<InetSocketAddress, ByteBuffer>,
     TransportLayerCallback<InetSocketAddress, ByteBuffer> {
 
-    protected WireTransportLayerImpl wtl;
+    private final WireTransportLayerImpl wtl;
     /**
      * Indexed by the option "STORE_SOCKET"
      */

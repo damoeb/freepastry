@@ -48,8 +48,8 @@ import rice.pastry.dist.DistNodeHandle;
 
 public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 
-  public MultiInetSocketAddress eaddress;
-  protected long epoch;
+  private final MultiInetSocketAddress eaddress;
+  private final long epoch;
 
   protected SocketNodeHandle(MultiInetSocketAddress eisa, long epoch, Id id, PastryNode node) {
     super(id);
@@ -134,11 +134,11 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
    * @return A String representation of the node handle.
    */
   public String toString() {
-    return "[SNH: " + nodeId + "/" + eaddress + "]";
+    return "[SNH: " + getNodeId() + "/" + eaddress + "]";
   }
 
   public String toStringFull() {
-    return "[SNH: " + nodeId + "/" + eaddress + " " + epoch+"]";
+    return "[SNH: " + getNodeId() + "/" + eaddress + " " + epoch+"]";
   }
 
   /**
@@ -215,6 +215,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
   public void serialize(OutputBuffer buf) throws IOException {
     eaddress.serialize(buf);
     buf.writeLong(epoch);
-    nodeId.serialize(buf);
+    getNodeId().serialize(buf);
   }
 }

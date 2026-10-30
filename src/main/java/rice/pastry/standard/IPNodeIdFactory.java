@@ -67,7 +67,7 @@ public class IPNodeIdFactory implements NodeIdFactory {
 
   Environment environment;
 
-  protected Logger logger;
+  private final Logger logger;
 
   /**
    * Constructor.

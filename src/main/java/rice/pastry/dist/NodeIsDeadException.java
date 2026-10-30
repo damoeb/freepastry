@@ -47,7 +47,7 @@ public class NodeIsDeadException extends RuntimeException {
   /**
    * The original reason we found the node to be dead.
    */
-  public Exception originalException;
+  private final Exception originalException;
 
   /**
    * Constructor for NodeIsDeadException.

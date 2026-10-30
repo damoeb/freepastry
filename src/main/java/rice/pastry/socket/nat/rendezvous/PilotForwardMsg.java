@@ -45,8 +45,8 @@ public class PilotForwardMsg extends PRawMessage {
 
   public static final short TYPE = 2;
 
-  protected ByteBufferMsg msg;
-  protected RendezvousSocketNodeHandle target;
+  private final ByteBufferMsg msg;
+  private final RendezvousSocketNodeHandle target;
 
   public PilotForwardMsg(int address, ByteBufferMsg msg, RendezvousSocketNodeHandle target) {
     super(address);

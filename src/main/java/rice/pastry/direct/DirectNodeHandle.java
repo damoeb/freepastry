@@ -58,7 +58,7 @@ import rice.pastry.socket.TransportLayerNodeHandle;
  */
 
 public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> implements PastryNodeListener {
-  public transient NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
+  private final transient NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   /**
    * Constructor for DirectNodeHandle.

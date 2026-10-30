@@ -103,8 +103,8 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
   protected void rerouteMe(final RouteMessage rm, NodeHandle oldDest, Exception ioe) {
     logger.debug("rerouteMe({} oldDest:{})", rm, oldDest);
 
-    rm.numRetries++;
-    if (rm.numRetries > MAX_RETRIES) {
+    rm.incrementNumRetries();
+    if (rm.getNumRetries() > MAX_RETRIES) {
       // TODO: notify an error handler, not just the message's own callback
       boolean dontPrint = false;
       if (ioe == null) {
@@ -113,9 +113,9 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         dontPrint = rm.sendFailed(ioe);
       }
       if (dontPrint) {
-        logger.info("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.numRetries);
+        logger.info("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.getNumRetries());
       } else {
-        logger.warn("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.numRetries);
+        logger.warn("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.getNumRetries());
       }
       return;
     }

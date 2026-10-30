@@ -48,8 +48,8 @@ import rice.pastry.routing.RouteSet;
 public class RouteRowResponse extends PRawMessage {
 
   public static final short TYPE = 4;
-  public short index;
-  public RouteSet[] row;
+  private final short index;
+  private final RouteSet[] row;
 
   public RouteRowResponse(NodeHandle sender, short index, RouteSet[] row, int address) {
     super(address);
@@ -102,4 +102,11 @@ public class RouteRowResponse extends PRawMessage {
     return TYPE;
   }
 
+  public short getIndex() {
+    return index;
+  }
+
+  public RouteSet[] getRow() {
+    return row;
+  }
 }

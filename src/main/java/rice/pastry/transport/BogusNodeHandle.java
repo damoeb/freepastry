@@ -47,7 +47,7 @@ import rice.pastry.Id;
 import rice.pastry.socket.TransportLayerNodeHandle;
 
 public class BogusNodeHandle extends TransportLayerNodeHandle<Collection<InetSocketAddress>> {
-  public Collection<InetSocketAddress> addresses;
+  private final Collection<InetSocketAddress> addresses;
 
   public BogusNodeHandle(InetSocketAddress address) {
     addresses = Collections.singletonList(address);

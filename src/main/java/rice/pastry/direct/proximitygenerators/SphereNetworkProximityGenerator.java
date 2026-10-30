@@ -64,7 +64,7 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
     /**
      * Position on the sphere, in radians.
      */
-    public double theta, phi;
+    private final double theta, phi;
     double radius;
 
     /**

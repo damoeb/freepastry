@@ -50,10 +50,10 @@ import rice.p2p.commonapi.CancellableTask;
 import rice.pastry.PastryNode;
 
 public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSimulator<Identifier, MessageType> {
-  protected BasicNetworkSimulator<Identifier, MessageType> simulator;
-  protected RandomSource random;
-  protected ProximityGenerator generator;
-  protected LivenessProvider<Identifier> livenessProvider;
+  private final BasicNetworkSimulator<Identifier, MessageType> simulator;
+  private final RandomSource random;
+  private final ProximityGenerator generator;
+  private final LivenessProvider<Identifier> livenessProvider;
 
   // TODO: add a listener to the top-level transport layer to notify simulator listeners
   public NetworkSimulatorImpl(Environment env, ProximityGenerator generator) {

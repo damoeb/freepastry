@@ -83,10 +83,10 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   // to notify of send/receive
   NetworkSimulator<Identifier, MessageType> sim;
 
-  protected int MIN_DELAY = 1;
+  private final int MIN_DELAY = 1;
 
-  protected final int maxDiameter;
-  protected final int minDelay;
+  private final int maxDiameter;
+  private final int minDelay;
 
   public BasicNetworkSimulator(Environment env, RandomSource random, NetworkSimulator<Identifier, MessageType> sim) {
     super(env, random, env.getLogManager().getLogger(BasicNetworkSimulator.class, null));

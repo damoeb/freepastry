@@ -80,7 +80,7 @@ public abstract class PastryAppl
 
   protected PastryNode thePastryNode;
 
-  protected int address;
+  private int address;
 
   protected Logger logger;
 
@@ -481,7 +481,7 @@ public abstract class PastryAppl
   /**
    * holds the receiverSocket
    */
-  protected AppSocketReceiver receiver;
+  private AppSocketReceiver receiver;
 
   /**
    * @return true if a receiver is waiting for a socket

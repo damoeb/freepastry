@@ -49,9 +49,9 @@ import rice.selector.TimerTask;
  * @author Peter Druschel
  */
 public class ScheduledMessage extends TimerTask {
-  protected PastryNode localNode;
+  private PastryNode localNode;
 
-  protected Message msg;
+  private Message msg;
 
   /**
    * Constructor

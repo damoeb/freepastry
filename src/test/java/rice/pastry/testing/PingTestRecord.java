@@ -76,8 +76,8 @@ public class PingTestRecord extends TestRecord {
     for (i = 0; i < nIndex; i++) {
       sum += nHops[i] * i;
     }
-    fHops = ((double) sum) / nTests;
-    fDistance = fDistance / nTests;
+    fHops = ((double) sum) / getTestNumber();
+    fDistance = fDistance / getTestNumber();
 
     for (i = 0; i < nIndex; i++) {
       fProb[i] = i * nHops[i] / ((double) sum);

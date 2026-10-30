@@ -52,8 +52,8 @@ import rice.pastry.PastryNode;
  */
 public class LeafSetRendezvousStrategy implements RendezvousGenerationStrategy<RendezvousSocketNodeHandle>{
 
-  protected PastryNode pn;
-  protected RandomSource random;
+  private final PastryNode pn;
+  private final RandomSource random;
 
   public LeafSetRendezvousStrategy(PastryNode pn, RandomSource r) {
     this.pn = pn;

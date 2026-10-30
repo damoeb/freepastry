@@ -63,13 +63,13 @@ public class RendezvousLeafSetNHStrategy implements NextHopStrategy<MultiInetSoc
     LeafSet leafset = ls;
     for (int i = 1; i < leafset.maxSize()/2; i++) {
       RendezvousSocketNodeHandle snh = (RendezvousSocketNodeHandle)leafset.get(-i);
-      if (snh != null && !snh.eaddress.equals(destination) && snh.canContactDirect()) {
-        result.add(snh.eaddress);
+      if (snh != null && !snh.getAddress().equals(destination) && snh.canContactDirect()) {
+        result.add(snh.getAddress());
         if (result.size() >= numRequested) return result;
       }
       snh = (RendezvousSocketNodeHandle)leafset.get(i);
-      if (snh != null && !snh.eaddress.equals(destination) && snh.canContactDirect()) {
-        result.add(snh.eaddress);
+      if (snh != null && !snh.getAddress().equals(destination) && snh.canContactDirect()) {
+        result.add(snh.getAddress());
         if (result.size() >= numRequested) return result;
       }
     }

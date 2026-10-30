@@ -168,16 +168,16 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   public static final byte[] PASTRY_MAGIC_NUMBER = new byte[] {0x27, 0x40, 0x75, 0x3A};
   private int port;
-  protected NodeIdFactory nidFactory;
+  private final NodeIdFactory nidFactory;
 
-  protected InetAddress localAddress;
+  private InetAddress localAddress;
 
   // the ordered list of InetAddresses, from External to internal
   InetAddress[] addressList;
 
-  protected int testFireWallPolicy;
+  private int testFireWallPolicy;
 
-  protected int findFireWallPolicy;
+  private int findFireWallPolicy;
 
   String firewallAppName;
   int firewallSearchTries;
@@ -332,7 +332,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
     SocketNodeHandle localhandle = (SocketNodeHandle)pn.getLocalHandle();
     final SocketNodeHandleFactory handleFactory = (SocketNodeHandleFactory)handleFactory2;
-    MultiInetSocketAddress proxyAddress = localhandle.eaddress;
+    MultiInetSocketAddress proxyAddress = localhandle.getAddress();
     MultiAddressSourceRouteFactory esrFactory = getMultiAddressSourceRouteFactory(pn);
 
     // Network Info layer
@@ -759,7 +759,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       Message m = m1;
       if (m instanceof RouteMessage) {
         RouteMessage rm = (RouteMessage)m;
-        m = rm.internalMsg;
+        m = rm.getInternalMsg();
         if (m == null) m = rm;
       }
       if (m instanceof PastryEndpointMessage) {
@@ -794,9 +794,9 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   public class TLBootstrapper implements Bootstrapper<InetSocketAddress>
   {
     protected PastryNode pn;
-    protected TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> tl;
-    protected SocketNodeHandleFactory handleFactory;
-    protected ProximityNeighborSelector pns;
+    private final TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> tl;
+    private final SocketNodeHandleFactory handleFactory;
+    private final ProximityNeighborSelector pns;
     protected Logger logger;
 
     // we need to store this in a mutable final object

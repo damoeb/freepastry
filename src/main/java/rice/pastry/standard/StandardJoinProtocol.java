@@ -88,7 +88,7 @@ import rice.pastry.transport.PMessageReceipt;
 public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
   protected NodeHandle localHandle;
 
-  protected RoutingTable routeTable;
+  private final RoutingTable routeTable;
 
   protected LeafSet leafSet;
 

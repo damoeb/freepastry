@@ -54,7 +54,7 @@ import rice.pastry.PastryNode;
  */
 public class PastryObjectInputStream extends ObjectInputStream {
 
-  protected PastryNode node;
+  private final PastryNode node;
 
   /**
    * @param stream the stream to read from

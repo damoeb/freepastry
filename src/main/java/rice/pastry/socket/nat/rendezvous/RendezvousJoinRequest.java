@@ -57,7 +57,7 @@ public class RendezvousJoinRequest extends JoinRequest {
   /**
    * The joiner has created a pilot connection to the pilot node.
    */
-  protected NodeHandle pilot;
+  private final NodeHandle pilot;
 
   public RendezvousJoinRequest(NodeHandle nh, byte rtBaseBitLength,
       long timestamp, NodeHandle pilot) {
@@ -66,8 +66,8 @@ public class RendezvousJoinRequest extends JoinRequest {
   }
 
   public String toString() {
-    return "RendezvousJoinRequest(" + (handle != null ? handle.getNodeId() : null) + ","
-    + (joinHandle != null ? joinHandle.getNodeId() : null) +","+timestamp+ " pilot:"+pilot+")";
+    return "RendezvousJoinRequest(" + (getHandle() != null ? getHandle().getNodeId() : null) + ","
+    + (getJoinHandle() != null ? getJoinHandle().getNodeId() : null) +","+getTimestamp()+ " pilot:"+pilot+")";
   }
 
   /***************** Raw Serialization ***************************************/

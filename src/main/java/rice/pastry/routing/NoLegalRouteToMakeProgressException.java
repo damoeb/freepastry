@@ -42,7 +42,7 @@ import rice.pastry.Id;
 
 public class NoLegalRouteToMakeProgressException extends IOException {
 
-  protected Id target;
+  private final Id target;
 
   public NoLegalRouteToMakeProgressException(Id target) {
     super("No legal route to the target "+target);

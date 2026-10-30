@@ -318,7 +318,7 @@ public abstract class CommonAPITest {
     }
     // the socket factory hands out BogusNodeHandles, which have to be booted from their addresses
     if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle) {
-      ret.boot(((rice.pastry.transport.BogusNodeHandle) bootstrap).addresses);
+      ret.boot(((rice.pastry.transport.BogusNodeHandle) bootstrap).getAddress());
     } else {
       ret.boot((Object) bootstrap);
     }

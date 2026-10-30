@@ -82,7 +82,7 @@ import rice.pastry.standard.StandardAddress;
  */
 public class PastryEndpoint extends PastryAppl implements Endpoint {
 
-  protected Application application;
+  private final Application application;
 
   class PEDeserializer implements MessageDeserializer {
     public Message deserialize(InputBuffer buf, short type, int priority,

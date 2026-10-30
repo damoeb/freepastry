@@ -62,10 +62,10 @@ public class EpochInetSocketAddress implements Serializable {
   public static final long EPOCH_UNKNOWN = -1;
 
   // the address list, most external first
-  protected InetSocketAddress address[];
+  private final InetSocketAddress address[];
 
   // the epoch number of the remote node
-  protected long epoch;
+  private final long epoch;
 
   /**
    * Constructor - don't use this unless you know what you are doing

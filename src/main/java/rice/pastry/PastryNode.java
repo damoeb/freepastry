@@ -120,51 +120,51 @@ public class PastryNode implements
   public static final byte CONNECTION_NO_ACCEPTOR = 2;
 
 
-  protected Id myNodeId;
+  private final Id myNodeId;
 
   private Environment myEnvironment;
 
   private MessageDispatch myMessageDispatch;
 
-  protected LeafSet leafSet;
+  private LeafSet leafSet;
 
-  protected RoutingTable routeSet;
+  private RoutingTable routeSet;
 
   protected NodeHandle localhandle;
 
-  protected Vector<PastryAppl> apps;
+  private final Vector<PastryAppl> apps;
 
-  protected Logger logger;
+  private final Logger logger;
 
   ReadyStrategy readyStrategy;
 
-  protected boolean joinFailed = false;
+  private boolean joinFailed = false;
 
-  protected boolean isDestroyed = false;
+  private boolean isDestroyed = false;
 
-  protected Router router;
+  private Router router;
 
   /**
    * Used to deserialize NodeHandles
    */
-  protected NodeHandleFactory<? extends NodeHandle> handleFactory;
+  private NodeHandleFactory<? extends NodeHandle> handleFactory;
 
   /**
    * Call initiateJoin on this class.
    */
-  protected JoinProtocol joiner;
+  private JoinProtocol joiner;
 
   /**
    * Call boot on this class.
    */
-  protected Bootstrapper<?> bootstrapper;
+  private Bootstrapper<?> bootstrapper;
 
   /**
    * The top level transport layer.
    */
-  protected TransportLayer<NodeHandle, RawMessage> tl;
+  private TransportLayer<NodeHandle, RawMessage> tl;
 
-  protected ProximityProvider<NodeHandle> proxProvider;
+  private ProximityProvider<NodeHandle> proxProvider;
 
   /**
    * Constructor, with NodeId. Need to set the node's ID before this node is
@@ -709,7 +709,7 @@ public class PastryNode implements
 
 
 
-  protected JoinFailedException joinFailedReason;
+  private JoinFailedException joinFailedReason;
   public void joinFailed(JoinFailedException cje) {
     logger.atWarn().log(() -> "joinFailed("+cje+")");
     joinFailedReason = cje;
@@ -746,12 +746,12 @@ public class PastryNode implements
 
   // Period (in seconds) at which the leafset and routeset maintenance tasks, respectively, are invoked.
   // 0 means never.
-  protected int leafSetMaintFreq, routeSetMaintFreq;
+  private int leafSetMaintFreq, routeSetMaintFreq;
 
-  protected ScheduledMessage leafSetRoutineMaintenance = null;
-  protected ScheduledMessage routeSetRoutineMaintenance = null;
+  private ScheduledMessage leafSetRoutineMaintenance = null;
+  private ScheduledMessage routeSetRoutineMaintenance = null;
 
-  protected LivenessProvider<NodeHandle> livenessProvider;
+  private LivenessProvider<NodeHandle> livenessProvider;
 
   public void setSocketElements(int lsmf, int rsmf,
       TransportLayer<NodeHandle, RawMessage> tl,

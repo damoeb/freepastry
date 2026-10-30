@@ -75,20 +75,20 @@ import rice.selector.TimerTask;
  */
 public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy, NodeSetListener, NodeHandleListener, PastryNodeListener, LeafSetProtocol {
 
-  protected NodeHandle localHandle;
+  private final NodeHandle localHandle;
 
-  protected PastryNode localNode;
+  private final PastryNode localNode;
 
-  protected LeafSet leafSet;
+  private final LeafSet leafSet;
 
-  protected RoutingTable routeTable;
+  private final RoutingTable routeTable;
 
   /**
    * NodeHandle -> Long remembers the TIME when we received a BLS from that
    * NodeHandle
    */
-  protected Map<NodeHandle, Long> lastTimeReceivedBLS; // the leases you have
-  protected Map<NodeHandle, Long> lastTimeSentBLS; // the leases you have issued
+  private final Map<NodeHandle, Long> lastTimeReceivedBLS; // the leases you have
+  private final Map<NodeHandle, Long> lastTimeSentBLS; // the leases you have issued
 
   /**
    * Related to rapidly determining direct neighbor liveness.

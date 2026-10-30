@@ -84,13 +84,13 @@ public class RoutingTable implements NodeSetEventSource {
    * </SUP></EM>
    */
 
-  public byte idBaseBitLength;
+  private final byte idBaseBitLength;
 
   private Id myNodeId;
 
-  public NodeHandle myNodeHandle;
+  private final NodeHandle myNodeHandle;
 
-  protected PastryNode pn;
+  private final PastryNode pn;
 
   private RouteSet routingTable[][];
 

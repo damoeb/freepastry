@@ -56,8 +56,8 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
   Map<Integer, MessageDeserializer> deserializers;
   NodeHandleFactory<?> nodeHandleFactory;
 
-  protected Environment environment;
-  protected Logger logger;
+  private final Environment environment;
+  private final Logger logger;
 
   public TLDeserializer(NodeHandleFactory<?> nodeHandleFactory, Environment env) {
     this.environment = env;

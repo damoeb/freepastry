@@ -60,7 +60,7 @@ public class PastryEndpointMessage extends PRawMessage {
 
   private static final long serialVersionUID = 4499456388556140871L;
 
-  protected RawMessage message;
+  private RawMessage message;
 
   /**
     * Constructor.

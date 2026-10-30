@@ -55,7 +55,7 @@ public class SPNFIdentitySerializer implements
     MultiInetSocketAddress, SourceRoute<MultiInetSocketAddress>> {
   protected PastryNode pn;
 
-  protected SocketNodeHandleFactory factory;
+  private final SocketNodeHandleFactory factory;
 
   public SPNFIdentitySerializer(PastryNode pn, SocketNodeHandleFactory factory) {
     this.pn = pn;

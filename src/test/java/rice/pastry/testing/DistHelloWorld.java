@@ -219,7 +219,7 @@ public class DistHelloWorld {
     } catch (java.io.IOException ioe) {
       throw new RuntimeException(ioe);
     }
-    pn.boot(((rice.pastry.transport.BogusNodeHandle) bootstrap).addresses); // internally initiateJoins
+    pn.boot(((rice.pastry.transport.BogusNodeHandle) bootstrap).getAddress()); // internally initiateJoins
     pastryNodes.addElement(pn);
 
     HelloWorldApp app = new HelloWorldApp(pn);

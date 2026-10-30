@@ -139,7 +139,7 @@ public class InternetPastryNodeFactory extends
     // get a natHandler
     this.natHandler = handler;
     if (natHandler == null) {
-      this.natHandler = getDefaultNatHandler(env, this.localAddress);
+      this.natHandler = getDefaultNatHandler(env, this.getBindAddress());
     }
 
     this.probeAddresses = probeAddresses;
@@ -154,7 +154,7 @@ public class InternetPastryNodeFactory extends
     this.connectivityVerifier = new ConnectivityVerifierImpl(this);
 
     // sets/verifies externalAddress
-    findExternalAddressIfNecessary(this.localAddress); // blocking call
+    findExternalAddressIfNecessary(this.getBindAddress()); // blocking call
   }
 
   /**
@@ -272,8 +272,8 @@ public class InternetPastryNodeFactory extends
       Map<String, Object> initialVars) {
 
     // make sure the innermost address is valid
-    if (!proxyAddress.getInnermostAddress().getAddress().equals(this.localAddress)) {
-      throw new RuntimeException("proxyAddress.innermostAddress() must be the local bind address. proxyAddress:"+proxyAddress+" bindAddress:"+this.localAddress);
+    if (!proxyAddress.getInnermostAddress().getAddress().equals(this.getBindAddress())) {
+      throw new RuntimeException("proxyAddress.innermostAddress() must be the local bind address. proxyAddress:"+proxyAddress+" bindAddress:"+this.getBindAddress());
     }
 
     // may be running on the LAN, don't bother with anything

@@ -110,9 +110,9 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   /**
    * Maps to a byte contactState
    */
-  protected String CONTACT_STATE = "RendezvousSocketPastryNodeFactory.CONTACT_STATE";
+  private final String CONTACT_STATE = "RendezvousSocketPastryNodeFactory.CONTACT_STATE";
 
-  protected RandomSource random;
+  private RandomSource random;
 
   /**
    * maps to a RendezvousStrategy<RendezvousSocketNodeHandle>
@@ -300,7 +300,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
       public InetSocketAddress convert(RendezvousSocketNodeHandle high) {
         // TODO: is this the correct one?
-        return high.eaddress.getAddress(0);
+        return high.getAddress().getAddress(0);
       }
 
       public void serialize(RendezvousSocketNodeHandle i, OutputBuffer buf) throws IOException {

@@ -82,11 +82,11 @@ import rice.pastry.transport.TransportPastryNodeFactory;
  */
 @SuppressWarnings("unchecked")
 public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
-  protected NodeIdFactory nidFactory;
+  private final NodeIdFactory nidFactory;
 
-  protected NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
+  private final NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
-  protected Collection<NodeHandleFactoryListener<? super NodeHandle>> listeners =
+  private final Collection<NodeHandleFactoryListener<? super NodeHandle>> listeners =
     new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>();
 
 

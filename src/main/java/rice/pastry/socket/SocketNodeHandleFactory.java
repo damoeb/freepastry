@@ -54,8 +54,8 @@ import rice.pastry.PastryNode;
 
 public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHandle>, Serializer<SocketNodeHandle> {
   protected PastryNode pn;
-  protected Map<SocketNodeHandle, SocketNodeHandle> handleSet;
-  protected Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> listeners = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>();
+  private final Map<SocketNodeHandle, SocketNodeHandle> handleSet;
+  private final Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> listeners = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>();
   Logger logger;
 
   public SocketNodeHandleFactory(PastryNode pn) {
