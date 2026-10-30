@@ -88,7 +88,8 @@ public class LookupService implements Application {
     endpoint.register();
 
     this.logger = endpoint.getEnvironment().getLogManager().getLogger(getClass(), null);
-    this.firstTimeout = endpoint.getEnvironment().getParameters().getLong("lookup_service.firstTimeout");
+    LookupServiceConfig config = LookupServiceConfig.fromParameters(endpoint.getEnvironment().getParameters());
+    this.firstTimeout = config.firstTimeout();
 
     // timeouts should really be adaptive, but that takes more code than this
     // simple app is worth
@@ -96,7 +97,7 @@ public class LookupService implements Application {
       this.timeout = timeout;
     } else {
       // get a default from the parameters file
-      this.timeout = endpoint.getEnvironment().getParameters().getLong("lookup_service.timeout");
+      this.timeout = config.timeout();
       if (this.timeout <= 0) this.timeout = 30000; // a sane but very large
                                                     // value
     }
