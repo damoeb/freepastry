@@ -37,9 +37,13 @@ advised of the possibility of such damage.
 
 package rice.pastry.testing;
 
+import java.io.IOException;
+
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PRawMessage;
 
 /**
  * PingMessageNew
@@ -51,7 +55,9 @@ import rice.pastry.messaging.Message;
  * @author Rongmei Zhang
  */
 
-public class PingMessageNew extends Message {
+public class PingMessageNew extends PRawMessage {
+    public static final short TYPE = 1;
+
     private Id target;
 
     private int    nHops = 0;
@@ -76,4 +82,25 @@ public class PingMessageNew extends Message {
     public double getDistance(){ return fDistance; }
 
     public Id getSource(){ return getSender().getNodeId(); }
+
+    /**
+     * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+     */
+    public PingMessageNew(int pingAddress, InputBuffer buf, NodeHandle sender) throws IOException {
+      super(pingAddress);
+      setSender(sender);
+      target = Id.build(buf);
+      nHops = buf.readInt();
+      fDistance = buf.readDouble();
+    }
+
+    public short getType() {
+      return TYPE;
+    }
+
+    public void serialize(OutputBuffer buf) throws IOException {
+      target.serialize(buf);
+      buf.writeInt(nHops);
+      buf.writeDouble(fDistance);
+    }
 }

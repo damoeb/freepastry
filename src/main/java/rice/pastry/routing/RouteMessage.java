@@ -108,7 +108,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
    * @param serializeVersion the serialization version of the message
    */
 
-  public RouteMessage(Id target, Message msg, byte serializeVersion) {
+  public RouteMessage(Id target, PRawMessage msg, byte serializeVersion) {
     this(target, msg, null, null, serializeVersion);
   }
 
@@ -120,7 +120,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
    * @param opts the send options for the message.
    */
 
-  public RouteMessage(Id target, Message msg, SendOptions opts, byte serializeVersion) {
+  public RouteMessage(Id target, PRawMessage msg, SendOptions opts, byte serializeVersion) {
     this(target, msg, null, opts, serializeVersion);
   }
 
@@ -133,7 +133,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
    * @param serializeVersion the serialization version of the message
    */
 
-  public RouteMessage(NodeHandle dest, Message msg,
+  public RouteMessage(NodeHandle dest, PRawMessage msg,
       SendOptions opts, byte serializeVersion) {
     this(dest.getNodeId(), msg, dest, opts, serializeVersion);
   }
@@ -146,7 +146,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
    * @param firstHop the nodeHandle of the first hop destination
    * @param serializeVersion the serialization version of the message
    */
-  public RouteMessage(Id target, Message msg, NodeHandle firstHop, byte serializeVersion) {
+  public RouteMessage(Id target, PRawMessage msg, NodeHandle firstHop, byte serializeVersion) {
     this(target, msg, firstHop, null, serializeVersion);
   }
 

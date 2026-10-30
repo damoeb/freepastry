@@ -39,6 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.timer;
 
+import java.io.IOException;
+
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
@@ -96,6 +98,14 @@ public class MyApp implements Application {
     // We are only going to use one instance of this application on each PastryNode
     this.endpoint = node.buildEndpoint(this, "myinstance");
 
+    // all messages this application sends are raw; tell the endpoint how to read them back
+    endpoint.setDeserializer((buf, type, priority, sender) -> {
+      if (type == MyMsg.TYPE) {
+        return new MyMsg(buf, endpoint);
+      }
+      throw new IOException("Unknown message type: " + type);
+    });
+
     endpoint.register();
 
     // Send MessageToSelf every 5 seconds, starting in 3 seconds
@@ -116,7 +126,7 @@ public class MyApp implements Application {
    */
   public void routeMyMsg(Id id) {
     System.out.println(this+" sending to "+id);
-    Message msg = new MyMsg(endpoint.getId(), id);
+    MyMsg msg = new MyMsg(endpoint.getId(), id);
     endpoint.route(id, msg, null);
   }
 
@@ -125,7 +135,7 @@ public class MyApp implements Application {
    */
   public void routeMyMsgDirect(NodeHandle nh) {
     System.out.println(this+" sending direct to "+nh);
-    Message msg = new MyMsg(endpoint.getId(), nh.getId());
+    MyMsg msg = new MyMsg(endpoint.getId(), nh.getId());
     endpoint.route(null, msg, nh);
   }
 

@@ -56,6 +56,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.JavaSerializedDeserializer;
 import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PRawMessage;
 import rice.pastry.messaging.RawMessageDelivery;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteMessageNotification;
@@ -277,7 +278,7 @@ public abstract class PastryAppl
    * @param msg the message to deliver.
    * @param opt send options that describe how the message is to be routed.
    */
-  public boolean routeMsgDirect(NodeHandle dest, Message msg, SendOptions opt) {
+  public boolean routeMsgDirect(NodeHandle dest, PRawMessage msg, SendOptions opt) {
     logger.trace("[{}] routemsgdirect {} to {}", thePastryNode, msg, dest);
     if (dest.getLiveness() >= NodeHandle.LIVENESS_DEAD) return false;
 
@@ -295,7 +296,7 @@ public abstract class PastryAppl
    * @param msg the message to deliver.
    * @param opt send options that describe how the message is to be routed.
    */
-  public void routeMsg(Id key, Message msg, SendOptions opt) {
+  public void routeMsg(Id key, PRawMessage msg, SendOptions opt) {
     logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     RouteMessage rm = new RouteMessage(key, msg, opt,
         thePastryNode.getConfig().routeMsgVersion());
@@ -304,7 +305,7 @@ public abstract class PastryAppl
   }
 
   // this one will replace the last one after the alpha release
-  public MessageReceipt routeMsg(final Id key, final Message msg, final SendOptions opt, final DeliveryNotification deliverAckToMe) {
+  public MessageReceipt routeMsg(final Id key, final PRawMessage msg, final SendOptions opt, final DeliveryNotification deliverAckToMe) {
     logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     final RouteMessage rm = new RouteMessage(key, msg, opt,
         thePastryNode.getConfig().routeMsgVersion());

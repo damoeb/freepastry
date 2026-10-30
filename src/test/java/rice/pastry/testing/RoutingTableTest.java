@@ -650,6 +650,14 @@ public class RoutingTableTest {
       // We are only going to use one instance of this application on each PastryNode
       this.endpoint = node.buildEndpoint(this, "myinstance");
 
+      // all messages this application sends are raw; tell the endpoint how to read them back
+      endpoint.setDeserializer((buf, type, priority, sender) -> {
+        if (type == MyMsg.TYPE) {
+          return new MyMsg(buf, endpoint);
+        }
+        throw new IOException("Unknown message type: " + type);
+      });
+
       this.node = node;
 
       // now we can receive messages
@@ -669,7 +677,7 @@ public class RoutingTableTest {
     public void routeMyMsg(Id id) {
       if (logHeavy)
         System.out.println(this+" sending to "+id);
-      Message msg = new MyMsg(endpoint.getId(), id);
+      MyMsg msg = new MyMsg(endpoint.getId(), id);
       endpoint.route(id, msg, null);
     }
 
@@ -679,7 +687,7 @@ public class RoutingTableTest {
     public void routeMyMsgDirect(NodeHandle nh) {
       if (logHeavy)
         System.out.println(this+" sending direct to "+nh);
-      Message msg = new MyMsg(endpoint.getId(), nh.getId());
+      MyMsg msg = new MyMsg(endpoint.getId(), nh.getId());
       endpoint.route(null, msg, nh);
     }
 

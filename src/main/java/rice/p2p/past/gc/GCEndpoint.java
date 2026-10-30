@@ -103,25 +103,13 @@ public class GCEndpoint implements Endpoint {
    * @param message The message to deliver
    * @param hint The first node to send this message to, optional
    */
-  public MessageReceipt route(Id id, Message message, NodeHandle hint) {
-    return endpoint.route(id, message, hint);
-  }
-
   public MessageReceipt route(Id id, RawMessage message, NodeHandle hint) {
     return endpoint.route(id, message, hint);
   }
 
 
-  public MessageReceipt route(Id id, Message message, NodeHandle hint, DeliveryNotification deliverAckToMe) {
-    return endpoint.route(id, message, hint, deliverAckToMe);
-  }
-
   public MessageReceipt route(Id id, RawMessage message, NodeHandle hint, DeliveryNotification deliverAckToMe) {
     return endpoint.route(id, message, hint, deliverAckToMe);
-  }
-
-  public MessageReceipt route(Id id, Message message, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    return endpoint.route(id, message, hint, deliverAckToMe, options);
   }
 
   public MessageReceipt route(Id id, RawMessage message, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {

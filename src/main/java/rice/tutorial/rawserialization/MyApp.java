@@ -96,7 +96,7 @@ public class MyApp implements Application {
    */
   public void routeMyMsg(Id id) {
     System.out.println(this+" sending to "+id);
-    Message msg = new MyMsg(endpoint.getId(), id);
+    MyMsg msg = new MyMsg(endpoint.getId(), id);
     endpoint.route(id, msg, null);
   }
 
@@ -105,7 +105,7 @@ public class MyApp implements Application {
    */
   public void routeMyMsgDirect(NodeHandle nh) {
     System.out.println(this+" sending direct to "+nh);
-    Message msg = new MyMsg(endpoint.getId(), nh.getId());
+    MyMsg msg = new MyMsg(endpoint.getId(), nh.getId());
     endpoint.route(null, msg, nh);
   }
 

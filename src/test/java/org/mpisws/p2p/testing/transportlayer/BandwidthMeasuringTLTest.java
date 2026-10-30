@@ -49,6 +49,8 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.util.tuples.Tuple3;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
@@ -60,12 +62,30 @@ import rice.tutorial.transportlayer.BandwidthLimitingTransportLayer;
 
 public class BandwidthMeasuringTLTest implements Application {
 
-  static class MyMsg implements Message {
+  static class MyMsg implements RawMessage {
+    static final short TYPE = 1;
 
     public int getPriority() {
       return 0;
     }
 
+    public short getType() {
+      return TYPE;
+    }
+
+    public void serialize(OutputBuffer buf) {
+      // no payload
+    }
+  }
+
+  static void registerWithDeserializer(PastryEndpoint ep) {
+    ep.setDeserializer((buf, type, priority, sender) -> {
+      if (type == MyMsg.TYPE) {
+        return new MyMsg();
+      }
+      throw new IOException("Unknown message type: " + type);
+    });
+    ep.register();
   }
 
   public void deliver(Id id, Message message) {
@@ -123,13 +143,13 @@ public class BandwidthMeasuringTLTest implements Application {
     PastryNode node1 = factory.newNode();
     BandwidthMeasuringTLTest app1 = new BandwidthMeasuringTLTest();
     PastryEndpoint ep1 = (PastryEndpoint)node1.buildEndpoint(app1, null);
-    ep1.register();
+    registerWithDeserializer(ep1);
     node1.boot((Object)null);
 
     PastryNode node2 = factory.newNode();
     BandwidthMeasuringTLTest app2 = new BandwidthMeasuringTLTest();
     PastryEndpoint ep2 = (PastryEndpoint)node2.buildEndpoint(app2, null);
-    ep2.register();
+    registerWithDeserializer(ep2);
     node2.boot(new InetSocketAddress(factory.getBindAddress(), bindPort));
 
     Thread.sleep(5000);

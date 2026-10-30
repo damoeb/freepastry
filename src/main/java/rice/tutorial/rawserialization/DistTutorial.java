@@ -52,7 +52,6 @@ import rice.pastry.PastryNodeFactory;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.tutorial.rawserialization2.MyApp;
 
 /**
  * This tutorial shows how to use FreePastry 2.0's raw serialization (instead of Java Serialization).

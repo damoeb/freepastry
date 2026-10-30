@@ -36,7 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.tutorial.lookup;
 
+import java.io.IOException;
 import java.util.HashMap;
+
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -48,6 +50,9 @@ import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
  * The LookupService provides a way to find out what nodes are responsible for a
@@ -85,6 +90,16 @@ public class LookupService implements Application {
     this.seqno = 42;
 
     this.endpoint = node.buildEndpoint(this, null);
+    endpoint.setDeserializer((buf, type, priority, sender) -> {
+      switch (type) {
+        case NodeLookupQuery.TYPE:
+          return new NodeLookupQuery(buf, endpoint);
+        case NodeLookupResponse.TYPE:
+          return new NodeLookupResponse(buf, endpoint);
+        default:
+          throw new IOException("Unknown message type: " + type);
+      }
+    });
     endpoint.register();
 
     this.logger = endpoint.getEnvironment().getLogManager().getLogger(getClass(), null);
@@ -288,7 +303,6 @@ public class LookupService implements Application {
    * @author jstewart
    */
   public static class NodeLookupTimeout implements Message {
-    private static final long serialVersionUID = 1648981192042898092L;
     int seqno;
 
     public NodeLookupTimeout(int seqno) {
@@ -306,8 +320,8 @@ public class LookupService implements Application {
    *
    * @author jstewart
    */
-  public static class NodeLookupQuery implements Message {
-    private static final long serialVersionUID = -4882776401593706141L;
+  public static class NodeLookupQuery implements RawMessage {
+    public static final short TYPE = 1;
     private final NodeHandle source;
     private final int numNodes;
     private final int seqno;
@@ -318,8 +332,24 @@ public class LookupService implements Application {
       this.source = localHandle;
     }
 
+    NodeLookupQuery(InputBuffer buf, Endpoint endpoint) throws IOException {
+      source = endpoint.readNodeHandle(buf);
+      numNodes = buf.readInt();
+      seqno = buf.readInt();
+    }
+
     public int getPriority() {
       return 0;
+    }
+
+    public short getType() {
+      return TYPE;
+    }
+
+    public void serialize(OutputBuffer buf) throws IOException {
+      source.serialize(buf);
+      buf.writeInt(numNodes);
+      buf.writeInt(seqno);
     }
   }
 
@@ -328,8 +358,8 @@ public class LookupService implements Application {
    *
    * @author jstewart
    */
-  public static class NodeLookupResponse implements Message {
-    private static final long serialVersionUID = -3200682143184682743L;
+  public static class NodeLookupResponse implements RawMessage {
+    public static final short TYPE = 2;
     private final NodeHandleSet nodes;
     private final int seqno;
 
@@ -338,8 +368,23 @@ public class LookupService implements Application {
       this.seqno = seqno;
     }
 
+    NodeLookupResponse(InputBuffer buf, Endpoint endpoint) throws IOException {
+      nodes = endpoint.readNodeHandleSet(buf, buf.readShort());
+      seqno = buf.readInt();
+    }
+
     public int getPriority() {
       return 0;
+    }
+
+    public short getType() {
+      return TYPE;
+    }
+
+    public void serialize(OutputBuffer buf) throws IOException {
+      buf.writeShort(nodes.getType());
+      nodes.serialize(buf);
+      buf.writeInt(seqno);
     }
   }
 

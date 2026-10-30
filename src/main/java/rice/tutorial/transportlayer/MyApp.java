@@ -39,6 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.transportlayer;
 
+import java.io.IOException;
+
 import java.util.Collections;
 
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
@@ -72,6 +74,14 @@ public class MyApp implements Application {
     // We are only going to use one instance of this application on each PastryNode
     this.endpoint = node.buildEndpoint(this, "myinstance");
 
+    // all messages this application sends are raw; tell the endpoint how to read them back
+    endpoint.setDeserializer((buf, type, priority, sender) -> {
+      if (type == MyMsg.TYPE) {
+        return new MyMsg(buf, endpoint);
+      }
+      throw new IOException("Unknown message type: " + type);
+    });
+
     this.node = node;
 
     // now we can receive messages
@@ -90,7 +100,7 @@ public class MyApp implements Application {
    */
   public void routeMyMsg(Id id) {
     System.out.println(this+" sending to "+id);
-    Message msg = new MyMsg(endpoint.getId(), id);
+    MyMsg msg = new MyMsg(endpoint.getId(), id);
     endpoint.route(id, msg, null, null, Collections.singletonMap(WireTransportLayer.OPTION_TRANSPORT_TYPE, (Object)WireTransportLayer.TRANSPORT_TYPE_DATAGRAM));
   }
 
@@ -99,7 +109,7 @@ public class MyApp implements Application {
    */
   public void routeMyMsgDirect(NodeHandle nh) {
     System.out.println(this+" sending direct to "+nh);
-    Message msg = new MyMsg(endpoint.getId(), nh.getId());
+    MyMsg msg = new MyMsg(endpoint.getId(), nh.getId());
     endpoint.route(null, msg, nh);
   }
 

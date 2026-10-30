@@ -39,18 +39,25 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.forwarding;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
  * An example message.
  *
  * @author Jeff Hoye
  */
-public class MyMsg implements Message {
+public class MyMsg implements RawMessage {
+  public static final short TYPE = 1;
+
   /**
    * Where the Message came from.
    */
@@ -86,5 +93,32 @@ public class MyMsg implements Message {
   ArrayList<NodeHandle> passport = new ArrayList<NodeHandle>();
   public void addHop(NodeHandle hop) {
     passport.add(hop);
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public MyMsg(InputBuffer buf, Endpoint endpoint) throws IOException {
+    from = endpoint.readId(buf, buf.readShort());
+    to = endpoint.readId(buf, buf.readShort());
+    int hops = buf.readInt();
+    for (int i = 0; i < hops; i++) {
+      passport.add(endpoint.readNodeHandle(buf));
+    }
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeShort(from.getType());
+    from.serialize(buf);
+    buf.writeShort(to.getType());
+    to.serialize(buf);
+    buf.writeInt(passport.size());
+    for (NodeHandle hop : passport) {
+      hop.serialize(buf);
+    }
   }
 }

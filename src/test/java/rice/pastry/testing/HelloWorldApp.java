@@ -36,6 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.testing;
 
+import java.io.IOException;
+
 import rice.environment.random.RandomSource;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
@@ -68,6 +70,13 @@ public class HelloWorldApp extends PastryAppl {
 
   public HelloWorldApp(PastryNode pn) {
     super(pn, null, addr, null);
+    // the only message this application sends is a raw HelloMsg
+    setDeserializer((buf, type, priority, sender) -> {
+      if (type == HelloMsg.TYPE) {
+        return new HelloMsg(addr, buf, thePastryNode);
+      }
+      throw new IOException("Unknown message type: " + type);
+    });
     register();
   }
 
@@ -81,7 +90,7 @@ public class HelloWorldApp extends PastryAppl {
     if (logger.isDebugEnabled()) {
       System.out.println("Sending message from " + getNodeId() + " to random dest " + rndid);
     }
-    Message msg = new HelloMsg(addr, thePastryNode.getLocalHandle(), rndid,
+    HelloMsg msg = new HelloMsg(addr, thePastryNode.getLocalHandle(), rndid,
         ++msgid);
     routeMsg(rndid, msg, new SendOptions());
   }

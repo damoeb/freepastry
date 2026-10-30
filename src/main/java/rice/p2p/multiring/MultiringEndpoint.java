@@ -58,8 +58,6 @@ import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.p2p.util.MRHAdapter;
-import rice.p2p.util.rawserialization.JavaSerializedMessage;
 
 /**
  * This class wraps an endpoint and allows for applications to transparently
@@ -120,24 +118,6 @@ public class MultiringEndpoint implements Endpoint {
    * @param message The message to deliver
    * @param hint The first node to send this message to, optional
    */
-  public MessageReceipt route(Id id, Message message, NodeHandle hint) {
-    return route(id, message, hint, null);
-  }
-
-  public MessageReceipt route(Id id, Message message, NodeHandle hint, DeliveryNotification deliverAckToMe) {
-    return route(id, message, hint, deliverAckToMe, null);
-  }
-
-  public MessageReceipt route(Id id, Message message, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    if (message instanceof RawMessage) {
-      return route(id, (RawMessage)message, hint, deliverAckToMe, options);
-    } else {
-      final MRHAdapter ret = new MRHAdapter();
-      return route(id, (RawMessage)new JavaSerializedMessage(message), hint,
-          deliverAckToMe, options);
-    }
-  }
-
   public MessageReceipt route(Id id, RawMessage message, NodeHandle hint) {
     return route(id, message, hint, null);
   }

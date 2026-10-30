@@ -995,7 +995,7 @@ public class PastryNode implements
    * @return a receipt for the message
    */
   public PMessageReceipt send(final NodeHandle handle,
-      final Message msg,
+      final PRawMessage msg,
       final PMessageNotification deliverAckToMe,
       Map<String, Object> tempOptions) {
 

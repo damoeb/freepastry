@@ -44,6 +44,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.NodeSet;
 import rice.pastry.PastryNode;
 import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PRawMessage;
 import rice.pastry.routing.RouteMessage;
 
 /**
@@ -96,7 +97,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * @param msg the message to deliver.
    * @param hint the hint
    */
-  public void route(Id key, Message msg, NodeHandle hint) {
+  public void route(Id key, PRawMessage msg, NodeHandle hint) {
     logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
 
     RouteMessage rm = new RouteMessage(key, msg, hint,

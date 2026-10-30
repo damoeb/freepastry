@@ -36,6 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.testing;
 
+import java.io.IOException;
+
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
@@ -61,6 +63,13 @@ public class Ping extends PastryAppl {
 
   public Ping(PastryNode pn) {
     super(pn);
+    // the only message this application sends is a raw PingMessageNew
+    setDeserializer((buf, type, priority, sender) -> {
+      if (type == PingMessageNew.TYPE) {
+        return new PingMessageNew(pingAddress, buf, (NodeHandle) sender);
+      }
+      throw new IOException("Unknown message type: " + type);
+    });
   }
 
   public int getAddress() {

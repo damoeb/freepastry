@@ -40,15 +40,22 @@ advised of the possibility of such damage.
  */
 package rice.pastry.testing;
 
+import java.io.IOException;
+
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.Message;
+import rice.pastry.PastryNode;
+import rice.pastry.messaging.PRawMessage;
 
 /**
  * @author Jeff Hoye
  *
  */
-public class HelloMsg extends Message {
+public class HelloMsg extends PRawMessage {
+  public static final short TYPE = 1;
+
   public Id target;
   private int msgid;
   public boolean messageDirect = false;
@@ -80,4 +87,25 @@ public class HelloMsg extends Message {
       return msgid;
   }
 
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public HelloMsg(int addr, InputBuffer buf, PastryNode node) throws IOException {
+    super(addr);
+    target = rice.pastry.Id.build(buf);
+    msgid = buf.readInt();
+    messageDirect = buf.readBoolean();
+    src = node.readNodeHandle(buf);
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    target.serialize(buf);
+    buf.writeInt(msgid);
+    buf.writeBoolean(messageDirect);
+    src.serialize(buf);
+  }
 }

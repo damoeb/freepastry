@@ -36,11 +36,16 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.testing;
 
+import java.io.IOException;
+
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PRawMessage;
 import rice.pastry.routing.SendOptions;
 
 /**
@@ -64,6 +69,13 @@ public class PingClient extends PastryAppl {
 
   public PingClient(PastryNode pn) {
     super(pn);
+    // the only message this application sends is a raw PingMessage
+    setDeserializer((buf, type, priority, sender) -> {
+      if (type == PingMessage.TYPE) {
+        return new PingMessage(pingAddress, buf);
+      }
+      throw new IOException("Unknown message type: " + type);
+    });
   }
 
   public int getAddress() {
@@ -121,7 +133,9 @@ public class PingClient extends PastryAppl {
  * DO NOT declare this inside PingClient; see HelloWorldApp for details.
  */
 
-class PingMessage extends Message {
+class PingMessage extends PRawMessage {
+  static final short TYPE = 1;
+
   private Id source;
 
   private Id target;
@@ -130,6 +144,21 @@ class PingMessage extends Message {
     super(pingAddress);
     source = src;
     target = tgt;
+  }
+
+  PingMessage(int pingAddress, InputBuffer buf) throws IOException {
+    super(pingAddress);
+    source = Id.build(buf);
+    target = Id.build(buf);
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    source.serialize(buf);
+    target.serialize(buf);
   }
 
   public String toString() {

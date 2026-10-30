@@ -55,6 +55,8 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.multiring.MultiringNode;
 import rice.pastry.PastryNode;
@@ -430,6 +432,12 @@ public class MultiringRegrTest {
 
     public MultiringTestApp(Node node) {
       this.endpoint = node.buildEndpoint(this, "BLAH");
+      this.endpoint.setDeserializer((buf, type, priority, sender) -> {
+        if (type == MultiringTestMessage.TYPE) {
+          return new MultiringTestMessage(buf, endpoint);
+        }
+        throw new IOException("Unknown message type: " + type);
+      });
       this.endpoint.register();
     }
 
@@ -449,15 +457,30 @@ public class MultiringRegrTest {
     }
   }
 
-  public static class MultiringTestMessage implements Message {
+  public static class MultiringTestMessage implements RawMessage {
+    public static final short TYPE = 1;
+
     public Id source;
 
     public MultiringTestMessage(Id source) {
       this.source = source;
     }
 
+    MultiringTestMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
+      source = endpoint.readId(buf, buf.readShort());
+    }
+
     public int getPriority() {
       return MEDIUM_PRIORITY;
+    }
+
+    public short getType() {
+      return TYPE;
+    }
+
+    public void serialize(OutputBuffer buf) throws IOException {
+      buf.writeShort(source.getType());
+      source.serialize(buf);
     }
   }
 

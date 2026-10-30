@@ -156,21 +156,6 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * @param msg the message to deliver.
    * @param hint the hint
    */
-  public MessageReceipt route(Id key, Message msg, NodeHandle hint) {
-    return route(key, msg, hint, null);
-  }
-  public MessageReceipt route(Id key, Message msg, NodeHandle hint, DeliveryNotification deliverAckToMe) {
-    return route(key, msg, hint, deliverAckToMe, null);
-  }
-
-  public MessageReceipt route(Id key, Message msg, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
-
-    PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
-    return routeHelper(key, pm, hint, deliverAckToMe, options);
-  }
-
-
   /**
    * This duplication of the above code is to make a fast path for the RawMessage.  Though the codeblock
    * looks identical, it is actually calling a different PEM constructor.

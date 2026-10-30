@@ -38,11 +38,14 @@ package rice.pastry.testing;
 
 import java.io.IOException;
 
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.client.CommonAPIAppl;
 import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PRawMessage;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.SendOptions;
 
@@ -74,6 +77,14 @@ public class RegrTestApp extends CommonAPIAppl {
   public RegrTestApp(PastryNode pn, PastryRegrTest prg) {
     super(pn);
     this.prg = prg;
+    // the only message this application sends is a raw RTMessage
+    setDeserializer((buf, type, priority, sender) -> {
+      if (type == RTMessage.TYPE) {
+        return new RTMessage(addr, buf, thePastryNode);
+      }
+      throw new IOException("Unknown message type: " + type);
+    });
+
   }
 
   public int getAddress() {
@@ -229,7 +240,9 @@ public class RegrTestApp extends CommonAPIAppl {
  * DO NOT declare this inside PingClient; see HelloWorldApp for details.
  */
 
-class RTMessage extends Message {
+class RTMessage extends PRawMessage {
+  static final short TYPE = 1;
+
   public NodeHandle sourceNode;
 
   public Id target;
@@ -238,6 +251,21 @@ class RTMessage extends Message {
     super(addr);
     sourceNode = src;
     target = tgt;
+  }
+
+  RTMessage(int addr, InputBuffer buf, PastryNode node) throws IOException {
+    super(addr);
+    sourceNode = node.readNodeHandle(buf);
+    target = Id.build(buf);
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    sourceNode.serialize(buf);
+    target.serialize(buf);
   }
 
   public String toString() {
