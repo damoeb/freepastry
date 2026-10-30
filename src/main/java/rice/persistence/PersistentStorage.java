@@ -120,18 +120,6 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
 public class PersistentStorage implements Storage {
 
   /**
-   * Fields for logging based on the requests we are writing.
-   */
-  private Object statLock = new Object();
-  private long statsLastWritten;
-  private long statsWriteInterval = 60 * 1000;
-  private long numWrites = 0;
-  private long numReads = 0;
-  private long numRenames = 0;
-  private long numDeletes = 0;
-  private long numMetadataWrites = 0;
-
-  /**
    * Static variables defining the layout of the on-disk storage
    */
   public static final long PERSISTENCE_MAGIC_NUMBER = 8038844221L;
@@ -184,6 +172,7 @@ public class PersistentStorage implements Storage {
   private String rootDir;           // rootDirectory
 
   private final StorageQuota quota; // the quota and the space in use
+  private final StorageStatistics stats; // the request counts
 
   Environment environment;
   Logger logger;
@@ -233,7 +222,7 @@ public class PersistentStorage implements Storage {
     this.index = index;
     this.directories = new HashMap<File, File[]>();
     this.prefixes = new HashMap<File, String>();
-    statsLastWritten = environment.getTimeSource().currentTimeMillis();
+    this.stats = new StorageStatistics(name, environment.getTimeSource(), logger);
     if (index) {
       this.dirty = new HashSet<File>();
       this.metadata = new ReverseTreeMap<Id, Serializable>();
@@ -245,17 +234,7 @@ public class PersistentStorage implements Storage {
   }
 
   private void printStats() {
-    synchronized(statLock) {
-      long now = environment.getTimeSource().currentTimeMillis();
-      if ((statsLastWritten/statsWriteInterval) != (now/statsWriteInterval)) {
-        logger.info("@L.PE name={} interval={}-{}", name, statsLastWritten, now);
-        statsLastWritten = now;
-
-        logger.atInfo().log(() -> "@L.PE   objsTotal=" + (index ? "" + metadata.keySet().size() : "?") + " objsBytesTotal=" + getTotalSize());
-        logger.info("@L.PE   numWrites={} numReads={} numDeletes={}", numWrites, numReads, numDeletes);
-        logger.info("@L.PE   numMetadataWrites={} numRenames={}", numMetadataWrites, numRenames);
-      }
-    }
+    stats.printStats(() -> (index ? "" + metadata.keySet().size() : "?"), this::getTotalSize);
   }
 
   /**
@@ -296,7 +275,7 @@ public class PersistentStorage implements Storage {
     environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "rename " + oldId + " " + newId; }
       public Boolean doWork() throws Exception {
-        synchronized(statLock) { numRenames++; }
+        stats.countRename();
 
         File f = getFile(oldId);
 
@@ -350,7 +329,7 @@ public class PersistentStorage implements Storage {
     environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "store " + id; }
       public Boolean doWork() throws Exception {
-        synchronized(statLock) { numWrites++; }
+        stats.countWrite();
 
         logger.atTrace().log(() -> "Storing object " + obj + " under id " + id.toStringFull() + " in root " + appDirectory);
 
@@ -421,7 +400,7 @@ public class PersistentStorage implements Storage {
     environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
       public String toString() { return "unstore " + id; }
       public Boolean doWork() throws Exception {
-        synchronized(statLock) { numDeletes++; }
+        stats.countDelete();
 
         /* first get the file */
         File objFile = getFile(id);
@@ -501,7 +480,7 @@ public class PersistentStorage implements Storage {
       environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
         public String toString() { return "setMetadata " + id; }
         public Boolean doWork() throws Exception {
-          synchronized(statLock) { numMetadataWrites++; }
+          stats.countMetadataWrite();
 
           logger.atTrace().log(() -> "COUNT: Updating metadata for " + id.toStringFull() + " in " + name);
 
@@ -538,7 +517,7 @@ public class PersistentStorage implements Storage {
       environment.getProcessor().processBlockingIO(new WorkRequest<Serializable>(c, environment.getSelectorManager()) {
         public String toString() { return "getObject " + id; }
         public Serializable doWork() throws Exception {
-          synchronized(statLock) { numReads++; }
+          stats.countRead();
 
           /* get the file */
           File objFile = getFile(id);
