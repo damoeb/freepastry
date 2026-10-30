@@ -56,7 +56,6 @@ import rice.p2p.commonapi.exception.TimeoutException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.util.AttachableCancellable;
-import rice.p2p.util.tuples.MutableTuple;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
@@ -207,7 +206,11 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     thePastryNode.addProximityListener(this);
 
     // our best candidate so far, initially null
-    final MutableTuple<NodeHandle, Cancellable> best = new MutableTuple<NodeHandle, Cancellable>();
+    class Best {
+      NodeHandle handle;
+      Cancellable cancellable;
+    }
+    final Best best = new Best();
 
     // get the proximity of everyone in the list
     for (NodeHandle nh : bootHandles) {
@@ -216,8 +219,8 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
         public void receiveResult(Integer result) {
           logger.debug("got proximity for {} in getNearHandles()", handle);
-          if ((best.a() != null) &&
-              (pingCache.get(best.a()).intValue() < result.intValue())) {
+          if ((best.handle != null) &&
+              (pingCache.get(best.handle).intValue() < result.intValue())) {
             // we're not the best, just return
             return;
           }
@@ -225,7 +228,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
           // we are the best
 
           // cancel the last task
-          if (best.b() != null) best.b().cancel();
+          if (best.cancellable != null) best.cancellable.cancel();
 
           // set ourself as best
           Cancellable cancellable = getNearest(handle, new Continuation<Collection<NodeHandle>, Exception>() {
@@ -251,7 +254,8 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
           });
 
           ret.attach(cancellable);
-          best.set(handle, cancellable);
+          best.handle = handle;
+          best.cancellable = cancellable;
         }
 
         public void receiveException(IOException exception) {

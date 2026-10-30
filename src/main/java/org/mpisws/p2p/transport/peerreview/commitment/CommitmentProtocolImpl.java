@@ -96,7 +96,10 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    * We also remember the location of the corresponding RECV entry in the log,
    * so we can reproduce the matching acknowledgment
    */
-  Map<Tuple<Identifier, Long>, ReceiveInfo<Identifier>> receiveCache;
+  /** the key of the receive cache: a sender and its sequence number */
+  record ReceiveKey<I>(I id, long seq) {}
+
+  Map<ReceiveKey<Identifier>, ReceiveInfo<Identifier>> receiveCache;
 
   AuthenticatorStore<Identifier> authStore;
   SecureHistory history;
@@ -145,8 +148,8 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    * Load the last events from the history into the cache
    */
   protected void initReceiveCache() throws IOException {
-    receiveCache = new LinkedHashMap<Tuple<Identifier, Long>, ReceiveInfo<Identifier>>(RECEIVE_CACHE_SIZE, 0.75f, true) {
-      protected boolean removeEldestEntry(Map.Entry<Tuple<Identifier, Long>, ReceiveInfo<Identifier>> eldest) {
+    receiveCache = new LinkedHashMap<ReceiveKey<Identifier>, ReceiveInfo<Identifier>>(RECEIVE_CACHE_SIZE, 0.75f, true) {
+      protected boolean removeEldestEntry(Map.Entry<ReceiveKey<Identifier>, ReceiveInfo<Identifier>> eldest) {
         return size() > RECEIVE_CACHE_SIZE;
       }
     };
@@ -165,7 +168,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
   }
 
   protected void addToReceiveCache(Identifier id, long senderSeq, long indexInLocalHistory) {
-    receiveCache.put(new Tuple<Identifier, Long>(id,senderSeq), new ReceiveInfo<Identifier>(id, senderSeq, indexInLocalHistory));
+    receiveCache.put(new ReceiveKey<Identifier>(id,senderSeq), new ReceiveInfo<Identifier>(id, senderSeq, indexInLocalHistory));
   }
 
   protected PeerInfo<Handle> lookupPeer(Handle handle) {
@@ -412,7 +415,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
   }
 
   protected long findRecvEntry(Identifier id, long seq) {
-    ReceiveInfo<Identifier> ret = receiveCache.get(new Tuple<Identifier, Long>(id,seq));
+    ReceiveInfo<Identifier> ret = receiveCache.get(new ReceiveKey<Identifier>(id,seq));
     if (ret == null) return -1;
     return ret.indexInLocalHistory;
   }

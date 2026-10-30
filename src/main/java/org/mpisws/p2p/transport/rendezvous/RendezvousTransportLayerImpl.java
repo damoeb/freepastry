@@ -68,7 +68,6 @@ import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
-import rice.p2p.util.tuples.MutableTuple;
 import rice.p2p.util.tuples.Tuple;
 import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
@@ -585,7 +584,11 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
             acceptorFailed.receiveSelectResult(acceptorSocket, false, true);
           } else {
             // when both sockets set themselves in this structure, then we can begin forwarding.
-            final MutableTuple<P2PSocket<Identifier>, P2PSocket<Identifier>> forwardSockets = new MutableTuple<P2PSocket<Identifier>, P2PSocket<Identifier>>();
+            class ForwardSockets {
+              P2PSocket<Identifier> connector;
+              P2PSocket<Identifier> acceptor;
+            }
+            final ForwardSockets forwardSockets = new ForwardSockets();
 
             logger.trace("writing success bytes in readAcceptHeader({},{},{},{})", acceptorSocket, target, opener, uid);
             // write success to connectorSocket/acceptorSocket
@@ -596,8 +599,8 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
                 // done, set up the forwarder
                 logger.trace("Connector socket complete, setting up forwarding. readAcceptHeader({},{},{},{})", acceptorSocket, target, opener, uid);
 
-                forwardSockets.setA(result);
-                if (forwardSockets.b() != null) createForwarder(forwardSockets.a(),forwardSockets.b(),opener,target,uid);
+                forwardSockets.connector = result;
+                if (forwardSockets.acceptor != null) createForwarder(forwardSockets.connector,forwardSockets.acceptor,opener,target,uid);
               }
               public void receiveException(Exception exception) {
                 logger.warn("Error writing failed bytes in readAcceptHeader({},{},{},{})", acceptorSocket, target, opener, uid, exception);
@@ -613,8 +616,8 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
                 // done, set up the forwarder
                 logger.trace("Acceptor socket complete, setting up forwarding. readAcceptHeader({},{},{},{})", acceptorSocket, target, opener, uid);
 
-                forwardSockets.setB(result);
-                if (forwardSockets.a() != null) createForwarder(forwardSockets.a(), forwardSockets.b(),opener,target,uid);
+                forwardSockets.acceptor = result;
+                if (forwardSockets.connector != null) createForwarder(forwardSockets.connector, forwardSockets.acceptor,opener,target,uid);
               }
               public void receiveException(Exception exception) {
                 logger.warn("Error writing failed bytes in readAcceptHeader({},{},{},{})", acceptorSocket, target, opener, uid, exception);

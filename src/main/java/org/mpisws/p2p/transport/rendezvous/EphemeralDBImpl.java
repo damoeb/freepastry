@@ -42,7 +42,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.time.TimeSource;
-import rice.p2p.util.tuples.MutableTuple;
 
 public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<Identifier, HighIdentifier> {
   /**
@@ -60,10 +59,13 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
   private long nextTag = NO_TAG+1;
   private final Map<HighIdentifier, Long> highToTag = new HashMap<HighIdentifier, Long>();
   private final Map<Identifier, Long> ephemeralToTag = new HashMap<Identifier, Long>();
+  /** an ephemeral address and when it was last used */
+  private record Ephemeral<I>(I addr, long lastUsed) {}
+
   /**
    * maps tag to ephemeral and timestamp
    */
-  private final Map<Long, MutableTuple<Identifier, Long>> tagToEphemeral = new HashMap<Long, MutableTuple<Identifier,Long>>();
+  private final Map<Long, Ephemeral<Identifier>> tagToEphemeral = new HashMap<Long, Ephemeral<Identifier>>();
 
   /**
    *
@@ -103,18 +105,18 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
   }
 
   public Identifier getEphemeral(long tag, Identifier i) {
-    MutableTuple<Identifier, Long> ret = tagToEphemeral.get(tag);
+    Ephemeral<Identifier> ret = tagToEphemeral.get(tag);
     if (ret == null) {
       logger.debug("getEphemeral({},{}):{}", tag, i, i);
       return i;
     }
-    if (ret.b() < time.currentTimeMillis()-STALE_PORT_TIME) {
+    if (ret.lastUsed() < time.currentTimeMillis()-STALE_PORT_TIME) {
       clear(tag);
       logger.debug("getEphemeral({},{}):{}", tag, i, i);
       return i;
     }
-    logger.atDebug().log(() -> "getEphemeral("+tag+","+i+"):"+ret.a());
-    return ret.a();
+    logger.atDebug().log(() -> "getEphemeral("+tag+","+i+"):"+ret.addr());
+    return ret.addr();
   }
 
   public long getTagForEphemeral(Identifier addr) {
@@ -123,13 +125,13 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
     if (tag == null) {
       // it doesn't exist
     } else {
-      MutableTuple<Identifier, Long> ret = tagToEphemeral.get(tag);
-      if (ret.b() < now-STALE_PORT_TIME) {
+      Ephemeral<Identifier> ret = tagToEphemeral.get(tag);
+      if (ret.lastUsed() < now-STALE_PORT_TIME) {
         // it's stale
         clear(tag);
       } else {
         // update timestamp
-        ret.setB(now);
+        tagToEphemeral.put(tag, new Ephemeral<Identifier>(ret.addr(), now));
         logger.debug("getTagForEphemeral({}):{}", addr, tag);
         return tag;
       }
@@ -137,7 +139,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
 
     // if we're here, we need to create a new one
     tag = nextTag++;
-    MutableTuple<Identifier, Long> ret = new MutableTuple<Identifier, Long>(addr, now);
+    Ephemeral<Identifier> ret = new Ephemeral<Identifier>(addr, now);
     ephemeralToTag.put(addr, tag);
     tagToEphemeral.put(tag,ret);
     logger.debug("getTagForEphemeral({}):{}", addr, tag);
@@ -146,8 +148,8 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
 
   protected void clear(long tag) {
     logger.debug("clear({})", tag);
-    MutableTuple<Identifier, Long> ret = tagToEphemeral.remove(tag);
-    ephemeralToTag.remove(ret.a());
+    Ephemeral<Identifier> ret = tagToEphemeral.remove(tag);
+    ephemeralToTag.remove(ret.addr());
   }
 
 }
