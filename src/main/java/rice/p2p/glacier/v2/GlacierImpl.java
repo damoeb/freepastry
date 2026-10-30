@@ -41,8 +41,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
@@ -110,19 +108,14 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierTrafficShaper trafficShaper;
   private final GlacierTrash trash;
   private final GlacierNeighborhood neighborhood;
   private final GlacierScheduler scheduler;
   private final FragmentLocator locator;
-  private final Hashtable<Id, Continuation<Object, Exception>> pendingTraffic;
   private GlacierStatistics statistics;
   private final Vector<GlacierStatisticsListener> listeners;
   private long currentFragmentRequestTimeout;
-  private long tokenBucket;
-  private long bucketLastUpdated;
-  private long bucketMin;
-  private long bucketMax;
-  private long bucketConsumed;
 
 
 
@@ -139,15 +132,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
 
 
-  private int rateLimitedRequestsPerSecond;
-
-
-  private long bucketTokensPerSecond;
-  private long bucketMaxBurstSize;
 
 
 
-  private int[] numActiveRestores;
+
+
 
 
   private Environment environment;
@@ -163,9 +152,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.config = GlacierConfig.from(environment.getParameters());
     this.syncInterval = config.syncInterval();
     this.syncMaxFragments = config.syncMaxFragments();
-    this.rateLimitedRequestsPerSecond = config.rateLimitedRequestsPerSecond();
-    this.bucketTokensPerSecond = config.bucketTokensPerSecond();
-    this.bucketMaxBurstSize = config.bucketMaxBurstSize();
 
 
 
@@ -173,6 +159,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.neighborStorage = neighborStorageArg;
     this.trash = new GlacierTrash(fragmentStorageArg, logger);
     this.policy = policyArg;
+    this.trafficShaper = new GlacierTrafficShaper(config, numFragmentsArg, environment, logger);
     this.node = nodeArg;
     this.instance = instanceArg;
     this.endpoint = node.buildEndpoint(this, instance);
@@ -216,14 +203,9 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.numSurvivors = numSurvivorsArg;
     this.factory = factoryArg;
     this.locator = new FragmentLocator(factoryArg, numFragmentsArg);
-    this.pendingTraffic = new Hashtable<Id, Continuation<Object, Exception>>();
     this.statistics = new GlacierStatistics(GlacierTags.MAX, environment);
     this.listeners = new Vector<GlacierStatisticsListener>();
-    this.numActiveRestores = new int[1];
-    this.numActiveRestores[0] = 0;
     this.currentFragmentRequestTimeout = config.fragmentRequestTimeoutDefault();
-    this.tokenBucket = 0;
-    this.bucketLastUpdated = environment.getTimeSource().currentTimeMillis();
     this.neighborhood = new GlacierNeighborhood(neighborStorage, factory, endpoint.getLocalNodeHandle().getId(), config.neighborTimeout(), environment, logger);
     neighborhood.determineResponsibleRange();
     endpoint.register();
@@ -370,8 +352,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         terminate();
       }
       public void timeoutExpired() {
-        if (numActiveRestores[0] > 0) {
-          logger.info("Sync postponed; {} fetches pending", numActiveRestores[0]);
+        if (trafficShaper.getActiveRestores() > 0) {
+          logger.info("Sync postponed; {} fetches pending", trafficShaper.getActiveRestores());
           nextTimeout = environment.getTimeSource().currentTimeMillis() + jitterTerm(config.syncRetryInterval());
         } else {
           nextTimeout = environment.getTimeSource().currentTimeMillis() + jitterTerm(syncInterval);
@@ -776,55 +758,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Traffic shaper */
 
-    scheduler.addContinuation(new GlacierContinuation() {
-      long nextTimeout;
-
-      public String toString() {
-        return "Traffic shaper";
-      }
-      public void init() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.rateLimitedCheckInterval();
-      }
-      public void receiveResult(Object o) {
-        logger.warn("TS received object: {}", o);
-      }
-      public void receiveException(Exception e) {
-        logger.warn("TS received exception: ", e);
-      }
-      public long getTimeout() {
-        return nextTimeout;
-      }
-      public void timeoutExpired() {
-        /* Use relative timeout to avoid backlog! */
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + (1 * GlacierConfig.SECONDS);
-
-        if (pendingTraffic.isEmpty()) {
-          logger.debug("Traffic shaper: Idle");
-          nextTimeout += config.rateLimitedCheckInterval();
-          return;
-        }
-
-        int numCurrentRestores = 0;
-        synchronized (numActiveRestores) {
-          numCurrentRestores = numActiveRestores[0];
-        }
-
-        logger.info("Traffic shaper: {} jobs waiting ({} active jobs, {} tokens)", pendingTraffic.size(), numCurrentRestores, tokenBucket);
-
-        updateTokenBucket();
-        if ((numCurrentRestores < config.maxActiveRestores()) && (tokenBucket>0)) {
-          for (int i=0; i<rateLimitedRequestsPerSecond; i++) {
-            if (!pendingTraffic.isEmpty()) {
-              Enumeration<Id> keys = pendingTraffic.keys();
-              Object thisKey = (Object) keys.nextElement();
-              logger.debug("Sending request {}", thisKey);
-              Continuation<Object, Exception> c = pendingTraffic.remove(thisKey);
-              c.receiveResult(Boolean.valueOf(true));
-            }
-          }
-        }
-      }
-    });
+    scheduler.addContinuation(trafficShaper.newShaperTask());
 
     /* Statistics */
 
@@ -850,20 +784,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         nextTimeout += config.statisticsReportInterval();
 
         if (!listeners.isEmpty()) {
-          statistics.setPendingRequests(pendingTraffic.size());
           statistics.setNumNeighbors(neighborStorage.scan().numElements());
           statistics.setNumFragments(fragmentStorage.scan().numElements());
           statistics.setNumContinuations(scheduler.size());
           statistics.setResponsibleRange(neighborhood.getResponsibleRange());
-          statistics.setActiveFetches(numActiveRestores[0]);
-          statistics.setBucketMin(bucketMin);
-          statistics.setBucketMax(bucketMax);
-          statistics.setBucketConsumed(bucketConsumed);
-          statistics.setBucketTokensPerSecond(bucketTokensPerSecond);
-          statistics.setBucketMaxBurstSize(bucketMaxBurstSize);
-          bucketMin = tokenBucket;
-          bucketMax = tokenBucket;
-          bucketConsumed = 0;
+          trafficShaper.addStatistics(statistics);
 
           Storage storageF = fragmentStorage.getStorage();
           if (storageF instanceof PersistentStorage)
@@ -883,23 +808,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         statistics = new GlacierStatistics(GlacierTags.MAX, environment);
       }
     });
-  }
-
-  protected void updateTokenBucket() {
-    final long now = environment.getTimeSource().currentTimeMillis();
-    final long contentsBefore = tokenBucket;
-
-    while (bucketLastUpdated < now) {
-      bucketLastUpdated += GlacierConfig.SECONDS/10;
-      tokenBucket += bucketTokensPerSecond/10;
-      if (tokenBucket > bucketMaxBurstSize)
-        tokenBucket = bucketMaxBurstSize;
-    }
-
-    if (bucketMax < tokenBucket)
-      bucketMax = tokenBucket;
-
-    logger.atDebug().log(() -> "Token bucket contains "+tokenBucket+" tokens (added "+(tokenBucket-contentsBefore)+")");
   }
 
   private long jitterTerm(long basis) {
@@ -1047,7 +955,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         "config.restoreMaxRequestFactor() = " + config.restoreMaxRequestFactor() + "\n" +
         "config.restoreMaxBoosts() = " + config.restoreMaxBoosts() + "\n" +
         "config.rateLimitedCheckInterval() = " + (int)(config.rateLimitedCheckInterval() / GlacierConfig.SECONDS) + " sec\n" +
-        "rateLimitedRequestsPerSecond = " + rateLimitedRequestsPerSecond + "\n";
+        "rateLimitedRequestsPerSecond = " + trafficShaper.getRateLimit() + "\n";
     }
 
     if (cmd.startsWith("flush") && config.faultInjectionEnabled()) {
@@ -1126,7 +1034,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       result = result + fragmentStorage.scan().numElements() + " fragments\n";
       result = result + neighborStorage.scan().numElements() + " neighbors\n";
       result = result + scheduler.size() + " active continuations\n";
-      result = result + pendingTraffic.size() + " pending requests\n";
+      result = result + trafficShaper.numPending() + " pending requests\n";
 
       return result;
     }
@@ -1143,7 +1051,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       for (int i=0; i<numObjects; i++) {
         final Id randomID = factory.buildRandomId(environment.getRandomSource());
         result = result + randomID.toStringFull() + "\n";
-        pendingTraffic.put(new VersionKey(randomID, 0), new Continuation.SimpleContinuation() {
+        trafficShaper.enqueue(new VersionKey(randomID, 0), new Continuation.SimpleContinuation() {
           public void receiveResult(Object o) {
             insert(
               new DebugContent(randomID, false, 0, new byte[] {}),
@@ -1434,7 +1342,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         logger.atInfo().log(() -> "refresh("+thisId.toStringFull()+"v"+thisVersion+", exp="+thisExpiration+")");
 
         final VersionKey thisVersionKey = new VersionKey(thisId, thisVersion);
-        Continuation<Object, Exception> prev = pendingTraffic.put(thisVersionKey, new Continuation.SimpleContinuation() {
+        Continuation<Object, Exception> prev = trafficShaper.enqueue(thisVersionKey, new Continuation.SimpleContinuation() {
           public void receiveResult(Object o) {
             retrieveManifest(thisVersionKey, GlacierTags.REFRESH, new Continuation<Object, Exception>() {
               public void receiveResult(Object o) {
@@ -2275,9 +2183,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         return "retrieveObject("+key+")";
       }
       public void init() {
-        synchronized (numActiveRestores) {
-          numActiveRestores[0] ++;
-        }
+        trafficShaper.restoreStarted();
 
         checkedFragment = new boolean[numFragments];
         haveFragment = new Fragment[numFragments];
@@ -2290,9 +2196,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         timeoutExpired();
       }
       private void localTerminate() {
-        synchronized (numActiveRestores) {
-          numActiveRestores[0] --;
-        }
+        trafficShaper.restoreFinished();
 
         terminate();
       }
@@ -2587,13 +2491,13 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   public void rateLimitedRetrieveFragment(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation c) {
     logger.debug("rateLimitedRetrieveFragment({})", key);
-    if (pendingTraffic.containsKey(key)) {
+    if (trafficShaper.isPending(key)) {
       logger.debug("Fragment is already being retrieved -- discarding request");
       return;
     }
 
     logger.debug("Added pending job: retrieveFragment({})", key);
-    Continuation<Object, Exception> prev = pendingTraffic.put(key, new Continuation.SimpleContinuation() {
+    Continuation<Object, Exception> prev = trafficShaper.enqueue(key, new Continuation.SimpleContinuation() {
       public void receiveResult(Object o) {
         retrieveFragment(key, manifest, tag, c);
       }
@@ -2608,24 +2512,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     final GlacierMessage msg = (GlacierMessage) message;
     logger.debug("Received message {} with destination {} from {}", msg, id, msg.getSource().getId());
 
-    if (msg instanceof GlacierDataMessage) {
-      GlacierDataMessage gdm = (GlacierDataMessage) msg;
-      long thisSize = 1000;
-      updateTokenBucket();
-      for (int i=0; i<gdm.numKeys(); i++) {
-        if (gdm.getFragment(i) != null)
-          thisSize += gdm.getFragment(i).getPayload().length;
-        if (gdm.getManifest(i) != null)
-          thisSize += numFragments * 21;
-      }
-
-      tokenBucket -= thisSize;
-      bucketConsumed += thisSize;
-      if (bucketMin > tokenBucket)
-        bucketMin = tokenBucket;
-
-      logger.debug("Token bucket contains {} tokens (consumed {})", tokenBucket, thisSize);
-    }
+    if (msg instanceof GlacierDataMessage)
+      trafficShaper.charge((GlacierDataMessage) msg);
 
     if (msg.isResponse()) {
       GlacierContinuation gc = scheduler.get(msg.getUID());
@@ -3291,7 +3179,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public void setRateLimit(int rps) {
-    this.rateLimitedRequestsPerSecond = rps;
+    trafficShaper.setRateLimit(rps);
   }
 
   public void setNeighborTimeout(long neighborTimeoutMin) {
@@ -3299,8 +3187,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public void setBandwidthLimit(long bytesPerSecond, long maxBurst) {
-    this.bucketTokensPerSecond = bytesPerSecond;
-    this.bucketMaxBurstSize = maxBurst;
+    trafficShaper.setBandwidthLimit(bytesPerSecond, maxBurst);
   }
 
   public long getTrashSize() {
