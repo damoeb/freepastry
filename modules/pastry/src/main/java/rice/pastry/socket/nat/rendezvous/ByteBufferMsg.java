@@ -76,7 +76,7 @@ public final class ByteBufferMsg extends PRawMessage implements RendezvousMessag
     buf.writeByte((byte)0); // version
     originalSender.serialize(buf);
     buf.writeInt(buffer.remaining());
-    buf.write(buffer.array(), buffer.position(), buffer.remaining());
+    buf.write(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
   }
 
   public NodeHandle getOriginalSender() {
