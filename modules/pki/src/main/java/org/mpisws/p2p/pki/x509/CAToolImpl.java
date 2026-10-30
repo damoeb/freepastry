@@ -65,6 +65,7 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import javax.security.auth.x500.X500Principal;
@@ -138,7 +139,7 @@ public class CAToolImpl implements CATool {
       caPair = new KeyPair(caCert.getPublicKey(),priv);
     } else {
       // make a self-signed cert
-      Instant exp = ZonedDateTime.now().plusYears(10).toInstant();
+      Instant exp = ZonedDateTime.now(ZoneOffset.UTC).plusYears(10).toInstant();
       Tuple<X509Certificate, KeyPair> t = generateNewCA(CN, exp);
       caCert = t.a();
       caPair = t.b();
@@ -217,7 +218,7 @@ public class CAToolImpl implements CATool {
 
   @Override
   public X509Certificate sign(String CN, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
-    Instant exp = ZonedDateTime.now().plusYears(1).toInstant();
+    Instant exp = ZonedDateTime.now(ZoneOffset.UTC).plusYears(1).toInstant();
     return sign(CN,key,exp,System.currentTimeMillis());
   }
 
@@ -225,7 +226,7 @@ public class CAToolImpl implements CATool {
     X500Principal subjectName = new X500Principal("CN="+CN);
 
     X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
-        caCert.getSubjectX500Principal(), BigInteger.valueOf(serialNumber), new Date(), Date.from(expiryDate),
+        caCert.getSubjectX500Principal(), BigInteger.valueOf(serialNumber), Date.from(Instant.now()), Date.from(expiryDate),
         subjectName, publicKey);
 
     try {

@@ -91,7 +91,7 @@ public class SSLTest {
 
   Environment rootEnv;
   List<SSLTransportLayerImpl<InetSocketAddress, ByteBuffer>> layers = new ArrayList<SSLTransportLayerImpl<InetSocketAddress, ByteBuffer>>();
-  Map<Object, Environment> environments = new IdentityHashMap<Object, Environment>();
+  IdentityHashMap<Object, Environment> environments = new IdentityHashMap<Object, Environment>();
   InetAddress addr;
   int alicePort;
   int bobPort;
@@ -277,6 +277,7 @@ public class SSLTest {
   }
 
   @Test
+  @SuppressWarnings("FutureReturnValueIgnored") // the handshake fails on alice's side; aliceError is what is checked
   void serverRejectsClientCertificateFromUntrustedCa() throws Exception {
     SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), null), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
     SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store("bob", ca(true), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);

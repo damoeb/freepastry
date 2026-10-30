@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,8 +33,8 @@ public class CAToolImplTest {
 
     assertEquals(CAToolImpl.DEFAULT_KEY_SIZE, ((RSAPublicKey) node.getPublic()).getModulus().bitLength());
     assertEquals(CAToolImpl.DEFAULT_KEY_SIZE, ((RSAPublicKey) ca.getCertificate().getPublicKey()).getModulus().bitLength());
-    assertEquals("SHA256WITHRSA", cert.getSigAlgName().toUpperCase());
-    assertEquals("SHA256WITHRSA", ca.getCertificate().getSigAlgName().toUpperCase());
+    assertEquals("SHA256WITHRSA", cert.getSigAlgName().toUpperCase(Locale.ROOT));
+    assertEquals("SHA256WITHRSA", ca.getCertificate().getSigAlgName().toUpperCase(Locale.ROOT));
     cert.verify(ca.getCertificate().getPublicKey());
   }
 
