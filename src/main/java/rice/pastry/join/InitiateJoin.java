@@ -86,8 +86,8 @@ public class InitiateJoin extends Message implements Serializable {
    * @return the handle.
    */
   public NodeHandle getHandle() {
-    for (int i = 0; i < handle.length; i++) {
-      if (handle[i].getLiveness() < NodeHandle.LIVENESS_DEAD) return handle[i];
+    for (NodeHandle nodeHandle : handle) {
+      if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) return nodeHandle;
     }
     return null;
   }

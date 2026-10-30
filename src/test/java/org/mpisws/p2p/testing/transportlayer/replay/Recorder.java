@@ -296,9 +296,7 @@ public class Recorder implements MyEvents {
   public static void printTree(ArrayList<MyScribeClient> apps) {
     // build a hashtable of the apps, keyed by nodehandle
     Hashtable<NodeHandle,MyScribeClient> appTable = new Hashtable<NodeHandle,MyScribeClient>();
-    Iterator<MyScribeClient> i = apps.iterator();
-    while (i.hasNext()) {
-      MyScribeClient app = (MyScribeClient) i.next();
+    for (MyScribeClient app : apps) {
       appTable.put(app.endpoint.getLocalNodeHandle(), app);
     }
     NodeHandle seed = ((MyScribeClient) apps.get(0)).endpoint
@@ -338,8 +336,8 @@ public class Recorder implements MyEvents {
     // recursively print all children
     MyScribeClient app = (MyScribeClient) appTable.get(curNode);
     NodeHandle[] children = app.getChildren();
-    for (int curChild = 0; curChild < children.length; curChild++) {
-      recursivelyPrintChildren(children[curChild], recursionDepth + 1, appTable);
+    for (NodeHandle nodeHandle : children) {
+      recursivelyPrintChildren(nodeHandle, recursionDepth + 1, appTable);
     }
   }
 

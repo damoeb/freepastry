@@ -1297,9 +1297,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             storeAggregate(aggregateFactory.buildAggregate(components, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
               public void receiveResult(Boolean o) {
                 logger.info("Consolidated Aggregate stored OK, removing old descriptors...");
-                for (int i=0; i<adc.length; i++) {
-                  if (logger.isDebugEnabled()) logger.debug("Removing "+adc[i].key.toStringFull()+" ...");
-                  aggregateList.removeAggregateDescriptor(adc[i]);
+                for (AggregateDescriptor aggregateDescriptor : adc) {
+                  if (logger.isDebugEnabled()) logger.debug("Removing "+aggregateDescriptor.key.toStringFull()+" ...");
+                  aggregateList.removeAggregateDescriptor(aggregateDescriptor);
                 }
 
                 aggregateList.writeToDisk();
@@ -1803,12 +1803,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           PastContentHandle[] pch = (PastContentHandle[]) o;
           PastContentHandle bestHandle = null;
 
-          for (int i=0; i<pch.length; i++) {
-            if ((pch[i] == null) || ((pch[i] instanceof GCPastContentHandle) && (((GCPastContentHandle)pch[i]).getVersion() != 0)))
+          for (PastContentHandle pastContentHandle : pch) {
+            if ((pastContentHandle == null) || ((pastContentHandle instanceof GCPastContentHandle) && (((GCPastContentHandle)pastContentHandle).getVersion() != 0)))
               continue;
 
             if (bestHandle == null)
-              bestHandle = pch[i];
+              bestHandle = pastContentHandle;
           }
 
           if (bestHandle != null) {
@@ -1877,9 +1877,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                   Id[] pointers = aggr.getPointers();
                   int numAdded = 0;
                   if (pointers != null) {
-                    for (int i=0; i<pointers.length; i++) {
-                      if (pointers[i] instanceof Id) {
-                        Id thisPointer = pointers[i];
+                    for (Id pointer : pointers) {
+                      if (pointer instanceof Id) {
+                        Id thisPointer = pointer;
                         if (!keysDone.contains(thisPointer) && !keysPostponed.contains(thisPointer) && !keysInProgress.contains(thisPointer)) {
                           if (keysInProgress.size() >= reconstructionMaxConcurrentLookups)
                             keysPostponed.add(thisPointer);

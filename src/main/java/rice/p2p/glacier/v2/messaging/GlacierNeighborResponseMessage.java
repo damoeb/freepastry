@@ -93,9 +93,9 @@ public class GlacierNeighborResponseMessage extends GlacierMessage {
     }
 
     buf.writeInt(neighbors.length);
-    for (int i = 0; i < neighbors.length; i++) {
-      buf.writeShort(neighbors[i].getType());
-      neighbors[i].serialize(buf);
+    for (Id neighbor : neighbors) {
+      buf.writeShort(neighbor.getType());
+      neighbor.serialize(buf);
     }
   }
 

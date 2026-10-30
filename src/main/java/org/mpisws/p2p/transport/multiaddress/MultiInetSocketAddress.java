@@ -83,8 +83,8 @@ public class MultiInetSocketAddress implements Serializable {
    */
   public int hashCode() {
     int result = 31173;
-    for (int i = 0; i < address.length; i++) {
-      result ^=  address[i].hashCode();
+    for (InetSocketAddress inetSocketAddress : address) {
+      result ^=  inetSocketAddress.hashCode();
     }
     return result;
   }
@@ -199,15 +199,15 @@ public class MultiInetSocketAddress implements Serializable {
    */
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)address.length);
-    for (int ctr = 0; ctr < address.length; ctr++) {
-      serializer.serialize(address[ctr], buf);
+    for (InetSocketAddress inetSocketAddress : address) {
+      serializer.serialize(inetSocketAddress, buf);
     }
   }
 
   public short getSerializedLength() {
     int ret = 1; // num addresses
-    for (int ctr = 0; ctr < address.length; ctr++) {
-      ret += serializer.getSerializedLength(address[ctr]);
+    for (InetSocketAddress inetSocketAddress : address) {
+      ret += serializer.getSerializedLength(inetSocketAddress);
     }
     return (short)ret;
   }

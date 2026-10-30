@@ -117,9 +117,9 @@ public class GCRefreshMessage extends ContinuationMessage {
     }
 
     buf.writeInt(keys.length);
-    for (int i = 0; i < keys.length; i++) {
-      buf.writeShort(keys[i].getType());
-      keys[i].serialize(buf);
+    for (GCId key : keys) {
+      buf.writeShort(key.getType());
+      key.serialize(buf);
     }
   }
 

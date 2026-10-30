@@ -550,8 +550,8 @@ public abstract class CommonAPITest {
   public static Environment parseArgs(String args[]) throws IOException {
     // process command line arguments
 
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-help")) {
+    for (String arg : args) {
+      if (arg.equals("-help")) {
         System.out.println("Usage: DistCommonAPITest [-params paramsfile] [-port p] [-protocol (direct|socket)] [-bootstrap host[:port]] [-help]");
         System.exit(1);
       }

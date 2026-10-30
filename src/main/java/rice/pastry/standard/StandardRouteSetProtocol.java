@@ -125,8 +125,8 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
       if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
         routeTable.put(nh);
 
-      for (int i = 0; i < row.length; i++) {
-        RouteSet rs = row[i];
+      for (RouteSet routeSet : row) {
+        RouteSet rs = routeSet;
 
         for (int j = 0; rs != null && j < rs.size(); j++) {
           nh = rs.get(j);

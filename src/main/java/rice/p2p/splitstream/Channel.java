@@ -144,9 +144,9 @@ public class Channel {
    * @return Stripe The Stripe object that is the primary stripe.
    */
   protected Stripe getPrimaryStripe() {
-    for(int i = 0; i < stripes.length; i++) {
-      if (SplitStreamScribePolicy.getPrefixMatch(this.localId, stripes[i].getStripeId().getId(), stripeBase) > 0)
-        return stripes[i];
+    for (Stripe stripe : stripes) {
+      if (SplitStreamScribePolicy.getPrefixMatch(this.localId, stripe.getStripeId().getId(), stripeBase) > 0)
+        return stripe;
     }
 
     return null;

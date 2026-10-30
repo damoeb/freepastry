@@ -603,8 +603,8 @@ public class MultiringRegrTest {
   protected static void parseArgs(String args[]) {
     // process command line arguments
 
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-help")) {
+    for (String arg : args) {
+      if (arg.equals("-help")) {
         System.out.println("Usage: DistCommonAPITest [-port p] [-protocol (rmi|wire)] [-bootstrap host[:port]] [-help]");
         System.exit(1);
       }

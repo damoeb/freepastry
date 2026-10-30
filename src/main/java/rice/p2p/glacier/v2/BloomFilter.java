@@ -162,8 +162,8 @@ public class BloomFilter implements Serializable {
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeInt(hashParams.length);
-    for (int i = 0; i < hashParams.length; i++) {
-      buf.writeInt(hashParams[i]);
+    for (int hashParam : hashParams) {
+      buf.writeInt(hashParam);
     }
     buf.writeInt(bitfield.length);
     buf.write(bitfield, 0, bitfield.length);

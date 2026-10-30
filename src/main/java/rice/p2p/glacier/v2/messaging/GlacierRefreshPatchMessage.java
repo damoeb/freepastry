@@ -95,19 +95,19 @@ public class GlacierRefreshPatchMessage extends GlacierMessage {
     super.serialize(buf);
 
     buf.writeInt(lifetimes.length);
-    for (int i = 0; i < lifetimes.length; i++) {
-      buf.writeLong(lifetimes[i]);
+    for (long lifetime : lifetimes) {
+      buf.writeLong(lifetime);
     }
 
     buf.writeInt(keys.length);
-    for (int i = 0; i < keys.length; i++) {
-      keys[i].serialize(buf);
+    for (VersionKey key : keys) {
+      key.serialize(buf);
     }
 
     buf.writeInt(signatures.length);
-    for (int i = 0; i < signatures.length; i++) {
-      buf.writeInt(signatures[i].length);
-      buf.write(signatures[i], 0, signatures[i].length);
+    for (byte[] signature : signatures) {
+      buf.writeInt(signature.length);
+      buf.write(signature, 0, signature.length);
     }
   }
 

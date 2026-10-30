@@ -379,9 +379,7 @@ public class RoutingTableTest {
       return n1.getId().compareTo(n2.getId());
     });
 
-    Iterator<PastryNode> i = nds.iterator();
-    while(i.hasNext()) {
-      PastryNode n = (PastryNode)i.next();
+    for (PastryNode n : nds) {
       System.out.println(n.isReady()+" "+n.getLeafSet());
     }
   }
@@ -421,16 +419,11 @@ public class RoutingTableTest {
   private double testRoutingTables1() {
 
     // for each node
-    Iterator<PastryNode> nodeIterator = nodes.iterator();
     int ctr = 0;
     double acc = 0;
-
-    while(nodeIterator.hasNext()) {
-      PastryNode node = (PastryNode)nodeIterator.next();
+    for (PastryNode node : nodes) {
       RoutingTable rt = node.getRoutingTable();
-      Iterator<PastryNode> i2 = nodes.iterator();
-      while(i2.hasNext()) {
-        PastryNode that = (PastryNode)i2.next();
+      for (PastryNode that : nodes) {
         if ((that != node) && that.isReady() && node.isReady()) {
           NodeHandle thatHandle = that.getLocalHandle();
           int latency = calcLatency(node,thatHandle);
@@ -480,18 +473,14 @@ public class RoutingTableTest {
 
   private int testRoutingTables2() {
     // for each node
-    Iterator<PastryNode> nodeIterator = nodes.iterator();
     int curNodeIndex = 0;
     int ctr = 0;
     int[] ctrs = new int[5];
-    while(nodeIterator.hasNext()) {
-      PastryNode node = (PastryNode)nodeIterator.next();
+    for (PastryNode node : nodes) {
       if (!node.isReady()) continue;
       PastryNode temp = DirectPastryNode.setCurrentNode(node);
       RoutingTable rt = node.getRoutingTable();
-      Iterator<PastryNode> i2 = nodes.iterator();
-      while(i2.hasNext()) {
-        PastryNode that = (PastryNode)i2.next();
+      for (PastryNode that : nodes) {
         if (!that.isReady()) continue;
         NodeHandle thatHandle = that.getLocalHandle();
         int response = rt.test(thatHandle);

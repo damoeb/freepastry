@@ -42,7 +42,6 @@ package rice.environment;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import org.slf4j.Logger;
 import rice.Destructable;
@@ -269,9 +268,7 @@ public class Environment implements Destructable {
   }
 
   private void callDestroyOnDestructables() {
-    Iterator<Destructable> i = new ArrayList<Destructable>(destructables).iterator();
-    while(i.hasNext()) {
-      Destructable d = (Destructable)i.next();
+    for (Destructable d : new ArrayList<Destructable>(destructables)) {
       d.destroy();
     }
     selectorManager.destroy();

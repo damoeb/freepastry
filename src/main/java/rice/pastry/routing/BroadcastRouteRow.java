@@ -118,8 +118,8 @@ public class BroadcastRouteRow extends PRawMessage implements Serializable {
 
   public String toStringFull() {
     String s = "BRR{"+fromNode+"}:";
-    for (int i = 0; i < row.length; i++) {
-      s+=row[i]+"|";
+    for (RouteSet routeSet : row) {
+      s+=routeSet+"|";
     }
     return s;
   }
@@ -133,10 +133,10 @@ public class BroadcastRouteRow extends PRawMessage implements Serializable {
     buf.writeByte((byte)0); // version
     fromNode.serialize(buf);
     buf.writeByte((byte) row.length);
-    for (int i=0; i<row.length; i++) {
-      if (row[i] != null) {
+    for (RouteSet routeSet : row) {
+      if (routeSet != null) {
         buf.writeBoolean(true);
-        row[i].serialize(buf);
+        routeSet.serialize(buf);
       } else {
         buf.writeBoolean(false);
       }

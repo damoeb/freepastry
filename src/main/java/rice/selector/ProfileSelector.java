@@ -149,9 +149,8 @@ public class ProfileSelector extends SelectorManager {
 
       return Long.compare(stat2.totalTime, stat1.totalTime);
     });
-    Iterator<Stat> i = list.iterator();
-    while(i.hasNext()) {
-      System.out.println("  "+i.next());
+    for (Stat stat : list) {
+      System.out.println("  "+stat);
     }
   }
 
@@ -168,64 +167,64 @@ public class ProfileSelector extends SelectorManager {
   protected void doSelections() throws IOException {
     SelectionKey[] keys = selectedKeys();
 
-    for (int i = 0; i < keys.length; i++) {
-      selector.selectedKeys().remove(keys[i]);
+    for (SelectionKey key : keys) {
+      selector.selectedKeys().remove(key);
 
-      SelectionKeyHandler skh = (SelectionKeyHandler) keys[i].attachment();
+      SelectionKeyHandler skh = (SelectionKeyHandler) key.attachment();
 
       if (skh != null) {
         // accept
-        if (keys[i].isValid() && keys[i].isAcceptable()) {
+        if (key.isValid() && key.isAcceptable()) {
           lastTaskType = "Accept";
           lastTaskClass = skh.getClass().getName();
           lastTaskToString = skh.toString();
           lastTaskHash = System.identityHashCode(skh);
           long startTime = timeSource.currentTimeMillis();
-          skh.accept(keys[i]);
+          skh.accept(key);
           int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Accept Complete";
           addStat("accepting",time);
         }
 
         // connect
-        if (keys[i].isValid() && keys[i].isConnectable()) {
+        if (key.isValid() && key.isConnectable()) {
           lastTaskType = "Connect";
           lastTaskClass = skh.getClass().getName();
           lastTaskToString = skh.toString();
           lastTaskHash = System.identityHashCode(skh);
           long startTime = timeSource.currentTimeMillis();
-          skh.connect(keys[i]);
+          skh.connect(key);
           int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Connect Complete";
           addStat("connecting",time);
         }
 
         // read
-        if (keys[i].isValid() && keys[i].isReadable()) {
+        if (key.isValid() && key.isReadable()) {
           lastTaskType = "Read";
           lastTaskClass = skh.getClass().getName();
           lastTaskToString = skh.toString();
           lastTaskHash = System.identityHashCode(skh);
           long startTime = timeSource.currentTimeMillis();
-          skh.read(keys[i]);
+          skh.read(key);
           int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Read Complete";
         }
 
         // write
-        if (keys[i].isValid() && keys[i].isWritable()) {
+        if (key.isValid() && key.isWritable()) {
           lastTaskType = "Write";
           lastTaskClass = skh.getClass().getName();
           lastTaskToString = skh.toString();
           lastTaskHash = System.identityHashCode(skh);
           long startTime = timeSource.currentTimeMillis();
-          skh.write(keys[i]);
+          skh.write(key);
           int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Write Complete";
         }
       } else {
-        keys[i].channel().close();
-        keys[i].cancel();
+        key.channel().close();
+        key.cancel();
       }
     }
   }

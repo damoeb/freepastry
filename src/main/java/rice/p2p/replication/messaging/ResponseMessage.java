@@ -101,8 +101,8 @@ public class ResponseMessage extends ReplicationMessage {
 
   public String toString() {
     int numResponses = 0;
-    for (int a = 0; a < ids.length; a++) {
-      numResponses+=ids[a].length;
+    for (Id[] id : ids) {
+      numResponses+=id.length;
     }
     return "ResponseMessage("+getSource()+"):"+numResponses;
   }
@@ -119,8 +119,8 @@ public class ResponseMessage extends ReplicationMessage {
     // encode the ids table
     // the table must be full: rows and entries are written without null markers
     buf.writeInt(ids.length);
-    for (int i=0; i<ids.length; i++) {
-      Id[] thisRow = ids[i];
+    for (Id[] id : ids) {
+      Id[] thisRow = id;
         buf.writeInt(thisRow.length);
         for (int j=0; j<thisRow.length; j++) {
             buf.writeShort(thisRow[j].getType());
@@ -130,8 +130,8 @@ public class ResponseMessage extends ReplicationMessage {
 
     // ranges
     buf.writeInt(ranges.length);
-    for (int i = 0; i < ranges.length; i++) {
-      ranges[i].serialize(buf);
+    for (IdRange range : ranges) {
+      range.serialize(buf);
     }
   }
 

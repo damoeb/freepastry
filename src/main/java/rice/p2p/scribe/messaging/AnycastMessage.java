@@ -39,7 +39,6 @@ package rice.p2p.scribe.messaging;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import rice.p2p.commonapi.Endpoint;
@@ -278,15 +277,13 @@ public class AnycastMessage extends ScribeMessage {
     initialRequestor.serialize(buf);
 
     buf.writeInt(toVisit.size());
-    Iterator<NodeHandle> i = toVisit.iterator();
-    while(i.hasNext()) {
-      ((NodeHandle)i.next()).serialize(buf);
+    for (NodeHandle nh : toVisit) {
+      nh.serialize(buf);
     }
 
     buf.writeInt(visited.size());
-    i = visited.iterator();
-    while(i.hasNext()) {
-      ((NodeHandle)i.next()).serialize(buf);
+    for (NodeHandle nh : visited) {
+      nh.serialize(buf);
     }
 
     if (content == null) {

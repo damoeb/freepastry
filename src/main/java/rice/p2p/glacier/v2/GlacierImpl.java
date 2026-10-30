@@ -3489,8 +3489,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         }
         public void respond() {
           int totalSuccesses = 0;
-          for (int i=0; i<successes.length; i++)
-            totalSuccesses += successes[i];
+          for (int success : successes)
+            totalSuccesses += success;
 
           logger.debug("AR Patch: Sending response ({} updates total)", totalSuccesses);
 

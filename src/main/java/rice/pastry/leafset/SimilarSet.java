@@ -41,7 +41,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Observer;
 
@@ -452,9 +451,7 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
           if (clockwise) return a.getId().compareTo(b.getId());
           return b.getId().compareTo(a.getId());
         });
-        Iterator<NodeHandle> i = toUse.iterator();
-        while(i.hasNext()) {
-          NodeHandle nh = i.next();
+        for (NodeHandle nh : toUse) {
           if (put(nh)) {
           }
         }

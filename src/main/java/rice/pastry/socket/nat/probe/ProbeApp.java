@@ -138,9 +138,7 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
 
   public Collection<InetSocketAddress> getExternalAddresses() {
     ArrayList<InetSocketAddress> ret = new ArrayList<InetSocketAddress>();
-    Iterator<NodeHandle> i = thePastryNode.getLeafSet().iterator();
-    while(i.hasNext()) {
-      NodeHandle nh = i.next();
+    for (NodeHandle nh : thePastryNode.getLeafSet()) {
       RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)nh;
       if (rsnh.canContactDirect()) {
         ret.add(rsnh.getInetSocketAddress());

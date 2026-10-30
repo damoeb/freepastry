@@ -111,8 +111,8 @@ public class MySplitStreamClient implements SplitStreamClient {
   }
 
   public void subscribeToAllChannels() {
-    for (int i = 0; i < stripes.length; i++) {
-      stripes[i].subscribe(this);
+    for (Stripe stripe : stripes) {
+      stripe.subscribe(this);
     }
   }
 
@@ -150,8 +150,8 @@ public class MySplitStreamClient implements SplitStreamClient {
   }
 
   public void publishAll(byte[] b) {
-    for (int i = 0; i < stripes.length; i++) {
-      publish(b, stripes[i]);
+    for (Stripe stripe : stripes) {
+      publish(b, stripe);
     }
   }
 

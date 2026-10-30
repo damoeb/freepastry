@@ -121,15 +121,15 @@ public class RawAggregate extends Aggregate implements RawGCPastContent {
    */
   private void serializeHelper(OutputBuffer buf) throws IOException {
     buf.writeShort((short)pointers.length);
-    for (int i = 0; i < pointers.length; i++) {
-      buf.writeShort(pointers[i].getType());
-      pointers[i].serialize(buf);
+    for (Id pointer : pointers) {
+      buf.writeShort(pointer.getType());
+      pointer.serialize(buf);
     }
 
     buf.writeShort((short)rawComponents.length);
-    for (int i = 0; i < rawComponents.length; i++) {
-      buf.writeShort(rawComponents[i].getType());
-      rawComponents[i].serialize(buf);
+    for (RawGCPastContent rawComponent : rawComponents) {
+      buf.writeShort(rawComponent.getType());
+      rawComponent.serialize(buf);
     }
   }
 

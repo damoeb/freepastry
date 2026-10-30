@@ -122,11 +122,9 @@ public class SubscribeAckMessage extends AbstractSubscribeMessage {
     buf.writeInt(numTopics);
 
 
-    Iterator<Topic> j = topics.iterator();
     Iterator<List<Id>> i = pathsToRoot.iterator();
-
-    while (j.hasNext()) {
-      j.next().serialize(buf);
+    for (Topic topic : topics) {
+      topic.serialize(buf);
       List<Id> pathToRoot = i.next();
       buf.writeInt(pathToRoot.size());
       for (Id id : pathToRoot) {

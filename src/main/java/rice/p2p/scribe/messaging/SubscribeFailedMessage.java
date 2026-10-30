@@ -39,7 +39,6 @@ package rice.p2p.scribe.messaging;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import rice.p2p.commonapi.Endpoint;
@@ -81,10 +80,8 @@ public class SubscribeFailedMessage extends AbstractSubscribeMessage {
 
     int numTopics = topics.size();
     buf.writeInt(numTopics);
-    Iterator<Topic> i = topics.iterator();
-
-    while (i.hasNext()) {
-      i.next().serialize(buf);
+    for (Topic topic : topics) {
+      topic.serialize(buf);
     }
   }
 

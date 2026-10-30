@@ -58,8 +58,8 @@ public class RendezvousScribeTest {
    * [-help]
    */
   public static void main(String args[]) throws IOException {
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-tofile")) {
+    for (String arg : args) {
+      if (arg.equals("-tofile")) {
         System.setOut(new PrintStream("delme.txt"));
         System.setErr(System.out);
         break;

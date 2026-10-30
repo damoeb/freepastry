@@ -826,9 +826,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
                 lookupHandles(id, replicationFactor+1, new Continuation<PastContentHandle[], Exception>() {
                   public void receiveResult(PastContentHandle[] handles) {
 
-                    for (int i=0; i<handles.length; i++) {
-                      if (handles[i] != null) {
-                        fetch(handles[i], new StandardContinuation<PastContent, PastContent, Exception>(parent) {
+                    for (PastContentHandle handle : handles) {
+                      if (handle != null) {
+                        fetch(handle, new StandardContinuation<PastContent, PastContent, Exception>(parent) {
                           public void receiveResult(final PastContent o) {
                             // lastly, try and cache object locally for future use
                             if (cache) {

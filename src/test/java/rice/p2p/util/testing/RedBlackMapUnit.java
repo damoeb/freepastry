@@ -121,10 +121,8 @@ public class RedBlackMapUnit {
   }
 
   protected static void printMap(SortedMap<Id, Long> map) {
-    Iterator<Id> i = map.keySet().iterator();
-
-    while (i.hasNext())
-      System.out.print(" " + i.next() + ",");
+    for (Id id : map.keySet())
+      System.out.print(" " + id + ",");
 
     System.out.println();
   }
@@ -215,11 +213,8 @@ public class RedBlackMapUnit {
   }
 
   protected static void testHeadMap(Id head, Id[] sorted, SortedMap<Id, Long> sub) {
-    Iterator<Id> it = sub.keySet().iterator();
     int count = 0;
-
-    while (it.hasNext()) {
-      Id next = (Id) it.next();
+    for (Id next : sub.keySet()) {
 
       if (next != sorted[count])
         throw new RuntimeException("FAILURE: Head test expected element " + sorted[count] + " got " + next);
@@ -235,11 +230,8 @@ public class RedBlackMapUnit {
   }
 
   protected static void testTailMap(Id tail, Id[] sorted, SortedMap<Id, Long> sub) {
-    Iterator<Id> it = sub.keySet().iterator();
     int count = getIndex(tail, sorted);
-
-    while (it.hasNext()) {
-      Id next = (Id) it.next();
+    for (Id next : sub.keySet()) {
 
       if (next != sorted[count])
         throw new RuntimeException("FAILURE: Tail test expected element " + sorted[count] + " got " + next);
@@ -255,11 +247,8 @@ public class RedBlackMapUnit {
   }
 
   protected static void testNormalSubMap(Id from, Id to, Id[] sorted, SortedMap<Id, Long> sub) {
-    Iterator<Id> it = sub.keySet().iterator();
     int count = getIndex(from, sorted);
-
-    while (it.hasNext()) {
-      Id next = (Id) it.next();
+    for (Id next : sub.keySet()) {
 
       if (next != sorted[count])
         throw new RuntimeException("FAILURE: Normal subMap test expected element " + sorted[count] + " got " + next);
@@ -277,11 +266,8 @@ public class RedBlackMapUnit {
   protected static void testWrappedSubMap(Id from, Id to, Id[] sorted, SortedMap<Id, Long> sub) {
     try {
 
-    Iterator<Id> it = sub.keySet().iterator();
     int count = (sorted.length > 0 ? (sorted[0].compareTo(to) < 0 ? 0 : getIndex(from, sorted)) : 0);
-
-    while (it.hasNext()) {
-      Id next = (Id) it.next();
+    for (Id next : sub.keySet()) {
       if (next != sorted[count])
         throw new RuntimeException("FAILURE: Wrapped subMap test expected element " + sorted[count] + " got " + next);
 

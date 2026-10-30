@@ -40,7 +40,6 @@ package rice.pastry.commonapi;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -643,14 +642,12 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public List<NodeHandle> networkNeighbors(int num) {
     HashSet<NodeHandle> handles = new HashSet<NodeHandle>();
     List<rice.pastry.NodeHandle> l = (List<rice.pastry.NodeHandle>)thePastryNode.getRoutingTable().asList();
-    Iterator<rice.pastry.NodeHandle> i = l.iterator();
-    while(i.hasNext()) {
-      handles.add(i.next());
+    for (rice.pastry.NodeHandle nh : l) {
+      handles.add(nh);
     }
     l = thePastryNode.getLeafSet().asList();
-    i = l.iterator();
-    while(i.hasNext()) {
-      handles.add(i.next());
+    for (rice.pastry.NodeHandle nh : l) {
+      handles.add(nh);
     }
 
     NodeHandle[] array = handles.toArray(new NodeHandle[0]);

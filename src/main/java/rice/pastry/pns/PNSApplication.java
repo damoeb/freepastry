@@ -724,8 +724,8 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
   private Cancellable closestToMe(NodeHandle handle, RouteSet[] routeSets, Continuation<NodeHandle, Exception> c) {
     ArrayList<NodeHandle> handles = new ArrayList<NodeHandle>();
 
-    for (int i=0 ; i<routeSets.length ; i++) {
-      RouteSet set = routeSets[i];
+    for (RouteSet routeSet : routeSets) {
+      RouteSet set = routeSet;
 
       if (set != null) {
         for (int j=0; j<set.size(); j++)

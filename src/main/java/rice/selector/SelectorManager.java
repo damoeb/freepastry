@@ -299,10 +299,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           select(selectTime);
 
           if (cancelledKeys.size() > 0) {
-            Iterator<SelectionKey> i = cancelledKeys.iterator();
-
-            while (i.hasNext())
-              ((SelectionKey) i.next()).cancel();
+            for (SelectionKey selectionKey : cancelledKeys)
+              selectionKey.cancel();
 
             cancelledKeys.clear();
 
@@ -440,9 +438,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     long diff = now - lastTime;
     // notify observers
     synchronized (loopObservers) {
-      Iterator<LoopObserver> i = loopObservers.iterator();
-      while (i.hasNext()) {
-        LoopObserver lo = (LoopObserver) i.next();
+      for (LoopObserver lo : loopObservers) {
         if (lo.delayInterest() <= diff) {
           lo.loopTime((int) diff);
         }
@@ -472,8 +468,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     if (keys.length > 1000 && logger.isDebugEnabled()) {
       logger.debug("lots of selection keys!");
       HashMap<String, Integer> histo = new HashMap<String, Integer>();
-      for (int i = 0; i < keys.length; i++) {
-        String keyclass = keys[i].getClass().getName();
+      for (SelectionKey key : keys) {
+        String keyclass = key.getClass().getName();
         if (histo.containsKey(keyclass)) {
           histo.put(keyclass, Integer.valueOf(((Integer)histo.get(keyclass)).intValue() + 1));
         } else {
@@ -481,43 +477,41 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         }
       }
       logger.debug("begin selection keys by class");
-      Iterator<String> it = histo.keySet().iterator();
-      while (it.hasNext()) {
-        String name = (String)it.next();
+      for (String name : histo.keySet()) {
         logger.debug("Selection Key: " + name + ": "+histo.get(name));
       }
       logger.debug("end selection keys by class");
     }
 
-    for (int i = 0; i < keys.length; i++) {
-      selector.selectedKeys().remove(keys[i]);
+    for (SelectionKey key : keys) {
+      selector.selectedKeys().remove(key);
 
-      synchronized (keys[i]) {
-        SelectionKeyHandler skh = (SelectionKeyHandler) keys[i].attachment();
+      synchronized (key) {
+        SelectionKeyHandler skh = (SelectionKeyHandler) key.attachment();
 
         if (skh != null) {
           // accept
-          if (keys[i].isValid() && keys[i].isAcceptable()) {
-            skh.accept(keys[i]);
+          if (key.isValid() && key.isAcceptable()) {
+            skh.accept(key);
           }
 
           // connect
-          if (keys[i].isValid() && keys[i].isConnectable()) {
-            skh.connect(keys[i]);
+          if (key.isValid() && key.isConnectable()) {
+            skh.connect(key);
           }
 
           // read
-          if (keys[i].isValid() && keys[i].isReadable()) {
-            skh.read(keys[i]);
+          if (key.isValid() && key.isReadable()) {
+            skh.read(key);
           }
 
           // write
-          if (keys[i].isValid() && keys[i].isWritable()) {
-            skh.write(keys[i]);
+          if (key.isValid() && key.isWritable()) {
+            skh.write(key);
           }
         } else {
-          keys[i].channel().close();
-          keys[i].cancel();
+          key.channel().close();
+          key.cancel();
         }
       }
     }

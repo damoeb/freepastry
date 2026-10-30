@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.util.testing;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
@@ -103,10 +102,7 @@ public class StringCacheUnit {
       if (! set.contains(t)) {
         set.add(t);
       } else {
-        Iterator<String> j = set.iterator();
-
-        while (j.hasNext()) {
-          String other = (String) j.next();
+        for (String other : set) {
 
           if (other.equals(t)) {
             if (other != t) {

@@ -44,7 +44,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Observer;
 import java.util.Vector;
@@ -369,9 +368,8 @@ public class PastryNode extends LegacyObservable implements
         // we iterate over private copy to allow addition of new apps in the
         // context of notifyReady()
         Vector<PastryAppl> tmpApps = new Vector<PastryAppl>(apps);
-        Iterator<PastryAppl> it = tmpApps.iterator();
-        while (it.hasNext())
-          ((PastryAppl) (it.next())).notifyReady();
+        for (PastryAppl pastryAppl : tmpApps)
+          pastryAppl.notifyReady();
         neverBeenReady = false;
       }
 
@@ -727,9 +725,7 @@ public class PastryNode extends LegacyObservable implements
     if (isDestroyed) return;
     logger.info("Destroying {}", this);
     isDestroyed = true;
-    Iterator<Destructable> i = destructables.iterator();
-    while(i.hasNext()) {
-      Destructable d = i.next();
+    for (Destructable d : destructables) {
       logger.info("Destroying {}", d);
       d.destroy();
     }

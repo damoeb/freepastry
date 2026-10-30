@@ -222,8 +222,8 @@ public class Stripe implements ScribeMultiClient {
 
         SplitStreamClient[] clients = (SplitStreamClient[]) this.clients.toArray(new SplitStreamClient[0]);
 
-        for (int i=0; i<clients.length; i++) {
-          clients[i].deliver(this, data);
+        for (SplitStreamClient client : clients) {
+          client.deliver(this, data);
         }
       } else {
         logger.warn("Received unexpected content {}", content);

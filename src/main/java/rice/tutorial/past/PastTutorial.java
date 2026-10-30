@@ -185,8 +185,8 @@ public class PastTutorial {
     System.out.println("Looking up the 5 keys");
 
     // for each stored key
-    for (int ctr = 0; ctr < storedKey.length; ctr++) {
-      final Id lookupKey = storedKey[ctr];
+    for (Id id : storedKey) {
+      final Id lookupKey = id;
 
       // pick a random past appl on a random node
       Past p = (Past)apps.get(env.getRandomSource().nextInt(numNodes));

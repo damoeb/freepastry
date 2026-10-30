@@ -382,8 +382,8 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     int total = 0;
     Stripe[] stripes = channel.getStripes();
 
-    for (int j=0; j<stripes.length; j++) {
-      total += scribe.getChildrenOfTopic(new Topic(stripes[j].getStripeId().getId())).size();
+    for (Stripe stripe : stripes) {
+      total += scribe.getChildrenOfTopic(new Topic(stripe.getStripeId().getId())).size();
     }
 
     return total;
@@ -409,23 +409,23 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     Topic tp;
 
     /* find all candidate stripes */
-    for(int i = 0; i < stripes.length; i++){
-      tp = new Topic(stripes[i].getStripeId().getId());
-      if (!channel.getPrimaryStripe().getStripeId().getId().equals(stripes[i].getStripeId().getId()) &&
+    for (Stripe stripe : stripes){
+      tp = new Topic(stripe.getStripeId().getId());
+      if (!channel.getPrimaryStripe().getStripeId().getId().equals(stripe.getStripeId().getId()) &&
           !this.scribe.isRoot(tp) &&
           (!scribe.getChildrenOfTopic(tp).isEmpty())) {
-        candidateStripes.add(stripes[i].getStripeId().getId());
+        candidateStripes.add(stripe.getStripeId().getId());
       }
     }
 
     /* if there are no candidates, find somewhere where i am the root*/
     if(candidateStripes.size() == 0) {
-      for(int i = 0; i < stripes.length; i++){
-        tp = new Topic(stripes[i].getStripeId().getId());
-        if ((! channel.getPrimaryStripe().getStripeId().getId().equals(stripes[i].getStripeId().getId())) &&
+      for (Stripe stripe : stripes){
+        tp = new Topic(stripe.getStripeId().getId());
+        if ((! channel.getPrimaryStripe().getStripeId().getId().equals(stripe.getStripeId().getId())) &&
             (!scribe.getChildrenOfTopic(tp).isEmpty()) &&
-            (! stripes[i].getStripeId().getId().equals(stripeId))) {
-          candidateStripes.add(stripes[i].getStripeId().getId());
+            (! stripe.getStripeId().getId().equals(stripeId))) {
+          candidateStripes.add(stripe.getStripeId().getId());
         }
       }
     }

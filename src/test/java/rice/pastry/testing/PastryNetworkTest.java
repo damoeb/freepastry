@@ -194,10 +194,7 @@ public class PastryNetworkTest {
 
   protected HashMap<NodeHandle, Object> fetchRouteRow(int row) throws IOException {
     HashMap<NodeHandle, Object> routerows = new HashMap<NodeHandle, Object>();
-    Iterator<NodeHandle> i = nodes.iterator();
-
-    while (i.hasNext()) {
-      NodeHandle handle = (NodeHandle) i.next();
+    for (NodeHandle handle : nodes) {
 
       System.out.println("Fetching route row " + row + " of " + handle);
 
@@ -215,16 +212,11 @@ public class PastryNetworkTest {
   protected void testRouteRow(int row) throws IOException {
     HashMap<NodeHandle, Object> routerows = fetchRouteRow(row);
 
-    Iterator<NodeHandle> i = nodes.iterator();
-
-    while (i.hasNext()) {
-      NodeHandle node = (NodeHandle) i.next();
+    for (NodeHandle node : nodes) {
       RoutingTable rt = new RoutingTable(node, 1, (byte)environment.getParameters().getInt("pastry_rtBaseBitLength"), ((SocketNodeHandle)node).getLocalNode());
 
-      Iterator<NodeHandle> j = nodes.iterator();
-
-      while (j.hasNext())
-        rt.put((NodeHandle) j.next());
+      for (NodeHandle nodeHandle : nodes)
+        rt.put(nodeHandle);
 
       RouteSet[] ideal = (RouteSet[]) rt.getRow(row);
       RouteSet[] actual = (RouteSet[]) routerows.get(node);

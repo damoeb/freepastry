@@ -473,15 +473,15 @@ public class PRRegressionTest {
         File f2 = new File(f,"peers");
         File[] foo = f2.listFiles();
         if (foo != null) {
-          for (int c = 0; c < foo.length; c++) {
-            foo[c].delete();
+          for (File file : foo) {
+            file.delete();
           }
         }
 
         foo = f.listFiles();
         if (foo != null) {
-          for (int c = 0; c < foo.length; c++) {
-            foo[c].delete();
+          for (File file : foo) {
+            file.delete();
           }
         }
 

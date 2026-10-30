@@ -100,13 +100,13 @@ public class GlacierResponseMessage extends GlacierMessage {
     super.serialize(buf);
 
     buf.writeInt(keys.length);
-    for (int i = 0; i < keys.length; i++) {
-      keys[i].serialize(buf);
+    for (FragmentKey key : keys) {
+      key.serialize(buf);
     }
 
     buf.writeInt(lifetimes.length);
-    for (int i = 0; i < lifetimes.length; i++) {
-      buf.writeLong(lifetimes[i]);
+    for (long lifetime : lifetimes) {
+      buf.writeLong(lifetime);
     }
     buf.writeInt(authoritative.length);
     for (int i = 0; i < authoritative.length; i++) {

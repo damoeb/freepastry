@@ -110,9 +110,8 @@ public class PartitionChecker {
       rings.add(buildRing(factory, (InetSocketAddress)(unmatchedBootstraps.iterator().next())));
     }
     Collections.sort(rings);
-    Iterator<Ring> i = rings.iterator();
-    while(i.hasNext()) {
-      System.out.println(i.next());
+    for (Ring ring : rings) {
+      System.out.println(ring);
     }
   }
 
@@ -292,9 +291,7 @@ public class PartitionChecker {
       }
       s+=" non-boots:";
       synchronized(nodes) {
-        Iterator<NodeHandle> i = nodes.iterator();
-        while(i.hasNext()) {
-          NodeHandle nxt = i.next();
+        for (NodeHandle nxt : nodes) {
           if (!bootstraps.contains(nxt))
             s+=","+nxt;
         }

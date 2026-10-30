@@ -39,7 +39,6 @@ package rice.pastry.testing;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Vector;
 
@@ -144,9 +143,7 @@ public class ClosestRegrTest {
 
   protected double getAvgNumEntries(Collection<PastryNode> nds) {
     double sum = 0;
-    Iterator<PastryNode> i = nds.iterator();
-    while(i.hasNext()) {
-      PastryNode pn = (PastryNode)i.next();
+    for (PastryNode pn : nds) {
       sum+=pn.getRoutingTable().numUniqueEntries();
     }
     return sum/nds.size();

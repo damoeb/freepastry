@@ -344,8 +344,8 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
 
       BroadcastRouteRow brr = new BroadcastRouteRow(localHandle, row);
 
-      for (int j = 0; j < row.length; j++) {
-        RouteSet rs = row[j];
+      for (RouteSet routeSet : row) {
+        RouteSet rs = routeSet;
         if (rs == null)
           continue;
 

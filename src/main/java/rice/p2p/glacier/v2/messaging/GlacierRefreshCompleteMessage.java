@@ -83,13 +83,13 @@ public class GlacierRefreshCompleteMessage extends GlacierMessage {
     buf.writeByte((byte)0); // version
     super.serialize(buf);
     buf.writeInt(updates.length);
-    for (int i = 0; i < updates.length; i++) {
-      buf.writeInt(updates[i]);
+    for (int update : updates) {
+      buf.writeInt(update);
     }
 
     buf.writeInt(keys.length);
-    for (int i = 0; i < keys.length; i++) {
-      keys[i].serialize(buf);
+    for (VersionKey key : keys) {
+      key.serialize(buf);
     }
   }
 

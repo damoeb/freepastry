@@ -792,9 +792,8 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
       }
     }
 
-    Iterator<NodeHandle> i = myInsertedHandles.iterator();
-    while(i.hasNext()) {
-      cwSet.notifyListeners(i.next(), true);
+    for (NodeHandle nodeHandle : myInsertedHandles) {
+      cwSet.notifyListeners(nodeHandle, true);
     }
 
     return result;
@@ -1006,9 +1005,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
     baseHandle.serialize(buf);
 
-    Iterator<NodeHandle> it = list.iterator();
-    while(it.hasNext()) {
-      NodeHandle nh = (NodeHandle)it.next();
+    for (NodeHandle nh : list) {
       nh.serialize(buf);
     }
 

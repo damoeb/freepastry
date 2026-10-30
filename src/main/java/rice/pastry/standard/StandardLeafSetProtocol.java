@@ -38,7 +38,6 @@ package rice.pastry.standard;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Observable;
 
 import org.slf4j.Logger;
@@ -80,9 +79,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       LeafSet ls, RoutingTable rt) {
     super(ln, LeafSetProtocolAddress.getCode());
     leafSet = ls;
-    Iterator<NodeHandle> i = leafSet.asList().iterator();
-    while(i.hasNext()) {
-      NodeHandle nh = (NodeHandle)i.next();
+    for (NodeHandle nh : leafSet.asList()) {
       nh.addNodeHandleListener(this);
     }
     cachedSet = new HashSet<NodeHandle>(leafSet.maxSize() * 2);
@@ -206,10 +203,8 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       if (notifyMissing) {
         // send leafset to nodes that where missing from remotels
 
-        Iterator<NodeHandle> it = new ArrayList<NodeHandle>(insertedHandles).iterator();
-        while (it.hasNext()) {
+        for (NodeHandle nh : new ArrayList<NodeHandle>(insertedHandles)) {
           // send leafset to missing node
-          NodeHandle nh = (NodeHandle) it.next();
           thePastryNode.send(nh,bl,null, options);
         }
       }

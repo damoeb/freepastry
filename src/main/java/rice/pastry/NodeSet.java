@@ -425,9 +425,7 @@ public class NodeSet implements NodeSetI, Serializable {
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort((short)set.size());
-    Iterator<NodeHandle> i = set.iterator();
-    while(i.hasNext()) {
-      NodeHandle nh = (NodeHandle)i.next();
+    for (NodeHandle nh : set) {
       nh.serialize(buf);
     }
   }

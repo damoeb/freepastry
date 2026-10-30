@@ -109,13 +109,13 @@ public class RequestMessage extends ReplicationMessage {
     super.serialize(buf);
 
     buf.writeInt(filters.length);
-    for (int i = 0; i < filters.length; i++) {
-      filters[i].serialize(buf);
+    for (IdBloomFilter filter : filters) {
+      filter.serialize(buf);
     }
 
     buf.writeInt(ranges.length);
-    for (int i = 0; i < ranges.length; i++) {
-      ranges[i].serialize(buf);
+    for (IdRange range : ranges) {
+      range.serialize(buf);
     }
   }
 

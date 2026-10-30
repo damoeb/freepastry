@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.pastry.messaging;
 
 import java.util.HashMap;
-import java.util.Iterator;
 
 import org.slf4j.Logger;
 import rice.Destructable;
@@ -149,9 +148,7 @@ public class MessageDispatch implements Destructable {
   }
 
   public void destroy() {
-    Iterator<PastryAppl> i = addressBook.values().iterator();
-    while(i.hasNext()) {
-      PastryAppl mr = i.next();
+    for (PastryAppl mr : addressBook.values()) {
       logger.info("Destroying {}", mr);
       mr.destroy();
     }

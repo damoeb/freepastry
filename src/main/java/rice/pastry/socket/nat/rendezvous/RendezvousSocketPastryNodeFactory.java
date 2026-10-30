@@ -536,8 +536,8 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
         "nat_network_prefixes");
 
     String[] nattedNetworkPrefix = nattedNetworkPrefixes.split(";");
-    for (int i = 0; i < nattedNetworkPrefix.length; i++) {
-      if (ip.startsWith(nattedNetworkPrefix[i])) {
+    for (String string : nattedNetworkPrefix) {
+      if (ip.startsWith(string)) {
         return false;
       }
     }

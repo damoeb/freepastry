@@ -1042,18 +1042,18 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
       return;
     }
 
-    for (int i=0; i<fields.length; i++) {
+    for (Field field : fields) {
       // static (e.g. serialVersionUID) and transient fields are never written, and must not be
       // made accessible: for JDK classes this throws InaccessibleObjectException
-      if (! (Modifier.isStatic(fields[i].getModifiers()) ||
-             Modifier.isTransient(fields[i].getModifiers()))) {
-        fields[i].setAccessible(true);
+      if (! (Modifier.isStatic(field.getModifiers()) ||
+             Modifier.isTransient(field.getModifiers()))) {
+        field.setAccessible(true);
 
-        if (fields[i].getType().isPrimitive()) {
-          writePrimitiveField(o, fields[i]);
+        if (field.getType().isPrimitive()) {
+          writePrimitiveField(o, field);
         } else {
           try {
-            writeObject(fields[i].get(o), fields[i].getName());
+            writeObject(field.get(o), field.getName());
           } catch (IllegalAccessException e) {
             throw new IOException("IllegalAccessException thrown " + e);
           }
@@ -1193,8 +1193,8 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
 
     String[] primitives = p.getPrimitives();
 
-    for (int i=0; i<primitives.length; i++) {
-      String name = primitives[i];
+    for (String string : primitives) {
+      String name = string;
       Object primitive = p.getPrimitive(name);
 
       if (primitive.getClass().equals(Integer.class)) {
@@ -1220,8 +1220,8 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
 
     String[] objects = p.getObjects();
 
-    for (int i=0; i<objects.length; i++) {
-      writeObject(p.getObject(objects[i]), objects[i]);
+    for (String object : objects) {
+      writeObject(p.getObject(object), object);
     }
 
     writer.end("default");

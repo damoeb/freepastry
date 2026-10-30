@@ -152,8 +152,8 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
 
     // subscribing notifies your application when data comes through the tree
     myStripes = myChannel.getStripes();
-    for (int curStripe = 0; curStripe < myStripes.length; curStripe++) {
-      myStripes[curStripe].subscribe(this);
+    for (Stripe myStripe : myStripes) {
+      myStripe.subscribe(this);
     }
   }
 

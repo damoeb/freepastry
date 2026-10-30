@@ -131,8 +131,8 @@ public class DistPastryRegrTest extends PastryRegrTest {
   private static void doInitstuff(String args[]) {
     // process command line arguments
 
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].equals("-help")) {
+    for (String arg : args) {
+      if (arg.equals("-help")) {
         System.out
             .println("Usage: DistPastryRegrTest [-port p] [-protocol (rmi|wire|socket)] [-nodes n] [-bootstrap host[:port]] [-help]");
         System.exit(1);

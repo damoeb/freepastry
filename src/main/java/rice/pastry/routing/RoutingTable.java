@@ -731,11 +731,11 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
    * Unregisters as an observer on all nodehandles.
    */
   public void destroy() {
-    for (int r = 0; r < routingTable.length; r++) {
-      for (int c = 0; c < routingTable[r].length; c++) {
-        if (routingTable[r][c] != null) {
-          routingTable[r][c].destroy();
-          routingTable[r][c] = null;
+    for (RouteSet[] routeSet : routingTable) {
+      for (int c = 0; c < routeSet.length; c++) {
+        if (routeSet[c] != null) {
+          routeSet[c].destroy();
+          routeSet[c] = null;
         }
       }
     }

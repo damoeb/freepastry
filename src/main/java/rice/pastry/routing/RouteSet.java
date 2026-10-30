@@ -110,8 +110,8 @@ public class RouteSet implements NodeSetI, Serializable,
     } else {
       s+=":";
     }
-    for (int i = 0; i < nodes.length; i++) {
-      s+=nodes[i]+",";
+    for (NodeHandle node : nodes) {
+      s+=node+",";
     }
     return s;
   }

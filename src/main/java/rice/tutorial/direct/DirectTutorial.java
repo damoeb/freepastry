@@ -38,7 +38,6 @@ package rice.tutorial.direct;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import rice.environment.Environment;
@@ -135,9 +134,7 @@ public class DirectTutorial {
     for (int i = 0; i < 10; i++) {
 
       // for each app
-      Iterator<MyApp> appIterator = apps.iterator();
-      while(appIterator.hasNext()) {
-        MyApp app = (MyApp)appIterator.next();
+      for (MyApp app : apps) {
 
         // pick a key at random
         Id randId = nidFactory.generateNodeId();
@@ -153,9 +150,7 @@ public class DirectTutorial {
     env.getTimeSource().sleep(1000);
 
     // for each app
-    Iterator<MyApp> appIterator = apps.iterator();
-    while(appIterator.hasNext()) {
-      MyApp app = (MyApp)appIterator.next();
+    for (MyApp app : apps) {
       PastryNode node = (PastryNode)app.getNode();
 
       // send directly to my leafset

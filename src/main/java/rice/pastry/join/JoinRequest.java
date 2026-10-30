@@ -241,10 +241,10 @@ public class JoinRequest extends PRawMessage {
       RouteSet[] thisRow = rows[i];
       if (thisRow != null) {
         buf.writeBoolean(true);
-        for (int j=0; j<thisRow.length; j++) {
-          if (thisRow[j] != null) {
+        for (RouteSet routeSet : thisRow) {
+          if (routeSet != null) {
             buf.writeBoolean(true);
-            thisRow[j].serialize(buf);
+            routeSet.serialize(buf);
           } else {
             buf.writeBoolean(false);
           }

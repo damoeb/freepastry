@@ -249,9 +249,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     gotResponse.clear();
 
     // send a probe to everyone in the leafset
-    Iterator<NodeHandle> i = whoDoWeNeedAResponseFrom().iterator();
-    while(i.hasNext()) {
-      NodeHandle nh = i.next();
+    for (NodeHandle nh : whoDoWeNeedAResponseFrom()) {
       sendTheMessage(nh, false);
     }
 
@@ -294,9 +292,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     Collection<NodeHandle> c = whoDoWeNeedAResponseFrom();
     logger.info("CJP: timeout1, still waiting to hear from {} nodes.", c.size());
 
-    Iterator<NodeHandle> i = c.iterator();
-    while(i.hasNext()) {
-      NodeHandle nh = (NodeHandle)i.next();
+    for (NodeHandle nh : c) {
       logger.debug("CJP: timeout2, still waiting to hear from {}", nh);
       try {
         sendTheMessage(nh, false);
@@ -377,9 +373,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       // for each n in L_i and failed do {probe}
       // rather than removing everyone in the remote failedset,
       // checkLiveness on them all
-      Iterator<NodeHandle> it = cjm.failed.iterator();
-      while(it.hasNext()) {
-        NodeHandle nh = (NodeHandle)it.next();
+      for (NodeHandle nh : cjm.failed) {
         if (leafSet.member(nh)) {
           if (nh.getLiveness() == NodeHandle.LIVENESS_DEAD) {
             // if we already found them dead, don't bother
@@ -417,9 +411,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
         }
       }
 
-      Iterator<NodeHandle> it2 = addThese.iterator();
-      while(it2.hasNext()) {
-        NodeHandle nh = (NodeHandle)it2.next();
+      for (NodeHandle nh : addThese) {
         // he's not a member, but he could be
         if (!failed.containsKey(nh) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {
           addToLeafSet(nh);
@@ -489,9 +481,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       } else {
         if (logger.isDebugEnabled()) {
           String toHearFromStr = "";
-          Iterator<NodeHandle> i = toHearFrom.iterator();
-          while(i.hasNext()) {
-            NodeHandle nh = (NodeHandle)i.next();
+          for (NodeHandle nh : toHearFrom) {
             toHearFromStr+=nh+":"+nh.getLiveness()+",";
           }
           logger.debug("CJP: still need to hear from:"+toHearFromStr);

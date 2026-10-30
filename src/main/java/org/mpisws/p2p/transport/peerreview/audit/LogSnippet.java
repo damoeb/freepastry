@@ -83,10 +83,9 @@ public class LogSnippet {
     LogSnippet that = (LogSnippet)o;
     if (!Arrays.equals(this.baseHash, that.baseHash)) return false;
     if (this.entries.size() != that.entries.size()) return false;
-    Iterator<SnippetEntry> i1 = this.entries.iterator();
     Iterator<SnippetEntry> i2 = that.entries.iterator();
-    while(i1.hasNext()) {
-      if (!i1.next().equals(i2.next())) return false;
+    for (SnippetEntry snippetEntry : this.entries) {
+      if (!snippetEntry.equals(i2.next())) return false;
     }
     return true;
   }

@@ -1150,9 +1150,9 @@ public class PersistentStorage implements Storage {
     String prefix = names[0].substring(0, length);
     CharacterHashSet set = new CharacterHashSet();
 
-    for (int i=0; i<names.length; i++) {
-      if (names[i].length() > length)
-        set.put(names[i].charAt(length));
+    for (String name : names) {
+      if (name.length() > length)
+        set.put(name.charAt(length));
     }
 
     char[] splits = set.get();

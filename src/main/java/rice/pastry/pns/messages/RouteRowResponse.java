@@ -68,12 +68,12 @@ public class RouteRowResponse extends PRawMessage {
     buf.writeByte((byte)0); // version
     buf.writeShort(index);
     buf.writeInt(row.length);
-    for (int i = 0; i < row.length; i++) {
-      if (row[i] == null) {
+    for (RouteSet routeSet : row) {
+      if (routeSet == null) {
         buf.writeBoolean(false);
       } else {
         buf.writeBoolean(true);
-        row[i].serialize(buf);
+        routeSet.serialize(buf);
       }
     }
   }

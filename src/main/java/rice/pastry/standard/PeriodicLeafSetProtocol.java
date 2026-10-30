@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.standard;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Observable;
 
@@ -156,9 +155,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
     // make sure to register all the existing leafset entries
     this.leafSet = ls;
-    Iterator<NodeHandle> i = this.leafSet.asList().iterator();
-    while(i.hasNext()) {
-      NodeHandle nh = (NodeHandle)i.next();
+    for (NodeHandle nh : this.leafSet.asList()) {
       nh.addNodeHandleListener(this, 50);
     }
 

@@ -41,7 +41,6 @@ package rice.pastry.standard;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -87,9 +86,7 @@ public class ConsistentJoinMsg extends PRawMessage {
     ls.serialize(buf);
     buf.writeBoolean(request);
     buf.writeInt(failed.size());
-    Iterator<NodeHandle> i = failed.iterator();
-    while(i.hasNext()) {
-      NodeHandle h = (NodeHandle)i.next();
+    for (NodeHandle h : failed) {
       h.serialize(buf);
     }
   }

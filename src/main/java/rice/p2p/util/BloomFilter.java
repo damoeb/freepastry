@@ -191,8 +191,8 @@ public class BloomFilter implements Serializable {
     buf.writeInt(length);
 
     buf.writeInt(parameters.length);
-    for(int i = 0; i < parameters.length; i++) {
-      buf.writeInt(parameters[i]);
+    for (int parameter : parameters) {
+      buf.writeInt(parameter);
     }
 
     int numBits = set.length();

@@ -98,8 +98,8 @@ public class EpochInetSocketAddress implements Serializable {
    */
   public int hashCode() {
     int result = (int)epoch;
-    for (int i = 0; i < address.length; i++) {
-      result ^=  address[i].hashCode();
+    for (InetSocketAddress inetSocketAddress : address) {
+      result ^=  inetSocketAddress.hashCode();
     }
     return result;
   }
@@ -272,9 +272,9 @@ public class EpochInetSocketAddress implements Serializable {
    */
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)address.length);
-    for (int ctr = 0; ctr < address.length; ctr++) {
-      buf.write(address[ctr].getAddress().getAddress(),0,4);
-      buf.writeShort((short)address[ctr].getPort());
+    for (InetSocketAddress inetSocketAddress : address) {
+      buf.write(inetSocketAddress.getAddress().getAddress(),0,4);
+      buf.writeShort((short)inetSocketAddress.getPort());
     }
     buf.writeLong(epoch);
   }

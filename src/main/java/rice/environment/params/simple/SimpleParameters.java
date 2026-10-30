@@ -47,7 +47,6 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -114,19 +113,19 @@ public class SimpleParameters implements Parameters {
     this.defaults = new MyProperties();
     this.changeListeners = new HashSet<ParameterChangeListener>();
 
-    for (int ctr = 0; ctr < orderedDefaults.length; ctr++) {
+    for (String orderedDefault : orderedDefaults) {
       try {
         ClassLoader loader = this.getClass().getClassLoader();
         // some VMs report the bootstrap classloader via null-return
         if (loader == null)
           loader = ClassLoader.getSystemClassLoader();
         try (InputStream in = loader.getResource(
-            orderedDefaults[ctr] + FILENAME_EXTENSION).openStream()) {
+            orderedDefault + FILENAME_EXTENSION).openStream()) {
           this.defaults.load(in);
         }
       } catch (Exception ioe) {
         String errorString = "Warning, couldn't load param file:"
-          + (orderedDefaults[ctr] + FILENAME_EXTENSION);
+          + (orderedDefault + FILENAME_EXTENSION);
         throw new ParamsNotPresentException(errorString,ioe);
       }
     }
@@ -275,8 +274,8 @@ public class SimpleParameters implements Parameters {
     String[] addresses = getString(name).split(ARRAY_SPACER);
     List<InetSocketAddress> result = new LinkedList<InetSocketAddress>();
 
-    for (int i = 0; i < addresses.length; i++) {
-      InetSocketAddress address = parseInetSocketAddress(addresses[i]);
+    for (String string : addresses) {
+      InetSocketAddress address = parseInetSocketAddress(string);
 
       if (address != null)
         result.add(address);
@@ -384,9 +383,7 @@ public class SimpleParameters implements Parameters {
   }
 
   private void fireChangeEvent(String name, String val) {
-    Iterator<ParameterChangeListener> i = changeListeners.iterator();
-    while (i.hasNext()) {
-      ParameterChangeListener p = (ParameterChangeListener) i.next();
+    for (ParameterChangeListener p : changeListeners) {
       p.parameterChange(name, val);
     }
   }

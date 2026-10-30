@@ -351,8 +351,8 @@ public class ReplicationImpl implements Replication, Application, Destructable {
       for (int i=0; i<rm.getIdSets().length; i++) {
         IdSet temp = factory.buildIdSet();
         Id[] tempA = rm.getIdSets()[i];
-        for (int j = 0; j < tempA.length; j++) {
-          temp.addId(tempA[j]);
+        for (Id setId : tempA) {
+          temp.addId(setId);
         }
 
         IdSet fetch = policy.difference(client.scan(rm.getRanges()[i]), temp, factory);
