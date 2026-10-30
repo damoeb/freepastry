@@ -62,7 +62,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
   /**
    * The number of stubs.
    */
-  public static int MAXOVERLAYSIZE = 2000;
+  int maxOverlaySize = 2000;
 
   // This keeps track of the indices that have already been assigned
   // index -> ctr
@@ -72,7 +72,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
   public GenericProximityGenerator(Environment env, File inFile) throws IOException {
     logger = env.getLogManager().getLogger(GenericProximityGenerator.class, null);
-    MAXOVERLAYSIZE = env.getParameters().getInt("pastry_direct_gtitm_max_overlay_size");
+    maxOverlaySize = env.getParameters().getInt("pastry_direct_gtitm_max_overlay_size");
     MIN_DIST = env.getParameters().getFloat("pastry_direct_min_delay");
     float delayFactor = env.getParameters().getFloat("pastry_direct_gtitm_delay_factor");// 1.0
 
@@ -96,10 +96,10 @@ public class GenericProximityGenerator implements ProximityGenerator {
     public int index; // index in the symmetric inter-host latency matrix
 
     public GNNodeRecord() {
-      if (numNodes >= MAXOVERLAYSIZE*nodesPerStub) throw new RuntimeException("No more nodes int he network.");
-      index = random.nextInt(MAXOVERLAYSIZE);
+      if (numNodes >= maxOverlaySize*nodesPerStub) throw new RuntimeException("No more nodes int he network.");
+      index = random.nextInt(maxOverlaySize);
       while (stubIsFull(index)) {
-        index = random.nextInt(MAXOVERLAYSIZE);
+        index = random.nextInt(maxOverlaySize);
       }
 
       incrementStub(index);
@@ -153,20 +153,20 @@ public class GenericProximityGenerator implements ProximityGenerator {
         String[] words;
         words = line.split("[ \t]+");
         if (distance == null) {
-          if (words.length < MAXOVERLAYSIZE)
-            MAXOVERLAYSIZE = words.length;
-          distance = new float[MAXOVERLAYSIZE][MAXOVERLAYSIZE];
+          if (words.length < maxOverlaySize)
+            maxOverlaySize = words.length;
+          distance = new float[maxOverlaySize][maxOverlaySize];
         }
         int nodeCount = 0;
-        for (int i = 0; i < MAXOVERLAYSIZE; i++) {
+        for (int i = 0; i < maxOverlaySize; i++) {
           if (words[i].length() > 0) {
             distance[lineCount][nodeCount] = delayFactor*Float.parseFloat(words[i]);
             nodeCount++;
-            if (nodeCount == MAXOVERLAYSIZE) break;
+            if (nodeCount == maxOverlaySize) break;
           }
         }
         lineCount++;
-        if (lineCount == MAXOVERLAYSIZE) break;
+        if (lineCount == maxOverlaySize) break;
       }
       final int size = lineCount;
       logger.info("Size of Generic Network matrix= {}", size);

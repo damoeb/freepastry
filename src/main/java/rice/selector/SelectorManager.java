@@ -72,7 +72,7 @@ import rice.environment.time.TimeSource;
 public class SelectorManager extends Thread implements Timer, Destructable {
 
   // the maximal time to sleep on a select operation
-  public static int TIMEOUT = 500;
+  public static final int TIMEOUT = 500;
 
   // the underlying selector used
   protected Selector selector;

@@ -55,12 +55,12 @@ public class SplitStreamSubscribeContent implements RawScribeContent {
   /**
    * The first stage of the join process
    */
-  public static int STAGE_NON_FINAL = -10;
+  public static final int STAGE_NON_FINAL = -10;
 
   /**
    * The final stage of the join process
    */
-  public static int STAGE_FINAL = -9;
+  public static final int STAGE_FINAL = -9;
 
   /**
    * The stage that the client attempting to join is in

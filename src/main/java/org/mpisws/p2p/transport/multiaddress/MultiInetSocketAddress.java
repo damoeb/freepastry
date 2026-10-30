@@ -53,7 +53,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Jeff Hoye
  */
 public class MultiInetSocketAddress implements Serializable {
-  static InetSocketAddressSerializer serializer = new InetSocketAddressSerializer();
+  static final InetSocketAddressSerializer serializer = new InetSocketAddressSerializer();
 
   // the address list, most external first
   protected InetSocketAddress address[];

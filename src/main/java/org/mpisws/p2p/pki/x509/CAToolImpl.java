@@ -93,7 +93,7 @@ public class CAToolImpl implements CATool {
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  static SecureRandom random = new SecureRandom();
+  static final SecureRandom random = new SecureRandom();
   /** Was SHA1withRSA, which JDK 25 rejects for certificate paths in TLS. */
   public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256withRSA";
   /** RSA modulus size for generated CA and node keys (was 768, which JDK 25 rejects in TLS). */

@@ -91,17 +91,17 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   /**
    * A cache of the writeReplace() methods, mapping class->writeReplace()
    */
-  protected static SoftHashMap<Class<?>, Method> WRITE_REPLACES = new SoftHashMap<Class<?>, Method>();
+  protected static final SoftHashMap<Class<?>, Method> WRITE_REPLACES = new SoftHashMap<Class<?>, Method>();
 
   /**
    * A cache of the writeObject() methods, mapping class->writeObject()
    */
-  protected static SoftHashMap<Class<?>, Method> WRITE_OBJECTS = new SoftHashMap<Class<?>, Method>();
+  protected static final SoftHashMap<Class<?>, Method> WRITE_OBJECTS = new SoftHashMap<Class<?>, Method>();
 
   /**
    * A cache of the persistentFields, mapping class->Field[]
    */
-  protected static SoftHashMap<Class<?>, Field[]> PERSISTENT_FIELDS = new SoftHashMap<Class<?>, Field[]>();
+  protected static final SoftHashMap<Class<?>, Field[]> PERSISTENT_FIELDS = new SoftHashMap<Class<?>, Field[]>();
 
   /**
    * The boxed primitive classes, which are written in default field format (a single
@@ -504,9 +504,20 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * @return The method, or null if none was found
    */
   private Method getWriteReplace(Class<?> cl) {
-    if (WRITE_REPLACES.containsKey(cl))
-      return (Method) WRITE_REPLACES.get(cl);
+    synchronized (WRITE_REPLACES) {
+      if (WRITE_REPLACES.containsKey(cl))
+        return (Method) WRITE_REPLACES.get(cl);
 
+      Method meth = findWriteReplace(cl);
+      WRITE_REPLACES.put(cl, meth);
+      return meth;
+    }
+  }
+
+  /**
+   * The uncached lookup behind {@link #getWriteReplace(Class)}.
+   */
+  private static Method findWriteReplace(Class<?> cl) {
     Method meth = null;
     Class<?> defCl = cl;
     while (defCl != null) {
@@ -519,7 +530,6 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     }
 
     if (meth == null) {
-      WRITE_REPLACES.put(cl, meth);
       return null;
     }
 
@@ -527,19 +537,15 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
     int mods = meth.getModifiers();
     if ((mods & (Modifier.STATIC | Modifier.ABSTRACT)) != 0) {
     } else if ((mods & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0) {
-      WRITE_REPLACES.put(cl, meth);
       return meth;
     } else if ((mods & Modifier.PRIVATE) != 0) {
       if (cl == defCl) {
-        WRITE_REPLACES.put(cl, meth);
         return meth;
       }
     } else {
-      WRITE_REPLACES.put(cl, meth);
       return meth;
     }
 
-    WRITE_REPLACES.put(cl, null);
     return null;
   }
 

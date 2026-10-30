@@ -66,12 +66,12 @@ public class IdBloomFilter implements Serializable {
   /**
    * The number of bits per key in bloom filters
    */
-  public static int NUM_BITS_PER_KEY = 4;
+  public static final int NUM_BITS_PER_KEY = 4;
 
   /**
    * The number of different hash functions to use in bloom filters
    */
-  public static int NUM_HASH_FUNCTIONS = 2;
+  public static final int NUM_HASH_FUNCTIONS = 2;
 
   /**
    * An internal byte[] for managing ids in a memory-efficient manner

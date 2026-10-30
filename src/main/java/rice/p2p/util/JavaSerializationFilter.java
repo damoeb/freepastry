@@ -135,7 +135,11 @@ public final class JavaSerializationFilter implements ObjectInputFilter {
   private static final JavaSerializationFilter DEFAULT = new JavaSerializationFilter(Collections.<String>emptyList(),
       DEFAULT_MAX_DEPTH, DEFAULT_MAX_REFS, DEFAULT_MAX_BYTES, DEFAULT_MAX_ARRAY);
 
-  /** cache for {@link #forParameters(Parameters)}, keyed on the parameter values it was built from */
+  /**
+   * Cache for {@link #forParameters(Parameters)}, keyed on the parameter values it was built from. A deliberate
+   * JVM-wide global: the volatile field always holds an immutable {key, filter} pair that is replaced as a whole, so
+   * readers never see a torn entry, and a lost update between racing writers only costs rebuilding a filter.
+   */
   private static volatile Object[] cache = new Object[2];
 
   private final List<String> allow;

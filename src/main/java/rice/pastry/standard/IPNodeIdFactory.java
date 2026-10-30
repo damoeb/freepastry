@@ -39,6 +39,7 @@ package rice.pastry.standard;
 import java.net.InetAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -55,7 +56,10 @@ import rice.pastry.NodeIdFactory;
  */
 
 public class IPNodeIdFactory implements NodeIdFactory {
-  private static int nextInstance = 0;
+  /**
+   * Deliberately JVM-wide, so that all factories in this JVM that share an IP and port still generate distinct ids.
+   */
+  private static final AtomicInteger nextInstance = new AtomicInteger();
 
   private InetAddress localIP;
 
@@ -103,7 +107,7 @@ public class IPNodeIdFactory implements NodeIdFactory {
     }
 
     byte raw[] = new byte[4];
-    tmp = ++nextInstance;
+    tmp = nextInstance.incrementAndGet();
     for (int i = 0; i < 4; i++) {
       raw[i] = (byte) (tmp & 0xff);
       tmp >>= 8;

@@ -46,7 +46,7 @@ import rice.pastry.direct.proximitygenerators.GenericProximityGenerator;
 // coordinates from input files
 public class GenericNetwork<Identifier, MessageType> extends NetworkSimulatorImpl<Identifier, MessageType> {
 
-  // The static variable MAXOVERLAYSIZE should be set to the n, where its input
+  // pastry_direct_gtitm_max_overlay_size should be set to the n, where its input
   // is a N*N matrix
   public GenericNetwork(Environment env, String inFile) throws IOException {
     this(env, new File(inFile));

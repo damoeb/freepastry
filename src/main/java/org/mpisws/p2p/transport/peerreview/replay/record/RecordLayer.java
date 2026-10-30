@@ -108,22 +108,12 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
 
   int socketCtr = Integer.MIN_VALUE;
 
-  public static ByteBuffer ONE, ZERO;
-
   public RecordLayer(TransportLayer<Identifier, ByteBuffer> tl, String name, Serializer<Identifier> serializer, Environment env) throws IOException {
     this.logger = env.getLogManager().getLogger(RecordLayer.class, null);
     this.identifierSerializer = serializer;
 
     NullHashProvider nhp = new NullHashProvider();
     SecureHistoryFactoryImpl shf = new SecureHistoryFactoryImpl(nhp, env);
-
-    byte[] one = new byte[1];
-    one[0] = 1;
-    ONE = ByteBuffer.wrap(one);
-
-    byte[] zero = new byte[1];
-    zero[0] = 0;
-    ZERO = ByteBuffer.wrap(zero);
 
     this.tl = tl;
     this.tl.setCallback(this);

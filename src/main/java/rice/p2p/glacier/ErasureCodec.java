@@ -64,9 +64,9 @@ public class ErasureCodec {
   final static int Lfield = 10;
   final static int MultField = (1 << Lfield) - 1;
 
-  static int[] ExpToFieldElt;
-  static int[] FieldEltToExp;
-  static boolean isEltInitialized = false;
+  /** Galois field tables: they only depend on Lfield, so they are computed once per JVM. */
+  static final int[] ExpToFieldElt = buildExpToFieldElt();
+  static final int[] FieldEltToExp = buildFieldEltToExp(ExpToFieldElt);
 
   protected Environment environment;
   protected Logger logger;
@@ -84,8 +84,6 @@ public class ErasureCodec {
     numFragments = _numFragments;
     numSurvivors = _numSurvivors;
 
-    if (!isEltInitialized)
-      initElt();
   }
 
   public void dump(byte[] data) {
@@ -368,31 +366,36 @@ public class ErasureCodec {
     return pcd.deserializePastContent(sib, endpoint, type);
   }
 
-  protected void initElt() {
+  private static int[] buildExpToFieldElt() {
     final int polymask[] = {
       0x0000, 0x0003, 0x0007, 0x000B, 0x0013, 0x0025, 0x0043, 0x0083,
       0x011D, 0x0211, 0x0409, 0x0805, 0x1053, 0x201B, 0x402B, 0x8003
       };
 
-    ExpToFieldElt = new int[MultField + Lfield];
+    int[] expToFieldElt = new int[MultField + Lfield];
 
-    ExpToFieldElt[0] = 1;
+    expToFieldElt[0] = 1;
     for (int i = 1; i < MultField + Lfield - 1; i++) {
-      ExpToFieldElt[i] = ExpToFieldElt[i - 1] << 1;
-      if ((ExpToFieldElt[i] & (1 << Lfield)) != 0) {
-        ExpToFieldElt[i] ^= polymask[Lfield];
+      expToFieldElt[i] = expToFieldElt[i - 1] << 1;
+      if ((expToFieldElt[i] & (1 << Lfield)) != 0) {
+        expToFieldElt[i] ^= polymask[Lfield];
       }
     }
-
-    /*
-     *  This is the inverter for the previous field. Note that 0
-     *  is not invertible!
-     */
-    FieldEltToExp = new int[MultField + 1];
-
-    FieldEltToExp[0] = -1;
-    for (int i = 0; i < MultField; i++) {
-      FieldEltToExp[ExpToFieldElt[i]] = i;
-    }
+    return expToFieldElt;
   }
+
+  /**
+   * This is the inverter for the previous field. Note that 0
+   * is not invertible!
+   */
+  private static int[] buildFieldEltToExp(int[] expToFieldElt) {
+    int[] fieldEltToExp = new int[MultField + 1];
+
+    fieldEltToExp[0] = -1;
+    for (int i = 0; i < MultField; i++) {
+      fieldEltToExp[expToFieldElt[i]] = i;
+    }
+    return fieldEltToExp;
+  }
+
 }

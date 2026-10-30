@@ -59,7 +59,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_CHALLE
  *
  */
 public class ChallengeMessage<Identifier extends RawSerializable> implements PeerReviewMessage {
-  public static short TYPE = MSG_CHALLENGE;
+  public static final short TYPE = MSG_CHALLENGE;
 
   public Identifier originator;
   public long evidenceSeq;

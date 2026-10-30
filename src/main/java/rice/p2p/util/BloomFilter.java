@@ -79,7 +79,7 @@ public class BloomFilter implements Serializable {
   /**
    * The length of the random byte arrays which are generated
    */
-  public static int PARAMETER_LENGTH = 4;
+  public static final int PARAMETER_LENGTH = 4;
 
   /**
    * The parameters to the hash functions for this bloom filter

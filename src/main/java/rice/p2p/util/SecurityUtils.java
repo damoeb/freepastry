@@ -182,53 +182,53 @@ public class SecurityUtils {
   /**
    * The message digest used for doing hashing
    */
-  private static MessageDigest hash;
+  private static final MessageDigest hash;
 
   /**
    * The message digest used for doing apop
    */
-  private static MessageDigest apop;
+  private static final MessageDigest apop;
 
   /**
    * The message digest used for doing hmacing
    */
-  private static MessageDigest hmac1;
+  private static final MessageDigest hmac1;
 
   /**
    * The message digest used for doing hmacing
    */
-  private static MessageDigest hmac2;
+  private static final MessageDigest hmac2;
 
   /**
    * The cipher used to encrypt/decrypt data using DES
    */
-  private static Cipher cipherSymmetric;
+  private static final Cipher cipherSymmetric;
 
   /**
    * The cipher used to encrypt/decrypt data using RSA
    */
-  private static Cipher cipherAsymmetric;
-  private static Cipher deprecatedCipherAsymmetric;
+  private static final Cipher cipherAsymmetric;
+  private static final Cipher deprecatedCipherAsymmetric;
 
   /**
    * The generator used to generate DES keys
    */
-  private static KeyGenerator generatorSymmetric;
+  private static final KeyGenerator generatorSymmetric;
 
   /**
    * The generator used to generate RSA keys
    */
-  private static KeyPairGenerator generatorAsymmetric;
+  private static final KeyPairGenerator generatorAsymmetric;
 
   /**
    * The generator used to decode RSA keys
    */
-  private static KeyFactory factoryAsymmetric;
+  private static final KeyFactory factoryAsymmetric;
 
   /**
    * The signature used for verification and signing data.
    */
-  private static Signature signature;
+  private static final Signature signature;
 
   /**
    * The RNG for generating DES IVs

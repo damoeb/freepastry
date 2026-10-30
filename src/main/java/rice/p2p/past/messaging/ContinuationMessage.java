@@ -132,19 +132,19 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
   /**
    * No response or exception.
    */
-  public static byte S_EMPTY = 0;
+  public static final byte S_EMPTY = 0;
   /**
    * Subclass handled serialization.
    */
-  public static byte S_SUB = 1;
+  public static final byte S_SUB = 1;
   /**
    * Java Serialized Response
    */
-  public static byte S_JAVA_RESPONSE = 3;
+  public static final byte S_JAVA_RESPONSE = 3;
   /**
    * Java Serialized Exception
    */
-  public static byte S_JAVA_EXCEPTION = 2;
+  public static final byte S_JAVA_EXCEPTION = 2;
 
 
   /**

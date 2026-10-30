@@ -62,11 +62,11 @@ import rice.environment.time.TimeSource;
  * Window>Preferences>Java>Code Generation>Code and Comments
  */
 public class ProfileSelector extends SelectorManager {
-  public static boolean useHeartbeat = true;
+  public static final boolean useHeartbeat = true;
   int HEART_BEAT_INTERVAL = 60000;
   long lastHeartBeat = 0;
 
-  public static boolean recordStats = true;
+  public static final boolean recordStats = true;
 
   public String lastTaskType = null;
   public String lastTaskClass = null;

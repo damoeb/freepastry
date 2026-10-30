@@ -54,10 +54,10 @@ import rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory;
 public class DistPastryNodeFactory {
 
   // choices of protocols
-  public static int PROTOCOL_SOCKET = 2;
-  public static int PROTOCOL_RENDEZVOUS = 3;
+  public static final int PROTOCOL_SOCKET = 2;
+  public static final int PROTOCOL_RENDEZVOUS = 3;
 
-  public static int PROTOCOL_DEFAULT = PROTOCOL_SOCKET;
+  public static final int PROTOCOL_DEFAULT = PROTOCOL_SOCKET;
 
   /**
    * Creates a distributed pastry node factory for the given protocol.

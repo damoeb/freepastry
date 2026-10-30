@@ -55,7 +55,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Alan Mislove
  */
 public class RingId implements Id {
-  public static short TYPE = 2;
+  public static final short TYPE = 2;
 
   /**
    * Serialver for backward compatibility
@@ -65,7 +65,7 @@ public class RingId implements Id {
   /**
    * Support for coalesced Ids - ensures only one copy of each Id is in memory
    */
-  private static WeakHashMap<RingId, WeakReference<RingId>> RINGID_MAP = new WeakHashMap<RingId, WeakReference<RingId>>();
+  private static final WeakHashMap<RingId, WeakReference<RingId>> RINGID_MAP = new WeakHashMap<RingId, WeakReference<RingId>>();
 
   /**
    * The id which this ringId represents

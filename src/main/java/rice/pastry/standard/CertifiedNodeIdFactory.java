@@ -69,7 +69,7 @@ import rice.pastry.NodeIdFactory;
  */
 public class CertifiedNodeIdFactory implements NodeIdFactory {
 
-  public static String NODE_ID_FILENAME = "nodeId";
+  public static final String NODE_ID_FILENAME = "nodeId";
 
   protected int port;
   protected IPNodeIdFactory realFactory;

@@ -93,17 +93,17 @@ public class XMLObjectInputStream extends ObjectInputStream {
   /**
    * The hashmap of readResolve methods, mapping Class->Method
    */
-  protected static SoftHashMap<Class<?>, Method> READ_RESOLVES = new SoftHashMap<Class<?>, Method>();
+  protected static final SoftHashMap<Class<?>, Method> READ_RESOLVES = new SoftHashMap<Class<?>, Method>();
 
   /**
    * The hashmap of readObject methods, mapping Class->Method
    */
-  protected static SoftHashMap<Class<?>, Method> READ_OBJECTS = new SoftHashMap<Class<?>, Method>();
+  protected static final SoftHashMap<Class<?>, Method> READ_OBJECTS = new SoftHashMap<Class<?>, Method>();
 
   /**
    * A cache of constructors, mapping classes to serialization constructors
    */
-  protected static SoftHashMap<Class<?>, Constructor<?>> CONSTRUCTORS = new SoftHashMap<Class<?>, Constructor<?>>();
+  protected static final SoftHashMap<Class<?>, Constructor<?>> CONSTRUCTORS = new SoftHashMap<Class<?>, Constructor<?>>();
 
   /**
    * The underlying reader, which parses the XML
@@ -632,17 +632,20 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   protected Object newInstance(Class<?> c) throws IOException {
     try {
-      Constructor<?> cons = CONSTRUCTORS.get(c);
+      Constructor<?> cons;
+      synchronized (CONSTRUCTORS) {
+        cons = CONSTRUCTORS.get(c);
 
-      if (cons == null) {
-        if (Externalizable.class.isAssignableFrom(c)) {
-          cons = c.getDeclaredConstructor(new Class<?>[0]);
-        } else {
-          cons = getSerializableConstructor(c);
+        if (cons == null) {
+          if (Externalizable.class.isAssignableFrom(c)) {
+            cons = c.getDeclaredConstructor(new Class<?>[0]);
+          } else {
+            cons = getSerializableConstructor(c);
+          }
+
+          cons.setAccessible(true);
+          CONSTRUCTORS.put(c, cons);
         }
-
-        cons.setAccessible(true);
-        CONSTRUCTORS.put(c, cons);
       }
 
       return cons.newInstance(new Object[0]);
