@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import java.io.IOException;
-import java.util.Observer;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandleListener;
@@ -186,36 +185,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
 
   public abstract void serialize(OutputBuffer buf) throws IOException;
 
-  /****************** Observer pattern with priority, see rice.p2p.commonapi.NodeHandleListener **********/
-
-  /**
-   * @deprecated use addNodeHandleListener(NodeHandleListener)
-   */
-  @Deprecated
-  @Override
-  public void addObserver(Observer o) {
-    addObserver(o, 0);
-  }
-
-  /**
-   *
-   * @param o
-   * @param priority higher priority observers will be called first
-   * @deprecated use addNodeHandleListener(NodeHandleListener, int)
-   */
-  @Deprecated
-  public void addObserver(Observer o, int priority) {
-    addNodeHandleListener(observerListener(o), priority);
-  }
-
-  /**
-   * @deprecated use removeNodeHandleListener(NodeHandleListener)
-   */
-  @Deprecated
-  @Override
-  public void deleteObserver(Observer o) {
-    removeNodeHandleListener(observerListener(o));
-  }
+  /****************** Listeners with priority, see rice.p2p.commonapi.NodeHandleListener **********/
 
   @Override
   public void addNodeHandleListener(NodeHandleListener listener, int priority) {
@@ -241,29 +211,25 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
     return ret;
   }
 
-  /**
-   * Notifies all listeners, regardless of setChanged().
-   */
   @Override
-  public void notifyObservers(Object arg) {
-    logger.atTrace().log(() -> this+".notifyObservers("+arg+"):notifying "+countObservers()+" listeners");
-    notifyNodeHandleListeners(arg);
+  protected void notifyNodeHandleListeners(Object event) {
+    logger.atTrace().log(() -> this+".notifyNodeHandleListeners("+event+"):notifying "+countNodeHandleListeners()+" listeners");
+    super.notifyNodeHandleListeners(event);
   }
 
 
   /**
-   * Method which allows the observers of this socket node handle to be updated.
-   * This method sets this object as changed, and then sends out the update.
+   * Notifies the listeners of this node handle of the update.
    *
    * @param update The update
    */
   public void update(Object update) {
     if (logger != null) {
-      logger.atDebug().log(() -> this+".update("+update+")"+countObservers());
+      logger.atDebug().log(() -> this+".update("+update+")"+countNodeHandleListeners());
     }
-    notifyObservers(update);
+    notifyNodeHandleListeners(update);
     if (logger != null) {
-      logger.atTrace().log(() -> this+".update("+update+")"+countObservers()+" done");
+      logger.atTrace().log(() -> this+".update("+update+")"+countNodeHandleListeners()+" done");
     }
   }
 }

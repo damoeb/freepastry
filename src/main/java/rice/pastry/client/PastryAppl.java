@@ -71,7 +71,7 @@ import rice.pastry.standard.StandardAddress;
  *
  * @author Peter Druschel
  */
-public abstract class PastryAppl /*implements Observer*/
+public abstract class PastryAppl
 {
   protected MessageDeserializer deserializer;
 
@@ -435,7 +435,7 @@ public abstract class PastryAppl /*implements Observer*/
    * Invoked when the Pastry node has joined the overlay network and
    * is ready to send and receive messages
    *
-   * As of FreePastry 1.4.1, replaced by PastryNode Observer pattern.
+   * As of FreePastry 1.4.1, replaced by {@link rice.pastry.PastryNodeListener}.
    */
   public void notifyReady() {}
 

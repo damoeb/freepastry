@@ -48,7 +48,6 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Observable;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -1966,16 +1965,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     if (content == null) return null;
     if (content instanceof RawScribeContent) return (RawScribeContent)content;
     return new JavaSerializedScribeContent(content);
-  }
-
-  /**
-   * Called when a Node's liveness changes
-   *
-   * @deprecated ScribeImpl is no longer a java.util.Observer; use nodeHandleUpdate(NodeHandle, Object)
-   */
-  @Deprecated
-  public void update(Observable o, Object arg) {
-    nodeHandleUpdate((NodeHandle)o, arg);
   }
 
   /**

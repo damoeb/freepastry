@@ -38,7 +38,6 @@ package rice.pastry.standard;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Observable;
 
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
@@ -518,18 +517,6 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     if (ready) {
       localNode.removePastryNodeListener(this);
       start();
-    }
-  }
-
-  /**
-   * @deprecated this class is no longer an Observer, see {@link #nodeHandleUpdate} and {@link #pastryNodeReady}
-   */
-  @Deprecated
-  public void update(final Observable o, final Object arg) {
-    if (o instanceof rice.p2p.commonapi.NodeHandle) {
-      nodeHandleUpdate((rice.p2p.commonapi.NodeHandle)o, arg);
-    } else if ((o instanceof PastryNode) && (arg instanceof Boolean)) {
-      pastryNodeReady((PastryNode)o, ((Boolean)arg).booleanValue());
     }
   }
 

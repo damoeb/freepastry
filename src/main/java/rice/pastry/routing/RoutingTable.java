@@ -41,16 +41,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Observer;
 
 import org.slf4j.Logger;
-import rice.p2p.commonapi.LegacyObservable;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeSet;
 import rice.pastry.NodeSetEventSource;
 import rice.pastry.NodeSetListener;
-import rice.pastry.NodeSetUpdate;
 import rice.pastry.PastryNode;
 
 /**
@@ -81,7 +78,7 @@ import rice.pastry.PastryNode;
  * @author Peter Druschel
  */
 
-public class RoutingTable extends LegacyObservable implements NodeSetEventSource {
+public class RoutingTable implements NodeSetEventSource {
   /**
    * The routing calculations will occur in base <EM>2 <SUP>idBaseBitLength
    * </SUP></EM>
@@ -539,7 +536,7 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   }
 
   /**
-   * Is called by the Observer pattern whenever a RouteSet in this table has
+   * Is called by each RouteSet in this table, as its NodeSetListener, whenever it has
    * changed.
    *
    * @param o the RouteSet
@@ -557,16 +554,11 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
       }
     }
 
-    // pass the event to the Observers of this RoutingTable
+    // pass the event to the listeners of this RoutingTable
     synchronized (listeners) {
       for (int i = 0; i < listeners.size(); i++) {
         ((NodeSetListener)listeners.get(i)).nodeSetUpdate(this,handle,added);
       }
-    }
-    // handle deprecated interface
-    if (countObservers() > 0) {
-      setChanged();
-      notifyObservers(new NodeSetUpdate(handle, added));
     }
   }
 
@@ -667,26 +659,6 @@ public class RoutingTable extends LegacyObservable implements NodeSetEventSource
   }
 
   ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
-
-  /**
-   * Generates too many objects to use this interface
-   * @deprecated use addNodeSetListener
-   */
-  @Deprecated
-  public void addObserver(Observer o) {
-    logger.warn("WARNING: Observer on RoutingTable is deprecated", new Exception("Stack Trace"));
-    super.addObserver(o);
-  }
-
-  /**
-   * Generates too many objects to use this interface
-   * @deprecated use deleteNodeSetListener
-   */
-  @Deprecated
-  public void deleteObserver(Observer o) {
-    logger.warn("WARNING: Observer on RoutingTable is deprecated");
-    super.deleteObserver(o);
-  }
 
   public void addNodeSetListener(NodeSetListener listener) {
     synchronized (listeners) {

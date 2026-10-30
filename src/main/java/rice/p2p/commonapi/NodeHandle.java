@@ -43,7 +43,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Observer;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
@@ -54,17 +53,14 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * node handle is a handle to a known node, which conceptually includes the
  * node's Id, as well as the node's underlying network address (such as IP/port).
  *
- * This class is (unfortunately) an abstact class due to the need to be observable.
- * Observe it with {@link #addNodeHandleListener(NodeHandleListener)}; the inherited
- * {@code java.util.Observable} methods are kept only for compatibility and are
- * implemented on top of the listener list.
+ * Observe it with {@link #addNodeHandleListener(NodeHandleListener)}.
  *
  * @version $Id: NodeHandle.java 4231 2008-06-24 12:22:18Z jeffh $
  *
  * @author Alan Mislove
  * @author Peter Druschel
  */
-public abstract class NodeHandle extends LegacyObservable implements Serializable  {
+public abstract class NodeHandle implements Serializable {
 
   // constants defining types of observable events
   public static final Integer PROXIMITY_CHANGED = Integer.valueOf(1);
@@ -112,7 +108,7 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
 
   public abstract void serialize(OutputBuffer buf) throws IOException;
 
-  /****************** Typed listeners (replacement for java.util.Observer) **********/
+  /****************** Listeners **********/
 
   /**
    * A registered listener and its priority.
@@ -220,98 +216,12 @@ public abstract class NodeHandle extends LegacyObservable implements Serializabl
     }
   }
 
-  /****************** Deprecated java.util.Observer compatibility **********/
-
   /**
-   * Adapts a java.util.Observer to a NodeHandleListener.  Equal iff the observers are equal.
+   * @return the number of registered listeners
    */
-  @Deprecated
-  private static final class ObserverListener implements NodeHandleListener {
-    final Observer observer;
-
-    ObserverListener(Observer observer) {
-      this.observer = observer;
-    }
-
-    public void nodeHandleUpdate(NodeHandle handle, Object event) {
-      observer.update(handle, event);
-    }
-
-    public boolean equals(Object o) {
-      return (o instanceof ObserverListener) && observer.equals(((ObserverListener)o).observer);
-    }
-
-    public int hashCode() {
-      return observer.hashCode();
-    }
-
-    public String toString() {
-      return observer.toString();
-    }
-  }
-
-  /**
-   * @deprecated for implementing the deprecated Observer methods in subclasses only
-   * @return a listener that forwards to the observer, equal to any other listener wrapping an equal observer
-   */
-  @Deprecated
-  protected static NodeHandleListener observerListener(Observer o) {
-    return new ObserverListener(o);
-  }
-
-  /**
-   * @deprecated use addNodeHandleListener
-   */
-  @Deprecated
-  @Override
-  public void addObserver(Observer o) {
-    addNodeHandleListener(observerListener(o));
-  }
-
-  /**
-   * @deprecated use removeNodeHandleListener
-   */
-  @Deprecated
-  @Override
-  public void deleteObserver(Observer o) {
-    removeNodeHandleListener(observerListener(o));
-  }
-
-  /**
-   * Same semantics as Observable: only notifies if setChanged() was called.
-   * Subclasses should call notifyNodeHandleListeners() instead.
-   */
-  @Override
-  public void notifyObservers(Object arg) {
-    synchronized (this) {
-      if (!hasChanged()) return;
-      clearChanged();
-    }
-    notifyNodeHandleListeners(arg);
-  }
-
-  @Override
-  public void notifyObservers() {
-    notifyObservers(null);
-  }
-
-  /**
-   * @return the number of registered listeners (including Observers)
-   */
-  @Override
-  public int countObservers() {
+  public int countNodeHandleListeners() {
     synchronized (listeners) {
       return listeners.size();
-    }
-  }
-
-  /**
-   * Removes all listeners (including Observers).
-   */
-  @Override
-  public void deleteObservers() {
-    synchronized (listeners) {
-      listeners.clear();
     }
   }
 }

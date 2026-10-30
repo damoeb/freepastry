@@ -39,8 +39,6 @@ package rice.p2p.commonapi.testing;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
 
 import org.junit.jupiter.api.Test;
 import rice.p2p.commonapi.Id;
@@ -53,8 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests the NodeHandleListener mechanism of NodeHandle that replaced java.util.Observer,
- * and the deprecated Observer adapters on top of it.
+ * Tests the NodeHandleListener mechanism of NodeHandle.
  */
 public class NodeHandleListenerTest {
 
@@ -71,11 +68,6 @@ public class NodeHandleListenerTest {
 
     void fire(Object event) {
       notifyNodeHandleListeners(event);
-    }
-
-    void changeAndNotifyObservers(Object event) {
-      setChanged();
-      notifyObservers(event);
     }
   }
 
@@ -119,7 +111,7 @@ public class NodeHandleListenerTest {
     handle.fire(NodeHandle.DECLARED_LIVE);
 
     assertEquals(List.of("a:3", "b:3"), log);
-    assertEquals(2, handle.countObservers());
+    assertEquals(2, handle.countNodeHandleListeners());
   }
 
   @Test
@@ -139,34 +131,5 @@ public class NodeHandleListenerTest {
 
     assertEquals(List.of("once:2", "always:2", "always:3"), log);
     assertFalse(handle.removeNodeHandleListener(new Recorder("unknown", log)));
-  }
-
-  @Test
-  @SuppressWarnings("deprecation") // exercises the deprecated java.util.Observer compatibility adapters
-  void deprecatedObserversAreAdaptedOntoListeners() {
-    TestHandle handle = new TestHandle();
-    List<Object> sources = new ArrayList<Object>();
-    List<Object> events = new ArrayList<Object>();
-    Observer observer = new Observer() {
-      public void update(Observable o, Object arg) {
-        sources.add(o);
-        events.add(arg);
-      }
-    };
-    handle.addObserver(observer);
-    assertEquals(1, handle.countObservers());
-
-    handle.fire(NodeHandle.PROXIMITY_CHANGED);
-    // Observable semantics: notifyObservers() without setChanged() does nothing
-    handle.notifyObservers(NodeHandle.DECLARED_DEAD);
-    handle.changeAndNotifyObservers(NodeHandle.DECLARED_LIVE);
-
-    assertEquals(List.of(handle, handle), sources);
-    assertEquals(List.of(NodeHandle.PROXIMITY_CHANGED, NodeHandle.DECLARED_LIVE), events);
-
-    handle.deleteObserver(observer);
-    assertEquals(0, handle.countObservers());
-    handle.fire(NodeHandle.DECLARED_DEAD);
-    assertEquals(2, events.size());
   }
 }

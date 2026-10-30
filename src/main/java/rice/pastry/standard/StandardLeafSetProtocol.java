@@ -38,7 +38,6 @@ package rice.pastry.standard;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Observable;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandleListener;
@@ -399,14 +398,6 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       if (arg == NodeHandle.DECLARED_DEAD) {
         leafSet.remove((NodeHandle)o);
       }
-  }
-
-  /**
-   * @deprecated this class is no longer an Observer, see {@link #nodeHandleUpdate}
-   */
-  @Deprecated
-  public void update(Observable o, Object arg) {
-    nodeHandleUpdate((NodeHandle)o, arg);
   }
 
 }

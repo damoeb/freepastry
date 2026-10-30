@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Observable;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
@@ -215,15 +214,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
     if (localnode.getLocalHandle().equals(this)) return false;
     ((PastryNode)localnode).getLivenessProvider().checkLiveness(this, null);
     return getLiveness() < LIVENESS_DEAD;
-  }
-
-  /**
-   * @param o ignored
-   * @param obj ignored
-   * @deprecated does nothing; SocketNodeHandle is no longer an Observer
-   */
-  @Deprecated
-  public void update(Observable o, Object obj) {
   }
 
 

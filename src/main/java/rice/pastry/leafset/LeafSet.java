@@ -46,7 +46,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Observer;
 import java.util.Set;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -798,32 +797,9 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
 
     return result;
   }
-  /**
-   * Add observer method.
-   *
-   * @deprecated use addNodeSetListener
-   * @param o the observer to add.
-   */
-  @Deprecated
-  public void addObserver(Observer o) {
-    cwSet.addObserver(o);
-    ccwSet.addObserver(o);
-  }
 
   /**
-   * Delete observer method.
-   *
-   * @deprecated use deleteNodeSetListener
-   * @param o the observer to delete.
-   */
-  @Deprecated
-  public void deleteObserver(Observer o) {
-    cwSet.deleteObserver(o);
-    ccwSet.deleteObserver(o);
-  }
-
-  /**
-   * Add observer method.
+   * Adds a listener to both halves of the leaf set.
    *
    * @param listener the listener to add.
    */
@@ -833,7 +809,7 @@ public class LeafSet implements Serializable, Iterable<NodeHandle> {
   }
 
   /**
-   * Delete observer method.
+   * Removes a listener from both halves of the leaf set.
    *
    * @param listener the listener to remove.
    */

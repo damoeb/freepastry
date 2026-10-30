@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.commonapi;
 
 /**
- * Typed replacement for using {@code java.util.Observer} on a {@link NodeHandle}.
+ * Listener for liveness and proximity changes of a {@link NodeHandle}.
  * Register with {@link NodeHandle#addNodeHandleListener(NodeHandleListener)}.
  */
 public interface NodeHandleListener {

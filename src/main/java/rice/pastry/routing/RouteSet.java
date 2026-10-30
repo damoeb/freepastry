@@ -43,7 +43,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Observable;
 
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -213,14 +212,6 @@ public class RouteSet implements NodeSetI, Serializable,
       // changed to remove dead handles - AM
       remove((NodeHandle) o);
     }
-  }
-
-  /**
-   * @deprecated RouteSet is no longer an Observer, see {@link #nodeHandleUpdate}
-   */
-  @Deprecated
-  public void update(Observable o, Object arg) {
-    nodeHandleUpdate((NodeHandle) o, arg);
   }
 
   /**

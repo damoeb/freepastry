@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.pastry.direct;
 
 import java.io.IOException;
-import java.util.Observable;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -116,16 +115,6 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   }
 
   /**
-   * Marks this handle changed and notifies its observers.
-   *
-   * @param arg the update passed to the observers
-   */
-  public void notifyObservers(Object arg) {
-    setChanged();
-    super.notifyObservers(arg);
-  }
-
-  /**
    * @return true if the node is not dead
    */
   public boolean ping() {
@@ -199,18 +188,10 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
     localNodeUpdate();
   }
 
-  /**
-   * @deprecated this class is no longer an Observer, see {@link PastryNodeListener}
-   */
-  @Deprecated
-  public void update(Observable arg0, Object arg1) {
-    localNodeUpdate();
-  }
-
   private void localNodeUpdate() {
     if (simulator.isAlive(this)) {
     } else {
-      notifyObservers(NodeHandle.DECLARED_DEAD);
+      notifyNodeHandleListeners(NodeHandle.DECLARED_DEAD);
     }
   }
 

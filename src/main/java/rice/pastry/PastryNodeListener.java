@@ -37,14 +37,13 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 /**
- * Typed replacement for using {@code java.util.Observer} on a {@link PastryNode}.
+ * Listener for readiness and join failures of a {@link PastryNode}.
  * Register with {@link PastryNode#addPastryNodeListener(PastryNodeListener)}.
  * Both methods do nothing by default, so implementors only override what they need.
  */
 public interface PastryNodeListener {
   /**
-   * Called whenever the node's readiness is (re)evaluated, i.e. where Observers
-   * used to receive {@code Boolean.TRUE} / {@code Boolean.FALSE}.
+   * Called whenever the node's readiness is (re)evaluated.
    *
    * @param node the node
    * @param ready true if the node is ready
@@ -53,8 +52,7 @@ public interface PastryNodeListener {
   }
 
   /**
-   * Called when joining the ring failed, i.e. where Observers used to receive
-   * the {@link JoinFailedException}.
+   * Called when joining the ring failed.
    *
    * @param node the node
    * @param reason why the join failed

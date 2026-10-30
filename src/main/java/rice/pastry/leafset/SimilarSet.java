@@ -42,14 +42,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.NoSuchElementException;
-import java.util.Observer;
 
-import rice.p2p.commonapi.LegacyObservable;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeSetEventSource;
 import rice.pastry.NodeSetListener;
-import rice.pastry.NodeSetUpdate;
 import rice.pastry.routing.RouteSet;
 import rice.pastry.routing.RoutingTable;
 
@@ -63,7 +60,7 @@ import rice.pastry.routing.RoutingTable;
  * @author Peter Druschel
  */
 
-public class SimilarSet extends LegacyObservable implements NodeSetEventSource, Serializable /*, Observer*/ {
+public class SimilarSet implements NodeSetEventSource, Serializable {
 
   private static final long serialVersionUID = 2289610430696506873L;
 
@@ -215,24 +212,6 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
 
   transient ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
 
-  /**
-   * Generates too many objects to use this interface
-   * @deprecated use addNodeSetListener
-   */
-  @Deprecated
-  public void addObserver(Observer o) {
-    super.addObserver(o);
-  }
-
-  /**
-   * Generates too many objects to use this interface
-   * @deprecated use removeNodeSetListener
-   */
-  @Deprecated
-  public void deleteObserver(Observer o) {
-    super.deleteObserver(o);
-  }
-
   public void addNodeSetListener(NodeSetListener listener) {
     synchronized (listeners) {
       listeners.add(listener);
@@ -246,16 +225,11 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
   }
 
   protected void notifyListeners(NodeHandle handle, boolean added) {
-    // pass the event to the Observers of this RoutingTable
+    // pass the event to the listeners of this set
     synchronized (listeners) {
       for (int i = 0; i < listeners.size(); i++) {
         ((NodeSetListener)listeners.get(i)).nodeSetUpdate(this,handle,added);
       }
-    }
-    // handle deprecated interface
-    if (countObservers() > 0) {
-      setChanged();
-      notifyObservers(new NodeSetUpdate(handle, added));
     }
   }
 

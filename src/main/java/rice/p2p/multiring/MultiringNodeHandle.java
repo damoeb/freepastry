@@ -39,7 +39,6 @@ package rice.p2p.multiring;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.util.Observable;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -126,18 +125,6 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
   @Deprecated
   public int proximity() {
     return handle.proximity();
-  }
-
-  /**
-   * Observable callback.  Simply rebroadcasts
-   *
-   * @deprecated MultiringNodeHandle is no longer a java.util.Observer; use nodeHandleUpdate(NodeHandle, Object)
-   * @param o the updated object
-   * @param obj The paramter
-   */
-  @Deprecated
-  public void update(Observable o, Object obj) {
-    nodeHandleUpdate((NodeHandle) o, obj);
   }
 
   /**

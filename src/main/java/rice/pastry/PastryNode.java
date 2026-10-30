@@ -45,7 +45,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Observer;
 import java.util.Vector;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
@@ -68,7 +67,6 @@ import rice.Continuation;
 import rice.Destructable;
 import rice.Executable;
 import rice.environment.Environment;
-import rice.p2p.commonapi.LegacyObservable;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.exception.AppNotRegisteredException;
 import rice.p2p.commonapi.exception.AppSocketException;
@@ -102,7 +100,7 @@ import rice.pastry.transport.SocketAdapter;
  * @author Andrew Ladd
  */
 
-public class PastryNode extends LegacyObservable implements
+public class PastryNode implements
     rice.p2p.commonapi.Node, Destructable, NodeHandleFactory<NodeHandle>,
     LivenessProvider<NodeHandle>, ProximityProvider<NodeHandle>,
     ProximityListener<NodeHandle>,
@@ -410,54 +408,11 @@ public class PastryNode extends LegacyObservable implements
     return routeSet;
   }
 
-  /**
-   * Add a leaf set observer to the Pastry node.
-   *
-   * @deprecated use addLeafSetListener
-   * @param o the observer.
-   */
-  @Deprecated
-  public void addLeafSetObserver(Observer o) {
-    leafSet.addObserver(o);
-  }
-
-  /**
-   * Delete a leaf set observer from the Pastry node.
-   *
-   * @deprecated use deleteLeafSetListener
-   * @param o the observer.
-   */
-  @Deprecated
-  public void deleteLeafSetObserver(Observer o) {
-    leafSet.deleteObserver(o);
-  }
-
   public void addLeafSetListener(NodeSetListener listener) {
     leafSet.addNodeSetListener(listener);
   }
   public void deleteLeafSetListener(NodeSetListener listener) {
     leafSet.deleteNodeSetListener(listener);
-  }
-  /**
-   * Add a route set observer to the Pastry node.
-   *
-   * @deprecated use addRouteSetListener
-   * @param o the observer.
-   */
-  @Deprecated
-  public void addRouteSetObserver(Observer o) {
-    routeSet.addObserver(o);
-  }
-
-  /**
-   * Delete a route set observer from the Pastry node.
-   *
-   * @deprecated use deleteRouteSetListener
-   * @param o the observer.
-   */
-  @Deprecated
-  public void deleteRouteSetObserver(Observer o) {
-    routeSet.deleteObserver(o);
   }
 
   public void addRouteSetListener(NodeSetListener listener) {
@@ -468,11 +423,10 @@ public class PastryNode extends LegacyObservable implements
     routeSet.removeNodeSetListener(listener);
   }
 
-  /****************** PastryNodeListener (replacement for java.util.Observer) **********/
+  /****************** PastryNodeListener **********/
 
   /**
-   * Registered listeners, including adapted Observers.  Notified in reverse order
-   * of registration, like java.util.Observable.
+   * Registered listeners.  Notified in reverse order of registration.
    */
   private final ArrayList<PastryNodeListener> pastryNodeListeners = new ArrayList<PastryNodeListener>();
 
@@ -501,8 +455,7 @@ public class PastryNode extends LegacyObservable implements
   }
 
   /**
-   * @param event Boolean (ready), JoinFailedException, or (for Observers only) anything
-   *   passed to notifyObservers() by a subclass
+   * @param event Boolean (ready) or JoinFailedException
    */
   private void notifyPastryNodeListeners(Object event) {
     PastryNodeListener[] l;
@@ -510,93 +463,11 @@ public class PastryNode extends LegacyObservable implements
       l = pastryNodeListeners.toArray(new PastryNodeListener[pastryNodeListeners.size()]);
     }
     for (int i = l.length-1; i >= 0; i--) {
-      if (l[i] instanceof ObserverListener) {
-        ((ObserverListener)l[i]).observer.update(this, event);
-      } else if (event instanceof Boolean) {
+      if (event instanceof Boolean) {
         l[i].pastryNodeReady(this, ((Boolean)event).booleanValue());
       } else if (event instanceof JoinFailedException) {
         l[i].pastryNodeJoinFailed(this, (JoinFailedException)event);
       }
-    }
-  }
-
-  /**
-   * Adapts a java.util.Observer.  Equal iff the observers are equal.
-   */
-  @Deprecated
-  private static final class ObserverListener implements PastryNodeListener {
-    final Observer observer;
-
-    ObserverListener(Observer observer) {
-      this.observer = observer;
-    }
-
-    public boolean equals(Object o) {
-      return (o instanceof ObserverListener) && observer.equals(((ObserverListener)o).observer);
-    }
-
-    public int hashCode() {
-      return observer.hashCode();
-    }
-
-    public String toString() {
-      return observer.toString();
-    }
-  }
-
-  /**
-   * @deprecated use addPastryNodeListener
-   */
-  @Deprecated
-  @Override
-  public void addObserver(Observer o) {
-    if (o == null) throw new NullPointerException();
-    addPastryNodeListener(new ObserverListener(o));
-  }
-
-  /**
-   * @deprecated use removePastryNodeListener
-   */
-  @Deprecated
-  @Override
-  public void deleteObserver(Observer o) {
-    removePastryNodeListener(new ObserverListener(o));
-  }
-
-  /**
-   * Same semantics as Observable: only notifies if setChanged() was called.
-   */
-  @Override
-  public void notifyObservers(Object arg) {
-    synchronized (this) {
-      if (!hasChanged()) return;
-      clearChanged();
-    }
-    notifyPastryNodeListeners(arg);
-  }
-
-  @Override
-  public void notifyObservers() {
-    notifyObservers(null);
-  }
-
-  /**
-   * @return the number of registered PastryNodeListeners (including Observers)
-   */
-  @Override
-  public int countObservers() {
-    synchronized (pastryNodeListeners) {
-      return pastryNodeListeners.size();
-    }
-  }
-
-  /**
-   * Removes all PastryNodeListeners (including Observers).
-   */
-  @Override
-  public void deleteObservers() {
-    synchronized (pastryNodeListeners) {
-      pastryNodeListeners.clear();
     }
   }
 

@@ -47,7 +47,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Observable;
 
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import rice.environment.params.Parameters;
@@ -548,16 +547,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     }
 
     return;
-  }
-
-  /**
-   * Can be PastryNode updates, leafset updates, or nodehandle updates.
-   *
-   * @deprecated this class is no longer an Observer, see {@link #nodeHandleUpdate} and {@link PastryNodeListener}
-   */
-  @Deprecated
-  public void update(Observable arg0, Object arg) {
-    update((Object)arg0, arg);
   }
 
   /**
