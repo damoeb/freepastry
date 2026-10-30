@@ -395,7 +395,8 @@ public class RouteSet implements NodeSetI,
    *         found.
    */
   public rice.p2p.commonapi.NodeHandle getHandle(rice.p2p.commonapi.Id id) {
-    return getHandle((Id) id);
+    int index = getIndex((Id) id);
+    return index < 0 ? null : get(index);
   }
 
   /**

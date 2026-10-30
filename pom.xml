@@ -77,7 +77,6 @@
             -Xep:CollectionIncompatibleType:OFF
             -Xep:CompareToZero:OFF
             -Xep:ComparisonOutOfRange:OFF
-            -Xep:InfiniteRecursion:OFF
             -Xep:SelfAssignment:OFF
             -Xep:SelfEquals:OFF
         </errorprone.pending.flags>
