@@ -58,23 +58,23 @@ public class SplitStreamImpl implements SplitStream {
   /**
    * The scribe instance for this SplitStream Object
    */
-  protected Scribe scribe;
+  private final Scribe scribe;
 
   /**
    * The node that this application is running on
    */
-  protected Node node;
+  private final Node node;
 
   /**
    * Hashtable of all the channels currently created on this node implicitly or explicitly.
    */
-  protected Hashtable<ChannelId, Channel> channels;
+  private final Hashtable<ChannelId, Channel> channels;
 
-  protected final int stripeBaseBitLength;
-  protected final int maxFailedSubscriptions;
-  protected final int defaultMaxChildren;
+  private final int stripeBaseBitLength;
+  private final int maxFailedSubscriptions;
+  private final int defaultMaxChildren;
 
-  protected String instance;
+  private final String instance;
 
   /**
    * Convenience constructor which uses the default SplitStreamScribePolicy.

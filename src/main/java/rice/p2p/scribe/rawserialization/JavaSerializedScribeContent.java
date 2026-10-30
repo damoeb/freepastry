@@ -50,7 +50,7 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
 public class JavaSerializedScribeContent implements RawScribeContent {
   public static final short TYPE = 0;
 
-  public ScribeContent content;
+  private final ScribeContent content;
 
   public JavaSerializedScribeContent(ScribeContent content) {
     this.content = content;

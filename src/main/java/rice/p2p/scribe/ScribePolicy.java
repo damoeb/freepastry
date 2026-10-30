@@ -162,7 +162,7 @@ public interface ScribePolicy {
    * @author amislove
    */
   public static class DefaultScribePolicy implements ScribePolicy {
-    protected Environment environment;
+    private final Environment environment;
     public DefaultScribePolicy(Environment env) {
       environment = env;
     }
@@ -243,7 +243,7 @@ public interface ScribePolicy {
     /**
      * The number of children to allow per topic
      */
-    protected int maxChildren;
+    private final int maxChildren;
 
     /**
      * Constructor which takes a maximum number

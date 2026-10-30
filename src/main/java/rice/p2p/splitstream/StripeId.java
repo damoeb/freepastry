@@ -53,7 +53,7 @@ public class StripeId {
   /**
    * This stripe's Id
    */
-  protected Id id;
+  private final Id id;
 
   /**
    * Constructor that takes in a nodeId and makes a StripeId

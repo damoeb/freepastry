@@ -53,7 +53,7 @@ public class ChannelId {
   /**
    * The underlying id for this channelid
    */
-  protected Id id;
+  private final Id id;
 
   /**
    * Constructor that takes in an Id and makes a ChannelId

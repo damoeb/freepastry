@@ -59,7 +59,7 @@ public abstract class ScribeMessage implements RawMessage {
   private static final long serialVersionUID = 4593674882226544604L;
 
   // the source of this message
-  protected NodeHandle source;
+  private NodeHandle source;
 
   // the topic of this message
   protected Topic topic;

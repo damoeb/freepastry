@@ -64,7 +64,7 @@ public class AnycastMessage extends ScribeMessage {
   /**
    * the content of this message
    */
-  protected RawScribeContent content;
+  private RawScribeContent content;
 
   /**
    * the list of nodes which we have visited
@@ -76,7 +76,7 @@ public class AnycastMessage extends ScribeMessage {
    */
   protected LinkedList<NodeHandle> toVisit;
 
-  protected NodeHandle initialRequestor;
+  private final NodeHandle initialRequestor;
 
   /**
    * Constructor which takes a unique integer Id

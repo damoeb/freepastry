@@ -100,12 +100,12 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   /**
    * the hashtable of topic -> TopicManager
    */
-  public Hashtable<Topic, TopicManager> topicManagers;
+  private final Hashtable<Topic, TopicManager> topicManagers;
 
   /**
    * this scribe's policy
    */
-  protected ScribePolicy policy;
+  private ScribePolicy policy;
 
   /**
    * this scribe's maintenancePolicy
@@ -115,12 +115,12 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   /**
    * this application's endpoint
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
    * the local node handle
    */
-  protected NodeHandle localHandle;
+  private final NodeHandle localHandle;
 
   /**
    * The hashtable of outstanding lost messags keyed by the UID of the SubscribeMessage
@@ -138,30 +138,30 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
   private String instance;
 
-  protected Node node;
+  private final Node node;
 
   /**
    * This contains a mapping of child - > all topics for which the local node
    * has this node(hashtable key) as a child
    */
-  public HashMap<NodeHandle, Collection<Topic>> allChildren;
+  private final HashMap<NodeHandle, Collection<Topic>> allChildren;
 
   /**
    * This contains a mapping of parent - > all topics for which the local node
    * has this node(hashtable key) as a parent
    */
-  public HashMap<NodeHandle, Collection<Topic>> allParents;
+  private final HashMap<NodeHandle, Collection<Topic>> allParents;
 
   /**
    * Topics that we are the root.
    */
-  public Set<Topic> roots = new HashSet<Topic>();
+  private final Set<Topic> roots = new HashSet<Topic>();
 
   /**
    * Topics that (should) have an outsanding subscription.
    * Topics that are in this set have no parent, and we are not the root.
    */
-  public Set<Topic> pending = new HashSet<Topic>();
+  private final Set<Topic> pending = new HashSet<Topic>();
 
   ScribeContentDeserializer contentDeserializer;
 
@@ -1830,27 +1830,27 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     /**
      * The topic this manager tracks
      */
-    protected Topic topic;
+    private final Topic topic;
 
     /**
      * The current path to the root for this node
      */
-    protected List<Id> pathToRoot;
+    private List<Id> pathToRoot;
 
     /**
      * The local clients subscribed to the topic
      */
-    protected ArrayList<ScribeMultiClient> clients;
+    private final ArrayList<ScribeMultiClient> clients;
 
     /**
      * The local node's children in the topic's tree
      */
-    protected ArrayList<NodeHandle> children;
+    private final ArrayList<NodeHandle> children;
 
     /**
      * The local node's parent in the topic's tree, or null if it has none
      */
-    protected NodeHandle parent;
+    private NodeHandle parent;
 
     /**
      * Constructor for TopicManager.

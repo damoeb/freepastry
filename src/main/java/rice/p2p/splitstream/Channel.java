@@ -67,17 +67,17 @@ public class Channel {
   /**
    * ChannelId for this channel
    */
-  protected ChannelId channelId;
+  private final ChannelId channelId;
 
   /**
    * The list of stripeIds for this channel
    */
-  protected Stripe[] stripes;
+  private final Stripe[] stripes;
 
   /**
    * The Id of the local node
    */
-  protected Id localId;
+  private final Id localId;
 
   /**
    * Constructor to create a new channel from scratch

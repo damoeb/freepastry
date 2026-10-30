@@ -53,7 +53,7 @@ public class SplitStreamContent implements RawScribeContent {
   /**
    * The internal data - just the bytes
    */
-  protected byte[] data;
+  private final byte[] data;
 
   /**
    * Constructor taking in a byte[]

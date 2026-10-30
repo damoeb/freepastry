@@ -56,8 +56,8 @@ import rice.p2p.scribe.Topic;
  */
 public class SubscribeLostMessage implements Message {
 
-  protected Set<Topic> topics;
-  protected int id;
+  private final Set<Topic> topics;
+  private final int id;
   CancellableTask task;
   ScribeMultiClient client;
 

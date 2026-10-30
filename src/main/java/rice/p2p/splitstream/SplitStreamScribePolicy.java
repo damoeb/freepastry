@@ -74,17 +74,17 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
   /**
    * A reference to this policy's splitstream object
    */
-  protected SplitStream splitStream;
+  private final SplitStream splitStream;
 
   /**
    * A reference to this policy's scribe object
    */
-  protected Scribe scribe;
+  private final Scribe scribe;
 
   /**
    * A mapping from channelId -> maximum children
    */
-  protected Hashtable<ChannelId, Integer> policy;
+  private final Hashtable<ChannelId, Integer> policy;
 
   /**
    * Constructor which takes a splitStream object

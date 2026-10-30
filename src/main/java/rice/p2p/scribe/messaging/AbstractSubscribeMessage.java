@@ -59,10 +59,10 @@ public abstract class AbstractSubscribeMessage implements RawMessage /*extends S
   /**
   * The id of this subscribe message
    */
-  protected int id;
+  private final int id;
 
   // the source of this message
-  protected NodeHandle source;
+  private final NodeHandle source;
 
   /**
    * You can now subscribe to a bunch of Topics at the same time.

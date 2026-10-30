@@ -58,7 +58,7 @@ public class AnycastFailureMessage extends ScribeMessage {
   public static final short TYPE = 11;
 
   // This is the same content that was sent in the anycast message
-  public RawScribeContent content;
+  private final RawScribeContent content;
 
   public AnycastFailureMessage(NodeHandle source, Topic topic, ScribeContent content) {
     this(source, topic, content instanceof RawScribeContent ? (RawScribeContent)content : new JavaSerializedScribeContent(content));
@@ -75,7 +75,7 @@ public class AnycastFailureMessage extends ScribeMessage {
 
   public String toString() {
     String s = "AnycastFailureMessage: ";
-    s = s + "Source= " + source + " Topic= " + topic + "ScribeContent= "
+    s = s + "Source= " + getSource() + " Topic= " + topic + "ScribeContent= "
         + content;
     return s;
   }

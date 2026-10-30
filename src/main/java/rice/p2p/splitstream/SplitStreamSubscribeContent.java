@@ -65,7 +65,7 @@ public class SplitStreamSubscribeContent implements RawScribeContent {
   /**
    * The stage that the client attempting to join is in
    */
-  protected int stage;
+  private final int stage;
 
   /**
    * Constructor taking the join stage

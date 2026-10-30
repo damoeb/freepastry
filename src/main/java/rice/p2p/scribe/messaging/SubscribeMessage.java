@@ -64,12 +64,12 @@ public class SubscribeMessage extends AnycastMessage {
   /**
    * The original subscriber
    */
-  protected NodeHandle subscriber;
+  private NodeHandle subscriber;
 
   /**
    * The id of this message
    */
-  protected int id;
+  private final int id;
 
   /**
    * You can now subscribe to a bunch of Topics at the same time.

@@ -60,7 +60,7 @@ public class PublishMessage extends ScribeMessage {
   public static final short TYPE = 8;
 
   // the content of this message
-  protected RawScribeContent content;
+  private final RawScribeContent content;
 
   /**
    * Constructor

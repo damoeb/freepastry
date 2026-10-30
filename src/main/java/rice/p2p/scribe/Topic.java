@@ -57,7 +57,7 @@ public class Topic implements Serializable, Comparable<Topic> {
   /**
    * The Id to which this topic is mapped
    */
-  protected Id id;
+  private final Id id;
 
   /**
    * Constructor which takes an Id for this topic

@@ -67,7 +67,7 @@ public class SubscribeAckMessage extends AbstractSubscribeMessage {
   /**
    * The contained path to the root
    */
-  protected List<List<Id>> pathsToRoot;
+  private final List<List<Id>> pathsToRoot;
 
   /**
    * Constructor
@@ -105,8 +105,8 @@ public class SubscribeAckMessage extends AbstractSubscribeMessage {
    * @return A String
    */
   public String toString() {
-    if (topics.size() == 1) return "SubscribeAckMessage{"+topics.get(0)+" ID:"+id+"}";
-    return "SubscribeAckMessage{"+topics.size()+" ID:"+id+"}";
+    if (topics.size() == 1) return "SubscribeAckMessage{"+topics.get(0)+" ID:"+getId()+"}";
+    return "SubscribeAckMessage{"+topics.size()+" ID:"+getId()+"}";
   }
 
   /***************** Raw Serialization ***************************************/

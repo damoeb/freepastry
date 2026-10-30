@@ -73,39 +73,39 @@ public class Stripe implements ScribeMultiClient {
   /**
    * The stripeId for this stripe
    */
-  protected StripeId stripeId;
+  private final StripeId stripeId;
 
   /**
    * The topic corresponding to this stripeId
    */
-  protected Topic topic;
+  private final Topic topic;
 
   /**
    * The scribe object
    */
-  protected Scribe scribe;
+  private final Scribe scribe;
 
   /**
    * A flag whether or not this stripe is the primary stripe for this node
    */
-  protected boolean isPrimary;
+  private boolean isPrimary;
 
   /**
    * The list of SplitStreamClients interested in data from this client
    */
-  protected Vector<SplitStreamClient> clients;
+  private final Vector<SplitStreamClient> clients;
 
   /**
    * This stripe's channel
    */
-  protected Channel channel;
+  private final Channel channel;
 
   /**
    * The count of failed subscribe messages
    */
-  protected Hashtable<Topic, Integer> failed;
+  private final Hashtable<Topic, Integer> failed;
 
-  protected String instance;
+  private final String instance;
 
   Logger logger;
 
