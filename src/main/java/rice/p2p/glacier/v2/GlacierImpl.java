@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -111,11 +110,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierTrash trash;
   private final GlacierNeighborhood neighborhood;
   private final GlacierScheduler scheduler;
   private final FragmentLocator locator;
   private final Hashtable<Id, Continuation<Object, Exception>> pendingTraffic;
-  private StorageManager trashStorage;
   private GlacierStatistics statistics;
   private final Vector<GlacierStatisticsListener> listeners;
   private long currentFragmentRequestTimeout;
@@ -172,7 +171,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     this.fragmentStorage = fragmentStorageArg;
     this.neighborStorage = neighborStorageArg;
-    this.trashStorage = null;
+    this.trash = new GlacierTrash(fragmentStorageArg, logger);
     this.policy = policyArg;
     this.node = nodeArg;
     this.instance = instanceArg;
@@ -418,7 +417,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                 Id thisPos = locator.getFragmentLocation(thisKey);
                 if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
                   logger.debug("Deleting fragment {}", thisKey);
-                  deleteFragment(thisKey, new Continuation<Object, Exception>() {
+                  trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
                     public void receiveResult(Object o) {
                       logger.debug("Handed off fragment deleted: {} (o={})", thisKey, o);
                     }
@@ -608,7 +607,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
               candidates ++;
               if (doneSoFar < config.garbageCollectionMaxFragmentsPerRun()) {
                 doneSoFar ++;
-                deleteFragment(thisKey, new Continuation<Object, Exception>() {
+                trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
                   public void receiveResult(Object o) {
                     logger.atInfo().log(() -> "GC collected "+thisKey.toStringFull()+", expired "+(now-metadata.getCurrentExpiration())+" msec ago");
                   }
@@ -870,12 +869,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           if (storageF instanceof PersistentStorage)
             statistics.setFragmentStorageSize(((PersistentStorage)storageF).getTotalSize());
 
-          if (trashStorage != null)
-            statistics.setNumObjectsInTrash(trashStorage.scan().numElements());
-
-          Storage storageT = (trashStorage == null) ? null : trashStorage.getStorage();
-          if (storageT instanceof PersistentStorage)
-            statistics.setTrashStorageSize(((PersistentStorage)storageT).getTotalSize());
+          trash.addStatistics(statistics);
 
           if (config.logStatistics())
             statistics.dump(environment.getLogManager().getLogger(GlacierStatistics.class, instance));
@@ -912,38 +906,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     return (long)((1-config.jitterRange())*basis) + environment.getRandomSource().nextInt((int)(2*config.jitterRange()*basis));
   }
 
-  private void deleteFragment(final Id fkey, final Continuation<? super Boolean, Exception> command) {
-    if (trashStorage != null) {
-      logger.atInfo().log(() -> "Moving fragment "+fkey.toStringFull()+" to trash");
-      fragmentStorage.getObject(fkey, new Continuation<Object, Exception>() {
-        public void receiveResult(Object o) {
-          logger.atDebug().log(() -> "Fragment "+fkey.toStringFull()+" retrieved, storing in trash");
-          if (o != null) {
-            trashStorage.store(fkey, null, (Serializable) o, new Continuation<Object, Exception>() {
-              public void receiveResult(Object o) {
-                logger.atDebug().log(() -> "Deleting fragment "+fkey.toStringFull());
-                fragmentStorage.unstore(fkey, command);
-              }
-              public void receiveException(Exception e) {
-                logger.atWarn().setCause(e).log(() -> "Cannot store in trash: "+fkey.toStringFull()+", e=");
-                command.receiveException(e);
-              }
-            });
-          } else {
-            receiveException(new GlacierException("Move to trash: Fragment "+fkey+" does not exist?!?"));
-          }
-        }
-        public void receiveException(Exception e) {
-          logger.warn("Cannot retrieve fragment {} for deletion: e=", fkey, e);
-          command.receiveException(new GlacierException("Cannot retrieve fragment "+fkey+" for deletion"));
-        }
-      });
-    } else {
-      logger.atInfo().log(() -> "Deleting fragment "+fkey.toStringFull());
-      fragmentStorage.unstore(fkey, command);
-    }
-  }
-
   public void sendMessage(Id id, GlacierMessage message, NodeHandle hint) {
     String className = message.getClass().getName();
     logger.atInfo().log(() -> "Send " + ((hint == null) ? "OVR" : "DIR") + " T" + ((int)message.getTag()) + " " + className.substring(className.lastIndexOf('.') + 8));
@@ -952,7 +914,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public void setTrashcan(StorageManager trashStorage) {
-    this.trashStorage = trashStorage;
+    trash.setTrashcan(trashStorage);
   }
 
   private byte[] getHashInput(VersionKey vkey, long expiration) {
@@ -2620,27 +2582,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       }
     };
 
-    if (trashStorage!=null) {
-      trashStorage.getObject(key, new Continuation<Object, Exception>() {
-        public void receiveResult(Object o) {
-          if (o != null) {
-            logger.atDebug().log(() -> "retrieveFragment: Key "+key.toStringFull()+" found in trash, retrieving...");
-          } else {
-            logger.atDebug().log(() -> "retrieveFragment: Key "+key.toStringFull()+" not found in trash");
-          }
-
-          c2.receiveResult(o);
-        }
-
-        public void receiveException(Exception e) {
-          logger.atWarn().log(() -> "Exception while getting object " + key + " from trash " + e);
-          c2.receiveResult(null);
-        }
-      });
-    } else {
-      logger.atDebug().log(() -> "retrieveFragment: Key "+key.toStringFull()+" not found in trash");
-      c2.receiveResult(null);
-    }
+    trash.lookupFragment(key, c2);
   }
 
   public void rateLimitedRetrieveFragment(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation c) {
@@ -3362,20 +3304,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public long getTrashSize() {
-    if (trashStorage == null)
-      return 0;
-
-    return trashStorage.getStorage().getTotalSize();
+    return trash.getTrashSize();
   }
 
   public void emptyTrash(final Continuation<? super Boolean, Exception> c) {
-    if (trashStorage != null) {
-      logger.info("Emptying trash (removing all objects)");
-
-      trashStorage.flush(c);
-    } else {
-      c.receiveResult(null);
-    }
+    trash.emptyTrash(c);
   }
 
   public void addStatisticsListener(GlacierStatisticsListener gsl) {
