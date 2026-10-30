@@ -63,7 +63,7 @@ public record GCPastMetadata(long expiration) implements Comparable<GCPastMetada
 
   @Override
   public boolean equals(Object o) {
-    return ((GCPastMetadata) o).expiration == expiration;
+    return o instanceof GCPastMetadata other && other.expiration == expiration;
   }
 
   @Override

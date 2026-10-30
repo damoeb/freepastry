@@ -113,9 +113,6 @@ public class GCNode implements Node {
     return "{GCNode " + node + "}";
   }
 
-  /* (non-Javadoc)
-   * @see rice.p2p.commonapi.Node#getEnvironment()
-   */
   @Override
   public Environment getEnvironment() {
     return node.getEnvironment();

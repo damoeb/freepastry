@@ -161,7 +161,7 @@ public class DistPastTest {
         int numNodes = Integer.parseInt(args[3]);
 
         // launch our node!
-        DistPastTest dt = new DistPastTest(bindport, bootaddress, env, numNodes);
+        new DistPastTest(bindport, bootaddress, env, numNodes);
       } catch (Exception e) {
         // remind user how to use
         System.out.println("Usage:");

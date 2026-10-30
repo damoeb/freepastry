@@ -158,7 +158,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
   // debug variables
   protected int inserts = 0;
-  private int lookups = 0;
   protected int fetchHandles = 0;
   protected int other = 0;
 
@@ -357,7 +356,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         close(socket);
       }
 
-      public void close(AppSocket socket) {
+      void close(AppSocket socket) {
         if (socket == null) return;
         pendingSocketTransactions.remove(socket);
         socket.close();
@@ -1100,8 +1099,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           }
         }
         case LookupMessage lmsg -> {
-          lookups++;
-
           // if the data is here, we send the reply; the requester caches it (see lookup())
           storage.getObject(lmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
             @Override
@@ -1119,8 +1116,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           getResponseContinuation(msg).receiveResult(set);
         }
         case FetchMessage fmsg -> {
-          lookups++;
-
           Continuation<Object, Exception> c;
           c = getFetchResponseContinuation(msg); // has to be special to determine how to send the message
 

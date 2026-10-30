@@ -243,17 +243,6 @@ public class ReplicationRegrTest extends CommonAPITest {
   }
 
   /**
-   * Private method which generates a random Id
-   *
-   * @return A new random Id
-   */
-  private Id generateId() {
-    byte[] data = new byte[20];
-    environment.getRandomSource().nextBytes(data);
-    return FACTORY.buildId(data);
-  }
-
-  /**
    * @version $Id: ReplicationRegrTest.java 4654 2009-01-08 16:33:07Z jeffh $
    * @author amislove
    */

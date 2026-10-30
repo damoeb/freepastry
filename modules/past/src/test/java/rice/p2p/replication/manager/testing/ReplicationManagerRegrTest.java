@@ -360,20 +360,9 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     simulate();
   }
 
-  /**
-   * Private method which generates a random Id
-   *
-   * @return A new random Id
-   */
-  private Id generateId() {
-    byte[] data = new byte[20];
-    environment.getRandomSource().nextBytes(data);
-    return FACTORY.buildId(data);
-  }
-
   private Id addToId(Id id, int num) {
     byte[] bytes = id.toByteArray();
-    bytes[0] += num;
+    bytes[0] = (byte) (bytes[0] + num);
 
     return FACTORY.buildId(bytes);
   }
@@ -382,7 +371,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    * @version $Id: ReplicationManagerRegrTest.java 4654 2009-01-08 16:33:07Z jeffh $
    * @author amislove
    */
-  protected class TestReplicationManagerClient implements ReplicationManagerClient {
+  protected static class TestReplicationManagerClient implements ReplicationManagerClient {
 
     public Node node;
 

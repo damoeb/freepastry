@@ -97,7 +97,6 @@ public class GCPastImpl extends PastImpl implements GCPast {
   private final IdFactory realFactory;
 
   // internal tracing stats
-  private int collected = 0;
   private int refreshed = 0;
 
   protected class GCPastDeserializer extends PastDeserializer {
@@ -504,8 +503,6 @@ public class GCPastImpl extends PastImpl implements GCPast {
       public void receiveResult(Object o) {
         if (i.hasNext()) {
           final Id gid = i.next();
-          GCPastMetadata metadata = (GCPastMetadata) storage.getMetadata(gid);
-          collected++;
 
           if (trash != null) {
             storage.getObject(gid, new StandardContinuation<Object, Object, Exception>(this) {

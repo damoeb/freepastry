@@ -290,9 +290,6 @@ public class GCEndpoint implements Endpoint {
     return "GC" + endpoint.getInstance();
   }
 
-  /* (non-Javadoc)
-   * @see rice.p2p.commonapi.Endpoint#getEnvironment()
-   */
   @Override
   public Environment getEnvironment() {
     return endpoint.getEnvironment();

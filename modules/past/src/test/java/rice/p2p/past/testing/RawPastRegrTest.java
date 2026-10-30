@@ -39,8 +39,8 @@ package rice.p2p.past.testing;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.LinkedList;
 
 import rice.Continuation;
 import rice.environment.Environment;
@@ -101,7 +101,7 @@ public class RawPastRegrTest extends CommonAPITest {
     pasts = new PastImpl[NUM_NODES];
     storages = new StorageManager[NUM_NODES];
 
-    if (PROTOCOL == PROTOCOL_DIRECT) {
+    if (PROTOCOL_DIRECT.equalsIgnoreCase(PROTOCOL)) {
       new Thread() {
         @Override
         public void run() {
@@ -462,6 +462,8 @@ public class RawPastRegrTest extends CommonAPITest {
   /**
    * Tests the fetch function in Past.
    */
+  // the nodes are compared by identity on purpose: the loop picks a Past that is not the same instance as remote1
+  @SuppressWarnings("ReferenceEquality")
   protected void testFetch() {
     final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
     final PastImpl remote1 = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
@@ -806,7 +808,7 @@ public class RawPastRegrTest extends CommonAPITest {
    * Usage: RawPastRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (direct|socket)] [-help]
    */
   public static void main(String args[]) throws Exception {
-      LinkedList<File> delme = new LinkedList<File>();
+      ArrayDeque<File> delme = new ArrayDeque<File>();
       delme.add(new File("FreePastry-Storage-Root"));
       while(!delme.isEmpty()) {
         File f = (File)delme.removeFirst();

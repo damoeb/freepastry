@@ -17,11 +17,6 @@
     <name>FreePastry PAST</name>
     <description>The PAST distributed hash table and the replication manager</description>
 
-    <properties>
-        <!-- TODO phase 2 (D7): fix this module's Error Prone warnings, then drop this override -->
-        <errorprone.module.flags>-XepDisableAllWarnings</errorprone.module.flags>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
