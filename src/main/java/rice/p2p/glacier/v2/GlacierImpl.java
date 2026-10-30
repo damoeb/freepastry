@@ -53,7 +53,6 @@ import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
-import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -112,14 +111,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierScheduler scheduler;
   private final FragmentLocator locator;
-  private final Hashtable<Integer, GlacierContinuation> continuations;
   private final Hashtable<Id, Continuation<Object, Exception>> pendingTraffic;
   private StorageManager trashStorage;
-  private long nextContinuationTimeout;
   private IdRange responsibleRange;
-  private int nextUID;
-  private CancellableTask timer;
   private GlacierStatistics statistics;
   private final Vector<GlacierStatisticsListener> listeners;
   private long currentFragmentRequestTimeout;
@@ -183,6 +179,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.node = nodeArg;
     this.instance = instanceArg;
     this.endpoint = node.buildEndpoint(this, instance);
+    this.scheduler = new GlacierScheduler(endpoint, environment, logger);
     this.endpoint.setDeserializer((buf, type, priority, sender) -> {
       switch(type) {
         case GlacierDataMessage.TYPE:
@@ -223,11 +220,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.factory = factoryArg;
     this.locator = new FragmentLocator(factoryArg, numFragmentsArg);
     this.responsibleRange = null;
-    this.nextUID = 0;
-    this.continuations = new Hashtable<Integer, GlacierContinuation>();
     this.pendingTraffic = new Hashtable<Id, Continuation<Object, Exception>>();
-    this.timer = null;
-    this.nextContinuationTimeout = -1;
     this.statistics = new GlacierStatistics(GlacierTags.MAX, environment);
     this.listeners = new Vector<GlacierStatisticsListener>();
     this.numActiveRestores = new int[1];
@@ -243,7 +236,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Neighbor requests */
 
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       long nextTimeout;
 
       public String toString() {
@@ -351,7 +344,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Sync */
 
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       long nextTimeout;
       int offset;
 
@@ -403,7 +396,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                 sendMessage(
                   null,
-                  new GlacierSyncMessage(getUID(), grrm.getCommonRange(), offset, bv, getLocalNodeHandle(), grrm.getSource().getId(), GlacierTags.SYNC),
+                  new GlacierSyncMessage(scheduler.getUID(), grrm.getCommonRange(), offset, bv, getLocalNodeHandle(), grrm.getSource().getId(), GlacierTags.SYNC),
                   grrm.getSource()
                 );
               } else {
@@ -450,7 +443,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Handoff */
 
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       long nextTimeout;
 
       public String toString() {
@@ -625,7 +618,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Garbage collection */
 
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       long nextTimeout;
 
       public String toString() {
@@ -682,7 +675,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Local scan */
 
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       long nextTimeout;
 
       public String toString() {
@@ -829,7 +822,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Traffic shaper */
 
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       long nextTimeout;
 
       public String toString() {
@@ -881,7 +874,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Statistics */
 
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       long nextTimeout;
 
       public String toString() {
@@ -906,7 +899,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           statistics.setPendingRequests(pendingTraffic.size());
           statistics.setNumNeighbors(neighborStorage.scan().numElements());
           statistics.setNumFragments(fragmentStorage.scan().numElements());
-          statistics.setNumContinuations(continuations.size());
+          statistics.setNumContinuations(scheduler.size());
           statistics.setResponsibleRange(responsibleRange);
           statistics.setActiveFetches(numActiveRestores[0]);
           statistics.setBucketMin(bucketMin);
@@ -1046,27 +1039,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     return result;
   }
 
-  private void addContinuation(GlacierContinuation gc) {
-    int thisUID = getUID();
-    gc.setup(thisUID);
-    continuations.put(Integer.valueOf(thisUID), gc);
-    gc.init();
-
-    long thisTimeout = gc.getTimeout();
-    long now = environment.getTimeSource().currentTimeMillis();
-
-    if ((nextContinuationTimeout == -1) || (thisTimeout < nextContinuationTimeout)) {
-      if (nextContinuationTimeout != -1)
-        cancelTimer();
-
-      nextContinuationTimeout = thisTimeout;
-      if (nextContinuationTimeout > now)
-        setTimer((int)(nextContinuationTimeout - now));
-      else
-        timerExpired();
-    }
-  }
-
   private void determineResponsibleRange() {
     Id cwPeer = null, ccwPeer = null, xcwPeer = null, xccwPeer = null, myNodeId = getLocalNodeHandle().getId();
 
@@ -1119,29 +1091,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     );
 
     logger.info("New range: {}", responsibleRange);
-  }
-
-  protected int getUID() {
-    return nextUID++;
-  }
-
-  /**
-   * Schedule a timer event
-   *
-   * @param timeoutMsec Length of the delay (in milliseconds)
-   */
-  private void setTimer(int timeoutMsec) {
-    timer = endpoint.scheduleMessage(new GlacierTimeoutMessage(0, getLocalNodeHandle()), timeoutMsec);
-  }
-
-  /**
-   * Cancel a timer event that has not yet occurred
-   */
-  private void cancelTimer() {
-    if (timer != null) {
-      timer.cancel();
-      timer = null;
-    }
   }
 
   /**
@@ -1313,7 +1262,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       result = result + "Local time: "+(new Date()) + "\n\n";
       result = result + fragmentStorage.scan().numElements() + " fragments\n";
       result = result + neighborStorage.scan().numElements() + " neighbors\n";
-      result = result + continuations.size() + " active continuations\n";
+      result = result + scheduler.size() + " active continuations\n";
       result = result + pendingTraffic.size() + " pending requests\n";
 
       return result;
@@ -1380,7 +1329,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       final String[] ret = new String[] { "" }; // only touched by the selector thread, until done completes
       final CompletableFuture<String> done = new CompletableFuture<String>();
       final long now = environment.getTimeSource().currentTimeMillis();
-      addContinuation(new GlacierContinuation() {
+      scheduler.addContinuation(new GlacierContinuation() {
         int receivedSoFar = 0;
         final int total = 100;
         public String toString() {
@@ -1531,7 +1480,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       final Id fragmentLoc = locator.getFragmentLocation(id);
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
-      addContinuation(new GlacierContinuation() {
+      scheduler.addContinuation(new GlacierContinuation() {
         public String toString() {
           return "DebugFetch continuation";
         }
@@ -1654,7 +1603,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     } else {
       /* Aggregated refresh method */
 
-      addContinuation(new GlacierContinuation() {
+      scheduler.addContinuation(new GlacierContinuation() {
         int minAcceptable = (int)(numSurvivors * config.minFragmentsAfterInsert());
         FragmentKey[][] fragmentKey;
         VersionKey[] versionKey;
@@ -2026,7 +1975,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   private void distribute(final VersionKey key, final Fragment[] fragments, final Manifest[] manifests, final long expiration, final char tag, final Continuation<Object, Exception> command) {
     final long tStart = environment.getTimeSource().currentTimeMillis();
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       NodeHandle[] holder;
       boolean[] receiptReceived;
       boolean doInsert = (fragments != null);
@@ -2269,56 +2218,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     });
   }
 
-  private void timerExpired() {
-    logger.debug("Timer expired");
-
-    boolean foundTerminated = false;
-    long earliestTimeout;
-    int numDelete;
-
-    do {
-      long now = environment.getTimeSource().currentTimeMillis();
-      int[] deleteList = new int[100];
-      numDelete = 0;
-      earliestTimeout = -1;
-
-      logger.debug("Timer run at {}", now);
-
-      Enumeration<GlacierContinuation> enu = continuations.elements();
-      while (enu.hasMoreElements()) {
-        GlacierContinuation gc = (GlacierContinuation) enu.nextElement();
-        long currentTimeout = gc.getTimeout();
-
-        if (!gc.hasTerminated() && currentTimeout < (now + 1*GlacierConfig.SECONDS)) {
-          logger.debug("Timer: Resuming [{}]", gc);
-          gc.syncTimeoutExpired();
-          if (!gc.hasTerminated() && (gc.getTimeout() <= currentTimeout))
-            panic("Continuation does not set new timeout: "+gc);
-        }
-
-        if (!gc.hasTerminated()) {
-          if ((earliestTimeout == -1) || (gc.getTimeout() < earliestTimeout))
-            earliestTimeout = gc.getTimeout();
-        } else {
-          if (numDelete < 100)
-            deleteList[numDelete++] = gc.getMyUID();
-        }
-      }
-
-      if (numDelete > 0) {
-        logger.debug("Deleting {} expired continuations", numDelete);
-        for (int i=0; i<numDelete; i++)
-          continuations.remove(Integer.valueOf(deleteList[i]));
-      }
-
-    } while ((numDelete == 100) || ((earliestTimeout >= 0) && (earliestTimeout < environment.getTimeSource().currentTimeMillis())));
-
-    if (earliestTimeout >= 0) {
-      logger.debug("Next timeout is at {}", earliestTimeout);
-      setTimer((int)Math.max(earliestTimeout - environment.getTimeSource().currentTimeMillis(), 1*GlacierConfig.SECONDS));
-    } else logger.debug("No more timeouts");
-  }
-
   public void neighborSeen(Id nodeId, long when) {
 
     if (nodeId.equals(getLocalNodeHandle().getId()))
@@ -2447,7 +2346,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   public void retrieveManifest(final VersionKey key, final char tag, final Continuation<? super Manifest, Exception> command) {
     logger.debug("retrieveManifest(key={} tag={})", key, tag);
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       private boolean checkedFragment[];
       private long timeout;
 
@@ -2536,7 +2435,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public void retrieveObject(final VersionKey key, final Manifest manifest, final boolean beStrict, final char tag, final Continuation<? super PastContent, Exception> c) {
-    addContinuation(new GlacierContinuation() {
+    scheduler.addContinuation(new GlacierContinuation() {
       private boolean checkedFragment[];
       private Fragment haveFragment[];
       private int attemptsLeft;
@@ -2735,7 +2634,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           }
         }
 
-        addContinuation(new GlacierContinuation() {
+        scheduler.addContinuation(new GlacierContinuation() {
           private int attemptsLeft;
           private boolean inPhaseTwo;
           private long timeout;
@@ -2995,7 +2894,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     }
 
     if (msg.isResponse()) {
-      GlacierContinuation gc = (GlacierContinuation) continuations.get(Integer.valueOf(msg.getUID()));
+      GlacierContinuation gc = scheduler.get(msg.getUID());
 
       if (gc != null) {
         if (!gc.hasTerminated()) {
@@ -3199,7 +3098,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
             sendMessage(
               null,
-              new GlacierDataMessage(getUID(), keys, fragments, manifests, getLocalNodeHandle(), gsm.getSource().getId(), false, GlacierTags.SYNC_MANIFESTS),
+              new GlacierDataMessage(scheduler.getUID(), keys, fragments, manifests, getLocalNodeHandle(), gsm.getSource().getId(), false, GlacierTags.SYNC_MANIFESTS),
               gsm.getSource()
             );
 
@@ -3634,7 +3533,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       /* TimeoutMessages are generated by the local node when a
          timeout expires. */
 
-      timerExpired();
+      scheduler.timerExpired();
       return;
     } else {
       panic("GLACIER ERROR - Received message " + msg + " of unknown type.");
