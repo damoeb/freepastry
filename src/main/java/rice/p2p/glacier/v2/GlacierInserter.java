@@ -100,44 +100,50 @@ final class GlacierInserter {
       Arrays.fill(generateFragment, true);
       return policy.encodeObject(obj, generateFragment);
     }, new Continuation<Fragment[], Exception>() {
-      public void receiveResult(Fragment[] o) {
-        final Fragment[] fragments = (Fragment[]) o;
+      public void receiveResult(Fragment[] fragments) {
         if (fragments == null) {
           command.receiveException(new GlacierException("Cannot encode object"));
           return;
         }
 
         logger.atDebug().log(() -> "insert(" + vkey.toStringFull() + ") encoded fragments OK, creating manifests...");
-
-        endpoint.process(() -> policy.createManifests(vkey, obj, fragments, expiration), new Continuation<Manifest[], Exception>() {
-          public void receiveResult(Manifest[] o) {
-            if (o instanceof Manifest[]) {
-              final Manifest[] manifests = (Manifest[]) o;
-              if (manifests == null) {
-                command.receiveException(new GlacierException("Cannot create manifests"));
-                return;
-              }
-
-              /* distribute() reports a Boolean[] for insertions */
-              distribute(vkey, fragments, manifests, expiration, GlacierTags.INSERT, new Continuation.StandardContinuation<Object, Boolean[], Exception>(command) {
-                public void receiveResult(Object o) {
-                  parent.receiveResult((Boolean[]) o);
-                }
-              });
-            } else {
-              logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - returned o="+o);
-              command.receiveException(new GlacierException("Cannot create manifests in insert()"));
-            }
-          }
-          public void receiveException(Exception e) {
-            logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - exception e="+e);
-            command.receiveException(e);
-          }
-        });
+        createManifestsAndDistribute(vkey, obj, fragments, expiration, command);
       }
       public void receiveException(Exception e) {
         logger.error("EncodeObject failed: e=", e);
         command.receiveException(new GlacierException("EncodeObject failed: e="+e));
+      }
+    });
+  }
+
+  /**
+   * Second step of an insertion: creates the manifests of the encoded fragments on the processing
+   * thread, then sends fragments and manifests to their holders.
+   */
+  private void createManifestsAndDistribute(final VersionKey vkey, final PastContent obj, final Fragment[] fragments, final long expiration, final Continuation<? super Boolean[], Exception> command) {
+    endpoint.process(() -> policy.createManifests(vkey, obj, fragments, expiration), new Continuation<Manifest[], Exception>() {
+      public void receiveResult(Manifest[] o) {
+        if (o instanceof Manifest[]) {
+          final Manifest[] manifests = (Manifest[]) o;
+          if (manifests == null) {
+            command.receiveException(new GlacierException("Cannot create manifests"));
+            return;
+          }
+
+          /* distribute() reports a Boolean[] for insertions */
+          distribute(vkey, fragments, manifests, expiration, GlacierTags.INSERT, new Continuation.StandardContinuation<Object, Boolean[], Exception>(command) {
+            public void receiveResult(Object o) {
+              parent.receiveResult((Boolean[]) o);
+            }
+          });
+        } else {
+          logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - returned o="+o);
+          command.receiveException(new GlacierException("Cannot create manifests in insert()"));
+        }
+      }
+      public void receiveException(Exception e) {
+        logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - exception e="+e);
+        command.receiveException(e);
       }
     });
   }
@@ -158,27 +164,7 @@ final class GlacierInserter {
         final VersionKey thisVersionKey = new VersionKey(thisId, thisVersion);
         Continuation<Object, Exception> prev = trafficShaper.enqueue(thisVersionKey, new Continuation.SimpleContinuation() {
           public void receiveResult(Object o) {
-            retriever.retrieveManifest(thisVersionKey, GlacierTags.REFRESH, new Continuation<Object, Exception>() {
-              public void receiveResult(Object o) {
-                if (o instanceof Manifest) {
-                  Manifest manifest = (Manifest) o;
-
-                  logger.atDebug().log(() -> "refresh("+thisId.toStringFull()+"v"+thisVersion+"): Got manifest");
-                  manifest = policy.updateManifest(new VersionKey(thisId, thisVersion), manifest, thisExpiration);
-                  Manifest[] manifests = new Manifest[numFragments];
-                  for (int i=0; i<numFragments; i++)
-                    manifests[i] = manifest;
-                  distribute(new VersionKey(thisId, thisVersion), null, manifests, thisExpiration, GlacierTags.REFRESH, thisContinuation);
-                } else {
-                  logger.warn("refresh({}v{}): Cannot retrieve manifest", thisId, thisVersion);
-                  thisContinuation.receiveResult(new GlacierException("Cannot retrieve manifest -- retry later"));
-                }
-              }
-              public void receiveException(Exception e) {
-                logger.warn("refresh({}v{}): Exception while retrieving manifest: ", thisId, thisVersion, e);
-                thisContinuation.receiveException(e);
-              }
-            });
+            refreshOne(thisVersionKey, thisExpiration, thisContinuation);
           }
         });
 
@@ -190,6 +176,36 @@ final class GlacierInserter {
 
       bulkRefresh.refresh(ids, versions, expirations, command);
     }
+  }
+
+  /**
+   * Refreshes one object once the traffic shaper lets it: fetches its manifest, extends it, and sends the
+   * new manifest to the holders of its fragments.
+   */
+  private void refreshOne(final VersionKey thisVersionKey, final long thisExpiration, final Continuation<Object, Exception> thisContinuation) {
+    final Id thisId = thisVersionKey.getId();
+    final long thisVersion = thisVersionKey.getVersion();
+    retriever.retrieveManifest(thisVersionKey, GlacierTags.REFRESH, new Continuation<Object, Exception>() {
+      public void receiveResult(Object o) {
+        if (o instanceof Manifest) {
+          Manifest manifest = (Manifest) o;
+
+          logger.atDebug().log(() -> "refresh("+thisId.toStringFull()+"v"+thisVersion+"): Got manifest");
+          manifest = policy.updateManifest(new VersionKey(thisId, thisVersion), manifest, thisExpiration);
+          Manifest[] manifests = new Manifest[numFragments];
+          for (int i=0; i<numFragments; i++)
+            manifests[i] = manifest;
+          distribute(new VersionKey(thisId, thisVersion), null, manifests, thisExpiration, GlacierTags.REFRESH, thisContinuation);
+        } else {
+          logger.warn("refresh({}v{}): Cannot retrieve manifest", thisId, thisVersion);
+          thisContinuation.receiveResult(new GlacierException("Cannot retrieve manifest -- retry later"));
+        }
+      }
+      public void receiveException(Exception e) {
+        logger.warn("refresh({}v{}): Exception while retrieving manifest: ", thisId, thisVersion, e);
+        thisContinuation.receiveException(e);
+      }
+    });
   }
 
   private void distribute(final VersionKey key, final Fragment[] fragments, final Manifest[] manifests, final long expiration, final char tag, final Continuation<Object, Exception> command) {

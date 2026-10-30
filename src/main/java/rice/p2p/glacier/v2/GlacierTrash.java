@@ -73,16 +73,7 @@ final class GlacierTrash {
         public void receiveResult(Object o) {
           logger.atDebug().log(() -> "Fragment "+fkey.toStringFull()+" retrieved, storing in trash");
           if (o != null) {
-            trashStorage.store(fkey, null, (Serializable) o, new Continuation<Object, Exception>() {
-              public void receiveResult(Object o) {
-                logger.atDebug().log(() -> "Deleting fragment "+fkey.toStringFull());
-                fragmentStorage.unstore(fkey, command);
-              }
-              public void receiveException(Exception e) {
-                logger.atWarn().setCause(e).log(() -> "Cannot store in trash: "+fkey.toStringFull()+", e=");
-                command.receiveException(e);
-              }
-            });
+            moveToTrash(fkey, (Serializable) o, command);
           } else {
             receiveException(new GlacierException("Move to trash: Fragment "+fkey+" does not exist?!?"));
           }
@@ -96,6 +87,22 @@ final class GlacierTrash {
       logger.atInfo().log(() -> "Deleting fragment "+fkey.toStringFull());
       fragmentStorage.unstore(fkey, command);
     }
+  }
+
+  /**
+   * Stores a fragment in the trash, then removes it from the fragment storage.
+   */
+  private void moveToTrash(final Id fkey, Serializable fam, final Continuation<? super Boolean, Exception> command) {
+    trashStorage.store(fkey, null, fam, new Continuation<Object, Exception>() {
+      public void receiveResult(Object o) {
+        logger.atDebug().log(() -> "Deleting fragment "+fkey.toStringFull());
+        fragmentStorage.unstore(fkey, command);
+      }
+      public void receiveException(Exception e) {
+        logger.atWarn().setCause(e).log(() -> "Cannot store in trash: "+fkey.toStringFull()+", e=");
+        command.receiveException(e);
+      }
+    });
   }
 
   /**

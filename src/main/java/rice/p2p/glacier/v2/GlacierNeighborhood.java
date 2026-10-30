@@ -166,18 +166,7 @@ final class GlacierNeighborhood {
             return;
           }
 
-          neighborStorage.store(fNodeId, null, Long.valueOf(fWhen),
-            new Continuation<Object, Exception>() {
-              public void receiveResult(Object o) {
-                logger.debug("Continue: neighborSeen ({}, {}) after store", fNodeId, fWhen);
-                logger.debug("Neighbor: Updated {} from {} to {}", fNodeId, previousWhen, fWhen);
-                determineResponsibleRange();
-              }
-              public void receiveException(Exception e) {
-                logger.warn("receiveException({}) while storing a neighbor ({})", e, fNodeId);
-              }
-            }
-          );
+          storeLastSeen(fNodeId, fWhen, previousWhen);
         }
         public void receiveException(Exception e) {
           logger.warn("receiveException({}) while retrieving a neighbor ({})", e, fNodeId);
@@ -266,35 +255,57 @@ final class GlacierNeighborhood {
         neighborSeen(thisNeighbor, environment.getTimeSource().currentTimeMillis());
       } else {
         logger.debug("CNE: Retrieving {}", thisNeighbor);
-        neighborStorage.getObject(thisNeighbor, new Continuation<Object, Exception>() {
-          public void receiveResult(Object o) {
-            if (o==null) {
-              logger.warn("CNE: Cannot retrieve neighbor {}", thisNeighbor);
-              return;
-            }
-
-            long lastSeen = ((Long)o).longValue();
-            if (lastSeen < earliestAcceptableDate) {
-              logger.info("CNE: Removing expired neighbor {} ({}<{})", thisNeighbor, lastSeen, earliestAcceptableDate);
-              neighborStorage.unstore(thisNeighbor, new Continuation<Object, Exception>() {
-                public void receiveResult(Object o) {
-                  logger.debug("CNE unstore successful: {}, returned {}", thisNeighbor, o);
-                }
-                public void receiveException(Exception e) {
-                  logger.atWarn().log(() -> "CNE unstore failed: "+thisNeighbor+", returned "+e);
-                }
-              });
-            } else {
-              logger.info("CNE: Neighbor {} still active, last seen {}", thisNeighbor, lastSeen);
-            }
-          }
-          public void receiveException(Exception e) {
-            logger.atWarn().log(() -> "CNE: Exception while retrieving neighbor "+thisNeighbor+", e="+e);
-          }
-        });
+        expireIfStale(thisNeighbor, earliestAcceptableDate);
       }
     }
 
     determineResponsibleRange();
+  }
+
+  private void storeLastSeen(final Id fNodeId, final long fWhen, final long previousWhen) {
+    neighborStorage.store(fNodeId, null, Long.valueOf(fWhen),
+      new Continuation<Object, Exception>() {
+        public void receiveResult(Object o) {
+          logger.debug("Continue: neighborSeen ({}, {}) after store", fNodeId, fWhen);
+          logger.debug("Neighbor: Updated {} from {} to {}", fNodeId, previousWhen, fWhen);
+          determineResponsibleRange();
+        }
+        public void receiveException(Exception e) {
+          logger.warn("receiveException({}) while storing a neighbor ({})", e, fNodeId);
+        }
+      }
+    );
+  }
+
+  /**
+   * Removes a stored neighbor that was last seen before earliestAcceptableDate.
+   */
+  private void expireIfStale(final Id thisNeighbor, final long earliestAcceptableDate) {
+    neighborStorage.getObject(thisNeighbor, new Continuation<Object, Exception>() {
+      public void receiveResult(Object o) {
+        if (o==null) {
+          logger.warn("CNE: Cannot retrieve neighbor {}", thisNeighbor);
+          return;
+        }
+
+        long lastSeen = ((Long)o).longValue();
+        if (lastSeen < earliestAcceptableDate) {
+          logger.info("CNE: Removing expired neighbor {} ({}<{})", thisNeighbor, lastSeen, earliestAcceptableDate);
+          neighborStorage.unstore(thisNeighbor, new Continuation<Object, Exception>() {
+            public void receiveResult(Object o) {
+              logger.debug("CNE unstore successful: {}, returned {}", thisNeighbor, o);
+            }
+            public void receiveException(Exception e) {
+              logger.atWarn().log(() -> "CNE unstore failed: "+thisNeighbor+", returned "+e);
+            }
+          });
+        } else {
+          logger.info("CNE: Neighbor {} still active, last seen {}", thisNeighbor, lastSeen);
+        }
+      }
+      public void receiveException(Exception e) {
+        logger.atWarn().log(() -> "CNE: Exception while retrieving neighbor "+thisNeighbor+", e="+e);
+      }
+    });
   }
 }

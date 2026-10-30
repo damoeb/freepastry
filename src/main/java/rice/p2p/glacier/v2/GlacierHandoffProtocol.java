@@ -96,114 +96,9 @@ final class GlacierHandoffProtocol {
       }
       public void receiveResult(Object o) {
         if (o instanceof GlacierResponseMessage) {
-          final GlacierResponseMessage grm = (GlacierResponseMessage) o;
-          logger.atDebug().log(() -> "Received handoff response from "+grm.getSource().getId()+" with "+grm.numKeys()+" keys");
-          for (int i=0; i<grm.numKeys(); i++) {
-            final FragmentKey thisKey = grm.getKey(i);
-            if (grm.getAuthoritative(i)) {
-              if (grm.getHaveIt(i)) {
-                Id thisPos = locator.getFragmentLocation(thisKey);
-                if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
-                  logger.debug("Deleting fragment {}", thisKey);
-                  trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
-                    public void receiveResult(Object o) {
-                      logger.debug("Handed off fragment deleted: {} (o={})", thisKey, o);
-                    }
-                    public void receiveException(Exception e) {
-                      logger.warn("Delete failed during handoff: {}, returned ", thisKey, e);
-                    }
-                  });
-                } else {
-                  logger.warn("Handoff response for {}, for which I am still responsible (attack?) -- ignored", thisKey);
-                }
-              } else {
-                fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
-                  public void receiveResult(Object o) {
-                    if (o != null) {
-                      logger.info("Fragment {} found ({}), handing off...", thisKey, o);
-                      FragmentAndManifest fam = (FragmentAndManifest) o;
-                      router.sendMessage(
-                        null,
-                        new GlacierDataMessage(grm.getUID(), thisKey, fam.getFragment(), fam.getManifest(), router.getLocalNodeHandle(), grm.getSource().getId(), true, GlacierTags.HANDOFF),
-                        grm.getSource()
-                      );
-                    } else {
-                      logger.warn("Handoff failed; fragment {} not found in fragment store", thisKey);
-                    }
-                  }
-                  public void receiveException(Exception e) {
-                    logger.warn("Handoff failed; exception while fetching {}, e=", thisKey, e);
-                  }
-                });
-              }
-            } else {
-              if (logger.isDebugEnabled()) logger.debug("Ignoring fragment "+thisKey+" (haveIt="+grm.getHaveIt(i)+", authoritative="+grm.getAuthoritative(i)+")");
-            }
-          }
+          handleResponse((GlacierResponseMessage) o);
         } else if (o instanceof GlacierDataMessage) {
-          final GlacierDataMessage gdm = (GlacierDataMessage) o;
-          for (int i=0; i<gdm.numKeys(); i++) {
-            final FragmentKey thisKey = gdm.getKey(i);
-            final Fragment thisFragment = gdm.getFragment(i);
-            final Manifest thisManifest = gdm.getManifest(i);
-
-            if ((thisFragment != null) && (thisManifest != null)) {
-              logger.info("Handoff: Received Fragment+Manifest for {}", thisKey);
-
-              if (!neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
-                logger.atWarn().log(() -> "Handoff: Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
-                continue;
-              }
-
-              if (!policy.checkSignature(thisManifest, thisKey.getVersionKey())) {
-                logger.warn("Handoff: Manifest is not signed properly");
-                continue;
-              }
-
-              if (!thisManifest.validatesFragment(thisFragment, thisKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
-                logger.warn("Handoff: Manifest does not validate this fragment");
-                continue;
-              }
-
-              if (!fragmentStorage.exists(thisKey)) {
-                logger.debug("Handoff: Verified ok. Storing locally.");
-
-                FragmentAndManifest fam = new FragmentAndManifest(thisFragment, thisManifest);
-
-                fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
-                  new Continuation<Object, Exception>() {
-                    public void receiveResult(Object o) {
-                      logger.info("Handoff: Stored OK, sending receipt: {}", thisKey);
-
-                      router.sendMessage(
-                        null,
-                        new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), router.getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
-                        gdm.getSource()
-                      );
-                    }
-
-                    public void receiveException(Exception e) {
-                      logger.warn("Handoff: receiveException({}) while storing a fragment -- unexpected, ignored (key={})", e, thisKey);
-                    }
-                  }
-                );
-              } else {
-                logger.warn("Handoff: We already have a fragment with this key! -- sending response");
-                router.sendMessage(
-                  null,
-                  new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), true, router.getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
-                  gdm.getSource()
-                );
-
-                continue;
-              }
-
-              continue;
-            } else {
-              logger.warn("Handoff: Either fragment or manifest are missing!");
-              continue;
-            }
-          }
+          acceptFragments((GlacierDataMessage) o);
         } else {
           logger.warn("Unexpected response in handoff continuation: {} -- ignored", o);
         }
@@ -257,5 +152,134 @@ final class GlacierHandoffProtocol {
         return nextTimeout;
       }
     };
+  }
+
+  /**
+   * Hands off the fragments the new holder does not have yet, and deletes those it has.
+   */
+  private void handleResponse(final GlacierResponseMessage grm) {
+    logger.atDebug().log(() -> "Received handoff response from "+grm.getSource().getId()+" with "+grm.numKeys()+" keys");
+    for (int i=0; i<grm.numKeys(); i++) {
+      final FragmentKey thisKey = grm.getKey(i);
+      if (grm.getAuthoritative(i)) {
+        if (grm.getHaveIt(i)) {
+          Id thisPos = locator.getFragmentLocation(thisKey);
+          if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
+            logger.debug("Deleting fragment {}", thisKey);
+            deleteHandedOffFragment(thisKey);
+          } else {
+            logger.warn("Handoff response for {}, for which I am still responsible (attack?) -- ignored", thisKey);
+          }
+        } else {
+          sendFragment(grm, thisKey);
+        }
+      } else {
+        if (logger.isDebugEnabled()) logger.debug("Ignoring fragment "+thisKey+" (haveIt="+grm.getHaveIt(i)+", authoritative="+grm.getAuthoritative(i)+")");
+      }
+    }
+  }
+
+  private void deleteHandedOffFragment(final FragmentKey thisKey) {
+    trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
+      public void receiveResult(Object o) {
+        logger.debug("Handed off fragment deleted: {} (o={})", thisKey, o);
+      }
+      public void receiveException(Exception e) {
+        logger.warn("Delete failed during handoff: {}, returned ", thisKey, e);
+      }
+    });
+  }
+
+  private void sendFragment(final GlacierResponseMessage grm, final FragmentKey thisKey) {
+    fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
+      public void receiveResult(Object o) {
+        if (o != null) {
+          logger.info("Fragment {} found ({}), handing off...", thisKey, o);
+          FragmentAndManifest fam = (FragmentAndManifest) o;
+          router.sendMessage(
+            null,
+            new GlacierDataMessage(grm.getUID(), thisKey, fam.getFragment(), fam.getManifest(), router.getLocalNodeHandle(), grm.getSource().getId(), true, GlacierTags.HANDOFF),
+            grm.getSource()
+          );
+        } else {
+          logger.warn("Handoff failed; fragment {} not found in fragment store", thisKey);
+        }
+      }
+      public void receiveException(Exception e) {
+        logger.warn("Handoff failed; exception while fetching {}, e=", thisKey, e);
+      }
+    });
+  }
+
+  /**
+   * Stores the fragments handed off to this node, and confirms each one to the sender.
+   */
+  private void acceptFragments(final GlacierDataMessage gdm) {
+    for (int i=0; i<gdm.numKeys(); i++) {
+      final FragmentKey thisKey = gdm.getKey(i);
+      final Fragment thisFragment = gdm.getFragment(i);
+      final Manifest thisManifest = gdm.getManifest(i);
+
+      if ((thisFragment != null) && (thisManifest != null)) {
+        logger.info("Handoff: Received Fragment+Manifest for {}", thisKey);
+
+        if (!neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
+          logger.atWarn().log(() -> "Handoff: Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
+          continue;
+        }
+
+        if (!policy.checkSignature(thisManifest, thisKey.getVersionKey())) {
+          logger.warn("Handoff: Manifest is not signed properly");
+          continue;
+        }
+
+        if (!thisManifest.validatesFragment(thisFragment, thisKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
+          logger.warn("Handoff: Manifest does not validate this fragment");
+          continue;
+        }
+
+        if (!fragmentStorage.exists(thisKey)) {
+          logger.debug("Handoff: Verified ok. Storing locally.");
+
+          storeHandedOffFragment(gdm, thisKey, thisFragment, thisManifest);
+        } else {
+          logger.warn("Handoff: We already have a fragment with this key! -- sending response");
+          router.sendMessage(
+            null,
+            new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), true, router.getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
+            gdm.getSource()
+          );
+
+          continue;
+        }
+
+        continue;
+      } else {
+        logger.warn("Handoff: Either fragment or manifest are missing!");
+        continue;
+      }
+    }
+  }
+
+  private void storeHandedOffFragment(final GlacierDataMessage gdm, final FragmentKey thisKey, Fragment thisFragment, final Manifest thisManifest) {
+    FragmentAndManifest fam = new FragmentAndManifest(thisFragment, thisManifest);
+
+    fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
+      new Continuation<Object, Exception>() {
+        public void receiveResult(Object o) {
+          logger.info("Handoff: Stored OK, sending receipt: {}", thisKey);
+
+          router.sendMessage(
+            null,
+            new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), router.getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
+            gdm.getSource()
+          );
+        }
+
+        public void receiveException(Exception e) {
+          logger.warn("Handoff: receiveException({}) while storing a fragment -- unexpected, ignored (key={})", e, thisKey);
+        }
+      }
+    );
   }
 }

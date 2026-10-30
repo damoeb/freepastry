@@ -218,64 +218,7 @@ final class GlacierMaintenance {
             logger.debug("Local scan: Fetching manifest for {} ({} pending queries)", thisVKey, queriesHere);
             queriesSent += queriesHere;
 
-            fragmentStorage.getObject(new FragmentKey(thisVKey, localFragmentID), new Continuation<Object, Exception>() {
-              public void receiveResult(Object o) {
-                if (o instanceof FragmentAndManifest) {
-                  final Manifest thisManifest = ((FragmentAndManifest)o).getManifest();
-
-                  for (int i=0; i<numFragments; i++) {
-                    final FragmentKey thisKey = new FragmentKey(thisVKey, i);
-                    if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
-                      if (!fragments.isMemberId(thisKey)) {
-                        logger.debug("Local scan: Sending query for {}", thisKey);
-                        final long tStart = environment.getTimeSource().currentTimeMillis();
-                        retriever.rateLimitedRetrieveFragment(thisKey, thisManifest, GlacierTags.LOCAL_SCAN, new GlacierContinuation() {
-                          public String toString() {
-                            return "Local scan: Fetch fragment: "+thisKey;
-                          }
-                          public void receiveResult(Object o) {
-                            if (o instanceof Fragment) {
-                              logger.info("Local scan: Received fragment {} (from primary) matches existing manifest, storing...", thisKey);
-
-                              FragmentAndManifest fam = new FragmentAndManifest((Fragment) o, thisManifest);
-
-                              fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
-                                new Continuation<Object, Exception>() {
-                                  public void receiveResult(Object o) {
-                                    logger.debug("Local scan: Recovered fragment stored OK");
-                                  }
-                                  public void receiveException(Exception e) {
-                                    logger.warn("Local scan: receiveException({}) while storing a fragment with existing manifest (key={})", e, thisKey);
-                                  }
-                                }
-                              );
-                            } else {
-                              logger.warn("Local scan: FS received something other than a fragment: {}", o);
-                            }
-                          }
-                          public void receiveException(Exception e) {
-                            logger.warn("Local scan: Exception while recovering synced fragment {}: ", thisKey, e);
-                            terminate();
-                          }
-                          public void timeoutExpired() {
-                            logger.warn("Local scan: Timeout while fetching synced fragment {} -- aborted", thisKey);
-                            terminate();
-                          }
-                          public long getTimeout() {
-                            return tStart + config.overallRestoreTimeout();
-                          }
-                        });
-                      }
-                    }
-                  }
-                } else {
-                  logger.warn("Local scan: Cannot retrieve {} from local store, received o={}", thisVKey, o);
-                }
-              }
-              public void receiveException(Exception e) {
-                logger.warn("Local scan: Cannot retrieve {} from local store, exception e=", thisVKey, e);
-              }
-            });
+            fetchMissingFragments(thisVKey, localFragmentID, fragments);
           }
 
           logger.info("{} queries sent after local scan", queriesSent);
@@ -284,5 +227,77 @@ final class GlacierMaintenance {
         }
       }
     };
+  }
+
+  /**
+   * Reads the manifest of an incomplete object from a local fragment, and fetches the fragments of it
+   * this node is responsible for but does not have.
+   */
+  private void fetchMissingFragments(final VersionKey thisVKey, int localFragmentID, final IdSet fragments) {
+    fragmentStorage.getObject(new FragmentKey(thisVKey, localFragmentID), new Continuation<Object, Exception>() {
+      public void receiveResult(Object o) {
+        if (o instanceof FragmentAndManifest) {
+          final Manifest thisManifest = ((FragmentAndManifest)o).getManifest();
+
+          for (int i=0; i<numFragments; i++) {
+            final FragmentKey thisKey = new FragmentKey(thisVKey, i);
+            if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
+              if (!fragments.isMemberId(thisKey)) {
+                logger.debug("Local scan: Sending query for {}", thisKey);
+                recoverFragment(thisKey, thisManifest);
+              }
+            }
+          }
+        } else {
+          logger.warn("Local scan: Cannot retrieve {} from local store, received o={}", thisVKey, o);
+        }
+      }
+      public void receiveException(Exception e) {
+        logger.warn("Local scan: Cannot retrieve {} from local store, exception e=", thisVKey, e);
+      }
+    });
+  }
+
+  /**
+   * Fetches one missing fragment through the traffic shaper, and stores it with the existing manifest.
+   */
+  private void recoverFragment(final FragmentKey thisKey, final Manifest thisManifest) {
+    final long tStart = environment.getTimeSource().currentTimeMillis();
+    retriever.rateLimitedRetrieveFragment(thisKey, thisManifest, GlacierTags.LOCAL_SCAN, new GlacierContinuation() {
+      public String toString() {
+        return "Local scan: Fetch fragment: "+thisKey;
+      }
+      public void receiveResult(Object o) {
+        if (o instanceof Fragment) {
+          logger.info("Local scan: Received fragment {} (from primary) matches existing manifest, storing...", thisKey);
+
+          FragmentAndManifest fam = new FragmentAndManifest((Fragment) o, thisManifest);
+
+          fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
+            new Continuation<Object, Exception>() {
+              public void receiveResult(Object o) {
+                logger.debug("Local scan: Recovered fragment stored OK");
+              }
+              public void receiveException(Exception e) {
+                logger.warn("Local scan: receiveException({}) while storing a fragment with existing manifest (key={})", e, thisKey);
+              }
+            }
+          );
+        } else {
+          logger.warn("Local scan: FS received something other than a fragment: {}", o);
+        }
+      }
+      public void receiveException(Exception e) {
+        logger.warn("Local scan: Exception while recovering synced fragment {}: ", thisKey, e);
+        terminate();
+      }
+      public void timeoutExpired() {
+        logger.warn("Local scan: Timeout while fetching synced fragment {} -- aborted", thisKey);
+        terminate();
+      }
+      public long getTimeout() {
+        return tStart + config.overallRestoreTimeout();
+      }
+    });
   }
 }
