@@ -1214,6 +1214,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     @Override
     public boolean cancel() {
       removePendingMessage(identifier, this);
+      if (subCancellable == null) return false;
       return subCancellable.cancel();
     }
 
