@@ -1004,45 +1004,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
 
   /**
-   * Method which creates a Pastry node from the next port with a randomly
-   * generated NodeId.
-   *
-   * @param bootstrap Node handle to bootstrap from.
-   * @return A node with a random ID and next port number.
-   * @deprecated use newNode() then call PastryNode.boot(bootaddress)
-   */
-  @Deprecated
-  public PastryNode newNode(NodeHandle bootstrap) {
-    return newNode(bootstrap, nidFactory.generateNodeId());
-  }
-
-  /**
-   * Method which creates a Pastry node from the next port with an id generated
-   * by the NodeIdFactory.
-   *
-   * @param bootstrap Node handle to bootstrap from.
-   * @param proxy the external address of the node, or null
-   * @return A node with a random ID and next port number.
-   */
-  public PastryNode newNode(NodeHandle bootstrap, InetSocketAddress proxy) {
-    return newNode(bootstrap, nidFactory.generateNodeId(), proxy);
-  }
-
-  /**
-   * Method which creates a Pastry node from the next port with the specified nodeId
-   * (or one generated from the NodeIdFactory if not specified)
-   *
-   * @param bootstrap Node handle to bootstrap from.
-   * @param nodeId if non-null, will use this nodeId for the node, rather than using the NodeIdFactory
-   * @return A node with a random ID and next port number.
-   * @deprecated use newNode(nodeId) then call PastryNode.boot(bootaddress)
-   */
-  @Deprecated
-  public PastryNode newNode(final NodeHandle bootstrap, Id nodeId) {
-    return newNode(bootstrap, nodeId, null);
-  }
-
-  /**
    * Need to boot manually.
    *
    * n.getBootstrapper().boot(addresses);
@@ -1058,28 +1019,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   public PastryNode newNode(InetSocketAddress proxyAddress) {
     return newNode(nidFactory.generateNodeId(), proxyAddress);
-  }
-
-  /**
-   * Method which creates a Pastry node from the next port with the specified nodeId
-   * and boots it.
-   *
-   * @param nodeHandle Node handle to bootstrap from (a handle returned by getNodeHandle()), or null to start a new ring
-   * @param id the id of the new node
-   * @param proxyAddress the external address of the node, or null
-   * @return A node with the given ID and next port number.
-   */
-  public PastryNode newNode(NodeHandle nodeHandle, Id id, InetSocketAddress proxyAddress) {
-    PastryNode n = newNode(id, proxyAddress);
-    if (nodeHandle == null) {
-      n.<InetSocketAddress>getBootstrapper().boot(null);
-
-    } else {
-      BogusNodeHandle bnh = (BogusNodeHandle)nodeHandle;
-      n.<InetSocketAddress>getBootstrapper().boot(bnh.addresses);
-
-    }
-    return n;
   }
 
   /**

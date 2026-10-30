@@ -77,25 +77,17 @@ public abstract class PastryNodeFactory {
   }
 
   /**
-   * Call this to construct a new node of the type chosen by the factory.
-   *
-   * @deprecated use newNode() then call PastryNode.boot(address);
-   * @param bootstrap The node handle to bootstrap off of
+   * Constructs a new node of the type chosen by the factory.  Call
+   * PastryNode.boot(address) to join a ring.
    */
-  @Deprecated
-  public abstract PastryNode newNode(NodeHandle bootstrap);
   public abstract PastryNode newNode() throws IOException;
 
   /**
-   * Call this to construct a new node of the type chosen by the factory, with
-   * the given nodeId.
+   * Constructs a new node of the type chosen by the factory, with the given
+   * nodeId.  Call PastryNode.boot(address) to join a ring.
    *
-   * @deprecated use newNode(nodeId) then call PastryNode.boot(address);
-   * @param bootstrap The node handle to bootstrap off of
    * @param nodeId The nodeId of the new node
    */
-  @Deprecated
-  public abstract PastryNode newNode(NodeHandle bootstrap, Id nodeId);
   public abstract PastryNode newNode(Id nodeId) throws IOException;
 
   public Environment getEnvironment() {

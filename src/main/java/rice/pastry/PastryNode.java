@@ -356,7 +356,6 @@ public class PastryNode implements
     logger.info("PastryNode.notifyReadyObservers({})", ready);
 
     if (ready) {
-      nodeIsReady(); // deprecate this
       nodeIsReady(true);
 
       notifyPastryNodeListeners(Boolean.valueOf(true));
@@ -1172,31 +1171,8 @@ public class PastryNode implements
     return proxProvider.removeProximityListener(listener);
   }
 
-  /**
-   * Overridden by derived classes, and invoked when the node has joined
-   * successfully.
-   *
-   * This one is for backwards compatibility. It will soon be deprecated.
-   *
-   * @deprecated use nodeIsReady(boolean)
-   *
-   */
-  @Deprecated
-  public void nodeIsReady() {
-
-    // nothing, used to cancel the joinEvent
-  }
-
   public NodeHandleFactory<? extends NodeHandle> getHandleFactory() {
     return handleFactory;
-  }
-
-  /**
-   * @deprecated misspelled; use {@link #getHandleFactory()}
-   */
-  @Deprecated
-  public NodeHandleFactory<? extends NodeHandle> getHandleFactroy() {
-    return getHandleFactory();
   }
 
 

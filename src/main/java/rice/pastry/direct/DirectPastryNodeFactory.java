@@ -40,7 +40,6 @@ package rice.pastry.direct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,42 +123,11 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
    */
   public NetworkSimulator<DirectNodeHandle,RawMessage> getNetworkSimulator() { return simulator; }
 
-  /**
-   * Manufacture a new Pastry node.
-   *
-   * @return a new PastryNode
-   * @deprecated use newNode() then call PastryNode.boot(bootstrap)
-   */
-  @Deprecated
-  public PastryNode newNode(NodeHandle bootstrap) {
-    return newNode(bootstrap, nidFactory.generateNodeId());
-  }
   public PastryNode newNode() throws IOException {
     return newNode(nidFactory.generateNodeId());
   }
 
   HashMap<Id, NodeRecord> recordTable = new HashMap<Id, NodeRecord>();
-
-  /**
-   * @deprecated use newNode(nodeId) then call PastryNode.boot(bootstrap)
-   */
-  @Deprecated
-  public PastryNode newNode(NodeHandle bootstrap, Id nodeId) {
-    try {
-      if (bootstrap == null)
-        logger.warn("No bootstrap node provided, starting a new ring...");
-      PastryNode pn = newNode(nodeId);
-      if (bootstrap == null) {
-        pn.getBootstrapper().boot(Collections.EMPTY_LIST);
-      } else {
-        pn.getBootstrapper().boot(Collections.singleton(bootstrap));
-      }
-      return pn;
-    } catch (IOException ioe) {
-      logger.error("Couldn't construct node.", ioe);
-      return null;
-    }
-  }
 
   /**
    * Manufacture a new Pastry node.
