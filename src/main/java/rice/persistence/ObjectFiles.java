@@ -37,8 +37,9 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.slf4j.Logger;
 import rice.environment.time.TimeSource;
@@ -74,13 +75,13 @@ final class ObjectFiles {
   Boolean rename(final Id oldId, final Id newId) throws Exception {
     stats.countRename();
 
-    File f = layout.getFile(oldId);
+    Path f = layout.getFile(oldId);
 
-    if ((f != null) && (f.exists())) {
-      File g = layout.getFile(newId);
+    if ((f != null) && (Files.exists(f))) {
+      Path g = layout.getFile(newId);
       StorageFiles.renameFile(f, g);
 
-      layout.checkDirectory(g.getParentFile());
+      layout.checkDirectory(g.getParent());
 
       if (metadataIndex != null) {
         metadataIndex.rename(oldId, newId);
@@ -98,8 +99,8 @@ final class ObjectFiles {
     logger.atTrace().log(() -> "Storing object " + obj + " under id " + id.toStringFull() + " in root " + layout.getAppDirectory());
 
     /* first, create a temporary file */
-    File objFile = layout.getFile(id);
-    File transcFile = layout.makeTemporaryFile(id);
+    Path objFile = layout.getFile(id);
+    Path transcFile = layout.makeTemporaryFile(id);
 
     logger.trace("Writing object {} to temporary file {} and renaming to {}", obj, transcFile, objFile);
 
@@ -118,7 +119,7 @@ final class ObjectFiles {
       throw e;
     }
 
-    logger.atTrace().log(() -> "COUNT: Storing data of class " + obj.getClass().getName() + " under " + id.toStringFull() + " of size " + transcFile.length() + " in " + name);
+    logger.atTrace().log(() -> "COUNT: Storing data of class " + obj.getClass().getName() + " under " + id.toStringFull() + " of size " + StorageFiles.getFileLength(transcFile) + " in " + name);
 
     /* recalculate amount used */
     quota.decreaseUsedSpace(StorageFiles.getFileLength(objFile));
@@ -129,11 +130,11 @@ final class ObjectFiles {
 
     /* mark the metadata cache of this file to be dirty */
     if (metadataIndex != null) {
-      metadataIndex.put(id, metadata, objFile.getParentFile());
+      metadataIndex.put(id, metadata, objFile.getParent());
     }
 
     /* finally, check to see if this directory needs to be split */
-    layout.checkDirectory(objFile.getParentFile());
+    layout.checkDirectory(objFile.getParent());
 
     return Boolean.TRUE;
   }
@@ -142,21 +143,21 @@ final class ObjectFiles {
     stats.countDelete();
 
     /* first get the file */
-    File objFile = layout.getFile(id);
+    Path objFile = layout.getFile(id);
 
-    logger.atTrace().log(() -> "COUNT: Unstoring data under " + id.toStringFull() + " of size " + objFile.length() + " in " + name);
+    logger.atTrace().log(() -> "COUNT: Unstoring data under " + id.toStringFull() + " of size " + StorageFiles.getFileLength(objFile) + " in " + name);
 
     /* remove id from stored list */
     if (metadataIndex != null) {
-      metadataIndex.remove(id, objFile.getParentFile());
+      metadataIndex.remove(id, objFile.getParent());
     }
 
     /* check to make sure file exists */
-    if ((objFile == null) || (! objFile.exists()))
+    if ((objFile == null) || (! Files.exists(objFile)))
       return Boolean.FALSE;
 
     /* record the space collected and delete the file */
-    quota.decreaseUsedSpace(objFile.length());
+    quota.decreaseUsedSpace(StorageFiles.getFileLength(objFile));
     StorageFiles.deleteFile(objFile);
 
     return Boolean.TRUE;
@@ -168,12 +169,12 @@ final class ObjectFiles {
     logger.atTrace().log(() -> "COUNT: Updating metadata for " + id.toStringFull() + " in " + name);
 
     /* write the metadata to the file */
-    File objFile = layout.getFile(id);
+    Path objFile = layout.getFile(id);
     format.writeMetadata(objFile, metadata);
 
     /* then update our cache */
     if (metadataIndex != null) {
-      metadataIndex.put(id, metadata, objFile.getParentFile());
+      metadataIndex.put(id, metadata, objFile.getParent());
     }
 
     return Boolean.TRUE;
@@ -183,19 +184,19 @@ final class ObjectFiles {
     stats.countRead();
 
     /* get the file */
-    File objFile = layout.getFile(id);
+    Path objFile = layout.getFile(id);
 
     try {
       /* and make sure that it exists */
-      if ((objFile == null) || (! objFile.exists()))
+      if ((objFile == null) || (! Files.exists(objFile)))
         return null;
 
-      logger.atTrace().log(() -> "COUNT: Fetching data under " + id.toStringFull() + " of size " + objFile.length() + " in " + name);
+      logger.atTrace().log(() -> "COUNT: Fetching data under " + id.toStringFull() + " of size " + StorageFiles.getFileLength(objFile) + " in " + name);
       return format.readData(objFile);
     } catch (Exception e) {
       /* remove our index for this file */
       if (metadataIndex != null) {
-        metadataIndex.remove(id, objFile.getParentFile());
+        metadataIndex.remove(id, objFile.getParent());
       }
 
       /* if there's a problem, move the file to the lost+found */
@@ -217,10 +218,10 @@ final class ObjectFiles {
    *
    * @param dir The directory to flush
    */
-  private void flushDirectory(File dir) throws IOException {
+  private void flushDirectory(Path dir) throws IOException {
     logger.debug("Flushing file {}", dir);
 
-    if (! dir.isDirectory()) {
+    if (! Files.isDirectory(dir)) {
       Id id = layout.readKey(dir);
 
       /* remove id from stored list */
@@ -229,10 +230,10 @@ final class ObjectFiles {
       }
 
       /* record the space collected and delete the file */
-      quota.decreaseUsedSpace(dir.length());
+      quota.decreaseUsedSpace(StorageFiles.getFileLength(dir));
       StorageFiles.deleteFile(dir);
     } else {
-      File[] dirs = dir.listFiles();
+      Path[] dirs = StorageFiles.list(dir, entry -> true);
 
       /* remove all subdirectories */
       for (int i=0; i<dirs.length; i++) {

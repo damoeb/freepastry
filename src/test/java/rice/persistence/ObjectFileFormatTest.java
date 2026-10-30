@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,13 +45,13 @@ class ObjectFileFormatTest {
 
   @Test
   void writesAndReadsTheObjectKeyVersionAndMetadata() throws IOException {
-    File file = dir.resolve("object").toFile();
+    Path file = dir.resolve("object");
     Id key = factory.buildId("key");
     byte[] obj = {1, 2, 3, 4};
 
     long size = testObj.writeObject(obj, 42, key, 12345L, file);
 
-    assertEquals(file.length(), size);
+    assertEquals(Files.size(file), size);
     assertArrayEquals(obj, (byte[]) testObj.readData(file));
     assertEquals(key, testObj.readKeyFromFile(file));
     assertEquals(12345L, testObj.readVersion(file));
@@ -61,7 +60,7 @@ class ObjectFileFormatTest {
 
   @Test
   void rewritesTheMetadataAndKeepsTheObject() throws IOException {
-    File file = dir.resolve("object").toFile();
+    Path file = dir.resolve("object");
     Id key = factory.buildId("key");
     testObj.writeObject("value", 1, key, 7L, file);
 
@@ -76,7 +75,7 @@ class ObjectFileFormatTest {
 
   @Test
   void keepsAMissingObjectAndMissingMetadata() throws IOException {
-    File file = dir.resolve("object").toFile();
+    Path file = dir.resolve("object");
 
     testObj.writeObject(null, null, factory.buildId("key"), 0L, file);
 
@@ -91,8 +90,8 @@ class ObjectFileFormatTest {
 
   @Test
   void refusesAFileWithoutTheTrailer() throws IOException {
-    File file = dir.resolve("broken").toFile();
-    Files.write(file.toPath(), new byte[] {31, -117, 8, 0});
+    Path file = dir.resolve("broken");
+    Files.write(file, new byte[] {31, -117, 8, 0});
 
     assertNull(testObj.readMetadata(file));
     assertThrows(IOException.class, () -> testObj.readData(file));
@@ -101,11 +100,11 @@ class ObjectFileFormatTest {
 
   @Test
   void refusesAnotherFormatVersion() throws IOException {
-    File file = dir.resolve("object").toFile();
+    Path file = dir.resolve("object");
     testObj.writeObject("value", 1, factory.buildId("key"), 7L, file);
-    byte[] bytes = Files.readAllBytes(file.toPath());
+    byte[] bytes = Files.readAllBytes(file);
     bytes[bytes.length - ObjectFileFormat.TRAILER_LENGTH + 15] = 2; // the low byte of the version long
-    Files.write(file.toPath(), bytes);
+    Files.write(file, bytes);
 
     assertNull(testObj.readMetadata(file));
     assertThrows(IOException.class, () -> testObj.readData(file));

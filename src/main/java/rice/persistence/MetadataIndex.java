@@ -39,11 +39,11 @@ package rice.persistence;
 
 import static rice.persistence.PersistentStorage.METADATA_FILENAME;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -73,7 +73,7 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 final class MetadataIndex {
 
   private final ReverseTreeMap<Id, Object> metadata;  // the in-memory cache of object metadata
-  private final HashSet<File> dirty;            // the list of directories which have dirty metadata
+  private final HashSet<Path> dirty;            // the list of directories which have dirty metadata
   private final IdFactory factory;
   private final StorageSerializer serializer;
   private final Logger logger;
@@ -87,7 +87,7 @@ final class MetadataIndex {
     this.factory = factory;
     this.serializer = serializer;
     this.logger = logger;
-    this.dirty = new HashSet<File>();
+    this.dirty = new HashSet<Path>();
     this.metadata = new ReverseTreeMap<Id, Object>();
   }
 
@@ -106,7 +106,7 @@ final class MetadataIndex {
   /**
    * Records the metadata of an object stored in {@code dir}, and marks that directory dirty.
    */
-  void put(Id id, Object value, File dir) {
+  void put(Id id, Object value, Path dir) {
     synchronized (metadata) {
       metadata.put(id, value);
       dirty.add(dir);
@@ -116,7 +116,7 @@ final class MetadataIndex {
   /**
    * Forgets an object stored in {@code dir}, and marks that directory dirty.
    */
-  void remove(Id id, File dir) {
+  void remove(Id id, Path dir) {
     synchronized (metadata) {
       metadata.remove(id);
       dirty.add(dir);
@@ -189,7 +189,7 @@ final class MetadataIndex {
     metadata.remove(id);
   }
 
-  void markDirtyUnlocked(File dir) {
+  void markDirtyUnlocked(Path dir) {
     dirty.add(dir);
   }
 
@@ -199,8 +199,8 @@ final class MetadataIndex {
    *
    * @param rangeForDirectory the range of keys a directory holds
    */
-  void writeDirty(Function<File, IdRange> rangeForDirectory) {
-    File[] files = (File[]) dirty.toArray(new File[0]);
+  void writeDirty(Function<Path, IdRange> rangeForDirectory) {
+    Path[] files = dirty.toArray(new Path[0]);
 
     for (int i=0; i<files.length; i++) {
       HashMap<Id, Object> map = new HashMap<Id, Object>();
@@ -223,22 +223,15 @@ final class MetadataIndex {
         synchronized (metadata) {
           dirty.remove(files[i]);
         }
-      } catch (FileNotFoundException f) {
-        try {
-          synchronized (metadata) {
-            dirty.remove(files[i]);
-          }
+      } catch (FileSystemException f) {
+        // the file could not be opened, as FileOutputStream reported with a FileNotFoundException
+        synchronized (metadata) {
+          dirty.remove(files[i]);
+        }
 
-          logger.warn("ERROR: Could not find directory while writing out metadata in '{}' - removing from dirty list and continuing!", files[i].getCanonicalPath(), f);
-        } catch (IOException g) {
-          logger.error("PANIC: Got IOException {} trying to detail FNF exception {} while writing out file {}", g, f, files[i], g);
-        }
+        logger.warn("ERROR: Could not find directory while writing out metadata in '{}' - removing from dirty list and continuing!", files[i].toAbsolutePath().normalize(), f);
       } catch (IOException e) {
-        try {
-          logger.warn("ERROR: Got error {} while writing out metadata in '{}' - aborting!", e, files[i].getCanonicalPath(), e);
-        } catch (IOException f) {
-          logger.error("PANIC: Got IOException {} trying to detail exception {} while writing out file {}", f, e, files[i], f);
-        }
+        logger.warn("ERROR: Got error {} while writing out metadata in '{}' - aborting!", e, files[i].toAbsolutePath().normalize(), e);
       }
     }
   }
@@ -252,16 +245,16 @@ final class MetadataIndex {
    * @param prefixOf the key prefix a directory stands for
    * @return the time the metadata file was last modified, 0 if it was broken and -1 if there is none
    */
-  long readMetadataFile(File file, Function<File, IdRange> rangeForDirectory, Function<File, String> prefixOf) throws IOException {
-    File metadata = new File(file, METADATA_FILENAME);
+  long readMetadataFile(Path file, Function<Path, IdRange> rangeForDirectory, Function<Path, String> prefixOf) throws IOException {
+    Path metadata = file.resolve(METADATA_FILENAME);
 
-    if (! metadata.exists())
+    if (! Files.exists(metadata))
       return -1L;
 
     IdRange range = rangeForDirectory.apply(file);
 
     try {
-      InputBuffer buf = new SimpleInputBuffer(Files.readAllBytes(metadata.toPath()));
+      InputBuffer buf = new SimpleInputBuffer(Files.readAllBytes(metadata));
       if (buf.readLong() != METADATA_CACHE_MAGIC) {
         throw new IOException("Not a metadata cache");
       }
@@ -275,13 +268,13 @@ final class MetadataIndex {
         Id id = factory.buildIdFromToString(buf.readUTF());
         Object value = buf.readBoolean() ? serializer.readMetadata(buf) : null;
 
-        if ((range.containsId(id)) && (new File(file, id.toStringFull().substring(prefixOf.apply(file).length())).exists()))
+        if ((range.containsId(id)) && (Files.exists(file.resolve(id.toStringFull().substring(prefixOf.apply(file).length())))))
           this.metadata.put(id, value);
         else
           dirty.add(file);
       }
 
-      return metadata.lastModified();
+      return StorageFiles.lastModified(metadata);
     } catch (IOException | RuntimeException e) {
       logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
       StorageFiles.deleteFile(metadata);
@@ -297,7 +290,7 @@ final class MetadataIndex {
    * @param file The directory to write the file to
    * @param map The data to write
    */
-  private void writeMetadataFile(File file, HashMap<Id, Object> map) throws IOException {
+  private void writeMetadataFile(Path file, HashMap<Id, Object> map) throws IOException {
     SimpleOutputBuffer buf = new SimpleOutputBuffer();
     buf.writeLong(METADATA_CACHE_MAGIC);
     buf.writeInt(METADATA_CACHE_VERSION);
@@ -310,7 +303,7 @@ final class MetadataIndex {
       }
     }
 
-    try (FileOutputStream fout = new FileOutputStream(new File(file, METADATA_FILENAME))) {
+    try (OutputStream fout = Files.newOutputStream(file.resolve(METADATA_FILENAME))) {
       fout.write(buf.getBytes(), 0, buf.getWritten());
     }
   }

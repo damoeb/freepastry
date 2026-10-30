@@ -39,8 +39,9 @@ package rice.persistence;
 
 import static rice.persistence.PersistentStorage.METADATA_FILENAME;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.Id;
@@ -92,9 +93,9 @@ final class StorageRecovery {
    *
    * @param dir The directory to start on
    */
-  private void initFiles(File dir) throws IOException {
-    String[] dirs = dir.list(new StorageLayout.DirectoryFilter());
-    String[] files = dir.list(new StorageLayout.FileFilter());
+  private void initFiles(Path dir) throws IOException {
+    String[] dirs = StorageFiles.listNames(dir, StorageLayout.DIRECTORIES);
+    String[] files = StorageFiles.listNames(dir, StorageLayout.FILES);
 
     /* first, init any files, and relocate any files if there are dirs */
     for (int i=0; i<files.length; i++) {
@@ -107,17 +108,17 @@ final class StorageRecovery {
         }
       } catch (Exception e) {
         logger.warn("Got exception {} initting file {} - moving to lost+found.", e, files[i], e);
-        layout.moveToLost(new File(dir, files[i]));
+        layout.moveToLost(dir.resolve(files[i]));
       }
     }
 
     /* next, recurse into any dirs */
     for (int i=0; i<dirs.length; i++)
-      initFiles(new File(dir, dirs[i]));
+      initFiles(dir.resolve(dirs[i]));
 
     /* and delete the old metadata file, if it exists */
     if (dirs.length > 0)
-      StorageFiles.deleteFile(new File(dir, METADATA_FILENAME));
+      StorageFiles.deleteFile(dir.resolve(METADATA_FILENAME));
   }
 
   /**
@@ -132,11 +133,11 @@ final class StorageRecovery {
    *
    * @returns Whether or not the file was a temporary file
    */
-  private boolean initTemporaryFile(File parent, String name) throws IOException {
+  private boolean initTemporaryFile(Path parent, String name) throws IOException {
     if (! layout.isTemporaryFile(name))
       return false;
 
-    layout.moveToLost(new File(parent, name));
+    layout.moveToLost(parent.resolve(name));
     return true;
   }
 
@@ -150,14 +151,14 @@ final class StorageRecovery {
    * Lastly, deletes any files which are of zero length.
    *
    */
-  private void initFileMap(File dir) throws IOException {
+  private void initFileMap(Path dir) throws IOException {
     logger.debug("Initting directory {}", dir);
 
     /* first, see if this directory needs to be expanded */
     layout.checkDirectory(dir);
 
     /* make sure the directory was not pruned */
-    if (! dir.exists())
+    if (! Files.exists(dir))
       return;
 
     /* now, read the metadata file in this directory */
@@ -172,8 +173,8 @@ final class StorageRecovery {
     }
 
     /* next, start processing by listing the number of files and going from there */
-    File[] files = dir.listFiles(new StorageLayout.FileFilter());
-    File[] dirs = dir.listFiles(new StorageLayout.DirectoryFilter());
+    Path[] files = StorageFiles.list(dir, StorageLayout.FILES);
+    Path[] dirs = StorageFiles.list(dir, StorageLayout.DIRECTORIES);
 
     for (int i=0; i<files.length; i++) {
       try {
@@ -188,8 +189,8 @@ final class StorageRecovery {
 
           /* if the file is newer than the metadata file, update the metadata
           if we don't have the metadata for this file, update it */
-          if ((metadataIndex != null) && ((! metadataIndex.containsUnlocked(id)) || (files[i].lastModified() > modified))) {
-            if (logger.isTraceEnabled()) logger.trace("Reading newer metadata out of file " + files[i] + " id " + id.toStringFull() + " " + files[i].lastModified() + " " + modified + " " + metadataIndex.containsUnlocked(id));
+          if ((metadataIndex != null) && ((! metadataIndex.containsUnlocked(id)) || (StorageFiles.lastModified(files[i]) > modified))) {
+            if (logger.isTraceEnabled()) logger.trace("Reading newer metadata out of file " + files[i] + " id " + id.toStringFull() + " " + StorageFiles.lastModified(files[i]) + " " + modified + " " + metadataIndex.containsUnlocked(id));
             metadataIndex.putUnlocked(id, format.readMetadata(files[i]));
             metadataIndex.markDirtyUnlocked(dir);
           }
@@ -223,10 +224,10 @@ final class StorageRecovery {
    * @param file2 The second file
    * @param output The file to store the result in
    */
-  private void resolveConflict(File file1, File file2, File output) throws IOException {
-    if (! file2.exists()) {
+  private void resolveConflict(Path file1, Path file2, Path output) throws IOException {
+    if (! Files.exists(file2)) {
       StorageFiles.renameFile(file1, output);
-    } else if (! file1.exists()) {
+    } else if (! Files.exists(file1)) {
       StorageFiles.renameFile(file2, output);
     } else if (file1.equals(file2)) {
       StorageFiles.renameFile(file1, output);
@@ -251,15 +252,15 @@ final class StorageRecovery {
    * @param parent The directory the file is in
    * @param name The name of the file to be moved
    */
-  private void moveFileToCorrectDirectory(File parent, String name) throws IOException {
-    File file = new File(parent, name);
+  private void moveFileToCorrectDirectory(Path parent, String name) throws IOException {
+    Path file = parent.resolve(name);
     Id id = format.readKeyFromFile(file);
-    File dest = layout.getDirectoryForId(id);
+    Path dest = layout.getDirectoryForId(id);
 
     /* if it's in the wrong directory, then move it and resolve the conflict if necessary */
     if (! dest.equals(parent)) {
       logger.debug("moving file {} to correct directory {} from {}", file, dest, parent);
-      File other = new File(dest, id.toStringFull().substring(layout.getPrefix(dest).length()));
+      Path other = dest.resolve(id.toStringFull().substring(layout.getPrefix(dest).length()));
       resolveConflict(file, other, other);
       layout.checkDirectory(dest);
     }

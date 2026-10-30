@@ -37,8 +37,15 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
-import java.io.File;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * File system primitives of {@link PersistentStorage} that report failures as IOExceptions.
@@ -54,9 +61,17 @@ final class StorageFiles {
    * @param directory The directory to be created
    * @throws IOException if the directory cannot be created
    */
-  static void createDirectory(File directory) throws IOException {
-    if ((directory == null) || (directory.exists() && directory.isFile()) || (! (directory.exists()) && (! directory.mkdirs())))
+  static void createDirectory(Path directory) throws IOException {
+    if ((directory == null) || (Files.exists(directory) && Files.isRegularFile(directory)))
       throw new IOException("Creation of directory " + directory + " failed!");
+
+    if (! Files.exists(directory)) {
+      try {
+        Files.createDirectories(directory);
+      } catch (IOException e) {
+        throw new IOException("Creation of directory " + directory + " failed!", e);
+      }
+    }
   }
 
   /**
@@ -65,13 +80,18 @@ final class StorageFiles {
    * @param directory The directory to be deleted
    * @throws IOException if the directory is not empty or cannot be deleted
    */
-  static void deleteDirectory(File directory) throws IOException {
-    if ((directory != null) && directory.exists()) {
-      if (directory.listFiles().length > 0)
-        throw new IOException("Cannot delete " + directory + " - directory is not empty!");
+  static void deleteDirectory(Path directory) throws IOException {
+    if ((directory != null) && Files.exists(directory)) {
+      try (Stream<Path> entries = Files.list(directory)) {
+        if (entries.findAny().isPresent())
+          throw new IOException("Cannot delete " + directory + " - directory is not empty!");
+      }
 
-      if (! directory.delete())
-        throw new IOException("Deletion of directory " + directory + " failed!");
+      try {
+        Files.delete(directory);
+      } catch (IOException e) {
+        throw new IOException("Deletion of directory " + directory + " failed!", e);
+      }
     }
   }
 
@@ -80,9 +100,31 @@ final class StorageFiles {
    * Returns the length of a file in bytes
    *
    * @param file file whose length to get
+   * @return the length, or 0 if the file does not exist or cannot be read, as File.length() did
    */
-  static long getFileLength(File file) {
-    return (((file != null) && file.exists()) ? file.length() : 0);
+  static long getFileLength(Path file) {
+    if ((file == null) || ! Files.exists(file))
+      return 0;
+
+    try {
+      return Files.size(file);
+    } catch (IOException e) {
+      return 0;
+    }
+  }
+
+  /**
+   * Returns the time a file was last modified
+   *
+   * @param file the file
+   * @return the time in millis, or 0 if the file does not exist or cannot be read, as File.lastModified() did
+   */
+  static long lastModified(Path file) {
+    try {
+      return Files.getLastModifiedTime(file).toMillis();
+    } catch (IOException e) {
+      return 0;
+    }
   }
 
   /**
@@ -91,12 +133,15 @@ final class StorageFiles {
    * @param oldFile The old name
    * @param newFile The new name
    */
-  static void renameFile(File oldFile, File newFile) throws IOException {
-    if ((oldFile != null) && oldFile.exists() && (! oldFile.equals(newFile))) {
+  static void renameFile(Path oldFile, Path newFile) throws IOException {
+    if ((oldFile != null) && Files.exists(oldFile) && (! oldFile.equals(newFile))) {
       deleteFile(newFile);
 
-      if (! oldFile.renameTo(newFile))
-        throw new IOException("Rename of " + oldFile + " to " + newFile + " failed!");
+      try {
+        Files.move(oldFile, newFile, ATOMIC_MOVE);
+      } catch (IOException e) {
+        throw new IOException("Rename of " + oldFile + " to " + newFile + " failed!", e);
+      }
     }
   }
 
@@ -106,8 +151,47 @@ final class StorageFiles {
    * @param file file to be deleted.
    *
    */
-  static void deleteFile(File file) throws IOException {
-    if ((file != null) && file.exists() && (! file.delete()))
-      throw new IOException("Delete of " + file + " failed!");
+  static void deleteFile(Path file) throws IOException {
+    if (file == null)
+      return;
+
+    try {
+      Files.deleteIfExists(file);
+    } catch (IOException e) {
+      throw new IOException("Delete of " + file + " failed!", e);
+    }
+  }
+
+  /**
+   * Lists the entries of a directory that the filter accepts.
+   *
+   * @param dir the directory
+   * @param filter the entries to return
+   * @return the entries, resolved against dir
+   * @throws IOException if the directory cannot be listed
+   */
+  static Path[] list(Path dir, DirectoryStream.Filter<Path> filter) throws IOException {
+    List<Path> result = new ArrayList<Path>();
+    try (DirectoryStream<Path> entries = Files.newDirectoryStream(dir, filter)) {
+      for (Path entry : entries)
+        result.add(entry);
+    }
+    return result.toArray(new Path[0]);
+  }
+
+  /**
+   * Lists the names of the entries of a directory that the filter accepts.
+   *
+   * @param dir the directory
+   * @param filter the entries to return
+   * @return the names of the entries
+   * @throws IOException if the directory cannot be listed
+   */
+  static String[] listNames(Path dir, DirectoryStream.Filter<Path> filter) throws IOException {
+    Path[] entries = list(dir, filter);
+    String[] result = new String[entries.length];
+    for (int i = 0; i < entries.length; i++)
+      result[i] = entries[i].getFileName().toString();
+    return result;
   }
 }

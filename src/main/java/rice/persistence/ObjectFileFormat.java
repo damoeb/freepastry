@@ -38,10 +38,14 @@ package rice.persistence;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -93,7 +97,7 @@ final class ObjectFileFormat {
    * @param file The file to read the object from.
    * @return The object that was read in, which may be null
    */
-  Object readData(File file) throws IOException {
+  Object readData(Path file) throws IOException {
     InputBuffer buf = readObjectSection(file);
     buf.readUTF(); // key
     buf.readLong(); // version
@@ -106,7 +110,7 @@ final class ObjectFileFormat {
    * @param file The file to read the key from.
    * @return The key that was read in
    */
-  Id readKeyFromFile(File file) throws IOException {
+  Id readKeyFromFile(Path file) throws IOException {
     return factory.buildIdFromToString(readObjectSection(file).readUTF());
   }
 
@@ -116,7 +120,7 @@ final class ObjectFileFormat {
    * @param file The file to read the version from.
    * @return The version that was read in
    */
-  long readVersion(File file) throws IOException {
+  long readVersion(Path file) throws IOException {
     InputBuffer buf = readObjectSection(file);
     buf.readUTF(); // key
     return buf.readLong();
@@ -127,15 +131,15 @@ final class ObjectFileFormat {
    *
    * @param file The file which should be read for the metadata
    */
-  Object readMetadata(File file) throws IOException {
-    try (RandomAccessFile ras = new RandomAccessFile(file, "r")) {
+  Object readMetadata(Path file) throws IOException {
+    try (RandomAccessFile ras = new RandomAccessFile(file.toFile(), "r")) {
       long length = metadataLength(ras, file);
       if (length < 0) {
         return null;
       }
 
       byte[] section = new byte[(int) length];
-      ras.seek(file.length() - TRAILER_LENGTH - length);
+      ras.seek(ras.length() - TRAILER_LENGTH - length);
       ras.readFully(section);
       InputBuffer buf = gunzip(section);
       return buf.readBoolean() ? serializer.readMetadata(buf) : null;
@@ -152,7 +156,7 @@ final class ObjectFileFormat {
    * @param file The file to write to
    * @return The file's disk space usage
    */
-  long writeObject(Object obj, Object metadata, Id key, long version, File file) throws IOException {
+  long writeObject(Object obj, Object metadata, Id key, long version, Path file) throws IOException {
     SimpleOutputBuffer buf = new SimpleOutputBuffer();
     buf.writeUTF(key.toStringFull());
     buf.writeLong(version);
@@ -161,12 +165,12 @@ final class ObjectFileFormat {
       serializer.writeObject(obj, buf);
     }
 
-    try (FileOutputStream fout = new FileOutputStream(file)) {
+    try (OutputStream fout = Files.newOutputStream(file)) {
       fout.write(gzip(buf));
     }
 
     appendMetadata(file, metadata);
-    return file.length();
+    return StorageFiles.getFileLength(file);
   }
 
   /**
@@ -175,13 +179,13 @@ final class ObjectFileFormat {
    * @param file The file to which the metadata should be written
    * @param metadata The metadata to write
    */
-  void writeMetadata(File file, Object metadata) throws IOException {
-    try (RandomAccessFile ras = new RandomAccessFile(file, "rw")) {
+  void writeMetadata(Path file, Object metadata) throws IOException {
+    try (RandomAccessFile ras = new RandomAccessFile(file.toFile(), "rw")) {
       long length = metadataLength(ras, file);
       if (length < 0) {
         throw new IOException("Not a version " + PersistentStorage.PERSISTENCE_VERSION_3 + " object file: " + file);
       }
-      ras.setLength(file.length() - TRAILER_LENGTH - length);
+      ras.setLength(ras.length() - TRAILER_LENGTH - length);
     }
 
     appendMetadata(file, metadata);
@@ -190,7 +194,7 @@ final class ObjectFileFormat {
   /**
    * Appends the metadata section and the trailer.
    */
-  private void appendMetadata(File file, Object metadata) throws IOException {
+  private void appendMetadata(Path file, Object metadata) throws IOException {
     SimpleOutputBuffer buf = new SimpleOutputBuffer();
     buf.writeBoolean(metadata != null);
     if (metadata != null) {
@@ -204,7 +208,7 @@ final class ObjectFileFormat {
     trailer.writeLong(PersistentStorage.PERSISTENCE_REVISION_3_0);
     trailer.writeLong(section.length);
 
-    try (FileOutputStream fout = new FileOutputStream(file, true)) {
+    try (OutputStream fout = Files.newOutputStream(file, CREATE, APPEND)) {
       fout.write(section);
       fout.write(trailer.getBytes(), 0, trailer.getWritten());
     }
@@ -213,14 +217,14 @@ final class ObjectFileFormat {
   /**
    * @return the object section of the file, unzipped
    */
-  private InputBuffer readObjectSection(File file) throws IOException {
-    try (RandomAccessFile ras = new RandomAccessFile(file, "r")) {
+  private InputBuffer readObjectSection(Path file) throws IOException {
+    try (RandomAccessFile ras = new RandomAccessFile(file.toFile(), "r")) {
       long length = metadataLength(ras, file);
       if (length < 0) {
         throw new IOException("Not a version " + PersistentStorage.PERSISTENCE_VERSION_3 + " object file: " + file);
       }
 
-      byte[] section = new byte[(int) (file.length() - TRAILER_LENGTH - length)];
+      byte[] section = new byte[(int) (ras.length() - TRAILER_LENGTH - length)];
       ras.seek(0);
       ras.readFully(section);
       return gunzip(section);
@@ -232,8 +236,8 @@ final class ObjectFileFormat {
    *
    * @return the length of the metadata section, or -1 if the file has no valid version 3 trailer
    */
-  private long metadataLength(RandomAccessFile ras, File file) throws IOException {
-    long fileLength = file.length();
+  private long metadataLength(RandomAccessFile ras, Path file) throws IOException {
+    long fileLength = ras.length();
     if (fileLength < TRAILER_LENGTH) {
       return -1;
     }

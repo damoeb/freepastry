@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,16 +36,16 @@ class MetadataIndexTest {
   private Environment env;
   private IdFactory factory;
   private Logger logger;
-  private File dir;
-  private Function<File, IdRange> rangeForDirectory;
-  private Function<File, String> prefixOf;
+  private Path dir;
+  private Function<Path, IdRange> rangeForDirectory;
+  private Function<Path, String> prefixOf;
 
   @BeforeEach
   void setUp() {
     env = Environment.directEnvironment(1);
     factory = new PastryIdFactory(env);
     logger = env.getLogManager().getLogger(MetadataIndexTest.class, null);
-    dir = root.toFile();
+    dir = root;
     rangeForDirectory = d -> factory.buildIdRangeFromPrefix(PREFIX);
     prefixOf = d -> PREFIX;
   }
@@ -62,7 +61,7 @@ class MetadataIndexTest {
 
   private Id storedId(String hex) throws IOException {
     Id id = factory.buildIdFromToString(PREFIX + hex);
-    Files.createFile(new File(dir, id.toStringFull().substring(PREFIX.length())).toPath());
+    Files.createFile(dir.resolve(id.toStringFull().substring(PREFIX.length())));
     return id;
   }
 
@@ -96,7 +95,7 @@ class MetadataIndexTest {
     written.put(kept, 1, dir);
     written.put(gone, 2, dir);
     written.writeDirty(rangeForDirectory);
-    Files.delete(new File(dir, gone.toStringFull().substring(PREFIX.length())).toPath());
+    Files.delete(dir.resolve(gone.toStringFull().substring(PREFIX.length())));
 
     MetadataIndex actual = newIndex();
     actual.readMetadataFile(dir, rangeForDirectory, prefixOf);
@@ -107,13 +106,13 @@ class MetadataIndexTest {
 
   @Test
   void deletesABrokenCacheFile() throws IOException {
-    File cache = new File(dir, PersistentStorage.METADATA_FILENAME);
-    Files.write(cache.toPath(), new byte[] {1, 2, 3});
+    Path cache = dir.resolve(PersistentStorage.METADATA_FILENAME);
+    Files.write(cache, new byte[] {1, 2, 3});
 
     long actual = newIndex().readMetadataFile(dir, rangeForDirectory, prefixOf);
 
     assertEquals(0L, actual);
-    assertFalse(cache.exists());
+    assertFalse(Files.exists(cache));
   }
 
   @Test

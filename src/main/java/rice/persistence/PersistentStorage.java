@@ -45,8 +45,8 @@ package rice.persistence;
  *
  * @version $Id: PersistentStorage.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.SortedMap;
 
 import org.slf4j.Logger;
@@ -100,7 +100,7 @@ public class PersistentStorage implements Storage {
   /**
    * Static variables which define the location of the storage root
    */
-  public static final String BACKUP_DIRECTORY = "/FreePastry-Storage-Root/";
+  public static final String BACKUP_DIRECTORY = "FreePastry-Storage-Root"; // a name: Path.resolve takes "/..." as absolute
   public static final String LOST_AND_FOUND_DIRECTORY = "lost+found";
   public static final String METADATA_FILENAME = "metadata.cache";
 
@@ -531,7 +531,7 @@ public class PersistentStorage implements Storage {
    *
    * @param dir The directory
    */
-  protected IdRange getRangeForDirectory(File dir) {
+  protected IdRange getRangeForDirectory(Path dir) {
     return layout.getRangeForDirectory(dir);
   }
 

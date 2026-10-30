@@ -44,9 +44,10 @@ import static rice.persistence.PersistentStorage.MAX_FILES;
 import static rice.persistence.PersistentStorage.METADATA_FILENAME;
 import static rice.persistence.PersistentStorage.ZERO_LENGTH_NAME;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,13 +73,13 @@ final class StorageLayout {
   private final MetadataIndex metadataIndex; // marks the directories created by a split dirty; null without indexing
   private final Logger logger;
 
-  private File rootDirectory;       // root directory to store stuff in
-  private File backupDirectory;     // dir for storing persistent objs
-  private File appDirectory;        // dir for storing persistent objs
-  private File lostDirectory;       // dir for lost objects
+  private Path rootDirectory;       // root directory to store stuff in
+  private Path backupDirectory;     // dir for storing persistent objs
+  private Path appDirectory;        // dir for storing persistent objs
+  private Path lostDirectory;       // dir for lost objects
 
-  private final HashMap<File, File[]> directories;      // the in-memory map of directories (for efficiency)
-  private final HashMap<File, String> prefixes;         // an in-memory cache of the directory prefixes
+  private final HashMap<Path, Path[]> directories;      // the in-memory map of directories (for efficiency)
+  private final HashMap<Path, String> prefixes;         // an in-memory cache of the directory prefixes
 
   StorageLayout(String rootDir, String name, IdFactory factory, RandomSource randomSource, MetadataIndex metadataIndex, Logger logger) {
     this.rootDir = rootDir;
@@ -87,21 +88,21 @@ final class StorageLayout {
     this.randomSource = randomSource;
     this.metadataIndex = metadataIndex;
     this.logger = logger;
-    this.directories = new HashMap<File, File[]>();
-    this.prefixes = new HashMap<File, String>();
+    this.directories = new HashMap<Path, Path[]>();
+    this.prefixes = new HashMap<Path, String>();
   }
 
   /**
    * @return the directory below which the objects are stored
    */
-  File getAppDirectory() {
+  Path getAppDirectory() {
     return appDirectory;
   }
 
   /**
    * Forgets a directory that has been deleted.
    */
-  void forgetDirectory(File dir) {
+  void forgetDirectory(Path dir) {
     directories.remove(dir);
     prefixes.remove(dir);
   }
@@ -114,16 +115,16 @@ final class StorageLayout {
    * @throws IOException if a directory cannot be created
    */
   void initDirectories() throws IOException {
-    rootDirectory = new File(rootDir);
+    rootDirectory = Path.of(rootDir);
     StorageFiles.createDirectory(rootDirectory);
 
-    backupDirectory = new File(rootDirectory, BACKUP_DIRECTORY);
+    backupDirectory = rootDirectory.resolve(BACKUP_DIRECTORY);
     StorageFiles.createDirectory(backupDirectory);
 
-    appDirectory = new File(backupDirectory, name);
+    appDirectory = backupDirectory.resolve(name);
     StorageFiles.createDirectory(appDirectory);
 
-    lostDirectory = new File(backupDirectory, LOST_AND_FOUND_DIRECTORY);
+    lostDirectory = backupDirectory.resolve(LOST_AND_FOUND_DIRECTORY);
     StorageFiles.createDirectory(lostDirectory);
   }
 
@@ -132,8 +133,8 @@ final class StorageLayout {
    *
    * @param dir The directory to recurse
    */
-  void initDirectoryMap(File dir) {
-    File[] files = dir.listFiles(new DirectoryFilter());
+  void initDirectoryMap(Path dir) throws IOException {
+    Path[] files = StorageFiles.list(dir, DIRECTORIES);
     directories.put(dir, files);
 
     for (int i=0; i<files.length; i++)
@@ -146,8 +147,8 @@ final class StorageLayout {
    * @param file the file to be moved
    *
    */
-  void moveToLost(File file) throws IOException {
-    StorageFiles.renameFile(file, new File(lostDirectory, getPrefix(file.getParentFile()) + file.getName()));
+  void moveToLost(Path file) throws IOException {
+    StorageFiles.renameFile(file, lostDirectory.resolve(getPrefix(file.getParent()) + file.getFileName().toString()));
   }
 
   /**
@@ -157,7 +158,7 @@ final class StorageLayout {
    * @param directory The directory to check
    * @return Whether or not the directory was modified
    */
-  boolean checkDirectory(File directory) throws IOException {
+  boolean checkDirectory(Path directory) throws IOException {
     int files = numFilesDir(directory);
     int dirs = numDirectoriesDir(directory);
 
@@ -183,11 +184,11 @@ final class StorageLayout {
    *
    * @param dir The directory to remove
    */
-  private void pruneDirectory(File dir) throws IOException {
+  private void pruneDirectory(Path dir) throws IOException {
     logger.debug("Pruning directory {} due to emptiness", dir);
 
     /* First delete the metadata file, if it exists */
-    StorageFiles.deleteFile(new File(dir, METADATA_FILENAME));
+    StorageFiles.deleteFile(dir.resolve(METADATA_FILENAME));
 
     /* Then remove the directory */
     StorageFiles.deleteDirectory(dir);
@@ -195,7 +196,7 @@ final class StorageLayout {
     /* Finally update the metadata */
     directories.remove(dir);
     prefixes.remove(dir);
-    this.directories.put(dir.getParentFile(), dir.getParentFile().listFiles(new DirectoryFilter()));
+    this.directories.put(dir.getParent(), StorageFiles.list(dir.getParent(), DIRECTORIES));
   }
 
   /**
@@ -209,10 +210,10 @@ final class StorageLayout {
    *
    * @param dir The directory to expand
    */
-  private void reformatDirectory(File dir) throws IOException {
+  private void reformatDirectory(Path dir) throws IOException {
     logger.debug("Expanding directory {} due to too many subdirectories", dir);
     /* first, determine what directories we should create (ignoring the ! directories) */
-    String[] newDirNames = getDirectories(dir.list(new DirectoryFilter()));
+    String[] newDirNames = getDirectories(StorageFiles.listNames(dir, DIRECTORIES));
     reformatDirectory(dir, newDirNames);
     logger.debug("Done expanding directory {}", dir);
   }
@@ -224,30 +225,30 @@ final class StorageLayout {
    * @param dir The directory to expand
    * @param newDirNames The array containing the names of the new directories
    */
-  private void reformatDirectory(File dir, String[] newDirNames) throws IOException {
-    String[] dirNames = dir.list(new DirectoryFilter());
-    File[] newDirs = new File[newDirNames.length];
+  private void reformatDirectory(Path dir, String[] newDirNames) throws IOException {
+    String[] dirNames = StorageFiles.listNames(dir, DIRECTORIES);
+    Path[] newDirs = new Path[newDirNames.length];
 
     /* create the new directories, move the old ones */
     for (int i=0; i<newDirNames.length; i++) {
-      newDirs[i] = new File(dir, newDirNames[i]);
+      newDirs[i] = dir.resolve(newDirNames[i]);
       StorageFiles.createDirectory(newDirs[i]);
       logger.debug("Creating directory {}", newDirNames[i]);
 
       /* now look through the original directory and move any matching dirs */
       String[] subDirNames = getMatchingDirectories(newDirNames[i], dirNames);
-      File[] newSubDirs = new File[subDirNames.length];
+      Path[] newSubDirs = new Path[subDirNames.length];
 
       for (int j=0; j<subDirNames.length; j++) {
         /* move the directory */
-        File oldDir = new File(dir, subDirNames[j]);
-        newSubDirs[j] = new File(newDirs[i], subDirNames[j].substring(newDirNames[i].length()));
+        Path oldDir = dir.resolve(subDirNames[j]);
+        newSubDirs[j] = newDirs[i].resolve(subDirNames[j].substring(newDirNames[i].length()));
         logger.debug("Moving the old direcotry {} to {}", oldDir, newSubDirs[j]);
         StorageFiles.renameFile(oldDir, newSubDirs[j]);
 
         /* remove the stale entry, add the new one */
         this.directories.remove(oldDir);
-        this.directories.put(newSubDirs[j], new File[0]);
+        this.directories.put(newSubDirs[j], new Path[0]);
       }
 
       this.directories.put(newDirs[i], newSubDirs);
@@ -285,20 +286,20 @@ final class StorageLayout {
    *
    * @param dir The directory to expand
    */
-  private void expandDirectory(File dir) throws IOException {
+  private void expandDirectory(Path dir) throws IOException {
     logger.debug("Expanding directory {} due to too many files", dir);
     /* first, determine what directories we should create */
-    String[] fileNames = dir.list(new FileFilter());
+    String[] fileNames = StorageFiles.listNames(dir, FILES);
     String[] dirNames = getDirectories(fileNames);
-    File[] dirs = new File[dirNames.length];
+    Path[] dirs = new Path[dirNames.length];
 
     /* create the directories */
     for (int i=0; i<dirNames.length; i++) {
-      dirs[i] = new File(dir, dirNames[i]);
-      directories.put(dirs[i], new File[0]);
+      dirs[i] = dir.resolve(dirNames[i]);
+      directories.put(dirs[i], new Path[0]);
 
-      if (dirs[i].exists() && dirs[i].isFile())
-        StorageFiles.renameFile(dirs[i], new File(dir, dirs[i].getName() + ZERO_LENGTH_NAME));
+      if (Files.exists(dirs[i]) && Files.isRegularFile(dirs[i]))
+        StorageFiles.renameFile(dirs[i], dir.resolve(dirs[i].getFileName().toString() + ZERO_LENGTH_NAME));
 
       StorageFiles.createDirectory(dirs[i]);
       logger.debug("Creating directory {}", dirNames[i]);
@@ -312,19 +313,19 @@ final class StorageLayout {
     directories.put(dir, dirs);
 
     /* last, move the files into the correct directory */
-    File[] files = dir.listFiles(new FileFilter());
+    Path[] files = StorageFiles.list(dir, FILES);
     for (int i = 0; i < files.length; i++) {
       for (int j = 0; j < dirs.length; j++) {
-        if (files[i].getName().startsWith(dirs[j].getName())) {
-          if (logger.isTraceEnabled()) logger.trace("Renaming file " + files[i] + " to " + new File(dirs[j], files[i].getName().substring(dirs[j].getName().length())));
-          StorageFiles.renameFile(files[i], new File(dirs[j], files[i].getName().substring(dirs[j].getName().length())));
+        if (files[i].getFileName().toString().startsWith(dirs[j].getFileName().toString())) {
+          if (logger.isTraceEnabled()) logger.trace("Renaming file " + files[i] + " to " + dirs[j].resolve(files[i].getFileName().toString().substring(dirs[j].getFileName().toString().length())));
+          StorageFiles.renameFile(files[i], dirs[j].resolve(files[i].getFileName().toString().substring(dirs[j].getFileName().toString().length())));
           break;
         }
       }
     }
 
     /* and remove the metadata file */
-    StorageFiles.deleteFile(new File(dir, METADATA_FILENAME));
+    StorageFiles.deleteFile(dir.resolve(METADATA_FILENAME));
 
     logger.debug("Done expanding directory {}", dir);
   }
@@ -409,12 +410,12 @@ final class StorageLayout {
    * @param id the id to generate a name for
    * @return the new File
    */
-  File makeTemporaryFile(Id id) throws IOException {
-    File directory = getDirectoryForId(id);
-    File file = new File(directory, id.toStringFull().substring(getPrefix(directory).length()) + "." + randomSource.nextInt() % 100);
+  Path makeTemporaryFile(Id id) throws IOException {
+    Path directory = getDirectoryForId(id);
+    Path file = directory.resolve(id.toStringFull().substring(getPrefix(directory).length()) + "." + randomSource.nextInt() % 100);
 
-    while (file.exists())
-      file = new File(directory, id.toStringFull().substring(getPrefix(directory).length()) + "." + randomSource.nextInt() % 100);
+    while (Files.exists(file))
+      file = directory.resolve(id.toStringFull().substring(getPrefix(directory).length()) + "." + randomSource.nextInt() % 100);
 
     return file;
   }
@@ -426,9 +427,9 @@ final class StorageLayout {
    * @param ancestor The potential ancestor
    * @return Whether or not the file is an ancestor
    */
-  private boolean isAncestor(File file, File ancestor) {
+  private boolean isAncestor(Path file, Path ancestor) {
     while ((file != null) && (! file.equals(ancestor))) {
-      file = file.getParentFile();
+      file = file.getParent();
     }
 
     return (file != null);
@@ -438,17 +439,17 @@ final class StorageLayout {
    * Gets the file for a certain id from the disk
    *
    * @param id the id to get a file for
-   * @return File the file for the id
+   * @return Path the file for the id
    */
-  File getFile(Id id) throws IOException {
-    File dir = getDirectoryForId(id);
+  Path getFile(Id id) throws IOException {
+    Path dir = getDirectoryForId(id);
     String name = id.toStringFull().substring(getPrefix(dir).length());
     if (name.equals("")) name = ZERO_LENGTH_NAME;
 
     // check for ! directory
-    File file = new File(dir, name);
-    if (file.exists() && file.isDirectory())
-      file = new File(file, ZERO_LENGTH_NAME);
+    Path file = dir.resolve(name);
+    if (Files.exists(file) && Files.isDirectory(file))
+      file = file.resolve(ZERO_LENGTH_NAME);
 
     return file;
   }
@@ -457,9 +458,9 @@ final class StorageLayout {
    * Gets the directory an id should be stored in
    *
    * @param id the string representation of the id
-   * @return File the directory that should contain an id
+   * @return Path the directory that should contain an id
    */
-  File getDirectoryForId(Id id) throws IOException {
+  Path getDirectoryForId(Id id) throws IOException {
     return getDirectoryForName(id.toStringFull());
   }
 
@@ -467,9 +468,9 @@ final class StorageLayout {
    * Gets the directory a given file should be stored in
    *
    * @param name The name of the file
-   * @return File the directory that should contain an id
+   * @return Path the directory that should contain an id
    */
-  private File getDirectoryForName(String name) throws IOException {
+  private Path getDirectoryForName(String name) throws IOException {
     return getDirectoryForName(name, appDirectory);
   }
 
@@ -480,25 +481,25 @@ final class StorageLayout {
    * @param dir The directory to start at
    * @return The directory the name should be stored in
    */
-  private File getDirectoryForName(String name, File dir) throws IOException {
-    File[] subDirs = (File[]) directories.get(dir);
+  private Path getDirectoryForName(String name, Path dir) throws IOException {
+    Path[] subDirs = (Path[]) directories.get(dir);
 
     if (subDirs.length == 0) {
       return dir;
     } else {
       for (int i=0; i<subDirs.length; i++)
-        if (name.startsWith(subDirs[i].getName()))
-          return getDirectoryForName(name.substring(subDirs[i].getName().length()), subDirs[i]);
-        else if ((name.length() == 0) && subDirs[i].getName().equals(ZERO_LENGTH_NAME))
+        if (name.startsWith(subDirs[i].getFileName().toString()))
+          return getDirectoryForName(name.substring(subDirs[i].getFileName().toString().length()), subDirs[i]);
+        else if ((name.length() == 0) && subDirs[i].getFileName().toString().equals(ZERO_LENGTH_NAME))
           return getDirectoryForName(name, subDirs[i]);
 
       /* here, we must create the appropriate directory */
-      if ((name.length() >= subDirs[0].getName().length()) || ((name.length() == 0) && (subDirs[0].getName().length() == 1))) {
-        File newDir = new File(dir, (name.length() == 0 ? ZERO_LENGTH_NAME : name.substring(0, subDirs[0].getName().length())));
-        logger.debug("Necessarily creating dir {}", newDir.getName());
+      if ((name.length() >= subDirs[0].getFileName().toString().length()) || ((name.length() == 0) && (subDirs[0].getFileName().toString().length() == 1))) {
+        Path newDir = dir.resolve((name.length() == 0 ? ZERO_LENGTH_NAME : name.substring(0, subDirs[0].getFileName().toString().length())));
+        logger.debug("Necessarily creating dir {}", newDir.getFileName().toString());
         StorageFiles.createDirectory(newDir);
         this.directories.put(dir, append(subDirs, newDir));
-        this.directories.put(newDir, new File[0]);
+        this.directories.put(newDir, new Path[0]);
 
         /* finally, we must check if this caused too many dirs in one dir.  If so, we
            simply rerun the algorithm which will reflect the new dir */
@@ -514,7 +515,7 @@ final class StorageLayout {
         String[] dirs = new String[subDirs.length + 1];
 
         for (int i=0; i<subDirs.length; i++)
-          dirs[i] = subDirs[i].getName();
+          dirs[i] = subDirs[i].getFileName().toString();
         dirs[subDirs.length] = (name.length() == 0 ? ZERO_LENGTH_NAME : name);
 
         /* now reformat the directory, creating an entry for this name */
@@ -533,7 +534,7 @@ final class StorageLayout {
    * @param file The directory the id will be stored in
    * @return The postfix
    */
-  private String getPostfix(Id id, File file) {
+  private String getPostfix(Id id, Path file) {
     return id.toStringFull().substring(getPrefix(file).length());
   }
 
@@ -543,14 +544,14 @@ final class StorageLayout {
    * @param file The directory to return the prefix for
    * @return The prefix
    */
-  String getPrefix(File file) {
+  String getPrefix(Path file) {
     if (prefixes.get(file) != null)
       return (String) prefixes.get(file);
 
     StringBuilder buffer = new StringBuilder();
     while (! file.equals(appDirectory)) {
-      buffer.insert(0, file.getName().replaceAll(ZERO_LENGTH_NAME, ""));
-      file = file.getParentFile();
+      buffer.insert(0, file.getFileName().toString().replaceAll(ZERO_LENGTH_NAME, ""));
+      file = file.getParent();
     }
     prefixes.put(file, buffer.toString());
 
@@ -564,8 +565,8 @@ final class StorageLayout {
    * @param file The file
    * @return The new list
    */
-  private File[] append(File[] files, File file) {
-    File[] result = new File[files.length + 1];
+  private Path[] append(Path[] files, Path file) {
+    Path[] result = new Path[files.length + 1];
 
     for (int i=0; i<files.length; i++)
       result[i] = files[i];
@@ -580,8 +581,8 @@ final class StorageLayout {
    * @param dir the directory to check
    * @return int the number of directories
    */
-  private int numDirectoriesDir(File dir) {
-    return dir.listFiles(new DirectoryFilter()).length;
+  private int numDirectoriesDir(Path dir) throws IOException {
+    return StorageFiles.list(dir, DIRECTORIES).length;
   }
 
   /**
@@ -590,30 +591,8 @@ final class StorageLayout {
    * @param dir the directory to check
    * @return int the number of files
    */
-  private int numFilesDir(File dir) {
-     return dir.listFiles(new FileFilter()).length;
-  }
-
-  /**
-   * Returns whether or not the given filename represents a stored file
-   *
-   * @param parent The directory the file is in
-   * @param name The name of the file
-   * @return true if it is neither a directory nor the metadata file
-   */
-  private static boolean isFile(File parent, String name) {
-    return ((! new File(parent, name).isDirectory()) && (! name.equals(METADATA_FILENAME)));
-  }
-
-  /**
-   * Returns whether or not the given filename represents a directory
-   *
-   * @param parent The directory the file is in
-   * @param name The name of the file
-   * @return true if it is a directory
-   */
-  private static boolean isDirectory(File parent, String name) {
-    return (new File(parent, name)).isDirectory();
+  private int numFilesDir(Path dir) throws IOException {
+     return StorageFiles.list(dir, FILES).length;
   }
 
   /**
@@ -623,8 +602,8 @@ final class StorageLayout {
    * @return boolean whether directory contains subdirectories
    *
    */
-  private boolean containsDir(File dir) {
-    return (dir.listFiles(new DirectoryFilter()).length != 0);
+  private boolean containsDir(Path dir) throws IOException {
+    return (StorageFiles.list(dir, DIRECTORIES).length != 0);
   }
 
   /**
@@ -633,12 +612,12 @@ final class StorageLayout {
    *
    * @param dir The directory
    */
-  IdRange getRangeForDirectory(File dir) {
+  IdRange getRangeForDirectory(Path dir) {
     String result = "";
 
     while (! dir.equals(appDirectory)) {
-      result = dir.getName() + result;
-      dir = dir.getParentFile();
+      result = dir.getFileName().toString() + result;
+      dir = dir.getParent();
     }
 
     return factory.buildIdRangeFromPrefix(result);
@@ -650,8 +629,8 @@ final class StorageLayout {
    * @param file The file to create the key from.
    * @return The key that was read in
    */
-  Id readKey(File file) {
-    String s = getPrefix(file.getParentFile()) + file.getName().replaceAll(ZERO_LENGTH_NAME, "");
+  Id readKey(Path file) {
+    String s = getPrefix(file.getParent()) + file.getFileName().toString().replaceAll(ZERO_LENGTH_NAME, "");
 
     if (s.indexOf(".") >= 0) {
       return factory.buildIdFromToString(s.toCharArray(), 0, s.indexOf("."));
@@ -661,24 +640,14 @@ final class StorageLayout {
   }
 
   /**
-   * A class that filters out the files in a directory to return
-   * only subdirectories.
+   * Accepts only subdirectories.
    */
-  static final class DirectoryFilter implements FilenameFilter {
-    public boolean accept(File dir, String name) {
-      return isDirectory(dir, name);
-    }
-  }
+  static final DirectoryStream.Filter<Path> DIRECTORIES = Files::isDirectory;
 
   /**
-   * A class that filters out the files in a directory to return
-   * only files ( no directories )
+   * Accepts only stored files: neither directories nor the metadata file.
    */
-  static final class FileFilter implements FilenameFilter {
-    public boolean accept(File dir, String name) {
-      return isFile(dir, name);
-    }
-  }
+  static final DirectoryStream.Filter<Path> FILES = entry -> (! Files.isDirectory(entry)) && (! entry.getFileName().toString().equals(METADATA_FILENAME));
 
   /**
    * Class for a hashtable of primitive characters
