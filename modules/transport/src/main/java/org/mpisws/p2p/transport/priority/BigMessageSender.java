@@ -41,6 +41,8 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Map;
 
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
@@ -72,7 +74,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
   @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
   LinkedList<PendingMessage> msgs =
     new LinkedList<PendingMessage>();
-  P2PSocket<Identifier> socket;
+  @Nullable P2PSocket<Identifier> socket;
   ByteBuffer header;
 
   BigMessageSender(Identifier i, TransportLayer<Identifier, ByteBuffer> tl, Logger logger,
@@ -84,14 +86,14 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     header = ByteBuffer.wrap(PriorityTransportLayerImpl.BIG_MSG_SOCKET);
   }
 
-  public void start(Map<String,Object> options) {
+  public void start(@Nullable Map<String,Object> options) {
     logger.trace("Opening BIG message socket to:{}", i);
     tl.openSocket(i, this, options);
   }
 
   public MessageRequestHandle<Identifier, ByteBuffer> addMessage(
-      ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+      ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     logger.debug("Sending BIG message of size:{} to:{}", m.remaining(), i);
     PendingMessage ret = new PendingMessage(m,deliverAckToMe,options);
     msgs.addLast(ret);
@@ -157,7 +159,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
 
   void sendNextMessage() throws IOException {
     if (msgs.isEmpty()) {
-      socket.close();
+      if (socket != null) socket.close();
       pendingBigMessages.remove(i);
       return;
     }
@@ -167,13 +169,13 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
 
   class PendingMessage implements MessageRequestHandle<Identifier, ByteBuffer>, P2PSocketReceiver<Identifier> {
     ByteBuffer msg;
-    MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
-    Map<String, Object> options;
+    @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
+    @Nullable Map<String, Object> options;
     ByteBuffer sizeBuffer;
 
     boolean started = false;
 
-    public PendingMessage(ByteBuffer msg, MessageCallback<Identifier, ByteBuffer> deliverAckToMe,Map<String, Object> options) {
+    public PendingMessage(ByteBuffer msg, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,@Nullable Map<String, Object> options) {
       this.msg = msg;
       this.deliverAckToMe = deliverAckToMe;
       this.options = options;
@@ -188,7 +190,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
 
     public void send() throws IOException {
       started = true;
-      receiveSelectResult(socket, false, true);
+      receiveSelectResult(Objects.requireNonNull(socket, "messages are sent once the socket is open"), false, true);
     }
 
     @Override
@@ -202,7 +204,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     }
 
     @Override
-    public Map<String, Object> getOptions() {
+    public @Nullable Map<String, Object> getOptions() {
       return options;
     }
 

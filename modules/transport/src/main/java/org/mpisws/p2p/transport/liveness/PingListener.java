@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.liveness;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Called when a ping is received.
@@ -51,10 +52,10 @@ public interface PingListener<Identifier> {
    * @param rtt the RTT
    * @param options how the ping was sent (source route/udp etc)
    */
-  public void pingResponse(Identifier i, int rtt, Map<String, Object> options);
+  public void pingResponse(Identifier i, int rtt, @Nullable Map<String, Object> options);
 
   /**
    * Called when we receive a ping (not a pong)
    */
-  public void pingReceived(Identifier i, Map<String, Object> options);
+  public void pingReceived(Identifier i, @Nullable Map<String, Object> options);
 }

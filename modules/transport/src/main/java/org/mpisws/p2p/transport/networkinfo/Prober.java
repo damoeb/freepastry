@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.networkinfo;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
 
@@ -60,6 +61,6 @@ public interface Prober {
   public Cancellable probe(InetSocketAddress addr,
       long uid,
       Continuation<Long, Exception> deliverResponseToMe,
-      Map<String, Object> options);
+      @Nullable Map<String, Object> options);
 
 }

@@ -37,7 +37,8 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.identity;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
-  public boolean accept(UpperIdentifier u, LowerIdentifier l, Map<String, Object> options);
+  public boolean accept(UpperIdentifier u, @Nullable LowerIdentifier l, @Nullable Map<String, Object> options);
 }

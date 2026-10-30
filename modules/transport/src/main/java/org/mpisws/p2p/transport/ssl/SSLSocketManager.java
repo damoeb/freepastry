@@ -48,6 +48,7 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import javax.security.auth.x500.X500Principal;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
@@ -66,7 +67,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   /**
    * The cert of the remote node. (not applicable for non-clientAuth servers.
    */
-  private X509Certificate peerCert = null;
+  private @Nullable X509Certificate peerCert = null;
 
   private final P2PSocket<Identifier> socket;
 
@@ -76,8 +77,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   private final Logger logger;
 
 
-  private SSLEngineResult result;
-  private HandshakeStatus status;
+  private HandshakeStatus status = HandshakeStatus.NOT_HANDSHAKING; // replaced by every handleResult()
 
   @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
   private final LinkedList<ByteBuffer> writeMe = new LinkedList<ByteBuffer>(); // cipher, outgoing
@@ -95,12 +95,12 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   private boolean doneHandshaking = false;
 
-  private Map<String, Object> options;
+  private @Nullable Map<String, Object> options;
 
   private final boolean useClientAuth;
   private final boolean server;
 
-  private String name;
+  private @Nullable String name;
 
   /**
    * Called on incoming side
@@ -137,7 +137,6 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   }
 
   protected void handleResult(SSLEngineResult result) {
-    this.result = result;
     this.status = result.getHandshakeStatus();
   }
 
@@ -229,12 +228,13 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     ByteBuffer b = unwrapMe.getFirst();
     while (b.hasRemaining()) {
       ByteBuffer foo = ByteBuffer.allocate(appBufferMax);
-      handleResult(engine.unwrap(b, foo));
+      SSLEngineResult unwrapped = engine.unwrap(b, foo);
+      handleResult(unwrapped);
       if (foo.position() != 0) {
         foo.flip();
         readMe.addLast(foo);
       }
-      if (result.getStatus() != SSLEngineResult.Status.OK || result.bytesConsumed() == 0) break; // need more bytes, or closed
+      if (unwrapped.getStatus() != SSLEngineResult.Status.OK || unwrapped.bytesConsumed() == 0) break; // need more bytes, or closed
       if (status == NEED_TASK || status == NEED_WRAP) break; // let the handshake proceed first
     }
     if (!b.hasRemaining()) unwrapMe.removeFirst();
@@ -332,6 +332,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
    */
   boolean runningTaskLock = false;
 
+  @SuppressWarnings("NullAway") // the delegated-task job has no result
   private void runDelegatedTasks() {
     if (status == HandshakeStatus.NEED_TASK) {
       runningTaskLock = true;
@@ -403,8 +404,8 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
   }
 
-  P2PSocketReceiver<Identifier> registeredToRead;
-  P2PSocketReceiver<Identifier> registeredToWrite;
+  @Nullable P2PSocketReceiver<Identifier> registeredToRead;
+  @Nullable P2PSocketReceiver<Identifier> registeredToWrite;
 
   @Override
   @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
@@ -467,7 +468,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   }
 
   @Override
-  public Map<String, Object> getOptions() {
+  public @Nullable Map<String, Object> getOptions() {
     return options;
   }
 

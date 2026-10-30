@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport;
 
 import java.io.IOException;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Used to receive incoming messages/sockets.
@@ -53,7 +54,7 @@ public interface TransportLayerCallback<Identifier, MessageType> {
    * @param options describe how the message arrived (udp/tcp, encrypted etc)
    * @throws IOException if there is a problem decoding the message
    */
-  public void messageReceived(Identifier i, MessageType m, Map<String, Object> options) throws IOException;
+  public void messageReceived(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException;
   /**
    * Notification of a new socket.
    *

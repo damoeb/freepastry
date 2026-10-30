@@ -39,10 +39,11 @@ package org.mpisws.p2p.transport.simpleidentity;
 import java.io.IOException;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public interface Serializer<Identifier> {
   public void serialize(Identifier i, OutputBuffer b) throws IOException;
-  public Identifier deserialize(InputBuffer b, Identifier i, Map<String, Object> options) throws IOException;
+  public Identifier deserialize(InputBuffer b, @Nullable Identifier i, @Nullable Map<String, Object> options) throws IOException;
 }

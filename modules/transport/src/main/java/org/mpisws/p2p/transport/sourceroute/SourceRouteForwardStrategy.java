@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.sourceroute;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Strategy that gives the opportunity to disallow forwarding of a socket or packet.
@@ -44,5 +45,5 @@ import java.util.Map;
  * @author Jeff Hoye
  */
 public interface SourceRouteForwardStrategy<Identifier> {
-  public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr, boolean socket, Map<String, Object> options);
+  public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr, boolean socket, @Nullable Map<String, Object> options);
 }

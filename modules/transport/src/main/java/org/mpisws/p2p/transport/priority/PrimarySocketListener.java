@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.priority;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Notified about primary socket connections.
@@ -46,7 +47,7 @@ import java.util.Map;
  */
 public interface PrimarySocketListener<Identifier> {
 
-  public void notifyPrimarySocketOpened(Identifier i, Map<String, Object> options);
+  public void notifyPrimarySocketOpened(Identifier i, @Nullable Map<String, Object> options);
 
-  public void notifyPrimarySocketClosed(Identifier i);
+  public void notifyPrimarySocketClosed(@Nullable Identifier i);
 }

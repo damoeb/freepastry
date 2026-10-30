@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.rendezvous;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import rice.Continuation;
@@ -73,12 +74,12 @@ public interface RendezvousStrategy<Identifier> {
    * @param deliverResultToMe notify me when success/failure
    * @return a way to cancel the request
    */
-  public Cancellable openChannel(Identifier target, Identifier rendezvous, Identifier source, int uid, Continuation<Integer, Exception> deliverResultToMe, Map<String, Object> options);
+  public Cancellable openChannel(Identifier target, Identifier rendezvous, Identifier source, int uid, @Nullable Continuation<Integer, Exception> deliverResultToMe, @Nullable Map<String, Object> options);
 
   /**
    * Sends the message via an out-of-band channel.  Usually routing.
    */
-  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options);
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> options);
 
   public void setTransportLayer(RendezvousTransportLayer<Identifier> ret);
 }

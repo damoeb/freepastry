@@ -41,4 +41,7 @@ advised of the possibility of such damage.
  * before passing them up to the {@code PastryNode}. {@link org.mpisws.p2p.transport.commonapi.OptionsAdder}
  * lets a factory add per-message transport options.
  */
+@NullMarked
 package org.mpisws.p2p.transport.commonapi;
+
+import org.jspecify.annotations.NullMarked;

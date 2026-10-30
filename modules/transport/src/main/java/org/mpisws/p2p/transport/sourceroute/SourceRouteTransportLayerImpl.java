@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -72,6 +73,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     SourceRouteTransportLayer<Identifier>,
     TransportLayerCallback<Identifier, ByteBuffer> {
 
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   TransportLayerCallback<SourceRoute<Identifier>, ByteBuffer> callback;
   ErrorHandler<SourceRoute<Identifier>> errorHandler;
   TransportLayer<Identifier, ByteBuffer> etl;
@@ -113,7 +115,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   public SocketRequestHandle<SourceRoute<Identifier>> openSocket(
       final SourceRoute<Identifier> i,
       final SocketCallback<SourceRoute<Identifier>> deliverSocketToMe,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
     logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
@@ -319,9 +321,9 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
 
   @Override
   @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-  public MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> sendMessage(final SourceRoute<Identifier> i, final ByteBuffer m,
-      final MessageCallback<SourceRoute<Identifier>, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+  public @Nullable MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> sendMessage(final SourceRoute<Identifier> i, final ByteBuffer m,
+      final @Nullable MessageCallback<SourceRoute<Identifier>, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     logger.debug("sendMessage({},{})", i, m);
 
     // invariants
@@ -380,7 +382,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
 
   @Override
   @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-  public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
     if (!m.hasRemaining()) {
       errorHandler.receivedUnexpectedData(srFactory.getSourceRoute(etl.getLocalIdentifier(), i), m.array(), m.position(), null);

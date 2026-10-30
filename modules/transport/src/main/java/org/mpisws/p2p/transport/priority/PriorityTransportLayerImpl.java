@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -163,7 +164,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i, final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
+  public SocketRequestHandle<Identifier> openSocket(Identifier i, final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("No handle to return socket to! (deliverSocketToMe must be non-null!)");
 
     final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i, options, logger);
@@ -188,17 +189,17 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     assert selectorManager.isSelectorThread() : "transport callbacks run on the selector thread";
     callback.messageReceived(i, m, options);
     notifyListenersRead(m.remaining(), i, options);
   }
 
   @Override
-  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier i, ByteBuffer m, final MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> opts) {
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier i, ByteBuffer m, final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> opts) {
     logger.debug("sendMessage({},{},{},{})", i, m, deliverAckToMe, opts);
     // callers may pass null options, but queued messages need non-null options (e.g. EntityManager.startLivenessChecker())
-    final Map<String, Object> options = (opts == null) ? new HashMap<String, Object>() : opts;
+    final @Nullable Map<String, Object> options = (opts == null) ? new HashMap<String, Object>() : opts;
 
     // if it is to be sent UDP, just pass it through
     if (options != null &&
@@ -241,7 +242,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
    */
   class MissingCallback implements TransportLayerCallback<Identifier, ByteBuffer> {
     @Override
-    public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+    public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
       logger.warn("No TransportLayerCallback set, dropping message of size {} from {}", m.remaining(), i);
     }
 
@@ -281,7 +282,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   @Override
-  public void livenessChanged(Identifier i, int val, Map<String, Object> options) {
+  public void livenessChanged(Identifier i, int val, @Nullable Map<String, Object> options) {
     if (val >= LivenessTypes.LIVENESS_DEAD) {
       getEntityManager(i).markDead();
     }
@@ -309,17 +310,17 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   public void notifyListenersRead(int size, Identifier source,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     listeners.notifyRead(size, source, options);
   }
 
   public void notifyListenersWrote(int size, Identifier dest,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     listeners.notifyWrote(size, dest, options);
   }
 
   public void notifyListenersDropped(int size, Identifier dest,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     listeners.notifyDropped(size, dest, options);
   }
 
@@ -334,7 +335,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   @Override
-  public void openPrimaryConnection(Identifier i, Map<String, Object> options) {
+  public void openPrimaryConnection(Identifier i, @Nullable Map<String, Object> options) {
     getEntityManager(i).openPrimarySocketHelper(i, options);
   }
 

@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.util;
 import java.io.IOException;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.slf4j.Logger;
@@ -63,7 +64,7 @@ public class DefaultCallback<Identifier, MessageType> implements
   }
 
   @Override
-  public void messageReceived(Identifier i, MessageType m, Map<String, Object> options)
+  public void messageReceived(Identifier i, MessageType m, @Nullable Map<String, Object> options)
       throws IOException {
     logger.info("messageReceived({},{})", i, m);
   }

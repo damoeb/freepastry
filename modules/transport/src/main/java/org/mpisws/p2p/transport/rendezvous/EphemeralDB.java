@@ -36,6 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.rendezvous;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Keeps track of tags, ephemeral identifiers, timestamps, highIdentifiers
  *
@@ -56,7 +58,7 @@ public interface EphemeralDB<Identifier, HighIdentifier> {
    *
    * @param i the default identifier
    */
-  public Identifier getEphemeral(long tag, Identifier i);
+  public @Nullable Identifier getEphemeral(long tag, @Nullable Identifier i);
 
   /**
    * Tell the DB that the high identifier points to this tag
@@ -67,6 +69,6 @@ public interface EphemeralDB<Identifier, HighIdentifier> {
    * Get the valid Identifier for this highIdentifier
    * @return null if there isn't a valid one
    */
-  public Identifier getEphemeral(HighIdentifier high);
+  public @Nullable Identifier getEphemeral(HighIdentifier high);
 
 }

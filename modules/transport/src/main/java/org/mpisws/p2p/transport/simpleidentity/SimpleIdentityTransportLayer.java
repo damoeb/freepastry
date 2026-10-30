@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -69,6 +70,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
 
   private final TransportLayer<Identifier, MessageType> tl;
   private final Logger logger;
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
   private ErrorHandler<Identifier> errorHandler;
   private final Serializer<Identifier> serializer;
@@ -120,7 +122,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
 
   @Override
   public SocketRequestHandle<Identifier> openSocket(Identifier i,
-      final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
+      final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
       @Override
@@ -164,10 +166,10 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
   }
 
   @Override
-  public MessageRequestHandle<Identifier, MessageType> sendMessage(
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(
       Identifier i, MessageType m,
-      MessageCallback<Identifier, MessageType> deliverAckToMe,
-      Map<String, Object> options) {
+      @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
@@ -213,7 +215,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
 
   @Override
   public void messageReceived(Identifier i, MessageType m,
-      Map<String, Object> options) throws IOException {
+      @Nullable Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);
   }
 

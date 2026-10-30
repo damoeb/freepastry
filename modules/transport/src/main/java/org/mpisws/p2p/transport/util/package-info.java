@@ -40,4 +40,7 @@ advised of the possibility of such damage.
  * implementations, request handle implementations, and {@link org.mpisws.p2p.transport.util.OptionsFactory}
  * for building the immutable option maps passed down the stack.
  */
+@NullMarked
 package org.mpisws.p2p.transport.util;
+
+import org.jspecify.annotations.NullMarked;

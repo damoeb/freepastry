@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.Destructable;
 
 /**
@@ -88,7 +89,7 @@ public interface TransportLayer<Identifier, MessageType> extends Destructable {
    * @param options options on how to open the socket (don't source route, encrypt etc) (may not be respected if layer cannot provide service)
    * @return an object to cancel opening the socket if it takes to long, or is no longer relevant
    */
-  public SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options);
+  public @Nullable SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options);
 
   /**
    * Send the message to the identifier
@@ -99,7 +100,7 @@ public interface TransportLayer<Identifier, MessageType> extends Destructable {
    * @param deliverAckToMe layer dependent notification when the message is sent (can indicate placed on the wire, point-to-point acknowledgment, or end-to-end acknowledgement)
    * @return ability to cancel the message if no longer relevant
    */
-  public MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, MessageCallback<Identifier, MessageType> deliverAckToMe, Map<String, Object> options);
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options);
 
   /**
    * The local node.

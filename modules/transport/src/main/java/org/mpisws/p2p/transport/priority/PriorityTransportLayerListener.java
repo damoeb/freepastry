@@ -38,9 +38,10 @@ package org.mpisws.p2p.transport.priority;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.TransportLayerListener;
 
 public interface PriorityTransportLayerListener<Identifier> extends TransportLayerListener<Identifier> {
-  public void enqueued(int bytes, Identifier i, Map<String, Object> options, boolean passthrough, boolean socket);
-  public void dropped(int bytes, Identifier i, Map<String, Object> options, boolean passthrough, boolean socket);
+  public void enqueued(int bytes, Identifier i, @Nullable Map<String, Object> options, boolean passthrough, boolean socket);
+  public void dropped(int bytes, Identifier i, @Nullable Map<String, Object> options, boolean passthrough, boolean socket);
 }

@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -56,8 +57,8 @@ public class MutableInetSocketAddressStrategy implements LocalIdentifierStrategy
   int port;
   Serializer<InetSocketAddress> serializer;
 
-  InetAddress lastLocalAddress;
-  byte[] lastBytes;
+  @Nullable InetAddress lastLocalAddress;
+  byte @Nullable [] lastBytes;
 
   public MutableInetSocketAddressStrategy(int port, Serializer<InetSocketAddress> serializer) {
     this.serializer = serializer;
@@ -67,11 +68,12 @@ public class MutableInetSocketAddressStrategy implements LocalIdentifierStrategy
   @Override
   public synchronized byte[] getLocalIdentifierBytes() throws IOException {
     InetAddress newAddr = getLocalAddress();
-    if (lastLocalAddress == null || !newAddr.equals(lastLocalAddress)) {
+    byte[] bytes = lastBytes;
+    if (bytes == null || lastLocalAddress == null || !newAddr.equals(lastLocalAddress)) {
       lastLocalAddress = newAddr;
-      lastBytes = serializeAddress(new InetSocketAddress(newAddr, port));
+      lastBytes = bytes = serializeAddress(new InetSocketAddress(newAddr, port));
     }
-    return lastBytes;
+    return bytes;
   }
 
   protected byte[] serializeAddress(InetSocketAddress addr) throws IOException {

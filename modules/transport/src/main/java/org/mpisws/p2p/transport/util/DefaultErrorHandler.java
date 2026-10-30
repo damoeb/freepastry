@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport.util;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
@@ -69,7 +70,7 @@ public class DefaultErrorHandler<Identifier> implements
   }
 
   @Override
-  public void receivedUnexpectedData(Identifier id, byte[] bytes, int pos, Map<String, Object> options) {
+  public void receivedUnexpectedData(Identifier id, byte[] bytes, int pos, @Nullable Map<String, Object> options) {
     if (logger.isInfoEnabled()) {
       // make this pretty
       String s = "";
@@ -83,7 +84,7 @@ public class DefaultErrorHandler<Identifier> implements
   }
 
   @Override
-  public void receivedException(Identifier i, Throwable error) {
+  public void receivedException(@Nullable Identifier i, Throwable error) {
     logger.atLevel(printlevel).setCause(error).log(() -> String.valueOf(i));
   }
 

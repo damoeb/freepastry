@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.Cancellable;
 
 /**
@@ -48,5 +49,5 @@ import rice.p2p.commonapi.Cancellable;
 public interface MessageRequestHandle<Identifier, MessageType> extends Cancellable {
   public MessageType getMessage();
   public Identifier getIdentifier();
-  public Map<String, Object> getOptions();
+  public @Nullable Map<String, Object> getOptions();
 }

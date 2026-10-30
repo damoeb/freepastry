@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -71,6 +72,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   TransportLayerCallback<Identifier, ByteBuffer> {
 
   TransportLayer<Identifier, ByteBuffer> tl;
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   TransportLayerCallback<Identifier, ByteBuffer> callback;
 
   Logger logger;
@@ -216,7 +218,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
 
     public MySocket(Identifier identifier, P2PSocket<Identifier> socket,
         Logger logger, ErrorHandler<Identifier> errorHandler,
-        Map<String, Object> options) {
+        @Nullable Map<String, Object> options) {
       super(identifier, socket, logger, errorHandler, options);
       synchronized(measured) {
         getVals(identifier).b().add(this);
@@ -250,7 +252,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
 
   @Override
   public void messageReceived(Identifier i, ByteBuffer m,
-      Map<String, Object> options) throws IOException {
+      @Nullable Map<String, Object> options) throws IOException {
     synchronized (measured) {
       getVals(i).a()[CUR_DOWN]+=m.remaining();
     }
@@ -258,9 +260,9 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   }
 
   @Override
-  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i,
-      ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i,
+      ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     synchronized (measured) {
       getVals(i).a()[CUR_UP]+=m.remaining();
     }
@@ -271,7 +273,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe,
-      final Map<String, Object> options) {
+      final @Nullable Map<String, Object> options) {
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
 

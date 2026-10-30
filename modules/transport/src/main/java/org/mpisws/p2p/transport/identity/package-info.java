@@ -42,4 +42,7 @@ advised of the possibility of such damage.
  * old node and reports it dead forever. {@link org.mpisws.p2p.transport.identity.IdentityImpl} holds
  * both halves.
  */
+@NullMarked
 package org.mpisws.p2p.transport.identity;
+
+import org.jspecify.annotations.NullMarked;

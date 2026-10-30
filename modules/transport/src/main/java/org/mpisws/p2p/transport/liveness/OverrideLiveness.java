@@ -37,7 +37,8 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.liveness;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public interface OverrideLiveness<Identifier> {
-  void setLiveness(Identifier i, int liveness, Map<String, Object> options);
+  void setLiveness(Identifier i, int liveness, @Nullable Map<String, Object> options);
 }

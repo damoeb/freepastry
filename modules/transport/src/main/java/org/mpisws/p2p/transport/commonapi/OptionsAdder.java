@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport.commonapi;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 
 public interface OptionsAdder {
@@ -45,6 +46,6 @@ public interface OptionsAdder {
   /**
    * Add any options related to this message
    */
-  public Map<String, Object> addOptions(Map<String, Object> options,RawMessage m);
+  public Map<String, Object> addOptions(@Nullable Map<String, Object> options,RawMessage m);
 
 }

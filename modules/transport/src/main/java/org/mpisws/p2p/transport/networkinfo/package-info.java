@@ -40,4 +40,7 @@ advised of the possibility of such damage.
  * of a node that is not yet part of a ring. Node factories use it to look up a bootstrap node's handle
  * and to probe NAT and firewall connectivity.
  */
+@NullMarked
 package org.mpisws.p2p.transport.networkinfo;
+
+import org.jspecify.annotations.NullMarked;

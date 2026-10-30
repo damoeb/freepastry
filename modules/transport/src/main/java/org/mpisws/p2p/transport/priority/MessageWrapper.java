@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
@@ -60,12 +61,12 @@ final class MessageWrapper<Identifier> implements
   int seq;
   Identifier myIdentifier;
 
-  P2PSocket<Identifier> socket; // null if we aren't registered, aka, we aren't pending/writing
+  @Nullable P2PSocket<Identifier> socket; // null if we aren't registered, aka, we aren't pending/writing
 
   ByteBuffer originalMessage;
   ByteBuffer message;
-  MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
-  Map<String, Object> options;
+  @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
+  @Nullable Map<String, Object> options;
   int originalSize;
   boolean cancelled = false; // true when cancel is called
   boolean completed = false; // true when completed is called
@@ -74,8 +75,8 @@ final class MessageWrapper<Identifier> implements
       EntityManager<Identifier> owner,
       Identifier temp,
       ByteBuffer message,
-      MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options, int priority, int seq) {
+      @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options, int priority, int seq) {
     this.owner = owner;
     this.listeners = owner.listeners();
     this.logger = owner.logger();
@@ -183,7 +184,7 @@ final class MessageWrapper<Identifier> implements
   }
 
   @Override
-  public Map<String, Object> getOptions() {
+  public @Nullable Map<String, Object> getOptions() {
     return options;
   }
 

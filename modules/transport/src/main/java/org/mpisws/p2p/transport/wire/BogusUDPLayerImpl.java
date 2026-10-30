@@ -41,6 +41,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
@@ -50,8 +51,8 @@ public class BogusUDPLayerImpl implements UDPLayer {
   @Override
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination, ByteBuffer m,
-      MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+      @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     MessageRequestHandle<InetSocketAddress, ByteBuffer> ret =
       new MessageRequestHandleImpl<InetSocketAddress, ByteBuffer>(destination, m, options);
     if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new IOException("UDP is disabled.  To use this feature, enable UDP in the WireTransportLayer constructor."));

@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -92,6 +93,7 @@ public class NetworkInfoTransportLayer implements
   private final Logger logger;
   private final Environment environment;
 
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
   private ErrorHandler<InetSocketAddress> errorHandler;
   private final TransportLayer<InetSocketAddress, ByteBuffer> tl;
@@ -132,7 +134,7 @@ public class NetworkInfoTransportLayer implements
 
   @Override
   public Cancellable getMyInetAddress(InetSocketAddress bootstrap,
-      final Continuation<InetSocketAddress, IOException> c, Map<String, Object> options) {
+      final Continuation<InetSocketAddress, IOException> c, @Nullable Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, HEADER_IP_ADDRESS_REQUEST, new SocketCallback<InetSocketAddress>() {
 
@@ -186,7 +188,7 @@ public class NetworkInfoTransportLayer implements
   }
 
   public Cancellable getId(InetSocketAddress bootstrap, byte index,
-      final Continuation<byte[], IOException> c, Map<String, Object> options) {
+      final Continuation<byte[], IOException> c, @Nullable Map<String, Object> options) {
     byte[] hdr = new byte[2];
     hdr[0] = HEADER_ID_REQUEST_BYTE;
     hdr[1] = index;
@@ -243,7 +245,7 @@ public class NetworkInfoTransportLayer implements
 
   @Override
   public Cancellable getExternalNodes(InetSocketAddress bootstrap,
-      final Continuation<Collection<InetSocketAddress>, IOException> c, Map<String, Object> options) {
+      final Continuation<Collection<InetSocketAddress>, IOException> c, @Nullable Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, HEADER_NODES_REQUEST, new SocketCallback<InetSocketAddress>() {
 
@@ -300,7 +302,7 @@ public class NetworkInfoTransportLayer implements
   @Override
   public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress i,
       SocketCallback<InetSocketAddress> deliverSocketToMe,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
 
     return openSocket(i,HEADER_PASSTHROUGH,deliverSocketToMe,options);
@@ -308,7 +310,7 @@ public class NetworkInfoTransportLayer implements
 
   public SocketRequestHandle<InetSocketAddress> openSocket(final InetSocketAddress i, final byte[] header,
       final SocketCallback<InetSocketAddress> deliverSocketToMe,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     logger.trace("openSocket({},{})", i, header.length);
 
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
@@ -660,8 +662,8 @@ public class NetworkInfoTransportLayer implements
   @Override
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress i, ByteBuffer m,
-      final MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+      final @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
 
     final MessageRequestHandleImpl<InetSocketAddress, ByteBuffer> ret = new MessageRequestHandleImpl<InetSocketAddress, ByteBuffer>(i,m,options);
 
@@ -693,7 +695,7 @@ public class NetworkInfoTransportLayer implements
 
   @Override
   public void messageReceived(InetSocketAddress i, ByteBuffer m,
-      Map<String, Object> options) throws IOException {
+      @Nullable Map<String, Object> options) throws IOException {
     byte header = m.get();
     switch(header) {
     case HEADER_PASSTHROUGH_BYTE:
@@ -717,6 +719,7 @@ public class NetworkInfoTransportLayer implements
   /**
    * Ask this strategy to probe a requesting node, but from a 3rd party node
    */
+  @SuppressWarnings("NullAway.Init") // set by setProbeStrategy() before probing
   private ProbeStrategy probeStrategy;
   public void setProbeStrategy(ProbeStrategy probeStrategy) {
     this.probeStrategy = probeStrategy;
@@ -728,10 +731,10 @@ public class NetworkInfoTransportLayer implements
    * ask probeAddress to call probeStrategy.requestProbe()
    */
   @Override
-  public Cancellable verifyConnectivity(final MultiInetSocketAddress local,
+  public @Nullable Cancellable verifyConnectivity(final MultiInetSocketAddress local,
       final InetSocketAddress probeAddress,
       final ConnectivityResult deliverResultToMe,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
 
     final long uid = environment.getRandomSource().nextLong();
@@ -820,7 +823,7 @@ public class NetworkInfoTransportLayer implements
   }
 
   @Override
-  public Cancellable probe(final InetSocketAddress addr, final long uid, final Continuation<Long, Exception> deliverResponseToMe, final Map<String, Object> options) {
+  public Cancellable probe(final InetSocketAddress addr, final long uid, final Continuation<Long, Exception> deliverResponseToMe, final @Nullable Map<String, Object> options) {
     logger.debug("probe({},{},{},{})", addr, uid, deliverResponseToMe, options);
     // udp
     final AttachableCancellable ret = new AttachableCancellable();

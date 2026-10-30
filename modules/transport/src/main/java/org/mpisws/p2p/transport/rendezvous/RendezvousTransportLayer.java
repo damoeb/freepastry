@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.rendezvous;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public interface RendezvousTransportLayer<HighIdentifier> {
 
@@ -50,5 +51,5 @@ public interface RendezvousTransportLayer<HighIdentifier> {
   /**
    * Called when a message was routed by the overlay to this node.
    */
-  public void messageReceivedFromOverlay(HighIdentifier i, ByteBuffer m, Map<String, Object> options) throws IOException;
+  public void messageReceivedFromOverlay(HighIdentifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException;
 }

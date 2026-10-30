@@ -46,6 +46,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
@@ -79,10 +80,10 @@ public class DirectAppSocket<Identifier, MessageType> {
   Logger acceptorLogger;
   Logger connectorLogger;
 
-  Map<String, Object> options;
+  @Nullable Map<String, Object> options;
 
   public DirectAppSocket(Identifier acceptor, Identifier connector, SocketCallback<Identifier> connectorCallback,
-      GenericNetworkSimulator<Identifier, MessageType> simulator, SocketRequestHandle<Identifier> handle, Map<String, Object> options) {
+      GenericNetworkSimulator<Identifier, MessageType> simulator, SocketRequestHandle<Identifier> handle, @Nullable Map<String, Object> options) {
     this.options = options;
     this.acceptor = acceptor;
     this.connector = connector;
@@ -103,10 +104,11 @@ public class DirectAppSocket<Identifier, MessageType> {
 
   class DirectAppSocketEndpoint implements P2PSocket<Identifier> {
     Logger logger;
+    @SuppressWarnings("NullAway.Init") // set by setCounterpart() before any IO
     DirectAppSocketEndpoint counterpart;
 
-    P2PSocketReceiver<Identifier> reader;
-    P2PSocketReceiver<Identifier> writer;
+    @Nullable P2PSocketReceiver<Identifier> reader;
+    @Nullable P2PSocketReceiver<Identifier> writer;
     Identifier localNodeHandle;
     int seq = 0;
 
@@ -392,7 +394,7 @@ public class DirectAppSocket<Identifier, MessageType> {
     }
 
     @Override
-    public Map<String, Object> getOptions() {
+    public @Nullable Map<String, Object> getOptions() {
       return options;
     }
   }

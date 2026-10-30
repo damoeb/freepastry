@@ -40,4 +40,7 @@ advised of the possibility of such damage.
  * intermediate nodes, which forward them, so that a node can be reached through a third node when the
  * direct path fails. It does not choose routes; that is the job of the {@code manager} subpackage.
  */
+@NullMarked
 package org.mpisws.p2p.transport.sourceroute;
+
+import org.jspecify.annotations.NullMarked;

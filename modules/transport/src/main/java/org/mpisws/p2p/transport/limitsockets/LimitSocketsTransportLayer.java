@@ -44,6 +44,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -77,6 +78,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   private final TransportLayer<Identifier, MessageType> tl;
   private final LinkedHashMap<LSSocket, LSSocket> cache;
   private final Logger logger;
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
   private final Timer timer;
   private ErrorHandler<Identifier> handler;
@@ -97,7 +99,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
+  public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
     if (logger.isTraceEnabled()) logger.trace("{}.openSocket({},{},{})", LimitSocketsTransportLayer.this, i, deliverSocketToMe, options, new Exception("Stack Trace"));
 
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i, options, logger) {
@@ -272,12 +274,12 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   }
 
   @Override
-  public MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, MessageCallback<Identifier, MessageType> deliverAckToMe, Map<String, Object> options) {
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
   @Override
-  public void messageReceived(Identifier i, MessageType m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);
   }
 

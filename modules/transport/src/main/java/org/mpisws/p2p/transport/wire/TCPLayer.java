@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
@@ -58,7 +59,7 @@ public class TCPLayer extends SelectionKeyHandler {
   WireTransportLayerImpl wire;
 
   // the key to accept from
-  private SelectionKey key;
+  private @Nullable SelectionKey key;
 
   Logger logger;
 
@@ -81,10 +82,10 @@ public class TCPLayer extends SelectionKeyHandler {
     }
   }
 
-  public SocketRequestHandle<InetSocketAddress> openSocket(
+  public @Nullable SocketRequestHandle<InetSocketAddress> openSocket(
       InetSocketAddress destination,
       SocketCallback<InetSocketAddress> deliverSocketToMe,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     if (isDestroyed()) return null;
     if (logger.isTraceEnabled()) {
       logger.trace("openSocket("+destination+")", new Exception("Stack Trace"));
@@ -135,12 +136,13 @@ public class TCPLayer extends SelectionKeyHandler {
   }
 
   public void acceptSockets(final boolean b) {
-    if (key == null) return; // no TCP server, nothing to accept from
+    final SelectionKey serverKey = key;
+    if (serverKey == null) return; // no TCP server, nothing to accept from
     Runnable r = () -> {
       if (b) {
-        key.interestOps(key.interestOps() | SelectionKey.OP_ACCEPT);
+        serverKey.interestOps(serverKey.interestOps() | SelectionKey.OP_ACCEPT);
       } else {
-        key.interestOps(key.interestOps() & ~SelectionKey.OP_ACCEPT);
+        serverKey.interestOps(serverKey.interestOps() & ~SelectionKey.OP_ACCEPT);
       }
     };
 

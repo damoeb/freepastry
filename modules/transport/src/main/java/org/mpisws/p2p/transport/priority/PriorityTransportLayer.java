@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.priority;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerListener;
 
@@ -76,7 +77,7 @@ public interface PriorityTransportLayer<Identifier> extends TransportLayer<Ident
   /**
    * open a primary connection; PrimarySocketListeners are notified when it is open
    */
-  public void openPrimaryConnection(Identifier i, Map<String, Object> options);
+  public void openPrimaryConnection(Identifier i, @Nullable Map<String, Object> options);
 
   public void addPrimarySocketListener(PrimarySocketListener<Identifier> listener);
   public void removePrimarySocketListener(PrimarySocketListener<Identifier> listener);

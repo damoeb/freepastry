@@ -41,4 +41,7 @@ advised of the possibility of such damage.
  * and {@link org.mpisws.p2p.transport.wire.UDPLayerImpl} are {@code SelectionKeyHandler}s, so all IO
  * runs on the selector thread.
  */
+@NullMarked
 package org.mpisws.p2p.transport.wire;
+
+import org.jspecify.annotations.NullMarked;

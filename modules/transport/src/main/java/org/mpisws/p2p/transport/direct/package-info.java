@@ -40,4 +40,7 @@ advised of the possibility of such damage.
  * network; {@link org.mpisws.p2p.transport.direct.EventSimulator} drives the simulation on the
  * selector thread by advancing the simulated clock to the next scheduled event.
  */
+@NullMarked
 package org.mpisws.p2p.transport.direct;
+
+import org.jspecify.annotations.NullMarked;

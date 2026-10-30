@@ -41,6 +41,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -117,10 +118,10 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
 
   // ******************************** Sockets **************************
   @Override
-  public SocketRequestHandle<MultiInetSocketAddress> openSocket(
+  public @Nullable SocketRequestHandle<MultiInetSocketAddress> openSocket(
       final MultiInetSocketAddress i,
       final SocketCallback<MultiInetSocketAddress> deliverSocketToMe,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
 
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
@@ -227,8 +228,8 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   public MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> sendMessage(
       final MultiInetSocketAddress i,
       final ByteBuffer m,
-      final MessageCallback<MultiInetSocketAddress, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+      final @Nullable MessageCallback<MultiInetSocketAddress, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
 
     logger.debug("sendMessage({},{})", i, m);
 
@@ -284,7 +285,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
 
   @Override
   @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-  public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) throws IOException {
+  public void messageReceived(InetSocketAddress i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     logger.debug("messageReceived({},{})", i, m);
     // read numAddresses
     int pos = m.position();

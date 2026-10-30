@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.liveness;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Expands the Transport Layer to include pings and liveness checks.
@@ -45,7 +46,7 @@ import java.util.Map;
  */
 public interface LivenessProvider<Identifier> {
 
-  public int getLiveness(Identifier i, Map<String, Object> options);
+  public int getLiveness(Identifier i, @Nullable Map<String, Object> options);
 
   /**
    * Returns whether a new notification will occur.
@@ -58,7 +59,7 @@ public interface LivenessProvider<Identifier> {
    * @return true if there will be an update (either a ping, or a change in liveness)
    * false if there won't be an update due to bandwidth concerns
    */
-  public boolean checkLiveness(Identifier i, Map<String, Object> options);
+  public boolean checkLiveness(Identifier i, @Nullable Map<String, Object> options);
 
   public void addLivenessListener(LivenessListener<Identifier> name);
   public boolean removeLivenessListener(LivenessListener<Identifier> name);

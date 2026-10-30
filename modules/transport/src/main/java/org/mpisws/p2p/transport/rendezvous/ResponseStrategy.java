@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport.rendezvous;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Used on non-Firewalled nodes to predict if a firewalled node will accept a message.
@@ -52,15 +53,15 @@ public interface ResponseStrategy<Identifier> {
   /**
    * True if we believe the firewall will accept the message (due to a recent message from the node)
    */
-  public boolean sendDirect(Identifier i, ByteBuffer msg, Map<String,Object> options);
+  public boolean sendDirect(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options);
 
   /**
    * Called when a message is directly sent to the Identifier
    */
-  public void messageSent(Identifier i, ByteBuffer msg, Map<String,Object> options);
+  public void messageSent(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options);
 
   /**
    * Called when a message is directly received from the Identifier
    */
-  public void messageReceived(Identifier i, ByteBuffer msg, Map<String,Object> options);
+  public void messageReceived(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options);
 }

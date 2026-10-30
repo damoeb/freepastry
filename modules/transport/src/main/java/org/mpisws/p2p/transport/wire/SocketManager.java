@@ -45,6 +45,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
@@ -56,7 +57,7 @@ import rice.selector.SelectionKeyHandler;
 public class SocketManager extends SelectionKeyHandler implements P2PSocket<InetSocketAddress>, SocketRequestHandle<InetSocketAddress> {
 
   // the key to read from
-  private SelectionKey key;
+  private @Nullable SelectionKey key;
 
   // the channel we are associated with
   private final SocketChannel channel;
@@ -67,9 +68,9 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
 
   InetSocketAddress addr;
 
-  Map<String, Object> options;
+  @Nullable Map<String, Object> options;
 
-  private P2PSocketReceiver<InetSocketAddress> reader, writer;
+  private @Nullable P2PSocketReceiver<InetSocketAddress> reader, writer;
 
   /**
    * becomes true before we deliver this to the SocketCallback, this invalidates the cancel() operation
@@ -113,7 +114,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    * @param c receives the socket once it is connected
    * @throws IOException An error
    */
-  public SocketManager(final TCPLayer tcp, final InetSocketAddress addr, final SocketCallback<InetSocketAddress> c, Map<String, Object> options) throws IOException {
+  public SocketManager(final TCPLayer tcp, final InetSocketAddress addr, final SocketCallback<InetSocketAddress> c, @Nullable Map<String, Object> options) throws IOException {
     this.tcp = tcp;
     this.options = options;
     logger = tcp.logger;
@@ -440,12 +441,12 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   }
 
   @Override
-  public Map<String, Object> getOptions() {
+  public @Nullable Map<String, Object> getOptions() {
     return options;
   }
 
   public SocketChannel getSocketChannel() {
-    tcp.wire.getEnvironment().getSelectorManager().cancel(key);
+    if (key != null) tcp.wire.getEnvironment().getSelectorManager().cancel(key);
     return channel;
   }
 

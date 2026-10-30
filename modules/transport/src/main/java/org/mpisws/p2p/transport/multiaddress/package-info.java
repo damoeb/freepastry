@@ -41,4 +41,7 @@ advised of the possibility of such damage.
  * traffic and uses an {@link org.mpisws.p2p.transport.multiaddress.AddressStrategy} to pick the address
  * that is reachable from the local node.
  */
+@NullMarked
 package org.mpisws.p2p.transport.multiaddress;
+
+import org.jspecify.annotations.NullMarked;

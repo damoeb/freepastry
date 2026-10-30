@@ -37,7 +37,8 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.proximity;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public interface ProximityListener<Identifier> {
-  public void proximityChanged(Identifier i, int newProximity, Map<String, Object> options);
+  public void proximityChanged(Identifier i, int newProximity, @Nullable Map<String, Object> options);
 }

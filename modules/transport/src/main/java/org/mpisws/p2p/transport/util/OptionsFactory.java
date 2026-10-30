@@ -38,21 +38,22 @@ package org.mpisws.p2p.transport.util;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public class OptionsFactory {
-  public static Map<String, Object> addOption(Map<String, Object> existing, String s, Object i) {
+  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String s, Object i) {
     Map<String, Object> ret = copyOptions(existing);
     ret.put(s,i);
     return ret;
   }
-  public static Map<String, Object> addOption(Map<String, Object> existing, String s1, Object i1, String s2, Object i2) {
+  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String s1, Object i1, String s2, Object i2) {
     Map<String, Object> ret = copyOptions(existing);
     ret.put(s1,i1);
     ret.put(s2,i2);
     return ret;
   }
 
-  public static Map<String, Object> addOption(Map<String, Object> existing, String s1, Object i1, String s2, Object i2, String s3, Object i3) {
+  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String s1, Object i1, String s2, Object i2, String s3, Object i3) {
     Map<String, Object> ret = copyOptions(existing);
     ret.put(s1,i1);
     ret.put(s2,i2);
@@ -60,7 +61,7 @@ public class OptionsFactory {
     return ret;
   }
 
-  public static Map<String, Object> copyOptions(Map<String, Object> existing) {
+  public static Map<String, Object> copyOptions(@Nullable Map<String, Object> existing) {
     if (existing == null) return new HashMap<String, Object>();
     return new HashMap<String, Object>(existing);
   }
@@ -68,8 +69,8 @@ public class OptionsFactory {
   /**
    * Merge 2 options, keeping the first if there is a conflict
    */
-  public static Map<String, Object> merge(Map<String, Object> options,
-      Map<String, Object> options2) {
+  public static Map<String, Object> merge(@Nullable Map<String, Object> options,
+      @Nullable Map<String, Object> options2) {
     Map<String, Object> ret = copyOptions(options2);
     if (options == null) return ret;
     for (String k : options.keySet()) {
@@ -78,7 +79,7 @@ public class OptionsFactory {
     return ret;
   }
 
-  public static Map<String, Object> removeOption(Map<String, Object> options,
+  public static Map<String, Object> removeOption(@Nullable Map<String, Object> options,
       String option) {
     Map<String, Object> ret = copyOptions(options);
     ret.remove(option);

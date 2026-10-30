@@ -49,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.slf4j.Logger;
@@ -65,9 +66,11 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   Logger logger;
 
   // the channel used from talking to the network
+  @SuppressWarnings("NullAway.Init") // set by openServerSocket(), called from the constructor
   private DatagramChannel channel;
 
   // the key used to determine what has taken place
+  @SuppressWarnings("NullAway.Init") // set by openServerSocket(), called from the constructor
   private SelectionKey key;
 
   // the size of the buffer used to read incoming datagrams must be big enough
@@ -82,6 +85,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   WireTransportLayerImpl wire;
 
+  @SuppressWarnings("NullAway.Init") // set by openServerSocket(), called from the constructor
   ByteBuffer readBuffer;
 
   @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
@@ -103,8 +107,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination,
       ByteBuffer msg,
-      MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+      @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     Envelope envelope;
     logger.trace("sendMessage({},{},{})", destination, msg, deliverAckToMe);
     envelope = new Envelope(destination, msg, deliverAckToMe, options);
@@ -261,7 +265,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
         }
       }
     } catch (Exception e) {
-      logger.warn("ERROR (datagrammanager:write) to {}", write.destination, e);
+      logger.warn("ERROR (datagrammanager:write) to {}", write == null ? null : write.destination, e);
     } finally {
       if (pendingMsgs.isEmpty())
         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
@@ -292,8 +296,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
      * The message sans header.
      */
     private final ByteBuffer msg;
-    private final MessageCallback<InetSocketAddress, ByteBuffer> continuation;
-    Map<String, Object> options;
+    private final @Nullable MessageCallback<InetSocketAddress, ByteBuffer> continuation;
+    @Nullable Map<String, Object> options;
 
     /**
      * Constructor for Envelope.
@@ -302,8 +306,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
      */
     public Envelope(InetSocketAddress destination,
         ByteBuffer msg,
-        MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
-        Map<String, Object> options) {
+        @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
+        @Nullable Map<String, Object> options) {
       this.destination = destination;
       this.msg = msg;
       this.continuation = deliverAckToMe;
@@ -329,7 +333,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     }
 
     @Override
-    public Map<String, Object> getOptions() {
+    public @Nullable Map<String, Object> getOptions() {
       return options;
     }
   }

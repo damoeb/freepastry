@@ -41,4 +41,7 @@ advised of the possibility of such damage.
  * messages with the datagram transport option go straight to UDP. Pending messages fail when the
  * destination is declared dead.
  */
+@NullMarked
 package org.mpisws.p2p.transport.priority;
+
+import org.jspecify.annotations.NullMarked;

@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.P2PSocket;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -89,9 +90,10 @@ public class SocketInputBuffer implements InputBuffer {
    */
   ByteBuffer readPtr, writePtr;
   byte[] cache;
-  ByteBuffer one, two, four, eight; // to reduce object allocation, reuse common sizes.  Lazily constructed
+  @Nullable ByteBuffer one, two, four, eight; // to reduce object allocation, reuse common sizes.  Lazily constructed
   int initialSize;
 
+  @SuppressWarnings("NullAway.Init") // set by resetDis(), which the constructor calls
   DataInputStream dis;
   public SocketInputBuffer(P2PSocket<?> socket) {
     this(socket,DEFAULT_INITIAL_SIZE);
@@ -113,11 +115,10 @@ public class SocketInputBuffer implements InputBuffer {
     if (dis != null && dis.markSupported()) {
       try {
         dis.reset();
+        return;
       } catch (IOException ioe) {
-        dis = null;
-        resetDis();
+        // replace the stream below
       }
-      return;
     }
     dis = new DataInputStream(new InputStream() {
 

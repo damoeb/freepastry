@@ -49,4 +49,7 @@ advised of the possibility of such damage.
  * {@link org.mpisws.p2p.transport.P2PSocket#register}, and callbacks, including those of a request that
  * fails immediately, can run before the requesting method returns.
  */
+@NullMarked
 package org.mpisws.p2p.transport;
+
+import org.jspecify.annotations.NullMarked;

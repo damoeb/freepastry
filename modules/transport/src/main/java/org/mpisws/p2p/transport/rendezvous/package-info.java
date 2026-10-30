@@ -41,4 +41,7 @@ advised of the possibility of such damage.
  * and routes messages to it accordingly. It is assembled by
  * {@code rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory}.
  */
+@NullMarked
 package org.mpisws.p2p.transport.rendezvous;
+
+import org.jspecify.annotations.NullMarked;

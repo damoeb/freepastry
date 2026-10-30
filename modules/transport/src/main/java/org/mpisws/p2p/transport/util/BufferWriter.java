@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.util;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
@@ -54,16 +55,16 @@ import rice.Continuation;
  * @author Jeff Hoye
  */
 public class BufferWriter<Identifier> implements P2PSocketReceiver<Identifier> {
-  ByteBuffer sizeBuf = null;
+  @Nullable ByteBuffer sizeBuf = null;
   ByteBuffer writeMe;
-  Continuation<P2PSocket<Identifier>, Exception> continuation;
+  @Nullable Continuation<P2PSocket<Identifier>, Exception> continuation;
 
   /**
    *
    * @param includeSizeHeader true if the size needs to be written in a header, false if it is a fixed size buffer
    */
   public BufferWriter(ByteBuffer writeMe, P2PSocket<Identifier> socket,
-      Continuation<P2PSocket<Identifier>, Exception> continuation, boolean includeSizeHeader) {
+      @Nullable Continuation<P2PSocket<Identifier>, Exception> continuation, boolean includeSizeHeader) {
     this.writeMe = writeMe;
     this.continuation = continuation;
     if (includeSizeHeader) {
@@ -79,7 +80,7 @@ public class BufferWriter<Identifier> implements P2PSocketReceiver<Identifier> {
   }
 
   public BufferWriter(ByteBuffer writeMe, P2PSocket<Identifier> socket,
-      Continuation<P2PSocket<Identifier>, Exception> continuation) {
+      @Nullable Continuation<P2PSocket<Identifier>, Exception> continuation) {
     this(writeMe, socket, continuation, true);
   }
 

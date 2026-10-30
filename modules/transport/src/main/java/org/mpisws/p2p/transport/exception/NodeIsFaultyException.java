@@ -37,37 +37,38 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.exception;
 
 import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 
 public class NodeIsFaultyException extends IOException {
-  Object identifier;
-  Object message;
-  Throwable cause;
+  @Nullable Object identifier;
+  @Nullable Object message;
+  @Nullable Throwable cause;
 
-  public NodeIsFaultyException(Object identifier, Object message) {
+  public NodeIsFaultyException(@Nullable Object identifier, @Nullable Object message) {
     super("Node "+identifier+" is faulty"+(message == null ? "" : ", couldn't deliver message "+message));
     this.identifier = identifier;
     this.message = message;
   }
 
-  public NodeIsFaultyException(Object identifier, Object message, Throwable cause) {
+  public NodeIsFaultyException(@Nullable Object identifier, @Nullable Object message, Throwable cause) {
     this(identifier, message);
     this.cause = cause;
   }
 
-  public NodeIsFaultyException(Object identifier) {
+  public NodeIsFaultyException(@Nullable Object identifier) {
     this(identifier, null);
   }
 
-  public Object getIdentifier() {
+  public @Nullable Object getIdentifier() {
     return identifier;
   }
 
-  public Object getAttemptedMessage() {
+  public @Nullable Object getAttemptedMessage() {
     return message;
   }
 
   @Override
-  public synchronized Throwable getCause() {
+  public synchronized @Nullable Throwable getCause() {
     return cause;
   }
 }

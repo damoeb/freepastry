@@ -40,4 +40,7 @@ advised of the possibility of such damage.
  * messages are not encrypted. Keys and certificates come from a {@code KeyStore}; see
  * {@code org.mpisws.p2p.pki.x509} for creating them.
  */
+@NullMarked
 package org.mpisws.p2p.transport.ssl;
+
+import org.jspecify.annotations.NullMarked;

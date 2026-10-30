@@ -40,4 +40,7 @@ advised of the possibility of such damage.
  * connections and other protocols are rejected early. It is also the smallest example of a transport
  * layer.
  */
+@NullMarked
 package org.mpisws.p2p.transport.wire.magicnumber;
+
+import org.jspecify.annotations.NullMarked;

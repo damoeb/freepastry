@@ -38,9 +38,10 @@ package org.mpisws.p2p.transport.networkinfo;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public interface ConnectivityResult {
-  public void udpSuccess(InetSocketAddress from, Map<String, Object> options);
-  public void tcpSuccess(InetSocketAddress from, Map<String, Object> options);
+  public void udpSuccess(InetSocketAddress from, @Nullable Map<String, Object> options);
+  public void tcpSuccess(InetSocketAddress from, @Nullable Map<String, Object> options);
   public void receiveException(Exception e);
 }

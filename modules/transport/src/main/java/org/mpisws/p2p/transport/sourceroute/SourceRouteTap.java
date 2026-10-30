@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport.sourceroute;
 
 import java.nio.ByteBuffer;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.P2PSocket;
 
 /**
@@ -53,11 +54,11 @@ public interface SourceRouteTap<Identifier> {
 
   public void socketOpened(SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
 
-  public void socketClosed(SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
+  public void socketClosed(@Nullable SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
 
   /**
    * We are the intermediate node for some bytes from Socket a to Socket b
    */
-  public void receivedBytes(ByteBuffer m, SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
+  public void receivedBytes(ByteBuffer m, @Nullable SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
 
 }

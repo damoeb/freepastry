@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -149,7 +150,7 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
   }
 
   @Override
-  public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress destination, SocketCallback<InetSocketAddress> deliverSocketToMe, Map<String, Object> options) {
+  public @Nullable SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress destination, SocketCallback<InetSocketAddress> deliverSocketToMe, @Nullable Map<String, Object> options) {
     return tcp.openSocket(destination, deliverSocketToMe, options);
   }
 
@@ -157,8 +158,8 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination,
       ByteBuffer m,
-      MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+      @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     logger.debug("sendMessage({},{})", destination, m);
     return udp.sendMessage(destination, m, deliverAckToMe, options);
   }
@@ -200,7 +201,7 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     tcp.acceptSockets(b);
   }
 
-  protected void messageReceived(InetSocketAddress address, ByteBuffer buffer, Map<String, Object> options) throws IOException {
+  protected void messageReceived(InetSocketAddress address, ByteBuffer buffer, @Nullable Map<String, Object> options) throws IOException {
     callback.messageReceived(address, buffer, options);
   }
 
@@ -251,12 +252,12 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     }
   }
 
-  public void broadcastChannelOpened(InetSocketAddress addr, Map<String, Object> options, boolean outgoing) {
+  public void broadcastChannelOpened(InetSocketAddress addr, @Nullable Map<String, Object> options, boolean outgoing) {
     for (SocketCountListener<InetSocketAddress> listener : getSlisteners())
       listener.socketOpened(addr, options, outgoing);
   }
 
-  public void broadcastChannelClosed(InetSocketAddress addr, Map<String, Object> options) {
+  public void broadcastChannelClosed(InetSocketAddress addr, @Nullable Map<String, Object> options) {
     for (SocketCountListener<InetSocketAddress> listener : getSlisteners())
       listener.socketClosed(addr, options);
   }

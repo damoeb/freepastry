@@ -48,6 +48,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
@@ -106,10 +108,10 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   WeakReference<Identifier> identifier;
 
-  SocketRequestHandle<Identifier> pendingSocket; // the receipt that we are opening a socket
-  P2PSocket<Identifier> writingSocket; // don't try to write to multiple sockets, it will confuse things
-  P2PSocket<Identifier> closeWritingSocket; // could be a boolean, but we store the writingSocket here just for debugging, == writingSocket if should close it after the current write
-  MessageWrapper<Identifier> messageThatIsBeingWritten; // the current message we are sending, if this is null, we aren't in the middle of sending a message
+  @Nullable SocketRequestHandle<Identifier> pendingSocket; // the receipt that we are opening a socket
+  @Nullable P2PSocket<Identifier> writingSocket; // don't try to write to multiple sockets, it will confuse things
+  @Nullable P2PSocket<Identifier> closeWritingSocket; // could be a boolean, but we store the writingSocket here just for debugging, == writingSocket if should close it after the current write
+  @Nullable MessageWrapper<Identifier> messageThatIsBeingWritten; // the current message we are sending, if this is null, we aren't in the middle of sending a message
   boolean registered = false;  // true if registered for writing
   // Invariant: if (messageThatIsBeingWritten != null) then (writingSocket != null)
 
@@ -178,7 +180,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    * @param receipt null if a remote node opened the socket
    */
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
-  public void primarySocketAvailable(P2PSocket<Identifier> s, SocketRequestHandle<Identifier> receipt) {
+  public void primarySocketAvailable(P2PSocket<Identifier> s, @Nullable SocketRequestHandle<Identifier> receipt) {
     // make sure we're on the selector thread so synchronization of writingSocket is simple
     if (!selectorManager.isSelectorThread()) throw new IllegalStateException("Must be called on the selector");
 
@@ -205,7 +207,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     new SizeReader<Identifier>(this, s);
   }
 
-  public void setWritingSocket(P2PSocket<Identifier> s/*, String loc*/) {
+  public void setWritingSocket(@Nullable P2PSocket<Identifier> s/*, String loc*/) {
     logger.info("{}.setWritingSocket({})", this, s);
     writingSocket = s;
     if (primarySocketListeners.isEmpty()) return;
@@ -262,7 +264,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     }
   }
 
-  public void openPrimarySocketHelper(final Identifier i, Map<String, Object> options) {
+  public void openPrimarySocketHelper(final Identifier i, @Nullable Map<String, Object> options) {
     synchronized(this) {
       if (pendingSocket != null || writingSocket != null) return;
       logger.debug("Opening Primary Socket to {}", i);
@@ -285,8 +287,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   }
 
 
-  TimerTask livenessChecker = null;
-  public void startLivenessChecker(final Identifier temp, final Map<String, Object> options) {
+  @Nullable TimerTask livenessChecker = null;
+  public void startLivenessChecker(final Identifier temp, final @Nullable Map<String, Object> options) {
     if (options == null) {
       throw new IllegalArgumentException("Options is null");
     }
@@ -301,9 +303,9 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
             if (ctx.destroyed.getAsBoolean()) return;
             livenessProvider.checkLiveness(temp, options);
 
-          // if this throws a NPE, there is a bug, cause this should have been cancelled if pendingSocket == null
             logger.info("{}.liveness checker setting pendingSocket to null {}", EntityManager.this, pendingSocket);
-            pendingSocket.cancel();
+            // this checker is cancelled whenever pendingSocket is cleared
+            Objects.requireNonNull(pendingSocket, "liveness checker runs without a pending socket").cancel();
             pendingSocket = null;
           }
           scheduleToWriteIfNeeded();  // will restart this livenessChecker, create a new pendingSocket
@@ -512,8 +514,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   public MessageRequestHandle<Identifier, ByteBuffer> send(
       Identifier temp,
       ByteBuffer message,
-      MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-      final Map<String, Object> options) {
+      @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+      final @Nullable Map<String, Object> options) {
     logger.trace("{}send({})", this, message);
 
     // pick the priority
@@ -588,7 +590,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     wrapper.complete();
 
     // close the socket if we need to
-    if (closeWritingSocket == writingSocket) {
+    if (writingSocket != null && closeWritingSocket == writingSocket) {
       writingSocket.close();
       setWritingSocket(null/*, "complete("+wrapper+")"*/);
       closeWritingSocket = null;
@@ -618,7 +620,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     }
   }
 
-  public void clearAndEnqueue(MessageWrapper<Identifier> wrapper) {
+  public void clearAndEnqueue(@Nullable MessageWrapper<Identifier> wrapper) {
     if (wrapper != messageThatIsBeingWritten) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+messageThatIsBeingWritten);
     synchronized(queue) {
       if (messageThatIsBeingWritten != null) messageThatIsBeingWritten.reset();

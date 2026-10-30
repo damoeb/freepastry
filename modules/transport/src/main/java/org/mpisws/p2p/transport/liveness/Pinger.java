@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.liveness;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public interface Pinger<Identifier> {
   /**
@@ -44,7 +45,7 @@ public interface Pinger<Identifier> {
    * @param options transport layer dependent way to send the ping (udp/tcp etc)
    * @return true If the ping will occur.  (Maybe it won't due to bandwidth concerns.)
    */
-  public boolean ping(Identifier i, Map<String, Object> options);
+  public boolean ping(Identifier i, @Nullable Map<String, Object> options);
 
   public void addPingListener(PingListener<Identifier> name);
   public boolean removePingListener(PingListener<Identifier> name);

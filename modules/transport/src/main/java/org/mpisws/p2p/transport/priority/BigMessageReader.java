@@ -39,6 +39,8 @@ package org.mpisws.p2p.transport.priority;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
 import rice.p2p.util.MathUtils;
@@ -51,7 +53,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
   private final EntityManagerContext<Identifier> ctx;
   byte[] sizeBytes = new byte[Integer.BYTES];
   ByteBuffer sizeBuf = ByteBuffer.wrap(sizeBytes);
-  ByteBuffer msgBuf = null;
+  @Nullable ByteBuffer msgBuf = null;
 
   BigMessageReader(EntityManagerContext<Identifier> ctx) {
     this.ctx = ctx;
@@ -88,7 +90,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
       }
     }
 
-    // msgBuf should not be null
+    ByteBuffer msgBuf = Objects.requireNonNull(this.msgBuf, "the size header is read first");
     if (msgBuf.hasRemaining()) {
       long ret = socket.read(msgBuf);
       if (ret == -1) {
@@ -104,7 +106,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
         msgBuf.flip();
         sizeBuf.clear();
         ctx.callback.get().messageReceived(socket.getIdentifier(), msgBuf, socket.getOptions());
-        msgBuf = null;
+        this.msgBuf = null;
         socket.register(true, false, this);
         return;
       }

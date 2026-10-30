@@ -38,16 +38,17 @@ package org.mpisws.p2p.transport.util;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.slf4j.Logger;
 import rice.p2p.commonapi.Cancellable;
 
 public class SocketRequestHandleImpl<Identifier> implements SocketRequestHandle<Identifier> {
   Identifier identifier;
-  Map<String, Object> options;
-  Cancellable subCancellable;
+  @Nullable Map<String, Object> options;
+  @Nullable Cancellable subCancellable;
 
-  public SocketRequestHandleImpl(Identifier i, Map<String, Object> options, Logger logger) {
+  public SocketRequestHandleImpl(Identifier i, @Nullable Map<String, Object> options, Logger logger) {
     this.identifier = i;
     this.options = options;
     if (logger == null) throw new IllegalArgumentException("logger is null");
@@ -59,7 +60,7 @@ public class SocketRequestHandleImpl<Identifier> implements SocketRequestHandle<
   }
 
   @Override
-  public Map<String, Object> getOptions() {
+  public @Nullable Map<String, Object> getOptions() {
     return options;
   }
 
@@ -71,11 +72,11 @@ public class SocketRequestHandleImpl<Identifier> implements SocketRequestHandle<
     return false;
   }
 
-  public void setSubCancellable(Cancellable sub) {
+  public void setSubCancellable(@Nullable Cancellable sub) {
     this.subCancellable = sub;
   }
 
-  public Cancellable getSubCancellable() {
+  public @Nullable Cancellable getSubCancellable() {
     return subCancellable;
   }
 

@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.liveness;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Notified of liveness changes.
@@ -48,5 +49,5 @@ public interface LivenessListener<Identifier> {
   /**
    * Called when the liveness changes.
    */
-  public void livenessChanged(Identifier i, int val, Map<String, Object> options);
+  public void livenessChanged(Identifier i, int val, @Nullable Map<String, Object> options);
 }

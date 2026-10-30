@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.ListenableTransportLayer;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -145,7 +146,7 @@ public class MagicNumberTransportLayer<Identifier> implements
   @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
     final SocketRequestHandleImpl<Identifier> cancellable = new SocketRequestHandleImpl<Identifier>(i, options, logger);
@@ -200,8 +201,8 @@ public class MagicNumberTransportLayer<Identifier> implements
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(
       final Identifier i,
       final ByteBuffer m,
-      final MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+      final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
 
     // build a new ByteBuffer with the header
     byte[] msgWithHeader = new byte[HEADER.length+m.remaining()];
@@ -255,7 +256,7 @@ public class MagicNumberTransportLayer<Identifier> implements
 
   @Override
   @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-  public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     logger.debug("messageReceived({},{})", i, m);
 
     if (m.remaining() < HEADER.length) {
@@ -359,7 +360,7 @@ public class MagicNumberTransportLayer<Identifier> implements
   }
 
   public void notifyListenersRead(int bytesRead, Identifier identifier,
-      Map<String, Object> options, boolean passthrough, boolean socket) {
+      @Nullable Map<String, Object> options, boolean passthrough, boolean socket) {
     Iterable<TransportLayerListener<Identifier>> i;
     synchronized(listeners) {
       i = new ArrayList<TransportLayerListener<Identifier>>(listeners);
@@ -370,7 +371,7 @@ public class MagicNumberTransportLayer<Identifier> implements
   }
 
   public void notifyListenersWrite(int bytesRead, Identifier identifier,
-      Map<String, Object> options, boolean passthrough, boolean socket) {
+      @Nullable Map<String, Object> options, boolean passthrough, boolean socket) {
     Iterable<TransportLayerListener<Identifier>> i;
     synchronized(listeners) {
       i = new ArrayList<TransportLayerListener<Identifier>>(listeners);

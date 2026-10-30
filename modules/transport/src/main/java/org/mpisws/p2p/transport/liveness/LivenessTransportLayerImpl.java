@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -137,6 +138,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
    */
   final Map<Identifier, EntityManager> managers;
 
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
 
   private ErrorHandler<Identifier> errorHandler;
@@ -179,7 +181,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   }
 
   @Override
-  public boolean checkLiveness(Identifier i, Map<String, Object> options) {
+  public boolean checkLiveness(Identifier i, @Nullable Map<String, Object> options) {
     return getManager(i).checkLiveness(options);
   }
 
@@ -202,7 +204,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
-  public EntityManager deleteManager(Identifier i) {
+  public @Nullable EntityManager deleteManager(Identifier i) {
     synchronized(managers) {
       EntityManager manager = managers.remove(i);
       if (manager != null) {
@@ -213,7 +215,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   }
 
   @Override
-  public int getLiveness(Identifier i, Map<String, Object> options) {
+  public int getLiveness(Identifier i, @Nullable Map<String, Object> options) {
     logger.trace("getLiveness({},{})", i, options);
     synchronized(managers) {
       if (managers.containsKey(i))
@@ -243,7 +245,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   boolean connectionExceptionMeansFaulty = true;
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
+  public @Nullable SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
     // this code marks the Identifier faulty if there is an error connecting the socket.  It's possible that this
     // should be moved to the source route manager, but there needs to be a way to cancel the liveness
     // checks, or maybe the higher layer can ignore them.
@@ -273,8 +275,8 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(
       final Identifier i,
       final ByteBuffer m,
-      final MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+      final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     final MessageRequestHandleImpl<Identifier, ByteBuffer> handle =
       new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
 
@@ -312,7 +314,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
 
   @Override
   @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-  public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
     byte hdr = m.get();
     switch(hdr) {
@@ -358,7 +360,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
    * Send the ping.
    */
   @Override
-  public boolean ping(final Identifier i, final Map<String, Object> options) {
+  public boolean ping(final Identifier i, final @Nullable Map<String, Object> options) {
     logger.trace("ping({})", i);
     if (i.equals(tl.getLocalIdentifier())) return false;
     try {
@@ -390,7 +392,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   /**
    * Send the pong();
    */
-  public void pong(final Identifier i, final long senderTime, final Map<String, Object> options) {
+  public void pong(final Identifier i, final long senderTime, final @Nullable Map<String, Object> options) {
     logger.trace("pong({},{})", i, senderTime);
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer(PING_BUFFER_SIZE);
@@ -470,7 +472,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
-  private void notifyLivenessListeners(Identifier i, int liveness, Map<String, Object> options) {
+  private void notifyLivenessListeners(Identifier i, int liveness, @Nullable Map<String, Object> options) {
     if (destroyed) return;
     logger.trace("notifyLivenessListeners({},{})", i, liveness);
     List<LivenessListener<Identifier>> temp;
@@ -512,7 +514,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
-  private void notifyPingListenersPong(Identifier i, int rtt, Map<String, Object> options) {
+  private void notifyPingListenersPong(Identifier i, int rtt, @Nullable Map<String, Object> options) {
     if (destroyed) return;
     List<PingListener<Identifier>> temp;
     synchronized(pingListeners) {
@@ -543,7 +545,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     long startTime; // the start time
     int initialDelay; // the initial expected delay
 
-    Map<String, Object> options;
+    @Nullable Map<String, Object> options;
 
     /**
      * Constructor for DeadChecker.
@@ -553,7 +555,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
      * @param initialDelay the expected round-trip time (the current RTO), for logging
      * @param options the options passed to ping() and to the liveness notifications
      */
-    public DeadChecker(EntityManager manager, int numTries, int initialDelay, Map<String, Object> options) {
+    public DeadChecker(EntityManager manager, int numTries, int initialDelay, @Nullable Map<String, Object> options) {
       logger.atDebug().log(() -> "DeadChecker@"+System.identityHashCode(this)+" CHECKING DEATH OF PATH " + manager.identifier.get()+" rto:"+initialDelay+" options:"+options);
 
       this.manager = manager;
@@ -570,7 +572,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
      * @param RTT the measured round-trip time
      * @param options the options of the ping
      */
-    public void pingResponse(long RTT, Map<String, Object> options) {
+    public void pingResponse(long RTT, @Nullable Map<String, Object> options) {
       if (!cancelled) {
         if (tries > 1) {
           long delay = time.currentTimeMillis()-startTime;
@@ -661,7 +663,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     private long updated;
 
     // whether or not a check dead is currently being carried out on this route
-    private DeadChecker pendingDeadchecker;
+    private @Nullable DeadChecker pendingDeadchecker;
 
     private final Set<LSocket> sockets;
 
@@ -680,10 +682,10 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       sockets = new HashSet<LSocket>();
     }
 
-    public DeadChecker getPending() {
+    public @Nullable DeadChecker getPending() {
       return pendingDeadchecker;
     }
-    public void setPending(DeadChecker d) {
+    public void setPending(@Nullable DeadChecker d) {
       pendingDeadchecker = d;
     }
 
@@ -701,7 +703,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
      * This method should be called when this route is declared
      * alive.
      */
-    protected void markAlive(Map<String, Object> options) {
+    protected void markAlive(@Nullable Map<String, Object> options) {
       boolean notify = false;
       if (liveness != LIVENESS_ALIVE) notify = true;
       this.liveness = LIVENESS_ALIVE;
@@ -717,7 +719,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
      * This method should be called when this route is declared
      * suspected.
      */
-    protected void markSuspected(Map<String, Object> options) {
+    protected void markSuspected(@Nullable Map<String, Object> options) {
       // note, can only go from alive -> suspected, can't go from dead->suspected
       if (liveness > LIVENESS_SUSPECTED) return;
 
@@ -737,21 +739,21 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
      * This method should be called when this route is declared
      * dead.
      */
-    protected void markDead(Map<String, Object> options) {
+    protected void markDead(@Nullable Map<String, Object> options) {
       boolean notify = false;
       if (liveness < LIVENESS_DEAD) notify = true;
       logger.trace("{}.markDead() notify:{}", this, notify);
       markDeadHelper(LIVENESS_DEAD, options, notify);
     }
 
-    protected void markDeadForever(Map<String, Object> options) {
+    protected void markDeadForever(@Nullable Map<String, Object> options) {
       boolean notify = false;
       if (liveness < LIVENESS_DEAD_FOREVER) notify = true;
       logger.trace("{}.markDeadForever() notify:{}", this, notify);
       markDeadHelper(LIVENESS_DEAD_FOREVER, options, notify);
     }
 
-    protected void markDeadHelper(int liveness, Map<String, Object> options, boolean notify) {
+    protected void markDeadHelper(int liveness, @Nullable Map<String, Object> options, boolean notify) {
       this.liveness = liveness;
       if (getPending() != null) {
         getPending().cancel(); // sets to null too
@@ -815,7 +817,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
      *
      * @return true if there will be an update (either a ping, or a change in liveness)
      */
-    protected boolean checkLiveness(final Map<String, Object> options) {
+    protected boolean checkLiveness(final @Nullable Map<String, Object> options) {
       logger.trace("{}.checkLiveness()", this);
 
       boolean ret = false;
@@ -904,11 +906,11 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     /**
      * set every time we want to write, and killed every time we do write
      */
-    TimerTask livenessCheckerTimer;
+    @Nullable TimerTask livenessCheckerTimer;
 
     boolean closed = false;
 
-    public LSocket(EntityManager manager, P2PSocket<Identifier> socket, Identifier hardRef) {
+    public LSocket(EntityManager manager, P2PSocket<Identifier> socket, @Nullable Identifier hardRef) {
       super(socket.getIdentifier(), socket, LivenessTransportLayerImpl.this.logger, LivenessTransportLayerImpl.this.errorHandler, socket.getOptions());
       if (hardRef == null) throw new IllegalArgumentException("hardRef == null "+manager+" "+socket);
       this.manager = manager;
@@ -981,7 +983,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   }
 
   @Override
-  public void setLiveness(Identifier i, int liveness, Map<String, Object> options) {
+  public void setLiveness(Identifier i, int liveness, @Nullable Map<String, Object> options) {
     EntityManager man = getManager(i);
     switch(liveness) {
     case LIVENESS_ALIVE:

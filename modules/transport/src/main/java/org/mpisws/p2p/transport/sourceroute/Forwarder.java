@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.slf4j.Logger;
@@ -51,7 +52,7 @@ public class Forwarder<Identifier> {
   /** Bytes copied per read while forwarding a socket. */
   private static final int PIPE_BUFFER_SIZE = 1024;
 
-  SourceRoute<Identifier> sr;
+  @Nullable SourceRoute<Identifier> sr;
   P2PSocket<Identifier> socka;
   P2PSocket<Identifier> sockb;
   Logger logger;
@@ -65,7 +66,7 @@ public class Forwarder<Identifier> {
   int numShutdown = 0;
   boolean closed = false;
 
-  public Forwarder(SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger) {
+  public Forwarder(@Nullable SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger) {
     this(sr, socka, sockb, logger, Collections.<SourceRouteTap<Identifier>>emptyList());
   }
 
@@ -73,7 +74,7 @@ public class Forwarder<Identifier> {
    * @param taps notified via {@link SourceRouteTap#receivedBytes} and {@link SourceRouteTap#socketClosed};
    * the collection is read live, so taps added/removed later are honored
    */
-  public Forwarder(SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger, Collection<SourceRouteTap<Identifier>> taps) {
+  public Forwarder(@Nullable SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger, Collection<SourceRouteTap<Identifier>> taps) {
     this.sr = sr;
     this.socka = socka;
     this.sockb = sockb;

@@ -38,16 +38,17 @@ package org.mpisws.p2p.transport.util;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import rice.p2p.commonapi.Cancellable;
 
 public class MessageRequestHandleImpl<Identifier, MessageType> implements MessageRequestHandle<Identifier, MessageType> {
-  Cancellable subCancellable;
+  @Nullable Cancellable subCancellable;
   Identifier identifier;
   MessageType msg;
-  Map<String, Object> options;
+  @Nullable Map<String, Object> options;
 
-  public MessageRequestHandleImpl(Identifier i, MessageType m, Map<String, Object> options) {
+  public MessageRequestHandleImpl(Identifier i, MessageType m, @Nullable Map<String, Object> options) {
     this.identifier = i;
     this.msg = m;
     this.options = options;
@@ -64,7 +65,7 @@ public class MessageRequestHandleImpl<Identifier, MessageType> implements Messag
   }
 
   @Override
-  public Map<String, Object> getOptions() {
+  public @Nullable Map<String, Object> getOptions() {
     return options;
   }
 
@@ -74,11 +75,11 @@ public class MessageRequestHandleImpl<Identifier, MessageType> implements Messag
     return subCancellable.cancel();
   }
 
-  public void setSubCancellable(Cancellable cancellable) {
+  public void setSubCancellable(@Nullable Cancellable cancellable) {
     this.subCancellable = cancellable;
   }
 
-  public Cancellable getSubCancellable() {
+  public @Nullable Cancellable getSubCancellable() {
     return subCancellable;
   }
 

@@ -41,6 +41,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
@@ -60,8 +61,8 @@ public class InetSocketAddressSerializer implements Serializer<InetSocketAddress
   public static final int IPV6_BYTES = 16;
 
   @Override
-  public InetSocketAddress deserialize(InputBuffer b, InetSocketAddress i,
-      Map<String, Object> options) throws IOException {
+  public InetSocketAddress deserialize(InputBuffer b, @Nullable InetSocketAddress i,
+      @Nullable Map<String, Object> options) throws IOException {
     return deserializeAddress(b);
   }
 

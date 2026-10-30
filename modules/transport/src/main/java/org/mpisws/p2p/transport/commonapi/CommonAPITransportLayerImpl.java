@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -130,11 +131,11 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
   }
 
   @Override
-  public MessageRequestHandle<Identifier, RawMessage> sendMessage(
+  public @Nullable MessageRequestHandle<Identifier, RawMessage> sendMessage(
       final Identifier i,
       final RawMessage m,
-      final MessageCallback<Identifier, RawMessage> deliverAckToMe,
-      Map<String, Object> options) {
+      final @Nullable MessageCallback<Identifier, RawMessage> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     if (destroyed) return null;
 
     logger.debug("sendMessage({},{})", i, m);
@@ -204,7 +205,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
     SimpleInputBuffer buf = new SimpleInputBuffer(m.array(), m.position());
     RawMessage ret = deserializer.deserialize(buf, i);
@@ -234,10 +235,10 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
 
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(
+  public @Nullable SocketRequestHandle<Identifier> openSocket(
       final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
     logger.debug("openSocket({})", i);

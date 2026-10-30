@@ -39,4 +39,7 @@ advised of the possibility of such damage.
  * sockets ({@code pastry_socket_scm_max_open_sockets}) and closes the least recently used one when the
  * limit is reached.
  */
+@NullMarked
 package org.mpisws.p2p.transport.limitsockets;
+
+import org.jspecify.annotations.NullMarked;

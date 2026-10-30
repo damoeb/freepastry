@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
@@ -56,13 +57,13 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
   protected Identifier identifier;
   protected P2PSocket<SubIdentifier> socket;
   protected Logger logger;
-  protected Map<String, Object> options;
+  protected @Nullable Map<String, Object> options;
   // TODO: make getters
-  private P2PSocketReceiver<Identifier> reader;
-  protected P2PSocketReceiver<Identifier> writer;
+  private @Nullable P2PSocketReceiver<Identifier> reader;
+  protected @Nullable P2PSocketReceiver<Identifier> writer;
   private final ErrorHandler<Identifier> errorHandler;
 
-  public SocketWrapperSocket(Identifier identifier, P2PSocket<SubIdentifier> socket, Logger logger, ErrorHandler<Identifier> errorHandler, Map<String, Object> options) {
+  public SocketWrapperSocket(Identifier identifier, P2PSocket<SubIdentifier> socket, Logger logger, ErrorHandler<Identifier> errorHandler, @Nullable Map<String, Object> options) {
     this.identifier = identifier;
     this.socket = socket;
     this.logger = logger;
@@ -115,7 +116,7 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
       P2PSocketReceiver<Identifier> temp = reader;
       reader = null;
       writer = null;
-      temp.receiveSelectResult(this, canRead, canWrite);
+      if (temp != null) temp.receiveSelectResult(this, canRead, canWrite);
       return;
     }
 
@@ -187,7 +188,7 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
   }
 
   @Override
-  public Map<String, Object> getOptions() {
+  public @Nullable Map<String, Object> getOptions() {
     return options;
   }
 }

@@ -48,6 +48,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.AuthenticationException;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -102,6 +103,7 @@ import rice.p2p.util.SecurityUtils;
 public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Identifier,MsgType>, TransportLayerCallback<Identifier, MsgType> {
 
   private final TransportLayer<Identifier,MsgType> tl;
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MsgType> callback;
 
   private final Logger logger;
@@ -164,7 +166,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
 
   @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i,
-      final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
+      final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
 
     // Every socket is encrypted. A per-socket option to turn encryption off would need the other end to learn that the socket is unencrypted.
     // TODO: send a byte saying whether the socket is encrypted and honor it on the accepting end, so encryption can be turned off per socket
@@ -384,9 +386,9 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
   }
 
   @Override
-  public MessageRequestHandle<Identifier, MsgType> sendMessage(Identifier i,
-      MsgType m, MessageCallback<Identifier, MsgType> deliverAckToMe,
-      Map<String, Object> options) {
+  public @Nullable MessageRequestHandle<Identifier, MsgType> sendMessage(Identifier i,
+      MsgType m, @Nullable MessageCallback<Identifier, MsgType> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
@@ -407,7 +409,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
 
   @Override
   public void messageReceived(Identifier i, MsgType m,
-      Map<String, Object> options) throws IOException {
+      @Nullable Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);
   }
 

@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -69,6 +70,7 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
 
   private final TransportLayer<Identifier, MessageType> tl;
 
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
 
   private final TimeSource timeSource;
@@ -93,14 +95,14 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
   }
 
   @Override
-  public MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, MessageCallback<Identifier, MessageType> deliverAckToMe, Map<String, Object> options) {
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options) {
     long now = timeSource.currentTimeMillis();
     udpTable.put(i,now);
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
   @Override
-  public void messageReceived(Identifier i, MessageType m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException {
     if (udpTable.containsKey(i)) {
       long now = timeSource.currentTimeMillis();
       if (udpTable.get(i)+UDP_OPEN_MILLIS >= now) {
@@ -137,7 +139,7 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
+  public @Nullable SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
     return tl.openSocket(i, deliverSocketToMe, options);
   }
 

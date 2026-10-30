@@ -81,7 +81,7 @@ public class AttachableCancellable implements Cancellable {
     return ret;
   }
 
-  public void attach(Cancellable c) {
+  public void attach(@Nullable Cancellable c) {
     if (c == null) return;
     boolean cancel = false;
     synchronized(lock) {

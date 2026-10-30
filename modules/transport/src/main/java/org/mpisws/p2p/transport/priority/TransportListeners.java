@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.priority;
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.TransportLayerListener;
 
 /**
@@ -81,7 +82,7 @@ final class TransportListeners<Identifier> {
   }
 
   void notifyRead(int size, Identifier source,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
 
     if (listeners.isEmpty()) return;
     ArrayList<TransportLayerListener<Identifier>> temp;
@@ -95,7 +96,7 @@ final class TransportListeners<Identifier> {
   }
 
   void notifyWrote(int size, Identifier dest,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     if (listeners.isEmpty()) return;
     ArrayList<TransportLayerListener<Identifier>> temp;
 
@@ -108,7 +109,7 @@ final class TransportListeners<Identifier> {
   }
 
   void notifyEnqueued(int size, Identifier dest,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     if (plisteners.isEmpty()) return;
     ArrayList<PriorityTransportLayerListener<Identifier>> temp;
 
@@ -121,7 +122,7 @@ final class TransportListeners<Identifier> {
   }
 
   void notifyDropped(int size, Identifier dest,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
     if (plisteners.isEmpty()) return;
     ArrayList<PriorityTransportLayerListener<Identifier>> temp;
 

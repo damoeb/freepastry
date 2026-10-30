@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.Cancellable;
 
 /**
@@ -55,5 +56,5 @@ public interface SocketRequestHandle<Identifier> extends Cancellable {
   /**
    * The options that the caller used.
    */
-  public Map<String, Object> getOptions();
+  public @Nullable Map<String, Object> getOptions();
 }

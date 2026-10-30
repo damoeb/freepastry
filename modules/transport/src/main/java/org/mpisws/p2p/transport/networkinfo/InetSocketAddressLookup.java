@@ -41,6 +41,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import rice.Continuation;
 import rice.Destructable;
@@ -63,7 +64,7 @@ public interface InetSocketAddressLookup extends Destructable {
    */
   public Cancellable getExternalNodes(InetSocketAddress bootstrap,
       Continuation<Collection<InetSocketAddress>, IOException> c,
-      Map<String, Object> options);
+      @Nullable Map<String, Object> options);
 
 
 
@@ -77,7 +78,7 @@ public interface InetSocketAddressLookup extends Destructable {
    */
   public Cancellable getMyInetAddress(InetSocketAddress bootstrap,
       Continuation<InetSocketAddress, IOException> c,
-      Map<String, Object> options);
+      @Nullable Map<String, Object> options);
 
   /**
    * Verify that I have connectivity by using a third party.
@@ -91,8 +92,8 @@ public interface InetSocketAddressLookup extends Destructable {
    * @param probeAddresses the node that coordinates the probe
    * @param deliverResultToMe receives the probe results
    */
-  public Cancellable verifyConnectivity(MultiInetSocketAddress local,
+  public @Nullable Cancellable verifyConnectivity(MultiInetSocketAddress local,
       InetSocketAddress probeAddresses,
       ConnectivityResult deliverResultToMe,
-      Map<String, Object> options);
+      @Nullable Map<String, Object> options);
 }

@@ -41,4 +41,7 @@ advised of the possibility of such damage.
  * changes; {@link org.mpisws.p2p.transport.proximity.MinRTTProximityProvider} uses the minimum observed
  * round-trip time. Pastry uses proximity to choose routing table entries.
  */
+@NullMarked
 package org.mpisws.p2p.transport.proximity;
+
+import org.jspecify.annotations.NullMarked;

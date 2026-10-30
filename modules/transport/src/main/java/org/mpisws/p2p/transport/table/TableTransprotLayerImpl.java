@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -76,6 +77,7 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
    */
   protected TableStore<Key, Value> knownValues;
 
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
   protected TransportLayer<Identifier, ByteBuffer> tl;
 
@@ -103,9 +105,9 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
   /**
    * REQUEST, int requestId, Key
    */
-  public Cancellable requestValue(final Identifier source,
+  public @Nullable Cancellable requestValue(final Identifier source,
       final Key principal, final Continuation<Value, Exception> c,
-      Map<String, Object> options) {
+      @Nullable Map<String, Object> options) {
 
     logger.debug("requestValue({},{})", source, principal);
     if (knownValues.containsKey(principal)) {
@@ -191,7 +193,7 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
 
   @Override
   public SocketRequestHandle<Identifier> openSocket(Identifier i,
-      final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
+      final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
 
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
@@ -315,9 +317,9 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
   }
 
   @Override
-  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i,
-      ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-      Map<String, Object> options) {
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i,
+      ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
@@ -338,7 +340,7 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
 
   @Override
   public void messageReceived(Identifier i, ByteBuffer m,
-      Map<String, Object> options) throws IOException {
+      @Nullable Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);
   }
 }

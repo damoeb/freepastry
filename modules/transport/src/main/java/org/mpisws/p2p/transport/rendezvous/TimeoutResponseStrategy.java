@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.rendezvous;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.environment.Environment;
 import rice.environment.time.TimeSource;
 import rice.p2p.util.TimerWeakHashMap;
@@ -65,17 +66,17 @@ public class TimeoutResponseStrategy<Identifier> implements ResponseStrategy<Ide
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer msg, Map<String,Object> options) {
+  public void messageReceived(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options) {
     lastTimeReceived.put(i, time.currentTimeMillis());
   }
 
   @Override
-  public void messageSent(Identifier i, ByteBuffer msg, Map<String,Object> options) {
+  public void messageSent(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options) {
 
   }
 
   @Override
-  public boolean sendDirect(Identifier i, ByteBuffer msg, Map<String,Object> options) {
+  public boolean sendDirect(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options) {
     long lastTime = 0;
     if (lastTimeReceived.containsKey(i)) {
       lastTime = lastTimeReceived.get(i);

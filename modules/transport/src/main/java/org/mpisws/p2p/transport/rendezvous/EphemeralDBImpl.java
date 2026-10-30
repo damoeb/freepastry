@@ -39,6 +39,8 @@ package org.mpisws.p2p.transport.rendezvous;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.time.TimeSource;
@@ -91,7 +93,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
   }
 
   @Override
-  public Identifier getEphemeral(HighIdentifier high) {
+  public @Nullable Identifier getEphemeral(HighIdentifier high) {
     Long tag = highToTag.get(high);
     if (tag == null) {
       logger.debug("getEphemeral({}):null", high);
@@ -106,7 +108,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
   }
 
   @Override
-  public Identifier getEphemeral(long tag, Identifier i) {
+  public @Nullable Identifier getEphemeral(long tag, @Nullable Identifier i) {
     Ephemeral<Identifier> ret = tagToEphemeral.get(tag);
     if (ret == null) {
       logger.debug("getEphemeral({},{}):{}", tag, i, i);
@@ -128,7 +130,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
     if (tag == null) {
       // it doesn't exist
     } else {
-      Ephemeral<Identifier> ret = tagToEphemeral.get(tag);
+      Ephemeral<Identifier> ret = Objects.requireNonNull(tagToEphemeral.get(tag), "both maps hold the same tags");
       if (ret.lastUsed() < now-STALE_PORT_TIME) {
         // it's stale
         clear(tag);
@@ -152,7 +154,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
   protected void clear(long tag) {
     logger.debug("clear({})", tag);
     Ephemeral<Identifier> ret = tagToEphemeral.remove(tag);
-    ephemeralToTag.remove(ret.addr());
+    if (ret != null) ephemeralToTag.remove(ret.addr());
   }
 
 }

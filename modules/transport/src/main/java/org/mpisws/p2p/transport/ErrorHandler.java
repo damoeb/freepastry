@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Notified when there is a problem not related to an outgoing message/socket,
@@ -52,7 +53,7 @@ public interface ErrorHandler<Identifier> {
    * @param bytes the entire message/socket header
    * @param location the location in the bytes that is unexpected
    */
-  public void receivedUnexpectedData(Identifier i, byte[] bytes, int location, Map<String, Object> options);
+  public void receivedUnexpectedData(Identifier i, byte[] bytes, int location, @Nullable Map<String, Object> options);
 
   /**
    * We got an exception.
@@ -60,5 +61,5 @@ public interface ErrorHandler<Identifier> {
    * @param i the identifier responsible (if any)
    * @param error the exception
    */
-  public void receivedException(Identifier i, Throwable error);
+  public void receivedException(@Nullable Identifier i, Throwable error);
 }

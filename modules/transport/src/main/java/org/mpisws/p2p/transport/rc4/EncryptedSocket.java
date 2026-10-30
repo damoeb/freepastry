@@ -42,6 +42,7 @@ import java.util.Map;
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.P2PSocket;
@@ -69,7 +70,7 @@ public class EncryptedSocket<Identifier> extends SocketWrapperSocket<Identifier,
   final ByteBuffer encryptedWriteBuffer;
 
   public EncryptedSocket(Identifier identifier, P2PSocket<Identifier> socket,
-      Logger logger, ErrorHandler<Identifier> handler, Map<String, Object> options, Cipher encryptCipher, Cipher decryptCipher, int writeBufferSize) {
+      Logger logger, ErrorHandler<Identifier> handler, @Nullable Map<String, Object> options, Cipher encryptCipher, Cipher decryptCipher, int writeBufferSize) {
     super(identifier, socket, logger, handler, options);
     encryptedBytes = new byte[writeBufferSize];
     encryptedWriteBuffer = ByteBuffer.wrap(encryptedBytes);

@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -66,6 +67,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   private boolean acceptSockets = true;
 
   private final Identifier localIdentifier;
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
   private final GenericNetworkSimulator<Identifier, MessageType> simulator;
   private final LivenessProvider<Identifier> livenessProvider;
@@ -120,7 +122,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
+  public SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
     SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i,options, logger);
 
 
@@ -141,10 +143,10 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   }
 
   @Override
-  public MessageRequestHandle<Identifier, MessageType> sendMessage(
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(
       Identifier i, MessageType m,
-      MessageCallback<Identifier, MessageType> deliverAckToMe,
-      Map<String, Object> options) {
+      @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     if (!simulator.isAlive(localIdentifier)) return null; // just make this stop, the local node is dead, he shouldn't be doing anything
     MessageRequestHandleImpl<Identifier, MessageType> handle = new MessageRequestHandleImpl<Identifier, MessageType>(i, m, options);
 
@@ -200,7 +202,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     return seq++;
   }
 
-  public void incomingMessage(Identifier i, MessageType m, Map<String, Object> options) throws IOException {
+  public void incomingMessage(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);
   }
 

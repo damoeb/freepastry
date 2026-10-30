@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.liveness.Pinger;
 import org.slf4j.Logger;
@@ -71,7 +72,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
   }
 
   @Override
-  public int proximity(Identifier i, Map<String, Object> options) {
+  public int proximity(Identifier i, @Nullable Map<String, Object> options) {
     EntityManager manager = getManager(i);
     int ret = manager.proximity;
     if (ret == DEFAULT_PROXIMITY) {
@@ -81,12 +82,12 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
   }
 
   @Override
-  public void pingResponse(Identifier i, int rtt, Map<String, Object> options) {
+  public void pingResponse(Identifier i, int rtt, @Nullable Map<String, Object> options) {
     getManager(i).markProximity(rtt, options);
   }
 
   @Override
-  public void pingReceived(Identifier i, Map<String, Object> options) {
+  public void pingReceived(Identifier i, @Nullable Map<String, Object> options) {
 
   }
 
@@ -133,7 +134,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
       proximity = DEFAULT_PROXIMITY;
     }
 
-    public void ping(Map<String, Object> options) {
+    public void ping(@Nullable Map<String, Object> options) {
       long now = time.currentTimeMillis();
       if ((now - lastPingTime) < pingThrottle) {
         logger.atDebug().log(() -> "Dropping ping because pingThrottle."+(pingThrottle - (now - lastPingTime)));
@@ -148,7 +149,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
      *
      * @param proximity The proximity
      */
-    protected void markProximity(int proximity, Map<String, Object> options) {
+    protected void markProximity(int proximity, @Nullable Map<String, Object> options) {
       if (proximity < 0) throw new IllegalArgumentException("proximity must be >= 0, was:"+proximity);
       logger.trace("{}.markProximity({})", this, proximity);
       if (this.proximity > proximity) {
@@ -179,7 +180,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     }
   }
 
-  public void notifyProximityListeners(Identifier i, int prox, Map<String, Object> options) {
+  public void notifyProximityListeners(Identifier i, int prox, @Nullable Map<String, Object> options) {
     Collection<ProximityListener<Identifier>> temp;
     synchronized(listeners) {
       temp = new ArrayList<ProximityListener<Identifier>>(listeners);

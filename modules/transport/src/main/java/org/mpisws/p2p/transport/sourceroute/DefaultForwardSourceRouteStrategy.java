@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.sourceroute;
 
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Always accepts.
@@ -48,7 +49,7 @@ public class DefaultForwardSourceRouteStrategy<Identifier> implements
 
   @Override
   public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr,
-      boolean socket, Map<String, Object> options) {
+      boolean socket, @Nullable Map<String, Object> options) {
     return true;
   }
 

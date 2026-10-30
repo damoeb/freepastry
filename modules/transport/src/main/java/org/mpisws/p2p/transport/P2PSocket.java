@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A socket in the layered transport layer.
@@ -53,7 +54,7 @@ public interface P2PSocket<Identifier> {
    *
    * @return a read-only list of options on this socket
    */
-  Map<String, Object> getOptions();
+  @Nullable Map<String, Object> getOptions();
 
   /**
    * The identification of the node at the other end of the socket.

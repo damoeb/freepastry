@@ -37,24 +37,25 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.priority;
 
 import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 
 public class QueueOverflowException extends IOException {
-  Object identifier;
+  @Nullable Object identifier;
   Object message;
-  Throwable cause;
+  @Nullable Throwable cause;
 
-  public QueueOverflowException(Object identifier, Object message) {
+  public QueueOverflowException(@Nullable Object identifier, Object message) {
     super("Queue to "+identifier+" overflowed. Couldn't deliver message "+message);
     this.identifier = identifier;
     this.message = message;
   }
 
-  public QueueOverflowException(Object identifier, Object message, Throwable cause) {
+  public QueueOverflowException(@Nullable Object identifier, Object message, Throwable cause) {
     this(identifier, message);
     this.cause = cause;
   }
 
-  public Object getIdentifier() {
+  public @Nullable Object getIdentifier() {
     return identifier;
   }
 
@@ -63,7 +64,7 @@ public class QueueOverflowException extends IOException {
   }
 
   @Override
-  public synchronized Throwable getCause() {
+  public synchronized @Nullable Throwable getCause() {
     return cause;
   }
 }

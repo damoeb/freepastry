@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
@@ -55,6 +56,6 @@ public interface ContactDeserializer<Identifier, HighIdentifier> {
   /**
    * Return the options that all the layers would make on this identifier.
    */
-  Map<String, Object> getOptions(HighIdentifier high);
+  @Nullable Map<String, Object> getOptions(HighIdentifier high);
 
 }

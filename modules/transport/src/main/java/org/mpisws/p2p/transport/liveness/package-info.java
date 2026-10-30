@@ -41,4 +41,7 @@ advised of the possibility of such damage.
  * {@link org.mpisws.p2p.transport.liveness.LivenessProvider} interface; {@code checkLiveness()}
  * triggers a check. Higher layers (routing, leaf set, PAST) react to these events.
  */
+@NullMarked
 package org.mpisws.p2p.transport.liveness;
+
+import org.jspecify.annotations.NullMarked;

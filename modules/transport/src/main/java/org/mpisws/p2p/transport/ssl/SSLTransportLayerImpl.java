@@ -45,6 +45,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -69,6 +70,7 @@ import rice.environment.Environment;
  */
 public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransportLayer<Identifier, MessageType> {
   private final TransportLayer<Identifier, MessageType> tl;
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
   private ErrorHandler<Identifier> errorHandler;
   private final Logger logger;
@@ -120,7 +122,7 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
 
   @Override
   public SocketRequestHandle<Identifier> openSocket(Identifier i,
-      final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
+      final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
 
@@ -199,9 +201,9 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
   }
 
   @Override
-  public MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i,
-      MessageType m, MessageCallback<Identifier, MessageType> deliverAckToMe,
-      Map<String, Object> options) {
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i,
+      MessageType m, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
@@ -212,7 +214,7 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
 
   @Override
   public void messageReceived(Identifier i, MessageType m,
-      Map<String, Object> options) throws IOException {
+      @Nullable Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);
   }
 

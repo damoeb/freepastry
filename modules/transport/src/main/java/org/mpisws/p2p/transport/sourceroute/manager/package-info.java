@@ -41,4 +41,7 @@ advised of the possibility of such damage.
  * routes through other nodes when it is not. It also provides liveness and proximity for the
  * identifiers.
  */
+@NullMarked
 package org.mpisws.p2p.transport.sourceroute.manager;
+
+import org.jspecify.annotations.NullMarked;
