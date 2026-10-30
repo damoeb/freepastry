@@ -110,6 +110,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final AggregateStorer storer;
   private final AggregateFlusher flusher;
   private final AggregateTree tree;
+  private final AggregateExpiration aggregateExpiration;
 
   private Environment environment;
   private final Logger logger;
@@ -179,6 +180,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     this.factory = factory;
+    this.aggregateExpiration = new AggregateExpiration(aggregateStore, aggregateList, config, environment.getTimeSource(), logger);
     this.tree = new AggregateTree(aggregateStore, objectStore, aggregateList, storer, this.aggregateFactory, config, environment.getTimeSource(), logger);
     this.flusher = new AggregateFlusher(waitingList, aggregateList, this.aggregateFactory, storer, config, logger);
     this.monitorIDs = new Vector<Id>();
@@ -189,7 +191,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       logger.atInfo().log(() -> "Aggregate list read OK -- current root: " + ((aggregateList.getRoot() == null) ? "null" : aggregateList.getRoot().toStringFull()));
     }
 
-    removeDeadAggregates();
+    aggregateExpiration.removeDeadAggregates();
 
     addTimer(jitterTerm(config.getFlushDelayAfterJoin()), tiFlush);
     addTimer(jitterTerm(config.getAggrRefreshDelayAfterJoin()), tiExpire);
@@ -717,125 +719,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     return null;
   }
 
-  private void removeDeadAggregates() {
-    List<AggregateDescriptor> toRemove = new ArrayList<AggregateDescriptor>();
-    Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
-    long now = environment.getTimeSource().currentTimeMillis();
-
-    /* Note: Multiple keys are mapped to a single aggregate descriptor, so the same ADC
-       may be returned multiple times - but we must delete it only once! */
-
-    while (enumeration.hasMoreElements()) {
-      AggregateDescriptor adc = (AggregateDescriptor) enumeration.nextElement();
-      if (adc.getCurrentLifetime() < (now - config.getAggregateGracePeriod())) {
-        if (!toRemove.contains(adc))
-          toRemove.add(adc);
-        logger.atWarn().log(() -> "Scheduling dead aggregate for removal: "+adc.getKey().toStringFull()+"(expired "+adc.getCurrentLifetime()+")");
-      }
-    }
-
-    if (toRemove.size() > 0) {
-      logger.info("Removing {} dead aggregates...", toRemove.size());
-
-      for (AggregateDescriptor adc : toRemove)
-        aggregateList.removeAggregateDescriptor(adc);
-    }
-  }
-
-  private void refreshAggregates() {
-    Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
-    long now = environment.getTimeSource().currentTimeMillis();
-    List<AggregateDescriptor> removeList = new ArrayList<AggregateDescriptor>();
-    // read (not modified) by the refresh continuation below
-    final List<AggregateDescriptor> refreshAggregateList = new ArrayList<AggregateDescriptor>();
-    final List<Long> refreshLifetimeList = new ArrayList<Long>();
-
-    logger.info("Checking aggregate lifetimes");
-
-    aggregateList.resetMarkers();
-    while (enumeration.hasMoreElements()) {
-      AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
-      if (!aggr.isMarker()) {
-        aggr.setMarker(true);
-
-        boolean isBeingRefreshed = false;
-        if (aggr.getCurrentLifetime() < (now + config.getExpirationRenewThreshold())) {
-          long newLifetime = AggregateStorer.chooseAggregateLifetime(aggr.getObjects());
-          if (newLifetime > aggr.getCurrentLifetime()) {
-            logger.atInfo().log(() -> "Refreshing aggregate "+aggr.getKey().toStringFull()+", new expiration is "+newLifetime);
-            isBeingRefreshed = true;
-
-            refreshAggregateList.add(aggr);
-            refreshLifetimeList.add(Long.valueOf(newLifetime));
-          }
-        }
-
-        if ((aggr.getCurrentLifetime() < now) && !isBeingRefreshed) {
-          logger.debug("Adding expired aggregate {} to remove list", aggr.getKey());
-          removeList.add(aggr);
-        }
-      }
-    }
-
-    boolean deletedOne = false;
-    while (!removeList.isEmpty()) {
-      AggregateDescriptor aggr = removeList.remove(0);
-      logger.atInfo().log(() -> "Removing expired aggregate "+aggr.getKey().toStringFull()+" from list");
-      deletedOne = true;
-      aggregateList.removeAggregateDescriptor(aggr);
-    }
-
-    if (deletedOne)
-      aggregateList.writeToDisk();
-
-    if (!refreshAggregateList.isEmpty()) {
-      logger.info("Refreshing {} aggregate(s)", refreshAggregateList.size());
-      if (aggregateStore instanceof GCPast) {
-        Id[] ids = new Id[refreshAggregateList.size()];
-        long[] lifetimes = new long[refreshAggregateList.size()];
-        for (int i=0; i<refreshAggregateList.size(); i++) {
-          ids[i] = refreshAggregateList.get(i).getKey();
-          lifetimes[i] = refreshLifetimeList.get(i).longValue();
-        }
-
-        ((GCPast)aggregateStore).refresh(ids, lifetimes, new Continuation<Object[], Exception>() {
-          public void receiveResult(Object[] o) {
-            Object[] results = (Object[]) o;
-            logger.debug("Received refresh results for {} aggregates", results.length);
-            int numOk = 0;
-
-            for (int i=0; i<results.length; i++) {
-              if (results[i] instanceof Boolean) {
-                AggregateDescriptor aggr = refreshAggregateList.get(i);
-                long newLifetime = refreshLifetimeList.get(i).longValue();
-                if (logger.isDebugEnabled()) logger.debug("Aggregate #"+i+" ("+aggr.getKey().toStringFull()+"): OK, new lifetime is "+newLifetime);
-                aggregateList.refreshAggregate(aggr, newLifetime);
-                numOk ++;
-              } else {
-                AggregateDescriptor aggr = refreshAggregateList.get(i);
-                Exception e = (Exception) results[i];
-                if (logger.isWarnEnabled()) logger.warn("Aggregate #"+i+" ("+aggr.getKey().toStringFull()+"): Refresh failed, e=", e);
-              }
-            }
-
-            aggregateList.writeToDisk();
-            logger.info("Refresh complete, {}/{} aggregates refreshed OK", numOk, results.length);
-          }
-          public void receiveException(Exception e) {
-            logger.warn("Interface contract broken; exception {} returned directly", e, e);
-          }
-        });
-      } else {
-        logger.debug("Aggregate store does not support GC; refreshing directly");
-        for (int i=0; i<refreshAggregateList.size(); i++) {
-          AggregateDescriptor aggr = refreshAggregateList.get(i);
-          long newLifetime = refreshLifetimeList.get(i).longValue();
-          aggregateList.refreshAggregate(aggr, newLifetime);
-        }
-      }
-    }
-  }
-
   private void consolidateAggregates() {
     final long now = environment.getTimeSource().currentTimeMillis();
     Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
@@ -1006,7 +889,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       }
       case tiExpire :
       {
-        refreshAggregates();
+        aggregateExpiration.refreshAggregates();
         tree.reconnectTree();
         addTimer(jitterTerm(config.getAggrRefreshInterval()), tiExpire);
         break;
