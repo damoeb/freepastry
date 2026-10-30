@@ -352,7 +352,7 @@ public class RingCertificate implements Serializable {
    * @param ring The ring name
    */
   private static void writeKeyPair(KeyPair pair, String pass, String ring) throws IOException {
-    byte[] cipher = SecurityUtils.encryptSymmetric(SecurityUtils.serialize(pair), SecurityUtils.hash(pass.getBytes()));
+    byte[] cipher = SecurityUtils.encryptWithPassword(SecurityUtils.serialize(pair), pass.toCharArray());
     ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(ring.toLowerCase() + ".ringkeypair.enc"))));
     oos.writeObject(cipher);
     oos.close();
@@ -369,7 +369,7 @@ public class RingCertificate implements Serializable {
     byte[] cipher = (byte[]) ois.readObject();
     ois.close();
 
-    return (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptSymmetric(cipher, SecurityUtils.hash(pass.getBytes())));
+    return (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptWithPassword(cipher, pass.toCharArray()));
   }
 
   /**
@@ -394,7 +394,7 @@ public class RingCertificate implements Serializable {
     // first, load the CA keypair
     File f = new File("ca.keypair.enc");
     ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(f))));
-    KeyPair caPair = (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptSymmetric((byte[]) ois.readObject(), SecurityUtils.hash(prompt(r, w, "Please enter the CA password: ").trim().getBytes())));
+    KeyPair caPair = (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptWithPassword((byte[]) ois.readObject(), prompt(r, w, "Please enter the CA password: ").trim().toCharArray()));
     ois.close();
 
     // get the ring info

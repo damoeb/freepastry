@@ -53,7 +53,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SecurityUtilsTest {
 
   static final int IV_BYTES = SecurityUtils.SYMMETRIC_IV_LENGTH / 8;
+  static final int TAG_BYTES = SecurityUtils.SYMMETRIC_TAG_LENGTH / 8;
   static final byte[] PLAIN = "the quick brown fox jumps over the lazy dog".getBytes(StandardCharsets.UTF_8);
+
+  // ----- symmetric: AES-256-GCM -----
 
   @Test
   public void symmetricRoundTrip() {
@@ -70,6 +73,19 @@ public class SecurityUtilsTest {
   }
 
   @Test
+  public void generatesAes256Keys() {
+    assertEquals(32, SecurityUtils.generateKeySymmetric().length);
+  }
+
+  @Test
+  public void ciphertextIsTheIVThenTheCiphertextThenTheTag() {
+    byte[] key = SecurityUtils.generateKeySymmetric();
+    assertEquals(12, IV_BYTES);
+    assertEquals(16, TAG_BYTES);
+    assertEquals(IV_BYTES + PLAIN.length + TAG_BYTES, SecurityUtils.encryptSymmetric(PLAIN, key).length);
+  }
+
+  @Test
   public void ciphertextStartsWithAFreshRandomIV() {
     byte[] key = SecurityUtils.generateKeySymmetric();
     byte[] first = SecurityUtils.encryptSymmetric(PLAIN, key);
@@ -77,32 +93,87 @@ public class SecurityUtilsTest {
     byte[] firstIV = Arrays.copyOf(first, IV_BYTES);
     assertFalse(Arrays.equals(new byte[IV_BYTES], firstIV), "the IV must not be all zeros");
     assertFalse(Arrays.equals(firstIV, Arrays.copyOf(second, IV_BYTES)), "each encryption must use a new IV");
-  }
-
-  @Test
-  public void equalPlaintextsEncryptToDifferentCiphertexts() {
-    byte[] key = SecurityUtils.generateKeySymmetric();
-    byte[] first = SecurityUtils.encryptSymmetric(PLAIN, key);
-    byte[] second = SecurityUtils.encryptSymmetric(PLAIN, key);
     assertFalse(Arrays.equals(Arrays.copyOfRange(first, IV_BYTES, first.length),
         Arrays.copyOfRange(second, IV_BYTES, second.length)), "the cipher must use the IV");
   }
 
   @Test
-  public void equalBlocksEncryptToDifferentCiphertext() {
+  public void decryptingATamperedCiphertextThrows() {
     byte[] key = SecurityUtils.generateKeySymmetric();
-    byte[] twoEqualBlocks = new byte[2 * IV_BYTES];
-    byte[] cipher = SecurityUtils.encryptSymmetric(twoEqualBlocks, key, new byte[IV_BYTES]);
-    assertFalse(Arrays.equals(Arrays.copyOfRange(cipher, 0, IV_BYTES), Arrays.copyOfRange(cipher, IV_BYTES, 2 * IV_BYTES)),
-        "equal plaintext blocks must not give equal ciphertext blocks");
+    byte[] cipher = SecurityUtils.encryptSymmetric(PLAIN, key);
+    // flip one bit each in the IV, the ciphertext body and the tag
+    for (int position : new int[] {0, IV_BYTES + 3, cipher.length - 1}) {
+      byte[] tampered = cipher.clone();
+      tampered[position] ^= 0x01;
+      assertThrows(SecurityException.class, () -> SecurityUtils.decryptSymmetric(tampered, key), "bit flipped at " + position);
+    }
+    byte[] truncated = Arrays.copyOf(cipher, cipher.length - 1);
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptSymmetric(truncated, key));
   }
 
   @Test
-  public void generatesIVsOfTheCipherBlockSize() {
+  public void decryptingWithTheWrongKeyThrows() {
+    byte[] key = SecurityUtils.generateKeySymmetric();
+    byte[] wrongKey = key.clone();
+    wrongKey[0] ^= 0x01;
+    byte[] cipher = SecurityUtils.encryptSymmetric(PLAIN, key);
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptSymmetric(cipher, wrongKey));
+  }
+
+  @Test
+  public void associatedDataIsAuthenticated() {
+    byte[] key = SecurityUtils.generateKeySymmetric();
+    byte[] aad = {1, 2, 3};
+    byte[] cipher = SecurityUtils.encryptSymmetric(PLAIN, key, 0, PLAIN.length, aad);
+    assertArrayEquals(PLAIN, SecurityUtils.decryptSymmetric(cipher, key, aad));
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptSymmetric(cipher, key, new byte[] {1, 2, 4}));
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptSymmetric(cipher, key));
+  }
+
+  @Test
+  public void rejectsKeysThatAreNot256Bits() {
+    byte[] desSizedKey = new byte[8];
+    byte[] aes128Key = new byte[16];
+    assertThrows(SecurityException.class, () -> SecurityUtils.encryptSymmetric(PLAIN, desSizedKey));
+    assertThrows(SecurityException.class, () -> SecurityUtils.encryptSymmetric(PLAIN, aes128Key));
+  }
+
+  @Test
+  public void rejectsCiphertextShorterThanTheIVAndTag() {
+    byte[] key = SecurityUtils.generateKeySymmetric();
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptSymmetric(new byte[IV_BYTES + TAG_BYTES - 1], key));
+  }
+
+  @Test
+  public void generatesIVsOfTheGcmNonceSize() {
     byte[] iv = SecurityUtils.generateIVSymmetric();
     assertEquals(IV_BYTES, iv.length);
     assertFalse(Arrays.equals(iv, SecurityUtils.generateIVSymmetric()));
   }
+
+  // ----- password-based: PBKDF2-HMAC-SHA256 + AES-256-GCM -----
+
+  @Test
+  public void passwordEncryptionRoundTripsAndRejectsTheWrongPassword() {
+    byte[] cipher = SecurityUtils.encryptWithPassword(PLAIN, "correct horse".toCharArray());
+    assertEquals(SecurityUtils.PASSWORD_SALT_LENGTH + IV_BYTES + PLAIN.length + TAG_BYTES, cipher.length);
+    assertArrayEquals(PLAIN, SecurityUtils.decryptWithPassword(cipher, "correct horse".toCharArray()));
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptWithPassword(cipher, "battery staple".toCharArray()));
+  }
+
+  @Test
+  public void passwordKeyDerivationIsSaltedAndDeterministic() {
+    char[] password = "pw".toCharArray();
+    byte[] salt = new byte[SecurityUtils.PASSWORD_SALT_LENGTH];
+    byte[] otherSalt = salt.clone();
+    otherSalt[0] = 1;
+    byte[] key = SecurityUtils.deriveKeyFromPassword(password, salt);
+    assertEquals(32, key.length);
+    assertArrayEquals(key, SecurityUtils.deriveKeyFromPassword(password, salt));
+    assertFalse(Arrays.equals(key, SecurityUtils.deriveKeyFromPassword(password, otherSalt)));
+  }
+
+  // ----- asymmetric -----
 
   static BigInteger modulus(KeyPair pair) {
     return ((RSAPublicKey) pair.getPublic()).getModulus();
@@ -131,11 +202,5 @@ public class SecurityUtilsTest {
     byte[] cipher = unsigned(wrongModulus, SecurityUtils.encryptAsymmetric(new byte[0], right.getPublic()).length);
     assertTrue(new BigInteger(1, cipher).compareTo(modulus(right)) < 0);
     assertThrows(SecurityException.class, () -> SecurityUtils.decryptAsymmetric(cipher, wrong.getPrivate()));
-  }
-
-  @Test
-  public void rejectsCiphertextShorterThanTheIV() {
-    byte[] key = SecurityUtils.generateKeySymmetric();
-    assertThrows(SecurityException.class, () -> SecurityUtils.decryptSymmetric(new byte[IV_BYTES - 1], key));
   }
 }

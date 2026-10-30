@@ -44,7 +44,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -66,12 +66,15 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import javax.crypto.AEADBadTagException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.crypto.DataLengthException;
@@ -96,13 +99,13 @@ public class SecurityUtils {
   /**
    * The name of the symmetric cipher to use.
    */
-  public final static String SYMMETRIC_ALGORITHM = "DES";
+  public final static String SYMMETRIC_ALGORITHM = "AES";
 
   /**
-   * The mode and padding of the symmetric cipher.  CBC, because plain "DES" means ECB, which ignores the IV
-   * and encrypts equal blocks to equal ciphertext.
+   * The mode and padding of the symmetric cipher.  GCM is authenticated: decryption fails on any change to the
+   * initialization vector, the ciphertext or the tag, and on the wrong key.
    */
-  public final static String SYMMETRIC_TRANSFORMATION = SYMMETRIC_ALGORITHM + "/CBC/PKCS5Padding";
+  public final static String SYMMETRIC_TRANSFORMATION = SYMMETRIC_ALGORITHM + "/GCM/NoPadding";
 
   /**
    * The name of the asymmetric generator to use.
@@ -110,9 +113,9 @@ public class SecurityUtils {
   public final static String ASYMMETRIC_GENERATOR = "RSA";
 
   /**
-   * The name of the symmetric cipher to use.
+   * The name of the symmetric key generator to use.
    */
-  public final static String SYMMETRIC_GENERATOR = "DES";
+  public final static String SYMMETRIC_GENERATOR = "AES";
 
   /**
    * The name of the signature algorithm to use.
@@ -120,14 +123,34 @@ public class SecurityUtils {
   public final static String SIGNATURE_ALGORITHM = "SHA1withRSA";
 
   /**
-   * The length of the symmetric keys
+   * The length of the symmetric keys, in bits.  Only keys of exactly this length are accepted.
    */
-  public final static int SYMMETRIC_KEY_LENGTH = 56;
+  public final static int SYMMETRIC_KEY_LENGTH = 256;
 
   /**
-   * The length of the symmetric initialization vectors, in bits
+   * The length of the symmetric initialization vectors, in bits (the 96-bit nonce recommended for GCM)
    */
-  public final static int SYMMETRIC_IV_LENGTH = 64;
+  public final static int SYMMETRIC_IV_LENGTH = 96;
+
+  /**
+   * The length of the GCM authentication tag appended to each ciphertext, in bits
+   */
+  public final static int SYMMETRIC_TAG_LENGTH = 128;
+
+  /**
+   * The key derivation function turning a password into a symmetric key
+   */
+  public final static String PASSWORD_KDF_ALGORITHM = "PBKDF2WithHmacSHA256";
+
+  /**
+   * The number of PBKDF2 iterations (the OWASP recommendation for PBKDF2-HMAC-SHA256)
+   */
+  public final static int PASSWORD_KDF_ITERATIONS = 600_000;
+
+  /**
+   * The length of the random salt prepended to password-encrypted data, in bytes
+   */
+  public final static int PASSWORD_SALT_LENGTH = 16;
 
   /**
    * The name of the hash function.
@@ -200,18 +223,13 @@ public class SecurityUtils {
   private static final MessageDigest hmac2;
 
   /**
-   * The cipher used to encrypt/decrypt data using DES
-   */
-  private static final Cipher cipherSymmetric;
-
-  /**
    * The cipher used to encrypt/decrypt data using RSA
    */
   private static final Cipher cipherAsymmetric;
   private static final Cipher deprecatedCipherAsymmetric;
 
   /**
-   * The generator used to generate DES keys
+   * The generator used to generate AES keys
    */
   private static final KeyGenerator generatorSymmetric;
 
@@ -231,7 +249,7 @@ public class SecurityUtils {
   private static final Signature signature;
 
   /**
-   * The RNG for generating DES IVs
+   * The RNG for generating IVs, salts and keys
    */
   private static final SecureRandom random = new SecureRandom();
 
@@ -242,7 +260,6 @@ public class SecurityUtils {
     Security.insertProviderAt(new org.bouncycastle.jce.provider.BouncyCastleProvider(), 2);
 
     try {
-      cipherSymmetric = Cipher.getInstance(SYMMETRIC_TRANSFORMATION);
       cipherAsymmetric = Cipher.getInstance(ASYMMETRIC_ALGORITHM, "BC");
       deprecatedCipherAsymmetric = Cipher.getInstance(DEPRECATED_ASYMMETRIC_ALGORITHM);
       generatorSymmetric = KeyGenerator.getInstance(SYMMETRIC_GENERATOR);
@@ -254,7 +271,7 @@ public class SecurityUtils {
       hmac1 = MessageDigest.getInstance(HMAC_ALGORITHM);
       hmac2 = MessageDigest.getInstance(HMAC_ALGORITHM);
 
-      generatorSymmetric.init(SYMMETRIC_KEY_LENGTH);
+      generatorSymmetric.init(SYMMETRIC_KEY_LENGTH, random);
     } catch (NoSuchAlgorithmException e) {
       throw new SecurityException("NoSuchAlgorithmException on construction: " + e);
     } catch (NoSuchPaddingException e) {
@@ -357,12 +374,12 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method for encrypting a block of data with symmetric encryption, under a fresh random
-   * initialization vector.  {@link #decryptSymmetric(byte[], byte[])} reverses it.
+   * Utility method for encrypting a block of data with AES-256-GCM, under a fresh random initialization vector.
+   * {@link #decryptSymmetric(byte[], byte[])} reverses it.
    *
    * @param data The data
-   * @param key The key
-   * @return The initialization vector, followed by the ciphertext
+   * @param key The 256-bit key
+   * @return The 12-byte initialization vector, followed by the ciphertext and the 16-byte tag
    * @exception SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptSymmetric(byte[] data, byte[] key) throws SecurityException {
@@ -370,122 +387,153 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method for encrypting a block of data with symmetric encryption.
+   * Utility method for encrypting a range of data with AES-256-GCM, under a fresh random initialization vector.
+   * {@link #decryptSymmetric(byte[], byte[])} reverses it.
    *
    * @param data The data
-   * @param key The key
-   * @param iv The initialization vector
-   * @return The ciphertext
-   * @exception SecurityException If the encryption does not happen properly
-   */
-  public static byte[] encryptSymmetric(byte[] data, byte[] key, byte[] iv) throws SecurityException {
-    return encryptSymmetric(data, key, 0, data.length, iv);
-  }
-
-  /**
-   * Utility method for encrypting a block of data with symmetric encryption, under a fresh random
-   * initialization vector.  {@link #decryptSymmetric(byte[], byte[])} reverses it.
-   *
-   * @param data The data
-   * @param key The key
+   * @param key The 256-bit key
    * @param offset The offset into the data
    * @param length The length of data to write
-   * @return The initialization vector, followed by the ciphertext
+   * @return The 12-byte initialization vector, followed by the ciphertext and the 16-byte tag
    * @exception SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length) throws SecurityException {
+    return encryptSymmetric(data, key, offset, length, null);
+  }
+
+  /**
+   * Utility method for encrypting a range of data with AES-256-GCM, under a fresh random initialization vector,
+   * authenticating additional data along with it.  {@link #decryptSymmetric(byte[], byte[], byte[])} with the
+   * same additional data reverses it.
+   *
+   * @param data The data
+   * @param key The 256-bit key
+   * @param offset The offset into the data
+   * @param length The length of data to write
+   * @param associatedData Data that is authenticated but neither encrypted nor included in the output, or null
+   * @return The 12-byte initialization vector, followed by the ciphertext and the 16-byte tag
+   * @exception SecurityException If the encryption does not happen properly
+   */
+  public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length, byte[] associatedData) throws SecurityException {
     byte[] iv = generateIVSymmetric();
-    byte[] cipher = encryptSymmetric(data, key, offset, length, iv);
-    byte[] result = new byte[iv.length + cipher.length];
-    System.arraycopy(iv, 0, result, 0, iv.length);
-    System.arraycopy(cipher, 0, result, iv.length, cipher.length);
+    try {
+      Cipher cipher = Cipher.getInstance(SYMMETRIC_TRANSFORMATION);
+      cipher.init(Cipher.ENCRYPT_MODE, symmetricKey(key), new GCMParameterSpec(SYMMETRIC_TAG_LENGTH, iv));
+      if (associatedData != null) {
+        cipher.updateAAD(associatedData);
+      }
+
+      byte[] result = new byte[iv.length + cipher.getOutputSize(length)];
+      System.arraycopy(iv, 0, result, 0, iv.length);
+      cipher.doFinal(data, offset, length, result, iv.length);
+      return result;
+    } catch (GeneralSecurityException e) {
+      throw new SecurityException("Could not encrypt " + length + " bytes: " + e, e);
+    }
+  }
+
+  /**
+   * Utility method for decrypting and authenticating some data encrypted with AES-256-GCM.
+   *
+   * @param data The initialization vector, followed by the ciphertext and the tag, as written by
+   *          {@link #encryptSymmetric(byte[], byte[])}
+   * @param key The 256-bit key
+   * @return The decrypted data
+   * @exception SecurityException If the data was not encrypted under this key, or was changed since
+   */
+  public static byte[] decryptSymmetric(byte[] data, byte[] key) throws SecurityException {
+    return decryptSymmetric(data, key, null);
+  }
+
+  /**
+   * Utility method for decrypting and authenticating some data encrypted with AES-256-GCM.
+   *
+   * @param data The initialization vector, followed by the ciphertext and the tag, as written by
+   *          {@link #encryptSymmetric(byte[], byte[], int, int, byte[])}
+   * @param key The 256-bit key
+   * @param associatedData The additional data the encryption authenticated, or null
+   * @return The decrypted data
+   * @exception SecurityException If the data was not encrypted under this key and additional data, or was
+   *          changed since
+   */
+  public static byte[] decryptSymmetric(byte[] data, byte[] key, byte[] associatedData) throws SecurityException {
+    int ivLength = SYMMETRIC_IV_LENGTH / 8;
+    if (data.length < ivLength + SYMMETRIC_TAG_LENGTH / 8) {
+      throw new SecurityException("Ciphertext of " + data.length + " bytes is shorter than the initialization vector and tag");
+    }
+    try {
+      Cipher cipher = Cipher.getInstance(SYMMETRIC_TRANSFORMATION);
+      cipher.init(Cipher.DECRYPT_MODE, symmetricKey(key), new GCMParameterSpec(SYMMETRIC_TAG_LENGTH, data, 0, ivLength));
+      if (associatedData != null) {
+        cipher.updateAAD(associatedData);
+      }
+      return cipher.doFinal(data, ivLength, data.length - ivLength);
+    } catch (AEADBadTagException e) {
+      throw new SecurityException("Ciphertext failed authentication (wrong key, or tampered with): " + e, e);
+    } catch (GeneralSecurityException e) {
+      throw new SecurityException("Could not decrypt " + data.length + " bytes: " + e, e);
+    }
+  }
+
+  /**
+   * Encrypts data under a password: a fresh random salt, followed by the output of
+   * {@link #encryptSymmetric(byte[], byte[])} under the key PBKDF2-HMAC-SHA256 derives from the password and salt.
+   *
+   * @param data The data
+   * @param password The password
+   * @return The 16-byte salt, followed by the IV, the ciphertext and the tag
+   * @exception SecurityException If the encryption does not happen properly
+   */
+  public static byte[] encryptWithPassword(byte[] data, char[] password) throws SecurityException {
+    byte[] salt = new byte[PASSWORD_SALT_LENGTH];
+    random.nextBytes(salt);
+
+    byte[] cipher = encryptSymmetric(data, deriveKeyFromPassword(password, salt));
+    byte[] result = new byte[salt.length + cipher.length];
+    System.arraycopy(salt, 0, result, 0, salt.length);
+    System.arraycopy(cipher, 0, result, salt.length, cipher.length);
     return result;
   }
 
   /**
-   * Utility method for encrypting a block of data with symmetric encryption.
+   * Decrypts data written by {@link #encryptWithPassword(byte[], char[])}.
    *
-   * @param data The data
-   * @param key The key
-   * @param offset The offset into the data
-   * @param length The length of data to write
-   * @param iv The initialization vector
-   * @return The ciphertext
-   * @exception SecurityException If the encryption does not happen properly
+   * @param data The salt, followed by the IV, the ciphertext and the tag
+   * @param password The password
+   * @return The decrypted data
+   * @exception SecurityException If the password is wrong, or the data was changed
    */
-  public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length, byte[] iv) throws SecurityException {
-    try {
-      iv = correctLength(iv, SYMMETRIC_IV_LENGTH/8);
-      IvParameterSpec ivSpec = new IvParameterSpec(iv);
-      SecretKeySpec secretKey = new SecretKeySpec(key, SYMMETRIC_ALGORITHM);
-
-      synchronized (cipherSymmetric) {
-        cipherSymmetric.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
-
-        return cipherSymmetric.doFinal(data, offset, length);
-      }
-    } catch (InvalidKeyException e) {
-      throw new SecurityException("InvalidKeyException (" + iv.length + "," + key.length + ") encrypting object: " + e);
-    } catch (IllegalBlockSizeException e) {
-      throw new SecurityException("IllegalBlockSizeException encrypting object: " + e);
-    } catch (BadPaddingException e) {
-      throw new SecurityException("BadPaddingException encrypting object: " + e);
-    } catch (InvalidAlgorithmParameterException e) {
-      throw new SecurityException("InvalidAlgorithmParameterException encrypting object: " + e);
+  public static byte[] decryptWithPassword(byte[] data, char[] password) throws SecurityException {
+    if (data.length < PASSWORD_SALT_LENGTH) {
+      throw new SecurityException("Ciphertext of " + data.length + " bytes is shorter than the salt");
     }
+    byte[] salt = Arrays.copyOf(data, PASSWORD_SALT_LENGTH);
+    return decryptSymmetric(Arrays.copyOfRange(data, PASSWORD_SALT_LENGTH, data.length), deriveKeyFromPassword(password, salt));
   }
 
   /**
-   * Utility method for decrypting some data with symmetric encryption.
+   * Derives a symmetric key from a password with PBKDF2-HMAC-SHA256.
    *
-   * @param data The initialization vector, followed by the ciphertext, as written by
-   *          {@link #encryptSymmetric(byte[], byte[])}
-   * @param key The key
-   * @return The decrypted data
-   * @exception SecurityException If the decryption does not happen properly
+   * @param password The password
+   * @param salt The salt
+   * @return A key of {@link #SYMMETRIC_KEY_LENGTH} bits
    */
-  public static byte[] decryptSymmetric(byte[] data, byte[] key) throws SecurityException {
-    int ivLength = SYMMETRIC_IV_LENGTH/8;
-    if (data.length < ivLength) {
-      throw new SecurityException("Ciphertext of " + data.length + " bytes is shorter than the initialization vector");
-    }
-    byte[] iv = Arrays.copyOfRange(data, 0, ivLength);
-    return decryptSymmetric(data, ivLength, data.length - ivLength, key, iv);
-  }
-
- /**
-   * Utility method for decrypting some data with symmetric encryption.
-   *
-   * @param data The data to decrypt
-   * @param key The key
-   * @param iv The initialization vector
-   * @return The decrypted data
-   * @exception SecurityException If the decryption does not happen properly
-   */
-  public static byte[] decryptSymmetric(byte[] data, byte[] key, byte[] iv) throws SecurityException {
-    return decryptSymmetric(data, 0, data.length, key, iv);
-  }
-
-  private static byte[] decryptSymmetric(byte[] data, int offset, int length, byte[] key, byte[] iv) throws SecurityException {
+  static byte[] deriveKeyFromPassword(char[] password, byte[] salt) throws SecurityException {
+    PBEKeySpec spec = new PBEKeySpec(password, salt, PASSWORD_KDF_ITERATIONS, SYMMETRIC_KEY_LENGTH);
     try {
-      iv = correctLength(iv, SYMMETRIC_IV_LENGTH/8);
-      IvParameterSpec ivSpec = new IvParameterSpec(iv);
-      SecretKeySpec secretKey = new SecretKeySpec(key, SYMMETRIC_ALGORITHM);
-
-      synchronized (cipherSymmetric) {
-        cipherSymmetric.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
-
-        return cipherSymmetric.doFinal(data, offset, length);
-      }
-    } catch (InvalidKeyException e) {
-      throw new SecurityException("InvalidKeyException decrypting object: " + e);
-    } catch (IllegalBlockSizeException e) {
-      throw new SecurityException("IllegalBlockSizeException decrypting object: " + e);
-    } catch (BadPaddingException e) {
-      throw new SecurityException("BadPaddingException decrypting object: " + e);
-    } catch (InvalidAlgorithmParameterException e) {
-      throw new SecurityException("InvalidAlgorithmParameterException decrypting object: " + e);
+      return SecretKeyFactory.getInstance(PASSWORD_KDF_ALGORITHM).generateSecret(spec).getEncoded();
+    } catch (GeneralSecurityException e) {
+      throw new SecurityException("Could not derive a key from the password: " + e, e);
+    } finally {
+      spec.clearPassword();
     }
+  }
+
+  private static SecretKeySpec symmetricKey(byte[] key) throws SecurityException {
+    if (key.length != SYMMETRIC_KEY_LENGTH / 8) {
+      throw new SecurityException("Symmetric key of " + key.length + " bytes, expected " + SYMMETRIC_KEY_LENGTH / 8);
+    }
+    return new SecretKeySpec(key, SYMMETRIC_ALGORITHM);
   }
 
   /**
@@ -599,10 +647,9 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method which will generate a non-weak DES key for applications to
-   * use.
+   * Utility method which will generate a random AES key for applications to use.
    *
-   * @return A new, random DES key
+   * @return A new, random key of {@link #SYMMETRIC_KEY_LENGTH} bits
    */
   public static byte[] generateKeySymmetric() {
     synchronized (generatorSymmetric) {
@@ -707,12 +754,11 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method which will generate a random initialization vector for
-   * applications to use.
+   * Generates a random GCM initialization vector.  Never reuse one under the same key.
    *
-   * @return A new, random DES initialization vector
+   * @return A new, random initialization vector of {@link #SYMMETRIC_IV_LENGTH} bits
    */
-  public static byte[] generateIVSymmetric() {
+  static byte[] generateIVSymmetric() {
     byte[] result = new byte[SYMMETRIC_IV_LENGTH/8];
     random.nextBytes(result);
 
@@ -720,33 +766,13 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method which will generate a non-weak DES key for applications to
-   * use.
+   * Utility method which will generate an RSA key pair for applications to use.
    *
-   * @return A new, random DES key
+   * @return A new, random RSA key pair
    */
   public static KeyPair generateKeyAsymmetric() {
     synchronized (generatorAsymmetric) {
       return generatorAsymmetric.generateKeyPair();
     }
-  }
-
-  /**
-   * Utility method for ensuring the array is of the proper length.  THis
-   * method enforces the length by appending 0's or returning a subset of
-   * the input array.
-   *
-   * @param data The input array
-   * @param length The length the array should be
-   * @return A correct-length array
-   */
-  private static byte[] correctLength(byte[] data, int length) {
-    byte[] result = new byte[length];
-
-    for (int i=0; (i<data.length) && (i<result.length); i++) {
-      result[i] = data[i];
-    }
-
-    return result;
   }
 }

@@ -166,7 +166,7 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
 
     byte[] cipher = (byte[]) ois.readObject();
 
-    KeyPair caPair = (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptSymmetric(cipher, SecurityUtils.hash(pw.getBytes())));
+    KeyPair caPair = (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptWithPassword(cipher, pw.toCharArray()));
 
     Environment env = new Environment();
     generateCertificate(new RandomNodeIdFactory(env).generateNodeId(), new FileOutputStream(new File(NODE_ID_FILENAME)), caPair.getPrivate());
