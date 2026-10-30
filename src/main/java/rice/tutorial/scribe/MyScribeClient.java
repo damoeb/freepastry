@@ -91,7 +91,7 @@ public class MyScribeClient implements ScribeMultiClient, Application {
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
    * node the message is intended for.
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
    * The constructor for this scribe client.  It will construct the ScribeApplication.
@@ -223,4 +223,7 @@ public class MyScribeClient implements ScribeMultiClient, Application {
     return myScribe.getChildrenOfTopic(myTopic).toArray(new NodeHandle[0]);
   }
 
+  public Endpoint getEndpoint() {
+    return endpoint;
+  }
 }

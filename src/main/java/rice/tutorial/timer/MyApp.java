@@ -70,9 +70,9 @@ public class MyApp implements Application {
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
    * node the message is intended for.
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
-  protected Environment environment;
+  private final Environment environment;
 
   /**
    * NOTE: It is unsafe to send this message to

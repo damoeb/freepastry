@@ -60,12 +60,12 @@ public class MyApp implements Application {
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
    * node the message is intended for.
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
    * The node we were constructed on.
    */
-  protected Node node;
+  private final Node node;
 
   public MyApp(Node node) {
     // We are only going to use one instance of this application on each PastryNode

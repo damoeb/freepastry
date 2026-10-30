@@ -77,30 +77,30 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
   /**
    * The lower level transport layer.
    */
-  protected TransportLayer<Identifier, ByteBuffer> tl;
+  private final TransportLayer<Identifier, ByteBuffer> tl;
 
   /**
    * The environment
    */
-  protected Environment environment;
-  protected Logger logger;
+  private final Environment environment;
+  private final Logger logger;
 
 
   /**
    * The size of the bucket.
    */
-  protected int BUCKET_SIZE;
+  private final int BUCKET_SIZE;
   /**
    * How often the bucket is refilled.
    */
-  protected int BUCKET_TIME_LIMIT;
+  private final int BUCKET_TIME_LIMIT;
 
   /**
    * When this goes to zero, don't send messages
    */
-  protected int bucket;
+  private int bucket;
 
-  protected ErrorHandler<Identifier> errorHandler;
+  private ErrorHandler<Identifier> errorHandler;
 
   /**
    * To send 10K/second specify use

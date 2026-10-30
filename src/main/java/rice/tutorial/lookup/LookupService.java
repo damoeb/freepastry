@@ -307,9 +307,9 @@ public class LookupService implements Application {
    */
   public static class NodeLookupQuery implements Message {
     private static final long serialVersionUID = -4882776401593706141L;
-    protected NodeHandle source;
-    protected int numNodes;
-    protected int seqno;
+    private final NodeHandle source;
+    private final int numNodes;
+    private final int seqno;
 
     public NodeLookupQuery(NodeHandle localHandle, int num, int seqno) {
       this.numNodes = num;
@@ -329,8 +329,8 @@ public class LookupService implements Application {
    */
   public static class NodeLookupResponse implements Message {
     private static final long serialVersionUID = -3200682143184682743L;
-    protected NodeHandleSet nodes;
-    protected int seqno;
+    private final NodeHandleSet nodes;
+    private final int seqno;
 
     public NodeLookupResponse(NodeHandleSet nodes, int seqno) {
       this.nodes = nodes;

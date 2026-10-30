@@ -103,7 +103,7 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
   /**
    * Data source...
    */
-  protected RandomSource random;
+  private final RandomSource random;
 
   /**
    * This task kicks off publishing and anycasting.
@@ -116,7 +116,7 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
    * node the message is intended for.
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
    * The constructor for this scribe client.  It will construct the ScribeApplication.

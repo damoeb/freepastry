@@ -113,7 +113,7 @@ public class DistTutorial {
 
 
     MyApp foo = (MyApp)apps.get(0);
-    System.out.println(((PastryNode)foo.node).getRoutingTable().printSelf());
+    System.out.println(((PastryNode)foo.getNode()).getRoutingTable().printSelf());
 
     System.exit(0);
 

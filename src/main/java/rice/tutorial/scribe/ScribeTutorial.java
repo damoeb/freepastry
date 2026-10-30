@@ -139,9 +139,9 @@ public class ScribeTutorial {
     // build a hashtable of the apps, keyed by nodehandle
     Map<NodeHandle, MyScribeClient> appTable = new HashMap<NodeHandle, MyScribeClient>();
     for (MyScribeClient app : apps) {
-      appTable.put(app.endpoint.getLocalNodeHandle(), app);
+      appTable.put(app.getEndpoint().getLocalNodeHandle(), app);
     }
-    NodeHandle seed = ((MyScribeClient) apps.get(0)).endpoint
+    NodeHandle seed = ((MyScribeClient) apps.get(0)).getEndpoint()
         .getLocalNodeHandle();
 
     // get the root

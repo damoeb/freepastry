@@ -75,14 +75,14 @@ public class MyApp implements Application {
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
    * node the message is intended for.
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
    * The node we were constructed on.
    */
-  protected Node node;
+  private final Node node;
 
-  protected FileTransfer fileTransfer;
+  private FileTransfer fileTransfer;
 
   public MyApp(Node node, final IdFactory factory) {
     // register the endpoint
