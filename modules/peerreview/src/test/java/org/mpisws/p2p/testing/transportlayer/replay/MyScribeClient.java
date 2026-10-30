@@ -223,7 +223,7 @@ public class MyScribeClient implements ScribeMultiClient, Application {
 
   }
 
-  class PublishContent implements Message {
+  static class PublishContent implements Message {
     @Override
     public int getPriority() {
       return MAX_PRIORITY;

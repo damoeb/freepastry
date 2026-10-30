@@ -47,10 +47,10 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public class MyInetSocketAddress extends InetSocketAddress implements RawSerializable {
   public static final Serializer<MyInetSocketAddress> serializer = new Serializer<MyInetSocketAddress>(){
-    public static final byte IPV4 = 4;
-    public static final byte IPV6 = 6;
-    public static final int IPV4_BYTES = 4;
-    public static final int IPV6_BYTES = 16;
+    private static final byte IPV4 = 4;
+    private static final byte IPV6 = 6;
+    private static final int IPV4_BYTES = 4;
+    private static final int IPV6_BYTES = 16;
 
     @Override
     public MyInetSocketAddress deserialize(InputBuffer b) throws IOException {

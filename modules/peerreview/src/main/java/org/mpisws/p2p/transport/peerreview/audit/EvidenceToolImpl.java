@@ -206,7 +206,6 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
        from this node, so we can later check whether it has sent any other ones */
 
     HashSet<Long> seqBuf = new HashSet<Long>();
-    int numSeqs = 0;
     try {
       if ((commitmentProtocol != null) && (flags & FLAG_FULL_MESSAGES_SENDER) == FLAG_FULL_MESSAGES_SENDER) {
         assert(peerreview != null);

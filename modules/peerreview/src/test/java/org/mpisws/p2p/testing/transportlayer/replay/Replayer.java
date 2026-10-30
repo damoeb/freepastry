@@ -45,7 +45,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.direct.EventSimulator;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
@@ -86,8 +85,6 @@ public class Replayer implements MyEvents, EventCallback {
     params.setInt("pastry_socket_scm_max_open_sockets", params.getInt("org.mpisws.p2p.testing.transportlayer.replay_pastry_socket_scm_max_open_sockets"));
 
     logger = env.getLogManager().getLogger(Replayer.class, null);
-
-    final Logger simLogger = env.getLogManager().getLogger(EventSimulator.class, null);
 
     final List<ReplayLayer<InetSocketAddress>> replayers = new ArrayList<ReplayLayer<InetSocketAddress>>();
 

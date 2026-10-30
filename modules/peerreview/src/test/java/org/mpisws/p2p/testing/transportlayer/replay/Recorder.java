@@ -44,8 +44,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.TransportLayer;
@@ -234,14 +235,14 @@ public class Recorder implements MyEvents {
       try {
         Replayer.replayNode((rice.pastry.Id)snh.getId(), snh.getInetSocketAddress(), bootaddress, snh.getEpoch(), storedRandSeed.get(snh.getId()));
       } catch (InterruptedException ie) {
-
+        Thread.currentThread().interrupt();
       }
       System.out.println("finished playing "+app.node);
       playbackCtr++;
     }
   }
 
-  public abstract class AppInvokation implements Runnable {
+  public abstract static class AppInvokation implements Runnable {
     MyScribeClient app;
     public AppInvokation(MyScribeClient app) {
       this.app = app;
@@ -293,9 +294,9 @@ public class Recorder implements MyEvents {
    *
    * @param apps Vector of the applications.
    */
-  public static void printTree(ArrayList<MyScribeClient> apps) {
+  public static void printTree(List<MyScribeClient> apps) {
     // build a hashtable of the apps, keyed by nodehandle
-    Hashtable<NodeHandle,MyScribeClient> appTable = new Hashtable<NodeHandle,MyScribeClient>();
+    Map<NodeHandle,MyScribeClient> appTable = new LinkedHashMap<NodeHandle,MyScribeClient>();
     for (MyScribeClient app : apps) {
       appTable.put(app.endpoint.getLocalNodeHandle(), app);
     }
@@ -312,7 +313,7 @@ public class Recorder implements MyEvents {
   /**
    * Recursively crawl up the tree to find the root.
    */
-  public static NodeHandle getRoot(NodeHandle seed, Hashtable<NodeHandle,MyScribeClient> appTable) {
+  public static NodeHandle getRoot(NodeHandle seed, Map<NodeHandle,MyScribeClient> appTable) {
     MyScribeClient app = (MyScribeClient) appTable.get(seed);
     if (app.isRoot())
       return seed;
@@ -324,7 +325,7 @@ public class Recorder implements MyEvents {
    * Print's self, then children.
    */
   public static void recursivelyPrintChildren(NodeHandle curNode,
-      int recursionDepth, Hashtable<NodeHandle,MyScribeClient> appTable) {
+      int recursionDepth, Map<NodeHandle,MyScribeClient> appTable) {
     // print self at appropriate tab level
     String s = "";
     for (int numTabs = 0; numTabs < recursionDepth; numTabs++) {
@@ -377,8 +378,8 @@ public class Recorder implements MyEvents {
       int numNodes = Integer.parseInt(args[3]);
 
       // launch our node!
-      Recorder dt = new Recorder(bindport, bootaddress, numNodes,
-          env);
+      new Recorder(bindport, bootaddress, numNodes,
+          env); // the constructor runs the whole scenario
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

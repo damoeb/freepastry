@@ -79,14 +79,14 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
   private byte[] payload;
 
   public UserDataMessage(long topSeq, Handle senderHandle, byte[] topMinusOne,
-      byte[] sig, ByteBuffer message, int relevantlen) {
+      byte[] sig, ByteBuffer message, int relevantLen) {
     this.topSeq = topSeq;
     this.senderHandle = senderHandle;
     hTopMinusOne = topMinusOne;
     this.signature = sig;
-    this.relevantLen = relevantlen;
+    this.relevantLen = relevantLen;
 
-    assert((relevantlen == message.remaining()) || (relevantlen < MathUtils.uByteToInt(RELEVANT_LEN_ALL)));
+    assert((relevantLen == message.remaining()) || (relevantLen < MathUtils.uByteToInt(RELEVANT_LEN_ALL)));
     if (message.remaining() == message.array().length) {
       this.payload = message.array();
     } else {

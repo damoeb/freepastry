@@ -234,6 +234,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
       for (Path ent : bar) {
         if (Files.isDirectory(ent)) continue;
         String d_name = ent.getFileName().toString();
+        @SuppressWarnings("StringSplitter") // a name with a trailing dot reads as <id>.<suffix>, as before
         String[] foo = d_name.split("\\.");
         if (foo.length != 2) continue;
         String first = foo[0];

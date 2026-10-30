@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.peerreview.commitment;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,8 +92,6 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     authFile = new RandomAccessFileIOBuffer(file, "rw");
 
     // read in authenticators
-    int authenticatorsRead = 0;
-    int bytesRead = 0;
     long pos = 0;
     authFile.seek(pos);
     while (authFile.bytesRemaining() > 0) {
@@ -103,7 +100,6 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
         Identifier id = idSerializer.deserialize(authFile);
         Authenticator authenticator = authenticatorSerializer.deserialize(authFile);
         addAuthenticatorToMemory(id, authenticator);
-        authenticatorsRead++;
         pos = authFile.getFilePointer();
       } catch (IOException ioe) {
         break;
@@ -206,7 +202,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
       SortedSet<Authenticator> subList = list.subSet(new Authenticator(maxseq+1,null,null), new Authenticator(minseq,null,null));
       return new ArrayList<Authenticator>(subList);
     }
-    return Collections.emptyList();
+    return new ArrayList<Authenticator>();
   }
 
   @Override

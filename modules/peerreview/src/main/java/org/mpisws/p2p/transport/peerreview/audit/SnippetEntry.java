@@ -131,7 +131,7 @@ public class SnippetEntry {
     byte b = buf.readByte();
     if (b == (byte)0) return prevSeq+1;
     if (b == SEQ_CODE_ABSOLUTE) return buf.readLong();
-    long howMuchBigger = MathUtils.uByteToInt(b)*NUM_INDEXES;
+    long howMuchBigger = (long)MathUtils.uByteToInt(b)*NUM_INDEXES;
     long prevSeqMS = ((prevSeq/NUM_INDEXES)*NUM_INDEXES);
     return prevSeqMS+howMuchBigger;
   }

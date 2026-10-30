@@ -99,7 +99,6 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   Map<I, Signature> verifiers = new HashMap<I, Signature>();
 
   HashProvider hasher;
-  private Environment environment;
 
   /**
    * TODO: Use a param to load the store from a file.
@@ -135,7 +134,6 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     this.tl = tl;
     tl.setCallback(this);
     this.hasher = hasher;
-    this.environment = env;
     this.logger = env.getLogManager().getLogger(IdentityTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(this.logger);
 

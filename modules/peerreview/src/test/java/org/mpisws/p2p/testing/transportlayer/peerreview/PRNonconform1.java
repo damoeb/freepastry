@@ -39,6 +39,7 @@ package org.mpisws.p2p.testing.transportlayer.peerreview;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.PeerReview;
@@ -115,7 +116,7 @@ public class PRNonconform1 extends PRRegressionTest {
       @Override
       public void messageReceived(HandleImpl i, ByteBuffer m,
           Map<String, Object> options) throws IOException {
-        logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(m.array()));
+        logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(Arrays.copyOfRange(m.array(), m.arrayOffset()+m.position(), m.arrayOffset()+m.limit())));
       }
 
       @Override

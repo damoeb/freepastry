@@ -36,7 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.commitment;
 
-import java.util.LinkedList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.message.OutgoingUserDataMessage;
@@ -65,15 +66,15 @@ public class PeerInfo<Handle extends RawSerializable> {
   /**
    * The first message hasn't been acknowledged, the rest haven't been sent.
    */
-  LinkedList<OutgoingUserDataMessage<Handle>> xmitQueue;
-  LinkedList<Tuple<UserDataMessage<Handle>, Map<String, Object>>> recvQueue;
+  Deque<OutgoingUserDataMessage<Handle>> xmitQueue;
+  Deque<Tuple<UserDataMessage<Handle>, Map<String, Object>>> recvQueue;
   boolean isReceiving;
 
   public PeerInfo(Handle handle) {
     this.handle = handle;
     lastTransmit = 0;
-    xmitQueue = new LinkedList<OutgoingUserDataMessage<Handle>>();
-    recvQueue = new LinkedList<Tuple<UserDataMessage<Handle>,Map<String,Object>>>();
+    xmitQueue = new ArrayDeque<OutgoingUserDataMessage<Handle>>();
+    recvQueue = new ArrayDeque<Tuple<UserDataMessage<Handle>,Map<String,Object>>>();
     currentTimeout = 0;
     retransmitsSoFar = 0;
     lastChallenge = -1;

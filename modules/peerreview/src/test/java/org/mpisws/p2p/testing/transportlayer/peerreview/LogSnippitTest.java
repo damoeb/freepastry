@@ -63,6 +63,7 @@ public class LogSnippitTest {
 
     ArrayList<SnippetEntry> list = new ArrayList<SnippetEntry>(100);
 
+    @SuppressWarnings("MathAbsoluteNegative") // Long.MIN_VALUE is a 2^-64 chance; keeps the seeded sequence as it was
     long seq = Math.abs(r.nextLong());
     for (int i = 0; i < 400; i++) {
       boolean isHash = r.nextInt(10) == 1;

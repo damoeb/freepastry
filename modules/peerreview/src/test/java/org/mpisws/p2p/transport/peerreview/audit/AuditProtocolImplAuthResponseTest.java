@@ -89,7 +89,7 @@ public class AuditProtocolImplAuthResponseTest {
   AuditProtocolImpl<Id, Id> audit;
 
   /** A stub of the interface: getEnvironment(), getTime() and getIdentifierExtractor() work, the rest is a no-op. */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals", "ReferenceEquality"}) // the caller picks the generic interface type; a stub has no type arguments to check, and equals() is proxy identity
   <T> T stub(Class<?> type) {
     return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
       switch (method.getName()) {

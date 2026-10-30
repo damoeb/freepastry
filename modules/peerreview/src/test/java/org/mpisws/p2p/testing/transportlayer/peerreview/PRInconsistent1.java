@@ -121,7 +121,7 @@ public class PRInconsistent1 extends PRRegressionTest {
     }
   }
 
-  public class ForkingSecureHistory extends SecureHistoryImpl {
+  public static class ForkingSecureHistory extends SecureHistoryImpl {
 
     public ForkingSecureHistory(RandomAccessFileIOBuffer indexFile,
         RandomAccessFileIOBuffer dataFile, boolean readOnly,

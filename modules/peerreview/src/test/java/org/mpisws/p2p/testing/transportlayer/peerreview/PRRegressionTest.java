@@ -170,7 +170,7 @@ public class PRRegressionTest {
 
     @Override
     public boolean equals(Object o) {
-      HandleImpl that = (HandleImpl)o;
+      if (!(o instanceof HandleImpl that)) return false;
       if (!id.equals(that.id)) return false;
       return name.equals(that.name);
     }
@@ -202,7 +202,7 @@ public class PRRegressionTest {
 
     @Override
     public boolean equals(Object o) {
-      IdImpl that = (IdImpl)o;
+      if (!(o instanceof IdImpl that)) return false;
       return (this.id == that.id);
     }
   }
@@ -424,7 +424,7 @@ public class PRRegressionTest {
     @Override
     public void messageReceived(HandleImpl i, ByteBuffer m,
         Map<String, Object> options) throws IOException {
-      logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(m.array()));
+      logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(Arrays.copyOfRange(m.array(), m.arrayOffset()+m.position(), m.arrayOffset()+m.limit())));
     }
 
     @Override
@@ -609,6 +609,7 @@ public class PRRegressionTest {
   }
 
   private HashProvider hasher;
+  @SuppressWarnings("UnusedVariable") // assigned in setUp but not read by any scenario yet
   private SecureHistoryFactory historyFactory;
 
   Player alice;
@@ -718,6 +719,7 @@ public class PRRegressionTest {
   /**
    * Runs the scenario as a program: exits with 0 on success, 1 otherwise.
    */
+  @SuppressWarnings("CatchAndPrintStackTrace") // as a program, stderr is the output
   protected static void runMain(PRRegressionTest test) {
     int status = 1;
     try {

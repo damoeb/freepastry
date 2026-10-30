@@ -460,7 +460,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
 
     /* Append a SEND entry to our local log */
 
-    byte[] hTopMinusOne, hTop, hToSign;
+    byte[] hTopMinusOne, hToSign;
     hTopMinusOne = history.getTopLevelEntry().getHash();
     EvtSend<Identifier> evtSend;
     if (relevantlen < message.remaining()) {

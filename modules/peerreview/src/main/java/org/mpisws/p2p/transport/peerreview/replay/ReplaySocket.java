@@ -89,6 +89,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
   P2PSocketReceiver<Identifier> reader;
   P2PSocketReceiver<Identifier> writer;
   @Override
+  @SuppressWarnings("ReferenceEquality") // the same receiver instance is meant
   public void register(boolean wantToRead, boolean wantToWrite, P2PSocketReceiver<Identifier> receiver) {
     if (closed) {
       receiver.receiveException(this, new ClosedChannelException("Socket "+this+" already closed."));
@@ -117,12 +118,13 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // the same receiver instance is meant
   public void notifyIO(boolean canRead, boolean canWrite) throws IOException {
     if (!canRead && !canWrite) {
-      throw new IOException("I can't read or write. canRead:"+canRead+" canWrite:"+canWrite);
+      throw new IOException("I can't read or write. canRead:false canWrite:false");
     }
     if (canRead && canWrite) {
-      if (writer != reader) throw new IllegalStateException("reader != writer canRead:"+canRead+" canWrite:"+canWrite);
+      if (writer != reader) throw new IllegalStateException("reader != writer canRead:true canWrite:true");
       P2PSocketReceiver<Identifier> temp = writer;
       writer = null;
       reader = null;
@@ -131,7 +133,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
     }
 
     if (canRead) {
-      if (reader == null) throw new IllegalStateException("reader:"+reader+" canRead:"+canRead);
+      if (reader == null) throw new IllegalStateException("reader:"+reader+" canRead:true");
       P2PSocketReceiver<Identifier> temp = reader;
       reader = null;
       temp.receiveSelectResult(this, canRead, canWrite);
@@ -139,7 +141,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
     }
 
     if (canWrite) {
-      if (writer == null) throw new IllegalStateException("writer:"+writer+" canWrite:"+canWrite);
+      if (writer == null) throw new IllegalStateException("writer:"+writer+" canWrite:true");
       P2PSocketReceiver<Identifier> temp = writer;
       writer = null;
       temp.receiveSelectResult(this, canRead, canWrite);
@@ -171,6 +173,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
     verifier.shutdownOutput(socketId);
   }
 
+  @SuppressWarnings("ReferenceEquality") // the same receiver instance is meant
   public void receiveException(IOException ioe) {
     if (deliverSocketToMe != null) {
       deliverSocketToMe.receiveException(this, ioe);

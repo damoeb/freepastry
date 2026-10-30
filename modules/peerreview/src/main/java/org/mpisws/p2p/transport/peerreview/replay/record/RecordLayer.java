@@ -221,6 +221,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     if (options == null || !options.containsKey(PR_RELEVANT_MSG) || ((Integer)options.get(PR_RELEVANT_MSG)).intValue() != 0) {
       int position = m.position(); // mark the current position
 
+      @SuppressWarnings("UnusedVariable") // the SEND entry holds the whole message; PR_RELEVANT_LEN is not applied yet
       int relevantLen = m.remaining();
 
       // If someone sets relevantLen=-1, it means the whole message is relevant.

@@ -37,11 +37,12 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.statement;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.PeerReview;
@@ -58,7 +59,6 @@ import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.PeerInfoStore;
 import org.mpisws.p2p.transport.peerreview.message.AccusationMessage;
-import org.mpisws.p2p.transport.peerreview.message.AckMessage;
 import org.mpisws.p2p.transport.peerreview.message.ResponseMessage;
 import org.mpisws.p2p.transport.peerreview.message.Statement;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
@@ -82,8 +82,8 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
 
   private final Logger logger;
 
-  private final Map<Identifier, LinkedList<IncompleteStatementInfo<Handle, Identifier>>> incompleteStatement =
-    new HashMap<Identifier, LinkedList<IncompleteStatementInfo<Handle, Identifier>>>();
+  private final Map<Identifier, List<IncompleteStatementInfo<Handle, Identifier>>> incompleteStatement =
+    new HashMap<Identifier, List<IncompleteStatementInfo<Handle, Identifier>>>();
 
   private final ChallengeResponseProtocol<Handle, Identifier> challengeProtocol;
   private final IdentityTransport<Handle, Identifier> transport;
@@ -122,9 +122,9 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
    */
   public void cleanupIncompleteStatements() {
     long now = peerreview.getTime();
-    Iterator<LinkedList<IncompleteStatementInfo<Handle, Identifier>>> fooIter = incompleteStatement.values().iterator();
+    Iterator<List<IncompleteStatementInfo<Handle, Identifier>>> fooIter = incompleteStatement.values().iterator();
     while(fooIter.hasNext()) {
-      LinkedList<IncompleteStatementInfo<Handle, Identifier>> foo = fooIter.next();
+      List<IncompleteStatementInfo<Handle, Identifier>> foo = fooIter.next();
       Iterator<IncompleteStatementInfo<Handle, Identifier>> barIter = foo.iterator();
       while(barIter.hasNext()) {
         IncompleteStatementInfo<Handle, Identifier> bar = barIter.next();
@@ -153,9 +153,9 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
 
     /* Find an empty spot in our message buffer and store the message there */
     IncompleteStatementInfo<Handle, Identifier> idx = new IncompleteStatementInfo<Handle, Identifier>(false,source,peerreview.getTime() + STATEMENT_COMPLETION_TIMEOUT_MILLIS,statement,false,null,options);
-    LinkedList<IncompleteStatementInfo<Handle, Identifier>> foo = incompleteStatement.get(statement.getSubject());
+    List<IncompleteStatementInfo<Handle, Identifier>> foo = incompleteStatement.get(statement.getSubject());
     if (foo == null) {
-      foo = new LinkedList<IncompleteStatementInfo<Handle,Identifier>>();
+      foo = new ArrayList<IncompleteStatementInfo<Handle,Identifier>>();
       incompleteStatement.put(statement.getSubject(), foo);
     }
     foo.add(idx);
@@ -202,9 +202,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
     Statement<Identifier> statement = idx.getStatement();
     idx.clearMissingCertificate();
 
-    Identifier originator = statement.getOriginator();
     Identifier subject = statement.getSubject();
-    long timestamp = statement.getEvidenceSeq();
     Evidence payload = statement.getEvidence();
 
     /* Retrieve the subject's public key if we don't have it already */
@@ -417,8 +415,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
 
        case CHAL_SEND:
        {
-         AckMessage<Identifier> ackMessage = (AckMessage<Identifier>)payload;
-         // this will be handled in challengeProtocol.handleStatement()
+         // the AckMessage payload will be handled in challengeProtocol.handleStatement()
          break;
        }
 

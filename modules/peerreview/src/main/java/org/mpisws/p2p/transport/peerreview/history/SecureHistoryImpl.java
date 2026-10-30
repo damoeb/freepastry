@@ -381,7 +381,7 @@ public class SecureHistoryImpl implements SecureHistory {
     IndexEntry ie;
 
     pointerAtEnd = false;
-    indexFile.seek(idx*indexFactory.getSerializedSize());
+    indexFile.seek((long)idx*indexFactory.getSerializedSize());
     ie = indexFactory.build(indexFile);
 
     return ie;
@@ -429,7 +429,7 @@ public class SecureHistoryImpl implements SecureHistory {
 
     pointerAtEnd = false;
 
-    indexFile.seek(idx*indexFactory.getSerializedSize());
+    indexFile.seek((long)idx*indexFactory.getSerializedSize());
 
     IndexEntry ie = indexFactory.build(indexFile);
 
@@ -446,7 +446,7 @@ public class SecureHistoryImpl implements SecureHistory {
 
     dataFile.write(entry.array(), entry.arrayOffset()+entry.position(), entry.remaining());
 
-    indexFile.seek(idx*indexFactory.getSerializedSize());
+    indexFile.seek((long)idx*indexFactory.getSerializedSize());
     ie.serialize(indexFile);
 
     return true;

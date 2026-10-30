@@ -92,7 +92,7 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
       throw ioe;
     }
 
-    IndexEntry entry = new IndexEntry(baseSeq, (long)0,EVT_INIT,-1, hashProv.getEmptyHash(), baseHash);
+    IndexEntry entry = new IndexEntry(baseSeq, 0L,EVT_INIT,-1, hashProv.getEmptyHash(), baseHash);
 
     entry.serialize(indexFile);
 

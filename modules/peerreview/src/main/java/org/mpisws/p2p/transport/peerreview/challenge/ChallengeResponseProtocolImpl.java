@@ -37,8 +37,9 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.challenge;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
@@ -88,7 +89,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
   AuditProtocol<Handle, Identifier> auditProtocol;
   CommitmentProtocol<Handle, Identifier> commitmentProtocol;
   private final Logger logger;
-  Map<Handle, LinkedList<PacketInfo<Handle, Identifier>>> queue = new HashMap<Handle,LinkedList<PacketInfo<Handle, Identifier>>>();
+  Map<Handle, List<PacketInfo<Handle, Identifier>>> queue = new HashMap<Handle,List<PacketInfo<Handle, Identifier>>>();
 
   public ChallengeResponseProtocolImpl(
       PeerReviewImpl<Handle, Identifier> peerReviewImpl,
@@ -110,12 +111,12 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
   protected void copyAndEnqueueTail(Handle source, Evidence evidence,
       boolean isAccusation, Identifier subject, Identifier originator, long evidenceSeq,
       Map<String, Object> options) {
-    LinkedList<PacketInfo<Handle, Identifier>> list = queue.get(source);
+    List<PacketInfo<Handle, Identifier>> list = queue.get(source);
     if (list == null) {
-      list = new LinkedList<PacketInfo<Handle,Identifier>>();
+      list = new ArrayList<PacketInfo<Handle,Identifier>>();
       queue.put(source, list);
     }
-    list.addLast(new PacketInfo<Handle, Identifier>(source,evidence,isAccusation,subject,originator,evidenceSeq,options));
+    list.add(new PacketInfo<Handle, Identifier>(source,evidence,isAccusation,subject,originator,evidenceSeq,options));
   }
 
   protected void deliver(PacketInfo<Handle, Identifier> pi) {
@@ -136,7 +137,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
   public void notifyStatusChange(Identifier id, int newStatus) {
     switch (newStatus) {
     case STATUS_TRUSTED:
-      LinkedList<PacketInfo<Handle, Identifier>> list = queue.remove(id);
+      List<PacketInfo<Handle, Identifier>> list = queue.remove(id);
       if (list != null) {
         for (PacketInfo<Handle, Identifier> pi : list) {
           deliver(pi);
@@ -190,7 +191,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
         if ((idxFrom >= 0) && (idxTo >= 0)) {
           IndexEntry fromEntry = history.statEntry(idxFrom);
           if (fromEntry == null) throw new RuntimeException("Cannot get beginSeq during AUDIT challenge");
-          short beginType = fromEntry.getType();
           long beginSeq = fromEntry.getSeq();
 //
           /* Log entries with consecutive sequence numbers correspond to events that have happened
@@ -260,7 +260,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
         logger.info("Received a SEND challenge");
 
         Tuple<AckMessage<Identifier>, Boolean> ret = commitmentProtocol.logMessageIfNew(udm);
-        AckMessage<Identifier> response = ret.a();
         boolean loggedPreviously = ret.b();
 
         /* We ONLY deliver the message to the application if we haven't done so
@@ -380,7 +379,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       ChallengeAudit evidenceAudit = (ChallengeAudit)evidence;
       AuditResponse<Handle> responseAudit = (AuditResponse<Handle>)response;
       long requestedBeginSeq = evidenceAudit.from().getSeq();
-      long finalSeq = evidenceAudit.to().getSeq();
       boolean includePrevCheckpoint = evidenceAudit.isIncludePrevCheckpoint();
 
       long firstSeq = responseAudit.getFirstSeq();
@@ -407,10 +405,6 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     case CHAL_SEND: {
       UserDataMessage<Handle> evidenceUDM = (UserDataMessage<Handle>)evidence;
       long senderSeq = evidenceUDM.getTopSeq();
-      Handle senderHandle = evidenceUDM.getSenderHandle();
-      byte[] senderHtopMinusOne = evidenceUDM.getHTopMinusOne();
-      byte[] senderSignature = evidenceUDM.getSignature();
-      int relevantLen = evidenceUDM.getRelevantLen();
 
       AckMessage<Identifier> responseAck = (AckMessage<Identifier>)response;
 
@@ -509,6 +503,10 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
         default:
           throw new RuntimeException("Unknown status: #"+status);
       }
+      break;
+    default:
+      // the StatementProtocol only passes RESPONSEs and ACCUSATIONs
+      break;
     }
   }
 

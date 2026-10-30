@@ -93,7 +93,6 @@ import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactory;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactoryImpl;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordSM;
-import org.mpisws.p2p.transport.peerreview.message.Statement;
 import org.mpisws.p2p.transport.peerreview.statement.StatementProtocolImpl;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -324,7 +323,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       callback.messageReceived(handle, message, options);
       break;
     case PEER_REVIEW_COMMIT:
-      Statement<Identifier> m = null;
       updateLogTime();
       byte type = message.get();
       SimpleInputBuffer sib = new SimpleInputBuffer(message);
@@ -472,9 +470,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
 
   public void writeCheckpoint() throws IOException {
-    int size = 0;
-
-    SimpleOutputBuffer sob = new SimpleOutputBuffer();;
+    SimpleOutputBuffer sob = new SimpleOutputBuffer();
     callback.storeCheckpoint(sob);
 
     updateLogTime();

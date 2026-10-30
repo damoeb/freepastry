@@ -38,10 +38,11 @@ package org.mpisws.p2p.transport.peerreview.evidence;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.MessageCallback;
@@ -71,7 +72,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   PeerInfoStore<Handle, Identifier> infoStore;
 
   Map<Identifier, CacheInfo> witnessCache = new HashMap<Identifier, CacheInfo>();
-  Map<Identifier, LinkedList<MessageInfo<Handle, Identifier>>> pendingMessage = new HashMap<Identifier, LinkedList<MessageInfo<Handle, Identifier>>>();
+  Map<Identifier, List<MessageInfo<Handle, Identifier>>> pendingMessage = new HashMap<Identifier, List<MessageInfo<Handle, Identifier>>>();
   Collection<QueryInfo> pendingQuery = new HashSet<QueryInfo>();
 
   Logger logger;
@@ -136,12 +137,12 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     MessageInfo<Handle, Identifier> m = new MessageInfo<>(subject, message, deliverAckToMe, options);
     Collection<Handle> witnesses = getWitnesses(subject);
     if (witnesses == null) {
-      LinkedList<MessageInfo<Handle, Identifier>> foo = pendingMessage.get(subject);
+      List<MessageInfo<Handle, Identifier>> foo = pendingMessage.get(subject);
       if (foo == null) {
-        foo = new LinkedList<MessageInfo<Handle, Identifier>>();
+        foo = new ArrayList<MessageInfo<Handle, Identifier>>();
         pendingMessage.put(subject, foo);
       }
-      foo.addLast(m);
+      foo.add(m);
       requestWitnesses(subject);
     } else {
       doSendMessageToWitnesses(witnesses, m);
@@ -298,15 +299,11 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     int status = infoStore.getStatus(subject);
     assert (status != STATUS_TRUSTED);
 
-    EvidenceRecord<Handle, Identifier> evidenceRecord = null;
-
     /* Get the evidence */
 
-    if (status == STATUS_EXPOSED) {
-      evidenceRecord = infoStore.statProof(subject);
-    } else {
-      evidenceRecord = infoStore.statFirstUnansweredChallenge(subject);
-    }
+    EvidenceRecord<Handle, Identifier> evidenceRecord = (status == STATUS_EXPOSED)
+      ? infoStore.statProof(subject)
+      : infoStore.statFirstUnansweredChallenge(subject);
 
     assert (evidenceRecord != null);
 
@@ -318,7 +315,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
 
       /* ... and send it */
 
-      logger.atTrace().log(() -> "Sending "+accusation+" "+((status == STATUS_EXPOSED) ? "proof" : "challenge")+" to "+target);
+      logger.atTrace().log(() -> "Sending accusation about "+subject+" ("+evidenceRecord.getOriginator()+", "+evidenceRecord.getTimeStamp()+") as a "+((status == STATUS_EXPOSED) ? "proof" : "challenge")+" to "+target);
       peerreview.transmit(target, accusation, null, null);
     } catch (IOException ioe) {
       logger.warn("Error sending evidence.");

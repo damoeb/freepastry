@@ -120,7 +120,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     this.localHandle = localHandle;
     this.foundFault = false;
     this.haveNextEvent = false;
-    this.nextEventIndex = firstEntryToReplay-1;
+    this.nextEventIndex = firstEntryToReplay-1L;
     this.initialized = false;
     this.signatureSizeBytes = signatureSizeBytes;
     this.hashSizeBytes = hashSizeBytes;
@@ -562,6 +562,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // registering the same callback instance twice is fine
   public void registerEvent(EventCallback callback, short eventType) {
     if (eventCallback.containsKey(eventType)) {
       if (callback != eventCallback.get(eventType)) throw new IllegalStateException("Event #"+eventType+" registered twice");
@@ -633,12 +634,9 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       case EVT_RECV : /* Incoming message; feed it to the state machine */
         Identifier sender = serializer.deserialize(nextEvent);
 
-        long senderSeq = 0;
-        boolean hashed = false;
-        if (useLogHashFlag) hashed = nextEvent.readBoolean();
+        if (useLogHashFlag) nextEvent.readBoolean(); // whether the entry is partly hashed
 
         int msgLen = nextEvent.bytesRemaining();
-        int relevantLen = hashed ? (msgLen-hashSizeBytes) : msgLen;
 
         byte[] msgBytes = new byte[msgLen];
         nextEvent.read(msgBytes);

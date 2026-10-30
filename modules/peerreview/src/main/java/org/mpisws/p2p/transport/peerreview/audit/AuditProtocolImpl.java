@@ -111,6 +111,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
   /**
    * Null if there is no current timer.
    */
+  @SuppressWarnings("UnusedVariable") // nothing cancels it yet: AuditProtocol has no destroy()
   private TimerTask auditTimer;
   private TimerTask progressTimer;
 
@@ -511,7 +512,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         throw new RuntimeException("Cannot create subject history: '"+namebuf+"'");
     }
 
-    long firstNewSeq = currentSeq - (currentSeq%SEQS_PER_MILLI) + SEQS_PER_MILLI;
     subjectHistory.appendSnippetToHistory(snippet);
     // TODO: verify older authenticators against the appended history
 

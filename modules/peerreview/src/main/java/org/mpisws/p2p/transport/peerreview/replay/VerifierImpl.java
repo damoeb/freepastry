@@ -269,8 +269,8 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
       case EVT_RECV : /* Incoming message; feed it to the state machine */
         Handle sender = peerreview.getHandleSerializer().deserialize(nextEvent);
-        long senderSeq = nextEvent.readLong();
-        boolean hashed = nextEvent.readBoolean();
+        nextEvent.readLong(); // the sender's seq
+        nextEvent.readBoolean(); // whether the entry is partly hashed
 
         int msgLen = nextEvent.bytesRemaining();
 
@@ -299,7 +299,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return false;
       case EVT_ACK : /* Skip ACKs */
   // warning there should be an upcall here
-        Identifier id = peerreview.getIdSerializer().deserialize(nextEvent);
+        peerreview.getIdSerializer().deserialize(nextEvent); // the acking node
         long ackedSeq = nextEvent.readLong();
         VerifierMRH<Handle> foo = callbacks.remove(ackedSeq);
         if (foo == null) {

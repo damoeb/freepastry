@@ -185,7 +185,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
         } else if (canWrite) {
           evt = EVT_SOCKET_CAN_WRITE;
         } else {
-          throw new IOException("I can't read or write. canRead:"+canRead+" canWrite:"+canWrite);
+          throw new IOException("I can't read or write. canRead:false canWrite:false");
         }
         try {
           socketIdBuffer.clear();

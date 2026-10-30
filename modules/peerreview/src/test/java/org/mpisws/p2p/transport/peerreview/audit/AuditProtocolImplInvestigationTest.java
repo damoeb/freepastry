@@ -91,7 +91,7 @@ public class AuditProtocolImplInvestigationTest {
   final List<Object> toWitnesses = new ArrayList<Object>();
 
   /** A stub of the interface: getEnvironment(), getTime(), getIdentifierExtractor() and sendMessageToWitnesses() work, the rest returns null, 0 or false. */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"}) // the caller picks the generic interface type; a stub has no type arguments to check
   <T> T stub(Class<?> type) {
     return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
       switch (method.getName()) {
