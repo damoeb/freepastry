@@ -36,13 +36,17 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.aggregation;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -89,7 +93,7 @@ public class AggregateList {
 
     if (loggingEnabled) {
       recoverLog();
-      this.logFile = new PrintStream(new FileOutputStream(logFileName, true));
+      this.logFile = new PrintStream(Files.newOutputStream(Path.of(logFileName), CREATE, APPEND));
     } else {
       this.logFile = null;
     }
@@ -109,7 +113,7 @@ public class AggregateList {
     int entriesReplayed = 0;
 
     try {
-      logFile = new BufferedReader(new FileReader(logFileName));
+      logFile = new BufferedReader(new InputStreamReader(Files.newInputStream(Path.of(logFileName))));
 
       while (true) {
         String line = readLineSkipComments(logFile);
@@ -225,7 +229,8 @@ public class AggregateList {
         }
       }
 
-    } catch (FileNotFoundException fnfe) {
+    } catch (FileSystemException fnfe) {
+      // the log could not be opened, as FileReader reported with a FileNotFoundException
       logger.warn("No aggregate log found; using configuration file only");
     } catch (Exception e) {
       // a half-replayed log leaves the list inconsistent, so refuse to continue
@@ -436,9 +441,9 @@ public class AggregateList {
     aggregateList.clear();
 
     String fileName;
-    if ((new File(configFileName)).exists())
+    if (Files.exists(Path.of(configFileName)))
       fileName = configFileName;
-    else if ((new File(configFileName + ".new")).exists())
+    else if (Files.exists(Path.of(configFileName + ".new")))
       fileName = configFileName + ".new";
     else {
       return false;
@@ -448,7 +453,7 @@ public class AggregateList {
     boolean readSuccessful = false;
 
     try {
-      configFile = new BufferedReader(new FileReader(fileName));
+      configFile = new BufferedReader(new InputStreamReader(Files.newInputStream(Path.of(fileName))));
 
       String[] root = readLineSkipComments(configFile).split("=");
       if (root[0].equals("nextid")) {
@@ -513,7 +518,7 @@ public class AggregateList {
       return;
 
     try {
-      PrintStream configFile = new PrintStream(new FileOutputStream(configFileName + ".new"));
+      PrintStream configFile = new PrintStream(Files.newOutputStream(Path.of(configFileName + ".new")));
       Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
 
       resetMarkers();
@@ -535,8 +540,15 @@ public class AggregateList {
       }
 
       configFile.close();
-      (new File(configFileName)).delete();
-      (new File(configFileName + ".new")).renameTo(new File(configFileName));
+      // as with delete and renameTo, a failed step is ignored: readFromDisk falls back to the .new file
+      try {
+        Files.deleteIfExists(Path.of(configFileName));
+      } catch (IOException ignored) {
+      }
+      try {
+        Files.move(Path.of(configFileName + ".new"), Path.of(configFileName), REPLACE_EXISTING);
+      } catch (IOException ignored) {
+      }
     } catch (IOException ioe) {
       logger.warn("AggregationImpl cannot write to its aggregate list: {} ({})", configFileName, ioe, ioe);
     }

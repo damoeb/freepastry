@@ -36,14 +36,16 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.environment.params.simple;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -101,8 +103,8 @@ public class SimpleParameters implements Parameters {
       this.configFileName = mutableConfigFileName + FILENAME_EXTENSION;
     } else {
       try {
-        File f = new File(defaultParamsFile);
-        if (f.exists()) {
+        Path f = Path.of(defaultParamsFile);
+        if (Files.exists(f)) {
           this.configFileName = defaultParamsFile;
         }
       } catch (SecurityException e) {
@@ -131,15 +133,15 @@ public class SimpleParameters implements Parameters {
     }
 
     if (this.configFileName != null) {
-      File f = new File(this.configFileName);
-      if (f.exists()) {
-        try (InputStream in = new FileInputStream(this.configFileName)) {
+      Path f = Path.of(this.configFileName);
+      if (Files.exists(f)) {
+        try (InputStream in = Files.newInputStream(f)) {
           properties.load(in);
         } catch (IOException | IllegalArgumentException e) {
           throw new ParamsNotPresentException("Error loading "+f, e);
         }
       } else {
-        LOG.info("Configuration file {} not present.  Using defaults.", f.getAbsolutePath());
+        LOG.info("Configuration file {} not present.  Using defaults.", f.toAbsolutePath());
       }
     }
   }
@@ -359,18 +361,31 @@ public class SimpleParameters implements Parameters {
     if (configFileName == null)
       return;
     try {
-      File current = new File(configFileName);
-      File next = new File(configFileName + ".new");
-      File old = new File(configFileName + ".old");
+      Path current = Path.of(configFileName);
+      Path next = Path.of(configFileName + ".new");
+      Path old = Path.of(configFileName + ".old");
 
-      properties.store(new FileOutputStream(next), null);
+      try (OutputStream out = Files.newOutputStream(next)) {
+        properties.store(out, null);
+      }
 
-      current.renameTo(old);
-      next.renameTo(current);
-      old.delete();
+      // as with renameTo and delete, a failed step is ignored
+      moveIgnoringFailure(current, old);
+      moveIgnoringFailure(next, current);
+      try {
+        Files.deleteIfExists(old);
+      } catch (IOException ignored) {
+      }
     } catch (IOException ioe) {
       LOG.error("Unable to store properties file {}", configFileName, ioe);
       throw ioe;
+    }
+  }
+
+  private static void moveIgnoringFailure(Path from, Path to) {
+    try {
+      Files.move(from, to, REPLACE_EXISTING);
+    } catch (IOException ignored) {
     }
   }
 
