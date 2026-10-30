@@ -38,8 +38,8 @@ advised of the possibility of such damage.
 package rice.p2p.multiring;
 
 import java.util.Collection;
-import java.util.Hashtable;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -104,7 +104,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   /**
    * The list of all of the endpoints connected to this node
    */
-  private final Hashtable<String, Endpoint> endpoints;
+  private final Map<String, Endpoint> endpoints;
 
   /**
    * A cached IdFactory for internal use
@@ -129,7 +129,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
     this.environment = node.getEnvironment();
     this.logger = environment.getLogManager().getLogger(MultiringNode.class, null);
     this.ringId = ringId;
-    this.endpoints = new Hashtable<String, Endpoint>();
+    this.endpoints = new ConcurrentHashMap<>();
     this.scribe = new ScribeImpl(this, "Multiring");
     scribe.setContentDeserializer((buf, endpoint, type) -> {
       return switch (MultiringContentType.find(type)) {

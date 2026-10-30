@@ -311,7 +311,7 @@ public class MultiringIdFactory implements IdFactory {
     return new MultiringNodeHandleSet(getRingId(), factory.buildNodeHandleSet());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "JdkObsolete"}) // JdkObsolete: wraps the SortedMap that IdFactory.buildIdSet takes
   protected class MultiringSortedMap<V> implements SortedMap<Id, V> {
     private final SortedMap<Id, V> map;
 

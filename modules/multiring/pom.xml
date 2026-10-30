@@ -17,11 +17,6 @@
     <name>FreePastry Multiring</name>
     <description>Hierarchical rings of Pastry overlays (rice.p2p.multiring)</description>
 
-    <properties>
-        <!-- TODO phase 2 (D7): fix this module's Error Prone warnings, then drop this override -->
-        <errorprone.module.flags>-XepDisableAllWarnings</errorprone.module.flags>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>

@@ -192,6 +192,7 @@ public class MultiringRegrTest {
    */
   private final List<AssertionError> failures = Collections.synchronizedList(new ArrayList<AssertionError>());
 
+  @SuppressWarnings("StaticAssignmentInConstructor") // main() may change the node counts before it builds the test
   public MultiringRegrTest(Environment env) throws IOException {
     this.environment = env;
 
@@ -279,7 +280,7 @@ public class MultiringRegrTest {
    * Gives the nodes 300 ms to pass messages.
    */
   protected void simulate() {
-    try { Thread.sleep(300); } catch (InterruptedException ie) {}
+    try { Thread.sleep(300); } catch (InterruptedException ignored) { /* only shortens the wait */ }
   }
 
   /**
@@ -371,9 +372,10 @@ public class MultiringRegrTest {
    *
    * @param ms The number of milliseconds to pause
    */
+  @SuppressWarnings("WaitNotInLoop") // a timed pause: an early wakeup only shortens it
   protected synchronized void pause(int ms) {
     if (PROTOCOL != PROTOCOL_DIRECT)
-      try { wait(ms); } catch (InterruptedException e) {}
+      try { wait(ms); } catch (InterruptedException ignored) { /* only shortens the pause */ }
   }
 
   /**
@@ -411,7 +413,7 @@ public class MultiringRegrTest {
 
       try {
         Thread.sleep(500);
-      } catch (Exception e) {}
+      } catch (Exception ignored) { /* only shortens the wait */ }
     }
   }
 
@@ -708,6 +710,7 @@ public class MultiringRegrTest {
     }
   }
 
+  @SuppressWarnings("CatchAndPrintStackTrace") // a manual run from the command line reports to the console
   public static void main(String[] args) throws IOException {
     parseArgs(args);
     Environment env;

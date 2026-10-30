@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
+import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -92,7 +93,7 @@ class PasswordEncryptedKeyPairFileTest {
     void locateFile() {
       // readKeyPair lower-cases the ring name, which here is a path prefix inside the temp directory
       ring = dir.resolve("testring").toString();
-      file = Path.of(ring.toLowerCase() + ".ringkeypair.enc");
+      file = Path.of(ring.toLowerCase(Locale.ROOT) + ".ringkeypair.enc");
     }
 
     @Test

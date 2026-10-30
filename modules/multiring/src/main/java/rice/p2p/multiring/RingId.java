@@ -132,6 +132,7 @@ public class RingId implements Id {
    * @return The result
    */
   public static RingId build(String s) {
+    @SuppressWarnings("StringSplitter") // the fixed format of toString(), no trailing empty fields
     String[] sArray = s.split("\\(|\\)| |,");
     return build(rice.pastry.Id.build(sArray[1]), rice.pastry.Id.build(sArray[3]));
   }

@@ -53,12 +53,14 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -101,7 +103,7 @@ public class RingCertificate {
       // and finally load and verify the certs
       URL a1 = ClassLoader.getSystemResource("ringcert.list");
       InputStream b1 = a1.openStream();
-      InputStreamReader c1 = new InputStreamReader(b1);
+      InputStreamReader c1 = new InputStreamReader(b1, StandardCharsets.UTF_8);
       BufferedReader r = new BufferedReader(c1);
       String filename = null;
 
@@ -274,7 +276,7 @@ public class RingCertificate {
    * Signs this RingCertificate, given the private key to sign
    * with
    *
-   * @priv The private key to sign with
+   * @param priv The private key to sign with
    */
   void sign(PrivateKey priv) {
     if (signature != null)
@@ -291,7 +293,7 @@ public class RingCertificate {
    * Verifies this RingCertificate, given the public key to verify
    * with
    *
-   * @pub The public key to verify with
+   * @param pub The public key to verify with
    */
   boolean verify(PublicKey pub) {
     if (signature == null)
@@ -439,7 +441,7 @@ public class RingCertificate {
    */
   private static void writeKeyPair(KeyPair pair, String pass, String ring) throws IOException {
     byte[] cipher = SecurityUtils.encryptWithPassword(SecurityUtils.encodeKeyPair(pair), pass.toCharArray());
-    writeGzippedBytes(Path.of(ring.toLowerCase() + ".ringkeypair.enc"), cipher);
+    writeGzippedBytes(Path.of(ring.toLowerCase(Locale.ROOT) + ".ringkeypair.enc"), cipher);
   }
 
   /**
@@ -450,7 +452,7 @@ public class RingCertificate {
    */
   public static KeyPair readKeyPair(String ring, String pass) throws IOException {
     byte[] cipher;
-    try (InputStream in = Files.newInputStream(Path.of(ring.toLowerCase() + ".ringkeypair.enc"))) {
+    try (InputStream in = Files.newInputStream(Path.of(ring.toLowerCase(Locale.ROOT) + ".ringkeypair.enc"))) {
       cipher = readGzippedBytes(in);
     }
 
@@ -477,8 +479,8 @@ public class RingCertificate {
    */
   public static void main(String[] args) throws Exception {
     Environment env = new Environment();
-    BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(System.out));
+    BufferedReader r = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
 
     // first, load the CA keypair
     Path f = Path.of("ca.keypair.enc");
@@ -490,6 +492,7 @@ public class RingCertificate {
 
     // get the ring info
     String ring = prompt(r, w, "Please enter the name of the ring (rice, berkeley): ");
+    @SuppressWarnings("StringSplitter") // dropping trailing empty entries is intended
     String[] bootstrap = prompt(r, w, "Please enter the bootstraps (host1:port1,host2:port2...): ").trim().split(",");
     int port = Integer.parseInt(prompt(r, w, "Please enter the default port for nodes: "));
     String logServer = prompt(r, w, "Please enter the log upload server (host:port): ");
@@ -516,10 +519,10 @@ public class RingCertificate {
     if (! cert.verify(caPair.getPublic()))
       throw new RuntimeException("Could not verify generated certificate!");
 
-    cert.writeToFile(Path.of(ring.toLowerCase() + ".ringcert"));
+    cert.writeToFile(Path.of(ring.toLowerCase(Locale.ROOT) + ".ringcert"));
 
     // and finally write out the KeyPair
-    writeKeyPair(pair, pass, ring.toLowerCase());
+    writeKeyPair(pair, pass, ring.toLowerCase(Locale.ROOT));
 
     // exit explicitly, the Environment's threads would keep the JVM running
     System.exit(0);
@@ -560,7 +563,7 @@ public class RingCertificate {
    * @return The ring id
    */
   private static Id generateId(String s, Environment env) {
-    String ring = s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
+    String ring = s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1).toLowerCase(Locale.ROOT);
 
     PastryIdFactory pif = new PastryIdFactory(env);
 
@@ -572,7 +575,7 @@ public class RingCertificate {
       ringData[i] = 0;
 
 
-    if (s.toLowerCase().equals("global"))
+    if (s.toLowerCase(Locale.ROOT).equals("global"))
       for (int i=0; i<ringData.length; i++)
         ringData[i] = 0;
 

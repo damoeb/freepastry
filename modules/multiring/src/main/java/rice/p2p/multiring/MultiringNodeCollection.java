@@ -37,8 +37,9 @@ advised of the possibility of such damage.
 
 package rice.p2p.multiring;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import rice.p2p.commonapi.DeliveryNotification;
 import rice.p2p.commonapi.MessageReceipt;
@@ -62,7 +63,7 @@ public class MultiringNodeCollection {
   /**
    * The list of nodes in the collection
    */
-  private final Vector<MultiringNode> nodes;
+  private final List<MultiringNode> nodes;
 
   /**
    * Constructor
@@ -70,7 +71,7 @@ public class MultiringNodeCollection {
    * @param node The node to base this node off of
    */
   public MultiringNodeCollection(MultiringNode node, int BASE) {
-    this.nodes = new Vector<MultiringNode>();
+    this.nodes = new CopyOnWriteArrayList<>();
     this.nodes.add(node);
     this.BASE = BASE;
   }
@@ -84,7 +85,7 @@ public class MultiringNodeCollection {
    * @param node The node to add to the collection
    */
   public void addNode(MultiringNode node) {
-    if (! node.getNodeId().equals(((MultiringNode) nodes.elementAt(0)).getNodeId()))
+    if (! node.getNodeId().equals(((MultiringNode) nodes.get(0)).getNodeId()))
       throw new IllegalArgumentException("Node added does not have the correct nodeId!");
 
     broadcastNewNode(node);
@@ -99,7 +100,7 @@ public class MultiringNodeCollection {
    */
   protected void broadcastNewNode(MultiringNode node) {
     for (int i=0; i<nodes.size(); i++) {
-      MultiringNode thisNode = (MultiringNode) nodes.elementAt(i);
+      MultiringNode thisNode = (MultiringNode) nodes.get(i);
 
       if (thisNode.getRingId().equals(node.getRingId()))
         throw new IllegalArgumentException("ERROR: Attempt to add already-existing ringId " + node + " " + node.getId() + " " + thisNode + " " + thisNode.getId());
@@ -123,10 +124,10 @@ public class MultiringNodeCollection {
    */
   protected MessageReceipt route(RingId id, RawMessage message, String application,
       DeliveryNotification deliverAckToMe, Map<String, Object> options) {
-    MultiringNode best = (MultiringNode) nodes.elementAt(0);
+    MultiringNode best = (MultiringNode) nodes.get(0);
 
     for (int i=1; i<nodes.size(); i++) {
-      MultiringNode thisNode = (MultiringNode) nodes.elementAt(i);
+      MultiringNode thisNode = (MultiringNode) nodes.get(i);
       int bestShared = getLengthOfSharedPrefix((RingId) best.getId(), id);
       int thisShared = getLengthOfSharedPrefix((RingId) thisNode.getId(), id);
       int bestLength = getLength((RingId) best.getId());

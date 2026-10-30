@@ -346,9 +346,6 @@ public class MultiringEndpoint implements Endpoint {
     return "multiring" + endpoint.getInstance();
   }
 
-  /* (non-Javadoc)
-   * @see rice.p2p.commonapi.Endpoint#getEnvironment()
-   */
   @Override
   public Environment getEnvironment() {
     return node.getEnvironment();
