@@ -72,9 +72,8 @@
             -Xep:StatementSwitchToExpressionSwitch:OFF
         </errorprone.flags>
         <!--
-          Per-module Error Prone flags. TODO phase 2 (D7): the modules that still set this to -XepDisableAllWarnings
-          (all but freepastry-core and freepastry-transport) get their warning-level findings fixed, then drop the override.
-          ERROR-level checks stay on everywhere.
+          Per-module Error Prone flags, empty by default. Every module builds with all Error Prone checks
+          (warnings included) under -Werror; a module may add flags here only with a reason.
         -->
         <errorprone.module.flags></errorprone.module.flags>
     </properties>
