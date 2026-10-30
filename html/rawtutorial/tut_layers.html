@@ -60,6 +60,7 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
   <li><b>Wire</b> -- Opens/Accepts Sockets, Sends/Receives Datagrams</li>
   <li><b>MagicNumber</b> -- Throws away sockets/datagrams for other applications such as HTTP (if it doesn't match the application specific magic number)</li>
   <li><b>LimitSockets</b> -- Prevents exaustion of FileDescripters by closing the Least Recently Used socket.</li>
+  <li><b>NetworkInfo</b> -- Answers "what is my external IP?" and "what is your id?" for bootstrapping and NAT probing.</li>
   <li><b>MultiInetAddressTransportLayer</b> -- Handles multi-homing (ex, when using a NAT a node may have more than 1 address:port, the internal address, and the NAT's external address that is forwarded)</li>
   <li><b>SourceRoute</b> -- sends messages/opens sockets along a source route to route around temporary routing anomalies.  This layer manages both the endpoints and the intermediate nodes.  Note that this layer does <i>not</i> determine the optimal route to an end host, that is done by another layer, the <i>SourceRouteManager</i>.</li>
   <li><b>LowerIdentity</b> -- This layer, in conjunction with the <i>UpperIdenity</i> maintains the "intention" of the sent/received message.  For example, if a node has restarted with a different NodeId this layer drops pings/sockets if they were intended for the previous node at this address.</li>
@@ -84,15 +85,15 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
   <li><b>DirectTransportLayer</b> -- This implements the discreet event simulator, and is used by the DirectPastryNodeFactory.</li>
 </ul>
 
-<h3>Upcoming layers:</h3>
+<h3>Optional layers:</h3>
 <ul>
-  <li><b>SSL</b> -- Provides Crypto/Authentication (typically goes above the SourceRoute layer to provide end-to-end crypto/auth)</li>
-  <li><b>BandwidthLimiting</b> -- Limits the Bandwidth of a node (typically goes between MagicNumber/SourceRoute Layers)</li>
+  <li><b>SSL</b> (<code>org.mpisws.p2p.transport.ssl</code>) -- Provides TLS for sockets (not for UDP); the <code>rice.tutorial.ssl</code> tutorial shows how to insert it.</li>
+  <li><b>Rendezvous</b> (<code>org.mpisws.p2p.transport.rendezvous</code>) -- Lets nodes behind a NAT that cannot accept connections take part; used by <code>RendezvousSocketPastryNodeFactory</code>.</li>
   <li><b>PeerReview</b> -- Provides protocol accountability (typically goes near the top, such as between CommonAPI/Priority layers)</li>
-  <li><b>STUN</b> -- would likely replace the Wire Layer and provide NAT hole-punching</li>
+  <li><b>BandwidthLimiting</b> -- Limits the Bandwidth of a node; this is the layer we build in this tutorial.</li>
 </ul>
 
-<p/>Note: The TranportLayer uses a Java language feature that was introduced in Java 1.5, generics.  For more informaiton on Generics, see this <a href="http://java.sun.com/j2se/1.5/pdf/generics-tutorial.pdf">this tutorial</a>.
+<p/>Note: The TransportLayer interface makes heavy use of generics. For more information on generics, see the <a href="https://docs.oracle.com/javase/tutorial/java/generics/">Java generics tutorial</a>.
 
 <h3>The TransportLayer interface:</h3>
 <pre>
@@ -133,13 +134,13 @@ public interface TransportLayerCallback&lt;Identifier, MessageType&gt; {
 <p/>Here are the calls for the P2PSocket:
 
 <pre>
-  void register(boolean wantToRead, boolean wantToWrite, P2PSocketReceiver<Identifier> receiver);
-  long read(ByteBuffer dsts) throws IOException; 
-  long write(ByteBuffer srcs) throws IOException; 
+  void register(boolean wantToRead, boolean wantToWrite, P2PSocketReceiver&lt;Identifier&gt; receiver);
+  long read(ByteBuffer dsts) throws IOException;
+  long write(ByteBuffer srcs) throws IOException;
   void shutdownOutput();
-  void close(); 
+  void close();
   Identifier getIdentifier();
-  Map<String, Object> getOptions();
+  Map&lt;String, Object&gt; getOptions();
 </pre>
 
 <h3>Other calls in the TransportLayer:</h3>
@@ -186,12 +187,7 @@ public interface TransportLayerCallback&lt;Identifier, MessageType&gt; {
   <li>To insert our new layer between 2 existing layers, we also need to implement a <code>TransportLayerCallback</code> with the same generic parameters so we can insert ourself between two existing layers.</li>  
 </ul>
 
-<h3>Download the tutorial files: 
-<a href="./src/transportlayer/BandwidthLimitingTransportLayer.java">BandwidthLimitingTransportLayer.java</a>
-<a href="./src/transportlayer/NotEnoughBandwidthException.java">NotEnoughBandwidthException.java</a>
-<a href="./src/transportlayer/DistTutorial.java">DistTutorial.java</a>
-<a href="./src/transportlayer/MyApp.java">MyApp.java</a>,
-<a href="./src/transportlayer/MyMsg.java">MyMsg.java</a> into a directory called rice/tutorial/transportlayer/.</h3>
+<h3>Tutorial source: <code>src/main/java/rice/tutorial/transportlayer/</code> (BandwidthLimitingTransportLayer.java, NotEnoughBandwidthException.java, DistTutorial.java, MyApp.java, MyMsg.java).</h3>
 
 
 
@@ -203,28 +199,31 @@ public class BandwidthLimitingTransportLayer&lt;Identifier&gt; implements
 }
 </pre>
 
-<p/>Here is the constructor.  It takes the <code>TransportLayer</code> immeadately below this layer, the bucket size, and bucket time length.  We also need access to the environment so we can create a logger.
+<p/>Here is the constructor. It takes the <code>TransportLayer</code> immediately below this layer, the bucket size, and bucket time length. We also need access to the environment so we can create a logger: <code>env.getLogManager().getLogger(...)</code> returns an SLF4J <code>org.slf4j.Logger</code>. The <code>DefaultErrorHandler</code> logs unexpected events through that logger until somebody calls <code>setErrorHandler()</code>.
 <pre>
   public BandwidthLimitingTransportLayer(
-      TransportLayer&lt;Identifier, ByteBuffer&gt; tl, 
-      long bucketSize, int bucketTimelimit, 
+      TransportLayer&lt;Identifier, ByteBuffer&gt; tl,
+      int bucketSize, int bucketTimelimit,
       Environment env) {
     this.environment = env;
     this.tl = tl;
     BUCKET_SIZE = bucketSize;
-    BUCKET_TIME_LIMIT = bucketTimelimit;    
+    BUCKET_TIME_LIMIT = bucketTimelimit;
     logger = env.getLogManager().getLogger(BandwidthLimitingTransportLayer.class, null);
+    this.errorHandler = new DefaultErrorHandler&lt;Identifier&gt;(logger);
     tl.setCallback(this);
+
+    ...
   }
 </pre>
-<p/>You can look at the code to see the declaration of these fields.  The last thing we have to do is set ourself as the lower level's callback.  This will cause it to deliver messages/sockets to us.
+<p/>You can look at the code to see the declaration of these fields. The last thing we have to do is set ourself as the lower level's callback. This will cause it to deliver messages/sockets to us.
 
 <p/>This variable is the bucket.
 <pre>
   /**
    * When this goes to zero, don't send messages
    */
-  protected long bucket;
+  private int bucket;
 </pre>
 
 <p/>Now let's create a task to refil the bucket.
@@ -272,14 +271,14 @@ When the user requests to send the message, it may be buffered or even fail.  Th
 
     boolean success = true;
     synchronized(this) {
-      if (m.remaining() > bucket) {
+      if (m.remaining() &gt; bucket) {
         success = false;
       } else {
         bucket-=m.remaining();
       }
     }
     if (!success) {
-      if (logger.level <= Logger.FINE) logger.log("Dropping message "+m+" because not enough bandwidth:"+bucket);
+      logger.debug("Dropping message {} because not enough bandwidth:{}", m, bucket);
       if (deliverAckToMe != null) 
         deliverAckToMe.sendFailed(null, new NotEnoughBandwidthException(bucket, m.remaining()));
       return null;
@@ -317,19 +316,19 @@ When the user requests to send the message, it may be buffered or even fail.  Th
   public MessageRequestHandle&lt;Identifier, ByteBuffer&gt; sendMessage(Identifier i, ByteBuffer m, 
     MessageCallback&lt;Identifier, ByteBuffer&gt; deliverAckToMe, Map&lt;String, Object&gt; options) {
 
-    MessageRequestHandleImpl&lt;Identifier, ByteBuffer> returnMe = 
+    MessageRequestHandleImpl&lt;Identifier, ByteBuffer&gt; returnMe = 
       new MessageRequestHandleImpl&lt;Identifier, ByteBuffer&gt;(i, m, options);
     
     boolean success = true;
     synchronized(this) {
-      if (m.remaining() > bucket) {
+      if (m.remaining() &gt; bucket) {
         success = false;
       } else {
         bucket-=m.remaining();
       }
     }
     if (!success) {
-      if (logger.level <= Logger.FINE) logger.log("Dropping message "+m+" because not enough bandwidth:"+bucket);
+      logger.debug("Dropping message {} because not enough bandwidth:{}", m, bucket);
       if (deliverAckToMe != null) 
         deliverAckToMe.sendFailed(returnMe, new NotEnoughBandwidthException(bucket, m.remaining()));
       return returnMe;
@@ -361,7 +360,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
         if (deliverAckToMe != null) deliverAckToMe.ack(returnMe);
       }
 
-      public void sendFailed(MessageRequestHandle&lt;Identifier, ByteBuffer&gt; msg, IOException reason) {
+      public void sendFailed(MessageRequestHandle&lt;Identifier, ByteBuffer&gt; msg, Exception reason) {
         if (deliverAckToMe != null) deliverAckToMe.sendFailed(returnMe, reason);
       }    
     },options));
@@ -381,14 +380,14 @@ When the user requests to send the message, it may be buffered or even fail.  Th
     
     boolean success = true;
     synchronized(this) {
-      if (m.remaining() > bucket) {
+      if (m.remaining() &gt; bucket) {
         success = false;
       } else {
         bucket-=m.remaining();
       }
     }
     if (!success) {
-      if (logger.level <= Logger.FINE) logger.log("Dropping message "+m+" because not enough bandwidth:"+bucket);
+      logger.debug("Dropping message {} because not enough bandwidth:{}", m, bucket);
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(returnMe, new NotEnoughBandwidthException(bucket, m.remaining()));
       return returnMe;
     }
@@ -398,7 +397,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
         if (deliverAckToMe != null) deliverAckToMe.ack(returnMe);
       }
 
-      public void sendFailed(MessageRequestHandle&lt;Identifier, ByteBuffer&gt; msg, IOException reason) {
+      public void sendFailed(MessageRequestHandle&lt;Identifier, ByteBuffer&gt; msg, Exception reason) {
         if (deliverAckToMe != null) deliverAckToMe.sendFailed(returnMe, reason);
       }    
     },options));
@@ -418,12 +417,13 @@ When the user requests to send the message, it may be buffered or even fail.  Th
   }
 </pre>
 
-<p/>Now we need to set up the constructor.  We will call <code>super()</code> with the wrapped socket's identifier and options.   Also, we must pass it a <code>logger</code>.
+<p/>Now we need to set up the constructor. We will call <code>super()</code> with the wrapped socket's identifier and options. Also, we must pass it a <code>logger</code> and an <code>ErrorHandler</code>.
 <pre>
     public BandwidthLimitingSocket(P2PSocket&lt;Identifier&gt; socket) {
-      super(socket.getIdentifier(), socket, 
-            BandwidthLimitingTransportLayer.this.logger, 
-            socket.getOptions());
+      super(socket.getIdentifier(), socket,
+          BandwidthLimitingTransportLayer.this.logger,
+          BandwidthLimitingTransportLayer.this.errorHandler,
+          socket.getOptions());
     }
 </pre>
 
@@ -437,9 +437,9 @@ When the user requests to send the message, it may be buffered or even fail.  Th
 <p/>We can determine how much the user wants to write by calling <code>srcs.remaining()</code>.  Then we must return how much was written, or -1 if the socket or outbound channel was closed.  Also, note that when we read off bytes from srcs, we are changing the stae of srcs.  It is critical that we make sure to manage the position of srcs properly.  This way if we don't send the whole message, the user code can call write() again with the same message until it has sent the whole thing.
 <p/>Here is the easy case, where we accept the <code>write()</code> and return the lower layer's result, or, we continue and log a message:
 <pre>
-      if (srcs.remaining() <= bucket) {
+      if (srcs.remaining() &lt;= bucket) {
         long ret = super.write(srcs);
-        if (ret >= 0) {
+        if (ret &gt;= 0) {
           // EOF is usually -1
           synchronized(this) {
             bucket -= ret;
@@ -448,7 +448,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
         return ret;
       }
 
-      if (logger.level <= Logger.FINE) logger.log("Limiting "+socket+" to "+bucket+" bytes.");
+      logger.debug("Limiting {} to {} bytes.", socket, bucket);
 </pre>
 
 <p/>The rest is complicated, because it is important to leave the incoming ByteBuffer's position in the proper place. 
@@ -470,9 +470,8 @@ When the user requests to send the message, it may be buffered or even fail.  Th
       // try to write our temp buffer
       long ret = super.write(temp);
       
-      if (ret < 0) {
-        // there was a problem,
-        // reset the position, return
+      if (ret &lt; 0) {
+        // there was a problem
         return ret;
       }
 </pre>
@@ -513,7 +512,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
 <p/>Let's make a member variable in <code>BandwidthLimitingSocket</code> to store the user's request to write:
 <pre>
     /**
-     * Store the write requestor.  If this variable is not null 
+     * Store the write requester.  If this variable is not null 
      * it means that the storedWriter wants to write, but there
      * wasn't enough bandwidth.
      */
@@ -554,8 +553,10 @@ When the user requests to send the message, it may be buffered or even fail.  Th
   class BandwidthLimitingSocket extends SocketWrapperSocket&lt;Identifier, Identifier&gt; {
     public BandwidthLimitingSocket(P2PSocket&lt;Identifier&gt; socket) {
 
-      super(socket.getIdentifier(), socket, 
-            BandwidthLimitingTransportLayer.this.logger, socket.getOptions());
+      super(socket.getIdentifier(), socket,
+          BandwidthLimitingTransportLayer.this.logger,
+          BandwidthLimitingTransportLayer.this.errorHandler,
+          socket.getOptions());
 
       synchronized(BandwidthLimitingTransportLayer.this) {
         sockets.add(this);
@@ -609,7 +610,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
 <a name="open"/><h3>openSocket():</h3>
 <p/>Here is the code for <code>openSocket()</code>.  We don't get the socket right away.  We have to wait until it has completed opening.  This is similar to a <a href="tut_continuations.html#lesson0a">continuation</a>.  The first thing we have to do is create a <code>SocketRequestHandle</code> for the same reasons as we did in the above code with <code>MessageRequestHandle</code>.
 <pre>
-    SocketRequestHandleImpl&lt;Identifier&gt; returnMe = new SocketRequestHandleImpl&lt;Identifier&gt;(i,options);
+    final SocketRequestHandleImpl&lt;Identifier&gt; returnMe = new SocketRequestHandleImpl&lt;Identifier&gt;(i,options, logger);
     returnMe.setSubCancellable(tl.openSocket(i, ... , options));  
     return returnMe;
 </pre>
@@ -621,7 +622,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
         deliverSocketToMe.receiveResult(returnMe, new BandwidthLimitingSocket(sock));
       }
     
-      public void receiveException(SocketRequestHandle&lt;Identifier&gt; s, IOException ex) {
+      public void receiveException(SocketRequestHandle&lt;Identifier&gt; s, Exception ex) {
         deliverSocketToMe.receiveException(returnMe, ex);
       }
     }, options)
@@ -659,6 +660,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
   }
 
   public void setErrorHandler(ErrorHandler&lt;Identifier&gt; handler) {
+    this.errorHandler = handler;
     tl.setErrorHandler(handler);
   }
 
@@ -667,6 +669,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
   }
 
   public void messageReceived(Identifier i, ByteBuffer m, Map&lt;String, Object&gt; options) throws IOException {
+    // notify listeners
     callback.messageReceived(i, m, options);
   }
 </pre>
@@ -683,31 +686,30 @@ When the user requests to send the message, it may be buffered or even fail.  Th
 
 <p/>Note that when we construct our <code>BandwidthLimitingTransportLayer</code>, we export <code>&lt;InetSocketAddress&gt;</code>. 
 <pre>
-  public static PastryNodeFactory exampleA(int bindport, Environment env, 
-      NodeIdFactory nidFactory, final int amt, final int time) throws IOException {  
-    
+  public static PastryNodeFactory exampleA(int bindport, Environment env,
+      NodeIdFactory nidFactory, final int amt, final int time) throws IOException {
+
     // anonymously extend SPNF
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
-      
+
       /**
        * Override getWireTransportLayer to return the BandwidthLimitingTL wrapping
        * the default wire implementation.
        */
       @Override
       protected TransportLayer&lt;InetSocketAddress, ByteBuffer&gt; getWireTransportLayer(
-          InetSocketAddress innermostAddress, TLPastryNode pn) throws IOException {
+          InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         // get the default layer
-        TransportLayer&lt;InetSocketAddress, ByteBuffer&gt; wtl = 
-          super.getWireTransportLayer(innermostAddress, pn);        
-        
+        TransportLayer&lt;InetSocketAddress, ByteBuffer&gt; wtl =
+          super.getWireTransportLayer(innermostAddress, pn);
+
         // wrap it with our layer
         return new BandwidthLimitingTransportLayer&lt;InetSocketAddress&gt;(
             wtl, amt, time, pn.getEnvironment());
-      }      
+      }
     };
     return factory;
-  } 
-</pre>
+  }</pre>
 <p/>You can replace the construction of the SocketPastryNodeFactory at the beginning of any of the existing tutorials with this code to add the "bandwidth-limiting" feature.  
 
 <h4>Example B</h4>
@@ -723,36 +725,36 @@ When the user requests to send the message, it may be buffered or even fail.  Th
   }
 </pre>
 
-<p/>As in Example A, we need to create the default <code>SourceRouteManagerLayer</code> by calling <code>super.getSourceRouteManagerLayer()</code>.  But we must also implement a <code>TransLivenessProximity</code> which returns our <code>BandwidthLimitingTrasnportLayer</code> for the <i>TransportLayer</i>, but the <code>SourceRouteManagerLayer</code> for the <i>LivenessProvider</i> and <i>ProximityProvider</i>.
+<p/>As in Example A, we need to create the default <code>SourceRouteManagerLayer</code> by calling <code>super.getSourceRouteManagerLayer()</code>.  But we must also implement a <code>TransLivenessProximity</code> which returns our <code>BandwidthLimitingTransportLayer</code> for the <i>TransportLayer</i>, but the <code>SourceRouteManagerLayer</code> for the <i>LivenessProvider</i> and <i>ProximityProvider</i>.
 <p/>Here is the code for <code>exampleB()</code>:
 <pre>
-  public static PastryNodeFactory exampleB(int bindport, Environment env, 
-      NodeIdFactory nidFactory, final int amt, final int time) throws IOException {    
+  public static PastryNodeFactory exampleB(int bindport, Environment env,
+      NodeIdFactory nidFactory, final int amt, final int time) throws IOException {
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
 
       @Override
       protected TransLivenessProximity&lt;MultiInetSocketAddress, ByteBuffer&gt; getSourceRouteManagerLayer(
-          TransportLayer&lt;SourceRoute&lt;MultiInetSocketAddress&gt;, ByteBuffer&gt; ltl, 
-          LivenessProvider&lt;SourceRoute&lt;MultiInetSocketAddress&gt;&gt; livenessProvider, 
-          Pinger&lt;SourceRoute&lt;MultiInetSocketAddress&gt;&gt; pinger, 
-          TLPastryNode pn, 
-          MultiInetSocketAddress proxyAddress, 
+          TransportLayer&lt;SourceRoute&lt;MultiInetSocketAddress&gt;, ByteBuffer&gt; ltl,
+          LivenessProvider&lt;SourceRoute&lt;MultiInetSocketAddress&gt;&gt; livenessProvider,
+          Pinger&lt;SourceRoute&lt;MultiInetSocketAddress&gt;&gt; pinger,
+          PastryNode pn,
+          MultiInetSocketAddress proxyAddress,
           MultiAddressSourceRouteFactory esrFactory) throws IOException {
-        
+
         // get the default layer
-        final TransLivenessProximity&lt;MultiInetSocketAddress, ByteBuffer&gt; srm = 
+        final TransLivenessProximity&lt;MultiInetSocketAddress, ByteBuffer&gt; srm =
           super.getSourceRouteManagerLayer(
             ltl, livenessProvider, pinger, pn, proxyAddress, esrFactory);
-        
+
         // wrap the default layer with our layer
-        final BandwidthLimitingTransportLayer&lt;MultiInetSocketAddress&gt; bll = 
+        final BandwidthLimitingTransportLayer&lt;MultiInetSocketAddress&gt; bll =
           new BandwidthLimitingTransportLayer&lt;MultiInetSocketAddress&gt;(
             srm.getTransportLayer(), amt, time, pn.getEnvironment());
-        
+
         return new TransLivenessProximity&lt;MultiInetSocketAddress, ByteBuffer&gt;(){
           public TransportLayer&lt;MultiInetSocketAddress, ByteBuffer&gt; getTransportLayer() {
             return bll;
-          }        
+          }
           public LivenessProvider&lt;MultiInetSocketAddress&gt; getLivenessProvider() {
             return srm.getLivenessProvider();
           }
@@ -762,102 +764,47 @@ When the user requests to send the message, it may be buffered or even fail.  Th
         };
       }
     };
-    return factory;    
-  }  
-</pre>
+    return factory;
+  }</pre>
 
 <p/>Note that <code>BandwidthLimitingTransportLayer</code> exports <code>&lt;MultiInetSocketAddress&gt;</code> this time.
 
 <a name="run"/><h3>Running the code</h3>
-<p/>We modified DistTutorial from <a href="">lesson4</a> to take some more parameters and call <code>BandwidthLimitingTransportLayer.exampleA()</code>.
+<p/>We modified DistTutorial from <a href="tut_multiple_nodes.html#lesson4">lesson4</a> to take a bandwidth parameter and build its factory with <code>BandwidthLimitingTransportLayer.exampleB()</code>. We also disable Proximity Neighbor Selection:
 
 <pre>
-  public DistTutorial(int bindport, InetSocketAddress bootaddress, 
+  public DistTutorial(int bindport, InetSocketAddress bootaddress,
       int numNodes, Environment env, int bandwidth) throws Exception {
-    ...
 
-    // construct the PastryNodeFactory, this is how we use rice.pastry.socket
-    PastryNodeFactory factory = BandwidthLimitingTransportLayer.exampleA(
-      bindport, env, nidFactory, bandwidth, 1000);
-    //  PastryNodeFactory factory = BandwidthLimitingTransportLayer.exampleB(
-    //    bindport, env, nidFactory, bandwidth, 1000);
-    //  PastryNodeFactory factory = new SocketPastryNodeFactory(
-    //    nidFactory, bindport, env);
+    // Generate the NodeIds Randomly
+    NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 
-    ...
-  }
-
-  /**
-   * Usage: 
-   * java [-cp FreePastry-&lt;version&gt;.jar] rice.tutorial.transportlayer.DistTutorial localbindport bootIP bootPort numNodes bandwidth;
-   * example java rice.tutorial.transportlayer.DistTutorial 9001 pokey.cs.almamater.edu 9001 10 1000
-   */
-  public static void main(String[] args) throws Exception {
-    ...
-  }
-</pre>
-
-<p/>We need to turn on FINE logging in our transport layer, and let's also disable ProximityNeighborSelection:
-<pre>
     // Disable PNS for our example
     env.getParameters().setBoolean("transport_use_pns", false);
-    
-    // enable logging on our new layer
-    env.getParameters().setInt(
-      "rice.tutorial.transportlayer.BandwidthLimitingTransportLayer_loglevel", 
-      Logger.FINE);    
+
+    // to see our new layer's log output, set the logger rice.tutorial.transportlayer.BandwidthLimitingTransportLayer
+    // to debug in your SLF4J backend's configuration
+
+    // construct the PastryNodeFactory, this is how we use rice.pastry.socket
+    // (BandwidthLimitingTransportLayer.exampleA() builds the same kind of factory in a different way)
+    PastryNodeFactory factory = BandwidthLimitingTransportLayer.exampleB(bindport, env, nidFactory, bandwidth, 1000);
+
+    ...
+  }
 </pre>
 
-<p/>Now lets run the code, but we must provide the bandwidth.  Let's try 10K/second:
+<p/>Our layer logs the dropped messages and limited writes at <code>debug</code> level through SLF4J. FreePastry has no logging parameters in <code>freepastry.params</code>; levels are set in the SLF4J backend you put on the classpath. With <code>slf4j-simple</code>, for example, add <code>-Dorg.slf4j.simpleLogger.log.rice.tutorial.transportlayer.BandwidthLimitingTransportLayer=debug</code> to the <code>java</code> command line, or put the same key in a <code>simplelogger.properties</code> file on the classpath.
+
+<p/>Build the project with <code>./mvnw -B package -DskipTests assembly:single</code>, which creates <code>target/freepastry-2.1.0-jar-with-dependencies.jar</code>. No SLF4J backend is bundled, so add one such as <code>slf4j-simple</code> to the classpath to see the log output. Now let's run the code, but we must provide the bandwidth. Let's try 10K/second:
 
 <pre>
-<span class="input">java -cp .:FreePastry-@freepastry_version@.jar rice.tutorial.transportlayer.DistTutorial 5009 10.9.8.7 5009 10 10000</span>
-<span class="output">
-Finished creating new node TLPastryNode[SNH: &lt;0x9492E7..&gt;/FOO/10.9.8.7:5009]
-Finished creating new node TLPastryNode[SNH: &lt;0x44C3E7..&gt;/FOO/10.9.8.7:5010]
-Finished creating new node TLPastryNode[SNH: &lt;0xBE1C77..&gt;/FOO/10.9.8.7:5011]
-Finished creating new node TLPastryNode[SNH: &lt;0x4C94DA..&gt;/FOO/10.9.8.7:5012]
-Finished creating new node TLPastryNode[SNH: &lt;0x3FAE2B..&gt;/FOO/10.9.8.7:5013]
-Finished creating new node TLPastryNode[SNH: &lt;0xA5DBDC..&gt;/FOO/10.9.8.7:5014]
-Finished creating new node TLPastryNode[SNH: &lt;0x99460E..&gt;/FOO/10.9.8.7:5015]
-0xB5DAB7:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222632375:Limiting SM java.nio.channels.SocketChannel[connected local=/10.9.8.7:2771 remote=/10.9.8.7:5014] to 315 bytes.
-0xB5DAB7:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222632390:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0xB5DAB7:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222632390:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-Finished creating new node TLPastryNode[SNH: &lt;0xB5DAB7..&gt;/FOO/10.9.8.7:5016]
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634218:Limiting SM java.nio.channels.SocketChannel[connected local=/10.9.8.7:5017 remote=/10.9.8.7:2775] to 283 bytes.
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634234:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634234:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634234:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634234:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634234:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634234:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634250:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0xC3183D:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222634250:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-Finished creating new node TLPastryNode[SNH: &lt;0xC3183D..&gt;/FOO/10.9.8.7:5017]
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635843:Limiting SM java.nio.channels.SocketChannel[connected local=/10.9.8.7:2786 remote=/10.9.8.7:5011] to 410 bytes.
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635843:Limiting SM java.nio.channels.SocketChannel[connected local=/10.9.8.7:2789 remote=/10.9.8.7:5015] to 0 bytes.
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635843:Limiting SM java.nio.channels.SocketChannel[connected local=/10.9.8.7:2788 remote=/10.9.8.7:5010] to 0 bytes.
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635843:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635843:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635843:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635859:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635859:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635859:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635859:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635859:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635859:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-0x317CF2:rice.tutorial.transportlayer.BandwidthLimitingTransportLayer:1190222635859:Dropping message java.nio.HeapByteBuffer[pos=0 lim=92 cap=92] because not enough bandwidth:0
-Finished creating new node TLPastryNode[SNH: &lt;0x317CF2..&gt;/FOO/10.9.8.7:5018]
-MyApp &lt;0x9492E7..&gt; sending to &lt;0x1CACFE..&gt;
-MyApp &lt;0x317CF2..&gt; received MyMsg from &lt;0x9492E7..&gt; to &lt;0x1CACFE..&gt;
+<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar:slf4j-simple.jar -Dorg.slf4j.simpleLogger.log.rice.tutorial.transportlayer.BandwidthLimitingTransportLayer=debug rice.tutorial.transportlayer.DistTutorial 5009 10.9.8.7 5009 10 10000</span>
+</pre>
 
-...
-</span></pre>
-
-Note the logging of 
+<p/>Among the usual "Finished creating new node" and MyApp lines, the output contains log lines like these (the exact line format depends on your SLF4J backend):
 
 <pre>
-Limiting SM XXX to XXX bytes.
+Limiting XXX to XXX bytes.
 </pre>
 
 and 
@@ -866,34 +813,7 @@ and
 Dropping message XXX because not enough bandwidth:XXX
 </pre>
 
-and 
-
-<pre>
-0x34578E:org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl:1197900565238:/10.9.8.7:5014 rice.tutorial.transportlayer.NotEnoughBandwidthException
-	at rice.tutorial.transportlayer.BandwidthLimitingTransportLayer.sendMessage(BandwidthLimitingTransportLayer.java:152)
-	at rice.tutorial.transportlayer.BandwidthLimitingTransportLayer.sendMessage(BandwidthLimitingTransportLayer.java:1)
-	at org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer.sendMessage(MagicNumberTransportLayer.java:226)
-	at org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer.sendMessage(MagicNumberTransportLayer.java:1)
-	at org.mpisws.p2p.transport.limitsockets.LimitSocketsTransportLayer.sendMessage(LimitSocketsTransportLayer.java:220)
-	at org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl.sendMessage(MultiInetAddressTransportLayerImpl.java:283)
-	at org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl.sendMessage(MultiInetAddressTransportLayerImpl.java:1)
-	at org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl.messageReceived(SourceRouteTransportLayerImpl.java:413)
-	at org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl.messageReceived(SourceRouteTransportLayerImpl.java:1)
-	at org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl.messageReceived(MultiInetAddressTransportLayerImpl.java:321)
-	at org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl.messageReceived(MultiInetAddressTransportLayerImpl.java:1)
-	at org.mpisws.p2p.transport.limitsockets.LimitSocketsTransportLayer.messageReceived(LimitSocketsTransportLayer.java:224)
-	at org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer.messageReceived(MagicNumberTransportLayer.java:251)
-	at org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer.messageReceived(MagicNumberTransportLayer.java:1)
-	at rice.tutorial.transportlayer.BandwidthLimitingTransportLayer.messageReceived(BandwidthLimitingTransportLayer.java:317)
-	at rice.tutorial.transportlayer.BandwidthLimitingTransportLayer.messageReceived(BandwidthLimitingTransportLayer.java:1)
-	at org.mpisws.p2p.transport.wire.WireTransportLayerImpl.messageReceived(WireTransportLayerImpl.java:183)
-	at org.mpisws.p2p.transport.wire.UDPLayer.readHeader(UDPLayer.java:228)
-	at org.mpisws.p2p.transport.wire.UDPLayer.read(UDPLayer.java:192)
-	at rice.selector.SelectorManager.doSelections(SelectorManager.java:389)
-	at rice.selector.SelectorManager.run(SelectorManager.java:255)
-</pre>
-
-<p/>You can get rid of these exceptions by installing a proper errorHandler on the transport layers.  The default one just prints the stack trace.
+<p/>When a message is dropped, the lower layers also report the <code>rice.tutorial.transportlayer.NotEnoughBandwidthException</code> to their <code>ErrorHandler</code>. The default <code>DefaultErrorHandler</code> logs it, with its stack trace, through the layer's SLF4J logger at <code>info</code> level. You can get rid of these log lines by installing a different <code>ErrorHandler</code> on the transport layers, or by raising the level of those loggers in your SLF4J backend.
 
 <p/>However, the code still runs successfully.
 

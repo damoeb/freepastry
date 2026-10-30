@@ -13,6 +13,7 @@
 
 <h3>How FreePastry "reads" the parameters.</h3>
 <p>Every PastryNode has access to the <a href="http://freepastry.org/FreePastry/javadoc/rice/environment/Environment.html">Environment</a>.  To read a parameter, FreePastry calls <code>environment.getParameters().getXXX("parameter_name")</code>.  A parameter can be of various types including ints, strings, and InetAddresses.  See the <a href="http://freepastry.org/FreePastry/javadoc/rice/environment/params/Parameters.html">JavaDoc for Parameters</a> for more information.</p>
+<p>Most components read their parameters once, when they are constructed, into a typed configuration record such as <code>rice.pastry.PastryConfig</code>, built by its <code>fromParameters(Parameters)</code> method.  Thus a parameter must be set before you construct the node or application that uses it; changing it afterwards has no effect on components that already exist.</p>
 <h3>How FreePastry initializes the parameters.</h3>
 <p>Most applications use the default constructor for the Environment.  This will load a "default" parameter file from the jar called freepastry.params.  If java can find a file in the working directory called "user.params" it will load this as the mutable parameter store.  Any values in this file will overwrite the default configurations stored in the jar.</p>
 <p><b>Note:</b>If you want to use a different mutable parameters filename than "user.params", you can use the <a href="http://freepastry.org/FreePastry/javadoc/rice/environment/Environment.html#Environment(java.lang.String)">single argument constructor</a> of Environment.  If you wish to have additional defaults in your application, you can call the <a href="http://freepastry.org/FreePastry/javadoc/rice/environment/Environment.html#Environment(java.lang.String[],%20java.lang.String)">2 argument constructor</a> of the Environment.
@@ -33,14 +34,14 @@ There are 3 ways to adjust FreePastry's parameters:
 <p>Thus if you want to add/modify the parameter "external_address" and set it to "123.45.67.89:1234" do the following.</p>  
 
 <p>1) Create a text file named user.params in your working directory.</p>
-<p>2) Add the following line to freepastry.params</p>
+<p>2) Add the following line to user.params</p>
 <pre>
 external_address = 123.45.67.89:1234
 </pre>  
 
 <a name="paramsjar">
 <h3>Changing the default freepastry.params file included in the Jar.</h3>
-<p>Before building (with ant), edit the file located in the source distribution in <code>jars/freepastry.params</code>.  The documentation for the parameters is in the file.</p>
+<p>Edit the file located in the source distribution in <code>src/main/resources/freepastry.params</code>, then rebuild the jar with <code>./mvnw -B package -DskipTests</code>.  The documentation for the parameters is in the file.</p>
 
 <a name="paramsprog">
 <h3>Changing the params programatically.</h3>

@@ -63,31 +63,33 @@ public interface SplitStreamClient {
    * @param s The stripe the data as received on
    */
   public void deliver(Stripe s, byte[] data);
+
+}
 </pre>
 
 Now we take a look at the member variables in MySplitStreamClient.
 <pre>
   /**
-   * The lenght of a message in bytes.
+   * The length of a message in bytes.
    */
   public static final int DATA_LENGTH = 10;
   /**
    * The number of messages to publish.
    */
   public static final int NUM_PUBLISHES = 10;
-  
+
   /**
    * The message sequence number.  Will be incremented after each send.
-   * 
+   *
    * Out of laziness we are encoding this as a byte in the stream, so the range is limited
    */
   byte seqNum = 0;
-  
-  /** 
+
+  /**
    * My handle to a SplitStream impl.
    */
   SplitStream mySplitStream;
-  
+
   /**
    * The Id of the only Channel we are subscribing to.
    */
@@ -97,16 +99,16 @@ Now we take a look at the member variables in MySplitStreamClient.
    * The channel.
    */
   Channel myChannel;
-  
+
   /**
    * The stripes... acquired from myChannel.
    */
   Stripe[] myStripes;
-  
+
   /**
    * Data source...
    */
-  protected RandomSource random;  
+  private final RandomSource random;
 </pre>
 
 <p/>The <code>ChannelId</code> is similar to the <code>Topic</code> in SplitStream.  It is usually a hash of a "human readable" content name.
@@ -122,7 +124,7 @@ Now we take a look at the member variables in MySplitStreamClient.
 
     // use this to generate data
     this.random = endpoint.getEnvironment().getRandomSource();
-    
+
     // construct Scribe
     mySplitStream = new SplitStreamImpl(node,"splitStreamTutorial");
 
@@ -131,10 +133,10 @@ Now we take a look at the member variables in MySplitStreamClient.
 
     // construct the ChannelId
     myChannelId = new ChannelId(temp);
-    
+
     // now we can receive messages
     endpoint.register();
-  }  
+  }
 </pre>
 
 <p/>The <code>environment</code> already contains our <code>RandomSource</code>.  
@@ -157,8 +159,8 @@ This is trivial once you have the ChannelId.  We do this in the <code>MySplitStr
 <pre>
     // subscribing notifies your application when data comes through the tree
     myStripes = myChannel.getStripes();
-    for (int curStripe = 0; curStripe &lt; myStripes.length; curStripe++) {
-      myStripes[curStripe].subscribe(this); 
+    for (Stripe myStripe : myStripes) {
+      myStripe.subscribe(this);
     }
 </pre>
 
@@ -174,24 +176,24 @@ Unlike Scribe which sends a ScribeContent, SplitStream disseminates byte arrays.
       // second byte: stripe
       // rest: random
       byte[] data = new byte[DATA_LENGTH];
-      
+
       // yes, we waste some random bytes here
       random.nextBytes(data);
       data[0] = seqNum;
       data[1] = curStripe;
-      
+
       // print what we are sending
       System.out.println("Node "+endpoint.getLocalNodeHandle()+" publishing "+seqNum+" "+printData(data));
 
       // publish the data
-      myStripes[curStripe].publish(data); 
+      myStripes[curStripe].publish(data);
     }
-    
+
     // increment the sequence number
     seqNum++;
-    
+
     // cancel after sending all the messages
-    if (seqNum >= NUM_PUBLISHES) publishTask.cancel();
+    if (seqNum &gt;= NUM_PUBLISHES) publishTask.cancel();
   }
 </pre>
 
@@ -199,7 +201,7 @@ The above code construct the <code>byte[] data</code> for each stripe and then c
 
 <pre>
   private String printData(byte[] data) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i &lt; data.length-1; i++) {
       sb.append((int)data[i]);
       sb.append(',');
@@ -223,14 +225,13 @@ All we are doing here is printing output to stdout.
 
 
 <a name="Run"></a><h3>Run the code.</h3>
-Now, let's run the code using the <code>-direct</code> flag. and 10 nodes.
+Build the project once with <code>./mvnw -B package -DskipTests assembly:single</code>, which writes <code>target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  Now, let's run the code using the <code>-direct</code> flag and 10 nodes.
 
 Your output will resemble:
 
 <pre>
-<span class="input">java -cp .:FreePastry-@freepastry_version@.jar rice.tutorial.splitstream.SplitStreamTutorial -direct 10</span>
-<span class="output">:rice.pastry.direct.DirectPastryNodeFactory:0:No bootstrap node provided, starting a new ring...
-Finished creating new node Pastry node &lt;0x30C9E7..&gt;
+<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.splitstream.SplitStreamTutorial -direct 10</span>
+<span class="output">Finished creating new node Pastry node &lt;0x30C9E7..&gt;
 Finished creating new node Pastry node &lt;0x5C775C..&gt;
 Finished creating new node Pastry node &lt;0x0B86E5..&gt;
 Finished creating new node Pastry node &lt;0xD09F58..&gt;
@@ -310,7 +311,7 @@ Note that the order of delivery of the individual stripes is not preserved.  We 
 <hr/><div class="nav">
   <span class="nav-left"><a href="tut_app_sockets.html#appsocket">Previous (Application Sockets)</a></span> 
   <span class="nav-center"><a href="index.html">Contents</a></span> 
-  <span class="nav-right"><a href="tut_raw_serialization.html#raw">Next (Raw Serialization 1)</a></span>
+  <span class="nav-right"><a href="tut_raw_serialization.html#raw">Next (Raw Serialization)</a></span>
 </div><br/>
 
 <div class="footer">

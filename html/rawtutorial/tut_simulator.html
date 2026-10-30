@@ -25,10 +25,7 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 
 <a name="lessonDirect"><h1>Simulator Tutorial</h1></a>
 <h2>FreePastry's Direct Simulator</h2>
-<h3>Download the tutorial files: 
-<a href="./src/direct/DirectTutorial.java">DirectTutorial.java</a>,
-<a href="./src/direct/MyApp.java">MyApp.java</a>,
-<a href="./src/direct/MyMsg.java">MyMsg.java</a> into a directory called rice/tutorial/direct/.</h3>
+<h3>Tutorial source: <code>src/main/java/rice/tutorial/direct/</code> (DirectTutorial.java, MyApp.java, MyMsg.java).</h3>
 
   <p>Before completing this Tutorial, we recommend completing <a href="tut_multiple_nodes.html#lesson4">Lesson 4</a> of the FreePastry tutorial.</p>
   <p>FreePastry's Simulator is a Discreet Event Simulator.  The puropse of this tutorial is to show you how to test/simulate your application on a medium sized network ( < 100,000 Nodes) with a minimum of complications/changes to your code.  If you followed the advice of the FreePastry tutorial up to this point, it should be very easy to test your code in the simulator.  Before we continue, let's list what FreePastry's simulator does and doesn't do:
@@ -58,14 +55,14 @@ Changes:
 Here is the change to the PastryNodeFactory.
 
 <pre>
-  PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
+    PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
 </pre>  
   
 has been changed to:
 
 <pre>
     // create a new network
-    NetworkSimulator simulator = new EuclideanNetwork(env);
+    NetworkSimulator&lt;DirectNodeHandle,RawMessage&gt; simulator = new EuclideanNetwork&lt;DirectNodeHandle,RawMessage&gt;(env);
 
     // set the max speed of the simulator so we can create several nodes in a short amount of time
     // by default the simulator will advance very fast while we are slow on the main() thread
@@ -75,25 +72,28 @@ has been changed to:
     PastryNodeFactory factory = new DirectPastryNodeFactory(nidFactory, simulator, env);
 </pre>  
   
-<p>First we create a implementation of a NetworkSimulator, the EuclideanNetwork.  This is the network topology, in this case a <i>plane</i>.  In the <a href="tut_gtitm.html">next tutorial</a>, we will simulate using a latency matrix.</p>
+<p>First we create an implementation of a NetworkSimulator, the EuclideanNetwork. It is generic in the node handle type (<code>DirectNodeHandle</code>) and the message type; every message on the simulated wire is a <code>RawMessage</code>, exactly as on the socket transport.  This is the network topology, in this case a <i>plane</i>.  In the <a href="tut_gtitm.html">next tutorial</a>, we will simulate using a latency matrix.</p>
 <p>By default, the simulator is very aggressive at advancing time.  The call to setMaxSpeed() limits the rate at wich the simulator can progress to "real-time".  It is helpful to do this while you are setting up your network, because until you have some nodes to simulate, time will advance very quickly.</p>
 <p>Finally we create our PastryNodeFactory which is similar to the construction of the SocketPastryNodeFactory, but takes a NetworkSimulator instead of a bindport.</p>
 
 <p>The bootHandle Code:</p>
 
 <pre>
-  NodeHandle bootHandle = ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
+    node.boot(bootaddress);
 </pre>  
   
 has been changed to:
 
 <pre>
-  // this way we can boot off the previous node
-  bootHandle = node.getLocalHandle();
+      // boot the node
+      node.boot(bootHandle);
+
+      // this way we can boot off the previous node
+      bootHandle = node.getLocalHandle();
 </pre>  
   
 
-<p>The difference being that we don't need to use an InetSocketAddress in the simulator because it is meaningliess in this context.</p>
+<p>The difference being that we don't need to use an InetSocketAddress in the simulator because it is meaningless in this context. The first node boots with a <code>null</code> handle and starts a new ring. As in Lesson 4, the loop then waits with <code>node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS)</code> until the node is ready or its join has failed.</p>
 
 Once we complete the creation of our network, we go ahead and tell the simulator to run as fast as possible:
 
@@ -104,12 +104,11 @@ Once we complete the creation of our network, we go ahead and tell the simulator
 
 <p>One last note: Because some of the network topologies use random coordinates to generate latencies, it can be important to set a minimum delay, in case nodes are specified in the identical, or "very-near" coordinates.  In general, it is unlikely to get leas than a 2milli delay between nodes.  To specify a minimum delay, you must set the <a href="params.html">param</a> <code>pastry_direct_min_delay</code> to the appropriate value.  FreePastry defaults this value to <b>2 millis</b>.
 
-Complie and execute this code as before.  Note that it runs much much faster than with the socket transport layer.  Here is the example output of this code:
+<p>Build the project once with <code>./mvnw -B package assembly:single -DskipTests</code>, which writes <code>target/freepastry-@freepastry_version@-jar-with-dependencies.jar</code> including the SLF4J API, and run the tutorial from it. FreePastry logs through SLF4J and ships no logging backend; without one on the classpath SLF4J prints a warning and discards the log output, which is fine here. Note that it runs much faster than with the socket transport layer. Here is the example output of this code:</p>
 
 <pre>
-<span class="input">java -cp .:FreePastry-@freepastry_version@.jar rice.tutorial.direct.DistTutorial 10</span>
-<span class="output">:rice.pastry.direct.DirectPastryNodeFactory:0:No bootstrap node provided, starting a new ring...
-Finished creating new node Pastry node <0x9C1733..>
+<span class="input">java -cp target/freepastry-@freepastry_version@-jar-with-dependencies.jar rice.tutorial.direct.DirectTutorial 10</span>
+<span class="output">Finished creating new node Pastry node <0x9C1733..>
 Finished creating new node Pastry node <0x8AE001..>
 Finished creating new node Pastry node <0x0CADFD..>
 Finished creating new node Pastry node <0x8682F1..>
