@@ -164,10 +164,15 @@ public class SecurityUtilsUnit {
     String hmacText = "<1896.697170952@postoffice.reston.mci.net>";
     String hmacKey = "tanstaaftanstaaf";
     byte[] hmac = SecurityUtils.hmac(hmacKey.getBytes(), hmacText.getBytes());
-    byte[] hmacResult = new byte[] {(byte) 0xb9, (byte) 0x13, (byte) 0xa6, (byte) 0x02,
-      (byte) 0xc7, (byte) 0xed, (byte) 0xa7, (byte) 0xa4,
-      (byte) 0x95, (byte) 0xb4, (byte) 0xe6, (byte) 0xe7,
-      (byte) 0x33, (byte) 0x4d, (byte) 0x38, (byte) 0x90};
+    // HMAC-SHA256
+    byte[] hmacResult = new byte[] {(byte) 0xf0, (byte) 0x01, (byte) 0x1b, (byte) 0xbf,
+      (byte) 0x7c, (byte) 0x16, (byte) 0x18, (byte) 0xef,
+      (byte) 0x90, (byte) 0xe3, (byte) 0xf1, (byte) 0x81,
+      (byte) 0x48, (byte) 0xe5, (byte) 0xed, (byte) 0xa4,
+      (byte) 0xe1, (byte) 0x56, (byte) 0x31, (byte) 0xc9,
+      (byte) 0xc3, (byte) 0x8e, (byte) 0xbe, (byte) 0xf0,
+      (byte) 0x62, (byte) 0xbf, (byte) 0x71, (byte) 0x43,
+      (byte) 0xff, (byte) 0x72, (byte) 0xe9, (byte) 0x44};
 
     if (Arrays.equals(hmac, hmacResult)) {
       System.out.println("[ PASSED ]");
@@ -184,10 +189,14 @@ public class SecurityUtilsUnit {
     String hmacText2 = "<1080369447214@The-Edge.local>";
     String hmacKey2 = "monkey";
     byte[] hmac2 = SecurityUtils.hmac(hmacKey2.getBytes(), hmacText2.getBytes());
-    byte[] hmacResult2 = new byte[] {(byte) 0x9b, (byte) 0xae, (byte) 0x52, (byte) 0xef,
-      (byte) 0x55, (byte) 0x45, (byte) 0x24, (byte) 0x91,
-      (byte) 0x36, (byte) 0x85, (byte) 0x74, (byte) 0x72,
-      (byte) 0x21, (byte) 0xbb, (byte) 0x84, (byte) 0x22};
+    byte[] hmacResult2 = new byte[] {(byte) 0x3f, (byte) 0x63, (byte) 0x7a, (byte) 0xb2,
+      (byte) 0x9c, (byte) 0xf2, (byte) 0x57, (byte) 0x3d,
+      (byte) 0x93, (byte) 0x9f, (byte) 0x94, (byte) 0xbf,
+      (byte) 0x77, (byte) 0x50, (byte) 0x2c, (byte) 0x04,
+      (byte) 0x33, (byte) 0x0d, (byte) 0x08, (byte) 0xb8,
+      (byte) 0x4f, (byte) 0xa2, (byte) 0x72, (byte) 0xaf,
+      (byte) 0x85, (byte) 0x2f, (byte) 0x92, (byte) 0xcc,
+      (byte) 0x30, (byte) 0x1e, (byte) 0x17, (byte) 0x42};
 
     if (Arrays.equals(hmac2, hmacResult2)) {
       System.out.println("[ PASSED ]");

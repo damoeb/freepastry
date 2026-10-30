@@ -41,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
+import java.util.HexFormat;
 
 import org.junit.jupiter.api.Test;
 
@@ -171,6 +172,25 @@ public class SecurityUtilsTest {
     assertEquals(32, key.length);
     assertArrayEquals(key, SecurityUtils.deriveKeyFromPassword(password, salt));
     assertFalse(Arrays.equals(key, SecurityUtils.deriveKeyFromPassword(password, otherSalt)));
+  }
+
+  // ----- MAC: HMAC-SHA256 -----
+
+  @Test
+  public void hmacIsHmacSha256() {
+    // RFC 4231, test case 2
+    byte[] expected = HexFormat.of().parseHex("5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843");
+    assertArrayEquals(expected, SecurityUtils.hmac("Jefe".getBytes(StandardCharsets.US_ASCII),
+        "what do ya want for nothing?".getBytes(StandardCharsets.US_ASCII)));
+  }
+
+  @Test
+  public void hmacDependsOnTheWholeKey() {
+    // the old MD5 construction silently cut keys to 64 bytes
+    byte[] longKey = new byte[100];
+    byte[] otherLongKey = longKey.clone();
+    otherLongKey[99] = 1;
+    assertFalse(Arrays.equals(SecurityUtils.hmac(longKey, PLAIN), SecurityUtils.hmac(otherLongKey, PLAIN)));
   }
 
   // ----- asymmetric -----

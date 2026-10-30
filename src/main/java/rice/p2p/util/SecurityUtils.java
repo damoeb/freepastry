@@ -49,7 +49,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
@@ -71,6 +70,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
@@ -158,64 +158,11 @@ public class SecurityUtils {
   public final static String HASH_ALGORITHM = HashUtils.ALGORITHM;
 
   /**
-   * The name of the hmac function.
+   * The name of the hmac function (RFC 2104 HMAC over SHA-256).
    */
-  public final static String HMAC_ALGORITHM = "MD5";
-
-  /**
-   * The name of the apop function.
-   */
-  public final static String APOP_ALGORITHM = "MD5";
-
-  /**
-   * The length of hmac keys
-   */
-  public final static int HMAC_KEY_LENGTH = 64;
-
-  /**
-   * The ipad of hmac keys, as defined in RFC 2195
-   */
-  public final static byte HMAC_IPAD_BYTE = 0x36;
-
-  /**
-   * The opad of hmac keys, as defined in RFC 2195
-   */
-  public final static byte HMAC_OPAD_BYTE = 0x5C;
-
-  /**
-   * The ipad byte array for use in hmac
-   */
-  public final static byte[] HMAC_IPAD = new byte[HMAC_KEY_LENGTH];
-
-  /**
-   * The opad byte array for use in hmac
-   */
-  public final static byte[] HMAC_OPAD = new byte[HMAC_KEY_LENGTH];
-
-  /**
-   * Initialize the ipad/opad buffers
-   */
-  static {
-    Arrays.fill(HMAC_IPAD, HMAC_IPAD_BYTE);
-    Arrays.fill(HMAC_OPAD, HMAC_OPAD_BYTE);
-  }
+  public final static String HMAC_ALGORITHM = "HmacSHA256";
 
   // ----- STATIC CIPHER OBJECTS -----
-
-  /**
-   * The message digest used for doing apop
-   */
-  private static final MessageDigest apop;
-
-  /**
-   * The message digest used for doing hmacing
-   */
-  private static final MessageDigest hmac1;
-
-  /**
-   * The message digest used for doing hmacing
-   */
-  private static final MessageDigest hmac2;
 
   /**
    * The cipher used to encrypt/decrypt data using RSA
@@ -261,9 +208,6 @@ public class SecurityUtils {
       generatorAsymmetric = KeyPairGenerator.getInstance(ASYMMETRIC_GENERATOR);
       factoryAsymmetric = KeyFactory.getInstance(ASYMMETRIC_GENERATOR);
       signature = Signature.getInstance(SIGNATURE_ALGORITHM);
-      apop = MessageDigest.getInstance(APOP_ALGORITHM);
-      hmac1 = MessageDigest.getInstance(HMAC_ALGORITHM);
-      hmac2 = MessageDigest.getInstance(HMAC_ALGORITHM);
 
       generatorSymmetric.init(SYMMETRIC_KEY_LENGTH, random);
     } catch (NoSuchAlgorithmException e) {
@@ -325,41 +269,20 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method for determining the apop of a challenge and password using a secure hashing
-   * algorithm.
+   * Utility method for determining the HMAC-SHA256 of a byte[] under a key.
    *
-   * @param password The password
-   * @param challenge The challengr
-   * @return The hash value
-   * @exception SecurityException If the hashing does not happen properly
-   */
-  public static byte[] apop(byte[] challenge, byte[] password) throws SecurityException {
-    synchronized (apop) {
-      apop.update(challenge);
-      apop.update(password);
-      return apop.digest();
-    }
-  }
-
-  /**
-   * Utility method for determining the hmac of a byte[] and key using a secure hashing
-   * algorithm.
-   *
+   * @param key The key, of any non-zero length
    * @param text The text
-   * @param key The key
-   * @return The hmac value
+   * @return The 32-byte hmac value
    * @exception SecurityException If the hmacing does not happen properly
    */
   public static byte[] hmac(byte[] key, byte[] text) throws SecurityException {
-    synchronized (hmac1) {
-      byte[] realKey = new byte[HMAC_KEY_LENGTH];
-      System.arraycopy(key, 0, realKey, 0, (key.length < realKey.length ? key.length : realKey.length));
-
-      hmac1.update(MathUtils.xor(realKey, HMAC_IPAD));
-      hmac1.update(text);
-      hmac2.update(MathUtils.xor(realKey, HMAC_OPAD));
-      hmac2.update(hmac1.digest());
-      return hmac2.digest();
+    try {
+      Mac mac = Mac.getInstance(HMAC_ALGORITHM);
+      mac.init(new SecretKeySpec(key, HMAC_ALGORITHM));
+      return mac.doFinal(text);
+    } catch (GeneralSecurityException | IllegalArgumentException e) {
+      throw new SecurityException("Could not compute the hmac: " + e, e);
     }
   }
 
