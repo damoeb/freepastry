@@ -39,10 +39,18 @@ package rice.p2p.util;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.MGF1ParameterSpec;
 import java.util.Arrays;
 import java.util.HexFormat;
+import javax.crypto.Cipher;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -193,34 +201,93 @@ public class SecurityUtilsTest {
     assertFalse(Arrays.equals(SecurityUtils.hmac(longKey, PLAIN), SecurityUtils.hmac(otherLongKey, PLAIN)));
   }
 
-  // ----- asymmetric -----
+  // ----- asymmetric: RSA-OAEP (SHA-256, MGF1-SHA-256) and SHA256withRSA -----
+
+  static KeyPair pairA;
+  static KeyPair pairB;
+
+  @BeforeAll
+  public static void generateKeyPairs() {
+    pairA = SecurityUtils.generateKeyAsymmetric();
+    pairB = SecurityUtils.generateKeyAsymmetric();
+  }
 
   static BigInteger modulus(KeyPair pair) {
     return ((RSAPublicKey) pair.getPublic()).getModulus();
   }
 
-  /** Returns the value as an unsigned big-endian array of exactly the given length. */
-  static byte[] unsigned(BigInteger value, int length) {
-    byte[] signed = value.toByteArray();
-    byte[] result = new byte[length];
-    int copied = Math.min(signed.length, length);
-    System.arraycopy(signed, signed.length - copied, result, length - copied, copied);
-    return result;
+  @Test
+  public void generatesRsaKeysOf3072Bits() {
+    assertEquals(3072, modulus(pairA).bitLength());
   }
 
   @Test
-  public void decryptingWithTheWrongPrivateKeyThrowsSecurityException() {
-    KeyPair a = SecurityUtils.generateKeyAsymmetric();
-    KeyPair b = SecurityUtils.generateKeyAsymmetric();
-    // a ciphertext for the key with the larger modulus, decrypted with the other one
-    boolean aIsLarger = modulus(a).compareTo(modulus(b)) > 0;
-    KeyPair right = aIsLarger ? a : b;
-    KeyPair wrong = aIsLarger ? b : a;
-    BigInteger wrongModulus = modulus(wrong);
-    // a ciphertext larger than the wrong key's modulus is the case that escaped as an unchecked DataLengthException;
-    // the wrong modulus itself is a valid ciphertext for the right key and never fits below the wrong one
-    byte[] cipher = unsigned(wrongModulus, SecurityUtils.encryptAsymmetric(new byte[0], right.getPublic()).length);
-    assertTrue(new BigInteger(1, cipher).compareTo(modulus(right)) < 0);
-    assertThrows(SecurityException.class, () -> SecurityUtils.decryptAsymmetric(cipher, wrong.getPrivate()));
+  public void asymmetricRoundTrip() {
+    byte[] secret = SecurityUtils.generateKeySymmetric();
+    byte[] cipher = SecurityUtils.encryptAsymmetric(secret, pairA.getPublic());
+    assertEquals(3072 / 8, cipher.length);
+    assertArrayEquals(secret, SecurityUtils.decryptAsymmetric(cipher, pairA.getPrivate()));
+    assertFalse(Arrays.equals(cipher, SecurityUtils.encryptAsymmetric(secret, pairA.getPublic())), "OAEP is randomized");
+  }
+
+  @Test
+  public void asymmetricCiphertextIsStandardOaepWithSha256() throws Exception {
+    byte[] secret = SecurityUtils.generateKeySymmetric();
+    Cipher jdk = Cipher.getInstance("RSA/ECB/OAEPPadding", "SunJCE");
+    jdk.init(Cipher.DECRYPT_MODE, pairA.getPrivate(),
+        new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT));
+    assertArrayEquals(secret, jdk.doFinal(SecurityUtils.encryptAsymmetric(secret, pairA.getPublic())));
+  }
+
+  @Test
+  public void decryptingWithTheWrongPrivateKeyThrows() {
+    byte[] cipher = SecurityUtils.encryptAsymmetric(SecurityUtils.generateKeySymmetric(), pairA.getPublic());
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptAsymmetric(cipher, pairB.getPrivate()));
+  }
+
+  @Test
+  public void decryptingACiphertextLargerThanTheModulusThrowsSecurityException() {
+    // the case that once escaped as an unchecked DataLengthException: the modulus itself is the smallest such value
+    byte[] modulus = modulus(pairB).toByteArray();
+    byte[] cipher = Arrays.copyOfRange(modulus, modulus.length - 3072 / 8, modulus.length);
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptAsymmetric(cipher, pairB.getPrivate()));
+  }
+
+  @Test
+  public void decryptingATamperedAsymmetricCiphertextThrows() {
+    byte[] cipher = SecurityUtils.encryptAsymmetric(SecurityUtils.generateKeySymmetric(), pairA.getPublic());
+    cipher[cipher.length - 1] ^= 0x01;
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptAsymmetric(cipher, pairA.getPrivate()));
+  }
+
+  @Test
+  public void signaturesAreSha256WithRsaOverTheDataItself() throws Exception {
+    byte[] sig = SecurityUtils.sign(PLAIN, pairA.getPrivate());
+    assertTrue(SecurityUtils.verify(PLAIN, sig, pairA.getPublic()));
+
+    Signature jdk = Signature.getInstance("SHA256withRSA", "SunRsaSign");
+    jdk.initVerify(pairA.getPublic());
+    jdk.update(PLAIN);
+    assertTrue(jdk.verify(sig), "no extra hash of the data before signing");
+  }
+
+  @Test
+  public void verifyingRejectsTamperedDataSignaturesAndTheWrongKey() {
+    byte[] sig = SecurityUtils.sign(PLAIN, pairA.getPrivate());
+    byte[] tamperedData = PLAIN.clone();
+    tamperedData[0] ^= 0x01;
+    byte[] tamperedSig = sig.clone();
+    tamperedSig[0] ^= 0x01;
+    assertFalse(SecurityUtils.verify(tamperedData, sig, pairA.getPublic()));
+    assertFalse(SecurityUtils.verify(PLAIN, tamperedSig, pairA.getPublic()));
+    assertFalse(SecurityUtils.verify(PLAIN, sig, pairB.getPublic()));
+  }
+
+  @Test
+  public void encodedKeysDecodeToEquivalentKeys() {
+    PublicKey pub = SecurityUtils.decodePublicKey(SecurityUtils.encodePublicKey(pairA.getPublic()));
+    PrivateKey priv = SecurityUtils.decodePrivateKey(SecurityUtils.encodePrivateKey(pairA.getPrivate()));
+    assertArrayEquals(PLAIN, SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(PLAIN, pub), priv));
+    assertTrue(SecurityUtils.verify(PLAIN, SecurityUtils.sign(PLAIN, priv), pub));
   }
 }

@@ -45,16 +45,18 @@ import java.security.PublicKey;
 /**
  * @(#) EncryptedOutputStream.java
  *
- * Class which serves as an output stream and transparently encrypted
- * the stream data with the given public key.  It does this by generating
- * a symmetric key, k, and then encrypting k under the public key.
- * The header sent over the stream therefore looks like
+ * Hybrid encryption: a fresh 256-bit AES key k, wrapped with RSA-OAEP (SHA-256, MGF1-SHA-256) under the
+ * public key, then the data in AES-256-GCM chunks under k.  The stream therefore looks like
  *
  * 4 bytes - length(e(k))
  * e(k)
  * chunks of upper-level data
  *
- * where each chunk is length(data) [4 bytes] followed by data
+ * where each chunk is length(c) [4 bytes] followed by c, the output of
+ * {@link SecurityUtils#encryptSymmetric(byte[], byte[], int, int, byte[])}: a 12-byte IV, the ciphertext and a
+ * 16-byte tag.  The additional authenticated data of the n-th chunk (from 0) is n as an 8-byte big-endian long,
+ * so that dropping, repeating or reordering chunks fails authentication.  Truncation after a whole chunk is
+ * not detected.
  *
  * @version $Id: EncryptedOutputStream.java 3613 2007-02-15 14:45:14Z jstewart $
  *
@@ -79,6 +81,9 @@ public class EncryptedOutputStream extends OutputStream {
 
   // the amount of the buffer which is currently used
   private int bufferLength;
+
+  // the number of chunks written so far
+  private long chunks;
 
   /**
    * Builds an encrypted outputstream given a public key to
@@ -156,7 +161,7 @@ public class EncryptedOutputStream extends OutputStream {
    * Internal method which writes out the buffered data
    */
   protected void writeBuffer() throws IOException {
-    byte[] encdata = SecurityUtils.encryptSymmetric(buffer, key, 0, bufferLength);
+    byte[] encdata = SecurityUtils.encryptSymmetric(buffer, key, 0, bufferLength, MathUtils.longToByteArray(chunks++));
     stream.writeInt(encdata.length);
     stream.write(encdata);
 

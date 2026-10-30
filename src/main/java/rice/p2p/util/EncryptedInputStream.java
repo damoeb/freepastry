@@ -45,16 +45,15 @@ import java.security.PrivateKey;
 /**
 * @(#) EncryptedInputStream.java
  *
- * Class which serves as an input stream and transparently dencrypts
- * the stream data with the given private key.  It does this by reading
- * a symmetric key, k, and then decrypting k under the public key.
- * The header read from the stream therefore looks like
+ * Reads what {@link EncryptedOutputStream} writes, decrypting the AES key with the private key, and decrypting
+ * and authenticating each chunk.  A chunk that was changed, dropped, repeated or moved makes the read throw a
+ * {@link SecurityException}.  The format:
  *
  * 4 bytes - length(e(k))
  * e(k)
  * chunks of upper-level data
  *
- * where each chunk is length(data) [4 bytes] followed by data
+ * where each chunk is length(c) [4 bytes] followed by c, see {@link EncryptedOutputStream}
  *
  * @version $Id: EncryptedInputStream.java 3613 2007-02-15 14:45:14Z jstewart $
  *
@@ -76,6 +75,9 @@ public class EncryptedInputStream extends InputStream {
 
   // the amount of buffered data which has been returned
   private int bufferLength;
+
+  // the number of chunks read so far
+  private long chunks;
 
   /**
    * Builds an encrypted inputstream given a private key to
@@ -153,7 +155,7 @@ public class EncryptedInputStream extends InputStream {
     byte[] encdata = new byte[stream.readInt()];
     stream.readFully(encdata);
 
-    this.buffer = SecurityUtils.decryptSymmetric(encdata, key);
+    this.buffer = SecurityUtils.decryptSymmetric(encdata, key, MathUtils.longToByteArray(chunks++));
     this.bufferLength = 0;
   }
 

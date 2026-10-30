@@ -45,35 +45,32 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
-import java.security.SignatureException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.crypto.AEADBadTagException;
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -91,10 +88,16 @@ public class SecurityUtils {
   // ----- STATIC CONFIGURATION FIELDS -----
 
   /**
-   * The name of the asymmetric cipher to use.
+   * The name of the asymmetric cipher to use, with {@link #ASYMMETRIC_PARAMETERS}.
    */
   public final static String ASYMMETRIC_ALGORITHM = "RSA/ECB/OAEPPadding";
-  public final static String DEPRECATED_ASYMMETRIC_ALGORITHM = "RSA";
+
+  /**
+   * The OAEP parameters: SHA-256 both as the hash and in MGF1.  Given explicitly, because the JDK's
+   * "OAEPWithSHA-256AndMGF1Padding" uses SHA-1 in MGF1, and BouncyCastle's "OAEPPadding" SHA-1 throughout.
+   */
+  public final static OAEPParameterSpec ASYMMETRIC_PARAMETERS =
+      new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
 
   /**
    * The name of the symmetric cipher to use.
@@ -113,6 +116,11 @@ public class SecurityUtils {
   public final static String ASYMMETRIC_GENERATOR = "RSA";
 
   /**
+   * The length of generated RSA moduli, in bits
+   */
+  public final static int ASYMMETRIC_KEY_LENGTH = 3072;
+
+  /**
    * The name of the symmetric key generator to use.
    */
   public final static String SYMMETRIC_GENERATOR = "AES";
@@ -120,7 +128,7 @@ public class SecurityUtils {
   /**
    * The name of the signature algorithm to use.
    */
-  public final static String SIGNATURE_ALGORITHM = "SHA1withRSA";
+  public final static String SIGNATURE_ALGORITHM = "SHA256withRSA";
 
   /**
    * The length of the symmetric keys, in bits.  Only keys of exactly this length are accepted.
@@ -165,12 +173,6 @@ public class SecurityUtils {
   // ----- STATIC CIPHER OBJECTS -----
 
   /**
-   * The cipher used to encrypt/decrypt data using RSA
-   */
-  private static final Cipher cipherAsymmetric;
-  private static final Cipher deprecatedCipherAsymmetric;
-
-  /**
    * The generator used to generate AES keys
    */
   private static final KeyGenerator generatorSymmetric;
@@ -186,11 +188,6 @@ public class SecurityUtils {
   private static final KeyFactory factoryAsymmetric;
 
   /**
-   * The signature used for verification and signing data.
-   */
-  private static final Signature signature;
-
-  /**
    * The RNG for generating IVs, salts and keys
    */
   private static final SecureRandom random = new SecureRandom();
@@ -202,20 +199,14 @@ public class SecurityUtils {
     Security.insertProviderAt(new org.bouncycastle.jce.provider.BouncyCastleProvider(), 2);
 
     try {
-      cipherAsymmetric = Cipher.getInstance(ASYMMETRIC_ALGORITHM, "BC");
-      deprecatedCipherAsymmetric = Cipher.getInstance(DEPRECATED_ASYMMETRIC_ALGORITHM);
       generatorSymmetric = KeyGenerator.getInstance(SYMMETRIC_GENERATOR);
       generatorAsymmetric = KeyPairGenerator.getInstance(ASYMMETRIC_GENERATOR);
       factoryAsymmetric = KeyFactory.getInstance(ASYMMETRIC_GENERATOR);
-      signature = Signature.getInstance(SIGNATURE_ALGORITHM);
 
       generatorSymmetric.init(SYMMETRIC_KEY_LENGTH, random);
+      generatorAsymmetric.initialize(ASYMMETRIC_KEY_LENGTH, random);
     } catch (NoSuchAlgorithmException e) {
       throw new SecurityException("NoSuchAlgorithmException on construction: " + e);
-    } catch (NoSuchPaddingException e) {
-      throw new SecurityException("NoSuchPaddingException on construction: " + e);
-    } catch (NoSuchProviderException e) {
-      throw new SecurityException("NoSuchProviderException on construction: " + e);
     }
   }
 
@@ -450,7 +441,7 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method for signing a block of data with the a private key
+   * Utility method for signing a block of data with the a private key, using {@link #SIGNATURE_ALGORITHM}
    *
    * @param data The data
    * @param key The key to use to sign
@@ -459,21 +450,17 @@ public class SecurityUtils {
    */
   public static byte[] sign(byte[] data, PrivateKey key) throws SecurityException {
     try {
-      synchronized (signature) {
-        signature.initSign(key);
-        signature.update(hash(data));
-
-        return signature.sign();
-      }
-    } catch (InvalidKeyException e) {
-      throw new SecurityException("InvalidKeyException signing object: " + e);
-    } catch (SignatureException e) {
-      throw new SecurityException("SignatureException signing object: " + e);
+      Signature signature = Signature.getInstance(SIGNATURE_ALGORITHM);
+      signature.initSign(key);
+      signature.update(data);
+      return signature.sign();
+    } catch (GeneralSecurityException e) {
+      throw new SecurityException("Could not sign " + data.length + " bytes: " + e, e);
     }
   }
 
   /**
-   * Utility method for verifying a signature
+   * Utility method for verifying a signature made by {@link #sign(byte[], PrivateKey)}
    *
    * @param data The data to verify
    * @param sig The proposed signature
@@ -483,79 +470,55 @@ public class SecurityUtils {
    */
   public static boolean verify(byte[] data, byte[] sig, PublicKey key) throws SecurityException {
     try {
-      synchronized (signature) {
-        signature.initVerify(key);
-        signature.update(hash(data));
-
-        return signature.verify(sig);
-      }
-    } catch (InvalidKeyException e) {
-      throw new SecurityException("InvalidKeyException verifying object: " + e);
-    } catch (SignatureException e) {
-      throw new SecurityException("SignatureException verifying object: " + e);
+      Signature signature = Signature.getInstance(SIGNATURE_ALGORITHM);
+      signature.initVerify(key);
+      signature.update(data);
+      return signature.verify(sig);
+    } catch (GeneralSecurityException e) {
+      throw new SecurityException("Could not verify a signature: " + e, e);
     }
   }
 
   /**
-   * Encrypts the given byte[] using the provided public key. TO DO: Check
-   * length of input
+   * Encrypts the given byte[] with RSA-OAEP (SHA-256, MGF1 with SHA-256) under the provided public key.  The data
+   * must be short: at most the modulus length minus 66 bytes (so 318 bytes for a 3072-bit key).  To encrypt
+   * more, encrypt a fresh {@link #generateKeySymmetric() symmetric key} with this method and the data with
+   * {@link #encryptSymmetric(byte[], byte[])}, as {@link EncryptedOutputStream} does.
    *
    * @param data The data to encrypt
    * @param key The key to encrypt with
-   * @return The encrypted data
+   * @return The encrypted data, as long as the modulus
    * @exception SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptAsymmetric(byte[] data, PublicKey key) throws SecurityException {
     try {
-      synchronized (cipherAsymmetric) {
-        cipherAsymmetric.init(Cipher.ENCRYPT_MODE, key);
-
-        return cipherAsymmetric.doFinal(data);
-      }
-    } catch (InvalidKeyException e) {
-      throw new SecurityException("InvalidKeyException encrypting object: " + e);
-    } catch (IllegalBlockSizeException e) {
-      throw new SecurityException("IllegalBlockSizeException encrypting object: " + e);
-    } catch (BadPaddingException e) {
-      throw new SecurityException("BadPaddingException encrypting object: " + e);
+      Cipher cipher = Cipher.getInstance(ASYMMETRIC_ALGORITHM);
+      cipher.init(Cipher.ENCRYPT_MODE, key, ASYMMETRIC_PARAMETERS, random);
+      return cipher.doFinal(data);
+    } catch (GeneralSecurityException e) {
+      throw new SecurityException("Could not encrypt " + data.length + " bytes: " + e, e);
     }
   }
 
   /**
-   * Decrypts the given byte[] using the provided private key. TO DO: Check
-   * length of input
+   * Decrypts the given byte[], encrypted by {@link #encryptAsymmetric(byte[], PublicKey)}, using the provided
+   * private key.
    *
    * @param data The data to decrypt
    * @param key The private key to use
    * @return The decrypted data
-   * @exception SecurityException If the decryption does not happen properly
+   * @exception SecurityException If the data was not encrypted for this key, or was changed since
    */
   public static byte[] decryptAsymmetric(byte[] data, PrivateKey key) throws SecurityException {
     try {
-      try {
-        // First try normal way of decrypting
-        synchronized (cipherAsymmetric) {
-          cipherAsymmetric.init(Cipher.DECRYPT_MODE, key);
-
-          return cipherAsymmetric.doFinal(data);
-        }
-      } catch (BadPaddingException e) {
-        // Trying deprecated way of decrypting
-        synchronized (deprecatedCipherAsymmetric) {
-          deprecatedCipherAsymmetric.init(Cipher.DECRYPT_MODE, key);
-
-          return deprecatedCipherAsymmetric.doFinal(data);
-        }
-      }
-    } catch (InvalidKeyException e) {
-      throw new SecurityException("InvalidKeyException decrypting object: " + e);
-    } catch (IllegalBlockSizeException e) {
-      throw new SecurityException("IllegalBlockSizeException decrypting object: " + e);
-    } catch (BadPaddingException e) {
-      throw new SecurityException("BadPaddingException decrypting object: " + e);
+      Cipher cipher = Cipher.getInstance(ASYMMETRIC_ALGORITHM);
+      cipher.init(Cipher.DECRYPT_MODE, key, ASYMMETRIC_PARAMETERS);
+      return cipher.doFinal(data);
+    } catch (GeneralSecurityException e) {
+      throw new SecurityException("Could not decrypt " + data.length + " bytes: " + e, e);
     } catch (DataLengthException e) {
       // the ciphertext is larger than the modulus of this key, so it was encrypted with another one
-      throw new SecurityException("DataLengthException decrypting object: " + e);
+      throw new SecurityException("DataLengthException decrypting object: " + e, e);
     }
   }
 
@@ -681,7 +644,7 @@ public class SecurityUtils {
   /**
    * Utility method which will generate an RSA key pair for applications to use.
    *
-   * @return A new, random RSA key pair
+   * @return A new, random RSA key pair of {@link #ASYMMETRIC_KEY_LENGTH} bits
    */
   public static KeyPair generateKeyAsymmetric() {
     synchronized (generatorAsymmetric) {
