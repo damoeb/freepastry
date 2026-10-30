@@ -352,13 +352,20 @@ public interface Endpoint extends NodeHandleReader {
   public void register();
 
   /**
-   * This replaces NodeHandle.proximity(), so that you don't have to have a "coalesced" NodeHandle.
+   * Returns the last known proximity of the node; the handle does not have to be "coalesced".
+   * Smaller values imply greater proximity.
    *
-   * @param nh
-   * @return
+   * @param nh the node
+   * @return the proximity metric value
    */
   public int proximity(NodeHandle nh);
 
+  /**
+   * Returns the last known liveness of the node.
+   *
+   * @param nh the node
+   * @return whether the node is believed to be alive
+   */
   public boolean isAlive(NodeHandle nh);
 
   /**

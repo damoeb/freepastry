@@ -78,24 +78,6 @@ public abstract class NodeHandle implements Serializable {
   public abstract Id getId();
 
   /**
-   * Returns whether or not this node is currently alive
-   *
-   * @deprecated use Endpoint.isAlive(NodeHandle)
-   * @return Whether or not this node is currently alive
-   */
-  @Deprecated
-  public abstract boolean isAlive();
-
-  /**
-   * Returns the current proximity value of this node
-   *
-   * @deprecated use Endpoint.proximity(NodeHandle)
-   * @return The current proximity value of this node
-   */
-  @Deprecated
-  public abstract int proximity();
-
-  /**
    * Requests that the underlying transport layer check to ensure
    * that the remote node is live.  If the node is found to be live, nothing
    * happens, but if the node does not respond, the transport layer

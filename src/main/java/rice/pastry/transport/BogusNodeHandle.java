@@ -44,7 +44,6 @@ import java.util.Collections;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
-import rice.pastry.messaging.Message;
 import rice.pastry.socket.TransportLayerNodeHandle;
 
 public class BogusNodeHandle extends TransportLayerNodeHandle<Collection<InetSocketAddress>> {
@@ -86,18 +85,6 @@ public class BogusNodeHandle extends TransportLayerNodeHandle<Collection<InetSoc
 
   @Override
   public boolean ping() {
-    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
-  }
-
-  @Deprecated
-  @Override
-  public int proximity() {
-    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
-  }
-
-  @Deprecated
-  @Override
-  public void receiveMessage(Message msg) {
     throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
   }
 

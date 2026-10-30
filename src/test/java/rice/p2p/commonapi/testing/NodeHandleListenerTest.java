@@ -59,10 +59,6 @@ public class NodeHandleListenerTest {
     private static final long serialVersionUID = 1L;
 
     public Id getId() { return null; }
-    @Deprecated
-    public boolean isAlive() { return true; }
-    @Deprecated
-    public int proximity() { return 0; }
     public boolean checkLiveness() { return true; }
     public void serialize(OutputBuffer buf) throws IOException { }
 

@@ -43,7 +43,6 @@ import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.pastry.messaging.Message;
 
 
 /**
@@ -77,20 +76,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   }
 
   /**
-   * Returns the last known liveness information about the Pastry node associated with this handle.
-   * Invoking this method does not cause network activity.
-   *
-   * @return true if the node is alive, false otherwise.
-   *
-   * @deprecated use PastryNode.isAlive(NodeHandle)
-   */
-  @Deprecated
-  public final boolean isAlive() {
-    return getLiveness() < LIVENESS_DEAD;
-  }
-
-  /**
-   * A more detailed version of isAlive().  This can return 3 states:
+   * Returns the last known liveness of the node.  This can return 3 states:
    *
    * @return LIVENESS_ALIVE, LIVENESS_SUSPECTED, LIVENESS_DEAD
    */
@@ -107,19 +93,6 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   public boolean checkLiveness() {
     return ping();
   }
-
-  /**
-   * Returns the last known proximity information about the Pastry node associated with this handle.
-   * Invoking this method does not cause network activity.
-   *
-   * Smaller values imply greater proximity. The exact nature and interpretation of the proximity metric
-   * implementation-specific.
-   *
-   * @deprecated use PastryNode.proximity() or Endpoint.proximity()
-   * @return the proximity metric value
-   */
-  @Deprecated
-  public abstract int proximity();
 
   /**
    * Ping the node. Refreshes the cached liveness status and proximity value of the Pastry node associated
@@ -156,32 +129,11 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   public abstract boolean equals(Object obj);
 
   /**
-   * Method which is used by Pastry to start the bootstrapping process on the
-   * local node using this handle as the bootstrap handle.  Default behavior is
-   * simply to call receiveMessage(msg), but transport layer implementations may
-   * care to perform other tasks by overriding this method, since the node is
-   * not technically part of the ring yet.
-   *
-   * @param msg the bootstrap message.
-   * @throws IOException
-   */
-  public void bootstrap(Message msg) throws IOException {
-    receiveMessage(msg);
-  }
-
-  /**
    * Hash codes for nodehandles.
    *
    * @return a hash code.
    */
   public abstract int hashCode();
-
-  /**
-   * @deprecated use PastryNode.send() or Endpoint.send()
-   * @param msg
-   */
-  @Deprecated
-  public abstract void receiveMessage(Message msg);
 
   public abstract void serialize(OutputBuffer buf) throws IOException;
 

@@ -47,7 +47,6 @@ import rice.pastry.JoinFailedException;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeListener;
-import rice.pastry.messaging.Message;
 import rice.pastry.socket.TransportLayerNodeHandle;
 
 /**
@@ -125,27 +124,6 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
     if (DirectPastryNode.getCurrentNode() == null) {
       throw new RuntimeException("PANIC: localnode is null in " + this+"@"+System.identityHashCode(this));
     }
-  }
-
-  /**
-   * @deprecated use PastryNode.proximity(NodeHandle)
-   * @return the proximity of this node to the current local node
-   */
-  @Deprecated
-  public int proximity() {
-    assertLocalNode();
-    return getLocalNode().proximity(this);
-  }
-
-  /**
-   * Sends the message to this node from the current local node.
-   *
-   * @deprecated use PastryNode.send()
-   * @param msg the message to send
-   */
-  @Deprecated
-  public void receiveMessage(Message msg) {
-    DirectPastryNode.getCurrentNode().send(this, msg,null, null);
   }
 
   /**

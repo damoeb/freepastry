@@ -256,14 +256,6 @@ public class MergeTest {
       return NodeHandle.LIVENESS_ALIVE;
     }
 
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public int proximity() {
-      return 1;
-    }
-
     public boolean ping() {
       return true;
     }
@@ -279,13 +271,6 @@ public class MergeTest {
     public int hashCode() {
       return id.hashCode();
     }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public void receiveMessage(Message m) {
-    };
 
     public String toString() {
       return id.toString();

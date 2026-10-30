@@ -106,28 +106,6 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
   }
 
   /**
-   * Returns whether or not this node is currently alive
-   *
-   * @deprecated use Endpoint.isAlive(NodeHandle)
-   * @return Whether or not this node is currently alive
-   */
-  @Deprecated
-  public boolean isAlive() {
-    return handle.isAlive();
-  }
-
-  /**
-   * Returns the current proximity value of this node
-   * @deprecated use Node.proximity(NodeHandle)
-   * @return The current proximity value of this node
-   */
-  @SuppressWarnings("deprecation")
-  @Deprecated
-  public int proximity() {
-    return handle.proximity();
-  }
-
-  /**
    * Listener callback on the wrapped handle.  Simply rebroadcasts
    *
    * @param h the updated handle

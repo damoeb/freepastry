@@ -38,17 +38,13 @@ package rice.pastry.socket;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
 import rice.pastry.PastryNode;
 import rice.pastry.dist.DistNodeHandle;
-import rice.pastry.messaging.Message;
 
 public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 
@@ -131,20 +127,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
   }
 
   /**
-   * Called to send a message to the node corresponding to this handle.
-   *
-   * @deprecated use PastryNode.send(msg, nh)
-   * @param msg Message to be delivered, may or may not be routeMessage.
-   */
-  @Deprecated
-  public void receiveMessage(Message msg) {
-    assertLocalNode();
-    Map<String, Object> options = new HashMap<String, Object>(1);
-    options.put(PriorityTransportLayer.OPTION_PRIORITY, msg.getPriority());
-    getLocalNode().send(this, msg,null, options);
-  }
-
-  /**
    * Returns a String representation of this DistNodeHandle. This method is
    * designed to be called by clients using the node handle, and is provided in
    * order to ensure that the right node handle is being talked to.
@@ -187,20 +169,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
   public int hashCode() {
     int hash = ((int)epoch) ^ getNodeId().hashCode() ^ eaddress.hashCode();
     return hash;
-  }
-
-  /**
-   * Returns the last known proximity information about the Pastry node
-   * associated with this handle. Invoking this method does not cause network
-   * activity. Smaller values imply greater proximity. The exact nature and
-   * interpretation of the proximity metric implementation-specific.
-   *
-   * @deprecated use PastryNode.proximity(nh)
-   * @return the proximity metric value
-   */
-  @Deprecated
-  public int proximity() {
-    return ((PastryNode)localnode).getProxProvider().proximity(this, null);
   }
 
   /**

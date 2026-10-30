@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -340,11 +339,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     rm.setPrevNode(pastryNode.getLocalHandle());
     rm.getOptions().setRerouteIfSuspected(false);
     NodeHandle nh = pastryNode.coalesce(target);
-    try {
-      nh.bootstrap(rm);
-    } catch (IOException ioe) {
-      logger.warn("Error bootstrapping.", ioe);
-    }
+    pastryNode.send(nh, rm, null, null);
   }
 
 }

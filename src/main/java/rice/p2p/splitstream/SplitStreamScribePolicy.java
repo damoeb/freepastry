@@ -340,7 +340,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
   }
 
   /**
-   * Liveness check via the scribe's endpoint (replaces the deprecated NodeHandle.isAlive()).
+   * Liveness check via the scribe's endpoint.
    */
   private boolean isAlive(NodeHandle handle) {
     return ((MaintainableScribe) scribe).getEndpoint().isAlive(handle);
