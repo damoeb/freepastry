@@ -45,6 +45,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.mpisws.p2p.filetransfer.BBReceipt;
 import org.mpisws.p2p.filetransfer.FileReceipt;
 import org.mpisws.p2p.filetransfer.FileTransfer;
@@ -72,6 +75,8 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  * @author Jeff Hoye
  */
 public class MyApp implements Application {
+
+  private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
   /**
    * The Endpoint represents the underlieing node.  By making calls on the
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
@@ -275,7 +280,7 @@ public class MyApp implements Application {
           });
 
         } catch (IOException ioe) {
-          ioe.printStackTrace();
+          logger.warn("Could not send the file", ioe);
         }
       }
 

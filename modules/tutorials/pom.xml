@@ -17,11 +17,6 @@
     <name>FreePastry Tutorials</name>
     <description>The code of the FreePastry tutorial (rice.tutorial)</description>
 
-    <properties>
-        <!-- TODO phase 2 (D7): fix this module's Error Prone warnings, then drop this override -->
-        <errorprone.module.flags>-XepDisableAllWarnings</errorprone.module.flags>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>

@@ -114,7 +114,7 @@ public class DistTutorial {
       InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
 
       // launch our node!
-      DistTutorial dt = new DistTutorial(bindport, bootaddress, env);
+      new DistTutorial(bindport, bootaddress, env);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

@@ -163,7 +163,7 @@ public class LookupServiceTest {
       int numNodes = Integer.parseInt(args[3]);
 
       // launch our node!
-      LookupServiceTest lt = new LookupServiceTest(bindport, bootaddress, numNodes, env);
+      new LookupServiceTest(bindport, bootaddress, numNodes, env);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

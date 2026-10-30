@@ -244,7 +244,7 @@ public class DirectTutorial {
       int numNodes = Integer.parseInt(args[0]);
 
       // launch our node!
-      DirectTutorial dt = new DirectTutorial(numNodes, env);
+      new DirectTutorial(numNodes, env);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

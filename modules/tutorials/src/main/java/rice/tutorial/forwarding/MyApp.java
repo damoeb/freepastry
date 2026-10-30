@@ -41,6 +41,9 @@ package rice.tutorial.forwarding;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -55,6 +58,8 @@ import rice.p2p.commonapi.RouteMessage;
  * @author Jeff Hoye
  */
 public class MyApp implements Application {
+
+  private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
   /**
    * The Endpoint represents the underlieing node.  By making calls on the
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
@@ -135,7 +140,7 @@ public class MyApp implements Application {
       MyMsg msg = (MyMsg)message.getMessage(endpoint.getDeserializer());
       msg.addHop(endpoint.getLocalNodeHandle());
     } catch (IOException ioe) {
-      ioe.printStackTrace();
+      logger.warn("Could not read message {}", message, ioe);
     }
     return true;
   }

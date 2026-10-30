@@ -105,10 +105,8 @@ public class PastTutorial {
       // this implements the "hash function" for our DHT
       PastryIdFactory idf = new rice.pastry.commonapi.PastryIdFactory(env);
 
-      // create a different storage root for each node
-      String storageDirectory = "./storage"+node.getId().hashCode();
-
-      // create the persistent part; to keep it on disk, use
+      // create the persistent part; to keep it on disk, give each node its own storage root and use
+      // String storageDirectory = "./storage"+node.getId().hashCode();
       // new PersistentStorage(idf, new PastStorageSerializer(() -> past), storageDirectory,
       //     4 * 1024 * 1024, node.getEnvironment())
       Storage stor = new MemoryStorage(idf);
@@ -267,7 +265,7 @@ public class PastTutorial {
       int numNodes = Integer.parseInt(args[3]);
 
       // launch our node!
-      PastTutorial dt = new PastTutorial(bindport, bootaddress, numNodes, env);
+      new PastTutorial(bindport, bootaddress, numNodes, env);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

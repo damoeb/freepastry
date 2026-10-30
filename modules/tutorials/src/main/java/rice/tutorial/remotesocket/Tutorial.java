@@ -44,12 +44,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -64,6 +66,8 @@ import rice.pastry.standard.StandardAddress;
  * @author Jeff Hoye
  */
 public class Tutorial {
+
+  private static final Logger logger = LoggerFactory.getLogger(Tutorial.class);
 
   // this will keep track of our applications
   List<MyApp> apps = new ArrayList<MyApp>();
@@ -88,8 +92,6 @@ public class Tutorial {
     AppSocketPastryNodeFactory factory = new AppSocketPastryNodeFactory(nidFactory, bindport, env);
 
     IdFactory idFactory = new PastryIdFactory(env);
-
-    NodeHandle bootHandle = null;
 
     // loop to construct the nodes/apps
     for (int curNode = 0; curNode < numNodes; curNode++) {
@@ -155,7 +157,7 @@ public class Tutorial {
                 out.clear();
               }
             } catch (IOException ioe) {
-              ioe.printStackTrace();
+              logger.warn("Error writing to socket {}", socket, ioe);
             }
           }
 
@@ -237,7 +239,7 @@ public class Tutorial {
       }
 
       // launch our node!
-      Tutorial dt = new Tutorial(bindport, bootaddress, numNodes, env, useDirect);
+      new Tutorial(bindport, bootaddress, numNodes, env, useDirect);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

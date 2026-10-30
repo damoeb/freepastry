@@ -45,6 +45,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.IdFactory;
@@ -62,6 +65,8 @@ import rice.pastry.standard.StandardAddress;
  * @author Jeff Hoye
  */
 public class Tutorial2 {
+
+  private static final Logger logger = LoggerFactory.getLogger(Tutorial2.class);
 
   // this will keep track of our applications
   List<MyApp> apps = new ArrayList<MyApp>();
@@ -143,7 +148,7 @@ public class Tutorial2 {
             socket.write(out);
             System.out.println("Done writing");
           } catch (IOException ioe) {
-            ioe.printStackTrace();
+            logger.warn("Error writing to socket {}", socket, ioe);
           }
         }, "Tutorial2 Blocking Writer").start();
       }
@@ -207,7 +212,7 @@ public class Tutorial2 {
       }
 
       // launch our node!
-      Tutorial2 dt = new Tutorial2(bindport, bootaddress, numNodes, env, useDirect);
+      new Tutorial2(bindport, bootaddress, numNodes, env, useDirect);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

@@ -180,7 +180,7 @@ public class DistTutorial {
       int numNodes = Integer.parseInt(args[3]);
 
       // launch our node!
-      DistTutorial dt = new DistTutorial(bindport, bootaddress, numNodes, env);
+      new DistTutorial(bindport, bootaddress, numNodes, env);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

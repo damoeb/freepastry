@@ -165,7 +165,7 @@ public class DistTutorialStall {
       InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
 
       // launch our node!
-      DistTutorialStall dt = new DistTutorialStall(bindport, bootaddress, env);
+      new DistTutorialStall(bindport, bootaddress, env);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

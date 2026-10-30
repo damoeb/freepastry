@@ -93,7 +93,7 @@ public class DistTutorial {
     // loop to construct the nodes/apps
     for (int curNode = 0; curNode < numNodes; curNode++) {
       // This will return null if we there is no node at that location
-      NodeHandle bootHandle = ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
+      ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
 
       // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
       PastryNode node = factory.newNode();
@@ -195,7 +195,7 @@ public class DistTutorial {
       int bandwidth = Integer.parseInt(args[4]);
 
       // launch our node!
-      DistTutorial dt = new DistTutorial(bindport, bootaddress, numNodes, env, bandwidth);
+      new DistTutorial(bindport, bootaddress, numNodes, env, bandwidth);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

@@ -222,7 +222,7 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
         if (ret >= 0) {
           // EOF is usually -1
           synchronized(this) {
-            bucket -= ret;
+            bucket -= (int) ret;
           }
         }
         return ret;
@@ -237,7 +237,7 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
       int originalPosition = srcs.position();
 
       // now we create temp, who's size is "bucket"
-      ByteBuffer temp = ByteBuffer.wrap(srcs.array(), originalPosition, bucket);
+      ByteBuffer temp = ByteBuffer.wrap(srcs.array(), srcs.arrayOffset() + originalPosition, bucket);
 
       // try to write our temp buffer
       long ret = super.write(temp);
@@ -249,7 +249,7 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
 
       // allocate the bandwidth
       synchronized(this) {
-        bucket -= ret;
+        bucket -= (int) ret;
       }
 
       // we need to properly set the position

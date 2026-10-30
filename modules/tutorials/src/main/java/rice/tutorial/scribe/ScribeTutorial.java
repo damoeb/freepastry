@@ -207,7 +207,7 @@ public class ScribeTutorial {
       int numNodes = Integer.parseInt(args[3]);
 
       // launch our node!
-      ScribeTutorial dt = new ScribeTutorial(bindport, bootaddress, numNodes,
+      new ScribeTutorial(bindport, bootaddress, numNodes,
           env);
     } catch (Exception e) {
       // remind user how to use

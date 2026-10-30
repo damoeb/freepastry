@@ -39,6 +39,9 @@ package rice.tutorial.remotesocket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -56,6 +59,8 @@ import rice.p2p.commonapi.appsocket.AppSocketReceiver;
  * @author Jeff Hoye
  */
 public class MyApp implements Application {
+
+  private static final Logger logger = LoggerFactory.getLogger(MyApp.class);
   /**
    * The Endpoint represents the underlieing node.  By making calls on the
    * Endpoint, it assures that the message will be delivered to a MyApp on whichever
@@ -118,7 +123,7 @@ public class MyApp implements Application {
 
           System.out.println(MyApp.this.node.getLocalNodeHandle()+" Received message from "+factory.buildId(in.array()));
         } catch (IOException ioe) {
-          ioe.printStackTrace();
+          logger.warn("Error reading from socket {}", socket, ioe);
         }
         // if expecting more messages, call socket.register(true, false, 3000, this) here
       }

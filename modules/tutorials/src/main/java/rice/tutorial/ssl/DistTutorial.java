@@ -100,7 +100,9 @@ public class DistTutorial {
     }
 
     // create the id from the file name
-    rice.pastry.Id id = rice.pastry.Id.build(keyStoreFile.getFileName().toString().split("\\.")[0]);
+    String keyStoreName = keyStoreFile.getFileName().toString();
+    int extensionStart = keyStoreName.indexOf('.');
+    rice.pastry.Id id = rice.pastry.Id.build(extensionStart < 0 ? keyStoreName : keyStoreName.substring(0, extensionStart));
 
     // construct the PastryNodeFactory, this is how we use rice.pastry.socket
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
@@ -239,7 +241,7 @@ public class DistTutorial {
       if (!Files.exists(keystoreFile)) throw new IllegalArgumentException("The file: "+keystoreFileName+" was not found.");
 
       // launch our node!
-      DistTutorial dt = new DistTutorial(bindport, bootaddress, env, keystoreFile);
+      new DistTutorial(bindport, bootaddress, env, keystoreFile);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

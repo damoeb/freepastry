@@ -42,7 +42,6 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 import rice.environment.Environment;
-import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
@@ -73,7 +72,7 @@ public class DistTutorial {
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
 
     // This will return null if we there is no node at that location
-    NodeHandle bootHandle = ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
+    ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
 
     // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
     PastryNode node = factory.newNode();
@@ -126,7 +125,7 @@ public class DistTutorial {
       InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
 
       // launch our node!
-      DistTutorial dt = new DistTutorial(bindport, bootaddress, env);
+      new DistTutorial(bindport, bootaddress, env);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

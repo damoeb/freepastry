@@ -45,12 +45,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import rice.environment.Environment;
-import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
-import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.direct.DirectNodeHandle;
 import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
@@ -96,8 +94,6 @@ public class SplitStreamTutorial {
     } else {
       factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
     }
-
-    IdFactory idFactory = new PastryIdFactory(env);
 
     Object bootHandle = null;
 
@@ -197,7 +193,7 @@ public class SplitStreamTutorial {
       }
 
       // launch our node!
-      SplitStreamTutorial dt = new SplitStreamTutorial(bindport, bootaddress, numNodes,
+      new SplitStreamTutorial(bindport, bootaddress, numNodes,
           env, useDirect);
     } catch (Exception e) {
       // remind user how to use

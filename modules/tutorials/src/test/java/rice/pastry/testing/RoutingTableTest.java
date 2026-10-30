@@ -43,7 +43,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
@@ -86,11 +89,13 @@ import rice.tutorial.direct.MyMsg;
  */
 @SuppressWarnings("unchecked")
 public class RoutingTableTest {
+
+  private static final Logger logger = LoggerFactory.getLogger(RoutingTableTest.class);
   boolean printLiveness = false;
   boolean printLeafSets = false;
 
   // this will keep track of our nodes
-  Vector<PastryNode> nodes = new Vector<PastryNode>();
+  CopyOnWriteArrayList<PastryNode> nodes = new CopyOnWriteArrayList<PastryNode>();
 
   HashMap<PastryNode, Object> apps = new HashMap<PastryNode, Object>();
 
@@ -176,7 +181,7 @@ public class RoutingTableTest {
       try {
         createNode();
       } catch (Exception ie) {
-        ie.printStackTrace();
+        logger.warn("Could not create a node", ie);
       }
       synchronized(this) {
         ctr++;
@@ -316,7 +321,7 @@ public class RoutingTableTest {
         createNode(); // create a new node every time we
                               // destroy one
       } catch (Exception ie) {
-        ie.printStackTrace();
+        logger.warn("Could not replace the destroyed node", ie);
       }
     });
 
@@ -402,7 +407,7 @@ public class RoutingTableTest {
     }
 
     if (rtMaintTime > 0)
-      node.scheduleMsg(new InitiateRouteSetMaintenance(),rtMaintTime*1000,rtMaintTime*1000);
+      node.scheduleMsg(new InitiateRouteSetMaintenance(),rtMaintTime*1000L,rtMaintTime*1000L);
 
     if (printLiveness)
       System.out.println("Finished creating new node("+nodes.size()+") "+node+" at "+env.getTimeSource().currentTimeMillis());
@@ -454,13 +459,14 @@ public class RoutingTableTest {
    *
    * @return delay stretch
    */
+  // the simulated nodes are compared by identity on purpose: a node is only ever equal to itself
+  @SuppressWarnings("ReferenceEquality")
   private double testRoutingTables1() {
 
     // for each node
     int ctr = 0;
     double acc = 0;
     for (PastryNode node : nodes) {
-      RoutingTable rt = node.getRoutingTable();
       for (PastryNode that : nodes) {
         if ((that != node) && that.isReady() && node.isReady()) {
           NodeHandle thatHandle = that.getLocalHandle();
@@ -481,6 +487,8 @@ public class RoutingTableTest {
     return acc/ctr;
   }
 
+  // the simulated nodes are compared by identity on purpose: a node is only ever equal to itself
+  @SuppressWarnings("ReferenceEquality")
   private double testRoutingTables1a() {
 
     // for each node
@@ -489,7 +497,6 @@ public class RoutingTableTest {
     RandomSource rand = env.getRandomSource();
     for (int i = 0; i < 1000000; i++) {
       PastryNode node = (PastryNode)nodes.get(rand.nextInt(nodes.size()));
-      RoutingTable rt = node.getRoutingTable();
       PastryNode that = (PastryNode)nodes.get(rand.nextInt(nodes.size()));
       if ((that != node) && that.isReady() && node.isReady()) {
         NodeHandle thatHandle = that.getLocalHandle();
@@ -537,7 +544,6 @@ public class RoutingTableTest {
 
   private int testRoutingTables2a() {
     // for each node
-    Iterator<PastryNode> nodeIterator = nodes.iterator();
     int curNodeIndex = 0;
     int ctr = 0;
     int[] ctrs = new int[5];
@@ -547,7 +553,6 @@ public class RoutingTableTest {
       if (!node.isReady()) continue;
       PastryNode temp = DirectPastryNode.setCurrentNode(node);
       RoutingTable rt = node.getRoutingTable();
-      Iterator<PastryNode> i2 = nodes.iterator();
       PastryNode that = (PastryNode)nodes.get(rand.nextInt(nodes.size()));
 
         if (!that.isReady()) continue;
@@ -573,7 +578,7 @@ public class RoutingTableTest {
       thePenalty = 0;
       NodeHandle next = getNextHop(rt, ls, thatHandle, node);
       int penalty = thePenalty;
-      if (next == thatHandle) return node.proximity(thatHandle);  // base case
+      if (Objects.equals(next, thatHandle)) return node.proximity(thatHandle);  // base case
       DirectNodeHandle dnh = (DirectNodeHandle)next;
       PastryNode nextNode = dnh.getRemote();
       return penalty+node.proximity(next)+calcLatency(nextNode, thatHandle); // recursive case
@@ -624,10 +629,9 @@ public class RoutingTableTest {
           || ((handle = rs.closestNode(NodeHandle.LIVENESS_ALIVE)) == null)) {
 
         // penalize for choosing dead route
-        NodeHandle notAlive2 = null;
-        notAlive2 = rt.bestAlternateRoute(10,
+        NodeHandle notAlive2 = rt.bestAlternateRoute(10,
             target);
-        if (notAlive2 == notAlive) {
+        if (Objects.equals(notAlive2, notAlive)) {
           // don't doublePenalize
         } else {
           if ((notAlive2 != null) && notAlive2.getLiveness() >= NodeHandle.LIVENESS_DEAD) thePenalty+=localNode.proximity(notAlive2)*4;
@@ -671,7 +675,7 @@ public class RoutingTableTest {
     }
   }
 
-  public class MyApp implements Application {
+  public static class MyApp implements Application {
     /**
      * The Endpoint represents the underlieing node.  By making calls on the
      * Endpoint, it assures that the message will be delivered to a MyApp on whichever
@@ -769,7 +773,7 @@ public class RoutingTableTest {
   }
 
 
-  class TestScribeClient implements ScribeMultiClient {
+  static class TestScribeClient implements ScribeMultiClient {
 
     protected Scribe scribe;
 
@@ -877,7 +881,7 @@ public class RoutingTableTest {
             });
 
             // launch our node!
-            RoutingTableTest dt = new RoutingTableTest(numNodes, meanSessionTime, useScribe, msgSendVals[msgSendRateIndex], rtMaintVals[rtMaintIndex], tries, env);
+            new RoutingTableTest(numNodes, meanSessionTime, useScribe, msgSendVals[msgSendRateIndex], rtMaintVals[rtMaintIndex], tries, env);
             synchronized(lock) {
               lock.wait(); // will be notified when the environment is destroyed
             }

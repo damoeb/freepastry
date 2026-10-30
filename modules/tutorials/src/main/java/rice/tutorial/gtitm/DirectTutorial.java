@@ -191,7 +191,7 @@ public class DirectTutorial {
         fileName = args[1];
 
       // launch our node!
-      DirectTutorial dt = new DirectTutorial(numNodes, env, fileName);
+      new DirectTutorial(numNodes, env, fileName);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

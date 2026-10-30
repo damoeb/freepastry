@@ -208,7 +208,7 @@ public class Tutorial {
       }
 
       // launch our node!
-      Tutorial dt = new Tutorial(bindport, bootaddress, numNodes, env, useDirect);
+      new Tutorial(bindport, bootaddress, numNodes, env, useDirect);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");
