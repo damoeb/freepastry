@@ -100,13 +100,11 @@ public class SplitStreamImpl implements SplitStream {
     stripeBaseBitLength = config.stripeBaseBitLength();
     this.scribe = new ScribeImpl(node, instance);
     scribe.setContentDeserializer((buf, endpoint, contentType) -> {
-      switch(contentType) {
-        case SplitStreamContent.TYPE:
-          return new SplitStreamContent(buf);
-        case SplitStreamSubscribeContent.TYPE:
-          return new SplitStreamSubscribeContent(buf);
-      }
-      throw new IllegalArgumentException("Invalid type:"+contentType);
+      return switch (SplitStreamContentType.find(contentType)) {
+        case CONTENT -> new SplitStreamContent(buf);
+        case SUBSCRIBE_CONTENT -> new SplitStreamSubscribeContent(buf);
+        case null -> throw new IllegalArgumentException("Invalid type:"+contentType);
+      };
     });
 
     this.node = node;

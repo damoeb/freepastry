@@ -50,10 +50,12 @@ import rice.p2p.commonapi.DeliveryNotification;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdType;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.MessageReceipt;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.commonapi.NodeHandleSetType;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
@@ -371,7 +373,7 @@ public class MultiringEndpoint implements Endpoint {
   }
 
   public Id readId(InputBuffer buf, short type) throws IOException {
-    if (type == RingId.TYPE)
+    if (type == IdType.RING_ID.id())
       return new RingId(buf, endpoint);
 
     return endpoint.readId(buf, type);
@@ -395,9 +397,8 @@ public class MultiringEndpoint implements Endpoint {
   }
 
   public NodeHandleSet readNodeHandleSet(InputBuffer buf, short type) throws IOException {
-    switch(type) {
-      case MultiringNodeHandleSet.TYPE:
-        return new MultiringNodeHandleSet(buf, endpoint);
+    if (type == NodeHandleSetType.MULTIRING_NODE_HANDLE_SET.id()) {
+      return new MultiringNodeHandleSet(buf, endpoint);
     }
     return endpoint.readNodeHandleSet(buf, type);
   }

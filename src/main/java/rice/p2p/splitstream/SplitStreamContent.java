@@ -47,35 +47,11 @@ import rice.p2p.scribe.ScribeContent;
  * @version $Id: SplitStreamContent.java 3810 2007-07-30 12:59:55Z jeffh $
  * @author Alan Mislove
  */
-public class SplitStreamContent implements ScribeContent {
-  public static final short TYPE = 1;
-
-  /**
-   * The internal data - just the bytes
-   */
-  private final byte[] data;
-
-  /**
-   * Constructor taking in a byte[]
-   *
-   * @param data The data for this content
-   */
-  public SplitStreamContent(byte[] data) {
-    this.data = data;
-  }
-
-  /**
-   * Returns the data for this content
-   *
-   * @return The data for this content
-   */
-  public byte[] getData() {
-    return data;
-  }
+public record SplitStreamContent(byte[] data) implements ScribeContent {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return SplitStreamContentType.CONTENT.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
@@ -85,12 +61,16 @@ public class SplitStreamContent implements ScribeContent {
   }
 
   public SplitStreamContent(InputBuffer buf) throws IOException {
+    this(readData(buf));
+  }
+
+  private static byte[] readData(InputBuffer buf) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        data = new byte[buf.readInt()];
+        byte[] data = new byte[buf.readInt()];
         buf.read(data);
-        break;
+        return data;
       default:
         throw new IOException("Unknown Version: "+version);
     }

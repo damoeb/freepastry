@@ -200,7 +200,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     /* first see if we are in the 3rd stage of algorithm for locating parent. */
     /* this occurs if we are in the third stage of locating a parent */
     if (content != null && (content instanceof SplitStreamSubscribeContent)) {
-      int stage = ((SplitStreamSubscribeContent) content).getStage();
+      int stage = ((SplitStreamSubscribeContent) content).stage();
       if (stage == SplitStreamSubscribeContent.STAGE_FINAL) {
         if (!children.contains(source)) {
           return false;
@@ -216,7 +216,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       return true;
     } else {
       /* check if non-primary stripe */
-      if ((! topic.id().equals(channel.getPrimaryStripe().getStripeId().getId())) &&
+      if ((! topic.id().equals(channel.getPrimaryStripe().getStripeId().id())) &&
           (! scribe.isRoot(topic))) {
         return false;
       } else {
@@ -348,7 +348,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       for (int j=0; j<stripes.length; j++) {
         Stripe stripe = stripes[j];
 
-        if (stripe.getStripeId().getId().equals(topic.id())) {
+        if (stripe.getStripeId().id().equals(topic.id())) {
           return channel;
         }
       }
@@ -368,7 +368,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     Stripe[] stripes = channel.getStripes();
 
     for (Stripe stripe : stripes) {
-      total += scribe.getChildrenOfTopic(new Topic(stripe.getStripeId().getId())).size();
+      total += scribe.getChildrenOfTopic(new Topic(stripe.getStripeId().id())).size();
     }
 
     return total;
@@ -395,22 +395,22 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
 
     /* find all candidate stripes */
     for (Stripe stripe : stripes){
-      tp = new Topic(stripe.getStripeId().getId());
-      if (!channel.getPrimaryStripe().getStripeId().getId().equals(stripe.getStripeId().getId()) &&
+      tp = new Topic(stripe.getStripeId().id());
+      if (!channel.getPrimaryStripe().getStripeId().id().equals(stripe.getStripeId().id()) &&
           !this.scribe.isRoot(tp) &&
           (!scribe.getChildrenOfTopic(tp).isEmpty())) {
-        candidateStripes.add(stripe.getStripeId().getId());
+        candidateStripes.add(stripe.getStripeId().id());
       }
     }
 
     /* if there are no candidates, find somewhere where i am the root*/
     if(candidateStripes.size() == 0) {
       for (Stripe stripe : stripes){
-        tp = new Topic(stripe.getStripeId().getId());
-        if ((! channel.getPrimaryStripe().getStripeId().getId().equals(stripe.getStripeId().getId())) &&
+        tp = new Topic(stripe.getStripeId().id());
+        if ((! channel.getPrimaryStripe().getStripeId().id().equals(stripe.getStripeId().id())) &&
             (!scribe.getChildrenOfTopic(tp).isEmpty()) &&
-            (! stripe.getStripeId().getId().equals(stripeId))) {
-          candidateStripes.add(stripe.getStripeId().getId());
+            (! stripe.getStripeId().id().equals(stripeId))) {
+          candidateStripes.add(stripe.getStripeId().id());
         }
       }
     }
@@ -447,7 +447,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     Id localId = channel.getLocalId();
 
     /* We have to drop one of child of the primary stripe */
-    Collection<NodeHandle> children = new ArrayList<NodeHandle>(scribe.getChildrenOfTopic(new Topic(primaryStripe.getStripeId().getId())));
+    Collection<NodeHandle> children = new ArrayList<NodeHandle>(scribe.getChildrenOfTopic(new Topic(primaryStripe.getStripeId().id())));
 
     /* Now, select that child which doesnt share least prefix with local node */
     int minPrefixMatch = getPrefixMatch(stripeId, newChild.getId(), channel.getStripeBase());

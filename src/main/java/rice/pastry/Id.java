@@ -43,6 +43,7 @@ import java.util.Random;
 import java.util.WeakHashMap;
 
 import rice.environment.random.RandomSource;
+import rice.p2p.commonapi.IdType;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /**
@@ -57,8 +58,6 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  * @author Alan Mislove
  */
 public class Id implements rice.p2p.commonapi.Id, RawSerializable {
-
-  public static final short TYPE = 1;
 
   /**
    * Support for coalesced Ids - ensures only one copy of each Id is in memory
@@ -1184,7 +1183,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   }
 
   public short getType() {
-    return TYPE;
+    return IdType.PASTRY_ID.id();
   }
 
   public static void main(String[] args) {

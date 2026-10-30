@@ -48,21 +48,7 @@ import rice.p2p.commonapi.Id;
  * @author Ansley Post
  * @author Alan Mislove
  */
-public class ChannelId {
-
-  /**
-   * The underlying id for this channelid
-   */
-  private final Id id;
-
-  /**
-   * Constructor that takes in an Id and makes a ChannelId
-   *
-   * @param id The underlying id for this channelid
-   */
-  public ChannelId(Id id) {
-    this.id = id;
-  }
+public record ChannelId(Id id) {
 
   /**
    * Constructor that takes in a String and makes a ChannelId
@@ -70,16 +56,7 @@ public class ChannelId {
    * @param name The name to create this channelId from
    */
   public ChannelId(String name) {
-    this.id = null;
-  }
-
-  /**
-   * Gets the Id attribute of the ChannelId object
-   *
-   * @return The Id value
-   */
-  public Id getId() {
-    return id;
+    this((Id) null);
   }
 
   public String toString() {

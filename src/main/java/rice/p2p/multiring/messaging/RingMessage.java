@@ -58,8 +58,6 @@ import rice.p2p.scribe.ScribeContent;
  */
 public class RingMessage implements ScribeContent {
 
-  public static final short TYPE = 1;
-
   /**
    * The target of this ring message
    */
@@ -135,7 +133,7 @@ public class RingMessage implements ScribeContent {
   }
 
   public short getType() {
-    return TYPE;
+    return MultiringContentType.RING_MESSAGE.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

@@ -295,7 +295,7 @@ public class SplitStreamRegrTest extends CommonAPITest {
           System.out
               .println("Node " + ssclients[i].getId()
                   + " is parentless for topic "
-                  + stripe.getStripeId().getId());
+                  + stripe.getStripeId().id());
         }
       }
     }

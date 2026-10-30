@@ -40,6 +40,7 @@ import java.io.IOException;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.multiring.RingId;
@@ -52,8 +53,6 @@ import rice.p2p.util.MathUtils;
  * @author ahae
  */
 public record VersionKey(Id id, long version) implements Id {
-  public static final short TYPE = 41;
-
   /**
    * Determines equality
    *
@@ -188,6 +187,6 @@ public record VersionKey(Id id, long version) implements Id {
   }
 
   public short getType() {
-    return TYPE;
+    return IdType.VERSION_KEY.id();
   }
 }

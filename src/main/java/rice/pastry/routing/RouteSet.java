@@ -42,6 +42,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import rice.p2p.commonapi.NodeHandleListener;
+import rice.p2p.commonapi.NodeHandleSetType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
@@ -63,8 +64,6 @@ import rice.pastry.PastryNode;
 
 public class RouteSet implements NodeSetI,
     NodeHandleListener, Iterable<NodeHandle> {
-  public static final short TYPE = 2;
-
   private NodeHandle[] nodes;
 
   private int theSize;
@@ -485,7 +484,7 @@ public class RouteSet implements NodeSetI,
   }
 
   public short getType() {
-    return TYPE;
+    return NodeHandleSetType.ROUTE_SET.id();
   }
 
  /**

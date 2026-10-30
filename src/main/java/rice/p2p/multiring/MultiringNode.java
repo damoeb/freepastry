@@ -53,6 +53,7 @@ import rice.p2p.commonapi.MessageReceipt;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.p2p.multiring.messaging.MultiringContentType;
 import rice.p2p.multiring.messaging.RingMessage;
 import rice.p2p.scribe.Scribe;
 import rice.p2p.scribe.ScribeContent;
@@ -131,11 +132,10 @@ public class MultiringNode implements Node, ScribeMultiClient {
     this.endpoints = new Hashtable<String, Endpoint>();
     this.scribe = new ScribeImpl(this, "Multiring");
     scribe.setContentDeserializer((buf, endpoint, type) -> {
-      switch (type) {
-        case RingMessage.TYPE:
-          return new RingMessage(buf, endpoint, endpoints);
-      }
-      throw new IllegalArgumentException("Invalid type:"+type);
+      return switch (MultiringContentType.find(type)) {
+        case RING_MESSAGE -> new RingMessage(buf, endpoint, endpoints);
+        case null -> throw new IllegalArgumentException("Invalid type:"+type);
+      };
     });
 
     this.collection = new MultiringNodeCollection(this, MultiringConfig.fromParameters(environment.getParameters()).base());

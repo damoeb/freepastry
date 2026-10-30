@@ -129,11 +129,11 @@ public class Stripe implements ScribeMultiClient {
     this.channel = channel;
     this.isPrimary = false;
     this.failed = new Hashtable<Topic, Integer>();
-    if(SplitStreamScribePolicy.getPrefixMatch(this.channel.getLocalId(), stripeId.getId(), channel.getStripeBase()) > 0)
+    if(SplitStreamScribePolicy.getPrefixMatch(this.channel.getLocalId(), stripeId.id(), channel.getStripeBase()) > 0)
       this.isPrimary = true;
 
     this.clients = new Vector<SplitStreamClient>();
-    this.topic = new Topic(stripeId.getId());
+    this.topic = new Topic(stripeId.id());
   }
 
   /**
@@ -223,7 +223,7 @@ public class Stripe implements ScribeMultiClient {
   public void deliver(Topic topic, ScribeContent content) {
     if (this.topic.equals(topic)) {
       if (content instanceof SplitStreamContent) {
-        byte[] data = ((SplitStreamContent) content).getData();
+        byte[] data = ((SplitStreamContent) content).data();
 
         SplitStreamClient[] clients = (SplitStreamClient[]) this.clients.toArray(new SplitStreamClient[0]);
 
@@ -328,7 +328,7 @@ public class Stripe implements ScribeMultiClient {
    * @return A array of children.
    */
   public NodeHandle[] getChildren(){
-    return this.scribe.getChildrenOfTopic(new Topic(this.getStripeId().getId())).toArray(new NodeHandle[0]);
+    return this.scribe.getChildrenOfTopic(new Topic(this.getStripeId().id())).toArray(new NodeHandle[0]);
   }
 
   /**
@@ -336,7 +336,7 @@ public class Stripe implements ScribeMultiClient {
    * @return Parent for this topic.
    */
   public NodeHandle getParent(){
-    return ((ScribeImpl) this.scribe).getParent(new Topic(this.getStripeId().getId()));
+    return ((ScribeImpl) this.scribe).getParent(new Topic(this.getStripeId().id()));
   }
 
   /**

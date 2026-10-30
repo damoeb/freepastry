@@ -40,6 +40,7 @@ import java.io.IOException;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.MathUtils;
@@ -51,8 +52,6 @@ import rice.p2p.util.MathUtils;
  * @author ahae
  */
 public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
-  public static final short TYPE = 42;
-
   /**
    * Not supported.
    *
@@ -228,6 +227,6 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
   }
 
   public short getType() {
-    return TYPE;
+    return IdType.FRAGMENT_KEY.id();
   }
 }

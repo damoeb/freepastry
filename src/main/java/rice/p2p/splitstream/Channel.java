@@ -145,7 +145,7 @@ public class Channel {
    */
   protected Stripe getPrimaryStripe() {
     for (Stripe stripe : stripes) {
-      if (SplitStreamScribePolicy.getPrefixMatch(this.localId, stripe.getStripeId().getId(), stripeBase) > 0)
+      if (SplitStreamScribePolicy.getPrefixMatch(this.localId, stripe.getStripeId().id(), stripeBase) > 0)
         return stripe;
     }
 
@@ -168,7 +168,7 @@ public class Channel {
     StripeId[] stripeIds = new StripeId[num];
 
     for (int i=0; i<num; i++) {
-      byte[] array = id.getId().toByteArray();
+      byte[] array = id.id().toByteArray();
       stripeIds[i] = new StripeId(factory.buildId(process(array, stripeBase, i)));
     }
 

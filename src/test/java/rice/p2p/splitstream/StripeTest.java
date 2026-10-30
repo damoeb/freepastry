@@ -60,7 +60,7 @@ class StripeTest {
     PastryIdFactory idFactory = new PastryIdFactory(env);
     Channel channel = new Channel(new ChannelId(idFactory.buildId("channel")), scribe, "StripeTest", idFactory, node.getId(), STRIPE_BASE, MAX_FAILED);
     stripe = channel.getStripes()[0];
-    topics = List.of(new Topic(stripe.getStripeId().getId()));
+    topics = List.of(new Topic(stripe.getStripeId().id()));
   }
 
   @AfterEach

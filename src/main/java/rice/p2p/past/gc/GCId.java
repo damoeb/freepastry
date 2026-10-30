@@ -41,6 +41,7 @@ import java.io.IOException;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.MathUtils;
@@ -55,8 +56,6 @@ import rice.p2p.util.MathUtils;
  * @author Alan Mislove
  */
 public record GCId(Id id, long expiration) implements Id {
-  public static final short TYPE = 3;
-
   /**
    * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
    *
@@ -194,7 +193,7 @@ public record GCId(Id id, long expiration) implements Id {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return IdType.GC_ID.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

@@ -43,6 +43,7 @@ import java.util.NoSuchElementException;
 import java.util.Vector;
 
 import rice.environment.random.RandomSource;
+import rice.p2p.commonapi.NodeHandleSetType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
@@ -55,8 +56,6 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  */
 
 public class NodeSet implements NodeSetI {
-
-  public static final short TYPE = 1;
 
   /**
    * of NodeHandle
@@ -428,7 +427,7 @@ public class NodeSet implements NodeSetI {
   }
 
   public short getType() {
-    return TYPE;
+    return NodeHandleSetType.NODE_SET.id();
   }
 
   public Collection<NodeHandle> getCollection()  {

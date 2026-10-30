@@ -55,10 +55,12 @@ import rice.p2p.commonapi.DeliveryNotification;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdType;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.MessageReceipt;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.commonapi.NodeHandleSetType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -597,7 +599,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
 
   public Id readId(InputBuffer buf, short type) throws IOException {
-    if (type != rice.pastry.Id.TYPE) throw new IllegalArgumentException("Invalid type:"+type);
+    if (type != IdType.PASTRY_ID.id()) throw new IllegalArgumentException("Invalid type:"+type);
     return rice.pastry.Id.build(buf);
   }
 
@@ -614,13 +616,13 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
 
   public NodeHandleSet readNodeHandleSet(InputBuffer buf, short type) throws IOException {
-    switch(type) {
-      case NodeSet.TYPE:
-        return new NodeSet(buf, thePastryNode);
-      case RouteSet.TYPE:
-        return new RouteSet(buf, thePastryNode, thePastryNode);
-    }
-    throw new IllegalArgumentException("Unknown type: "+type);
+    return switch (NodeHandleSetType.find(type)) {
+      case NODE_SET -> new NodeSet(buf, thePastryNode);
+      case ROUTE_SET -> new RouteSet(buf, thePastryNode, thePastryNode);
+      // read by the multiring endpoint that wraps this one
+      case MULTIRING_NODE_HANDLE_SET -> throw new IllegalArgumentException("Unknown type: "+type);
+      case null -> throw new IllegalArgumentException("Unknown type: "+type);
+    };
   }
 
   public List<NodeHandle> networkNeighbors(int num) {

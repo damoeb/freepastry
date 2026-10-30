@@ -43,6 +43,7 @@ import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.commonapi.NodeHandleSetType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
@@ -54,8 +55,6 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Alan Mislove
  */
 public class MultiringNodeHandleSet implements NodeHandleSet {
-  public static final short TYPE = 10;
-
   /**
    * The actual node handle set
    */
@@ -217,6 +216,6 @@ public class MultiringNodeHandleSet implements NodeHandleSet {
   }
 
   public short getType() {
-    return TYPE;
+    return NodeHandleSetType.MULTIRING_NODE_HANDLE_SET.id();
   }
 }

@@ -48,30 +48,7 @@ import rice.p2p.commonapi.Id;
  * @author Ansley Post
  * @author Alan Mislove
  */
-public class StripeId {
-
-  /**
-   * This stripe's Id
-   */
-  private final Id id;
-
-  /**
-   * Constructor that takes in a nodeId and makes a StripeId
-   *
-   * @param id The Id for this stripe
-   */
-  public StripeId(Id id) {
-    this.id = id;
-  }
-
-  /**
-   * Gets the Id attribute of the StripeId object
-   *
-   * @return The Id value
-   */
-  public Id getId() {
-    return id;
-  }
+public record StripeId(Id id) {
 
   public String toString() {
     return "[StripeId " + id + "]";

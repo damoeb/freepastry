@@ -172,7 +172,7 @@ public class MySplitStreamClient implements SplitStreamClient {
     System.arraycopy(data, 4, material, 0, 20);
     Id publisher = rice.pastry.Id.build(material);
 
-    Id stripeId = (rice.pastry.Id) (s.getStripeId().getId());
+    Id stripeId = (rice.pastry.Id) (s.getStripeId().id());
     String stripeStr = stripeId.toString().substring(3, 4);
     System.out.println("deliver("+stripeStr+","+publisher+","+seq+"):"+n.getEnvironment().getTimeSource().currentTimeMillis()+" from "+s.getParent());
   }

@@ -49,6 +49,7 @@ import rice.p2p.commonapi.DeliveryNotification;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdType;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.MessageReceipt;
 import rice.p2p.commonapi.NodeHandle;
@@ -299,7 +300,7 @@ public class GCEndpoint implements Endpoint {
   }
 
   public Id readId(InputBuffer buf, short type) throws IOException {
-    if (type == GCId.TYPE)
+    if (type == IdType.GC_ID.id())
       return new GCId(buf, endpoint);
 
     return endpoint.readId(buf, type);

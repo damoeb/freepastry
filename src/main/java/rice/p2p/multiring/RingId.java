@@ -43,6 +43,7 @@ import java.util.WeakHashMap;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
@@ -54,8 +55,6 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Alan Mislove
  */
 public class RingId implements Id {
-  public static final short TYPE = 2;
-
   /**
    * Serialver for backward compatibility
    */
@@ -300,7 +299,7 @@ public class RingId implements Id {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return IdType.RING_ID.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

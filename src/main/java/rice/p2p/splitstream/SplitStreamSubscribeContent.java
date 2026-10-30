@@ -49,9 +49,7 @@ import rice.p2p.scribe.ScribeContent;
  * @version $Id: SplitStreamSubscribeContent.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Alan Mislove
  */
-public class SplitStreamSubscribeContent implements ScribeContent {
-  public static final short TYPE = 2;
-
+public record SplitStreamSubscribeContent(int stage) implements ScribeContent {
   /**
    * The first stage of the join process
    */
@@ -62,32 +60,9 @@ public class SplitStreamSubscribeContent implements ScribeContent {
    */
   public static final int STAGE_FINAL = -9;
 
-  /**
-   * The stage that the client attempting to join is in
-   */
-  private final int stage;
-
-  /**
-   * Constructor taking the join stage
-   *
-   * @param stage The stage that the client attempting to join is in
-   */
-  public SplitStreamSubscribeContent(int stage) {
-    this.stage = stage;
-  }
-
-  /**
-    * Returns the data for this content
-   *
-   * @return The data for this content
-   */
-  public int getStage() {
-    return stage;
-  }
-
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return SplitStreamContentType.SUBSCRIBE_CONTENT.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
@@ -96,11 +71,14 @@ public class SplitStreamSubscribeContent implements ScribeContent {
   }
 
   public SplitStreamSubscribeContent(InputBuffer buf) throws IOException {
+    this(readStage(buf));
+  }
+
+  private static int readStage(InputBuffer buf) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        stage = buf.readInt();
-        break;
+        return buf.readInt();
       default:
         throw new IOException("Unknown Version: "+version);
     }
