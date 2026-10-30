@@ -134,9 +134,11 @@ final class AggregateTree {
       new ObjectDescriptor[] {},
       disconnected,
       new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {
           logger.debug("Successfully inserted pointer array");
         }
+        @Override
         public void receiveException(Exception e) {
           logger.warn("Error while inserting pointer array: ", e);
         }
@@ -177,10 +179,12 @@ final class AggregateTree {
 
       logger.atInfo().log(() -> "Rebuild: Fetching handles for aggregate " + fromKey.toStringFull());
       aggregateStore.lookupHandles(fromKey, MAX_HANDLES, new Continuation<PastContentHandle[], Exception>() {
+        @Override
         public void receiveResult(PastContentHandle[] o) {
           logger.debug("Got handles for {}", fromKey);
           handlesReceived(fromKey, o);
         }
+        @Override
         public void receiveException(Exception e) {
           failed(fromKey, e);
         }
@@ -188,14 +192,14 @@ final class AggregateTree {
     }
 
     private void handlesReceived(final Id fromKey, PastContentHandle[] o) {
-      if (!(o instanceof PastContentHandle[])) {
+      if (o == null) {
         failed(fromKey, new AggregationException("LookupHandles for "+fromKey+" failed, returned o="+Arrays.toString(o)));
         return;
       }
 
       PastContentHandle bestHandle = null;
       for (PastContentHandle pastContentHandle : o) {
-        if ((pastContentHandle == null) || ((pastContentHandle instanceof GCPastContentHandle) && (((GCPastContentHandle)pastContentHandle).getVersion() != 0)))
+        if ((pastContentHandle == null) || ((pastContentHandle instanceof GCPastContentHandle gcPastContentHandle) && (gcPastContentHandle.getVersion() != 0)))
           continue;
 
         if (bestHandle == null)
@@ -210,13 +214,15 @@ final class AggregateTree {
       final PastContentHandle thisHandle = bestHandle;
       logger.debug("Fetching {}", thisHandle);
       aggregateStore.fetch(thisHandle, new Continuation<PastContent, Exception>() {
+        @Override
         public void receiveResult(PastContent o) {
-          if (o instanceof Aggregate) {
-            aggregateFetched(fromKey, thisHandle, (Aggregate) o);
+          if (o instanceof Aggregate aggregate) {
+            aggregateFetched(fromKey, thisHandle, aggregate);
           } else {
             failed(fromKey, new AggregationException("Fetch failed: "+fromKey+", returned "+o));
           }
         }
+        @Override
         public void receiveException(Exception e) {
           failed(fromKey, e);
         }
@@ -230,7 +236,7 @@ final class AggregateTree {
       logger.atInfo().log(() -> "Rebuild: Got aggregate " + fromKey.toStringFull());
 
       ObjectDescriptor[] objects = new ObjectDescriptor[aggr.numComponents()];
-      long aggregateExpiration = (thisHandle instanceof GCPastContentHandle) ? ((GCPastContentHandle)thisHandle).getExpiration() : GCPast.INFINITY_EXPIRATION;
+      long aggregateExpiration = (thisHandle instanceof GCPastContentHandle gcPastContentHandle) ? gcPastContentHandle.getExpiration() : GCPast.INFINITY_EXPIRATION;
 
       for (int i=0; i<aggr.numComponents(); i++) {
         objects[i] = new ObjectDescriptor(
@@ -250,7 +256,7 @@ final class AggregateTree {
       int numAdded = 0;
       if (pointers != null) {
         for (Id pointer : pointers) {
-          if (pointer instanceof Id) {
+          if (pointer != null) {
             Id thisPointer = pointer;
             if (!keysDone.contains(thisPointer) && !keysPostponed.contains(thisPointer) && !keysInProgress.contains(thisPointer)) {
               if (keysInProgress.size() >= config.getReconstructionMaxConcurrentLookups())
@@ -284,9 +290,10 @@ final class AggregateTree {
     private void restoreInObjectStore(final GCPastContent objData) {
       logger.debug("Checking whether {}v{} is in object store...", objData.getId(), objData.getVersion());
       objectStore.lookupHandles(objData.getId(), 1, new Continuation<PastContentHandle[], Exception>() {
+        @Override
         public void receiveResult(PastContentHandle[] o) {
-          PastContentHandle[] result = (o instanceof PastContentHandle[]) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
-          logger.atDebug().log(() -> "Handles for "+objData.getId()+"v"+objData.getVersion()+": "+Arrays.toString(result)+" ("+result.length+", PCH="+(o instanceof PastContentHandle[])+")");
+          PastContentHandle[] result = (o != null) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
+          logger.atDebug().log(() -> "Handles for "+objData.getId()+"v"+objData.getVersion()+": "+Arrays.toString(result)+" ("+result.length+", PCH="+(o != null)+")");
           boolean gotOne = false;
           for (int i=0; i<result.length; i++) {
             if (result[i] != null) {
@@ -301,15 +308,18 @@ final class AggregateTree {
           } else {
             logger.debug("Ain't got it... reinserting");
             objectStore.insert(objData, new Continuation<Boolean[], Exception>() {
+              @Override
               public void receiveResult(Boolean[] o) {
                 logger.debug("Reinsert {}v{} ok, result={}", objData.getId(), objData.getVersion(), o);
               }
+              @Override
               public void receiveException(Exception e) {
                 logger.debug("Reinsert {}v{} failed, exception=", objData.getId(), objData.getVersion(), e);
               }
             });
           }
         }
+        @Override
         public void receiveException(Exception e) {
           logger.debug("Cannot retrieve handles for object {}v{} to be restored; e=", objData.getId(), objData.getVersion(), e);
         }

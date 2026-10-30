@@ -88,24 +88,29 @@ final class GlacierHandoffProtocol {
     return new GlacierContinuation() {
       long nextTimeout;
 
+      @Override
       public String toString() {
         return "Handoff continuation";
       }
+      @Override
       public void init() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.handoffDelayAfterJoin();
       }
+      @Override
       public void receiveResult(Object o) {
-        if (o instanceof GlacierResponseMessage) {
-          handleResponse((GlacierResponseMessage) o);
-        } else if (o instanceof GlacierDataMessage) {
-          acceptFragments((GlacierDataMessage) o);
+        if (o instanceof GlacierResponseMessage glacierResponseMessage) {
+          handleResponse(glacierResponseMessage);
+        } else if (o instanceof GlacierDataMessage glacierDataMessage) {
+          acceptFragments(glacierDataMessage);
         } else {
           logger.warn("Unexpected response in handoff continuation: {} -- ignored", o);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Exception in handoff continuation: ", e);
       }
+      @Override
       public void timeoutExpired() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.jitterTerm(config.handoffInterval(), environment.getRandomSource());
         logger.info("Checking fragment storage for fragments to hand off...");
@@ -148,6 +153,7 @@ final class GlacierHandoffProtocol {
           null
         );
       }
+      @Override
       public long getTimeout() {
         return nextTimeout;
       }
@@ -181,9 +187,11 @@ final class GlacierHandoffProtocol {
 
   private void deleteHandedOffFragment(final FragmentKey thisKey) {
     trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         logger.debug("Handed off fragment deleted: {} (o={})", thisKey, o);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Delete failed during handoff: {}, returned ", thisKey, e);
       }
@@ -192,6 +200,7 @@ final class GlacierHandoffProtocol {
 
   private void sendFragment(final GlacierResponseMessage grm, final FragmentKey thisKey) {
     fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o != null) {
           logger.info("Fragment {} found ({}), handing off...", thisKey, o);
@@ -205,6 +214,7 @@ final class GlacierHandoffProtocol {
           logger.warn("Handoff failed; fragment {} not found in fragment store", thisKey);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Handoff failed; exception while fetching {}, e=", thisKey, e);
       }
@@ -250,13 +260,10 @@ final class GlacierHandoffProtocol {
             gdm.getSource()
           );
 
-          continue;
         }
 
-        continue;
       } else {
         logger.warn("Handoff: Either fragment or manifest are missing!");
-        continue;
       }
     }
   }
@@ -266,6 +273,7 @@ final class GlacierHandoffProtocol {
 
     fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
       new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
           logger.info("Handoff: Stored OK, sending receipt: {}", thisKey);
 
@@ -276,6 +284,7 @@ final class GlacierHandoffProtocol {
           );
         }
 
+        @Override
         public void receiveException(Exception e) {
           logger.warn("Handoff: receiveException({}) while storing a fragment -- unexpected, ignored (key={})", e, thisKey);
         }

@@ -78,11 +78,13 @@ final class AggregateFlusher {
       logger.info("Flush in progress... daisy-chaining continuation");
       final Continuation<? super Boolean, Exception> parent = flushWait;
       flushWait = new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {
           logger.info("Daisy-chain receiveResult(), restarting {}", command);
           parent.receiveResult(o);
           formAggregates(command);
         }
+        @Override
         public void receiveException(Exception e) {
           logger.info("Daisy-chain receiveException(), restarting {}", command);
           parent.receiveException(e);
@@ -114,9 +116,11 @@ final class AggregateFlusher {
     deleteDamagedObjects(deletionVector);
 
     Continuation.MultiContinuation<Object[]> c = new Continuation.MultiContinuation<Object[]>(new Continuation<Object[], Exception>() {
+      @Override
       public void receiveResult(Object[] o) {
         flushComplete(Boolean.valueOf(true));
       }
+      @Override
       public void receiveException(Exception e) {
         flushComplete(e);
       }
@@ -130,8 +134,8 @@ final class AggregateFlusher {
     if (flushWait != null) {
       Continuation<? super Boolean, Exception> c = flushWait;
       flushWait = null;
-      if (o instanceof Exception)
-        c.receiveException((Exception) o);
+      if (o instanceof Exception exception)
+        c.receiveException(exception);
       else
         c.receiveResult((Boolean) o);
     }
@@ -210,9 +214,11 @@ final class AggregateFlusher {
     for (final Id thisId : deletionVector) {
       logger.atInfo().log(() -> "Deleting object "+thisId.toStringFull()+" from waiting list (broken metadata)");
       waitingList.unstore(thisId, new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {
           logger.debug("Successfully deleted: {}", thisId);
         }
+        @Override
         public void receiveException(Exception e) {
           logger.warn("Cannot delete: {}, e=", thisId, e);
         }
@@ -245,9 +251,10 @@ final class AggregateFlusher {
       waitingList.getObject(new VersionKey(desc[0].getKey(), desc[0].getVersion()), this);
     }
 
+    @Override
     public void receiveResult(Object o) {
-      if ((o!=null) && (o instanceof GCPastContent)) {
-        obj[currentQuery++] = (GCPastContent) o;
+      if ((o!=null) && (o instanceof GCPastContent gcPastContent)) {
+        obj[currentQuery++] = gcPastContent;
         if (currentQuery < desc.length) {
           logger.debug("Retrieving #{}.{}: {}", index, currentQuery, desc[currentQuery].getKey());
           waitingList.getObject(new VersionKey(desc[currentQuery].getKey(), desc[currentQuery].getVersion()), this);
@@ -260,6 +267,7 @@ final class AggregateFlusher {
       }
     }
 
+    @Override
     public void receiveException(Exception e) {
       logger.atWarn().log(() -> "Exception while building aggregate: "+e);
       command.receiveException(e);
@@ -268,9 +276,11 @@ final class AggregateFlusher {
     private void storeAggregate() {
       Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), null);
       storer.storeAggregate(aggregateFactory.buildAggregate(obj, pointers), aggrExpiration, desc, pointers, new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {
           unstoreComponents();
         }
+        @Override
         public void receiveException(Exception e) {
           logger.warn("Exception while storing new aggregate: ", e);
           command.receiveException(e);
@@ -283,9 +293,11 @@ final class AggregateFlusher {
       for (int i=0; i<desc.length; i++) {
         final Continuation<Object, Exception> c2s = c2.getSubContinuation(i);
         waitingList.unstore(new VersionKey(desc[i].getKey(), desc[i].getVersion()), new Continuation<Boolean, Exception>() {
+          @Override
           public void receiveResult(Boolean o) {
             c2s.receiveResult(o);
           }
+          @Override
           public void receiveException(Exception e) {
             logger.warn("Exception while unstoring aggregate component: ", e);
             c2s.receiveException(e);

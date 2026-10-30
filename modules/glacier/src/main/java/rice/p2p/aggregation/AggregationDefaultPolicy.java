@@ -40,6 +40,7 @@ import rice.p2p.past.PastContent;
 
 public class AggregationDefaultPolicy implements AggregationPolicy {
 
+  @Override
   public boolean shouldBeAggregated(PastContent obj, int size) {
     return true;
   }

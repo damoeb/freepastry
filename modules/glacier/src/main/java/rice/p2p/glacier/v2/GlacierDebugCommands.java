@@ -190,7 +190,9 @@ final class GlacierDebugCommands {
       while (iter.hasNext()) {
         FragmentKey thisKey = (FragmentKey) iter.next();
         fragmentStorage.unstore(thisKey, new Continuation<Object, Exception>() {
+          @Override
           public void receiveResult(Object o) {}
+          @Override
           public void receiveException(Exception e) {}
         });
       }
@@ -208,9 +210,11 @@ final class GlacierDebugCommands {
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       inserter.refresh(new Id[] { id }, new long[] { 0 }, new long[] { expiration }, new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
           ret.complete("result("+o+")");
         }
+        @Override
         public void receiveException(Exception e) {
           ret.complete("exception("+e+")");
         }
@@ -229,6 +233,7 @@ final class GlacierDebugCommands {
 
       Continuation<Object, Exception> c = new Continuation<Object, Exception>() {
         Id currentLookup;
+        @Override
         public void receiveResult(Object o) {
           if (o != null)
             result.append(currentLookup.toStringFull() + " " + (((Long)o).longValue() - now) + "\n");
@@ -240,6 +245,7 @@ final class GlacierDebugCommands {
             ret.complete("OK");
           }
         }
+        @Override
         public void receiveException(Exception e) {
           ret.complete("Exception: "+e);
         }
@@ -277,13 +283,16 @@ final class GlacierDebugCommands {
         final Id randomID = factory.buildRandomId(environment.getRandomSource());
         result = result + randomID.toStringFull() + "\n";
         trafficShaper.enqueue(new VersionKey(randomID, 0), new Continuation.SimpleContinuation() {
+          @Override
           public void receiveResult(Object o) {
             inserter.insert(
               new DebugContent(randomID, false, 0, new byte[] {}),
               environment.getTimeSource().currentTimeMillis() + lifetime,
               new Continuation<Object, Exception>() {
+                @Override
                 public void receiveResult(Object o) {
                 }
+                @Override
                 public void receiveException(Exception e) {
                 }
               });
@@ -303,9 +312,11 @@ final class GlacierDebugCommands {
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       fragmentStorage.unstore(id, new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
           ret.complete("result("+o+")");
         }
+        @Override
         public void receiveException(Exception e) {
           ret.complete("exception("+e+")");
         }
@@ -328,9 +339,11 @@ final class GlacierDebugCommands {
       scheduler.addContinuation(new GlacierContinuation() {
         int receivedSoFar = 0;
         final int total = 100;
+        @Override
         public String toString() {
           return "Burst continuation";
         }
+        @Override
         public void init() {
           for (int i=0; i<total; i++) {
             router.sendMessage(
@@ -340,19 +353,23 @@ final class GlacierDebugCommands {
             );
           }
         }
+        @Override
         public void receiveResult(Object o) {
-          if (o instanceof GlacierResponseMessage) {
-            ret[0] = ret[0] + (environment.getTimeSource().currentTimeMillis() - now) + " msec ("+((GlacierResponseMessage)o).getSource().getId()+")\n";
-            if ((++receivedSoFar) == total)
+          if (o instanceof GlacierResponseMessage glacierResponseMessage) {
+            ret[0] = ret[0] + (environment.getTimeSource().currentTimeMillis() - now) + " msec ("+glacierResponseMessage.getSource().getId()+")\n";
+            if (++receivedSoFar == total)
               timeoutExpired();
           }
         }
+        @Override
         public void receiveException(Exception e) {
         }
+        @Override
         public void timeoutExpired() {
           done.complete(ret[0]);
           terminate();
         }
+        @Override
         public long getTimeout() {
           return now + 120 * GlacierConfig.SECONDS;
         }
@@ -369,12 +386,14 @@ final class GlacierDebugCommands {
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       retriever.retrieveManifest(vkey, GlacierTags.DEBUG, new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
-          if (o instanceof Manifest)
-            ret.complete(((Manifest)o).toStringFull());
+          if (o instanceof Manifest manifest)
+            ret.complete(manifest.toStringFull());
           else
             ret.complete("result("+o+")");
         }
+        @Override
         public void receiveException(Exception e) {
           ret.complete("exception("+e+")");
         }
@@ -393,6 +412,7 @@ final class GlacierDebugCommands {
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       fragmentStorage.getObject(id, new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
           FragmentAndManifest fam = (FragmentAndManifest) o;
           ret.complete("OK\n\nFragment: "+fam.getFragment().getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(fam.getFragment().getPayload()), false)+"], ID="+id.fragmentId()+"\n\nValidation: " +
@@ -400,6 +420,7 @@ final class GlacierDebugCommands {
                    fam.getManifest().toStringFull()+"\n\nMetadata:\n - Stored since: "+metadata.storedSince()+
                    "\n - Current expiration: "+metadata.currentExpiration()+"\n - Previous expiration: "+metadata.previousExpiration()+"\n");
         }
+        @Override
         public void receiveException(Exception e) {
           ret.complete("exception("+e+")");
         }
@@ -421,6 +442,7 @@ final class GlacierDebugCommands {
         fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
           FragmentKey currentKey = thisKey;
           int totalChecks = 1, totalFailures = 0;
+          @Override
           public void receiveResult(Object o) {
             FragmentAndManifest fam = (FragmentAndManifest) o;
             boolean success = fam.getManifest().validatesFragment(fam.getFragment(), currentKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance));
@@ -429,12 +451,13 @@ final class GlacierDebugCommands {
             result.append(currentKey.toStringFull()+" "+ (success ? "OK" : "FAIL") + "\n");
             advance();
           }
+          @Override
           public void receiveException(Exception e) {
             totalFailures ++;
             result.append(currentKey.toStringFull()+" EXC: "+e+"\n");
             advance();
           }
-          public void advance() {
+          void advance() {
             if (iter.hasNext()) {
               currentKey = (FragmentKey) iter.next();
               totalChecks ++;
@@ -465,9 +488,11 @@ final class GlacierDebugCommands {
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       scheduler.addContinuation(new GlacierContinuation() {
+        @Override
         public String toString() {
           return "DebugFetch continuation";
         }
+        @Override
         public void init() {
           router.sendMessage(
             fragmentLoc,
@@ -475,9 +500,9 @@ final class GlacierDebugCommands {
             null
           );
         }
+        @Override
         public void receiveResult(Object o) {
-          if (o instanceof GlacierDataMessage) {
-            GlacierDataMessage gdm = (GlacierDataMessage) o;
+          if (o instanceof GlacierDataMessage gdm) {
             ret.complete("\n\nResponse: "+gdm.getKey(0).toStringFull()+" ("+gdm.numKeys()+" keys)\n" +  "Holder: "+gdm.getSource()+"\n" +
                      "Fragment: "+gdm.getFragment(0).getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(gdm.getFragment(0).getPayload()), false)+"]\n\nValidation: " +
                      (gdm.getManifest(0).validatesFragment(gdm.getFragment(0), gdm.getKey(0).fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
@@ -489,14 +514,17 @@ final class GlacierDebugCommands {
             terminate();
           }
         }
+        @Override
         public void receiveException(Exception e) {
           ret.complete("Exception="+e);
           terminate();
         }
+        @Override
         public void timeoutExpired() {
           ret.complete("Timeout");
           terminate();
         }
+        @Override
         public long getTimeout() {
           return now + 5 * GlacierConfig.SECONDS;
         }

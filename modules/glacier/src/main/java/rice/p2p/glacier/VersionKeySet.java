@@ -65,6 +65,7 @@ public class VersionKeySet extends SortedMapIdSet<VersionKeySet> {
     super(s);
   }
 
+  @Override
   protected VersionKeySet newSet(SortedMap<Id, ?> members) {
     return new VersionKeySet(members);
   }
@@ -75,6 +76,7 @@ public class VersionKeySet extends SortedMapIdSet<VersionKeySet> {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public byte[] hash() {
     throw new RuntimeException("VersionKeySet.getHash() is not supported!");
   }
@@ -84,6 +86,7 @@ public class VersionKeySet extends SortedMapIdSet<VersionKeySet> {
    *
    * @return "[ IdSet:  ]"
    */
+  @Override
   public String toString() {
     return "[ IdSet:  ]";
   }

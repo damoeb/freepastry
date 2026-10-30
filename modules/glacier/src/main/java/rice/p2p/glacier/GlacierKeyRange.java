@@ -85,6 +85,7 @@ public abstract class GlacierKeyRange implements IdRange {
    *
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
+  @Override
   public Id getCCWId() {
     return toKey(range.getCCWId());
   }
@@ -94,6 +95,7 @@ public abstract class GlacierKeyRange implements IdRange {
    *
    * @return the id at the clockwise edge of the range (exclusive)
    */
+  @Override
   public Id getCWId() {
     return toKey(range.getCWId());
   }
@@ -103,6 +105,7 @@ public abstract class GlacierKeyRange implements IdRange {
    *
    * @return Whether or not this range is empty
    */
+  @Override
   public boolean isEmpty() {
     return range.isEmpty();
   }
@@ -113,6 +116,7 @@ public abstract class GlacierKeyRange implements IdRange {
    * @param key the key
    * @return true if the key lies within this range, false otherwise
    */
+  @Override
   public boolean containsId(Id key) {
     return range.containsId(toId(key));
   }
@@ -127,6 +131,7 @@ public abstract class GlacierKeyRange implements IdRange {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public IdRange getComplementRange() {
     throw unsupported("getComplementRange");
   }
@@ -138,6 +143,7 @@ public abstract class GlacierKeyRange implements IdRange {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public IdRange mergeRange(IdRange merge) {
     throw unsupported("mergeRange");
   }
@@ -149,6 +155,7 @@ public abstract class GlacierKeyRange implements IdRange {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public IdRange diffRange(IdRange diff) {
     throw unsupported("diffRange");
   }
@@ -160,6 +167,7 @@ public abstract class GlacierKeyRange implements IdRange {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public IdRange intersectRange(IdRange intersect) {
     throw unsupported("intersectRange");
   }
@@ -169,10 +177,12 @@ public abstract class GlacierKeyRange implements IdRange {
    *
    * @return the hash code
    */
+  @Override
   public int hashCode() {
     return range.hashCode();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     range.serialize(buf);
   }

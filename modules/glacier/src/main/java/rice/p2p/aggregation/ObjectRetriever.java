@@ -77,6 +77,7 @@ final class ObjectRetriever {
     logger.info("lookup({}, cache={})", id, cache);
 
     objectStore.lookup(id, cache, new Continuation<PastContent, Exception>() {
+      @Override
       public void receiveResult(PastContent o) {
         if (o != null) {
           logger.debug("NL: Found in PAST: {}", id);
@@ -85,6 +86,7 @@ final class ObjectRetriever {
           lookupInAggregate(id, command);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         command.receiveException(e);
       }
@@ -130,13 +132,14 @@ final class ObjectRetriever {
     }
 
     logger.debug("VL: Not found in aggregate list: {}v{}", id, version);
-    if (!(aggregateStore instanceof VersioningPast)) {
+    if (!(aggregateStore instanceof VersioningPast versioningPast)) {
       logger.debug("VL: Aggregate store does not support versioning");
       lookupVersionInObjectStore(id, version, command, false);
       return;
     }
 
-    ((VersioningPast) aggregateStore).lookup(id, version, new Continuation<PastContent, Exception>() {
+    versioningPast.lookup(id, version, new Continuation<PastContent, Exception>() {
+      @Override
       public void receiveResult(PastContent o) {
         if (o != null) {
           logger.debug("VL: Found in Aggregate.VersioningPAST: {}v{}", id, version);
@@ -146,6 +149,7 @@ final class ObjectRetriever {
           lookupVersionInObjectStore(id, version, command, true);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Aggregate.VersioningPAST returned exception for {}v{}: ", id, version, e);
         command.receiveException(new AggregationException("Aggregate.VersioningPAST returned exception for "+id+"v"+version+": "+e));
@@ -160,7 +164,7 @@ final class ObjectRetriever {
    *          does not support versioning
    */
   private void lookupVersionInObjectStore(final Id id, final long version, final Continuation<? super PastContent, Exception> command, boolean failIfUnsupported) {
-    if (!(objectStore instanceof VersioningPast)) {
+    if (!(objectStore instanceof VersioningPast versioningPast)) {
       logger.debug("VL: Object store does not support versioning");
       if (failIfUnsupported)
         command.receiveException(new AggregationException("Cannot find "+id+"v"+version+" -- try rebuilding aggregate list?"));
@@ -169,7 +173,8 @@ final class ObjectRetriever {
       return;
     }
 
-    ((VersioningPast) objectStore).lookup(id, version, new Continuation<PastContent, Exception>() {
+    versioningPast.lookup(id, version, new Continuation<PastContent, Exception>() {
+      @Override
       public void receiveResult(PastContent o) {
         if (o != null) {
           logger.debug("VL: Found in Object.VersioningPAST: {}v{}", id, version);
@@ -179,6 +184,7 @@ final class ObjectRetriever {
           command.receiveResult(null);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         command.receiveException(e);
       }
@@ -188,8 +194,9 @@ final class ObjectRetriever {
   void lookupHandles(final Id id, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
     logger.info("lookupHandles({},{})", id, max);
     objectStore.lookupHandles(id, max, new Continuation<PastContentHandle[], Exception>() {
+      @Override
       public void receiveResult(PastContentHandle[] o) {
-        PastContentHandle[] result = (o instanceof PastContentHandle[]) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
+        PastContentHandle[] result = (o != null) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
         boolean foundHandle = false;
 
         for (int i=0; i<result.length; i++)
@@ -204,6 +211,7 @@ final class ObjectRetriever {
           lookupHandlesInAggregate(id, max, command);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.atWarn().log(() -> "Exception in lookupHandles: "+e);
         command.receiveException(e);
@@ -242,11 +250,13 @@ final class ObjectRetriever {
     }
 
     retrieveObjectFromAggregate(adc, objDescIndex, new Continuation<GCPastContent, Exception>() {
+      @Override
       public void receiveResult(GCPastContent o) {
         logger.debug("lookupHandles: Retrieved from aggregate: {}, result={}", id, o);
         /* re-inserted implicitly by retrieveObjectFromAggregate */
         objectStore.lookupHandles(id, max, command);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.atWarn().log(() -> "lookupHandles: Cannot retrieve from aggregate, exception "+e);
         command.receiveException(e);
@@ -260,14 +270,16 @@ final class ObjectRetriever {
    */
   private void retrieveObjectFromAggregate(final AggregateDescriptor adc, final int objDescIndex, final Continuation<? super GCPastContent, Exception> command) {
     aggregateStore.lookup(adc.getKey(), new Continuation<PastContent, Exception>() {
+      @Override
       public void receiveResult(PastContent o) {
-        if (o instanceof Aggregate) {
-          validateAndExtract(adc, objDescIndex, (Aggregate) o, command);
+        if (o instanceof Aggregate aggregate) {
+          validateAndExtract(adc, objDescIndex, aggregate, command);
         } else {
           logger.warn("retrieveObjectFromAggregate failed; receiveResult({})", o);
           command.receiveResult(null);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("retrieveObjectFromAggregate failed; receiveException({})", e, e);
         command.receiveException(e);
@@ -277,8 +289,9 @@ final class ObjectRetriever {
 
   private void validateAndExtract(final AggregateDescriptor adc, final int objDescIndex, final Aggregate aggr, final Continuation<? super GCPastContent, Exception> command) {
     endpoint.process(() -> factory.buildId(aggr.getContentHash()), new Continuation<Id, Exception>() {
+      @Override
       public void receiveResult(Id o) {
-        if (o instanceof Id) {
+        if (o != null) {
           Id aggrNominalKey = (Id) o;
 
           if (!aggrNominalKey.equals(adc.getKey())) {
@@ -290,7 +303,9 @@ final class ObjectRetriever {
           logger.debug("Object {} (#{}) successfully retrieved from {}", adc.getObjects()[objDescIndex].getKey(), objDescIndex, adc.getKey());
 
           objectStore.insert(aggr.getComponent(objDescIndex), new Continuation<Boolean[], Exception>() {
+            @Override
             public void receiveResult(Boolean[] o) {}
+            @Override
             public void receiveException(Exception e) {}
           });
 
@@ -300,6 +315,7 @@ final class ObjectRetriever {
           command.receiveException(new AggregationException("retrieveObjectFromAggregate cannot determine content hash"));
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("retrieveObjectFromAggregate cannot determine content hash, exception ", e);
         command.receiveException(e);

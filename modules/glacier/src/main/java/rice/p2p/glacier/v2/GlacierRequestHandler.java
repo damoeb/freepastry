@@ -140,7 +140,7 @@ final class GlacierRequestHandler {
       Manifest manifest[] = new Manifest[gfm.getNumKeys()];
       int numFragments = 0, numManifests = 0;
 
-      public void returnResponse() {
+      void returnResponse() {
         logger.debug("Returning response with {} fragments, {} manifests ({} queries originally)", numFragments, numManifests, gfm.getNumKeys());
         router.sendMessage(
           null,
@@ -148,6 +148,7 @@ final class GlacierRequestHandler {
           gfm.getSource()
         );
       }
+      @Override
       public void receiveResult(Object o) {
         if (o != null) {
           logger.atInfo().log(() -> "Fragment "+gfm.getKey(currentLookup)+" found ("+o+")");
@@ -166,13 +167,14 @@ final class GlacierRequestHandler {
 
         nextLookup();
       }
-      public void nextLookup() {
+      void nextLookup() {
         currentLookup ++;
         if (currentLookup >= gfm.getNumKeys())
           returnResponse();
         else
           fragmentStorage.getObject(gfm.getKey(currentLookup), this);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.atWarn().setCause(e).log(() -> "Exception while retrieving fragment "+gfm.getKey(currentLookup)+" (lookup #"+currentLookup+"), e=");
         fragment[currentLookup] = null;
@@ -217,6 +219,7 @@ final class GlacierRequestHandler {
 
           fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
             new Continuation<Object, Exception>() {
+              @Override
               public void receiveResult(Object o) {
                 logger.info("Stored OK, sending receipt: {}", thisKey);
 
@@ -227,6 +230,7 @@ final class GlacierRequestHandler {
                 );
               }
 
+              @Override
               public void receiveException(Exception e) {
                 logger.warn("receiveException({}) while storing a fragment -- unexpected, ignored (key={})", e, thisKey);
               }
@@ -281,9 +285,9 @@ final class GlacierRequestHandler {
    */
   private void replaceManifest(final GlacierDataMessage gdm, final FragmentKey thisKey, final Manifest thisManifest, final FragmentMetadata metadata) {
     fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
-        if (o instanceof FragmentAndManifest) {
-          FragmentAndManifest fam = (FragmentAndManifest) o;
+        if (o instanceof FragmentAndManifest fam) {
 
           logger.debug("Got FAM for {}, now replacing old manifest with new one...", thisKey);
 
@@ -303,6 +307,7 @@ final class GlacierRequestHandler {
             fam.replaceManifest(thisManifest);
             fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), ((metadata == null) ? 0 : metadata.currentExpiration()), environment.getTimeSource().currentTimeMillis()), fam,
               new Continuation<Object, Exception>() {
+                @Override
                 public void receiveResult(Object o) {
                   logger.debug("Old manifest for {} replaced OK, sending receipt", thisKey);
                   router.sendMessage(
@@ -311,6 +316,7 @@ final class GlacierRequestHandler {
                     gdm.getSource()
                   );
                 }
+                @Override
                 public void receiveException(Exception e) {
                   logger.warn("Cannot store refreshed manifest: ", e);
                 }
@@ -323,6 +329,7 @@ final class GlacierRequestHandler {
           logger.warn("Fragment store returns something other than a FAM: {}", o);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Cannot retrieve FAM for {}: ", thisKey, e);
       }
@@ -336,21 +343,25 @@ final class GlacierRequestHandler {
   private void fetchSyncedFragment(final FragmentKey thisKey, final Manifest thisManifest) {
     final long tStart = environment.getTimeSource().currentTimeMillis();
     retriever.rateLimitedRetrieveFragment(thisKey, thisManifest, GlacierTags.SYNC_FETCH, new GlacierContinuation() {
+      @Override
       public String toString() {
         return "Fetch synced fragment: "+thisKey;
       }
+      @Override
       public void receiveResult(Object o) {
-        if (o instanceof Fragment) {
+        if (o instanceof Fragment fragment) {
           if (!fragmentStorage.exists(thisKey)) {
             logger.info("Received fragment {} (from primary) matches existing manifest, storing...", thisKey);
 
-            FragmentAndManifest fam = new FragmentAndManifest((Fragment) o, thisManifest);
+            FragmentAndManifest fam = new FragmentAndManifest(fragment, thisManifest);
 
             fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
               new Continuation<Object, Exception>() {
+                @Override
                 public void receiveResult(Object o) {
                   logger.debug("Recovered fragment stored OK");
                 }
+                @Override
                 public void receiveException(Exception e) {
                   logger.warn("receiveException({}) while storing a fragment with existing manifest (key={})", e, thisKey);
                 }
@@ -363,9 +374,9 @@ final class GlacierRequestHandler {
           logger.warn("FS received something other than a fragment: {}", o);
         }
       }
+      @Override
       public void receiveException(Exception e) {
-        if (e instanceof GlacierNotEnoughFragmentsException) {
-          GlacierNotEnoughFragmentsException gnf = (GlacierNotEnoughFragmentsException) e;
+        if (e instanceof GlacierNotEnoughFragmentsException gnf) {
           logger.atInfo().log(() -> "Not enough fragments to reconstruct "+thisKey+": "+gnf.getChecked()+"/"+numFragments+" checked, "+gnf.getFound()+" found, "+numSurvivors+" needed");
         } else {
           logger.warn("Exception while recovering synced fragment {}: ", thisKey, e);
@@ -373,10 +384,12 @@ final class GlacierRequestHandler {
 
         terminate();
       }
+      @Override
       public void timeoutExpired() {
         logger.warn("Timeout while fetching synced fragment {} -- aborted", thisKey);
         terminate();
       }
+      @Override
       public long getTimeout() {
         return tStart + config.overallRestoreTimeout();
       }

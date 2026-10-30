@@ -65,6 +65,7 @@ final class GlacierTrash {
     if (trashStorage != null) {
       logger.atInfo().log(() -> "Moving fragment "+fkey.toStringFull()+" to trash");
       fragmentStorage.getObject(fkey, new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
           logger.atDebug().log(() -> "Fragment "+fkey.toStringFull()+" retrieved, storing in trash");
           if (o != null) {
@@ -73,6 +74,7 @@ final class GlacierTrash {
             receiveException(new GlacierException("Move to trash: Fragment "+fkey+" does not exist?!?"));
           }
         }
+        @Override
         public void receiveException(Exception e) {
           logger.warn("Cannot retrieve fragment {} for deletion: e=", fkey, e);
           command.receiveException(new GlacierException("Cannot retrieve fragment "+fkey+" for deletion"));
@@ -89,10 +91,12 @@ final class GlacierTrash {
    */
   private void moveToTrash(final Id fkey, Object fam, final Continuation<? super Boolean, Exception> command) {
     trashStorage.store(fkey, null, fam, new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         logger.atDebug().log(() -> "Deleting fragment "+fkey.toStringFull());
         fragmentStorage.unstore(fkey, command);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.atWarn().setCause(e).log(() -> "Cannot store in trash: "+fkey.toStringFull()+", e=");
         command.receiveException(e);
@@ -107,6 +111,7 @@ final class GlacierTrash {
   void lookupFragment(final FragmentKey key, final Continuation<Object, Exception> c) {
     if (trashStorage!=null) {
       trashStorage.getObject(key, new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
           if (o != null) {
             logger.atDebug().log(() -> "retrieveFragment: Key "+key.toStringFull()+" found in trash, retrieving...");
@@ -117,6 +122,7 @@ final class GlacierTrash {
           c.receiveResult(o);
         }
 
+        @Override
         public void receiveException(Exception e) {
           logger.atWarn().log(() -> "Exception while getting object " + key + " from trash " + e);
           c.receiveResult(null);
@@ -140,7 +146,7 @@ final class GlacierTrash {
       statistics.setNumObjectsInTrash(trashStorage.scan().numElements());
 
     Storage storageT = (trashStorage == null) ? null : trashStorage.getStorage();
-    if (storageT instanceof PersistentStorage)
-      statistics.setTrashStorageSize(((PersistentStorage)storageT).getTotalSize());
+    if (storageT instanceof PersistentStorage persistentStorage)
+      statistics.setTrashStorageSize(persistentStorage.getTotalSize());
   }
 }

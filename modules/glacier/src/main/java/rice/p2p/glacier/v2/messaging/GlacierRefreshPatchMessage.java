@@ -79,15 +79,18 @@ public final class GlacierRefreshPatchMessage extends GlacierMessage {
     return signatures[index];
   }
 
+  @Override
   public String toString() {
     return "[GlacierRefreshPatch for " + keys[0] + " ("+(numKeys()-1)+" more keys)]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.REFRESH_PATCH.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

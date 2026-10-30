@@ -101,17 +101,9 @@ public class ErasureCodec {
 
   /**
    * Generates multiple fragments from the incoming bytes
-   * @param bytes
-   * @param length
-   * @param generateFragment
-   * @return
    */
+  @SuppressWarnings("UnnecessaryParentheses") // keeps the byte-packing columns aligned
   public Fragment[] encode(byte[] bytes, int length, boolean[] generateFragment) {
-    int wantFragments = 0;
-    for (int i=0; i<generateFragment.length; i++)
-      if (generateFragment[i])
-        wantFragments ++;
-
     int numWords = (length + 3) / 4;
     int wordsPerGroup = (numSurvivors * Lfield);
     int numGroups = (numWords + (wordsPerGroup - 1)) / wordsPerGroup;
@@ -190,12 +182,8 @@ public class ErasureCodec {
     }
   }
 
+  @SuppressWarnings("UnnecessaryParentheses") // keeps the byte-packing columns aligned
   public PastContent decode(Fragment frag[], Endpoint endpoint, PastContentDeserializer pcd) {
-
-    Fragment firstFrag = null;
-    for (int i=0; i<frag.length; i++)
-      if (frag[i] != null)
-        firstFrag = frag[i];
 
     if (frag.length != numFragments)
       return null;

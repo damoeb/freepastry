@@ -52,6 +52,7 @@ public class GlacierStorageSerializer implements StorageSerializer {
   private static final byte FRAGMENT_AND_MANIFEST = 1;
   private static final byte TIMESTAMP = 2;
 
+  @Override
   public void writeObject(Object obj, OutputBuffer buf) throws IOException {
     if (obj instanceof FragmentAndManifest fam) {
       buf.writeByte(FRAGMENT_AND_MANIFEST);
@@ -64,6 +65,7 @@ public class GlacierStorageSerializer implements StorageSerializer {
     }
   }
 
+  @Override
   public Object readObject(InputBuffer buf) throws IOException {
     byte tag = buf.readByte();
     switch (tag) {
@@ -76,13 +78,15 @@ public class GlacierStorageSerializer implements StorageSerializer {
     }
   }
 
+  @Override
   public void writeMetadata(Object metadata, OutputBuffer buf) throws IOException {
-    if (!(metadata instanceof FragmentMetadata)) {
+    if (!(metadata instanceof FragmentMetadata fragmentMetadata)) {
       throw new IOException("Cannot persist metadata " + metadata + " of " + metadata.getClass().getName());
     }
-    ((FragmentMetadata) metadata).serialize(buf);
+    fragmentMetadata.serialize(buf);
   }
 
+  @Override
   public Object readMetadata(InputBuffer buf) throws IOException {
     return new FragmentMetadata(buf);
   }

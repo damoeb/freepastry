@@ -59,6 +59,7 @@ public record FragmentMetadata(long currentExpiration, long previousExpiration, 
     buf.writeLong(storedSince);
   }
 
+  @Override
   public int compareTo(FragmentMetadata object) {
     FragmentMetadata metadata = (FragmentMetadata) object;
 

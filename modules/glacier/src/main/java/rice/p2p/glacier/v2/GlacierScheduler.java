@@ -129,7 +129,6 @@ final class GlacierScheduler {
   void timerExpired() {
     logger.debug("Timer expired");
 
-    boolean foundTerminated = false;
     long earliestTimeout;
     int numDelete;
 
@@ -180,7 +179,7 @@ final class GlacierScheduler {
    * This method is called when Glacier encounters a fatal error
    *
    * @param s Message describing the error, which is logged
-   * @exception Error always
+   * @throws Error always
    */
   private void panic(String s) throws Error {
     logger.error("PANIC: {}", s);

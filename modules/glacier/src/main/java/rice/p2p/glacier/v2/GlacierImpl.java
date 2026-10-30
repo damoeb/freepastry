@@ -130,32 +130,39 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     scheduler.addContinuation(statisticsCollector.newReportingTask());
   }
 
+  @Override
   public String handleDebugCommand(String command) {
     return debugCommands.handleDebugCommand(command);
   }
 
+  @Override
   public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
     insert(obj, GCPast.INFINITY_EXPIRATION, command);
   }
 
+  @Override
   public void insert(final PastContent obj, final long expiration, final Continuation<? super Boolean[], Exception> command) {
     inserter.insert(obj, expiration, command);
   }
 
+  @Override
   public void refresh(Id[] ids, long[] expirations, Continuation<? super Object[], Exception> command) {
     long[] versions = new long[ids.length];
     Arrays.fill(versions, 0);
     refresh(ids, versions, expirations, command);
   }
 
+  @Override
   public void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
     inserter.refresh(ids, versions, expirations, command);
   }
 
+  @Override
   public boolean forward(final RouteMessage message) {
     return true;
   }
 
+  @Override
   public void update(NodeHandle handle, boolean joined) {
     logger.atInfo().log(() -> "Leafset update: " + handle + " has " + (joined ? "joined" : "left"));
 
@@ -165,33 +172,38 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     neighborhood.neighborSeen(handle.getId(), environment.getTimeSource().currentTimeMillis());
   }
 
+  @Override
   public void deliver(Id id, Message message) {
     dispatcher.deliver(id, message);
   }
 
+  @Override
   public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command) {
     command.receiveException(new UnsupportedOperationException("LookupHandle() is not supported on Glacier"));
   }
 
+  @Override
   public void lookupHandles(Id id, int num, Continuation<? super PastContentHandle[], Exception> command) {
     lookupHandles(id, 0, num, command);
   }
 
+  @Override
   public void lookupHandles(final Id id, final long version, int num, final Continuation<? super PastContentHandle[], Exception> command) {
     logger.info("lookupHandles({}v{}, n={})", id, version, num);
 
     retriever.retrieveManifest(new VersionKey(id, version), GlacierTags.LOOKUP_HANDLES, new Continuation<Object, Exception>() {
       boolean haveAnswered = false;
+      @Override
       public void receiveResult(Object o) {
         if (haveAnswered) {
           logger.debug("lookupHandles({}): received manifest {} but has already answered. Discarding...", id, o);
           return;
         }
-        if (o instanceof Manifest) {
+        if (o instanceof Manifest manifest) {
           logger.debug("lookupHandles({}): received manifest {}, returning handle...", id, o);
           haveAnswered = true;
           command.receiveResult(new PastContentHandle[] {
-            new GlacierContentHandle(id, version, getLocalNodeHandle(), (Manifest) o)
+            new GlacierContentHandle(id, version, getLocalNodeHandle(), manifest)
           });
         } else {
           logger.warn("lookupHandles({}): Cannot retrieve manifest", id);
@@ -199,6 +211,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           command.receiveResult(new PastContentHandle[] { null });
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("lookupHandles({}): Exception ", id, e);
         haveAnswered = true;
@@ -207,38 +220,43 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     });
   }
 
+  @Override
   public void lookup(Id id, long version, Continuation<? super PastContent, Exception> command) {
     VersionKey vkey = new VersionKey(id, version);
     logger.info("lookup({}v{})", id, version);
     retriever.retrieveObject(vkey, null, true, GlacierTags.LOOKUP, command);
   }
 
+  @Override
   public void lookup(Id id, boolean cache, Continuation<? super PastContent, Exception> command) {
     lookup(id, 0, command);
   }
 
+  @Override
   public void lookup(Id id, Continuation<? super PastContent, Exception> command) {
     lookup(id, 0, command);
   }
 
+  @Override
   public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command) {
     logger.info("fetch({})", handle.getId());
 
-    if (!(handle instanceof GlacierContentHandle)) {
+    if (!(handle instanceof GlacierContentHandle gch)) {
       command.receiveException(new GlacierException("Unknown handle type"));
       return;
     }
 
-    GlacierContentHandle gch = (GlacierContentHandle) handle;
     logger.debug("exact: fetch({}v{})", gch.getId(), gch.getVersion());
 
     retriever.retrieveObject(new VersionKey(gch.getId(), gch.getVersion()), gch.manifest(), true, GlacierTags.FETCH, command);
   }
 
+  @Override
   public int getReplicationFactor() {
     return 1;
   }
 
+  @Override
   public NodeHandle getLocalNodeHandle() {
     return endpoint.getLocalNodeHandle();
   }
@@ -267,10 +285,12 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     return instance;
   }
 
+  @Override
   public void setContentDeserializer(PastContentDeserializer deserializer) {
     retriever.setContentDeserializer(deserializer);
   }
 
+  @Override
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {
   }
 }

@@ -68,12 +68,14 @@ public class AggregationStorageSerializer implements StorageSerializer {
     this.aggregation = aggregation;
   }
 
+  @Override
   public void writeObject(Object obj, OutputBuffer buf) throws IOException {
     PastContent content = (PastContent) obj;
     buf.writeShort(content.getType());
     content.serialize(buf);
   }
 
+  @Override
   public Object readObject(InputBuffer buf) throws IOException {
     AggregationImpl a = aggregation.get();
     if (a == null) {
@@ -82,13 +84,15 @@ public class AggregationStorageSerializer implements StorageSerializer {
     return a.getContentDeserializer().deserializePastContent(buf, a.getEndpoint(), buf.readShort());
   }
 
+  @Override
   public void writeMetadata(Object metadata, OutputBuffer buf) throws IOException {
-    if (!(metadata instanceof ObjectDescriptor)) {
+    if (!(metadata instanceof ObjectDescriptor objectDescriptor)) {
       throw new IOException("Cannot persist metadata " + metadata + " of " + metadata.getClass().getName());
     }
-    ((ObjectDescriptor) metadata).serialize(buf);
+    objectDescriptor.serialize(buf);
   }
 
+  @Override
   public Object readMetadata(InputBuffer buf) throws IOException {
     return new ObjectDescriptor(buf, keyFactory);
   }

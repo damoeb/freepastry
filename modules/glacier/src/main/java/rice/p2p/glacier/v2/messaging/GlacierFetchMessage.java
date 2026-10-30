@@ -80,15 +80,18 @@ public final class GlacierFetchMessage extends GlacierMessage {
     return keys[index];
   }
 
+  @Override
   public String toString() {
     return "[GlacierFetch for " + keys[0] + " and "+(keys.length-1)+" other keys, req="+request+"]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.FETCH.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

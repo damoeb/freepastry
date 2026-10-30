@@ -84,15 +84,18 @@ public final class GlacierResponseMessage extends GlacierMessage {
     return lifetimes[index];
   }
 
+  @Override
   public String toString() {
     return "[GlacierResponse for " + keys[0] + " ("+(numKeys()-1)+" more keys)]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.RESPONSE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

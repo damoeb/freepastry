@@ -85,9 +85,11 @@ final class AggregationMonitor {
     Id[] ids = (Id[]) monitorIDs.toArray(new Id[] {});
     logger.info("Monitor: Refreshing {} objects", ids.length);
     aggregation.refresh(ids, environment.getTimeSource().currentTimeMillis() + 3 * config.getMonitorRefreshInterval(), new Continuation<Object[], Exception>() {
+      @Override
       public void receiveResult(Object[] o) {
         logger.debug("Monitor: Refresh completed, result={}", o);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.debug("Monitor: Refresh failed, exception=", e);
       }
@@ -170,6 +172,7 @@ final class AggregationMonitor {
       int currentLookup = 0;
       boolean lookupInAggrStore = false;
 
+      @Override
       public void receiveResult(PastContentHandle[] o) {
         logger.debug("Monitor: Retr {} a={} got {}", currentLookup, lookupInAggrStore, o);
         Id currentId = (Id) monitorIDs.elementAt(currentLookup);
@@ -218,6 +221,7 @@ final class AggregationMonitor {
           }
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Montior: Failed, e=", e);
         ret.complete("done");
@@ -252,6 +256,7 @@ final class AggregationMonitor {
       this.remainingTotal = numFiles;
     }
 
+    @Override
     public void receiveResult(Object o) {
       if (remainingTotal > 0) {
         final int burstSize = Math.min((int)((avgBurstSize*0.3) + environment.getRandomSource().nextInt((int)(1.4*avgBurstSize))), remainingTotal);
@@ -263,6 +268,7 @@ final class AggregationMonitor {
       }
     }
 
+    @Override
     public void receiveException(Exception e) {
       logger.warn("Monitor.add aggregate insertion failed: ", e);
       receiveResult(e);
@@ -278,6 +284,7 @@ final class AggregationMonitor {
         this.remainingHere = burstSize;
       }
 
+      @Override
       public void receiveResult(Object o) {
         if (remainingHere > 0) {
           logger.debug("Continuing burst insert, {} remaining", remainingHere);
@@ -293,6 +300,7 @@ final class AggregationMonitor {
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Monitor.add component insertion failed: ", e);
         receiveResult(e);

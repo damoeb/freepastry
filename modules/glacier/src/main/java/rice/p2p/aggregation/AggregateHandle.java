@@ -47,22 +47,27 @@ import rice.p2p.past.gc.GCPastContentHandle;
 
 public record AggregateHandle(NodeHandle nodeHandle, Id id, long version, long expiration) implements GCPastContentHandle {
 
+  @Override
   public Id getId() {
     return id;
   }
 
+  @Override
   public NodeHandle getNodeHandle() {
     return nodeHandle;
   }
 
+  @Override
   public long getVersion() {
     return version;
   }
 
+  @Override
   public long getExpiration() {
     return expiration;
   }
 
+  @Override
   public short getType() {
     return AggregationHandleType.AGGREGATE_HANDLE.id();
   }
@@ -75,6 +80,7 @@ public record AggregateHandle(NodeHandle nodeHandle, Id id, long version, long e
     this(nodeHandle, id, version, expiration);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeLong(version);
     buf.writeLong(expiration);

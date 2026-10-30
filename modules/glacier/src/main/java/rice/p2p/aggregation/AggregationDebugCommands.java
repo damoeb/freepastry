@@ -103,9 +103,11 @@ final class AggregationDebugCommands {
    */
   private static <R> Continuation<R, Exception> reportTo(final CompletableFuture<String> ret) {
     return new Continuation<R, Exception>() {
+      @Override
       public void receiveResult(R o) {
         ret.complete("result("+o+")");
       }
+      @Override
       public void receiveException(Exception e) {
         ret.complete("exception("+e+")");
       }
@@ -123,10 +125,10 @@ final class AggregationDebugCommands {
     if (!requestedInstance.equals(myInstance) && !requestedInstance.equals("a")) {
       String subResult = null;
 
-      if ((subResult == null) && (aggregateStore instanceof DebugCommandHandler))
-        subResult = ((DebugCommandHandler)aggregateStore).handleDebugCommand(command);
-      if ((subResult == null) && (objectStore instanceof DebugCommandHandler))
-        subResult = ((DebugCommandHandler)objectStore).handleDebugCommand(command);
+      if ((subResult == null) && (aggregateStore instanceof DebugCommandHandler debugCommandHandler))
+        subResult = debugCommandHandler.handleDebugCommand(command);
+      if ((subResult == null) && (objectStore instanceof DebugCommandHandler debugCommandHandler))
+        subResult = debugCommandHandler.handleDebugCommand(command);
 
       return subResult;
     }
@@ -151,8 +153,10 @@ final class AggregationDebugCommands {
           new DebugContent(randomID, false, 0, new byte[] {}),
           environment.getTimeSource().currentTimeMillis() + 120*AggregationConfig.SECONDS,
           new Continuation<Boolean[], Exception>() {
+            @Override
             public void receiveResult(Boolean[] o) {
             }
+            @Override
             public void receiveException(Exception e) {
             }
           }
@@ -308,8 +312,9 @@ final class AggregationDebugCommands {
 
     final CompletableFuture<String> ret = new CompletableFuture<String>();
     aggregation.lookupHandles(id, max, new Continuation<PastContentHandle[], Exception>() {
+      @Override
       public void receiveResult(PastContentHandle[] o) {
-        if (o instanceof PastContentHandle[]) {
+        if (o != null) {
           PastContentHandle[] oA = (PastContentHandle[]) o;
           String text = "";
           for (int i=0; i<oA.length; i++)
@@ -317,6 +322,7 @@ final class AggregationDebugCommands {
           ret.complete(text + oA.length + " handle(s) returned\n");
         } else ret.complete("result("+Arrays.toString(o)+") -- no handles returned!");
       }
+      @Override
       public void receiveException(Exception e) {
         ret.complete("exception("+e+")");
       }

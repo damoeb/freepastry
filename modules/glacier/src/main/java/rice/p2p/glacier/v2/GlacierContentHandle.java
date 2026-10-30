@@ -46,26 +46,32 @@ import rice.p2p.past.gc.GCPastContentHandle;
 public record GlacierContentHandle(Id id, long version, NodeHandle nodeHandle, Manifest manifest) implements GCPastContentHandle {
   public static final short TYPE = 4;
 
+  @Override
   public Id getId() {
     return id;
   }
 
+  @Override
   public NodeHandle getNodeHandle() {
     return nodeHandle;
   }
 
+  @Override
   public long getVersion() {
     return version;
   }
 
+  @Override
   public long getExpiration() {
     return manifest.getExpiration();
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(id.getType());
     id.serialize(buf);

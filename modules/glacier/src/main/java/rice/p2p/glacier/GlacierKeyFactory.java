@@ -75,6 +75,7 @@ public abstract class GlacierKeyFactory implements IdFactory {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public Id buildId(byte[] material) {
     throw unsupported("buildId(byte[])");
   }
@@ -86,6 +87,7 @@ public abstract class GlacierKeyFactory implements IdFactory {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public Id buildId(int[] material) {
     throw unsupported("buildId(int[])");
   }
@@ -97,10 +99,12 @@ public abstract class GlacierKeyFactory implements IdFactory {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public Id buildId(String string) {
     throw unsupported("buildId(String)");
   }
 
+  @Override
   public Id buildIdFromToString(char[] chars, int offset, int length) {
     return buildIdFromToString(new String(chars, offset, length));
   }
@@ -112,6 +116,7 @@ public abstract class GlacierKeyFactory implements IdFactory {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public Id.Distance buildIdDistance(byte[] material) {
     throw unsupported("buildIdDistance()");
   }
@@ -124,6 +129,7 @@ public abstract class GlacierKeyFactory implements IdFactory {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public IdRange buildIdRange(Id cw, Id ccw) {
     throw unsupported("buildIdRange()");
   }
@@ -134,6 +140,7 @@ public abstract class GlacierKeyFactory implements IdFactory {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public NodeHandleSet buildNodeHandleSet() {
     throw unsupported("buildNodeHandleSet()");
   }

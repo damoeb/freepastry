@@ -57,15 +57,18 @@ public final class GlacierRefreshProbeMessage extends GlacierMessage {
     return requestedId;
   }
 
+  @Override
   public String toString() {
     return "[GlacierRefreshProbe #"+getUID()+" for " + requestedId + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.REFRESH_PROBE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

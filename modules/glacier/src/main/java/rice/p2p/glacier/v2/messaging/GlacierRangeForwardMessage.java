@@ -64,15 +64,18 @@ public final class GlacierRangeForwardMessage extends GlacierMessage {
     return requestor;
   }
 
+  @Override
   public String toString() {
     return "[GlacierRangeForward #"+getUID()+" for " + requestedRange + " by " + requestor + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.RANGE_FORWARD.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

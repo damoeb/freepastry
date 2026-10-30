@@ -88,9 +88,11 @@ final class GlacierNeighborProtocol {
     return new GlacierContinuation() {
       long nextTimeout;
 
+      @Override
       public String toString() {
         return "Neighbor continuation";
       }
+      @Override
       public void init() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.expireNeighborsDelayAfterJoin();
 
@@ -124,9 +126,9 @@ final class GlacierNeighborProtocol {
           }
         }
       }
+      @Override
       public void receiveResult(Object o) {
-        if (o instanceof GlacierNeighborResponseMessage) {
-          final GlacierNeighborResponseMessage gnrm = (GlacierNeighborResponseMessage) o;
+        if (o instanceof GlacierNeighborResponseMessage gnrm) {
           logger.atDebug().log(() -> "NeighborResponse from "+gnrm.getSource()+" with "+gnrm.numNeighbors()+" neighbors");
           for (int i=0; i<gnrm.numNeighbors(); i++)
             neighborhood.neighborSeen(gnrm.getNeighbor(i), gnrm.getLastSeen(i));
@@ -134,15 +136,18 @@ final class GlacierNeighborProtocol {
           logger.warn("Unknown response in neighbor continuation: {} -- discarded", o);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Exception in neighbor continuation: ", e);
         terminate();
       }
+      @Override
       public void timeoutExpired() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.expireNeighborsInterval();
 
         neighborhood.expireNeighbors(endpoint.neighborSet(ALL_NEIGHBORS));
       }
+      @Override
       public long getTimeout() {
         return nextTimeout;
       }
@@ -168,11 +173,12 @@ final class GlacierNeighborProtocol {
 
     Iterator<Id> iter = requestedNeighbors.getIterator();
     for (int i=0; i<numRequested; i++)
-      neighbors[i] = (Id)(iter.next());
+      neighbors[i] = (Id) iter.next();
 
     neighborStorage.getObject(neighbors[0], new Continuation<Object, Exception>() {
       int currentLookup = 0;
 
+      @Override
       public void receiveResult(Object o) {
         logger.debug("Continue: NeighborRequest from {} for range {}", gnrm.getSource().getId(), gnrm.getRequestedRange());
 
@@ -181,9 +187,9 @@ final class GlacierNeighborProtocol {
           return;
         }
 
-        if (o instanceof Long) {
+        if (o instanceof Long l) {
           logger.debug("Retr: Neighbor {} was last seen at {}", neighbors[currentLookup], o);
-          lastSeen[currentLookup] = ((Long)o).longValue();
+          lastSeen[currentLookup] = l.longValue();
           currentLookup ++;
           if (currentLookup < numRequested) {
             neighborStorage.getObject(neighbors[currentLookup], this);
@@ -198,6 +204,7 @@ final class GlacierNeighborProtocol {
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Problem while retrieving neighbors in range {} for {} -- canceled", gnrm.getRequestedRange(), gnrm.getSource(), e);
       }

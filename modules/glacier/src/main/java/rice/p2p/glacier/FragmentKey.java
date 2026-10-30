@@ -60,6 +60,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public boolean isBetween(Id ccw, Id cw) {
     throw new RuntimeException("FragmentKey.isBetween() is not supported!");
   }
@@ -80,12 +81,12 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    * @param peer the object to compare to
    * @return whether the given object is an equal key
    */
+  @Override
   public boolean equals(Object peer) {
-    if (!(peer instanceof FragmentKey)) {
+    if (!(peer instanceof FragmentKey sk)) {
       return false;
     }
 
-    FragmentKey sk = (FragmentKey) peer;
     return (sk.versionKey.equals(this.versionKey) && (sk.fragmentId == this.fragmentId));
   }
 
@@ -94,6 +95,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    *
    * @return a byte[] representing this key
    */
+  @Override
   public byte[] toByteArray() {
     byte[] result = new byte[getByteArrayLength()];
 
@@ -108,6 +110,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    * @param result the array to write to
    * @param offset the offset in the array to start writing at
    */
+  @Override
   public void toByteArray(byte[] result, int offset) {
     versionKey.toByteArray(result, offset);
     MathUtils.intToByteArray(fragmentId, result, offset+versionKey.getByteArrayLength());
@@ -118,6 +121,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    *
    * @return The length of the byte[] representing this Id
    */
+  @Override
   public int getByteArrayLength() {
     return versionKey.getByteArrayLength() + 4;
   }
@@ -127,6 +131,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    *
    * @return the full string form
    */
+  @Override
   public String toStringFull() {
     return versionKey.toStringFull() + "#" + fragmentId;
   }
@@ -136,6 +141,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    *
    * @return the short string form
    */
+  @Override
   public String toString() {
     return versionKey.toString() + "#" + fragmentId;
   }
@@ -147,6 +153,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public Distance longDistanceFromId(Id nid) {
     throw new RuntimeException("FragmentKey.longDistanceFromId() is not supported!");
   }
@@ -158,6 +165,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public Distance distanceFromId(Id nid) {
     throw new RuntimeException("FragmentKey.distanceFromId() is not supported!");
   }
@@ -169,6 +177,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public Id addToId(Distance offset) {
     throw new RuntimeException("FragmentKey.addToId() is not supported!");
   }
@@ -180,6 +189,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public boolean clockwise(Id nid) {
     throw new RuntimeException("FragmentKey.clockwise() is not supported!");
   }
@@ -190,6 +200,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    * @param o the key to compare to
    * @return a negative number, zero or a positive number as this key is less than, equal to or greater than o
    */
+  @Override
   public int compareTo(Id o) {
     int keyResult = versionKey.compareTo(((FragmentKey) o).versionKey);
     if (keyResult != 0) {
@@ -211,6 +222,7 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    *
    * @return the hash code
    */
+  @Override
   public int hashCode() {
     return (versionKey.hashCode() + fragmentId);
   }
@@ -221,11 +233,13 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
     this(versionKey, fragmentId);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeInt(fragmentId);
     versionKey.serialize(buf);
   }
 
+  @Override
   public short getType() {
     return IdType.FRAGMENT_KEY.id();
   }

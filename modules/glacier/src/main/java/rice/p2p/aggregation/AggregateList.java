@@ -248,7 +248,7 @@ public class AggregateList {
   public void logEntry(String entry) {
     if (loggingEnabled) {
       if (logFile != null) {
-        logFile.println("$|"+(nextSerial++)+"|"+environment.getTimeSource().currentTimeMillis()+"|"+entry+"|@");
+        logFile.println("$|"+ nextSerial+++"|"+environment.getTimeSource().currentTimeMillis()+"|"+entry+"|@");
         logFile.flush();
       } else {
         logger.warn("Aggregation cannot write to log: {}", entry);

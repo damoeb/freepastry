@@ -106,8 +106,9 @@ final class AggregateStorer {
       logger.debug("storeAggregate() starts working on content hash...");
       return factory.buildId(aggr.getContentHash());
     }, new Continuation<Id, Exception>() {
+      @Override
       public void receiveResult(Id o) {
-        if (o instanceof Id) {
+        if (o != null) {
           aggr.setId((Id) o);
           insertAggregate(aggr, expiration, desc, pointers, command);
         } else {
@@ -115,6 +116,7 @@ final class AggregateStorer {
           command.receiveException(new AggregationException("storeAggregate() cannot determine content hash"));
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("storeAggregate() cannot determine content hash, exception ", e);
         command.receiveException(e);
@@ -128,16 +130,18 @@ final class AggregateStorer {
       logger.info("#{}: {}", j, desc[j]);
 
     Continuation<Boolean[], Exception> c = new Continuation<Boolean[], Exception>() {
+      @Override
       public void receiveResult(Boolean[] o) {
         commitAggregate(aggr, expiration, desc, pointers, o, command);
       }
+      @Override
       public void receiveException(Exception e) {
         command.receiveException(e);
       }
     };
 
-    if (aggregateStore instanceof GCPast)
-      ((GCPast)aggregateStore).insert(aggr, expiration, c);
+    if (aggregateStore instanceof GCPast gcPast)
+      gcPast.insert(aggr, expiration, c);
     else
       aggregateStore.insert(aggr, c);
   }
@@ -150,7 +154,7 @@ final class AggregateStorer {
       pointers
     );
 
-    if (o instanceof Boolean[]) {
+    if (o != null) {
       aggregateList.addAggregateDescriptor(adc);
       aggregateList.setRoot(aggr.getId());
       aggregateList.writeToDisk();

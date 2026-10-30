@@ -152,6 +152,7 @@ final class GlacierNeighborhood {
 
     neighborStorage.getObject(nodeId,
       new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
           logger.debug("Continue: neighborSeen ({}, {}) after getObject", fNodeId, fWhen);
 
@@ -164,6 +165,7 @@ final class GlacierNeighborhood {
 
           storeLastSeen(fNodeId, fWhen, previousWhen);
         }
+        @Override
         public void receiveException(Exception e) {
           logger.warn("receiveException({}) while retrieving a neighbor ({})", e, fNodeId);
         }
@@ -261,11 +263,13 @@ final class GlacierNeighborhood {
   private void storeLastSeen(final Id fNodeId, final long fWhen, final long previousWhen) {
     neighborStorage.store(fNodeId, null, Long.valueOf(fWhen),
       new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) {
           logger.debug("Continue: neighborSeen ({}, {}) after store", fNodeId, fWhen);
           logger.debug("Neighbor: Updated {} from {} to {}", fNodeId, previousWhen, fWhen);
           determineResponsibleRange();
         }
+        @Override
         public void receiveException(Exception e) {
           logger.warn("receiveException({}) while storing a neighbor ({})", e, fNodeId);
         }
@@ -278,6 +282,7 @@ final class GlacierNeighborhood {
    */
   private void expireIfStale(final Id thisNeighbor, final long earliestAcceptableDate) {
     neighborStorage.getObject(thisNeighbor, new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o==null) {
           logger.warn("CNE: Cannot retrieve neighbor {}", thisNeighbor);
@@ -288,9 +293,11 @@ final class GlacierNeighborhood {
         if (lastSeen < earliestAcceptableDate) {
           logger.info("CNE: Removing expired neighbor {} ({}<{})", thisNeighbor, lastSeen, earliestAcceptableDate);
           neighborStorage.unstore(thisNeighbor, new Continuation<Object, Exception>() {
+            @Override
             public void receiveResult(Object o) {
               logger.debug("CNE unstore successful: {}, returned {}", thisNeighbor, o);
             }
+            @Override
             public void receiveException(Exception e) {
               logger.atWarn().log(() -> "CNE unstore failed: "+thisNeighbor+", returned "+e);
             }
@@ -299,6 +306,7 @@ final class GlacierNeighborhood {
           logger.info("CNE: Neighbor {} still active, last seen {}", thisNeighbor, lastSeen);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.atWarn().log(() -> "CNE: Exception while retrieving neighbor "+thisNeighbor+", e="+e);
       }

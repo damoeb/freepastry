@@ -145,8 +145,8 @@ final class AggregateExpiration {
 
     if (!refreshAggregateList.isEmpty()) {
       logger.info("Refreshing {} aggregate(s)", refreshAggregateList.size());
-      if (aggregateStore instanceof GCPast) {
-        renewInAggregateStore((GCPast) aggregateStore, refreshAggregateList, refreshLifetimeList);
+      if (aggregateStore instanceof GCPast gcPast) {
+        renewInAggregateStore(gcPast, refreshAggregateList, refreshLifetimeList);
       } else {
         logger.debug("Aggregate store does not support GC; refreshing directly");
         for (int i=0; i<refreshAggregateList.size(); i++) {
@@ -167,6 +167,7 @@ final class AggregateExpiration {
     }
 
     store.refresh(ids, lifetimes, new Continuation<Object[], Exception>() {
+      @Override
       public void receiveResult(Object[] o) {
         Object[] results = (Object[]) o;
         logger.debug("Received refresh results for {} aggregates", results.length);
@@ -189,6 +190,7 @@ final class AggregateExpiration {
         aggregateList.writeToDisk();
         logger.info("Refresh complete, {}/{} aggregates refreshed OK", numOk, results.length);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Interface contract broken; exception {} returned directly", e, e);
       }

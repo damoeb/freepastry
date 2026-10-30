@@ -65,6 +65,7 @@ public class FragmentKeySet extends SortedMapIdSet<FragmentKeySet> {
     super(s);
   }
 
+  @Override
   protected FragmentKeySet newSet(SortedMap<Id, ?> members) {
     return new FragmentKeySet(members);
   }
@@ -75,6 +76,7 @@ public class FragmentKeySet extends SortedMapIdSet<FragmentKeySet> {
    * @return never returns
    * @throws RuntimeException always
    */
+  @Override
   public byte[] hash() {
     throw new RuntimeException("FragmentKeySet.getHash() is not supported!");
   }

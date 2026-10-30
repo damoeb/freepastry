@@ -71,6 +71,7 @@ public sealed abstract class AggregationMessage implements Message permits Aggre
    *
    * @return This message's priority
    */
+  @Override
   public int getPriority() {
     return MEDIUM_LOW_PRIORITY;
   }

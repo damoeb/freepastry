@@ -111,8 +111,8 @@ final class GlacierMessageDispatcher {
     final GlacierMessage msg = (GlacierMessage) message;
     logger.debug("Received message {} with destination {} from {}", msg, id, msg.getSource().getId());
 
-    if (msg instanceof GlacierDataMessage)
-      trafficShaper.charge((GlacierDataMessage) msg);
+    if (msg instanceof GlacierDataMessage glacierDataMessage)
+      trafficShaper.charge(glacierDataMessage);
 
     if (msg.isResponse()) {
       GlacierContinuation gc = scheduler.get(msg.getUID());
@@ -155,7 +155,7 @@ final class GlacierMessageDispatcher {
    * This method is called when Glacier encounters a fatal error
    *
    * @param s Message describing the error, which is logged
-   * @exception Error always
+   * @throws Error always
    */
   private void panic(String s) throws Error {
     logger.error("PANIC: {}", s);

@@ -134,6 +134,7 @@ public class Manifest {
     return result;
   }
 
+  @Override
   public String toString() {
     return "[Manifest obj=["+dump(objectHash, false)+"] expires="+expirationDate+"]";
   }

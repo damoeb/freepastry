@@ -73,15 +73,18 @@ public final class GlacierNeighborResponseMessage extends GlacierMessage {
     return lastSeen[index];
   }
 
+  @Override
   public String toString() {
     return "[GlacierNeighborResponse with "+numNeighbors()+" keys]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.NEIGHBOR_RESPONSE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

@@ -179,9 +179,10 @@ final class AggregateConsolidator {
       aggregateStore.lookup(firstKey, this);
     }
 
+    @Override
     public void receiveResult(PastContent o) {
-      if (o instanceof Aggregate) {
-        aggr[currentLookup] = (Aggregate) o;
+      if (o instanceof Aggregate aggregate) {
+        aggr[currentLookup] = aggregate;
         currentLookup ++;
         if (currentLookup >= adc.length) {
           storeConsolidated();
@@ -192,6 +193,7 @@ final class AggregateConsolidator {
       }
     }
 
+    @Override
     public void receiveException(Exception e) {
       logger.atWarn().setCause(e).log(() -> "Exception during consolidation lookup "+adc[currentLookup].getKey().toStringFull()+": "+e+" -- aborting");
     }
@@ -227,6 +229,7 @@ final class AggregateConsolidator {
       final long aggrExpirationF = AggregateStorer.chooseAggregateLifetime(desc);
 
       storer.storeAggregate(aggregateFactory.buildAggregate(components, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {
           logger.info("Consolidated Aggregate stored OK, removing old descriptors...");
           for (AggregateDescriptor aggregateDescriptor : adc) {
@@ -237,6 +240,7 @@ final class AggregateConsolidator {
           aggregateList.writeToDisk();
           logger.info("Consolidation completed, {} objects from {} aggregates consolidated", objectsTotal, aggr.length);
         }
+        @Override
         public void receiveException(Exception e) {
           logger.warn("Exception during consolidation store: e={} -- aborting", e, e);
         }

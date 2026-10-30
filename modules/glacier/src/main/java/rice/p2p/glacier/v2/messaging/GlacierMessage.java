@@ -92,6 +92,7 @@ public sealed abstract class GlacierMessage implements RawMessage
    *
    * @return This message's priority
    */
+  @Override
   public int getPriority() {
     return LOW_PRIORITY;
   }
@@ -131,6 +132,7 @@ public sealed abstract class GlacierMessage implements RawMessage
     return tag;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeInt(id);
     buf.writeChar(tag);

@@ -43,6 +43,7 @@ public final class AggregationTimeoutMessage extends AggregationMessage {
     super(uid, local, local.getId());
   }
 
+  @Override
   public String toString() {
     return "[AggregationTimeoutMessage "+getUID()+"]";
   }

@@ -70,10 +70,12 @@ public class VersionKeyFactory extends GlacierKeyFactory {
    * @param rng A random number generator
    * @return The built Id.
    */
+  @Override
   public Id buildRandomId(Random rng) {
     return new VersionKey(factory.buildRandomId(rng), rng.nextLong());
   }
 
+  @Override
   public Id buildRandomId(RandomSource rng) {
     return new VersionKey(factory.buildRandomId(rng), rng.nextLong());
   }
@@ -84,6 +86,7 @@ public class VersionKeyFactory extends GlacierKeyFactory {
    * @param string the string form
    * @return the key
    */
+  @Override
   public Id buildIdFromToString(String string) {
     StringTokenizer stok = new StringTokenizer(string, "(,)- :v#");
     if (stok.countTokens() < 3) {
@@ -106,6 +109,7 @@ public class VersionKeyFactory extends GlacierKeyFactory {
    * @param string The toString() representation of an Id
    * @return The built Id.
    */
+  @Override
   public IdRange buildIdRangeFromPrefix(String string) {
     return new VersionKeyRange(factory.buildIdRangeFromPrefix(string));
   }
@@ -115,6 +119,7 @@ public class VersionKeyFactory extends GlacierKeyFactory {
    *
    * @return an empty IdSet
    */
+  @Override
   public IdSet buildIdSet() {
     return new VersionKeySet();
   }
@@ -125,10 +130,12 @@ public class VersionKeyFactory extends GlacierKeyFactory {
    * @param map The map which to take the keys from to create the IdSet's elements
    * @return the IdSet
    */
+  @Override
   public IdSet buildIdSet(SortedMap<Id, ?> map) {
     return new VersionKeySet(map);
   }
 
+  @Override
   public int getIdToStringLength() {
     return factory.getIdToStringLength() + 13;
   }

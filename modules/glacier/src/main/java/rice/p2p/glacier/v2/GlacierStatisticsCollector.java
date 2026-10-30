@@ -96,21 +96,27 @@ final class GlacierStatisticsCollector {
     return new GlacierContinuation() {
       long nextTimeout;
 
+      @Override
       public String toString() {
         return "Statistics";
       }
+      @Override
       public void init() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.statisticsReportInterval();
       }
+      @Override
       public void receiveResult(Object o) {
         logger.warn("STAT received object: {}", o);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("STAT received exception: ", e);
       }
+      @Override
       public long getTimeout() {
         return nextTimeout;
       }
+      @Override
       public void timeoutExpired() {
         nextTimeout += config.statisticsReportInterval();
 
@@ -122,8 +128,8 @@ final class GlacierStatisticsCollector {
           trafficShaper.addStatistics(statistics);
 
           Storage storageF = fragmentStorage.getStorage();
-          if (storageF instanceof PersistentStorage)
-            statistics.setFragmentStorageSize(((PersistentStorage)storageF).getTotalSize());
+          if (storageF instanceof PersistentStorage persistentStorage)
+            statistics.setFragmentStorageSize(persistentStorage.getTotalSize());
 
           trash.addStatistics(statistics);
 

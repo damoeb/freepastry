@@ -60,6 +60,7 @@ public class FragmentAndManifest implements RawSerializable {
     manifest = new Manifest(buf);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     fragment.serialize(buf);
     manifest.serialize(buf);

@@ -225,6 +225,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     throw err;
   }
 
+  @Override
   public String handleDebugCommand(String command) {
     return debugCommands.handleDebugCommand(command);
   }
@@ -238,9 +239,11 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         logger.info("Scheduled flush, waiting list: {}", waitingList.getSize());
 
         flusher.formAggregates(new Continuation<Boolean, Exception>() {
+          @Override
           public void receiveResult(Boolean o) {
             logger.debug("Scheduled flush: Success (o={})", o);
           }
+          @Override
           public void receiveException(Exception e) {
             logger.warn("Scheduled flush: Failure (e={})", e, e);
           }
@@ -298,10 +301,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     refresh(ids, expirations, command);
   }
 
+  @Override
   public void refresh(final Id[] ids, final long[] expirations, final Continuation<? super Object[], Exception> command) {
     refresher.refresh(ids, expirations, command);
   }
 
+  @Override
   public void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
     refresher.refresh(ids, versions, expirations, command);
   }
@@ -310,15 +315,17 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     tree.setHandle(handle, command);
   }
 
+  @Override
   public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
     insert(obj, INFINITY_EXPIRATION, command);
   }
 
+  @Override
   public void insert(final PastContent obj, final long lifetime, final Continuation<? super Boolean[], Exception> command) {
 
     long theVersion;
-    if (obj instanceof GCPastContent) {
-      theVersion = ((GCPastContent)obj).getVersion();
+    if (obj instanceof GCPastContent gcPastContent) {
+      theVersion = gcPastContent.getVersion();
     } else {
       theVersion = 0;
     }
@@ -330,14 +337,16 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     if (policy.shouldBeAggregated(obj, theSize)) {
       logger.info("AGGREGATE INSERT: {} version={} size={} class={}", obj.getId(), theVersion, theSize, obj.getClass().getName());
 
-      if (objectStore instanceof GCPast)
-        ((GCPast)objectStore).insert(obj, lifetime, command);
+      if (objectStore instanceof GCPast gcPast)
+        gcPast.insert(obj, lifetime, command);
       else
         objectStore.insert(obj, command);
 
       waitingList.store(vkey, new ObjectDescriptor(obj.getId(), theVersionF, lifetime, lifetime, theSize), obj, new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {
         }
+        @Override
         public void receiveException(Exception e) {
           logger.warn("Exception while storing aggregate: {} (e={})", obj.getId(), e, e);
         }
@@ -349,6 +358,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         boolean otherSucceeded = false;
         boolean otherFailed = false;
 
+        @Override
         public void receiveResult(Boolean[] o) {
           logger.debug("INSERT {} receiveResult({}), otherSucc={} otherFail={}", obj.getId(), o, otherSucceeded, otherFailed);
           if (otherSucceeded) {
@@ -360,6 +370,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             otherSucceeded = true;
           }
         }
+        @Override
         public void receiveException(Exception e) {
           logger.debug("INSERT {} receiveException({}), otherSucc={} otherFail={}", obj.getId(), e, otherSucceeded, otherFailed);
           logger.debug("--reporting Failure");
@@ -368,42 +379,49 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         }
       };
 
-      if (objectStore instanceof GCPast)
-        ((GCPast)objectStore).insert(obj, lifetime, c);
+      if (objectStore instanceof GCPast gcPast)
+        gcPast.insert(obj, lifetime, c);
       else
         objectStore.insert(obj, c);
 
-      if (aggregateStore instanceof GCPast)
-        ((GCPast)aggregateStore).insert(new NonAggregate(obj), lifetime, c);
+      if (aggregateStore instanceof GCPast gcPast)
+        gcPast.insert(new NonAggregate(obj), lifetime, c);
       else
         aggregateStore.insert(new NonAggregate(obj), c);
     }
   }
 
+  @Override
   public void lookup(final Id id, boolean cache, final Continuation<? super PastContent, Exception> command) {
     retriever.lookup(id, cache, command);
   }
 
+  @Override
   public void lookup(final Id id, final long version, final Continuation<? super PastContent, Exception> command) {
     retriever.lookup(id, version, command);
   }
 
+  @Override
   public void lookup(Id id, Continuation<? super PastContent, Exception> command) {
     lookup(id, true, command);
   }
 
+  @Override
   public void lookupHandles(final Id id, final long version, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
     ((VersioningPast)aggregateStore).lookupHandles(id, version, max, command);
   }
 
+  @Override
   public void lookupHandle(final Id id, final NodeHandle handle, final Continuation<? super PastContentHandle, Exception> command) {
     command.receiveException(new UnsupportedOperationException("LookupHandle() is not supported on Aggregation"));
   }
 
+  @Override
   public void lookupHandles(final Id id, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
     retriever.lookupHandles(id, max, command);
   }
 
+  @Override
   public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command) {
 
     /* Note that we never give out any handles from the aggregate store, so this must
@@ -425,7 +443,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     while (iter.hasNext()) {
       VersionKey thisKey = (VersionKey) iter.next();
       waitingList.unstore(thisKey, new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {}
+        @Override
         public void receiveException(Exception e) {}
       });
     }
@@ -433,21 +453,26 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     command.receiveResult(Boolean.valueOf(true));
   }
 
+  @Override
   public NodeHandle getLocalNodeHandle() {
     return objectStore.getLocalNodeHandle();
   }
 
+  @Override
   public int getReplicationFactor() {
     return objectStore.getReplicationFactor();
   }
 
+  @Override
   public boolean forward(RouteMessage message) {
     return true;
   }
 
+  @Override
   public void update(NodeHandle handle, boolean joined) {
   }
 
+  @Override
   public void deliver(Id id, Message message) {
 
     final AggregationMessage msg = (AggregationMessage) message;
@@ -467,6 +492,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     return stats;
   }
 
+  @Override
   public void setContentDeserializer(PastContentDeserializer deserializer) {
     contentDeserializer = deserializer;
     objectStore.setContentDeserializer(contentDeserializer);
@@ -480,6 +506,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     return endpoint;
   }
 
+  @Override
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {
     objectStore.setContentHandleDeserializer(deserializer);
   }

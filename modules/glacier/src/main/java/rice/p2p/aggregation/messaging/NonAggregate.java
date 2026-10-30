@@ -61,28 +61,34 @@ public class NonAggregate implements PastContent {
     this.content = subContent;
   }
 
+  @Override
   public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
     content = content.checkInsert(id, ((NonAggregate)existingContent).content);
     return this;
   }
 
+  @Override
   public PastContentHandle getHandle(Past local) {
     return content.getHandle(local);
   }
 
+  @Override
   public Id getId() {
     return content.getId();
   }
 
+  @Override
   public boolean isMutable() {
     return content.isMutable();
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return AggregationContentType.NON_AGGREGATE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     buf.writeShort(content.getType());

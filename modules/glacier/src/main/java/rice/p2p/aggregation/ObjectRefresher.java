@@ -87,10 +87,11 @@ final class ObjectRefresher {
     logger.info("Refreshing {} keys", ids.length);
 
     refreshInObjectStore(ids, expirations, new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         Object[] result;
-        if (o instanceof Object[]) {
-          result = (Object[]) o;
+        if (o instanceof Object[] array) {
+          result = array;
         } else {
           logger.warn("refresh: ObjectStore result is of incorrect type; expected Object[], got {}", o);
           result = new Object[ids.length];
@@ -100,6 +101,7 @@ final class ObjectRefresher {
 
         refreshInAggregates(ids, expirations, result, command);
       }
+      @Override
       public void receiveException(Exception e) {
         Object[] result = new Object[ids.length];
         for (int i=0; i<ids.length; i++)
@@ -130,10 +132,11 @@ final class ObjectRefresher {
       } else result[i] = new AggregationException("Not found");
     }
 
-    if (objectStore instanceof VersioningPast) {
-      ((VersioningPast)objectStore).refresh(ids, versions, expirations, new Continuation<Object[], Exception>() {
+    if (objectStore instanceof VersioningPast versioningPast) {
+      versioningPast.refresh(ids, versions, expirations, new Continuation<Object[], Exception>() {
+        @Override
         public void receiveResult(Object[] o) {
-          if (o instanceof Object[]) {
+          if (o != null) {
             Object[] subresult = (Object[]) o;
             for (int i=0; i<result.length; i++)
               if ((result[i] instanceof Boolean) && !(subresult[i] instanceof Boolean))
@@ -146,6 +149,7 @@ final class ObjectRefresher {
 
           command.receiveResult(result);
         }
+        @Override
         public void receiveException(Exception e) {
           command.receiveException(e);
         }
@@ -156,22 +160,24 @@ final class ObjectRefresher {
   }
 
   private void refreshInObjectStore(Id[] ids, long[] expirations, Continuation<Object, Exception> command) {
-    if (objectStore instanceof GCPast) {
-      ((GCPast)objectStore).refresh(ids, expirations, command);
+    if (objectStore instanceof GCPast gcPast) {
+      gcPast.refresh(ids, expirations, command);
     } else {
       // same contract as GCPast.refresh: one result per id
       Object[] result = new Object[ids.length];
-      Arrays.fill(result, Boolean.TRUE);
+      Arrays.fill(result, true);
       command.receiveResult(result);
     }
   }
 
   private void refreshInAggregates(Id[] ids, long[] expirations, Object[] result, final Continuation<? super Object[], Exception> command) {
     Continuation<Object[], Exception> c = new Continuation<Object[], Exception>() {
+      @Override
       public void receiveResult(Object[] o) {
         aggregateList.writeToDisk();
         command.receiveResult(o);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("", e);
         command.receiveException(e);
@@ -202,6 +208,7 @@ final class ObjectRefresher {
       this.command = command;
     }
 
+    @Override
     public void receiveResult(Object o) {
       Object lastResult = o;
       while (true) {
@@ -225,6 +232,7 @@ final class ObjectRefresher {
       }
     }
 
+    @Override
     public void receiveException(Exception e) {
       logger.atWarn().setCause(e).log(() -> "Exception while refreshing "+ids[currentIndex].toStringFull()+", e=");
       receiveResult(e);
@@ -308,10 +316,12 @@ final class ObjectRefresher {
       if (thisObject == null) {
         logger.atWarn().log(() -> "Broken object in waiting list: " + vkey.toStringFull() + ", removing...");
         waitingList.unstore(vkey, new Continuation<Boolean, Exception>() {
+          @Override
           public void receiveResult(Boolean o) {
             logger.atInfo().log(() -> "Broken object "+vkey.toStringFull()+" removed successfully");
             RefreshRun.this.receiveResult(new AggregationException("Object in waiting list, but broken: "+vkey.toStringFull()));
           }
+          @Override
           public void receiveException(Exception e) {
             logger.atWarn().setCause(e).log(() -> "Cannot remove broken object "+vkey.toStringFull()+" from waiting list (exception: "+e+")");
             RefreshRun.this.receiveResult(new AggregationException("Object broken, in waiting list, and cannot remove: "+vkey.toStringFull()+" (e="+e+")"));
@@ -331,10 +341,12 @@ final class ObjectRefresher {
       );
 
       waitingList.setMetadata(vkey, newDescriptor, new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {
           logger.atDebug().log(() -> "Refreshed metadata written ok for "+vkey.toStringFull());
           RefreshRun.this.receiveResult(Boolean.valueOf(true));
         }
+        @Override
         public void receiveException(Exception e) {
           logger.atWarn().setCause(e).log(() -> "Cannot refresh waiting object "+vkey.toStringFull()+", e=");
           RefreshRun.this.receiveResult(new AggregationException("Cannot refresh waiting object "+vkey.toStringFull()+", setMetadata() failed (e="+e+")"));
@@ -348,14 +360,16 @@ final class ObjectRefresher {
      */
     private void reaggregate(final Id id, final long expiration) {
       objectStore.lookup(id, false, new Continuation<PastContent, Exception>() {
+        @Override
         public void receiveResult(PastContent o) {
-          if (o instanceof PastContent) {
+          if (o != null) {
             addMissingObject(id, expiration, o);
           } else {
             logger.atWarn().log(() -> "Refresh: Cannot find refreshed object "+id.toStringFull()+", lookup returns "+o);
             RefreshRun.this.receiveException(new AggregationException("Object not found during reaggregation: "+id.toStringFull()));
           }
         }
+        @Override
         public void receiveException(Exception e) {
           logger.atWarn().log(() -> "Refresh: Exception received while reaggregating "+id.toStringFull()+", e="+e);
           RefreshRun.this.receiveException(e);
@@ -367,8 +381,8 @@ final class ObjectRefresher {
       logger.atWarn().log(() -> "Refresh: Found in PAST, but not in aggregate list: "+id.toStringFull());
 
       long theVersion;
-      if (obj instanceof GCPastContent) {
-        theVersion = ((GCPastContent)obj).getVersion();
+      if (obj instanceof GCPastContent gcPastContent) {
+        theVersion = gcPastContent.getVersion();
       } else {
         theVersion = 0;
       }
@@ -391,18 +405,22 @@ final class ObjectRefresher {
       logger.debug("ADDING MISSING OBJECT AFTER REFRESH: {}", obj.getId());
 
       waitingList.store(vkey, new ObjectDescriptor(obj.getId(), theVersion, expiration, expiration, theSize), obj, new Continuation<Boolean, Exception>() {
+        @Override
         public void receiveResult(Boolean o) {
           ((PastImpl) objectStore).cache(obj, new Continuation<Boolean, Exception>() {
+            @Override
             public void receiveResult(Boolean o) {
               logger.atDebug().log(() -> "Refresh: Missing object "+id.toStringFull()+" added ok");
               RefreshRun.this.receiveResult(Boolean.valueOf(true));
             }
+            @Override
             public void receiveException(Exception e) {
               logger.atWarn().setCause(e).log(() -> "Refresh: Exception while precaching object: "+id.toStringFull()+" (e="+e+")");
               RefreshRun.this.receiveResult(Boolean.valueOf(true));
             }
           });
         }
+        @Override
         public void receiveException(Exception e) {
           logger.atWarn().setCause(e).log(() -> "Refresh: Exception while refreshing aggregate: "+id.toStringFull()+" (e="+e+")");
           RefreshRun.this.receiveResult(new AggregationException("Cannot store reaggregated object in waiting list: "+id.toStringFull()));

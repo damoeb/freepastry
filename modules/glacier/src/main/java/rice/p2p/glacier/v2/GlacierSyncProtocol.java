@@ -120,15 +120,17 @@ final class GlacierSyncProtocol {
       long nextTimeout;
       int offset;
 
+      @Override
       public String toString() {
         return "Sync continuation";
       }
+      @Override
       public void init() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.syncDelayAfterJoin();
       }
+      @Override
       public void receiveResult(Object o) {
-        if (o instanceof GlacierRangeResponseMessage) {
-          final GlacierRangeResponseMessage grrm = (GlacierRangeResponseMessage) o;
+        if (o instanceof GlacierRangeResponseMessage grrm) {
 
           Id ccwId = locator.getFragmentLocation(grrm.getCommonRange().getCCWId(), numFragments-offset, 0);
           Id cwId = locator.getFragmentLocation(grrm.getCommonRange().getCWId(), numFragments-offset, 0);
@@ -160,8 +162,9 @@ final class GlacierSyncProtocol {
 
             return bv;
           }, new Continuation<BloomFilter, Exception>() {
+            @Override
             public void receiveResult(BloomFilter o) {
-              if (o instanceof BloomFilter) {
+              if (o != null) {
                 BloomFilter bv = (BloomFilter) o;
                 logger.debug("Got {}", bv);
                 logger.atInfo().log(() -> keySet.numElements()+" keys added, sending sync request...");
@@ -175,6 +178,7 @@ final class GlacierSyncProtocol {
                 logger.warn("While processing range response: Result is of unknown type: {} -- discarding request", o);
               }
             }
+            @Override
             public void receiveException(Exception e) {
               logger.warn("Exception while processing range response: {} -- discarding request", e, e);
             }
@@ -183,10 +187,12 @@ final class GlacierSyncProtocol {
           logger.warn("Unknown result in sync continuation: {} -- discarded", o);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Exception in sync continuation: ", e);
         terminate();
       }
+      @Override
       public void timeoutExpired() {
         if (trafficShaper.getActiveRestores() > 0) {
           logger.info("Sync postponed; {} fetches pending", trafficShaper.getActiveRestores());
@@ -208,6 +214,7 @@ final class GlacierSyncProtocol {
           );
         }
       }
+      @Override
       public long getTimeout() {
         return nextTimeout;
       }
@@ -276,6 +283,7 @@ final class GlacierSyncProtocol {
       Fragment[] fragments = new Fragment[Math.min(numLookups, config.manifestAggregationFactor())];
       FragmentKey[] keys = new FragmentKey[Math.min(numLookups, config.manifestAggregationFactor())];
 
+      @Override
       public void receiveResult(Object o) {
         final FragmentKey thisKey = (FragmentKey) missing.get(currentLookup);
 
@@ -320,6 +328,7 @@ final class GlacierSyncProtocol {
         if (currentLookup < numLookups)
           fragmentStorage.getObject(missing.get(currentLookup), this);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.atWarn().log(() -> "SYN2: Exception while retrieving fragment "+missing.get(currentLookup)+", e="+e+" -- canceled SYN");
       }
@@ -390,7 +399,7 @@ final class GlacierSyncProtocol {
     b[a.length + 4] = (byte)(0xFF & (expiration>>24));
     b[a.length + 5] = (byte)(0xFF & (expiration>>16));
     b[a.length + 6] = (byte)(0xFF & (expiration>>8));
-    b[a.length + 7] = (byte)(0xFF & (expiration));
+    b[a.length + 7] = (byte)(0xFF & expiration);
 
     return b;
   }
@@ -399,7 +408,7 @@ final class GlacierSyncProtocol {
    * This method is called when Glacier encounters a fatal error
    *
    * @param s Message describing the error, which is logged
-   * @exception Error always
+   * @throws Error always
    */
   private void panic(String s) throws Error {
     logger.error("PANIC: {}", s);

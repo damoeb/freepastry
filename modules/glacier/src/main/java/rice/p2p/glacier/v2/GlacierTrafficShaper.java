@@ -187,21 +187,27 @@ final class GlacierTrafficShaper {
     return new GlacierContinuation() {
       long nextTimeout;
 
+      @Override
       public String toString() {
         return "Traffic shaper";
       }
+      @Override
       public void init() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.rateLimitedCheckInterval();
       }
+      @Override
       public void receiveResult(Object o) {
         logger.warn("TS received object: {}", o);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("TS received exception: ", e);
       }
+      @Override
       public long getTimeout() {
         return nextTimeout;
       }
+      @Override
       public void timeoutExpired() {
         /* Use relative timeout to avoid backlog! */
         nextTimeout = environment.getTimeSource().currentTimeMillis() + (1 * GlacierConfig.SECONDS);

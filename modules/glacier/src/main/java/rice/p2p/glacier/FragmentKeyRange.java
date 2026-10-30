@@ -56,10 +56,12 @@ public class FragmentKeyRange extends GlacierKeyRange {
     super(range);
   }
 
+  @Override
   protected Id toKey(Id id) {
     return new FragmentKey(new VersionKey(id, 0L), 0);
   }
 
+  @Override
   protected Id toId(Id key) {
     return ((FragmentKey) key).versionKey().id();
   }
@@ -70,6 +72,7 @@ public class FragmentKeyRange extends GlacierKeyRange {
    * @param o the object to compare to
    * @return whether o is a FragmentKeyRange over an equal range
    */
+  @Override
   public boolean equals(Object o) {
     return (o instanceof FragmentKeyRange other) && range.equals(other.range);
   }
@@ -79,6 +82,7 @@ public class FragmentKeyRange extends GlacierKeyRange {
    *
    * @return the underlying range, marked as a FragmentKeyRange
    */
+  @Override
   public String toString() {
     return "FragmentKeyRange[" + range + "]";
   }

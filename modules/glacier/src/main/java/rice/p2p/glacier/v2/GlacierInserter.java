@@ -90,7 +90,7 @@ final class GlacierInserter {
   }
 
   void insert(final PastContent obj, final long expiration, final Continuation<? super Boolean[], Exception> command) {
-    long theVersion = (obj instanceof GCPastContent) ? ((GCPastContent)obj).getVersion() : 0;
+    long theVersion = (obj instanceof GCPastContent gcPastContent) ? gcPastContent.getVersion() : 0;
     final VersionKey vkey = new VersionKey(obj.getId(), theVersion);
 
     logger.atInfo().log(() -> "insert(" + obj + " (id=" + vkey.toStringFull() + ", mutable=" + obj.isMutable() + ")");
@@ -100,6 +100,7 @@ final class GlacierInserter {
       Arrays.fill(generateFragment, true);
       return policy.encodeObject(obj, generateFragment);
     }, new Continuation<Fragment[], Exception>() {
+      @Override
       public void receiveResult(Fragment[] fragments) {
         if (fragments == null) {
           command.receiveException(new GlacierException("Cannot encode object"));
@@ -109,6 +110,7 @@ final class GlacierInserter {
         logger.atDebug().log(() -> "insert(" + vkey.toStringFull() + ") encoded fragments OK, creating manifests...");
         createManifestsAndDistribute(vkey, obj, fragments, expiration, command);
       }
+      @Override
       public void receiveException(Exception e) {
         logger.error("EncodeObject failed: e=", e);
         command.receiveException(new GlacierException("EncodeObject failed: e="+e));
@@ -122,8 +124,9 @@ final class GlacierInserter {
    */
   private void createManifestsAndDistribute(final VersionKey vkey, final PastContent obj, final Fragment[] fragments, final long expiration, final Continuation<? super Boolean[], Exception> command) {
     endpoint.process(() -> policy.createManifests(vkey, obj, fragments, expiration), new Continuation<Manifest[], Exception>() {
+      @Override
       public void receiveResult(Manifest[] o) {
-        if (o instanceof Manifest[]) {
+        if (o != null) {
           final Manifest[] manifests = (Manifest[]) o;
           if (manifests == null) {
             command.receiveException(new GlacierException("Cannot create manifests"));
@@ -132,6 +135,7 @@ final class GlacierInserter {
 
           /* distribute() reports a Boolean[] for insertions */
           distribute(vkey, fragments, manifests, expiration, GlacierTags.INSERT, new Continuation.StandardContinuation<Object, Boolean[], Exception>(command) {
+            @Override
             public void receiveResult(Object o) {
               parent.receiveResult((Boolean[]) o);
             }
@@ -141,6 +145,7 @@ final class GlacierInserter {
           command.receiveException(new GlacierException("Cannot create manifests in insert()"));
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - exception e="+e);
         command.receiveException(e);
@@ -163,6 +168,7 @@ final class GlacierInserter {
 
         final VersionKey thisVersionKey = new VersionKey(thisId, thisVersion);
         Continuation<Object, Exception> prev = trafficShaper.enqueue(thisVersionKey, new Continuation.SimpleContinuation() {
+          @Override
           public void receiveResult(Object o) {
             refreshOne(thisVersionKey, thisExpiration, thisContinuation);
           }
@@ -186,9 +192,9 @@ final class GlacierInserter {
     final Id thisId = thisVersionKey.id();
     final long thisVersion = thisVersionKey.version();
     retriever.retrieveManifest(thisVersionKey, GlacierTags.REFRESH, new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
-        if (o instanceof Manifest) {
-          Manifest manifest = (Manifest) o;
+        if (o instanceof Manifest manifest) {
 
           logger.atDebug().log(() -> "refresh("+thisId.toStringFull()+"v"+thisVersion+"): Got manifest");
           manifest = policy.updateManifest(new VersionKey(thisId, thisVersion), manifest, thisExpiration);
@@ -201,6 +207,7 @@ final class GlacierInserter {
           thisContinuation.receiveResult(new GlacierException("Cannot retrieve manifest -- retry later"));
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("refresh({}v{}): Exception while retrieving manifest: ", thisId, thisVersion, e);
         thisContinuation.receiveException(e);
@@ -219,6 +226,7 @@ final class GlacierInserter {
       boolean inhibitInsertions = true;
       int minAcceptable = (int)(numSurvivors * config.minFragmentsAfterInsert());
 
+      @Override
       public String toString() {
         return whoAmI() + " continuation for "+key;
       }
@@ -237,8 +245,9 @@ final class GlacierInserter {
         return result;
       }
       private String whoAmI() {
-        return (doRefresh) ? "Refresh" : "Insert";
+        return doRefresh ? "Refresh" : "Insert";
       }
+      @Override
       public void init() {
         logger.atInfo().log(() -> "Initializing "+whoAmI()+" continuation for " + key);
         holder = new NodeHandle[numFragments];
@@ -260,9 +269,9 @@ final class GlacierInserter {
           );
         }
       }
+      @Override
       public void receiveResult(Object o) {
-        if (o instanceof GlacierResponseMessage) {
-          GlacierResponseMessage grm = (GlacierResponseMessage) o;
+        if (o instanceof GlacierResponseMessage grm) {
           if (!grm.getKey(0).versionKey().equals(key)) {
             logger.atWarn().log(() -> whoAmI()+" response got routed to the wrong key: "+key);
             return;
@@ -362,6 +371,7 @@ final class GlacierInserter {
           logger.atWarn().log(() -> "Unknown response to "+whoAmI()+" continuation: "+o+" -- discarded");
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.atWarn().setCause(e).log(() -> "Exception during "+whoAmI()+"("+key+"): ");
         if (!answered) {
@@ -377,6 +387,7 @@ final class GlacierInserter {
         else
           command.receiveResult(Boolean.valueOf(true));
       }
+      @Override
       public void timeoutExpired() {
         if (numReceiptsReceived() >= minAcceptable) {
           logger.atInfo().log(() -> whoAmI()+" of "+key+" successful, "+numReceiptsReceived()+"/"+numFragments+" receipts received");
@@ -394,8 +405,9 @@ final class GlacierInserter {
 
         terminate();
       }
+      @Override
       public long getTimeout() {
-        return tStart + ((doRefresh) ? config.refreshTimeout() : config.insertTimeout());
+        return tStart + (doRefresh ? config.refreshTimeout() : config.insertTimeout());
       }
     });
   }

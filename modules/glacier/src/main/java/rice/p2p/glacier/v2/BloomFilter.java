@@ -55,7 +55,7 @@ public class BloomFilter {
     int numPrimeCandidates = numHashes*100;
     if (numPrimeCandidates >= (length - 5))
       numPrimeCandidates = length - 5;
-    int maxFactor = (int)(Math.sqrt(length));
+    int maxFactor = (int) Math.sqrt(length);
     int offset = length - numPrimeCandidates + 1;
     boolean[] isPrimeH = new boolean[numPrimeCandidates];
     boolean[] isPrimeL = new boolean[maxFactor + 1];
@@ -89,7 +89,7 @@ public class BloomFilter {
 
     for (int i=0; i<data.length; i++) {
       cache = (cache<<8) + data[i] + ((data[i]<0) ? 256 : 0);
-      if (((++ctr) == 7) || (i==(data.length-1))) {
+      if ((++ctr == 7) || (i==(data.length-1))) {
         for (int j=0; j<hashParams.length; j++)
           hash[j] += cache % hashParams[j];
         ctr = 0;
@@ -122,6 +122,7 @@ public class BloomFilter {
     return true;
   }
 
+  @Override
   public String toString() {
     String result = "[BV "+(bitfield.length*8)+"bit = { ";
     for (int i=0; i<hashParams.length; i++)

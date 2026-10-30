@@ -80,7 +80,8 @@ public abstract class GlacierContinuation {
     terminated = true;
   }
 
+  @Override
   public String toString() {
     return "Unknown continuation #"+getMyUID();
   }
-};
+}

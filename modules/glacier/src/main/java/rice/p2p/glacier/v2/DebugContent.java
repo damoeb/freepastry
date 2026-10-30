@@ -67,30 +67,35 @@ public class DebugContent implements GCPastContent {
     this.payload = payload;
   }
 
+  @Override
   public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
-    if (!isMutable ||  !(existingContent instanceof DebugContent))
+    if (!isMutable || !(existingContent instanceof DebugContent dc))
       return this;
 
-    DebugContent dc = (DebugContent) existingContent;
     return (this.version > dc.version) ? this : dc;
   }
 
+  @Override
   public long getVersion() {
     return version;
   }
 
+  @Override
   public PastContentHandle getHandle(Past local) {
     return new DebugContentHandle(myId, version, GCPast.INFINITY_EXPIRATION, local.getLocalNodeHandle());
   }
 
+  @Override
   public GCPastContentHandle getHandle(GCPast local, long expiration) {
     return new DebugContentHandle(myId, version, expiration, local.getLocalNodeHandle());
   }
 
+  @Override
   public Id getId() {
     return myId;
   }
 
+  @Override
   public boolean isMutable() {
     return this.isMutable;
   }
@@ -110,10 +115,12 @@ public class DebugContent implements GCPastContent {
     buf.read(payload, 0, payload.length);
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(myId.getType());
     myId.serialize(buf);
@@ -123,6 +130,7 @@ public class DebugContent implements GCPastContent {
     buf.write(payload, 0, payload.length);
   }
 
+  @Override
   public GCPastMetadata getMetadata(long expiration) {
     return new GCPastMetadata(expiration);
   }

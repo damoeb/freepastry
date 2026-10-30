@@ -68,15 +68,18 @@ public final class GlacierRefreshCompleteMessage extends GlacierMessage {
     return updates[index];
   }
 
+  @Override
   public String toString() {
     return "[GlacierRefreshComplete for " + keys[0] + " ("+(numKeys()-1)+" more keys)]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.REFRESH_COMPLETE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

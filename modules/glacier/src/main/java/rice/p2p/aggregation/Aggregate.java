@@ -96,6 +96,7 @@ public class Aggregate implements GCPastContent {
     this.myId = myId;
   }
 
+  @Override
   public Id getId() {
     return myId;
   }
@@ -112,14 +113,17 @@ public class Aggregate implements GCPastContent {
     return components[index];
   }
 
+  @Override
   public long getVersion() {
     return 0;
   }
 
+  @Override
   public boolean isMutable() {
     return false;
   }
 
+  @Override
   public PastContent checkInsert(rice.p2p.commonapi.Id id, PastContent existingContent) throws PastException {
     if (existingContent == null) {
       return this;
@@ -142,22 +146,27 @@ public class Aggregate implements GCPastContent {
     return HashUtils.hash(buf.getBytes(), 0, buf.getWritten());
   }
 
+  @Override
   public PastContentHandle getHandle(Past local) {
     return new AggregateHandle(local.getLocalNodeHandle(), myId, getVersion(), GCPast.INFINITY_EXPIRATION);
   }
 
+  @Override
   public GCPastContentHandle getHandle(GCPast local, long expiration) {
     return new AggregateHandle(local.getLocalNodeHandle(), myId, getVersion(), expiration);
   }
 
+  @Override
   public GCPastMetadata getMetadata(long expiration) {
     return new GCPastMetadata(expiration);
   }
 
+  @Override
   public short getType() {
     return AggregationContentType.AGGREGATE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     buf.writeShort(myId.getType());

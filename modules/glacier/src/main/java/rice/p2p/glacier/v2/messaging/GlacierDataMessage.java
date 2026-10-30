@@ -81,16 +81,19 @@ public final class GlacierDataMessage extends GlacierMessage {
     return manifests[index];
   }
 
+  @Override
   public String toString() {
     return "[GlacierData for " + keys[0] + " ("+(numKeys()-1)+" more keys)]";
   }
 
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.DATA.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

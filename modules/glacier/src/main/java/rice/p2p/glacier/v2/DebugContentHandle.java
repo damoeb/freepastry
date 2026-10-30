@@ -46,26 +46,32 @@ import rice.p2p.past.gc.GCPastContentHandle;
 public record DebugContentHandle(Id id, long version, long expiration, NodeHandle nodeHandle) implements GCPastContentHandle {
   public static final short TYPE = 3;
 
+  @Override
   public Id getId() {
     return id;
   }
 
+  @Override
   public NodeHandle getNodeHandle() {
     return nodeHandle;
   }
 
+  @Override
   public long getVersion() {
     return version;
   }
 
+  @Override
   public long getExpiration() {
     return expiration;
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(id.getType());
     id.serialize(buf);

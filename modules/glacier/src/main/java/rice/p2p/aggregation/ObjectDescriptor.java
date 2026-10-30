@@ -81,6 +81,7 @@ public class ObjectDescriptor implements Comparable<ObjectDescriptor> {
     buf.writeInt(size);
   }
 
+  @Override
   public String toString() {
     return "objDesc["+key.toStringFull()+"v"+version+", lt="+currentLifetime+", rt="+refreshedLifetime+", size="+size+"]";
   }
@@ -89,6 +90,7 @@ public class ObjectDescriptor implements Comparable<ObjectDescriptor> {
     return (currentLifetime > pointInTime) || (refreshedLifetime > pointInTime);
   }
 
+  @Override
   public int compareTo(ObjectDescriptor other) {
     ObjectDescriptor metadata = (ObjectDescriptor) other;
 
@@ -146,4 +148,4 @@ public class ObjectDescriptor implements Comparable<ObjectDescriptor> {
   public long getVersion() {
     return version;
   }
-};
+}

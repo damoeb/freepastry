@@ -58,15 +58,18 @@ public final class GlacierRangeResponseMessage extends GlacierMessage {
     return commonRange;
   }
 
+  @Override
   public String toString() {
     return "[GlacierRangeResponse to UID#" + getUID() + ", range="+commonRange+"]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.RANGE_RESPONSE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

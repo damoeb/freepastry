@@ -58,15 +58,18 @@ public final class GlacierTimeoutMessage extends GlacierMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[GlacierTimeoutMessage "+getUID()+"]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.TIMEOUT.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     throw new RuntimeException("serialize() not supported in GlacierTimeoutMessage");
   }

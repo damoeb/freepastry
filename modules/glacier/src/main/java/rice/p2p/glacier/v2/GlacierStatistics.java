@@ -141,4 +141,4 @@ public class GlacierStatistics {
   public void setTrashStorageSize(long trashStorageSize) {
     this.trashStorageSize = trashStorageSize;
   }
-};
+}

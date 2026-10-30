@@ -62,6 +62,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
     logger = environment.getLogManager().getLogger(GlacierDefaultPolicy.class, instance);
   }
 
+  @Override
   public boolean checkSignature(Manifest manifest, VersionKey key) {
     if (manifest.getSignature() == null)
       return false;
@@ -73,10 +74,12 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
     manifest.setSignature(key.toByteArray());
   }
 
+  @Override
   public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer pcd) {
     return codec.decode(fragments, endpoint, pcd);
   }
 
+  @Override
   public Manifest[] createManifests(VersionKey key, PastContent obj, Fragment[] fragments, long expiration) {
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -111,6 +114,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
     return manifests;
   }
 
+  @Override
   public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
     logger.trace("Serialize object: {}", obj);
 
@@ -134,6 +138,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
     return fragments;
   }
 
+  @Override
   public Manifest updateManifest(VersionKey key, Manifest manifest, long newExpiration) {
     if (!checkSignature(manifest, key))
       return null;

@@ -59,12 +59,12 @@ public record VersionKey(Id id, long version) implements Id {
    * @param peer the object to compare to
    * @return whether the given object is an equal key
    */
+  @Override
   public boolean equals(Object peer) {
-    if (!(peer instanceof VersionKey)) {
+    if (!(peer instanceof VersionKey fk)) {
       return false;
     }
 
-    VersionKey fk = (VersionKey) peer;
     return ((fk.version == this.version) && fk.id.equals(this.id));
   }
 
@@ -73,6 +73,7 @@ public record VersionKey(Id id, long version) implements Id {
    *
    * @return the short string form
    */
+  @Override
   public String toString() {
     return id.toString() + "v" + version;
   }
@@ -82,6 +83,7 @@ public record VersionKey(Id id, long version) implements Id {
    *
    * @return the full string form
    */
+  @Override
   public String toStringFull() {
     return id.toStringFull() + "v" + version;
   }
@@ -92,6 +94,7 @@ public record VersionKey(Id id, long version) implements Id {
    * @param o the key to compare to
    * @return a negative number, zero or a positive number as this key is less than, equal to or greater than o
    */
+  @Override
   public int compareTo(Id o) {
     int idResult = id.compareTo(((VersionKey) o).id);
     if (idResult != 0) {
@@ -112,6 +115,7 @@ public record VersionKey(Id id, long version) implements Id {
    *
    * @return the hash code
    */
+  @Override
   public int hashCode() {
     return (id.hashCode() + Long.hashCode(version));
   }
@@ -121,6 +125,7 @@ public record VersionKey(Id id, long version) implements Id {
    *
    * @return a byte[] representing this key
    */
+  @Override
   public byte[] toByteArray() {
     byte[] result = new byte[getByteArrayLength()];
 
@@ -135,6 +140,7 @@ public record VersionKey(Id id, long version) implements Id {
    * @param result the array to write to
    * @param offset the offset in the array to start writing at
    */
+  @Override
   public void toByteArray(byte[] result, int offset) {
     id.toByteArray(result, offset);
     MathUtils.longToByteArray(version, result, offset + id.getByteArrayLength());
@@ -145,26 +151,32 @@ public record VersionKey(Id id, long version) implements Id {
    *
    * @return The length of the byte[] representing this Id
    */
+  @Override
   public int getByteArrayLength() {
     return id.getByteArrayLength() + 8;
   }
 
+  @Override
   public boolean isBetween(Id ccw, Id cw) {
     throw new RuntimeException("VersionKey.isBetween() is not supported!");
   }
 
+  @Override
   public Distance longDistanceFromId(Id nid) {
     throw new RuntimeException("VersionKey.longDistanceFromId() is not supported!");
   }
 
+  @Override
   public Distance distanceFromId(Id nid) {
     throw new RuntimeException("VersionKey.distanceFromId() is not supported!");
   }
 
+  @Override
   public Id addToId(Distance offset) {
     throw new RuntimeException("VersionKey.addToId() is not supported!");
   }
 
+  @Override
   public boolean clockwise(Id nid) {
     throw new RuntimeException("VersionKey.clockwise() is not supported!");
   }
@@ -180,12 +192,14 @@ public record VersionKey(Id id, long version) implements Id {
     this(id, version);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeLong(version);
     buf.writeShort(id.getType());
     id.serialize(buf);
   }
 
+  @Override
   public short getType() {
     return IdType.VERSION_KEY.id();
   }

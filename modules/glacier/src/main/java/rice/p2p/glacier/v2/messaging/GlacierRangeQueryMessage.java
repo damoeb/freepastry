@@ -58,15 +58,18 @@ public final class GlacierRangeQueryMessage extends GlacierMessage {
     return requestedRange;
   }
 
+  @Override
   public String toString() {
     return "[GlacierRangeQuery #"+getUID()+" for " + requestedRange + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return GlacierMessageType.RANGE_QUERY.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

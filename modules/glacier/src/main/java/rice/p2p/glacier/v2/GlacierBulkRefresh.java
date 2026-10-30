@@ -117,9 +117,11 @@ final class GlacierBulkRefresh {
       final int stageFetchingManifests = 2;
       final int stagePatching = 3;
 
+      @Override
       public String toString() {
         return "AggregateRefresh continuation ("+fragmentKey.length+" fragments)";
       }
+      @Override
       public void init() {
         logger.info("Initializing AggregateRefresh continuation");
 
@@ -161,9 +163,9 @@ final class GlacierBulkRefresh {
         logger.debug("AR Initialization completed, {} candidate objects. Triggering first probe...", fragmentKey.length);
         timeoutExpired();
       }
+      @Override
       public void receiveResult(Object o) {
-        if (o instanceof GlacierRefreshResponseMessage) {
-          GlacierRefreshResponseMessage grrm = (GlacierRefreshResponseMessage) o;
+        if (o instanceof GlacierRefreshResponseMessage grrm) {
           IdRange thisRange = grrm.getRange();
           NodeHandle holder = grrm.isOnline() ? grrm.getSource() : null;
 
@@ -181,8 +183,7 @@ final class GlacierBulkRefresh {
 
           if (!holders.contains(holder))
             holders.add(holder);
-        } else if (o instanceof GlacierDataMessage) {
-          GlacierDataMessage gdm = (GlacierDataMessage) o;
+        } else if (o instanceof GlacierDataMessage gdm) {
 
           logger.atDebug().log(() -> "AR Received data message with "+gdm.numKeys()+" keys");
           for (int i=0; i<gdm.numKeys(); i++) {
@@ -194,7 +195,7 @@ final class GlacierBulkRefresh {
               if (policy.checkSignature(thisManifest, thisKey.versionKey())) {
                 logger.debug("AR Signature OK");
                 for (int j=0; j<ids.length; j++) {
-                  if ((manifests[j] == null) && (versionKey[j].equals(thisKey.versionKey()))) {
+                  if ((manifests[j] == null) && versionKey[j].equals(thisKey.versionKey())) {
                     manifests[j] = thisManifest;
                     logger.debug("AR Storing under #{}", j);
                   }
@@ -204,8 +205,7 @@ final class GlacierBulkRefresh {
               }
             }
           }
-        } else if (o instanceof GlacierRefreshCompleteMessage) {
-          GlacierRefreshCompleteMessage grcm = (GlacierRefreshCompleteMessage) o;
+        } else if (o instanceof GlacierRefreshCompleteMessage grcm) {
           logger.debug("AR Refresh completion reported by {}", grcm.getSource());
 
           for (int i=0; i<grcm.numKeys(); i++) {
@@ -220,7 +220,7 @@ final class GlacierBulkRefresh {
             if (index >= 0) {
               int maxSuccesses = 0;
               for (int j=0; j<numFragments; j++) {
-                if (!fragmentChecked[index][j] && (fragmentHolder[index][j] != null) && (fragmentHolder[index][j].equals(grcm.getSource()))) {
+                if (!fragmentChecked[index][j] && (fragmentHolder[index][j] != null) && fragmentHolder[index][j].equals(grcm.getSource())) {
                   maxSuccesses ++;
                   fragmentChecked[index][j] = true;
                 }
@@ -258,6 +258,7 @@ final class GlacierBulkRefresh {
           logger.warn("Unexpected result in AR continuation: {} -- discarded", o);
         }
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Exception during AggregateRefresh: ", e);
         terminate();
@@ -273,6 +274,7 @@ final class GlacierBulkRefresh {
           command.receiveResult(result);
         }
       }
+      @Override
       public void timeoutExpired() {
         if (currentStage == stageProbing) {
           nextTimeout = environment.getTimeSource().currentTimeMillis() + config.bulkRefreshProbeInterval();
@@ -315,19 +317,19 @@ final class GlacierBulkRefresh {
             allObjectsCovered &= objectCovered[i];
           }
 
-          if (!allObjectsCovered && ((retriesRemaining--) > 0)) {
+          if (!allObjectsCovered && (retriesRemaining-- > 0)) {
             logger.debug("AR Fetching manifests, {} attempts remaining", retriesRemaining);
             while (true) {
               int idx = environment.getRandomSource().nextInt(ids.length);
               int maxSteps = ids.length + 2;
-              while (objectCovered[idx] && ((--maxSteps)>0))
+              while (objectCovered[idx] && (--maxSteps>0))
                 idx = (idx+1) % ids.length;
               if (maxSteps <= 0)
                 break;
 
               int fid = environment.getRandomSource().nextInt(numFragments);
               maxSteps = numFragments + 2;
-              while ((fragmentHolder[idx][fid] == null) && ((--maxSteps)>0))
+              while ((fragmentHolder[idx][fid] == null) && (--maxSteps>0))
                 fid = (fid+1) % numFragments;
 
               if (fragmentHolder[idx][fid] != null) {
@@ -336,7 +338,7 @@ final class GlacierBulkRefresh {
                 for (int i=0; i<ids.length; i++) {
                   if (!objectCovered[i]) {
                     for (int j=0; j<numFragments; j++) {
-                      if ((fragmentHolder[i][j] != null) && (fragmentHolder[i][j].equals(thisHolder))) {
+                      if ((fragmentHolder[i][j] != null) && fragmentHolder[i][j].equals(thisHolder)) {
                         idsToQuery.add(fragmentKey[i][j]);
                         objectCovered[i] = true;
                         break;
@@ -386,7 +388,7 @@ final class GlacierBulkRefresh {
         if (currentStage == stagePatching) {
           nextTimeout = environment.getTimeSource().currentTimeMillis() + config.bulkRefreshPatchInterval();
 
-          if ((retriesRemaining--) > 0) {
+          if (retriesRemaining-- > 0) {
             logger.debug("AR Sending patches... ({} retries left)", retriesRemaining);
 
             int totalPatchesSent = 0;
@@ -453,7 +455,7 @@ final class GlacierBulkRefresh {
 
             Object[] result = new Object[ids.length];
             for (int i=0; i<ids.length; i++) {
-              result[i] = (successes[i] >= minAcceptable) ? (Object)(Boolean.valueOf(true)) : (Object)(new GlacierException("Only "+successes[i]+" fragments of "+versionKey[i]+" refreshed successfully; need "+minAcceptable));
+              result[i] = (successes[i] >= minAcceptable) ? (Object) Boolean.valueOf(true) : (Object) new GlacierException("Only "+successes[i]+" fragments of "+versionKey[i]+" refreshed successfully; need "+minAcceptable);
               if (logger.isDebugEnabled()) logger.debug(" - AR Result for "+versionKey[i]+": " + ((result[i] instanceof Boolean) ? "OK" : "Failed") + " (with "+successes[i]+"/"+numFragments+" fragments, "+minAcceptable+" acceptable)");
             }
 
@@ -462,6 +464,7 @@ final class GlacierBulkRefresh {
           }
         }
       }
+      @Override
       public long getTimeout() {
         return nextTimeout;
       }
@@ -517,6 +520,7 @@ final class GlacierBulkRefresh {
       int currentIndex = 0;
       int currentFID = -1;
 
+      @Override
       public void receiveResult(Object o) {
         if (currentPhase == phaseFetch) {
           logger.debug("AR Patch: Got FAM for {}", currentKey);
@@ -578,7 +582,7 @@ final class GlacierBulkRefresh {
           fragmentStorage.getObject(currentKey, this);
         }
       }
-      public void respond() {
+      void respond() {
         int totalSuccesses = 0;
         for (int success : successes)
           totalSuccesses += success;
@@ -591,6 +595,7 @@ final class GlacierBulkRefresh {
           grpm.getSource()
         );
       }
+      @Override
       public void receiveException(Exception e) {
         logger.warn("Exception while processing AR patch (key {}, phase {}): ", currentKey, currentPhase, e);
         currentPhase = phaseAdvance;

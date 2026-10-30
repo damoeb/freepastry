@@ -56,10 +56,12 @@ public class VersionKeyRange extends GlacierKeyRange {
     super(range);
   }
 
+  @Override
   protected Id toKey(Id id) {
     return new VersionKey(id, 0L);
   }
 
+  @Override
   protected Id toId(Id key) {
     return ((VersionKey) key).id();
   }
@@ -70,6 +72,7 @@ public class VersionKeyRange extends GlacierKeyRange {
    * @param o To compare to
    * @return Equals
    */
+  @Override
   public boolean equals(Object o) {
     return ((VersionKeyRange) o).range.equals(range);
   }
@@ -79,6 +82,7 @@ public class VersionKeyRange extends GlacierKeyRange {
    *
    * @return A string
    */
+  @Override
   public String toString() {
     return "[VKRange " + range + "]";
   }
