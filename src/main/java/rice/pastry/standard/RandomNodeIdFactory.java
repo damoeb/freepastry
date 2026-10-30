@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
-import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.util.HashUtils;
 import rice.pastry.Id;
@@ -55,17 +54,13 @@ import rice.pastry.NodeIdFactory;
 public class RandomNodeIdFactory implements NodeIdFactory {
   private long next;
 
-  Environment environment;
 
-  private final Logger logger;
   /**
    * Constructor.
    */
 
   public RandomNodeIdFactory(Environment env) {
-    this.environment = env;
     next = env.getRandomSource().nextLong();
-    this.logger = env.getLogManager().getLogger(getClass(), null);
   }
 
   /**

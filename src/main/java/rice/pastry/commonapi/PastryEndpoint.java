@@ -667,10 +667,6 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     return thePastryNode.isAlive((rice.pastry.NodeHandle)nh);
   }
 
-  public int getAppId() {
-    return getAddress();
-  }
-
   boolean consistentRouting = true;
   public void setConsistentRouting(boolean val) {
     consistentRouting = val;

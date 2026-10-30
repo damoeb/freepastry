@@ -36,13 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.direct;
 
-import org.mpisws.p2p.transport.direct.Delivery;
 import org.mpisws.p2p.transport.direct.DirectTransportLayer;
 import org.mpisws.p2p.transport.direct.GenericNetworkSimulator;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
-import rice.environment.Environment;
-import rice.p2p.commonapi.CancellableTask;
-import rice.pastry.PastryNode;
 
 /**
  * Interface to an object which is simulating the network.
@@ -53,8 +49,6 @@ import rice.pastry.PastryNode;
  */
 
 public interface NetworkSimulator<Identifier, MessageType> {
-
-  public Environment getEnvironment();
 
 
   /**
@@ -99,8 +93,6 @@ public interface NetworkSimulator<Identifier, MessageType> {
    */
   public DirectNodeHandle getClosest(DirectNodeHandle nh);
 
-  public void destroy(DirectPastryNode dpn);
-
   /**
    * Generates a random node record
    *
@@ -108,19 +100,9 @@ public interface NetworkSimulator<Identifier, MessageType> {
    */
   public NodeRecord generateNodeRecord();
 
-  public void removeNode(PastryNode node);
-
   public void start();
 
   public void stop();
-
-  /**
-   * Deliver message.
-   *
-   * @param del the delivery to schedule
-   * @param delay the delay in milliseconds
-   */
-  public CancellableTask enqueueDelivery(Delivery del, int delay);
 
   /**
    * The max rate of the simulator compared to realtime.

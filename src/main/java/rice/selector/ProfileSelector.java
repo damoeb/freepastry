@@ -63,11 +63,8 @@ import rice.environment.time.TimeSource;
  * Window>Preferences>Java>Code Generation>Code and Comments
  */
 public class ProfileSelector extends SelectorManager {
-  public static final boolean useHeartbeat = true;
   int HEART_BEAT_INTERVAL = 60000;
   long lastHeartBeat = 0;
-
-  public static final boolean recordStats = true;
 
   private String lastTaskType = null;
   private String lastTaskClass = null;
@@ -76,11 +73,6 @@ public class ProfileSelector extends SelectorManager {
 
   int numInvocationsScheduled = 0;
   int numInvocationsExecuted = 0;
-
-  public ProfileSelector(String instance,
-      TimeSource timeSource, LogManager log) {
-    this(instance,timeSource,log,null);
-  }
 
   public ProfileSelector(String instance, TimeSource timeSource, LogManager log, RandomSource rand) {
     this(instance, timeSource,log, rand, 60000);
@@ -122,7 +114,6 @@ public class ProfileSelector extends SelectorManager {
   }
 
   protected void onLoop() {
-    if (!useHeartbeat) return;
     long curTime = timeSource.currentTimeMillis();
     if ((curTime - lastHeartBeat) > HEART_BEAT_INTERVAL) {
       System.out.println("selector heartbeat "+DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now())+" maxInvokes:"+maxInvokes+" invokesSched:"+numInvocationsScheduled+" invokesExe:"+numInvocationsExecuted+" CurrentThread:"+Thread.currentThread()+"@"+System.identityHashCode(Thread.currentThread()));
@@ -151,12 +142,10 @@ public class ProfileSelector extends SelectorManager {
   private final ConcurrentHashMap<String, Stat> stats = new ConcurrentHashMap<String, Stat>();
 
   public void addStat(String s, long time) {
-    if (!recordStats) return;
     stats.computeIfAbsent(s, Stat::new).addTime(time);
   }
 
   public void printStats() {
-    if (!recordStats) return;
 
     // a weakly consistent snapshot, no lock needed
     ArrayList<Stat> list = new ArrayList<Stat>(stats.values());
@@ -293,43 +282,6 @@ public class ProfileSelector extends SelectorManager {
         skh.modifyKey(key);
         lastTaskType = "ModifyKey Complete";
       }
-    }
-  }
-
-  protected void doInvocations2() {
-    Runnable run = getInvocation();
-
-    while (run != null) {
-      try {
-        lastTaskType = "Invocation";
-        lastTaskClass = run.getClass().getName();
-        lastTaskToString = run.toString();
-        lastTaskHash = System.identityHashCode(run);
-        long startTime = timeSource.currentTimeMillis();
-        run.run();
-        int time = (int)(timeSource.currentTimeMillis() - startTime);
-        addStat(run.getClass().getName(),time);
-        lastTaskType = "Invocation Complete";
-      } catch (Exception e) {
-        logger.error("Invoking runnable caused exception {} - continuing", e, e);
-      }
-
-      run = getInvocation();
-    }
-
-    SelectionKey key = getModifyKey();
-    while (key != null) {
-      if (key.isValid() && (key.attachment() != null)) {
-        SelectionKeyHandler skh = (SelectionKeyHandler) key.attachment();
-        lastTaskType = "ModifyKey";
-        lastTaskClass = skh.getClass().getName();
-        lastTaskHash = System.identityHashCode(skh);
-        lastTaskToString = skh.toString();
-        skh.modifyKey(key);
-        lastTaskType = "ModifyKey Complete";
-      }
-
-      key = getModifyKey();
     }
   }
 

@@ -38,15 +38,12 @@ package rice.pastry.direct;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.mpisws.p2p.transport.direct.Delivery;
 import org.mpisws.p2p.transport.direct.DirectTransportLayer;
 import org.mpisws.p2p.transport.direct.GenericNetworkSimulator;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
-import rice.p2p.commonapi.CancellableTask;
-import rice.pastry.PastryNode;
 
 public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSimulator<Identifier, MessageType> {
   private final BasicNetworkSimulator<Identifier, MessageType> simulator;
@@ -71,11 +68,6 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     this.generator = generator;
     simulator = new BasicNetworkSimulator<Identifier, MessageType>(env, random, this, config);
     livenessProvider = simulator;
-  }
-
-  // ****************** passthroughs to simulator ***************
-  public Environment getEnvironment() {
-    return simulator.getEnvironment();
   }
 
   public void setFullSpeed() {
@@ -157,14 +149,6 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     }
   }
 
-  public void destroy(DirectPastryNode dpn) {
-
-  }
-
-  public CancellableTask enqueueDelivery(Delivery del, int delay) {
-    return null;
-  }
-
   public NodeRecord generateNodeRecord() {
     return generator.generateNodeRecord();
   }
@@ -183,10 +167,6 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
 
   public float proximity(Identifier a, Identifier b) {
     return simulator.proximity(a, b);
-  }
-
-  public void removeNode(PastryNode node) {
-
   }
 
   public NodeRecord getNodeRecord(DirectNodeHandle handle) {

@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.socket.nat.rendezvous;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -60,7 +59,6 @@ import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.util.AttachableCancellable;
 import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
-import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteMessageNotification;
@@ -74,7 +72,6 @@ import rice.selector.SelectorManager;
  *
  */
 public class RendezvousApp extends PastryAppl implements RendezvousStrategy<RendezvousSocketNodeHandle> {
-  private final LeafSet leafSet;
   private final SelectorManager selectorManager;
   private RendezvousTransportLayer<RendezvousSocketNodeHandle> tl;
 
@@ -122,22 +119,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         }
       }
     }); // this constructor doesn't auto-register
-    leafSet = pn.getLeafSet();
     selectorManager = pn.getEnvironment().getSelectorManager();
-  }
-
-  /**
-   * Can be called before you boot, will tell you if you are Firewalled.
-   * Should send a message to the bootstrap, who forwards it to another node who sends you the request back.  Should
-   * try UDP/TCP.
-   *
-   * Returns your external address.
-   *
-   * @param bootstrap
-   * @param receiveResult
-   */
-  public void isNatted(NodeHandle bootstrap, Continuation<InetSocketAddress, Exception> receiveResult) {
-
   }
 
   @Override

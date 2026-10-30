@@ -54,7 +54,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.mpisws.p2p.transport.ErrorHandler;
-import org.mpisws.p2p.transport.SocketCountListener;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayer;
 import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayerImpl;
@@ -175,15 +174,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   private InetAddress localAddress;
 
-  // the ordered list of InetAddresses, from External to internal
-  InetAddress[] addressList;
-
-  private int testFireWallPolicy;
-
-  private int findFireWallPolicy;
-
-  String firewallAppName;
-  int firewallSearchTries;
 
   /**
    * The socket parameters, read at construction.
@@ -216,8 +206,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     port = startPort;
     socketConfig = SocketFactoryConfig.fromParameters(env.getParameters());
 
-    firewallSearchTries = socketConfig.findPortMaxTries();
-    firewallAppName = socketConfig.natAppName();
     localAddress = bindAddress;
     if (localAddress == null) {
       if (socketConfig.bindAddress() != null) {
@@ -407,22 +395,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {
     Environment environment = pn.getEnvironment();
     WireTransportLayerImpl wtl = new WireTransportLayerImpl(innermostAddress,environment, null);
-    wtl.addSocketCountListener(getSocketCountListener(pn));
-
     return wtl;
-  }
-
-  protected SocketCountListener<InetSocketAddress> getSocketCountListener(final PastryNode pn) {
-    return new SocketCountListener<InetSocketAddress>() {
-      public void socketOpened(InetSocketAddress i,
-          Map<String, Object> options, boolean outgoing) {
-        pn.broadcastChannelOpened(i, 0);
-      }
-      public void socketClosed(InetSocketAddress i,
-          Map<String, Object> options) {
-        pn.broadcastChannelClosed(i);
-      }
-    };
   }
 
   protected TransportLayer<InetSocketAddress, ByteBuffer> getMagicNumberTransportLayer(TransportLayer<InetSocketAddress, ByteBuffer> wtl, PastryNode pn) {
@@ -1024,10 +997,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     return newNode(id, (InetSocketAddress)null);
   }
 
-  public PastryNode newNode(InetSocketAddress proxyAddress) {
-    return newNode(nidFactory.generateNodeId(), proxyAddress);
-  }
-
   /**
    * This method uses the pAddress as the outer address if it's non-null.
    * It automatically generates the internal address from the localAddress, and increments the port as necessary.
@@ -1211,24 +1180,4 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     return new SimpleRandomSource(randSeed, lman);
   }
 
-  /**
-   * Method which constructs an InetSocketAddres for the local host with the
-   * specified port number.
-   *
-   * @param portNumber The port number to create the address at.
-   * @return An InetSocketAddress at the localhost with port portNumber.
-   */
-  private MultiInetSocketAddress getEpochAddress(int portNumber) {
-    MultiInetSocketAddress result = null;
-
-    result = new MultiInetSocketAddress(new InetSocketAddress(localAddress,
-        portNumber));
-    return result;
-  }
-
-
-  // *************** Delme **************
-  public static InetSocketAddress verifyConnection(int i, InetSocketAddress addr, InetSocketAddress[] addr2, Environment env, Logger l) {
-    return null;
-  }
 }

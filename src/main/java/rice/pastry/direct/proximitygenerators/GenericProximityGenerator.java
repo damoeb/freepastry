@@ -121,16 +121,6 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
       return res;
     }
-
-    // this return the index in the matrix/CoordinateArray that this NodeRecord
-    // corresponds to
-    public int getIndex() {
-      return index;
-    }
-
-    public void markDead() {
-      decrementStub(index);
-    }
   }
 
   int nodesPerStub = 1;
@@ -194,13 +184,6 @@ public class GenericProximityGenerator implements ProximityGenerator {
       val = assignedIndices.get(index);
     }
     assignedIndices.put(index, val+1);
-  }
-
-  private void decrementStub(int index) {
-    numNodes--;
-
-    int val = assignedIndices.get(index);
-    assignedIndices.put(index, val-1);
   }
 
 

@@ -167,19 +167,6 @@ public class RoutingTable implements NodeSetEventSource {
    * @return a nodeHandle of a numerically closer node, relative to the key
    */
 
-  public NodeHandle bestAlternateRoute(Id key) {
-    return bestAlternateRoute(NodeHandle.LIVENESS_SUSPECTED, key);
-  }
-
-  /**
-   * Determines an alternate hop numerically closer to the key than the one we
-   * are at. This assumes that bestEntry did not produce a live nodeHandle that
-   * matches the next digit of the key.
-   *
-   * @param key the key
-   * @return a nodeHandle of a numerically closer node, relative to the key
-   */
-
   public NodeHandle bestAlternateRoute(int minLiveness, Id key) {
     int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
     if (diffDigit < 0)
@@ -488,22 +475,6 @@ public class RoutingTable implements NodeSetEventSource {
   }
 
   /**
-   * Gets the node handle associated with a given id.
-   *
-   * @param nid a node id
-   * @return the handle associated with that id, or null if none is known.
-   */
-
-  public NodeHandle get(Id nid) {
-    RouteSet ns = getBestEntry(nid);
-
-    if (ns == null)
-      return null;
-
-    return ns.get(nid);
-  }
-
-  /**
    * Get a row from the routing table.
    *
    * @param i which row
@@ -699,19 +670,5 @@ public class RoutingTable implements NodeSetEventSource {
     }
 
     return rtHandles;
-  }
-
-  /**
-   * Unregisters as a NodeHandleListener on all node handles.
-   */
-  public void destroy() {
-    for (RouteSet[] routeSet : routingTable) {
-      for (int c = 0; c < routeSet.length; c++) {
-        if (routeSet[c] != null) {
-          routeSet[c].destroy();
-          routeSet[c] = null;
-        }
-      }
-    }
   }
 }

@@ -44,7 +44,6 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.util.Serializer;
-import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
@@ -56,11 +55,9 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   protected PastryNode pn;
   private final Map<SocketNodeHandle, SocketNodeHandle> handleSet;
   private final Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> listeners = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>();
-  Logger logger;
 
   public SocketNodeHandleFactory(PastryNode pn) {
     this.pn = pn;
-    this.logger = pn.getEnvironment().getLogManager().getLogger(SocketNodeHandleFactory.class, null);
 
     handleSet = new HashMap<SocketNodeHandle, SocketNodeHandle>();
   }

@@ -51,7 +51,6 @@ public interface RandomSource {
   public void nextBytes(byte[] bytes);
   public double nextDouble();
   public float nextFloat();
-  public double nextGaussian();
   public int nextInt();
   public int nextInt(int max);
   public long nextLong();

@@ -68,10 +68,6 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
     this.logger = localnode.getEnvironment().getLogManager().getLogger(getClass(),null);
   }
 
-  public MultiInetSocketAddress getIdentifier() {
-    return eaddress;
-  }
-
   /**
    * Returns the last known liveness information about the Pastry node
    * associated with this handle. Invoking this method does not cause network

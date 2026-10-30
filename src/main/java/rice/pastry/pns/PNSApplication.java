@@ -74,7 +74,6 @@ import rice.pastry.routing.RouteSet;
 import rice.pastry.standard.ProximityNeighborSelector;
 import rice.pastry.transport.PMessageNotification;
 import rice.pastry.transport.PMessageReceipt;
-import rice.selector.Timer;
 import rice.selector.TimerTask;
 
 /**
@@ -103,8 +102,6 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
   private final byte rtBase;
 
   private final Environment environment;
-
-  private Timer timer;
 
   final short depth; // = (Id.IdBitLength / rtBase);
 

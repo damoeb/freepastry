@@ -55,7 +55,6 @@ import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteSet;
 import rice.pastry.routing.RoutingTable;
 import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.selector.Timer;
 import rice.selector.TimerTask;
 
 /**
@@ -313,17 +312,6 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     public String toString() {
       return nh.toString() + " "+timestamp;
     }
-  }
-
-  /**
-   * This method starts the PartitionHandler's probing of candidate nodes.
-   * It should be called after the handler is constructed.
-   *
-   * @param timer the timer used to schedule partition checks (normally from the environment)
-   */
-  public void start(Timer timer) {
-    logger.info("installing partition handler");
-    timer.schedule(this, config.checkInterval(), config.checkInterval());
   }
 
   /**

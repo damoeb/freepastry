@@ -39,7 +39,6 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing.simple;
 
-import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import rice.Continuation;
@@ -108,19 +107,11 @@ public class SimpleProcessor implements Processor {
     return workRequest;
   }
 
-  public Queue<ProcessingRequest<?, ?>> getQueue() {
-    return QUEUE;
-  }
-
   public void destroy() {
     THREAD.shutdown();
     QUEUE.clear();
     bioThread.shutdown();
     workQueue.destroy();
-  }
-
-  public WorkQueue getIOQueue() {
-    return workQueue;
   }
 
   /**

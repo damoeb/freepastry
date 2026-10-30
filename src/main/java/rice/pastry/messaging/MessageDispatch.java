@@ -107,10 +107,6 @@ public class MessageDispatch implements Destructable {
     addressBook.put(Integer.valueOf(address), receiver);
   }
 
-  public PastryAppl getDestination(Message msg) {
-    return getDestinationByAddress(msg.getDestination());
-  }
-
   public PastryAppl getDestinationByAddress(int addr) {
     PastryAppl mr = (PastryAppl) addressBook.get(Integer.valueOf(addr));
     return mr;

@@ -37,12 +37,9 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Vector;
 
-import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.NodeHandleSetType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -69,20 +66,6 @@ public class NodeSet implements NodeSetI {
     set = new Vector<NodeHandle>();
   }
 
-  /**
-   * Constructor.
-   */
-  public NodeSet(Vector<NodeHandle> s) {
-    set = s;
-  }
-
-  /**
-   * Copy constructor.
-   */
-  public NodeSet(NodeSet o) {
-    set = new Vector<NodeHandle>(o.set);
-  }
-
   /*
    * NodeSet methods
    */
@@ -100,36 +83,6 @@ public class NodeSet implements NodeSetI {
 
     set.add(handle);
     return true;
-  }
-
-  /**
-   * Method which randomizes the order of this NodeSet
-   */
-  public void randomize(RandomSource random) {
-    for (int i = 0; i < set.size(); i++) {
-      int a = random.nextInt(set.size());
-      int b = random.nextInt(set.size());
-      NodeHandle tmp = set.elementAt(a);
-      set.setElementAt(set.elementAt(b), a);
-      set.setElementAt(tmp, b);
-    }
-  }
-
-  /**
-   * Finds the NodeHandle associated with a NodeId.
-   *
-   * @param nid a node id.
-   * @return the handle associated with that id or null if no such handle is
-   *         found.
-   */
-
-  public NodeHandle get(Id nid) {
-    try {
-      return (NodeHandle) set.elementAt(getIndex(nid));
-    } catch (ArrayIndexOutOfBoundsException e) {
-      return null;
-    }
-
   }
 
   /**
@@ -199,22 +152,6 @@ public class NodeSet implements NodeSetI {
     return getIndexId(nid);
   }
 
-  public int getIndex(NodeHandle nh) {
-    NodeHandle h;
-
-    for (int i = 0; i < set.size(); i++) {
-      try {
-        h = (NodeHandle) set.elementAt(i);
-        if (h.equals(nh))
-          return i;
-      } catch (Exception ignored) {
-        // an entry that cannot be compared is not a match
-      }
-    }
-
-    return -1;
-  }
-
   private int getIndexId(rice.p2p.commonapi.Id nid) {
     NodeHandle h;
 
@@ -231,57 +168,6 @@ public class NodeSet implements NodeSetI {
     return -1;
   }
 
-  /*
-   * additional methods unique to NodeSet
-   */
-
-  /**
-   * insert a member at the given index
-   *
-   * @param index the position at which to insert the element into the ordered
-   *          set
-   * @param handle the handle to add
-   * @return false if handle was already a member, true otherwise
-   */
-  public boolean insert(int index, NodeHandle handle) {
-    if (set.contains(handle))
-      return false;
-
-    set.add(index, handle);
-    return true;
-  }
-
-  /**
-   * remove a member
-   *
-   * @param handle the handle to remove
-   */
-  public NodeHandle remove(NodeHandle handle) {
-    if (set.remove(handle)) {
-      return handle;
-    }
-    return null;
-  }
-
-  /**
-   * remove a member at a given position
-   *
-   * @param index the position of the member to remove
-   */
-  public void remove(int index) {
-    set.remove(index);
-  }
-
-  /**
-   * determine rank of a member
-   *
-   * @param handle the handle to test
-   * @return rank (index) of the handle, or -1 if handle is not a member
-   */
-  public int indexOf(NodeHandle handle) {
-    return set.indexOf(handle);
-  }
-
   /**
    * test membership
    *
@@ -290,35 +176,6 @@ public class NodeSet implements NodeSetI {
    */
   public boolean member(NodeHandle handle) {
     return set.contains(handle);
-  }
-
-  /**
-   * return a subset of this set, consisting of the members within a given range
-   * of positions
-   *
-   * @param from the lower end of the range (inclusive)
-   * @param to the upper end of the range (exclusive)
-   * @return the subset, or null of the arguments were out of bounds
-   */
-  NodeSet subSet(int from, int to) {
-    NodeSet res;
-
-    try {
-      res = new NodeSet(new Vector<NodeHandle>(set.subList(from, to)));
-    } catch (IndexOutOfBoundsException | IllegalArgumentException e) {
-      return null;
-    }
-
-    return res;
-  }
-
-  /**
-   * return an iterator that iterates over the elements of this set
-   *
-   * @return the iterator
-   */
-  public Iterator<NodeHandle> getIterator() {
-    return set.iterator();
   }
 
   /**
@@ -406,10 +263,6 @@ public class NodeSet implements NodeSetI {
     return getIndex((Id)id);
   }
 
-  public Iterator<NodeHandle> iterator() {
-    return set.iterator();
-  }
-
   public NodeSet(InputBuffer buf, NodeHandleFactory<? extends NodeHandle> nhf) throws IOException {
     short numNodes = buf.readShort();
     set = new Vector<NodeHandle>(numNodes);
@@ -428,9 +281,5 @@ public class NodeSet implements NodeSetI {
 
   public short getType() {
     return NodeHandleSetType.NODE_SET.id();
-  }
-
-  public Collection<NodeHandle> getCollection()  {
-    return set;
   }
 }

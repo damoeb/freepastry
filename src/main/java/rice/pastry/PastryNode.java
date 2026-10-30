@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -112,11 +111,6 @@ public class PastryNode implements
     TransportLayerCallback<NodeHandle, RawMessage>,
     LivenessListener<NodeHandle> {
 
-  /**
-   * Used by AppSockets
-   */
-  public static final byte CONNECTION_UNKNOWN_ERROR = -1;
-  public static final byte CONNECTION_UNKNOWN = -100;
   public static final byte CONNECTION_OK = 0;
   public static final byte CONNECTION_NO_APP = 1;
   public static final byte CONNECTION_NO_ACCEPTOR = 2;
@@ -324,10 +318,6 @@ public class PastryNode implements
     return d;
   }
 
-  public boolean removeDestructable(Destructable d) {
-    return destructables.remove(d);
-  }
-
   /**
    * Overridden by derived classes, and invoked when the node has joined
    * successfully. This should probably be abstract, but maybe in a later
@@ -400,23 +390,6 @@ public class PastryNode implements
       notifyPastryNodeListeners(Boolean.valueOf(false));
 
     }
-  }
-
-  /**
-   * Called by the layered Pastry application to check if the local pastry node
-   * is the one that is currently closest to the object key id.
-   *
-   * @param key
-   *          the object key id
-   *
-   * @return true if the local node is currently the closest to the key.
-   */
-  public boolean isClosest(Id key) {
-
-    if (leafSet.mostSimilar(key) == 0)
-      return true;
-    else
-      return false;
   }
 
   public LeafSet getLeafSet() {
@@ -909,12 +882,6 @@ public class PastryNode implements
     });
   }
 
-  protected void acceptAppSocket(int appId) throws AppSocketException {
-    PastryAppl acceptorAppl = getMessageDispatch().getDestinationByAddress(appId);
-    if (acceptorAppl == null) throw new AppNotRegisteredException(appId);
-    if (!acceptorAppl.canReceiveSocket()) throw new NoReceiverAvailableException();
-  }
-
 
 
 
@@ -1155,10 +1122,6 @@ public class PastryNode implements
     return livenessProvider.getLiveness(i, options);
   }
 
-  public int getLiveness(NodeHandle i) {
-    return livenessProvider.getLiveness(i, null);
-  }
-
   public boolean isAlive(NodeHandle i) {
     return (livenessProvider.getLiveness(i, null) < LIVENESS_DEAD);
   }
@@ -1170,14 +1133,6 @@ public class PastryNode implements
 
   public LivenessProvider<NodeHandle> getLivenessProvider() {
     return livenessProvider;
-  }
-
-  public ProximityProvider<NodeHandle> getProxProvider() {
-    return proxProvider;
-  }
-
-  public TransportLayer<NodeHandle, RawMessage> getTL() {
-    return tl;
   }
 
   public void clearState(NodeHandle i) {
@@ -1192,52 +1147,6 @@ public class PastryNode implements
     return proxProvider.removeProximityListener(listener);
   }
 
-  public NodeHandleFactory<? extends NodeHandle> getHandleFactory() {
-    return handleFactory;
-  }
-
-
-  /******************* network listeners *********************/
-  // the list of network listeners
-  private ArrayList<NetworkListener> networkListeners = new ArrayList<NetworkListener>();
-
-  public void addNetworkListener(NetworkListener listener) {
-    synchronized(networkListeners) {
-      networkListeners.add(listener);
-    }
-  }
-
-  public void removeNetworkListener(NetworkListener listener) {
-    synchronized(networkListeners) {
-      networkListeners.remove(listener);
-    }
-  }
-
-  protected Iterable<NetworkListener> getNetworkListeners() {
-    synchronized(networkListeners) {
-      return new ArrayList<NetworkListener>(networkListeners);
-    }
-  }
-
-  public void broadcastChannelClosed(InetSocketAddress addr) {
-    for (NetworkListener listener : getNetworkListeners())
-      listener.channelClosed(addr);
-  }
-
-  public void broadcastChannelOpened(InetSocketAddress addr, int reason) {
-    for (NetworkListener listener : getNetworkListeners())
-      listener.channelOpened(addr, reason);
-  }
-
-  public void broadcastSentListeners(int address, short msgType, InetSocketAddress dest, int size, int wireType) {
-    for (NetworkListener listener : getNetworkListeners())
-      listener.dataSent(address, msgType, dest, size, wireType);
-  }
-
-  public void broadcastReceivedListeners(int address, short msgType, InetSocketAddress from, int size, int wireType) {
-    for (NetworkListener listener : getNetworkListeners())
-      listener.dataReceived(address, msgType, from, size, wireType);
-  }
 
   public void addNodeHandleFactoryListener(NodeHandleFactoryListener<? super NodeHandle> listener) {
     handleFactory.addNodeHandleFactoryListener(listener);

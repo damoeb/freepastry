@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.join;
 
 import java.util.Collection;
-import java.util.Date;
 
 import rice.pastry.NodeHandle;
 import rice.pastry.messaging.Message;
@@ -53,27 +52,15 @@ import rice.pastry.messaging.Message;
 public class InitiateJoin extends Message {
   private NodeHandle[] handle;
 
-  /**
-   * Constructor.
-   *
-   * @param nh the node handle that the join will begin from.
-   */
-
-
-  public InitiateJoin(Collection<NodeHandle> nh) {
-    this(null, nh);
-  }
 
   /**
    * Constructor.
-   *
-   * @param stamp the timestamp
    *
    * @param nh the node handles that the join will begin from.
    */
 
-  public InitiateJoin(Date stamp, Collection<NodeHandle> nh) {
-    super(JoinAddress.getCode(), stamp);
+  public InitiateJoin(Collection<NodeHandle> nh) {
+    super(JoinAddress.getCode());
     handle = nh.toArray(new NodeHandle[1]);
   }
 

@@ -40,11 +40,7 @@ package rice.pastry.client;
 import java.io.IOException;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
-import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.slf4j.Logger;
-import rice.p2p.commonapi.DeliveryNotification;
-import rice.p2p.commonapi.MessageReceipt;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
@@ -56,9 +52,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
 import rice.pastry.messaging.PRawMessage;
-import rice.pastry.messaging.RawMessageDelivery;
 import rice.pastry.routing.RouteMessage;
-import rice.pastry.routing.RouteMessageNotification;
 import rice.pastry.routing.RoutingTable;
 import rice.pastry.routing.SendOptions;
 import rice.pastry.standard.StandardAddress;
@@ -180,20 +174,6 @@ public abstract class PastryAppl
 
   // internal methods
 
-  public void receiveMessageInternal(RawMessageDelivery msg) {
-    Message m;
-    try {
-      m = msg.deserialize(deserializer);
-    } catch (IOException ioe) {
-      logger.error("Error deserializing {} in {}.  Message will be dropped.", msg, this, ioe);
-      return;
-    } catch (RuntimeException re) {
-      logger.error("Error deserializing {} in {}.  Message will be dropped.", msg, this, re);
-      throw re;
-    }
-    receiveMessage(m);
-  }
-
   protected void setDeserializer(MessageDeserializer deserializer) {
     this.deserializer = deserializer;
   }
@@ -267,25 +247,6 @@ public abstract class PastryAppl
   }
 
   /**
-   * Sends a message to the Pastry node identified by dest. If that
-   * node has failed or no point-to-point connection can be
-   * established to the node from the local node in the Internet,
-   * the operation fails. Note that in this case, it may still be
-   * possible to send the message to that node using routeMsg.
-   *
-   * @param dest the destination node
-   * @param msg the message to deliver.
-   * @param opt send options that describe how the message is to be routed.
-   */
-  public boolean routeMsgDirect(NodeHandle dest, PRawMessage msg, SendOptions opt) {
-    logger.trace("[{}] routemsgdirect {} to {}", thePastryNode, msg, dest);
-    if (dest.getLiveness() >= NodeHandle.LIVENESS_DEAD) return false;
-
-    thePastryNode.send(dest,msg,null, options);
-    return dest.getLiveness() < NodeHandle.LIVENESS_DEAD;
-  }
-
-  /**
    * Routes a message to the live node D with nodeId numerically
    * closest to key (at the time of delivery).  The message is
    * delivered to the application with address addr at D, and at
@@ -301,53 +262,6 @@ public abstract class PastryAppl
         thePastryNode.getConfig().routeMsgVersion());
     rm.setTLOptions(options);
     thePastryNode.getRouter().route(rm);
-  }
-
-  // this one will replace the last one after the alpha release
-  public MessageReceipt routeMsg(final Id key, final PRawMessage msg, final SendOptions opt, final DeliveryNotification deliverAckToMe) {
-    logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
-    final RouteMessage rm = new RouteMessage(key, msg, opt,
-        thePastryNode.getConfig().routeMsgVersion());
-
-    final MessageReceipt ret = new MessageReceipt(){
-
-      public boolean cancel() {
-        logger.debug("routeMsg({},{},{}).cancel()", key, msg, deliverAckToMe);
-        return rm.cancel();
-      }
-
-      public Message getMessage() {
-        return msg;
-      }
-
-      public Id getId() {
-        return key;
-      }
-
-      public NodeHandle getHint() {
-        return null;
-      }
-    };
-
-    // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
-    if ((deliverAckToMe != null) || (logger.isDebugEnabled())) {
-      rm.setRouteMessageNotification(new RouteMessageNotification() {
-        public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
-          logger.debug("routeMsg({},{},{}).sendSuccess():{}", key, msg, deliverAckToMe, nextHop);
-          if (deliverAckToMe != null) deliverAckToMe.sent(ret);
-        }
-        public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
-          logger.atDebug().log(() -> "routeMsg("+key+","+msg+","+deliverAckToMe+").sendFailed("+e+")");
-          if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
-        }
-      });
-    }
-
-
-    rm.setTLOptions(OptionsFactory.addOption(options, PriorityTransportLayer.OPTION_PRIORITY, msg.getPriority()));
-    thePastryNode.getRouter().route(rm);
-
-    return ret;
   }
 
   /**
@@ -376,19 +290,6 @@ public abstract class PastryAppl
    */
   public RoutingTable getRoutingTable() {
     return thePastryNode.getRoutingTable();
-  }
-
-  /**
-   * Called by the layered Pastry application to check if the local
-   * pastry node is the one that is currently closest to the object key id.
-   *
-   * @param key
-   * the object key id
-   *
-   * @return true if the local node is currently the closest to the key.
-   */
-  public boolean isClosest(Id key) {
-    return thePastryNode.isClosest(key);
   }
 
   // abstract methods, to be overridden by the derived application object

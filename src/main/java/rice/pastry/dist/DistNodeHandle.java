@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.pastry.dist;
 
-import java.net.InetSocketAddress;
 
 import rice.pastry.Id;
 import rice.pastry.socket.TransportLayerNodeHandle;
@@ -98,6 +97,4 @@ public abstract class DistNodeHandle<Identifier> extends TransportLayerNodeHandl
      * @return a hash code.
      */
     public abstract int hashCode();
-
-    public abstract InetSocketAddress getInetSocketAddress();
 }

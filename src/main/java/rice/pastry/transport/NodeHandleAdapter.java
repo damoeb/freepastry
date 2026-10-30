@@ -51,7 +51,6 @@ import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.NodeHandle;
-import rice.pastry.boot.Bootstrapper;
 
 @SuppressWarnings("unchecked")
 public class NodeHandleAdapter implements
@@ -62,7 +61,6 @@ public class NodeHandleAdapter implements
   TransportLayer<NodeHandle, RawMessage> tl;
   LivenessProvider<NodeHandle> livenessProvider;
   ProximityProvider<NodeHandle> proxProvider;
-  Bootstrapper<?> boot;
 
   /**
    * The layers may be typed by a NodeHandle subclass; the adapter only ever hands them back

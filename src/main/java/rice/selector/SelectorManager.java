@@ -187,17 +187,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   /**
-   * Utility method which returns the SelectionKey attached to the given
-   * channel, if one exists
-   *
-   * @param channel The channel to return the key for
-   * @return The key
-   */
-  public SelectionKey getKey(SelectableChannel channel) {
-    return channel.keyFor(selector);
-  }
-
-  /**
    * Registers a new channel with the selector, and attaches the given
    * SelectionKeyHandler as the handler for the newly created key. Operations
    * which the handler is interested in will be called as available.
@@ -556,34 +545,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       SelectionKey key = (SelectionKey) i2.next();
       if (key.isValid() && (key.attachment() != null))
         ((SelectionKeyHandler) key.attachment()).modifyKey(key);
-    }
-  }
-
-  /**
-   * Method which synchronously returns the first element off of the
-   * invocations list.
-   *
-   * @return An item from the invocations list
-   */
-  protected synchronized Runnable getInvocation() {
-    if (invocations.size() > 0)
-      return (Runnable) invocations.removeFirst();
-    else
-      return null;
-  }
-
-  /**
-   * Method which synchronously returns one element off of the modifyKeys set
-   *
-   * @return A key from the modifyKeys set, or null if it is empty
-   */
-  protected synchronized SelectionKey getModifyKey() {
-    if (modifyKeys.size() > 0) {
-      Object result = modifyKeys.iterator().next();
-      modifyKeys.remove(result);
-      return (SelectionKey) result;
-    } else {
-      return null;
     }
   }
 

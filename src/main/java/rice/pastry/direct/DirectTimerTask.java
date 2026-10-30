@@ -56,10 +56,6 @@ public class DirectTimerTask extends TimerTask {
     this(md,nextExecutionTime,period,false);
   }
 
-  DirectTimerTask(MessageDelivery<?, ?> md, long nextExecutionTime) {
-    this(md,nextExecutionTime,-1,false);
-  }
-
   public void run() {
     md.deliver();
   }

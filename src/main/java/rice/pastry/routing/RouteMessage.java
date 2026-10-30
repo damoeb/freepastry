@@ -119,20 +119,6 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
   /**
    * Constructor.
    *
-   * @param dest the node this message will be routed to
-   * @param msg the wrapped message.
-   * @param opts the send options for the message.
-   * @param serializeVersion the serialization version of the message
-   */
-
-  public RouteMessage(NodeHandle dest, PRawMessage msg,
-      SendOptions opts, byte serializeVersion) {
-    this(dest.getNodeId(), msg, dest, opts, serializeVersion);
-  }
-
-  /**
-   * Constructor.
-   *
    * @param target this is id of the node the message will be routed to.
    * @param msg the wrapped message.
    * @param firstHop the nodeHandle of the first hop destination
@@ -478,15 +464,6 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
 
   public int getAuxAddress() {
     return auxAddress;
-  }
-
-  public short getInternalType() {
-    if (rawInternalMsg != null) return rawInternalMsg.getType();
-    if (internalMsg != null) {
-      return ((RawMessage)internalMsg).getType();
-    }
-    // we don't yet know the internal type because we haven't deserialized it far enough yet
-    return -1;
   }
 
   public void setDestinationHandle(NodeHandle handle) {

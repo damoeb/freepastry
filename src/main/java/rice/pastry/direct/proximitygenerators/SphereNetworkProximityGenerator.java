@@ -101,9 +101,6 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
 
       return (float)ret;
     }
-
-    public void markDead() {
-    }
   }
 
   public void test() {

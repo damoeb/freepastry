@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.join;
 
 import java.io.IOException;
-import java.util.Date;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -61,10 +60,6 @@ import rice.pastry.routing.RouteSet;
  */
 public class JoinRequest extends PRawMessage {
 
-  public static final byte HAS_HANDLE = 0x01;
-  public static final byte HAS_JOIN_HANDLE = 0x02;
-  public static final byte HAS_LEAFSET = 0x02;
-
   private final NodeHandle handle;
 
   private NodeHandle joinHandle;
@@ -79,17 +74,9 @@ public class JoinRequest extends PRawMessage {
 
   private long timestamp;
 
-  /**
-   * Constructor.
-   *
-   * @param nh a handle of the node trying to join the network.
-   */
-  public JoinRequest(NodeHandle nh, byte rtBaseBitLength) {
-    this(nh, null, rtBaseBitLength);
-  }
 
   public JoinRequest(NodeHandle nh, byte rtBaseBitLength, long timestamp) {
-    this(nh, null, rtBaseBitLength);
+    this(nh, rtBaseBitLength);
     this.timestamp = timestamp;
   }
 
@@ -97,10 +84,9 @@ public class JoinRequest extends PRawMessage {
    * Constructor.
    *
    * @param nh a handle of the node trying to join the network.
-   * @param stamp the timestamp
    */
-  public JoinRequest(NodeHandle nh, Date stamp, byte rtBaseBitLength) {
-    super(JoinAddress.getCode(), stamp);
+  public JoinRequest(NodeHandle nh, byte rtBaseBitLength) {
+    super(JoinAddress.getCode());
     handle = nh;
     initialize(rtBaseBitLength);
     setPriority(MAX_PRIORITY);

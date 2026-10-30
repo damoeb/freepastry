@@ -51,7 +51,6 @@ import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.logging.Slf4jLogManager;
-import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.Id;
@@ -63,7 +62,6 @@ import rice.pastry.PastryNode;
 import rice.pastry.boot.Bootstrapper;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.LeafSetProtocol;
-import rice.pastry.routing.RouteSet;
 import rice.pastry.routing.RoutingTable;
 import rice.pastry.standard.ProximityNeighborSelector;
 import rice.pastry.standard.StandardLeafSetProtocol;
@@ -118,13 +116,6 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     }
   }
 
-  /**
-   * Getter for the NetworkSimulator.
-   *
-   * @return the NetworkSimulator we are using.
-   */
-  public NetworkSimulator<DirectNodeHandle,RawMessage> getNetworkSimulator() { return simulator; }
-
   public PastryNode newNode() throws IOException {
     return newNode(nidFactory.generateNodeId());
   }
@@ -158,75 +149,6 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       return pn;
   }
 
-  /**
-   * This method returns the remote leafset of the provided handle
-   * to the caller. In the simulator it reads the remote node's leafset directly.
-   *
-   * @param handle The node to connect to
-   * @return The leafset of the remote node
-   */
-  public LeafSet getLeafSet(NodeHandle handle) throws IOException {
-    DirectNodeHandle dHandle = (DirectNodeHandle) handle;
-
-    return dHandle.getRemote().getLeafSet();
-  }
-
-  /**
-   * The non-blocking versions here all execute immediately.
-   * This CancellableTask is just a placeholder.
-   * @author Jeff Hoye
-   */
-  static class NullCancellableTask implements CancellableTask {
-    public void run() {
-    }
-
-    public boolean cancel() {
-      return false;
-    }
-
-    public long scheduledExecutionTime() {
-      return 0;
-    }
-  }
-
-
-  public CancellableTask getLeafSet(NodeHandle handle, Continuation<LeafSet, Exception> c) {
-    DirectNodeHandle dHandle = (DirectNodeHandle) handle;
-    c.receiveResult(dHandle.getRemote().getLeafSet());
-    return new NullCancellableTask();
-  }
-
-  /**
-   * This method returns the remote route row of the provided handle
-   * to the caller. In the simulator it reads the remote node's routing table directly.
-   *
-   * @param handle The node to connect to
-   * @param row The row number to retrieve
-   * @return The route row of the remote node
-   */
-  public RouteSet[] getRouteRow(NodeHandle handle, int row) throws IOException {
-    DirectNodeHandle dHandle = (DirectNodeHandle) handle;
-
-    return dHandle.getRemote().getRoutingTable().getRow(row);
-  }
-
-  public CancellableTask getRouteRow(NodeHandle handle, int row, Continuation<RouteSet[], Exception> c) {
-    DirectNodeHandle dHandle = (DirectNodeHandle) handle;
-    c.receiveResult(dHandle.getRemote().getRoutingTable().getRow(row));
-    return new NullCancellableTask();
-  }
-
-  /**
-   * This method determines and returns the proximity between two nodes, as
-   * given by the simulator.
-   *
-   * @param local the local node
-   * @param remote the remote node
-   * @return The proximity of the two nodes
-   */
-  public int getProximity(NodeHandle local, NodeHandle remote) {
-    return (int)simulator.proximity((DirectNodeHandle)local, (DirectNodeHandle)remote);
-  }
 
   @Override
   protected NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> handleFactory) throws IOException {

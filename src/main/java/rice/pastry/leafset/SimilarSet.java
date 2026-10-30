@@ -39,7 +39,6 @@ package rice.pastry.leafset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.NoSuchElementException;
 
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
@@ -230,29 +229,6 @@ public class SimilarSet implements NodeSetEventSource {
   }
 
   /**
-   * Finds the NodeHandle associated with the Id.
-   *
-   * @param nid a node id.
-   * @return the handle associated with that id or null if no such handle is
-   *         found.
-   */
-  public NodeHandle get(Id nid) {
-    for (int i = 0; i < theSize; i++)
-      if (nodes[i].getNodeId().equals(nid))
-        return nodes[i];
-
-    return null;
-  }
-
-  public NodeHandle get(NodeHandle nh) {
-    for (int i = 0; i < theSize; i++)
-      if (nodes[i].equals(nh))
-        return nodes[i];
-
-    return null;
-  }
-
-  /**
    * Gets the ith element in the set.
    *
    * @param i an index. i == -1 refers to the local node
@@ -292,22 +268,6 @@ public class SimilarSet implements NodeSetEventSource {
         return true;
 
     return false;
-  }
-
-  /**
-   * Removes a node id and its handle from the set.
-   *
-   * @param nid the node to remove.
-   * @return the node handle removed or null if nothing.
-   */
-  public NodeHandle remove(Id nid) {
-    for (int i = 0; i < theSize; i++) {
-      if (nodes[i].getNodeId().equals(nid)) {
-        return remove(i);
-      }
-    }
-
-    return null;
   }
 
   public NodeHandle remove(NodeHandle nh) {
@@ -527,61 +487,6 @@ public class SimilarSet implements NodeSetEventSource {
 
   // Common API Support
 
-  /**
-   * Puts a NodeHandle into the set.
-   *
-   * @param handle the handle to put.
-   *
-   * @return true if the put succeeded, false otherwise.
-   */
-  public boolean putHandle(rice.p2p.commonapi.NodeHandle handle) {
-    return put((NodeHandle) handle);
-  }
-
-  /**
-   * Gets the ith element in the set.
-   *
-   * @param i an index.
-   * @return the handle associated with that id or null if no such handle is
-   *         found.
-   */
-  public rice.p2p.commonapi.NodeHandle getHandle(int i) {
-    return get(i);
-  }
-
-  /**
-   * Verifies if the set contains this particular id.
-   *
-   * @param id a node id.
-   * @return true if that node id is in the set, false otherwise.
-   */
-  public boolean memberHandle(rice.p2p.commonapi.Id id) {
-    return member((Id) id);
-  }
-
-  /**
-   * Removes a node id and its handle from the set.
-   *
-   * @param id the id of the node to remove.
-   *
-   * @return the node handle removed or null if nothing.
-   */
-  public rice.p2p.commonapi.NodeHandle removeHandle(rice.p2p.commonapi.Id id) {
-    return remove((Id) id);
-  }
-
-  /**
-   * Gets the index of the element with the given node id.
-   *
-   * @param id the id.
-   *
-   * @return the index or throws a NoSuchElementException.
-   */
-  public int getIndexHandle(rice.p2p.commonapi.Id id)
-      throws NoSuchElementException {
-    return getIndex((Id) id);
-  }
-
   SimilarSet copy(LeafSet newLeafSet) {
     return new SimilarSet(this, newLeafSet);
   }
@@ -605,15 +510,6 @@ public class SimilarSet implements NodeSetEventSource {
 
   public String toString() {
     return "SimilarSet{"+ln+"}";
-  }
-
-  public void destroy() {
-    for (int i = 0; i < nodes.length; i++) {
-      if (nodes[i] != null) {
-        nodes[i] = null;
-      }
-    }
-    theSize = 0;
   }
 
 }

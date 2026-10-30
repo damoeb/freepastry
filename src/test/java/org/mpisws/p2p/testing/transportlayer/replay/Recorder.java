@@ -360,8 +360,6 @@ public class Recorder implements MyEvents {
 
     params.setInt("pastry_socket_scm_max_open_sockets", params.getInt("org.mpisws.p2p.testing.transportlayer.replay_pastry_socket_scm_max_open_sockets"));
 
-    params.setBoolean("pastry_socket_use_own_random",false);
-
     // disable the UPnP setting (in case you are testing this on a NATted LAN)
     params.setString("nat_search_policy","never");
 

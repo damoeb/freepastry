@@ -45,6 +45,4 @@ public interface NodeRecord {
 
   float proximity(NodeRecord nrb);
 
-  void markDead();
-
 }

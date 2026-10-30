@@ -53,10 +53,6 @@ public class DeliveryTimerTask extends TimerTask {
     this.seq = seq;
   }
 
-  DeliveryTimerTask(Delivery md, long nextExecutionTime, int period, int seq) {
-    this(md,nextExecutionTime,-1,false, seq);
-  }
-
   DeliveryTimerTask(Delivery md, long nextExecutionTime, int seq) {
     this(md,nextExecutionTime,-1,false, seq);
   }

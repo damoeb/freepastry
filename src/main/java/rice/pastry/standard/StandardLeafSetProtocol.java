@@ -64,7 +64,6 @@ import rice.pastry.routing.RoutingTable;
  */
 
 public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtocol, NodeHandleListener {
-  private final boolean failstop = true;
 
   // nodes are assumed to fail silently
 
@@ -102,21 +101,6 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
       // first, merge the received leaf set into our own
       boolean changed = mergeLeafSet(remotels, from);
-
-      if (type == BroadcastLeafSet.JoinInitial) {
-        // we have now successfully joined the ring, set the local node ready
-      }
-
-      if (!failstop) {
-        // with arbitrary node failures, we need to broadcast whenever we learn
-        // something new
-        if (changed)
-          broadcast();
-
-        // then, send ls to sending node if that node's ls is missing nodes
-        checkLeafSet(remotels, from, false);
-        return;
-      }
 
       // if this node has just joined, notify the members of our new leaf set
       if (type == BroadcastLeafSet.JoinInitial)
@@ -257,37 +241,6 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
         thePastryNode.send(nh,bls,null, options);
         sent.addId(nh.getNodeId());
       }
-    }
-  }
-
-  /**
-   * Broadcast the local leaf set to all members of the given leaf set, plus the
-   * node from which the leaf set was received.
-   *
-   * @param ls the leafset whose members we send to local leaf set
-   * @param from the node from which ls was received
-   */
-
-  protected void broadcast(LeafSet ls, NodeHandle from) {
-    BroadcastLeafSet bls = new BroadcastLeafSet(thePastryNode.getLocalHandle(), leafSet,
-        BroadcastLeafSet.JoinAdvertise, 0);
-
-    int cwSize = ls.cwSize();
-    int ccwSize = ls.ccwSize();
-
-    for (int i = -ccwSize; i <= cwSize; i++) {
-      NodeHandle nh;
-
-      if (i == 0)
-        nh = from;
-      else
-        nh = ls.get(i);
-
-      if (nh == null || nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
-        continue;
-
-      thePastryNode.send(nh,bls,null, options);
-
     }
   }
 

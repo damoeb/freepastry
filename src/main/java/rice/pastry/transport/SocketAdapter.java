@@ -49,12 +49,10 @@ import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<Identifier> {
   P2PSocket<Identifier> internal;
   Logger logger;
-  Environment environment;
 
   public SocketAdapter(P2PSocket<Identifier> socket, Environment env) {
     this.internal = socket;
     this.logger = env.getLogManager().getLogger(SocketAdapter.class, null);
-    this.environment = env;
   }
 
   public void close() {

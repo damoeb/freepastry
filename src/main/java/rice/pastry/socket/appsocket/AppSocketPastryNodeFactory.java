@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.socket.appsocket;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -103,11 +102,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
   public AppSocketPastryNodeFactory(NodeIdFactory nf, int startPort,
       Environment env) throws IOException {
     super(nf, startPort, env);
-  }
-
-  public AppSocketPastryNodeFactory(NodeIdFactory nf, InetAddress bindAddress,
-      int startPort, Environment env) throws IOException {
-    super(nf, bindAddress, startPort, env);
   }
 
   public static final String STORE_SOCKET = "store_socket";
@@ -214,7 +208,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
 
   SocketFactory sf;
-  public static final String SOCKET_FACTORY_UID = "appSocketFactory.uid";
 
   /**
    * @return used to open sockets to the remote node
@@ -364,7 +357,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
   protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {
     Environment environment = pn.getEnvironment();
     WireTransportLayerImpl wtl = new WireTransportLayerImpl(innermostAddress,environment, null, !(pn instanceof BogusTLPastryNode));
-    wtl.addSocketCountListener(getSocketCountListener(pn));
 
     if (pn instanceof BogusTLPastryNode) {
       return ((BogusTLPastryNode)pn).getWireTransportLayer(wtl);

@@ -52,12 +52,10 @@ import rice.pastry.routing.RouterStrategy;
 public class RendezvousRouterStrategy implements RouterStrategy {
 
   PriorityTransportLayer<MultiInetSocketAddress> priority;
-  Environment environment;
   Logger logger;
 
   public RendezvousRouterStrategy(PriorityTransportLayer<MultiInetSocketAddress> priority, Environment env) {
     this.priority = priority;
-    this.environment = env;
     this.logger = env.getLogManager().getLogger(RendezvousRouterStrategy.class, null);
   }
 

@@ -274,21 +274,6 @@ public class RouteSet implements NodeSetI,
   /**
    * Membership test.
    *
-   * @param nh the node to test membership of.
-   *
-   * @return true if it is a member, false otherwise.
-   */
-  public boolean member(NodeHandle nh) {
-    for (int i = 0; i < theSize; i++)
-      if (nodes[i].equals(nh))
-        return true;
-
-    return false;
-  }
-
-  /**
-   * Membership test.
-   *
    * @param nid the node id to membership of.
    *
    * @return true if it is a member, false otherwise.
@@ -312,17 +297,6 @@ public class RouteSet implements NodeSetI,
 
   public int capacity() {
     return nodes.length;
-  }
-
-  /**
-   * Pings all new nodes in the RouteSet. No longer- Called from
-   * RouteMaintenance.
-   */
-  public void pingAllNew() {
-    for (int i = 0; i < theSize; i++) {
-      if (localNode.proximity(nodes[i]) == Integer.MAX_VALUE)
-        nodes[i].ping();
-    }
   }
 
   /**
@@ -372,21 +346,6 @@ public class RouteSet implements NodeSetI,
       throw new NoSuchElementException();
 
     return nodes[i];
-  }
-
-  /**
-   * Returns the node handle with the matching node id or null if none exists.
-   *
-   * @param nid the node id.
-   *
-   * @return the node handle.
-   */
-  public NodeHandle get(Id nid) {
-    for (int i = 0; i < theSize; i++)
-      if (nodes[i].getNodeId().equals(nid))
-        return nodes[i];
-
-    return null;
   }
 
   /**
@@ -524,16 +483,6 @@ public class RouteSet implements NodeSetI,
     }
     row = -1;
     col = -1;
-  }
-
-  public void destroy() {
-    for (int i = 0; i < nodes.length; i++) {
-      if (nodes[i] != null) {
-        nodes[i].removeNodeHandleListener(this);
-        nodes[i] = null;
-      }
-    }
-
   }
 
   public Iterator<NodeHandle> iterator() {

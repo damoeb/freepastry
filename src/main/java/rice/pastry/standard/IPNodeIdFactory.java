@@ -64,7 +64,6 @@ public class IPNodeIdFactory implements NodeIdFactory {
 
   private int port;
 
-  Environment environment;
 
   private final Logger logger;
 
@@ -76,7 +75,6 @@ public class IPNodeIdFactory implements NodeIdFactory {
 
   public IPNodeIdFactory(InetAddress localIP, int port, Environment env) {
     this.port = port;
-    this.environment = env;
     this.logger = env.getLogManager().getLogger(getClass(), null);
     try {
       this.localIP = localIP;

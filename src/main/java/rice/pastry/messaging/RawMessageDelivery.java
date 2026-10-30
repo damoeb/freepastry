@@ -39,9 +39,7 @@ advised of the possibility of such damage.
  */
 package rice.pastry.messaging;
 
-import java.io.IOException;
 
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 
 /**
  *
@@ -51,6 +49,4 @@ import rice.p2p.commonapi.rawserialization.MessageDeserializer;
  * @author Jeff Hoye
  */
 public interface RawMessageDelivery {
-  public int getAddress();
-  public Message deserialize(MessageDeserializer md) throws IOException;
 }

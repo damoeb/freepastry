@@ -186,7 +186,6 @@ Subclasses swap or insert layers by overriding these protected factory methods:
 - `rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory` adds `org.mpisws.p2p.transport.rendezvous` for nodes behind NATs that cannot accept connections.
 - `rice.pastry.socket.internet.InternetPastryNodeFactory` adds NAT and firewall detection. UPnP is only available through a `NATHandler` named by the `nat_handler_class` parameter; the SBBI-based handler has been removed.
 - `rice.pastry.socket.appsocket.AppSocketPastryNodeFactory` adds application sockets.
-- `rice.pastry.peerreview.CallbackFactory` is used for PeerReview.
 
 `org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl` (TLS for sockets, not for UDP) is not part of the default stack. The `rice.tutorial.ssl` tutorial shows how to insert it.
 

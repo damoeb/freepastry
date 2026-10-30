@@ -131,13 +131,6 @@ public class SimpleRandomSource implements RandomSource {
     return ret;
   }
 
-  public double nextGaussian() {
-    double ret = rnd.nextGaussian();
-    if (logger != null)
-      logger.trace("nextGaussian = {}", ret);
-    return ret;
-  }
-
   public int nextInt() {
     int ret = rnd.nextInt();
     if (logger != null)

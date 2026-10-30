@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.messaging;
 
-import java.util.Date;
 
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
@@ -57,15 +56,8 @@ public abstract class Message implements rice.p2p.commonapi.Message {
 
   private NodeHandle sender;
 
-  /**
-   * Potentially needed for reverse compatibility with serialization?
-   * Remove this when move to byte-level protocol.
-   */
-  private boolean priority;
 
   private int priorityLevel = DEFAULT_PRIORITY_LEVEL;
-
-  private Date theStamp;
 
   /**
    * Constructor.
@@ -74,22 +66,9 @@ public abstract class Message implements rice.p2p.commonapi.Message {
    */
 
   public Message(int dest) {
-    this(dest, null);
-  }
-
-  /**
-   * Constructor.
-   *
-   * @param dest the destination.
-   * @param timestamp the timestamp
-   */
-
-  public Message(int dest, Date timestamp) {
     if (dest == 0) throw new IllegalArgumentException("dest must != 0");
     destination = dest;
-    this.theStamp = timestamp;
     sender = null;
-    priority = false;
   }
   /**
    * Gets the address of message receiver that the message is for.
@@ -98,15 +77,6 @@ public abstract class Message implements rice.p2p.commonapi.Message {
    */
   public int getDestination() {
     return destination;
-  }
-
-  /**
-   * Gets the timestamp of the message, if it exists.
-   *
-   * @return a timestamp or null if the sender did not specify one.
-   */
-  public Date getDate() {
-    return theStamp;
   }
 
   /**
@@ -155,22 +125,6 @@ public abstract class Message implements rice.p2p.commonapi.Message {
    */
   protected void setPriority(int prio) {
     priorityLevel = prio;
-  }
-
-  /**
-   * If the message has no timestamp, this will stamp the message.
-   *
-   * @param time the timestamp.
-   *
-   * @return true if the message was stamped, false if the message already had a
-   *         timestamp.
-   */
-  public boolean stamp(Date time) {
-    if (theStamp == null) {
-      theStamp = time;
-      return true;
-    } else
-      return false;
   }
 
 }

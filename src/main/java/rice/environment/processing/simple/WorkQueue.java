@@ -75,11 +75,6 @@ public class WorkQueue {
     this(-1);
   }
 
-  public int getLength() {
-    // don't count the STOP marker
-    return running ? q.size() : q.size() - (q.contains(STOP) ? 1 : 0);
-  }
-
   public WorkQueue(int capacity) {
      this.capacity = capacity;
   }

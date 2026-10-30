@@ -61,13 +61,11 @@ import rice.selector.TimerTask;
 public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulator implements
     GenericNetworkSimulator<Identifier, MessageType> {
   static class Tupel<Identifier, MessageType> {
-    Identifier i;
     DirectTransportLayer<Identifier, MessageType> tl;
     NodeRecord record;
 
     public Tupel(Identifier i, DirectTransportLayer<Identifier, MessageType> tl, NodeRecord record) {
       super();
-      this.i = i;
       this.tl = tl;
       this.record = record;
     }
@@ -82,22 +80,12 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   // to notify of send/receive
   NetworkSimulator<Identifier, MessageType> sim;
 
-  private final int MIN_DELAY = 1;
-
-  private final int maxDiameter;
-  private final int minDelay;
-
-  public BasicNetworkSimulator(Environment env, RandomSource random, NetworkSimulator<Identifier, MessageType> sim) {
-    this(env, random, sim, NetworkSimulatorConfig.fromParameters(env.getParameters()));
-  }
 
   public BasicNetworkSimulator(Environment env, RandomSource random, NetworkSimulator<Identifier, MessageType> sim,
       NetworkSimulatorConfig config) {
     super(env, random, env.getLogManager().getLogger(BasicNetworkSimulator.class, null));
     this.sim = sim;
     manager.useLoopListeners(false);
-    maxDiameter = config.maxDiameter();
-    minDelay = config.minDelay();
     start();
   }
 
@@ -115,13 +103,6 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     return dtt;
   }
 
-  /**
-   * node should always be a local node, because this will be delivered instantly
-   */
-  public Cancellable deliverMessage(MessageType msg, Identifier node, Identifier from) {
-    return deliverMessage(msg, node, from, 0);
-  }
-
   public Cancellable deliverMessage(MessageType msg, Identifier node, Identifier from,
       int delay) {
     if (delay > 0) {
@@ -132,11 +113,6 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
 
   void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to) {
     sim.notifySimulatorListenersReceived(m, from, to);
-  }
-
-  public Cancellable deliverMessageFixedRate(MessageType msg,
-      Identifier node, Identifier from, int delay, int period) {
-    return deliverMessage(msg, node, from, delay, period);
   }
 
   public Cancellable deliverMessage(MessageType msg, Identifier node, Identifier from, int delay, int period) {
@@ -163,16 +139,8 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     notifyLivenessListeners(i, LivenessTypes.LIVENESS_DEAD, null);
   }
 
-  public Environment getEnvironment() {
-    return environment;
-  }
-
   public Environment getEnvironment(Identifier i) {
     return nodes.get(i).tl.getEnvironment();
-  }
-
-  public RandomSource getRandomSource() {
-    return random;
   }
 
   public boolean isAlive(Identifier i) {

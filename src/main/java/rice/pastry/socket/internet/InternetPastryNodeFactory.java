@@ -113,11 +113,6 @@ public class InternetPastryNodeFactory extends
    */
   InetAddress[] externalAddresses;
 
-  public InternetPastryNodeFactory(NodeIdFactory nf, int startPort,
-      Environment env) throws IOException {
-    this(nf, null, startPort, env, null, null, null);
-  }
-
   /**
    * May block for more than a second to determine network information.
    *

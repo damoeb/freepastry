@@ -41,10 +41,8 @@ import java.io.IOException;
 import rice.pastry.Id;
 import rice.pastry.IdRange;
 import rice.pastry.NodeHandle;
-import rice.pastry.NodeSet;
 import rice.pastry.PastryNode;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PRawMessage;
 import rice.pastry.routing.RouteMessage;
 
 /**
@@ -72,96 +70,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
     super(pn);
   }
 
-  /**
-   * Constructor.
-   *
-   * @param pn the pastry node that the application attaches to.
-   */
-  public CommonAPIAppl(PastryNode pn, String instance) {
-    super(pn, instance);
-  }
-
   // API methods to be invoked by applications
-
-  /**
-   * This operation forwards a message towards the root of key. The optional
-   * hint argument specifies a node that should be used as a first hop in
-   * routing the message. A good hint, e.g. one that refers to the key's current
-   * root, can result in the message being delivered in one hop; a bad hint adds
-   * at most one extra hop to the route. Either K or hint may be NULL, but not
-   * both. The operation provides a best-effort service: the message may be
-   * lost, duplicated, corrupted, or delayed indefinitely.
-   *
-   *
-   * @param key the key
-   * @param msg the message to deliver.
-   * @param hint the hint
-   */
-  public void route(Id key, PRawMessage msg, NodeHandle hint) {
-    logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
-
-    RouteMessage rm = new RouteMessage(key, msg, hint,
-        thePastryNode.getConfig().routeMsgVersion());
-    rm.setTLOptions(options);
-    thePastryNode.getRouter().route(rm);
-  }
-
-  /**
-   * This method produces a list of nodes that can be used as next hops on a
-   * route towards key, such that the resulting route satisfies the overlay
-   * protocol's bounds on the number of hops taken. If safe is true, the
-   * expected fraction of faulty nodes in the list is guaranteed to be no higher
-   * than the fraction of faulty nodes in the overlay; if false, the set may be
-   * chosen to optimize performance at the expense of a potentially higher
-   * fraction of faulty nodes. This option allows applications to implement
-   * routing in overlays with byzantine node failures. Implementations that
-   * assume fail-stop behavior may ignore the safe argument. The fraction of
-   * faulty nodes in the returned list may be higher if the safe parameter is
-   * not true because, for instance, malicious nodes have caused the local node
-   * to build a routing table that is biased towards malicious
-   * nodes~\cite{Castro02osdi}.
-   *
-   * @param key the message's key
-   * @param num the maximal number of next hops nodes requested
-   * @param safe
-   * @return the nodehandle set
-   */
-
-  public NodeSet localLookup(Id key, int num, boolean safe) {
-    // safe ignored until we have the secure routing support
-
-    // get the nodes from the routing table
-    return getRoutingTable().alternateRoutes(key, num);
-  }
-
-  /**
-   * This method produces an unordered list of nodehandles that are neighbors of
-   * the local node in the ID space. Up to num node handles are returned.
-   *
-   * @param num the maximal number of nodehandles requested
-   * @return the nodehandle set
-   */
-
-  public NodeSet neighborSet(int num) {
-    return getLeafSet().neighborSet(num);
-  }
-
-  /**
-   * This method returns an ordered set of nodehandles on which replicas of the
-   * object with key can be stored. The call returns nodes with a rank up to and
-   * including max_rank. If max_rank exceeds the implementation's maximum
-   * replica set size, then its maximum replica set is returned. The returned
-   * nodes may be used for replicating data since they are precisely the nodes
-   * which become roots for the key when the local node fails.
-   *
-   * @param key the key
-   * @param max_rank the maximal number of nodehandles returned
-   * @return the replica set
-   */
-
-  public NodeSet replicaSet(Id key, int max_rank) {
-    return getLeafSet().replicaSet(key, max_rank);
-  }
 
   /**
    * This method provides information about ranges of keys for which the node n
@@ -199,30 +108,6 @@ public abstract class CommonAPIAppl extends PastryAppl {
     else
       return cw;
 
-  }
-
-  /**
-   * This method provides information about ranges of keys for which the node n
-   * is currently a r-root. The operations returns null if the range could not
-   * be determined. It is an error to query the range of a node not present in
-   * the neighbor set as returned by the update upcall or the neighborSet call.
-   *
-   * Some implementations may have multiple, disjoint ranges of keys for which a
-   * given node is responsible (Pastry has two). The parameter key allows the
-   * caller to specify which range should be returned. If the node referenced by
-   * n is the r-root for key, then the resulting range includes key. Otherwise,
-   * the result is the nearest range clockwise from key for which n is
-   * responsible.
-   *
-   * @param n nodeHandle of the node whose range is being queried
-   * @param r the rank
-   * @param key the key
-   * @return the range of keys, or null if range could not be determined for the
-   *         given node and rank
-   */
-
-  public IdRange range(NodeHandle n, int r, Id key) {
-    return range(n, r, key, false);
   }
 
   /*

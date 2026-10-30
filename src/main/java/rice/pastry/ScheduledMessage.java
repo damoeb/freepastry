@@ -65,19 +65,6 @@ public class ScheduledMessage extends TimerTask {
   }
 
   /**
-   * Returns the message
-   *
-   * @return the message
-   */
-  public Message getMessage() {
-    return msg;
-  }
-
-  public PastryNode getLocalNode() {
-    return localNode;
-  }
-
-  /**
    * deliver the message
    */
   public void run() {

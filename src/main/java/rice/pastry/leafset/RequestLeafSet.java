@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.leafset;
 
 import java.io.IOException;
-import java.util.Date;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -55,25 +54,15 @@ import rice.pastry.messaging.PRawMessage;
 public class RequestLeafSet extends PRawMessage {
   long timeStamp;
 
-  /**
-   * Constructor.
-   *
-   * @param nh the return handle.
-   */
-
-  public RequestLeafSet(NodeHandle nh, long timeStamp) {
-    this(null, nh, timeStamp);
-  }
 
   /**
    * Constructor.
    *
-   * @param stamp the timestamp
    * @param nh the return handle
    */
 
-  public RequestLeafSet(Date stamp, NodeHandle nh, long timeStamp) {
-    super(LeafSetProtocolAddress.getCode(), stamp);
+  public RequestLeafSet(NodeHandle nh, long timeStamp) {
+    super(LeafSetProtocolAddress.getCode());
     setSender(nh);
     this.timeStamp = timeStamp;
     setPriority(MAX_PRIORITY);

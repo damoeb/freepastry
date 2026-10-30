@@ -67,7 +67,6 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
      */
     private final int x, y;
 
-    private final boolean alive;
 
     /**
      * Constructor for NodeRecord.
@@ -77,7 +76,6 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
       x = random.nextInt() % side;
       y = random.nextInt() % side;
 
-      alive = true;
     }
 
     public float proximity(NodeRecord that) {
@@ -97,9 +95,6 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
 
     public String toString() {
       return "ENR("+x+","+y+")";
-    }
-
-    public void markDead() {
     }
 
   }

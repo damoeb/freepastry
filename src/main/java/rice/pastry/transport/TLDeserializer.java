@@ -54,14 +54,12 @@ import rice.pastry.messaging.PRawMessage;
 
 public class TLDeserializer implements RawMessageDeserializer, Deserializer {
   Map<Integer, MessageDeserializer> deserializers;
-  NodeHandleFactory<?> nodeHandleFactory;
 
   private final Environment environment;
   private final Logger logger;
 
   public TLDeserializer(NodeHandleFactory<?> nodeHandleFactory, Environment env) {
     this.environment = env;
-    this.nodeHandleFactory = nodeHandleFactory;
     this.deserializers = new HashMap<Integer, MessageDeserializer>();
     this.logger = environment.getLogManager().getLogger(TLDeserializer.class, null);
   }
@@ -102,10 +100,6 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
     o.writeShort(type);
 
     msg.serialize(o);
-  }
-
-  public void clearDeserializer(int address) {
-    deserializers.remove(address);
   }
 
   public MessageDeserializer getDeserializer(int address) {

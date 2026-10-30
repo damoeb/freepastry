@@ -115,10 +115,6 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
     return diff;
   }
 
-  public boolean isCancelled() {
-    return cancelled;
-  }
-
   /**
    * Makes the cancel operation remove the task from the queue as well.
    *

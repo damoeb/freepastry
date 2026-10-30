@@ -109,16 +109,6 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
     }
   }
 
-  /**
-   * Constructor.
-   *
-   * @param lh the local node handle.
-   */
-
-  public StandardJoinProtocol(PastryNode ln, NodeHandle lh,RoutingTable rt, LeafSet ls) {
-    this(ln, lh, rt, ls, null);
-  }
-
   public StandardJoinProtocol(PastryNode ln, NodeHandle lh,RoutingTable rt, LeafSet ls, MessageDeserializer md) {
     super(ln, null, JoinAddress.getCode(), md == null ? new SJPDeserializer(ln) : md);
     localHandle = lh;

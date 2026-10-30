@@ -85,8 +85,6 @@ public class Replayer implements MyEvents, EventCallback {
 
     params.setInt("pastry_socket_scm_max_open_sockets", params.getInt("org.mpisws.p2p.testing.transportlayer.replay_pastry_socket_scm_max_open_sockets"));
 
-    params.setBoolean("pastry_socket_use_own_random",false);
-
     logger = env.getLogManager().getLogger(Replayer.class, null);
 
     final Logger simLogger = env.getLogManager().getLogger(EventSimulator.class, null);

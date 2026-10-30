@@ -113,10 +113,6 @@ public class PMessageReceiptImpl implements PMessageReceipt {
     return internal;
   }
 
-  public boolean isCancelled() {
-    return cancelled;
-  }
-
   public String toString() {
     return "PMsgRecptI{"+message+","+getIdentifier()+"}";
   }

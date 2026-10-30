@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.leafset;
 
 import java.io.IOException;
-import java.util.Date;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -70,22 +69,14 @@ public class BroadcastLeafSet extends PRawMessage {
 
   private long requestTimeStamp;
 
-  /**
-   * Constructor.
-   */
-
-  public BroadcastLeafSet(NodeHandle from, LeafSet leafSet, int type, long requestTimeStamp) {
-    this(null, from, leafSet, type, requestTimeStamp);
-  }
 
   /**
    * Constructor.
    *
-   * @param stamp the timestamp
    */
 
-  public BroadcastLeafSet(Date stamp, NodeHandle from, LeafSet leafSet, int type, long requestTimeStamp) {
-    super(LeafSetProtocolAddress.getCode(), stamp);
+  public BroadcastLeafSet(NodeHandle from, LeafSet leafSet, int type, long requestTimeStamp) {
+    super(LeafSetProtocolAddress.getCode());
 
     if (leafSet == null) throw new IllegalArgumentException("Leafset is null");
 

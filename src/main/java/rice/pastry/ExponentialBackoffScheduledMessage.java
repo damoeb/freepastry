@@ -72,11 +72,6 @@ public class ExponentialBackoffScheduledMessage extends ScheduledMessage {
     schedule(initialDelay);
   }
 
-  public ExponentialBackoffScheduledMessage(PastryNode node, Message msg, Timer timer, long initialDelay, double expBase) {
-    this(node, msg, timer, initialDelay, initialDelay, expBase, -1);
-    numTimes=1;
-  }
-
 
   private void schedule(long time) {
     myTask = new EBTimerTask();

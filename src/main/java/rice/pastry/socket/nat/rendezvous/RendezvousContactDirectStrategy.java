@@ -44,7 +44,6 @@ import rice.environment.Environment;
 
 public class RendezvousContactDirectStrategy implements ContactDirectStrategy<RendezvousSocketNodeHandle> {
   MultiInetSocketAddress localAddr;
-  Environment environment;
   AddressStrategy addressStrategy;
   Logger logger;
 
@@ -53,7 +52,6 @@ public class RendezvousContactDirectStrategy implements ContactDirectStrategy<Re
       AddressStrategy addressStrategy,
       Environment environment) {
     this.localAddr = localNodeHandle.getAddress();
-    this.environment = environment;
     this.addressStrategy = addressStrategy;
     this.logger = environment.getLogManager().getLogger(RendezvousContactDirectStrategy.class, null);
   }

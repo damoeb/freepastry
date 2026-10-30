@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry.routing;
 
 import java.io.IOException;
-import java.util.Date;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -66,26 +65,16 @@ public final class BroadcastRouteRow extends PRawMessage implements RouteSetProt
   /**
    * Constructor.
    *
-   * @param stamp the timestamp
    * @param from the node id
    * @param r the row
    */
-  public BroadcastRouteRow(Date stamp, NodeHandle from, RouteSet[] r) {
-    super(RouteProtocolAddress.getCode(), stamp);
+  public BroadcastRouteRow(NodeHandle from, RouteSet[] r) {
+    super(RouteProtocolAddress.getCode());
     fromNode = from;
     row = r;
     setPriority(MAX_PRIORITY);
   }
 
-  /**
-   * Constructor.
-   *
-   * @param from the node id
-   * @param r the row
-   */
-  public BroadcastRouteRow(NodeHandle from, RouteSet[] r) {
-    this(null, from, r);
-  }
 
   /**
    * Gets the from node.
@@ -141,7 +130,7 @@ public final class BroadcastRouteRow extends PRawMessage implements RouteSetProt
   }
 
   public BroadcastRouteRow(InputBuffer buf, NodeHandleFactory<?> nhf, PastryNode localNode) throws IOException {
-    super(RouteProtocolAddress.getCode(), null);
+    super(RouteProtocolAddress.getCode());
 
     byte version = buf.readByte();
     switch(version) {

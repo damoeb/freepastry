@@ -994,9 +994,4 @@ public class LeafSet implements Iterable<NodeHandle> {
     }
     return l;
   }
-
-  public void destroy() {
-    cwSet.destroy();
-    ccwSet.destroy();
-  }
 }

@@ -108,16 +108,6 @@ public class StandardRouter extends PastryAppl implements Router {
     }
   }
 
-  /**
-   * Constructor, using an {@link AliveRouterStrategy}.
-   *
-   * @param thePastryNode the local node.
-   * @param dispatch the message dispatch to register with.
-   */
-  public StandardRouter(final PastryNode thePastryNode, MessageDispatch dispatch) {
-    this(thePastryNode, dispatch, new AliveRouterStrategy());
-  }
-
   public StandardRouter(final PastryNode thePastryNode, MessageDispatch dispatch, RouterStrategy strategy) {
     super(thePastryNode, null, RouterAddress.getCode(), (buf, type, priority, sender) -> {
       RouteMessage rm;

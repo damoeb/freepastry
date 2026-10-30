@@ -41,7 +41,6 @@ import java.util.concurrent.CountDownLatch;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.selector.SelectorManager;
 
 /**
  * Asynchronously receives the result to a given method call, using
@@ -110,40 +109,6 @@ public interface Continuation<R, E extends Exception> {
      */
     public void receiveException(E result) {
       parent.receiveException(result);
-    }
-  }
-
-  /**
-   * This class is a Continuation provided for simplicity which
-   * passes any results up to the parent Continuation which it
-   * is constructed with.  Subclasses should implement the
-   * receiveException() method with the appropriate behavior.
-   */
-  public static abstract class ErrorContinuation<R, E extends Exception> implements Continuation<R, E> {
-
-    /**
-    * The parent continuation
-     */
-    private final Continuation<? super R, E> parent;
-
-    /**
-     * Constructor which takes in the parent continuation
-     * for this continuation.
-     *
-     * @param continuation The parent of this continuation
-     */
-    public ErrorContinuation(Continuation<? super R, E> continuation) {
-      parent = continuation;
-    }
-
-    /**
-     * Called when an the result is available.  Simply passes the result
-     * to the parent;
-     *
-     * @param result The result
-     */
-    public void receiveResult(R result) {
-      parent.receiveResult(result);
     }
   }
 
@@ -232,7 +197,6 @@ public interface Continuation<R, E extends Exception> {
       fail(e);
     }
 
-    // also used by ExternalContinuationRunnable for exceptions of any type
     private void fail(Exception e) {
       exception = e;
       done.countDown();
@@ -262,65 +226,6 @@ public interface Continuation<R, E extends Exception> {
 
     public boolean exceptionThrown() {
       return (exception != null);
-    }
-  }
-
-  /**
-   * This class is used when you want to run some task on the selector thread
-   * and wait for it to return its result in a Continuation.  It is essentially
-   * a convenience object which combines the functionality of a Runnable that
-   * can be invoked on the Selector with an ExternalContinuation that it will
-   * wait on.  Override the execute(Continuation) method then call invoke() to
-   * get the result or Exception from the operation.  The current thread will
-   * block on invoke until the continuation returns a result or an exception.
-   *
-   * @author jstewart
-   *
-   */
-  public static abstract class ExternalContinuationRunnable<R, E extends Exception> implements Runnable {
-    private ExternalContinuation<R,E> e;
-
-    public ExternalContinuationRunnable() {
-      e = new ExternalContinuation<R,E>();
-    }
-
-    public void run() {
-      try {
-        execute(e);
-      } catch (Exception exc) {
-        e.fail(exc);
-      }
-    }
-
-    protected abstract void execute(Continuation<R, E> c) throws Exception;
-
-    public R invoke(SelectorManager sm) throws Exception {
-      sm.invoke(this);
-      e.sleep();
-      if (e.exceptionThrown())
-        throw e.getException();
-      return e.getResult();
-    }
-
-    public R invoke(Environment env) throws Exception {
-      return invoke(env.getSelectorManager());
-    }
-  }
-
-  /**
-   * This class is used when you want to run some task on the selector thread
-   * and wait for it to return its result.  Override execute() to perform the
-   * operation and then use invoke to schedule its operation.  The current
-   * thread will block until the operation returns a result or an exception.
-   *
-   * @author jstewart
-   *
-   */
-  public abstract class ExternalRunnable<R> extends ExternalContinuationRunnable<R, Exception> {
-    protected abstract R execute() throws Exception;
-
-    protected void execute(Continuation<R, Exception> c) throws Exception {
-      c.receiveResult(execute());
     }
   }
 
