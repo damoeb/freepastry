@@ -187,7 +187,7 @@ public interface TransportLayerCallback&lt;Identifier, MessageType&gt; {
   <li>To insert our new layer between 2 existing layers, we also need to implement a <code>TransportLayerCallback</code> with the same generic parameters so we can insert ourself between two existing layers.</li>  
 </ul>
 
-<h3>Tutorial source: <code>src/main/java/rice/tutorial/transportlayer/</code> (BandwidthLimitingTransportLayer.java, NotEnoughBandwidthException.java, DistTutorial.java, MyApp.java, MyMsg.java).</h3>
+<h3>Tutorial source: <code>modules/tutorials/src/main/java/rice/tutorial/transportlayer/</code> (BandwidthLimitingTransportLayer.java, NotEnoughBandwidthException.java, DistTutorial.java, MyApp.java, MyMsg.java).</h3>
 
 
 
@@ -795,10 +795,10 @@ When the user requests to send the message, it may be buffered or even fail.  Th
 
 <p/>Our layer logs the dropped messages and limited writes at <code>debug</code> level through SLF4J. FreePastry has no logging parameters in <code>freepastry.params</code>; levels are set in the SLF4J backend you put on the classpath. With <code>slf4j-simple</code>, for example, add <code>-Dorg.slf4j.simpleLogger.log.rice.tutorial.transportlayer.BandwidthLimitingTransportLayer=debug</code> to the <code>java</code> command line, or put the same key in a <code>simplelogger.properties</code> file on the classpath.
 
-<p/>Build the project with <code>./mvnw -B package -DskipTests assembly:single</code>, which creates <code>target/freepastry-2.1.0-jar-with-dependencies.jar</code>. No SLF4J backend is bundled, so add one such as <code>slf4j-simple</code> to the classpath to see the log output. Now let's run the code, but we must provide the bandwidth. Let's try 10K/second:
+<p/>Build the project with <code>./mvnw -B package -DskipTests</code>, which creates <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>. No SLF4J backend is bundled, so add one such as <code>slf4j-simple</code> to the classpath to see the log output. Now let's run the code, but we must provide the bandwidth. Let's try 10K/second:
 
 <pre>
-<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar:slf4j-simple.jar -Dorg.slf4j.simpleLogger.log.rice.tutorial.transportlayer.BandwidthLimitingTransportLayer=debug rice.tutorial.transportlayer.DistTutorial 5009 10.9.8.7 5009 10 10000</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar:slf4j-simple.jar -Dorg.slf4j.simpleLogger.log.rice.tutorial.transportlayer.BandwidthLimitingTransportLayer=debug rice.tutorial.transportlayer.DistTutorial 5009 10.9.8.7 5009 10 10000</span>
 </pre>
 
 <p/>Among the usual "Finished creating new node" and MyApp lines, the output contains log lines like these (the exact line format depends on your SLF4J backend):

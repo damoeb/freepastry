@@ -252,12 +252,12 @@ Now let's see what happen if the Past doesn't have the requested content.  Here'
 
 This is the last operation, so both paths call <code>env.destroy()</code> to shut the nodes down and end the program.
 
-<p/>Build the project once with <code>./mvnw -B package -DskipTests assembly:single</code>, which writes <code>target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  Past needs no jars beyond it.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.
+<p/>Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  Past needs no jars beyond it.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.
 
 When you run the code, your output will resemble:
 
 <pre>
-<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.past.PastTutorial 9001 10.9.8.7 9001 5</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.past.PastTutorial 9001 10.9.8.7 9001 5</span>
 <span class="output">Finished creating new node SocketNodeHandle (&lt;0x22D2E1..&gt;/FOO/10.9.8.7:9001 [6702844014892124116])
 Finished creating new node SocketNodeHandle (&lt;0x3EDF4C..&gt;/FOO/10.9.8.7:9002 [-4218714042288854790])
 Finished creating new node SocketNodeHandle (&lt;0x16C2C6..&gt;/FOO/10.9.8.7:9003 [419583566816935501])

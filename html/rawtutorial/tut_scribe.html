@@ -341,7 +341,7 @@ After that we wait a few seconds then print the tree.
 </pre>
 
 <h3>Execution.</h3>
-Build the project once with <code>./mvnw -B package -DskipTests assembly:single</code>, which writes <code>target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  The parameters are identical to those in Lesson 4:
+Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  The parameters are identical to those in Lesson 4:
 <ol>
   <li>Local bind port.</li>
   <li>Bootstrap host. (the local host address)</li>
@@ -352,7 +352,7 @@ Build the project once with <code>./mvnw -B package -DskipTests assembly:single<
 Your output will resemble:
 
 <pre>
-<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.scribe.ScribeTutorial 9001 10.9.8.7 9001 10</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.scribe.ScribeTutorial 9001 10.9.8.7 9001 10</span>
 <span class="output">Finished creating new node SocketNodeHandle (&lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189])
 myTopic = [TOPIC &lt;0x19A8F5..&gt;]
 Finished creating new node SocketNodeHandle (&lt;0x8904D9..&gt;/FOO/10.9.8.7:9002 [4410881318286179245])

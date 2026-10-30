@@ -1,12 +1,39 @@
 # FreePastry architecture
 
-This is an orientation guide for developers who are new to the code base. It explains how the main pieces fit together and points to the classes that implement them. Everything here was checked against the sources in `src/`; places where the code leaves a question open are marked **Unclear**.
+This is an orientation guide for developers who are new to the code base. It explains how the main pieces fit together and points to the classes that implement them. Everything here was checked against the sources in `modules/*/src/`; places where the code leaves a question open are marked **Unclear**.
 
 FreePastry has three layers:
 
 1. **Infrastructure**: the `Environment` (`rice.environment`), which bundles configuration, clock, randomness, logging, the selector thread (`rice.selector`) and the worker threads (`rice.environment.processing`).
 2. **The overlay**: a `PastryNode` (`rice.pastry`) with its leaf set, routing table and maintenance protocols, on top of a pluggable stack of transport layers (`org.mpisws.p2p.transport.**`). The stack is either real TCP/UDP (`rice.pastry.socket`) or a discrete-event simulator (`rice.pastry.direct`).
 3. **Applications**: written against the protocol-independent common API (`rice.p2p.commonapi`). These are PAST, GCPast, Glacier, Aggregation, Scribe, SplitStream, Replication and Multiring (`rice.p2p.**`), with local storage from `rice.persistence`.
+
+## Modules
+
+The build has one Maven module per area, under `modules/`. Each line lists a module's direct dependencies; a module also sees what those depend on. There are no cycles.
+
+```
+freepastry-all             the jar with dependencies: every module below
+freepastry-tutorials    -> every module below
+freepastry-glacier      -> past, multiring, pastry, persistence, core
+freepastry-multiring    -> scribe, pastry, core
+freepastry-scribe       -> pastry, core
+freepastry-past         -> persistence, core
+freepastry-persistence  -> core
+freepastry-peerreview   -> pki, transport, core
+freepastry-pki          -> pastry, transport, core (+ Bouncy Castle bcpkix)
+freepastry-pastry       -> transport, core
+freepastry-filetransfer -> transport, core
+freepastry-transport    -> core
+freepastry-core         -> Bouncy Castle bcprov, SLF4J API
+```
+
+- **core** holds what every layer shares: `rice` (`Continuation` and friends), `rice.environment`, `rice.selector`, `rice.p2p.commonapi`, `rice.p2p.util` and the default `freepastry.params`.
+- **transport** is the generic layer stack, `org.mpisws.p2p.transport.**` without PeerReview. It knows nothing about Pastry: the simulated `transport.direct.DirectTransportLayer` takes a `GenericNetworkSimulator` and a `LivenessProvider`, and the caller (`DirectPastryNodeFactory`) registers it with the `rice.pastry.direct.NetworkSimulator`.
+- **past** (with replication) and **persistence** use only the common API, not `rice.pastry`; their tests use Pastry ids in test scope.
+- **peerreview** (`org.mpisws.p2p.transport.peerreview.**`) is a transport layer, but it needs pki's certificates, so it is its own module above pki.
+
+A test lives in the module whose code it tests. If it needs a higher module, it lives in the lowest module that sees everything it uses. Test helpers that other modules reuse (`TLTest`, `FreePorts`, `CommonAPITest`, `RegressionRun`, the util unit programs) ship in their module's test-jar.
 
 ## The Environment
 
@@ -24,13 +51,13 @@ FreePastry has three layers:
 
 Ways to build one:
 
-- `new Environment()` and `new Environment(String paramFile)` set up a real-network environment. The defaults come from `freepastry.params` on the classpath; it is the main resource `src/main/resources/freepastry.params`. An optional mutable params file overrides the defaults.
+- `new Environment()` and `new Environment(String paramFile)` set up a real-network environment. The defaults come from `freepastry.params` on the classpath; it is the main resource `modules/core/src/main/resources/freepastry.params`. An optional mutable params file overrides the defaults.
 - `Environment.directEnvironment()` sets up the simulator: a `DirectTimeSource`, a `SimProcessor` and a selector that is driven by the simulator.
 - Subclasses can override `chooseDefaults()`.
 
 Parameters are read when components are constructed, so most of them must be set before you build a node.
 
-Logging goes through SLF4J 2. Components get their logger from `environment.getLogManager().getLogger(getClass(), instance)`. The default `Slf4jLogManager` names it `<class>[.<instance>][.<prefix>]`, where the prefix is set by `Slf4jLogManager.clone(prefix)` (node factories use the node id), and creates it with `LoggerFactory.getLogger(name)`. Classes without an environment use `LoggerFactory.getLogger(X.class)` directly. Levels, format and destinations are the job of the SLF4J backend the application provides (the tests use slf4j-simple, configured by `src/test/resources/simplelogger.properties`); there are no logging parameters in `freepastry.params`. Log calls use placeholders, `logger.debug("routing {} to {}", msg, hop)`, or the lazy fluent form, `logger.atDebug().log(() -> expensive())`, so messages are only built when the level is enabled. Explicit `if (logger.isDebugEnabled())` guards remain only around multi-statement blocks or expensive arguments. Log lines carry the backend's wall-clock timestamp, not the simulator's virtual time.
+Logging goes through SLF4J 2. Components get their logger from `environment.getLogManager().getLogger(getClass(), instance)`. The default `Slf4jLogManager` names it `<class>[.<instance>][.<prefix>]`, where the prefix is set by `Slf4jLogManager.clone(prefix)` (node factories use the node id), and creates it with `LoggerFactory.getLogger(name)`. Classes without an environment use `LoggerFactory.getLogger(X.class)` directly. Levels, format and destinations are the job of the SLF4J backend the application provides (the tests use slf4j-simple, configured by each module's `src/test/resources/simplelogger.properties`); there are no logging parameters in `freepastry.params`. Log calls use placeholders, `logger.debug("routing {} to {}", msg, hop)`, or the lazy fluent form, `logger.atDebug().log(() -> expensive())`, so messages are only built when the level is enabled. Explicit `if (logger.isDebugEnabled())` guards remain only around multi-statement blocks or expensive arguments. Log lines carry the backend's wall-clock timestamp, not the simulator's virtual time.
 
 `Environment.destroy()` stores the parameters. It then destroys every registered `rice.Destructable`, then the selector and then the processor, all on the selector thread (if called from another thread it uses `invoke()`). Components register themselves with `addDestructable()`. For example, `PastryNode`'s constructor calls `e.addDestructable(this)`. `cloneEnvironment()` derives a child environment that shares the parent's fate (the parent destroys it). Node factories use this to give each node its own logger name suffix, and optionally its own selector or processor.
 
@@ -210,7 +237,7 @@ The class hierarchy is `rice.pastry.PastryNodeFactory` (reads `pastry_rtMax`, `p
 The two concrete factories differ like this:
 
 - **`SocketPastryNodeFactory`** picks the bind address: the constructor argument, else the `socket_bindAddress` parameter, else `InetAddress.getLocalHost()`. If that is a loopback address and `pastry_socket_allow_loopback` is false, it connects to `pastry_socket_known_network_address` to find a real interface. If `pastry_socket_increment_port_after_construction` is set, the port is incremented after each node. `newNode()` builds the node on the selector thread. `boot()` goes through `TLBootstrapper`: it checks the liveness of the boot addresses (waiting up to 20 s), runs PNS on the live ones, then calls `PastryNode.doneNode()`.
-- **`DirectPastryNodeFactory`** builds a `DirectTransportLayer` per node, which delivers through the `NetworkSimulator`. Liveness and proximity come from the simulator; topologies include `EuclideanNetwork`, `SphereNetwork` and `GenericNetwork`. If `pastry_direct_guarantee_consistency` is false, it uses `StandardLeafSetProtocol` instead of the periodic one.
+- **`DirectPastryNodeFactory`** builds a `DirectTransportLayer` per node and registers it with the `NetworkSimulator`, which delivers its messages. Liveness and proximity come from the simulator; topologies include `EuclideanNetwork`, `SphereNetwork` and `GenericNetwork`. If `pastry_direct_guarantee_consistency` is false, it uses `StandardLeafSetProtocol` instead of the periodic one.
 
 ## The Pastry node
 
@@ -371,7 +398,7 @@ The implementations:
 
 ## Where to go next
 
-- The tutorials in `src/main/java/rice/tutorial/` (lesson1 to lesson4, `past`, `scribe`, `splitstream`, `rawserialization`, `transportlayer`, `ssl`, …) are small, runnable programs. The HTML that goes with them is in `html/rawtutorial/`.
-- The defaults and comments for every parameter are in `src/main/resources/freepastry.params`.
+- The tutorials in `modules/tutorials/src/main/java/rice/tutorial/` (lesson1 to lesson4, `past`, `scribe`, `splitstream`, `rawserialization`, `transportlayer`, `ssl`, …) are small, runnable programs. The HTML that goes with them is in `html/rawtutorial/`.
+- The defaults and comments for every parameter are in `modules/core/src/main/resources/freepastry.params`.
 - The `package-info.java` of each main package gives a one-paragraph summary.
-- API docs are generated, not committed: run `./mvnw javadoc:javadoc` and open `target/reports/apidocs/index.html`.
+- API docs are generated, not committed: run `./mvnw javadoc:aggregate` and open `target/reports/apidocs/index.html`.

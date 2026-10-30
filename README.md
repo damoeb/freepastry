@@ -17,21 +17,23 @@ The compiler runs with `-Xlint:rawtypes,deprecation,removal,dep-ann -Werror`: ra
 
 Use the bundled Maven wrapper; it downloads Maven 3.10.0 on first use. Dependencies come from Maven Central only, as configured in `.mvn/settings.xml`.
 
+FreePastry is a multi-module Maven build; see [Modules](#modules). Run every command below from the project root. Add `-pl modules/<name> -am` to build one module together with the modules it depends on.
+
 ### Build
 
 ```bash
 ./mvnw clean compile
 ```
 
-This compiles the source code into the `target/classes/` directory.
+This compiles each module into its `modules/<name>/target/classes/` directory.
 
-### Create JAR
+### Create JARs
 
 ```bash
 ./mvnw package
 ```
 
-This runs the tests and creates `freepastry-2.1.0.jar` in the `target/` directory.
+This runs the tests and creates one jar per module, `modules/<name>/target/freepastry-<name>-2.1.0.jar`, plus its test classes as `freepastry-<name>-2.1.0-tests.jar`. It also builds the jar with dependencies (see below).
 
 ### Run Tests
 
@@ -41,10 +43,16 @@ This runs the tests and creates `freepastry-2.1.0.jar` in the `target/` director
 
 `verify` compiles, runs the unit tests (JUnit Jupiter) and checks the formatting with Spotless. Long simulations and real-network tests are tagged `integration` and are excluded by default; run them with `./mvnw verify -Pintegration`.
 
-To run a specific test:
+To run a specific test (modules without a matching test are skipped):
 
 ```bash
 ./mvnw test -Dtest=LivenessTest
+```
+
+To run the tests of one module only, for example PAST:
+
+```bash
+./mvnw test -pl modules/past -am
 ```
 
 Tests run sequentially to avoid port conflicts. A failing test fails the build.
@@ -52,23 +60,23 @@ Tests run sequentially to avoid port conflicts. A failing test fails the build.
 ### Create JAR with Dependencies
 
 ```bash
-./mvnw package -DskipTests assembly:single
+./mvnw package -DskipTests
 ```
 
-This creates `target/freepastry-2.1.0-jar-with-dependencies.jar`, which bundles FreePastry with Bouncy Castle and the SLF4J API. It contains no SLF4J backend: add one to the classpath (see [Logging](#logging)) to see log output.
+This creates `modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar`, which bundles every FreePastry module with Bouncy Castle and the SLF4J API. The distribution module `freepastry-all` builds it during `package`, so no `assembly:single` is needed. It contains no SLF4J backend: add one to the classpath (see [Logging](#logging)) to see log output.
 
 ### Run Hello World Example
 
-The example programs are in `src/test/java` and the tutorials in `src/main/java/rice/tutorial/`. Run a tutorial with the jar with dependencies, for example a node that starts a new ring on port 9001 (it boots from its own address):
+The example programs are in each module's `src/test/java` and the tutorials in `modules/tutorials/src/main/java/rice/tutorial/`. Run a tutorial with the jar with dependencies, for example a node that starts a new ring on port 9001 (it boots from its own address):
 
 ```bash
-java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3.DistTutorial 9001 <your-ip> 9001
+java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3.DistTutorial 9001 <your-ip> 9001
 ```
 
 Start additional nodes that join the ring through the first one:
 
 ```bash
-java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3.DistTutorial 9002 <first-node-ip> 9001
+java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3.DistTutorial 9002 <first-node-ip> 9001
 ```
 
 ## Common Maven Commands
@@ -78,20 +86,44 @@ java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3
 - `./mvnw test` - Run tests
 - `./mvnw verify` - Run tests and the Spotless check
 - `./mvnw spotless:apply` - Fix formatting violations
-- `./mvnw package` - Create JAR file
-- `./mvnw javadoc:javadoc` - Generate API documentation (output in `target/reports/apidocs/`)
-- `./mvnw install` - Install to local Maven repository
-- `./mvnw package -DskipTests assembly:single` - Create JAR with dependencies
+- `./mvnw package` - Create the module JARs and the JAR with dependencies
+- `./mvnw package -DskipTests -pl modules/all -am` - Create only the JAR with dependencies
+- `./mvnw compile javadoc:javadoc` - Generate API documentation per module (output in `modules/<name>/target/reports/apidocs/`)
+- `./mvnw javadoc:aggregate` - Generate one API documentation for all modules (output in `target/reports/apidocs/`)
+- `./mvnw install` - Install all modules to the local Maven repository
+
+## Modules
+
+Every module has the group id `org.mpisws.p2p`, the version `2.1.0` and the artifact id `freepastry-<name>`. Each module depends only on the modules listed for it (and on what those depend on).
+
+| Module | Directory | Packages | Depends on |
+|---|---|---|---|
+| `freepastry-core` | `modules/core` | `rice` (Continuation, FutureContinuation, Destructable, Executable), `rice.environment`, `rice.selector`, `rice.p2p.commonapi`, `rice.p2p.util`, and `freepastry.params` | Bouncy Castle (bcprov), SLF4J API |
+| `freepastry-transport` | `modules/transport` | `org.mpisws.p2p.transport`, except `peerreview` | core |
+| `freepastry-filetransfer` | `modules/filetransfer` | `org.mpisws.p2p.filetransfer` | core, transport |
+| `freepastry-pastry` | `modules/pastry` | `rice.pastry` | core, transport |
+| `freepastry-pki` | `modules/pki` | `org.mpisws.p2p.pki` | core, transport, pastry, Bouncy Castle (bcpkix) |
+| `freepastry-peerreview` | `modules/peerreview` | `org.mpisws.p2p.transport.peerreview` | core, transport, pki |
+| `freepastry-persistence` | `modules/persistence` | `rice.persistence` | core |
+| `freepastry-past` | `modules/past` | `rice.p2p.past`, `rice.p2p.replication` | core, persistence |
+| `freepastry-scribe` | `modules/scribe` | `rice.p2p.scribe`, `rice.p2p.splitstream` | core, pastry |
+| `freepastry-multiring` | `modules/multiring` | `rice.p2p.multiring` | core, pastry, scribe |
+| `freepastry-glacier` | `modules/glacier` | `rice.p2p.glacier`, `rice.p2p.aggregation` | core, pastry, past, multiring, persistence |
+| `freepastry-tutorials` | `modules/tutorials` | `rice.tutorial` | all of the above |
+| `freepastry-all` | `modules/all` | none: builds the jar with dependencies | all of the above |
+
+Tests live in the module whose code they test. A test that needs a higher module lives in the lowest module that sees everything it uses, for example `SSLTest` in pki and the Id-set tests in glacier. `MessageTypeRegistriesTest`, which checks every message type registry, is in tutorials because that module depends on all others. Some modules use other modules in test scope only: persistence, past and filetransfer test with pastry ids, and peerreview's replay programs use scribe. Shared test helpers (`TLTest` and `FreePorts` in transport, `CommonAPITest` and `RegressionRun` in pastry, the unit programs in core) ship in their module's test-jar.
 
 ## Project Structure
 
-- `src/main/java/` - Java source files
-- `src/main/resources/` - Default configuration (`freepastry.params`)
-- `src/test/java/` - Tests (JUnit Jupiter) and regression programs (`testing` packages)
-- `target/` - Compiled classes and JARs (generated by Maven)
+- `pom.xml` - Parent POM: the module list, dependency and plugin versions, and the build configuration all modules share
+- `modules/<name>/pom.xml` - One module's dependencies
+- `modules/<name>/src/main/java/` - Java source files
+- `modules/core/src/main/resources/` - Default configuration (`freepastry.params`)
+- `modules/<name>/src/test/java/` - Tests (JUnit Jupiter) and regression programs (`testing` packages)
+- `modules/<name>/target/` - Compiled classes and JARs (generated by Maven)
 - `docs/` - Architecture overview, protocol notes and diagrams
 - `html/rawtutorial/` - Tutorial files
-- `pom.xml` - Maven project configuration
 
 ## Dependencies
 
@@ -108,14 +140,14 @@ FreePastry logs through the [SLF4J](https://www.slf4j.org/) 2 API and does not b
 
 Levels, line format and output files are configured in the backend, for example in `simplelogger.properties` (`org.slf4j.simpleLogger.defaultLogLevel=info`, `org.slf4j.simpleLogger.log.rice.pastry.socket=debug`) or in `logback.xml`. Each logger is named after its class, so package prefixes work as usual. A logger created with an instance name gets `.<instance>` appended, and each node of a multi-node JVM appends `.<node id>` (for example `rice.pastry.PastryNode.0x1A2B3C`), so you can also set the level of a single node.
 
-The old `freepastry.params` logging parameters (`loglevel`, `<logger>_loglevel`, `logging_*`, `log_rotate_*`, `environment_logToFile`, `fileLogManager_*`) are gone: set levels and log files in the backend instead. The tests use slf4j-simple with `src/test/resources/simplelogger.properties`, which logs at `warn` and above.
+The old `freepastry.params` logging parameters (`loglevel`, `<logger>_loglevel`, `logging_*`, `log_rotate_*`, `environment_logToFile`, `fileLogManager_*`) are gone: set levels and log files in the backend instead. The tests use slf4j-simple with each module's `src/test/resources/simplelogger.properties`, which logs at `warn` and above.
 
 ## Documentation
 
 - Architecture overview for new developers (threading, transport stack, apps): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Javadoc API documentation: run `./mvnw javadoc:javadoc`; the output is in `target/reports/apidocs/` (open `index.html`). It is generated, not committed.
-- Tutorial: `html/rawtutorial/index.html`, with the example sources in `src/main/java/rice/tutorial/`
-- Configuration: the defaults and a comment for every parameter are in `src/main/resources/freepastry.params`. Components read them into typed config records (`*Config.fromParameters(Parameters)`) when they are constructed.
+- Javadoc API documentation: run `./mvnw javadoc:aggregate`; the output is in `target/reports/apidocs/` (open `index.html`). `./mvnw compile javadoc:javadoc` writes one per module to `modules/<name>/target/reports/apidocs/`. It is generated, not committed.
+- Tutorial: `html/rawtutorial/index.html`, with the example sources in `modules/tutorials/src/main/java/rice/tutorial/`
+- Configuration: the defaults and a comment for every parameter are in `modules/core/src/main/resources/freepastry.params`. Components read them into typed config records (`*Config.fromParameters(Parameters)`) when they are constructed.
 
 ## Serialization
 

@@ -81,12 +81,12 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 <a href="./src/appsocket/Tutorial.java">Tutorial.java</a>
 <a href="./src/appsocket/MyApp.java">MyApp.java</a>, into a directory called rice/tutorial/appsocket/.</h3>
 
-<p>First the command line args are more sophisticated.  You can either use the previous syntax of <code>localbindport bootIP bootPort numNodes</code> to use sockets, or specify <code>-direct numNodes</code> to use the simulator.  Build the project once with <code>./mvnw -B package -DskipTests assembly:single</code>, which writes <code>target/freepastry-2.1.0-jar-with-dependencies.jar</code>, and run the tutorial from it.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.</p>
+<p>First the command line args are more sophisticated.  You can either use the previous syntax of <code>localbindport bootIP bootPort numNodes</code> to use sockets, or specify <code>-direct numNodes</code> to use the simulator.  Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>, and run the tutorial from it.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.</p>
 <pre>
 Usage:
-java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.appsocket.Tutorial localbindport bootIP bootPort numNodes
+java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.appsocket.Tutorial localbindport bootIP bootPort numNodes
   or
-java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.appsocket.Tutorial -direct numNodes
+java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.appsocket.Tutorial -direct numNodes
 
 example java rice.tutorial.appsocket.Tutorial 9001 pokey.cs.almamater.edu 9001 10
 example java rice.tutorial.appsocket.Tutorial -direct 10

@@ -53,7 +53,7 @@ PastryNodeFactory and the IdFactory.
   <li>In your application, call <code>node.getEnvironment(), or endpoint.getEnvironment()</code>.</li>
 </ul> 
 
-<p>The default constructor for an environment looks in the classpath for a params file called <b>freepastry.params</b>.  The file lives in <b>src/main/resources/freepastry.params</b> and Maven puts it into <code>target/classes</code> and into the FreePastry jar, so this works automatically whether you run from the jar, from <code>./mvnw</code> or from an IDE that imports the Maven project.</p>
+<p>The default constructor for an environment looks in the classpath for a params file called <b>freepastry.params</b>.  The file lives in <b>modules/core/src/main/resources/freepastry.params</b> and Maven puts it into <code>modules/core/target/classes</code>, into the <code>freepastry-core</code> jar and into the jar with dependencies, so this works automatically whether you run from the jar, from <code>./mvnw</code> or from an IDE that imports the Maven project.</p>
 <p>By default, the Environment also looks for a file in the local directory called <b>user.params</b>.</i> With this file you can alter FreePastry's parameters without re-compiling or rebuilding the jar.</p>
 See also: <a href="params.html">Adjusting FreePastry's parameters</a>.
 

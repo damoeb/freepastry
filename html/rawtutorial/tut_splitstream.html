@@ -225,12 +225,12 @@ All we are doing here is printing output to stdout.
 
 
 <a name="Run"></a><h3>Run the code.</h3>
-Build the project once with <code>./mvnw -B package -DskipTests assembly:single</code>, which writes <code>target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  Now, let's run the code using the <code>-direct</code> flag and 10 nodes.
+Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  Now, let's run the code using the <code>-direct</code> flag and 10 nodes.
 
 Your output will resemble:
 
 <pre>
-<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.splitstream.SplitStreamTutorial -direct 10</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.splitstream.SplitStreamTutorial -direct 10</span>
 <span class="output">Finished creating new node Pastry node &lt;0x30C9E7..&gt;
 Finished creating new node Pastry node &lt;0x5C775C..&gt;
 Finished creating new node Pastry node &lt;0x0B86E5..&gt;

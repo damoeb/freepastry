@@ -25,7 +25,7 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 
 <a name="lessonGtitm"><h1>Simulator Tutorial 2</h1></a>
 <h2>FreePastry's Direct Simulator (Using Latency Matrix)</h2>
-<h3>Tutorial source: <code>src/main/java/rice/tutorial/gtitm/</code> (DirectTutorial.java, MyApp.java, MyMsg.java).</h3>
+<h3>Tutorial source: <code>modules/tutorials/src/main/java/rice/tutorial/gtitm/</code> (DirectTutorial.java, MyApp.java, MyMsg.java).</h3>
 
   <p>Before completing this Tutorial, we recommend completing <a href="tut_simulator.html">Simulator Tutorial</a> of the FreePastry tutorial.</p>
   <p>FreePastry's Simulator is a Discreet Event Simulator.  The puropse of this tutorial is to show you how to use the GenericNetwork to use a <b>latency matrix</b> to more accurately simulate your application with FreePastry's Discreet Event Simulator.
@@ -52,7 +52,7 @@ Changes:
 <p/>Build and run this code as in the <a href="tut_simulator.html">previous tutorial</a>, but this time provide a matrix file. The tutorial directory includes <a href="GNPINPUT">this file</a>, which must be copied to the working directory to execute this tutorial.
 
 <pre>
-<span class="input">java -cp target/freepastry-@freepastry_version@-jar-with-dependencies.jar rice.tutorial.gtitm.DirectTutorial 10 GNPINPUT</span>
+<span class="input">java -cp modules/all/target/freepastry-@freepastry_version@-jar-with-dependencies.jar rice.tutorial.gtitm.DirectTutorial 10 GNPINPUT</span>
 <span class="output">Finished creating new node Pastry node <0x7B5ABF..>
 Finished creating new node Pastry node <0xFFA2A6..>
 Finished creating new node Pastry node <0x74A71D..>

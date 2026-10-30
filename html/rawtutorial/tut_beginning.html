@@ -226,20 +226,20 @@ Lesson 2 will aid you in running your code.</h3>
 <ul>
   <li><b>Step 1:</b> Compile
     <ol type="i">
-      <li>You need Java 25 or later.  The tutorial sources are part of the FreePastry source tree, in <code>src/main/java/rice/tutorial/</code>, so you build them together with FreePastry.</li>
+      <li>You need Java 25 or later.  The tutorial sources are part of the FreePastry source tree, in <code>modules/tutorials/src/main/java/rice/tutorial/</code>, so you build them together with FreePastry.</li>
       <li>From the root of the source tree, build a jar that contains FreePastry, the tutorials and their dependencies:
-	  <pre><span class="input">./mvnw -B package -DskipTests assembly:single</span></pre>
-	  This creates <code>target/freepastry-2.1.0-jar-with-dependencies.jar</code>.</li>
+	  <pre><span class="input">./mvnw -B package -DskipTests</span></pre>
+	  This creates <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.</li>
     </ol>
   <li><b>Step 2:</b> Launch the bootstrap node.
 Even though this is the first node, and therefore we know the bootstrap will
 not work, you need to place in a bogus ip/port.  A smarter <code>main()</code> method in DistTutorial.java could fix this problem.
-<pre><span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson1.DistTutorial 9001 <i>yourhost.domain</i> 9001</span></pre>
+<pre><span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson1.DistTutorial 9001 <i>yourhost.domain</i> 9001</span></pre>
 <p>
 (In the above command, <i>yourhost.domain</i> can be the DNS name of your
 host or its IP address.)  Your output will look something like this:</p>
 <pre>
-<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson1.DistTutorial 9001 10.9.8.7 9001</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson1.DistTutorial 9001 10.9.8.7 9001</span>
 <span class="output">Finished creating new node SocketNodeHandle (&lt;0xB7E151..&gt;/FOO/10.9.8.7:9001 [-4233509936758121968])</span></pre>
 FreePastry logs through SLF4J.  The jar does not contain a logging backend, so SLF4J prints a one-time warning and discards the log output.  To see FreePastry's log messages, for example "No bootstrap node provided, starting a new ring...", add an SLF4J backend such as <code>slf4j-simple</code> to the classpath.
 </li>
@@ -247,10 +247,10 @@ FreePastry logs through SLF4J.  The jar does not contain a logging backend, so S
   <p>
   You can do this on another computer but make sure you fill in the name of
   the computer from step 2 in <i>bootstraphost.domain</i>.</p>
-<pre><span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson1.DistTutorial 9002 <i>bootstraphost.domain</i> 9001</span></pre>
+<pre><span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson1.DistTutorial 9002 <i>bootstraphost.domain</i> 9001</span></pre>
 <p/> Your output will look something like this:    
 <pre>
-<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson1.DistTutorial 9002 10.9.8.7 9001</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson1.DistTutorial 9002 10.9.8.7 9001</span>
 <span class="output">Finished creating new node SocketNodeHandle (<0xE00352..>/FOO/10.9.8.7:9002 [4492232311666603357])</span></pre></li>
 </ul>
 
@@ -554,7 +554,7 @@ Now if you execute this code twice you should get something like:
 
 <p><em>(for Node1)</em></p>
 <pre>
-<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3.DistTutorial 9001 10.9.8.7 9001</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3.DistTutorial 9001 10.9.8.7 9001</span>
 <span class="output">Finished creating new node SocketNodeHandle (&lt;0xC20545..&gt;/FOO/10.9.8.7:9001 [-4445364026872145996])
 MyApp &lt;0xC20545..&gt; received MyMsg from &lt;0xDD90C6..&gt; to &lt;0xA67C20..&gt;
 MyApp &lt;0xC20545..&gt; received MyMsg from &lt;0xDD90C6..&gt; to &lt;0xBF799E..&gt;
@@ -567,7 +567,7 @@ MyApp &lt;0xC20545..&gt; received MyMsg from &lt;0xDD90C6..&gt; to &lt;0xC20545.
 
 <p><em>(for Node2)</em></p>
 <pre>
-<span class="input">java -cp target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3.DistTutorial 9002 10.9.8.7 9001</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson3.DistTutorial 9002 10.9.8.7 9001</span>
 <span class="output">Finished creating new node SocketNodeHandle (&lt;0xDD90C6..&gt;/FOO/10.9.8.7:9002 [5138450490561334965])
 MyApp &lt;0xDD90C6..&gt; sending to &lt;0x2E5C63..&gt;
 MyApp &lt;0xDD90C6..&gt; received MyMsg from &lt;0xDD90C6..&gt; to &lt;0x2E5C63..&gt;

@@ -25,7 +25,7 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 
 <a name="lessonDirect"><h1>Simulator Tutorial</h1></a>
 <h2>FreePastry's Direct Simulator</h2>
-<h3>Tutorial source: <code>src/main/java/rice/tutorial/direct/</code> (DirectTutorial.java, MyApp.java, MyMsg.java).</h3>
+<h3>Tutorial source: <code>modules/tutorials/src/main/java/rice/tutorial/direct/</code> (DirectTutorial.java, MyApp.java, MyMsg.java).</h3>
 
   <p>Before completing this Tutorial, we recommend completing <a href="tut_multiple_nodes.html#lesson4">Lesson 4</a> of the FreePastry tutorial.</p>
   <p>FreePastry's Simulator is a Discreet Event Simulator.  The puropse of this tutorial is to show you how to test/simulate your application on a medium sized network ( < 100,000 Nodes) with a minimum of complications/changes to your code.  If you followed the advice of the FreePastry tutorial up to this point, it should be very easy to test your code in the simulator.  Before we continue, let's list what FreePastry's simulator does and doesn't do:
@@ -104,10 +104,10 @@ Once we complete the creation of our network, we go ahead and tell the simulator
 
 <p>One last note: Because some of the network topologies use random coordinates to generate latencies, it can be important to set a minimum delay, in case nodes are specified in the identical, or "very-near" coordinates.  In general, it is unlikely to get leas than a 2milli delay between nodes.  To specify a minimum delay, you must set the <a href="params.html">param</a> <code>pastry_direct_min_delay</code> to the appropriate value.  FreePastry defaults this value to <b>2 millis</b>.
 
-<p>Build the project once with <code>./mvnw -B package assembly:single -DskipTests</code>, which writes <code>target/freepastry-@freepastry_version@-jar-with-dependencies.jar</code> including the SLF4J API, and run the tutorial from it. FreePastry logs through SLF4J and ships no logging backend; without one on the classpath SLF4J prints a warning and discards the log output, which is fine here. Note that it runs much faster than with the socket transport layer. Here is the example output of this code:</p>
+<p>Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-@freepastry_version@-jar-with-dependencies.jar</code> including the SLF4J API, and run the tutorial from it. FreePastry logs through SLF4J and ships no logging backend; without one on the classpath SLF4J prints a warning and discards the log output, which is fine here. Note that it runs much faster than with the socket transport layer. Here is the example output of this code:</p>
 
 <pre>
-<span class="input">java -cp target/freepastry-@freepastry_version@-jar-with-dependencies.jar rice.tutorial.direct.DirectTutorial 10</span>
+<span class="input">java -cp modules/all/target/freepastry-@freepastry_version@-jar-with-dependencies.jar rice.tutorial.direct.DirectTutorial 10</span>
 <span class="output">Finished creating new node Pastry node <0x9C1733..>
 Finished creating new node Pastry node <0x8AE001..>
 Finished creating new node Pastry node <0x0CADFD..>
