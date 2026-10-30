@@ -59,12 +59,12 @@ final class AggregateConsolidator {
   private final AggregateList aggregateList;
   private final AggregateFactory aggregateFactory;
   private final AggregateStorer storer;
-  private final AggregationConfig config;
+  private final AggregationSettings config;
   private final TimeSource timeSource;
   private final RandomSource randomSource;
   private final Logger logger;
 
-  AggregateConsolidator(Past aggregateStore, AggregateList aggregateList, AggregateFactory aggregateFactory, AggregateStorer storer, AggregationConfig config, TimeSource timeSource, RandomSource randomSource, Logger logger) {
+  AggregateConsolidator(Past aggregateStore, AggregateList aggregateList, AggregateFactory aggregateFactory, AggregateStorer storer, AggregationSettings config, TimeSource timeSource, RandomSource randomSource, Logger logger) {
     this.aggregateStore = aggregateStore;
     this.aggregateList = aggregateList;
     this.aggregateFactory = aggregateFactory;

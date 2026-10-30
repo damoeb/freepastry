@@ -61,12 +61,12 @@ final class AggregationMonitor {
   private final AggregateList aggregateList;
   private final IdFactory factory;
   private final Environment environment;
-  private final AggregationConfig config;
+  private final AggregationSettings config;
   private final Logger logger;
 
   private final Vector<Id> monitorIDs;
 
-  AggregationMonitor(AggregationImpl aggregation, Past objectStore, Past aggregateStore, AggregateList aggregateList, IdFactory factory, Environment environment, AggregationConfig config, Logger logger) {
+  AggregationMonitor(AggregationImpl aggregation, Past objectStore, Past aggregateStore, AggregateList aggregateList, IdFactory factory, Environment environment, AggregationSettings config, Logger logger) {
     this.aggregation = aggregation;
     this.objectStore = objectStore;
     this.aggregateStore = aggregateStore;

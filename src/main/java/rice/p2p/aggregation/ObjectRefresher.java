@@ -66,10 +66,10 @@ final class ObjectRefresher {
   private final StorageManager waitingList;
   private final AggregateList aggregateList;
   private final AggregationPolicy policy;
-  private final AggregationConfig config;
+  private final AggregationSettings config;
   private final Logger logger;
 
-  ObjectRefresher(Past objectStore, StorageManager waitingList, AggregateList aggregateList, AggregationPolicy policy, AggregationConfig config, Logger logger) {
+  ObjectRefresher(Past objectStore, StorageManager waitingList, AggregateList aggregateList, AggregationPolicy policy, AggregationSettings config, Logger logger) {
     this.objectStore = objectStore;
     this.waitingList = waitingList;
     this.aggregateList = aggregateList;

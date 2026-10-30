@@ -59,12 +59,12 @@ final class AggregateFlusher {
   private final AggregateList aggregateList;
   private final AggregateFactory aggregateFactory;
   private final AggregateStorer storer;
-  private final AggregationConfig config;
+  private final AggregationSettings config;
   private final Logger logger;
 
   private Continuation<? super Boolean, Exception> flushWait;
 
-  AggregateFlusher(StorageManager waitingList, AggregateList aggregateList, AggregateFactory aggregateFactory, AggregateStorer storer, AggregationConfig config, Logger logger) {
+  AggregateFlusher(StorageManager waitingList, AggregateList aggregateList, AggregateFactory aggregateFactory, AggregateStorer storer, AggregationSettings config, Logger logger) {
     this.waitingList = waitingList;
     this.aggregateList = aggregateList;
     this.aggregateFactory = aggregateFactory;

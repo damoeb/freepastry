@@ -71,11 +71,11 @@ final class AggregationDebugCommands {
   private final AggregationMonitor monitor;
   private final IdFactory factory;
   private final Environment environment;
-  private final AggregationConfig config;
+  private final AggregationSettings config;
   private final String instance;
   private final Logger logger;
 
-  AggregationDebugCommands(AggregationImpl aggregation, Past aggregateStore, Past objectStore, AggregateList aggregateList, StorageManager waitingList, AggregationMonitor monitor, IdFactory factory, Environment environment, AggregationConfig config, String instance, Logger logger) {
+  AggregationDebugCommands(AggregationImpl aggregation, Past aggregateStore, Past objectStore, AggregateList aggregateList, StorageManager waitingList, AggregationMonitor monitor, IdFactory factory, Environment environment, AggregationSettings config, String instance, Logger logger) {
     this.aggregation = aggregation;
     this.aggregateStore = aggregateStore;
     this.objectStore = objectStore;

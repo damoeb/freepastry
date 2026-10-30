@@ -54,11 +54,11 @@ import rice.p2p.past.gc.GCPast;
 final class AggregateExpiration {
   private final Past aggregateStore;
   private final AggregateList aggregateList;
-  private final AggregationConfig config;
+  private final AggregationSettings config;
   private final TimeSource timeSource;
   private final Logger logger;
 
-  AggregateExpiration(Past aggregateStore, AggregateList aggregateList, AggregationConfig config, TimeSource timeSource, Logger logger) {
+  AggregateExpiration(Past aggregateStore, AggregateList aggregateList, AggregationSettings config, TimeSource timeSource, Logger logger) {
     this.aggregateStore = aggregateStore;
     this.aggregateList = aggregateList;
     this.config = config;

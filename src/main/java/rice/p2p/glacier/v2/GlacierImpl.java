@@ -91,7 +91,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.logger = environment.getLogManager().getLogger(GlacierImpl.class, instance);
     this.instance = instance;
 
-    GlacierConfig config = GlacierConfig.from(environment.getParameters());
+    GlacierConfig config = GlacierConfig.fromParameters(environment.getParameters());
 
     this.trash = new GlacierTrash(fragmentStorage, logger);
     this.trafficShaper = new GlacierTrafficShaper(config, numFragments, environment, logger);

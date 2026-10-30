@@ -94,7 +94,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final Hashtable<Integer, CancellableTask> timers;
   private AggregationStatistics stats;
 
-  private final AggregationConfig config;
+  private final AggregationSettings config;
   private final AggregateStorer storer;
   private final AggregateFlusher flusher;
   private final AggregateTree tree;
@@ -121,7 +121,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.environment = node.getEnvironment();
     logger = environment.getLogManager().getLogger(AggregationImpl.class, instance);
 
-    config = new AggregationConfig(environment.getParameters());
+    config = new AggregationSettings(AggregationConfig.fromParameters(environment.getParameters()));
 
     this.aggregateFactory = aggregateFactory;
     if (this.aggregateFactory == null) {

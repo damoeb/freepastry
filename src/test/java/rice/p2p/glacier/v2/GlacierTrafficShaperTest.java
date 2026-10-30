@@ -31,7 +31,7 @@ class GlacierTrafficShaperTest {
     env = Environment.directEnvironment(1);
     time = (DirectTimeSource) env.getTimeSource();
     idFactory = new PastryIdFactory(env);
-    testObj = new GlacierTrafficShaper(GlacierConfig.from(env.getParameters()), 48, env, LoggerFactory.getLogger(GlacierTrafficShaperTest.class));
+    testObj = new GlacierTrafficShaper(GlacierConfig.fromParameters(env.getParameters()), 48, env, LoggerFactory.getLogger(GlacierTrafficShaperTest.class));
     released = new ArrayList<Id>();
   }
 

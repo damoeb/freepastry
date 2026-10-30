@@ -63,13 +63,13 @@ final class AggregateTree {
   private final AggregateList aggregateList;
   private final AggregateStorer storer;
   private final AggregateFactory aggregateFactory;
-  private final AggregationConfig config;
+  private final AggregationSettings config;
   private final TimeSource timeSource;
   private final Logger logger;
 
   private boolean rebuildInProgress;
 
-  AggregateTree(Past aggregateStore, Past objectStore, AggregateList aggregateList, AggregateStorer storer, AggregateFactory aggregateFactory, AggregationConfig config, TimeSource timeSource, Logger logger) {
+  AggregateTree(Past aggregateStore, Past objectStore, AggregateList aggregateList, AggregateStorer storer, AggregateFactory aggregateFactory, AggregationSettings config, TimeSource timeSource, Logger logger) {
     this.aggregateStore = aggregateStore;
     this.objectStore = objectStore;
     this.aggregateList = aggregateList;

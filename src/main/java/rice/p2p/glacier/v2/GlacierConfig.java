@@ -36,15 +36,20 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
+import static rice.environment.params.ConfigChecks.inRange;
+import static rice.environment.params.ConfigChecks.positive;
+
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 
 /**
- * The tuning parameters of a {@link GlacierImpl}, read once from the {@code p2p_glacier_*} parameters.
- * Parameters that can be changed at runtime hold only the initial value here; the collaborator that
- * uses such a parameter keeps the current value.
+ * The tuning parameters of a {@link GlacierImpl}, read once from the {@code p2p_glacier_*} parameters:
+ * each component comes from the key {@code p2p_glacier_<component name>}. Times are in milliseconds.
+ * Parameters that can be changed at runtime ({@code syncInterval}, through
+ * {@link GlacierImpl#setSyncInterval(int)}) hold only the initial value here; the collaborator that uses
+ * such a parameter keeps the current value.
  */
-record GlacierConfig(
+public record GlacierConfig(
     boolean logStatistics,
     boolean faultInjectionEnabled,
     long insertTimeout,
@@ -101,7 +106,12 @@ record GlacierConfig(
   static final long MINUTES = 60 * SECONDS;
   static final long HOURS = 60 * MINUTES;
 
-  static GlacierConfig from(Parameters p) {
+  /**
+   * @throws IllegalArgumentException if a jittered interval (sync, sync retry, handoff, local scan) or a
+   *         Bloom filter size is not positive, or the jitter range is outside (0, 1]; the jitter needs a
+   *         positive range
+   */
+  public static GlacierConfig fromParameters(Parameters p) {
     return new GlacierConfig(
       p.getBoolean("p2p_glacier_logStatistics"),
       p.getBoolean("p2p_glacier_faultInjectionEnabled"),
@@ -114,11 +124,11 @@ record GlacierConfig(
       p.getLong("p2p_glacier_syncDelayAfterJoin"),
       p.getLong("p2p_glacier_syncMinRemainingLifetime"),
       p.getLong("p2p_glacier_syncMinQuietTime"),
-      p.getInt("p2p_glacier_syncBloomFilterNumHashes"),
-      p.getInt("p2p_glacier_syncBloomFilterBitsPerKey"),
+      positive("p2p_glacier_syncBloomFilterNumHashes", p.getInt("p2p_glacier_syncBloomFilterNumHashes")),
+      positive("p2p_glacier_syncBloomFilterBitsPerKey", p.getInt("p2p_glacier_syncBloomFilterBitsPerKey")),
       p.getInt("p2p_glacier_syncPartnersPerTrial"),
-      p.getLong("p2p_glacier_syncInterval"),
-      p.getLong("p2p_glacier_syncRetryInterval"),
+      positive("p2p_glacier_syncInterval", p.getLong("p2p_glacier_syncInterval")),
+      positive("p2p_glacier_syncRetryInterval", p.getLong("p2p_glacier_syncRetryInterval")),
       p.getInt("p2p_glacier_syncMaxFragments"),
       p.getInt("p2p_glacier_fragmentRequestMaxAttempts"),
       p.getLong("p2p_glacier_fragmentRequestTimeoutDefault"),
@@ -131,11 +141,11 @@ record GlacierConfig(
       p.getInt("p2p_glacier_manifestAggregationFactor"),
       p.getLong("p2p_glacier_overallRestoreTimeout"),
       p.getLong("p2p_glacier_handoffDelayAfterJoin"),
-      p.getLong("p2p_glacier_handoffInterval"),
+      positive("p2p_glacier_handoffInterval", p.getLong("p2p_glacier_handoffInterval")),
       p.getInt("p2p_glacier_handoffMaxFragments"),
       p.getLong("p2p_glacier_garbageCollectionInterval"),
       p.getInt("p2p_glacier_garbageCollectionMaxFragmentsPerRun"),
-      p.getLong("p2p_glacier_localScanInterval"),
+      positive("p2p_glacier_localScanInterval", p.getLong("p2p_glacier_localScanInterval")),
       p.getInt("p2p_glacier_localScanMaxFragmentsPerRun"),
       p.getDouble("p2p_glacier_restoreMaxRequestFactor"),
       p.getInt("p2p_glacier_restoreMaxBoosts"),
@@ -151,7 +161,7 @@ record GlacierConfig(
       p.getInt("p2p_glacier_bulkRefreshPatchRetries"),
       p.getLong("p2p_glacier_bucketTokensPerSecond"),
       p.getLong("p2p_glacier_bucketMaxBurstSize"),
-      p.getDouble("p2p_glacier_jitterRange"),
+      inRange("p2p_glacier_jitterRange", p.getDouble("p2p_glacier_jitterRange"), Double.MIN_VALUE, 1),
       p.getLong("p2p_glacier_statisticsReportInterval"),
       p.getInt("p2p_glacier_maxActiveRestores"));
   }
