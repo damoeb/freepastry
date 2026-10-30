@@ -46,9 +46,6 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -56,6 +53,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -324,8 +323,8 @@ public class RingCertificate {
    *
    * @param file The file to write to
    */
-  private void writeToFile(File file) throws IOException {
-    try (FileOutputStream out = new FileOutputStream(file)) {
+  private void writeToFile(Path file) throws IOException {
+    try (OutputStream out = Files.newOutputStream(file)) {
       writeToStream(out);
     }
   }
@@ -419,14 +418,14 @@ public class RingCertificate {
   /**
    * Writes a byte array to a file, gzipped and preceded by its length.
    */
-  private static void writeGzippedBytes(File file, byte[] bytes) throws IOException {
-    try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file))))) {
+  private static void writeGzippedBytes(Path file, byte[] bytes) throws IOException {
+    try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(file))))) {
       writeBytes(out, bytes);
     }
   }
 
   /**
-   * Reads a byte array written by {@link #writeGzippedBytes(File, byte[])}.
+   * Reads a byte array written by {@link #writeGzippedBytes(Path, byte[])}.
    */
   static byte[] readGzippedBytes(InputStream stream) throws IOException {
     DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(stream)));
@@ -442,7 +441,7 @@ public class RingCertificate {
    */
   private static void writeKeyPair(KeyPair pair, String pass, String ring) throws IOException {
     byte[] cipher = SecurityUtils.encryptWithPassword(SecurityUtils.encodeKeyPair(pair), pass.toCharArray());
-    writeGzippedBytes(new File(ring.toLowerCase() + ".ringkeypair.enc"), cipher);
+    writeGzippedBytes(Path.of(ring.toLowerCase() + ".ringkeypair.enc"), cipher);
   }
 
   /**
@@ -453,7 +452,7 @@ public class RingCertificate {
    */
   public static KeyPair readKeyPair(String ring, String pass) throws IOException {
     byte[] cipher;
-    try (InputStream in = new FileInputStream(ring.toLowerCase() + ".ringkeypair.enc")) {
+    try (InputStream in = Files.newInputStream(Path.of(ring.toLowerCase() + ".ringkeypair.enc"))) {
       cipher = readGzippedBytes(in);
     }
 
@@ -484,9 +483,9 @@ public class RingCertificate {
     BufferedWriter w = new BufferedWriter(new OutputStreamWriter(System.out));
 
     // first, load the CA keypair
-    File f = new File("ca.keypair.enc");
+    Path f = Path.of("ca.keypair.enc");
     byte[] caCipher;
-    try (InputStream in = new FileInputStream(f)) {
+    try (InputStream in = Files.newInputStream(f)) {
       caCipher = readGzippedBytes(in);
     }
     KeyPair caPair = SecurityUtils.decodeKeyPair(SecurityUtils.decryptWithPassword(caCipher, prompt(r, w, "Please enter the CA password: ").trim().toCharArray()));
@@ -520,7 +519,7 @@ public class RingCertificate {
     if (! cert.verify(caPair.getPublic()))
       throw new RuntimeException("Could not verify generated certificate!");
 
-    cert.writeToFile(new File(ring.toLowerCase() + ".ringcert"));
+    cert.writeToFile(Path.of(ring.toLowerCase() + ".ringcert"));
 
     // and finally write out the KeyPair
     writeKeyPair(pair, pass, ring.toLowerCase());

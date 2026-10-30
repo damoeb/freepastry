@@ -40,13 +40,13 @@ package rice.pastry.standard;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.zip.GZIPInputStream;
@@ -96,21 +96,26 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
    * @return the new nodeId
    */
   public Id generateNodeId() {
-    File f = new File(NODE_ID_FILENAME);
+    Path f = Path.of(NODE_ID_FILENAME);
 
-    if (! f.exists()) {
-      File g = new File("." + NODE_ID_FILENAME + "-" + port);
+    if (! Files.exists(f)) {
+      Path g = Path.of("." + NODE_ID_FILENAME + "-" + port);
 
-      if (g.exists())
-        g.renameTo(f);
+      if (Files.exists(g)) {
+        try {
+          Files.move(g, f, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+          // as with renameTo, a failed rename shows up as the missing certificate below
+        }
+      }
     }
 
-    if (! f.exists()) {
+    if (! Files.exists(f)) {
       logger.warn("Unable to find NodeID certificate - exiting.");
       throw new RuntimeException("Unable to find NodeID certificate - make sure that the NodeID certificate file '" + NODE_ID_FILENAME + "' exists in your ePOST directory.");
     }
 
-    try (InputStream in = new FileInputStream(f)) {
+    try (InputStream in = Files.newInputStream(f)) {
       return readCertificate(in);
     } catch (IOException e) {
       logger.warn("", e);
@@ -170,9 +175,9 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
     String caDirectory = getArg(args, "-ca");
 
     // the CA key pair, encrypted with the password: gzipped, preceded by its length
-    File f = new File(caDirectory,"ca.keypair.enc");
+    Path f = (caDirectory == null) ? Path.of("ca.keypair.enc") : Path.of(caDirectory, "ca.keypair.enc");
     byte[] cipher;
-    try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(f))))) {
+    try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
       cipher = new byte[in.readInt()];
       in.readFully(cipher);
     }
@@ -180,7 +185,7 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
     KeyPair caPair = SecurityUtils.decodeKeyPair(SecurityUtils.decryptWithPassword(cipher, pw.toCharArray()));
 
     Environment env = new Environment();
-    generateCertificate(new RandomNodeIdFactory(env).generateNodeId(), new FileOutputStream(new File(NODE_ID_FILENAME)), caPair.getPrivate());
+    generateCertificate(new RandomNodeIdFactory(env).generateNodeId(), Files.newOutputStream(Path.of(NODE_ID_FILENAME)), caPair.getPrivate());
     env.destroy();
   }
 

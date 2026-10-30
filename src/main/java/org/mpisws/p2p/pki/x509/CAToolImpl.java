@@ -36,12 +36,13 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.pki.x509;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -136,10 +137,10 @@ public class CAToolImpl implements CATool {
     X509Certificate caCert;
     KeyPair caPair;
 
-    File caStoreFile = new File(CN+"-store");
-    if (caStoreFile.exists()) {
+    Path caStoreFile = Path.of(CN+"-store");
+    if (Files.exists(caStoreFile)) {
       KeyStore store = KeyStore.getInstance(DEFAULT_KEYSTORE_TYPE);
-      try (FileInputStream fis = new FileInputStream(caStoreFile)) {
+      try (InputStream fis = Files.newInputStream(caStoreFile)) {
         store.load(fis, pw);
       } catch (IOException ioe) {
         throw new IOException("Could not load "+caStoreFile+" as a "+DEFAULT_KEYSTORE_TYPE+" key store: wrong password, or a store written by an older FreePastry (UBER format, no longer supported)", ioe);
@@ -166,7 +167,7 @@ public class CAToolImpl implements CATool {
       store.setKeyEntry(CA_STORE_PRIVATE, caPair.getPrivate(), pw, chain);
       store.setCertificateEntry(CA_STORE_CERT, caCert);
 
-      try (FileOutputStream fos = new FileOutputStream(caStoreFile)) {
+      try (OutputStream fos = Files.newOutputStream(caStoreFile)) {
         store.store(fos, pw);
       }
     }
@@ -322,10 +323,10 @@ public class CAToolImpl implements CATool {
 
       // write the clientStore to disk
       String fileName = CN+".store";
-      FileOutputStream fos = new FileOutputStream(fileName);
-      // store the clientStore under a blank password, if you want a password on the client store, do it here
-      clientStore.store(fos, "".toCharArray());
-      fos.close();
+      try (OutputStream fos = Files.newOutputStream(Path.of(fileName))) {
+        // store the clientStore under a blank password, if you want a password on the client store, do it here
+        clientStore.store(fos, "".toCharArray());
+      }
       System.out.println("Stored to "+fileName);
     }
 
