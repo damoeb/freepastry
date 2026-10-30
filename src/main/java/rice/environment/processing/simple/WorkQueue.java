@@ -39,65 +39,97 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing.simple;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.environment.processing.WorkRequest;
 
 /**
+ * The queue of the blocking IO thread.
+ *
  * @author Jeff Hoye
  */
-@SuppressWarnings("unchecked")
 public class WorkQueue {
   private static final Logger LOG = LoggerFactory.getLogger(WorkQueue.class);
 
-  List<WorkRequest<?>> q = new LinkedList<WorkRequest<?>>();
-  /* A negative capacity, is equivalent to infinite capacity */
-  int capacity = -1;
+  /**
+   * Put into the queue by {@link #destroy()} to wake up the threads blocked in {@link #dequeue()}.
+   */
+  private static final WorkRequest<Object> STOP = new WorkRequest<Object>() {
+    public Object doWork() {
+      return null;
+    }
+  };
 
-  volatile boolean running = true;
+  private final BlockingQueue<WorkRequest<?>> q = new LinkedBlockingQueue<WorkRequest<?>>();
+  /* A negative capacity, is equivalent to infinite capacity */
+  private final int capacity;
+
+  private final Object enqueueLock = new Object();
+
+  private volatile boolean running = true;
 
   public WorkQueue() {
-     /* do nothing */
+    this(-1);
   }
 
-  public synchronized int getLength() {
-    return q.size();
+  public int getLength() {
+    // don't count the STOP marker
+    return running ? q.size() : q.size() - (q.contains(STOP) ? 1 : 0);
   }
 
   public WorkQueue(int capacity) {
      this.capacity = capacity;
   }
 
-  public synchronized void enqueue(WorkRequest<?> request) {
-    if (capacity < 0 || q.size() < capacity) {
-      q.add(request);
-      notifyAll();
-    } else {
-      request.returnError(new WorkQueueOverflowException());
-    }
-  }
-
-  public synchronized WorkRequest<?> dequeue() {
-    while (q.isEmpty() && running) {
-      try {
-        wait();
-      } catch (InterruptedException e) {
-        LOG.warn("Interrupted while waiting for work", e);
+  public void enqueue(WorkRequest<?> request) {
+    // only enqueue() adds work, so the size can't grow between the check and the add
+    synchronized (enqueueLock) {
+      if (capacity < 0 || q.size() < capacity) {
+        q.add(request);
+        return;
       }
     }
+    request.returnError(new WorkQueueOverflowException());
+  }
 
-    if (!running) return null;
-    return q.remove(0);
+  /**
+   * Blocks until there is work, or the queue is destroyed.
+   *
+   * @return the next request, or null once the queue is destroyed
+   */
+  public WorkRequest<?> dequeue() {
+    boolean interrupted = false;
+    try {
+      while (running) {
+        try {
+          WorkRequest<?> request = q.take();
+          if (request == STOP) {
+            // put it back for the other waiting threads
+            q.add(STOP);
+            return null;
+          }
+          if (!running) return null;
+          return request;
+        } catch (InterruptedException e) {
+          LOG.warn("Interrupted while waiting for work", e);
+          interrupted = true;
+        }
+      }
+      return null;
+    } finally {
+      if (interrupted) {
+        // keep waiting for work, but let the caller see the interrupt
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 
   public void destroy() {
     running = false;
-    synchronized(this) {
-      notifyAll();
-    }
+    q.add(STOP);
   }
 
 }
