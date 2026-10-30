@@ -74,6 +74,7 @@ public final class AccusationMessage<Identifier extends RawSerializable> extends
   }
 
 
+  @Override
   public short getType() {
     return PeerReviewMessageType.ACCUSATION.id();
   }

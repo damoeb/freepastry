@@ -52,8 +52,6 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
   hash hTopMinusOne
   signature sig
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public class EvtAck<Identifier extends RawSerializable> extends HistoryEvent {
   Identifier remoteId;
@@ -82,6 +80,7 @@ public class EvtAck<Identifier extends RawSerializable> extends HistoryEvent {
     buf.read(signature);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     remoteId.serialize(buf);
     buf.writeLong(ackedSeq);

@@ -71,6 +71,7 @@ public class ReplaySM extends SelectorManager {
   /**
    * Don't automatically start the thread.
    */
+  @Override
   public void setEnvironment(Environment env) {
     if (env == null) throw new IllegalArgumentException("env is null!");
     if (environment != null) return;

@@ -78,6 +78,7 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
   public Authenticator extractAuthenticator(Identifier id, long seq, short entryType, byte[] entryHash, byte[] hTopMinusOne, byte[] signature);
   public boolean addAuthenticatorIfValid(AuthenticatorStore<Identifier> store, Identifier subject, Authenticator auth);
 
+  @Override
   public boolean hasCertificate(Identifier id);
 
   Environment getEnvironment();
@@ -103,7 +104,6 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
   /**
    * Current time in millis, however, we depend on there being a timesource that is more discretized
    * than the "wall" clock.  It is only advanced on a timeout or a message receipt.
-   * @return
    */
   long getTime();
 
@@ -116,8 +116,6 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
   /**
    *
    * @param subject the "bad" guy
-   * @param timestamp
-   * @param evidence
    */
   public void sendEvidenceToWitnesses(Identifier subject, long timestamp, Evidence evidence);
 
@@ -131,9 +129,6 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
 
   /**
    * Throws exception if called w/o the cert for the subject
-   * @param subject
-   * @param auth
-   * @return
    */
   public boolean verify(Identifier subject, Authenticator auth);
   public RandomSource getRandomSource();

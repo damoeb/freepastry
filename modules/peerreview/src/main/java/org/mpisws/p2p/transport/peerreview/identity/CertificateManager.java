@@ -45,8 +45,6 @@ import rice.p2p.commonapi.Cancellable;
 /**
  * Stores some Certificates, sign/verify, can fetch Certificates
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public interface CertificateManager<Handle, Identifier> {
   public byte[] sign(byte[] bytes);

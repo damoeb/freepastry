@@ -153,6 +153,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
   }
 
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     final int socketId = socketCtr++;
     final ByteBuffer socketIdBuffer = ByteBuffer.wrap(MathUtils.intToByteArray(socketId));
@@ -167,6 +168,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i, options, logger);
 
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>(){
+      @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
         socketIdBuffer.clear();
         try {
@@ -177,6 +179,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
         socketIdBuffer.clear();
         deliverSocketToMe.receiveResult(ret, new RecordSocket<Identifier>(i, sock, logger, options, socketId, socketIdBuffer, RecordLayer.this));
       }
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
         socketIdBuffer.clear();
         try {
@@ -191,6 +194,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     return ret;
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     final int socketId = socketCtr++;
     final ByteBuffer socketIdBuffer = ByteBuffer.wrap(MathUtils.intToByteArray(socketId));
@@ -206,6 +210,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     callback.incomingSocket(new RecordSocket<Identifier>(s.getIdentifier(), s, logger, s.getOptions(), socketId, socketIdBuffer, RecordLayer.this));
   }
 
+  @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
     if (logger.isTraceEnabled()) {
       logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));
@@ -240,6 +245,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
 
   }
 
+  @Override
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
     try {
       if (identifierSerializer == null) {
@@ -258,26 +264,32 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     callback.messageReceived(i, m, options);
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.handler = handler;
   }
 
+  @Override
   public void destroy() {
     try {
       if (history != null) history.close();
@@ -303,6 +315,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     Environment ret = new Environment(selector,proc,rs,dts,lm,
         params, Environment.generateDefaultExceptionStrategy(lm)) {
 
+      @Override
       public Environment cloneEnvironment(String prefix, boolean cloneSelector, boolean cloneProcessor) {
         // new logManager
         DirectTimeSource dts = new DirectTimeSource(getTimeSource().currentTimeMillis());

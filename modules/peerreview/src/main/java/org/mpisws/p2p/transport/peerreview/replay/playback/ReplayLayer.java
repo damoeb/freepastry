@@ -74,6 +74,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
     this.environment = environment;
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     try {
       int socketId = openSocket(i);
@@ -84,14 +85,17 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
     } catch (IOException ioe) {
       SocketRequestHandle<Identifier> ret = new SocketRequestHandle<Identifier>(){
 
+        @Override
         public Identifier getIdentifier() {
           return i;
         }
 
+        @Override
         public Map<String, Object> getOptions() {
           return options;
         }
 
+        @Override
         public boolean cancel() {
           return true;
         }
@@ -102,6 +106,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
     }
   }
 
+  @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
     if (logger.isTraceEnabled()) {
       logger.trace("sendMessage("+i+","+m+"):"+MathUtils.toHex(m.array()), new Exception("Stack Trace"));
@@ -117,23 +122,29 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
     return ret;
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return localHandle;
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
   }
 
+  @Override
   public void destroy() {
   }
 
+  @Override
   public void acceptMessages(boolean b) {
   }
 
+  @Override
   public void acceptSockets(boolean b) {
   }
 
@@ -189,6 +200,7 @@ public class ReplayLayer<Identifier> extends ReplayVerifier<Identifier> {
 
   }
 
+  @Override
   public Environment getEnvironment() {
     return environment;
   }

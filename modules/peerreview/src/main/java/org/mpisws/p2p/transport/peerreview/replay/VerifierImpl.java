@@ -189,11 +189,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     }
   }
 
+  @Override
   public boolean verifiedOK() {
     return !foundFault;
   };
 
 
+  @Override
   @SuppressWarnings("unchecked")
   public void setApplication(PeerReviewCallback<Handle, ?> app) {
     this.app = (PeerReviewCallback<Handle, Identifier>)app;
@@ -205,6 +207,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
    * is that we can stop calling this if there is more important work to do, e.g.
    * handle foreground requests
    */
+  @Override
   public boolean makeProgress() {
     logger.debug("makeProgress()");
     if (foundFault || next == null)
@@ -444,6 +447,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   /**
    * Called by the state machine when it wants to send a message
    */
+  @Override
   public MessageRequestHandle<Handle, ByteBuffer> sendMessage(
       Handle target, ByteBuffer message, MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
@@ -613,11 +617,13 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     }
   }
 
+  @Override
   public long getNextEventTime() {
     if (next == null) return -1;
     return next.getSeq()/SEQS_PER_MILLI;
   }
 
+  @Override
   public boolean isSuccess() {
     if (initialized && verifiedOK()) {
       if (next == null) return true;
@@ -668,6 +674,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
   Map<Integer, ReplaySocket<Handle>> sockets = new HashMap<Integer, ReplaySocket<Handle>>();
 
+  @Override
   public SocketRequestHandle<Handle> openSocket(final Handle i, SocketCallback<Handle> deliverSocketToMe, final Map<String, Object> options) {
     try {
       int socketId = openSocket(i);
@@ -678,14 +685,17 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     } catch (IOException ioe) {
       SocketRequestHandle<Handle> ret = new SocketRequestHandle<Handle>(){
 
+        @Override
         public Handle getIdentifier() {
           return i;
         }
 
+        @Override
         public Map<String, Object> getOptions() {
           return options;
         }
 
+        @Override
         public boolean cancel() {
           return true;
         }
@@ -717,7 +727,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
   /**
    * Return the new socketId
-   * @param target
    * @return the new socketId, Integer.MIN_VALUE for an error
    */
   public int openSocket(Handle target) throws IOException {
@@ -751,7 +760,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   /**
    * Return the bytes read.
    *
-   * @param socketId
    * @return number of bytes read
    */
   public int readSocket(int socketId, ByteBuffer dst) throws IOException {
@@ -796,7 +804,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   /**
    * Return the bytes written.
    *
-   * @param socketId
    * @return number of bytes written
    */
   public int writeSocket(int socketId, ByteBuffer src) throws IOException {
@@ -909,30 +916,37 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     fetchNextEvent();
   }
 
+  @Override
   public Environment getEnvironment() {
     return environment;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     throw new RuntimeException("implement");
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     throw new RuntimeException("implement");
   }
 
+  @Override
   public Handle getLocalIdentifier() {
     return localHandle;
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Handle, ByteBuffer> callback) {
     this.app = (PeerReviewCallback<Handle, Identifier>)callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Handle> handler) {
     throw new RuntimeException("implement");
   }
 
+  @Override
   public void destroy() {
     throw new RuntimeException("implement");
   }

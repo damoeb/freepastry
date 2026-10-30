@@ -85,10 +85,12 @@ public class Authenticator implements Comparable<Authenticator> {
     buf.write(signature, 0, signature.length);
   }
 
+  @Override
   public int hashCode() {
     return hashCode;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof Authenticator that)) return false;
     if (seq == that.seq) {
@@ -101,6 +103,7 @@ public class Authenticator implements Comparable<Authenticator> {
     return false;
   }
 
+  @Override
   public int compareTo(Authenticator that) {
     if (this.seq > that.seq)
       return -1;
@@ -135,6 +138,7 @@ public class Authenticator implements Comparable<Authenticator> {
     return seq;
   }
 
+  @Override
   public String toString() {
     return seq+" "+MathUtils.toHex(hash)+" "+MathUtils.toHex(signature);
   }

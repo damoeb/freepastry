@@ -77,6 +77,7 @@ public class ChallengeHashPolicy<Identifier> implements HashPolicy {
     }
   }
 
+  @Override
   public boolean hashEntry(short type, byte[] content) {
     switch (type) {
     case EVT_CHECKPOINT : /* We include at most one checkpoint, and only if FLAG_INCLUDE_CHECKPOINT is set */

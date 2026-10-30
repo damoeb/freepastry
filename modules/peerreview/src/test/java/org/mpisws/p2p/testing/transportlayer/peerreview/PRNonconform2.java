@@ -113,7 +113,6 @@ public class PRNonconform2 extends PRRegressionTest {
             IdImpl id,
             int newStatus) {
           // ignore alice's stuff
-          return;
         }
 
       };

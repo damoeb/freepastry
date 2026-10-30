@@ -83,6 +83,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
    *  mixed. This method sets the name of the file and reads its current contents
    *  into memory.
    */
+  @Override
   public void setFilename(Path file) throws IOException {
     if (authFile != null) {
       authFile.close();
@@ -155,6 +156,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     return authenticators.get(id);
   }
 
+  @Override
   public void addAuthenticator(Identifier id, Authenticator authenticator) {
     try {
       if (authFile != null) {
@@ -167,15 +169,18 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     }
   }
 
+  @Override
   public void flushAuthenticatorsFor(Identifier id, long minseq, long maxseq) {
     flushAuthenticatorsFromMemory(id, minseq, maxseq);
   }
 
+  @Override
   public void flushAuthenticatorsFor(Identifier id) {
     flushAuthenticatorsFor(id, Long.MIN_VALUE, Long.MAX_VALUE-1);
   }
 
 
+  @Override
   public void garbageCollect() throws IOException {
     if (authFile == null) return;
 
@@ -193,6 +198,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     }
   }
 
+  @Override
   public List<Authenticator> getAuthenticators(Identifier id, long minseq,
       long maxseq) {
     SortedSet<Authenticator> list = authenticators.get(id);
@@ -203,48 +209,57 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     return Collections.emptyList();
   }
 
+  @Override
   public List<Authenticator> getAuthenticators(Identifier id) {
     return getAuthenticators(id,Long.MIN_VALUE, Long.MAX_VALUE-1);
   }
 
+  @Override
   public Authenticator getLastAuthenticatorBefore(Identifier id, long seq) {
     List<Authenticator> list = getAuthenticators(id, Long.MIN_VALUE, seq);
     if (list.isEmpty()) return null;
     return list.get(0);
   }
 
+  @Override
   public Authenticator getMostRecentAuthenticator(Identifier id) {
     SortedSet<Authenticator> list = authenticators.get(id);
     if (list == null || list.isEmpty()) return null;
     return list.first();
   }
 
+  @Override
   public int getNumSubjects() {
     return authenticators.size();
   }
 
+  @Override
   public Authenticator getOldestAuthenticator(Identifier id) {
     SortedSet<Authenticator> list = authenticators.get(id);
     if (list == null) return null;
     return list.last();
   }
 
+  @Override
   public List<Identifier> getSubjects() {
     return new ArrayList<Identifier>(authenticators.keySet());
   }
 
+  @Override
   public int numAuthenticatorsFor(Identifier id) {
     SortedSet<Authenticator> list = authenticators.get(id);
     if (list == null) return 0;
     return list.size();
   }
 
+  @Override
   public Authenticator statAuthenticator(Identifier id, long seq) {
     List<Authenticator> ret = getAuthenticators(id, seq, seq);
     if (ret == null || ret.isEmpty()) return null;
     return ret.get(0);
   }
 
+  @Override
   public void flush(Identifier id) {
     authenticators.remove(id);
   }

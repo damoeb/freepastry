@@ -59,6 +59,7 @@ RESP_AUDIT
  */
 public record AuditResponse<Handle extends RawSerializable>(Handle logOwner, LogSnippet logSnippet) implements Evidence {
 
+  @Override
   public short getEvidenceType() {
     return RESP_AUDIT;
   }
@@ -69,6 +70,7 @@ public record AuditResponse<Handle extends RawSerializable>(Handle logOwner, Log
     this(logOwner, logSnippet);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     logOwner.serialize(buf);
     logSnippet.serialize(buf);

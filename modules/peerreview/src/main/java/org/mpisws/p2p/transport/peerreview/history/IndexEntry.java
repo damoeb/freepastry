@@ -120,6 +120,7 @@ public class IndexEntry {
     return type;
   }
 
+  @Override
   public String toString() {
     return "IE{#"+seq+" t:"+type+" s:"+sizeInFile+"}";
   }

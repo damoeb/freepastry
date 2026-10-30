@@ -57,10 +57,6 @@ public interface PeerReviewCallback<Handle, Identifier> extends Destructable, Id
   void storeCheckpoint(OutputBuffer buffer) throws IOException;
   /**
    * Return false if the checkpoint is bogus.
-   *
-   * @param buffer
-   * @return
-   * @throws IOException
    */
   boolean loadCheckpoint(InputBuffer buffer) throws IOException;
   void getWitnesses(Identifier subject, WitnessListener<Handle, Identifier> callback);

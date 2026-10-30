@@ -60,6 +60,7 @@ public class EvtSendTest {
       this.id = id;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       buf.writeInt(id);
     }

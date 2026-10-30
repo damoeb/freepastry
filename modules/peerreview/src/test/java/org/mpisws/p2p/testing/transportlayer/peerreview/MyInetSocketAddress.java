@@ -52,6 +52,7 @@ public class MyInetSocketAddress extends InetSocketAddress implements RawSeriali
     public static final int IPV4_BYTES = 4;
     public static final int IPV6_BYTES = 16;
 
+    @Override
     public MyInetSocketAddress deserialize(InputBuffer b) throws IOException {
       byte version = b.readByte();
       byte[] addr;
@@ -71,6 +72,7 @@ public class MyInetSocketAddress extends InetSocketAddress implements RawSeriali
       return new MyInetSocketAddress(InetAddress.getByAddress(addr),0xFFFF & port);
     }
 
+    @Override
     public void serialize(MyInetSocketAddress i, OutputBuffer b)
         throws IOException {
       byte[] addr = i.getAddress().getAddress();
@@ -95,6 +97,7 @@ public class MyInetSocketAddress extends InetSocketAddress implements RawSeriali
   }
 
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     serializer.serialize(this, buf);
   }

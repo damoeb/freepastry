@@ -81,6 +81,7 @@ public class ProofInconsistent implements Evidence {
     this.snippet = snippet;
   }
 
+  @Override
   public short getEvidenceType() {
     return PROOF_INCONSISTENT;
   }
@@ -100,6 +101,7 @@ public class ProofInconsistent implements Evidence {
     }
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     auth1.serialize(buf);
     if (snippet == null) {

@@ -45,7 +45,6 @@ public interface EvidenceTool<Handle extends RawSerializable, Identifier extends
 
   /**
    *
-   * @param snippet
    * @return VALID|INVALID|CERT_MISSING, missingCertID
    */
   Tuple<Integer, Identifier> checkSnippet(LogSnippet snippet);

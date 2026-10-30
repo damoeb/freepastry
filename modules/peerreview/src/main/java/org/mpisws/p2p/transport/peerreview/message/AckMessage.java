@@ -55,8 +55,6 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.RESP_SEND;
   signature sig
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public final class AckMessage<Identifier extends RawSerializable> implements PeerReviewMessage, Evidence {
 
@@ -75,14 +73,17 @@ public final class AckMessage<Identifier extends RawSerializable> implements Pee
     this.signature = signature;
   }
 
+  @Override
   public short getType() {
     return PeerReviewMessageType.ACK.id();
   }
 
+  @Override
   public short getEvidenceType() {
     return RESP_SEND;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     nodeId.serialize(buf);
     buf.writeLong(sendEntrySeq);

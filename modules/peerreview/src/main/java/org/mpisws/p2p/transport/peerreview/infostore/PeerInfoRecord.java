@@ -52,9 +52,6 @@ import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED
  * This is just an index to the real evidence which is on disk
  *
  * @author Jeff Hoye
- *
- * @param <Handle>
- * @param <Identifier>
  */
 public class PeerInfoRecord<Handle, Identifier> {
   private Identifier subject;
@@ -129,12 +126,14 @@ public class PeerInfoRecord<Handle, Identifier> {
       this.interestedParty = interestedParty;
     }
 
+    @Override
     public boolean hasResponse() {
       Map<Long, EvidenceRecordImpl> foo = answeredEvidence.get(originator);
       if (foo == null) return false;
       return foo.containsKey(timestamp);
     }
 
+    @Override
     public void setIsProof(boolean isProof) {
       this.isProof = isProof;
       /* This may cause the node to become SUSPECTED or EXPOSED */
@@ -147,12 +146,14 @@ public class PeerInfoRecord<Handle, Identifier> {
       }
     }
 
+    @Override
     public void setInterestedParty(Handle interestedParty) {
       this.interestedParty = interestedParty;
     }
 
+    @Override
     public void setHasResponse() {
-      assert(!isProof());
+      assert !isProof();
 
       // pull from unanswered (if it's there)
       Map<Long, EvidenceRecordImpl> foo = unansweredEvidence.get(originator);
@@ -179,18 +180,22 @@ public class PeerInfoRecord<Handle, Identifier> {
       }
     }
 
+    @Override
     public boolean isProof() {
       return isProof;
     }
 
+    @Override
     public long getTimeStamp() {
       return timestamp;
     }
 
+    @Override
     public Identifier getOriginator() {
       return originator;
     }
 
+    @Override
     public Handle getInterestedParty() {
       return interestedParty;
     }
@@ -219,7 +224,6 @@ public class PeerInfoRecord<Handle, Identifier> {
   /**
    *
    * @param proof only return proofs
-   * @return
    */
   protected EvidenceRecord<Handle, Identifier> getFirstUnansweredChallenge(boolean proof) {
     for (Map<Long, EvidenceRecordImpl> foo : unansweredEvidence.values()) {

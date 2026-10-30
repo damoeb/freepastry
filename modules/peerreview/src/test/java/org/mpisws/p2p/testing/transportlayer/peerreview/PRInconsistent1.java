@@ -132,7 +132,6 @@ public class PRInconsistent1 extends PRRegressionTest {
 
     /**
      * Delete this index and everything after it
-     * @param entryIndex
      */
     public void fork(long entryIndex) throws IOException {
       IndexEntry entry = statEntry(entryIndex);

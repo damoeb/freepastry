@@ -73,6 +73,7 @@ public class ProofNonconformant<Handle extends RawSerializable> implements Evide
     this.snippet = snippet;
   }
 
+  @Override
   public short getEvidenceType() {
     return PROOF_NONCONFORMANT;
   }
@@ -83,6 +84,7 @@ public class ProofNonconformant<Handle extends RawSerializable> implements Evide
     snippet = new LogSnippet(buf,hashSize);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     to.serialize(buf);
     myHandle.serialize(buf);

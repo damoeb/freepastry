@@ -57,8 +57,6 @@ public interface SecureHistory {
    * 'header' and 'entry'; otherwise, only 'entry' is used.
    *
    * Takes an ordered list of ByteBuffers to append
-   *
-   * @throws IOException
    */
   public void appendEntry(short type, boolean storeFullEntry, ByteBuffer ... entry) throws IOException;
 
@@ -79,7 +77,6 @@ public interface SecureHistory {
 
   /**
    * The destructor.  Closes the file handles.
-   * @throws IOException
    */
   public void close() throws IOException;
 

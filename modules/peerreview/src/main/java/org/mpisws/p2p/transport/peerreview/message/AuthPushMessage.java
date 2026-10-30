@@ -57,6 +57,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  */
 public record AuthPushMessage<Identifier extends RawSerializable>(Map<Identifier, List<Authenticator>> authenticators) implements PeerReviewMessage {
 
+  @Override
   public short getType() {
     return PeerReviewMessageType.AUTHPUSH.id();
   }
@@ -76,6 +77,7 @@ public record AuthPushMessage<Identifier extends RawSerializable>(Map<Identifier
     return new AuthPushMessage<I>(authenticators);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort((short)authenticators.size());
     for (Entry<Identifier, List<Authenticator>> e : authenticators.entrySet()) {

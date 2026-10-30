@@ -175,6 +175,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
 
     super.register(wantToRead, wantToWrite, new P2PSocketReceiver<Identifier>(){
 
+      @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
         short evt;
         if (canRead && canWrite) {
@@ -195,6 +196,7 @@ public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Id
         receiver.receiveSelectResult(RecordSocket.this, canRead, canWrite);
       }
 
+      @Override
       public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
         try {
           socketIdBuffer.clear();

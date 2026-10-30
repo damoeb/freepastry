@@ -74,13 +74,14 @@ public class LogSnippet {
     this.entries = entries;
   }
 
+  @Override
   public String toString() {
     return "LogSnippet["+entries.get(0).getSeq()+"-"+entries.get(entries.size()-1).getSeq()+"]";
   }
 
+  @Override
   public boolean equals(Object o) {
-    if (!(o instanceof LogSnippet)) return false;
-    LogSnippet that = (LogSnippet)o;
+    if (!(o instanceof LogSnippet that)) return false;
     if (!Arrays.equals(this.baseHash, that.baseHash)) return false;
     if (this.entries.size() != that.entries.size()) return false;
     Iterator<SnippetEntry> i2 = that.entries.iterator();
@@ -90,6 +91,7 @@ public class LogSnippet {
     return true;
   }
 
+  @Override
   public int hashCode() {
     return Objects.hash(Arrays.hashCode(baseHash), entries);
   }

@@ -86,15 +86,16 @@ public class SnippetEntry {
     this(buf, decodeSeq(buf, prev.seq), hashSize);
   }
 
+  @Override
   public boolean equals(Object o) {
-    if (!(o instanceof SnippetEntry)) return false;
-    SnippetEntry that = (SnippetEntry)o;
+    if (!(o instanceof SnippetEntry that)) return false;
     if (this.type != that.type) return false;
     if (this.seq != that.seq) return false;
     if (this.isHash != that.isHash) return false;
     return Arrays.equals(this.content, that.content);
   }
 
+  @Override
   public int hashCode() {
     return Objects.hash(type, seq, isHash, Arrays.hashCode(content));
   }
@@ -112,6 +113,7 @@ public class SnippetEntry {
     buf.read(content);
   }
 
+  @Override
   public String toString() {
     return "SEntry type:"+type+" seq:"+seq+" "+(isHash?"hash":"not hash")+" len:"+content.length;
   }

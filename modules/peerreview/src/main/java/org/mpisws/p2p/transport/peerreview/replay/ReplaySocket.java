@@ -58,10 +58,6 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
 
   /**
    * TODO: Make extensible by putting into a factory.
-   *
-   * @param identifier
-   * @param socketId
-   * @param verifier
    */
   public ReplaySocket(Identifier identifier, int socketId, VerifierImpl<Identifier, ?> verifier, Map<String, Object> options) {
     this.identifier = identifier;
@@ -70,24 +66,29 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
     this.options = options;
   }
 
+  @Override
   public Identifier getIdentifier() {
     return identifier;
   }
 
+  @Override
   public Map<String, Object> getOptions() {
     return options;
   }
 
+  @Override
   public long read(ByteBuffer dst) throws IOException {
     return verifier.readSocket(socketId, dst);
   }
 
+  @Override
   public long write(ByteBuffer src) throws IOException {
     return verifier.writeSocket(socketId, src);
   }
 
   P2PSocketReceiver<Identifier> reader;
   P2PSocketReceiver<Identifier> writer;
+  @Override
   public void register(boolean wantToRead, boolean wantToWrite, P2PSocketReceiver<Identifier> receiver) {
     if (closed) {
       receiver.receiveException(this, new ClosedChannelException("Socket "+this+" already closed."));
@@ -146,6 +147,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
     }
   }
 
+  @Override
   public void close() {
     closed = true;
 
@@ -162,6 +164,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
     deliverSocketToMe = null;
   }
 
+  @Override
   public void shutdownOutput() {
     outputShutdown = true;
 
@@ -190,6 +193,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
     }
   }
 
+  @Override
   public boolean cancel() {
     throw new RuntimeException("Not implemented.");
   }

@@ -133,6 +133,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       foundFault = true;
   }
 
+  @Override
   public boolean verifiedOK() {
     return !foundFault;
   };
@@ -140,19 +141,11 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 
   /**
    * Callback when a message has arrived.
-   *
-   * @param from
-   * @param msg
-   * @throws IOException
    */
   protected abstract void receive(Identifier from, ByteBuffer msg) throws IOException;
 
   /**
    * Callback when a socket comes in from a remote node.
-   *
-   * @param from
-   * @param socketId
-   * @throws IOException
    */
   protected abstract void incomingSocket(Identifier from, int socketId) throws IOException;
 
@@ -161,11 +154,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
    *
    * Note that the simulated node should have already registered for this event, even though it is
    * not logged.  If the node is not registered for the event, it is an error.
-   *
-   * @param socketId
-   * @param canRead
-   * @param canWrite
-   * @throws IOException
    */
   protected abstract void socketIO(int socketId, boolean canRead, boolean canWrite) throws IOException;
 
@@ -173,6 +161,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 
   protected abstract void socketException(int socketId, IOException ioe) throws IOException;
 
+  @Override
   public void setApplication(PeerReviewCallback<Identifier, ?> app) {
   }
 
@@ -369,7 +358,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 
   /**
    * Return the new socketId
-   * @param target
    * @return the new socketId, Integer.MIN_VALUE for an error
    */
   public int openSocket(Identifier target) throws IOException {
@@ -403,7 +391,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   /**
    * Return the bytes read.
    *
-   * @param socketId
    * @return number of bytes read
    */
   public int readSocket(int socketId, ByteBuffer dst) throws IOException {
@@ -448,7 +435,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   /**
    * Return the bytes written.
    *
-   * @param socketId
    * @return number of bytes written
    */
   public int writeSocket(int socketId, ByteBuffer src) throws IOException {
@@ -589,6 +575,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
    * is that we can stop calling this if there is more important work to do, e.g.
    * handle foreground requests
    */
+  @Override
   public boolean makeProgress() {
     logger.debug("makeProgress()");
     if (foundFault || !haveNextEvent)
@@ -743,10 +730,12 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     return true;
   }
 
+  @Override
   public long getNextEventTime() {
     return next.getSeq()/SEQS_PER_MILLI;
   }
 
+  @Override
   public boolean isSuccess() {
     if (initialized && verifiedOK()) {
       if (next == null) return true;

@@ -95,10 +95,12 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     }
   }
 
+  @Override
   public String toString() {
     return "UDM:"+topSeq+","+senderHandle+","+MathUtils.toHex(hTopMinusOne)+","+MathUtils.toHex(signature)+","+relevantLen+","+payload.length;
   }
 
+  @Override
   public short getType() {
     return PeerReviewMessageType.USERDATA.id();
   }
@@ -108,6 +110,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     return relevantCode;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeLong(topSeq);
     senderHandle.serialize(buf);
@@ -171,11 +174,6 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     }
   }
 
-  /**
-   * @param myId
-   * @param hasher
-   * @return
-   */
   public byte[] getInnerHash(RawSerializable myId, HashProvider hasher) {
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -187,10 +185,6 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     }
   }
 
-  /**
-   * @param hasher
-   * @return
-   */
   public byte[] getInnerHash(HashProvider hasher) {
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -220,6 +214,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     return payload.length;
   }
 
+  @Override
   public short getEvidenceType() {
     return CHAL_SEND;
   }

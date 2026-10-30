@@ -57,8 +57,6 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
   data payload   - or -  relevantPayload, hash
 
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
   private final Identifier receiverId;
@@ -96,6 +94,7 @@ public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
     }
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     receiverId.serialize(buf);
     buf.writeBoolean(hash != null);

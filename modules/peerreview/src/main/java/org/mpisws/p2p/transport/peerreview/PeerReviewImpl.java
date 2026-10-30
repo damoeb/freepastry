@@ -175,6 +175,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   private final RandomSource random;
 
+  @Override
   public RandomSource getRandomSource() {
     return random;
   }
@@ -217,6 +218,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
 
   /* Gets a fresh, unique sequence number for evidence */
+  @Override
   public long getEvidenceSeq() {
     if (nextEvidenceSeq < getTime()) {
       nextEvidenceSeq = getTime();
@@ -240,6 +242,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     }
   }
 
+  @Override
   public MessageRequestHandle<Handle, ByteBuffer> sendMessage(Handle target,
       ByteBuffer message,
       final MessageCallback<Handle, ByteBuffer> deliverAckToMe,
@@ -260,11 +263,13 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       ret.setSubCancellable(transport.sendMessage(target, msg,
           new MessageCallback<Handle, ByteBuffer>() {
 
+            @Override
             public void ack(MessageRequestHandle<Handle, ByteBuffer> msg) {
               if (deliverAckToMe != null)
                 deliverAckToMe.ack(ret);
             }
 
+            @Override
             public void sendFailed(
                 MessageRequestHandle<Handle, ByteBuffer> msg, Exception reason) {
               if (deliverAckToMe != null)
@@ -274,7 +279,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       return ret;
     }
 
-    assert(initialized);
+    assert initialized;
 
     /* The misbehavior hook of the C++ implementation (tampering with data for testing) is not ported */
 
@@ -285,6 +290,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
         deliverAckToMe, options);
   }
 
+  @Override
   public void setApp(PeerReviewCallback<Handle, Identifier> callback) {
     logger.info("setApp({})", callback);
     this.callback = callback;
@@ -293,13 +299,15 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   /**
    *
    */
+  @Override
   public void setCallback(TransportLayerCallback<Handle, ByteBuffer> callback) {
     setApp((PeerReviewCallback<Handle, Identifier>)callback);
   }
 
+  @Override
   public void messageReceived(Handle handle, ByteBuffer message, Map<String, Object> options) throws IOException {
 
-    assert(initialized);
+    assert initialized;
 
     if (infoStore.getStatus(identifierExtractor.extractIdentifier(handle)) == STATUS_EXPOSED) {
       logger.warn("Received a message from an exposed node {} -- ignoring", handle);
@@ -369,6 +377,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
    * new) authenticator and adds it to our local store if (a) it hasn't been
    * recorded before, and (b) its signature is valid.
    */
+  @Override
   public boolean addAuthenticatorIfValid(AuthenticatorStore<Identifier> store, Identifier subject, Authenticator auth) {
     // see if we can exit early
 
@@ -385,7 +394,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
      /* maybe the new authenticator is a forgery? Let's check the signature!
         If the signature doesn't check out, then we simply discard the 'authenticator' and
         move on. */
-     assert(transport.hasCertificate(subject));
+     assert transport.hasCertificate(subject);
 
      try {
        byte[] signedHash = transport.hash(auth.getPartToHashThenSign());
@@ -434,23 +443,28 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     }
   }
 
+  @Override
   public Cancellable requestCertificate(Handle source, Identifier certHolder, Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
     return transport.requestCertificate(source, certHolder, c, options);
   }
 
+  @Override
   public Cancellable requestCertificate(final Handle source, final Identifier certHolder) {
     return transport.requestCertificate(source, certHolder, new Continuation<X509Certificate, Exception>() {
 
+      @Override
       public void receiveException(Exception exception) {
         logger.warn("error receiving cert for {} from {}", certHolder, source, exception);
       }
 
+      @Override
       public void receiveResult(X509Certificate result) {
         notifyCertificateAvailable(certHolder);
       }
     }, null);
   }
 
+  @Override
   public void notifyCertificateAvailable(Identifier id) {
     commitmentProtocol.notifyCertificateAvailable(id);
     authPushProtocol.notifyCertificateAvailable(id);
@@ -506,6 +520,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     }
   }
 
+  @Override
   public void notifyStatusChange(final Identifier id, final int newStatus) {
     logger.atInfo().log(() -> "Status change: <"+id+"> becomes "+getStatusString(newStatus));
     challengeProtocol.notifyStatusChange(id, newStatus);
@@ -513,9 +528,11 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
     // let pr finish first
     env.getSelectorManager().schedule(new TimerTask() {
+      @Override
       public void run() {
         callback.notifyStatusChange(id, newStatus);
       }
+      @Override
       public String toString() {
         return "NotifyStatusChangeTask: "+id+"=>"+newStatus;
       }
@@ -523,6 +540,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   }
 
+  @Override
   public void init(String dirname) throws IOException {
     assert(callback != null);
     Path dir = Path.of(dirname);
@@ -589,6 +607,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       public void run() {
         doMaintenance();
       }
+      @Override
       public String toString() {
         return "DoMaintenanceTask";
       }
@@ -599,6 +618,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       public void run() {
         doAuthPush();
       }
+      @Override
       public String toString() {
         return "AuthPushTask";
       }
@@ -609,6 +629,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       public void run() {
         doCheckpoint();
       }
+      @Override
       public String toString() {
         return "CheckpointTask";
       }
@@ -623,58 +644,72 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     writeCheckpoint();
   }
 
+  @Override
   public PeerReviewCallback<Handle, Identifier> getApp() {
     return callback;
   }
 
+  @Override
   public SocketRequestHandle<Handle> openSocket(Handle i, SocketCallback<Handle> deliverSocketToMe, Map<String, Object> options) {
     return transport.openSocket(i, deliverSocketToMe, options);
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Handle> s) throws IOException {
     callback.incomingSocket(s);
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     transport.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     transport.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalId() {
     return identifierExtractor.extractIdentifier(transport.getLocalIdentifier());
   }
 
+  @Override
   public Handle getLocalHandle() {
     return transport.getLocalIdentifier();
   }
 
+  @Override
   public Handle getLocalIdentifier() {
     return transport.getLocalIdentifier();
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Handle> handler) {
 
   }
 
+  @Override
   public void destroy() {
     transport.destroy();
   }
 
+  @Override
   public AuthenticatorSerializer getAuthenticatorSerializer() {
     return authenticatorSerialilzer;
   }
 
+  @Override
   public Environment getEnvironment() {
     return env;
   }
 
+  @Override
   public Serializer<Identifier> getIdSerializer() {
     return idSerializer;
   }
 
+  @Override
   public long getTime() {
     return env.getTimeSource().currentTimeMillis();
   }
@@ -682,12 +717,14 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   /**
    * A helper function that extracts an authenticator from an incoming message and adds it to our local store.
    */
+  @Override
   public Authenticator extractAuthenticator(long seq, short entryType, byte[] entryHash, byte[] hTopMinusOne, byte[] signature) {
     byte[] hash = transport.hash(seq,entryType,hTopMinusOne, entryHash);
     Authenticator ret = new Authenticator(seq,hash,signature);
     return ret;
   }
 
+  @Override
   public Authenticator extractAuthenticator(Identifier id, long seq, short entryType, byte[] entryHash, byte[] hTopMinusOne, byte[] signature) {
 
     Authenticator ret = extractAuthenticator(seq, entryType, entryHash, hTopMinusOne, signature);
@@ -697,18 +734,22 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     return null;
   }
 
+  @Override
   public Serializer<Handle> getHandleSerializer() {
     return handleSerializer;
   }
 
+  @Override
   public int getHashSizeInBytes() {
     return transport.getHashSizeBytes();
   }
 
+  @Override
   public IdentifierExtractor<Handle, Identifier> getIdentifierExtractor() {
     return identifierExtractor;
   }
 
+  @Override
   public void challengeSuspectedNode(Handle handle) {
     challengeProtocol.challengeSuspectedNode(handle);
   }
@@ -717,6 +758,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
    * Called internally by other classes if they have found evidence against one of our peers.
    * We ask the EvidenceTransferProtocol to send it to the corresponding witness set.
    */
+  @Override
   public void sendEvidenceToWitnesses(Identifier subject, long evidenceSeq,
       Evidence evidence) {
     AccusationMessage<Identifier> accusation = new AccusationMessage<Identifier>(getLocalId(),subject,evidenceSeq,evidence);
@@ -727,12 +769,8 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   /**
    * Note, must include PEER_REVIEW_COMMIT and the type
-   *
-   * @param dest
-   * @param message
-   * @param deliverAckToMe
-   * @param options
    */
+  @Override
   public void transmit(Handle dest,
       PeerReviewMessage message,
       MessageCallback<Handle, ByteBuffer> deliverAckToMe,
@@ -752,60 +790,74 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     }
   }
 
+  @Override
   public boolean hasCertificate(Identifier id) {
     return transport.hasCertificate(id);
   }
 
+  @Override
   public byte[] sign(byte[] bytes) {
     return transport.sign(bytes);
   }
 
+  @Override
   public short getSignatureSizeBytes() {
     return transport.getSignatureSizeBytes();
   }
 
+  @Override
   public boolean verify(Identifier id, Authenticator auth) {
     byte[] signedHash = transport.hash(auth.getPartToHashThenSign());
     int result = transport.verify(id, signedHash, auth.getSignature());
     return result == SIGNATURE_OK;
   }
 
+  @Override
   public int verify(Identifier id, byte[] msg, byte[] signature) {
     return transport.verify(id, msg, signature);
   }
 
+  @Override
   public byte[] getEmptyHash() {
     return transport.getEmptyHash();
   }
 
+  @Override
   public short getHashSizeBytes() {
     return transport.getHashSizeBytes();
   }
 
+  @Override
   public byte[] hash(long seq, short type, byte[] nodeHash, byte[] contentHash) {
     return transport.hash(seq, type, nodeHash, contentHash);
   }
 
+  @Override
   public byte[] hash(ByteBuffer... hashMe) {
     return transport.hash(hashMe);
   }
 
+  @Override
   public EvidenceTool<Handle, Identifier> getEvidenceTool() {
     return evidenceTool;
   }
 
+  @Override
   public SecureHistoryFactory getHistoryFactory() {
     return historyFactory;
   }
 
+  @Override
   public VerifierFactory<Handle, Identifier> getVerifierFactory() {
     return verifierFactory;
   }
 
+  @Override
   public SecureHistory getHistory() {
     return history;
   }
 
+  @Override
   public long getTimeToleranceMillis() {
     return timeToleranceMillis;
   }

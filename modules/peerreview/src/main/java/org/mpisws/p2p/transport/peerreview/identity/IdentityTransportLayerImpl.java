@@ -103,12 +103,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
 
   /**
    * TODO: Use a param to load the store from a file.
-   * @param localId
-   * @param localCert
-   * @param iSerializer
-   * @param cSerializer
    * @param buf must be null: loading a persistent store is not implemented and throws
-   * @return
    */
   static <H, I> TableStore<I, X509Certificate> getTableStore(I localId, X509Certificate localCert, Serializer<I> iSerializer, X509Serializer cSerializer, InputBuffer buf) {
     MyStore<H, I> ret = new MyStore<H, I>();
@@ -161,16 +156,19 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   /**
    * CERT_REQUEST, int requestId, Identifier
    */
+  @Override
   public Cancellable requestCertificate(final Identifier source,
       final I principal, final Continuation<X509Certificate, Exception> c,
       Map<String, Object> options) {
     return super.requestValue(source, principal, c, options);
   }
 
+  @Override
   public boolean hasCertificate(I i) {
     return super.hasKey(i);
   }
 
+  @Override
   public byte[] sign(byte[] bytes) {
     try {
       signer.update(bytes);
@@ -184,6 +182,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     }
   }
 
+  @Override
   public int verify(I id, byte[] msg, byte[] signature) {
     logger.atTrace().log(() -> "Verify:"+id+" "+msg.length+" "+MathUtils.toBase64(msg)+" == "+signature.length+" "+MathUtils.toBase64(signature));
     Signature verifier = getVerifier(id);
@@ -205,8 +204,6 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   /**
    * Returns null if we don't know the cert for the identifier.
    *
-   * @param i
-   * @return
    * @throws RuntimeException if the verifier cannot be created from the certificate
    */
   public Signature getVerifier(I i) {
@@ -226,22 +223,27 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     return ret;
   }
 
+  @Override
   public short getSignatureSizeBytes() {
     return signatureSize;
   }
 
+  @Override
   public byte[] getEmptyHash() {
     return hasher.getEmptyHash();
   }
 
+  @Override
   public short getHashSizeBytes() {
     return hasher.getHashSizeBytes();
   }
 
+  @Override
   public byte[] hash(long seq, short type, byte[] nodeHash, byte[] contentHash) {
     return hasher.hash(seq, type, nodeHash, contentHash);
   }
 
+  @Override
   public byte[] hash(ByteBuffer... hashMe) {
     return hasher.hash(hashMe);
   }

@@ -67,6 +67,7 @@ public sealed abstract class Statement<Identifier extends RawSerializable> imple
     evidence = evSerializer.deserialize(buf, buf.readByte(),isResponse());
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     originator.serialize(buf);
     subject.serialize(buf);

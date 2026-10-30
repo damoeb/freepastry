@@ -132,6 +132,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
   /* If a node goes back to TRUSTED, we deliver all pending messages */
 
+  @Override
   public void notifyStatusChange(Identifier id, int newStatus) {
     switch (newStatus) {
     case STATUS_TRUSTED:
@@ -153,6 +154,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
   /**
    * Called when another node sends us a challenge. If the challenge is valid, we respond.
    */
+  @Override
   public void handleChallenge(Handle source, ChallengeMessage<Identifier> challenge, Map<String, Object> options) throws IOException {
     short type = challenge.getChallengeType();
     switch (type) {
@@ -452,8 +454,9 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
   /**
    *  Handle an incoming RESPONSE or ACCUSATION from another node
-   * @throws IOException */
+   */
 
+  @Override
   public void handleStatement(Handle source, PeerReviewMessage m, Map<String, Object> options) throws IOException {
     assert(m instanceof AccusationMessage || m instanceof ResponseMessage);
 
@@ -515,6 +518,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
   /**
    * Looks up the first unanswered challenge to a SUSPECTED node, and sends it to that node
    */
+  @Override
   public void challengeSuspectedNode(Handle target) {
 
     Identifier tIdentifier = peerreview.getIdentifierExtractor().extractIdentifier(target);
@@ -537,6 +541,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     }
   }
 
+  @Override
   public void handleIncomingMessage(Handle source, UserDataMessage<Handle> message, Map<String, Object> options) throws IOException {
     int status = infoStore.getStatus(peerreview.getIdentifierExtractor().extractIdentifier(source));
     switch (status) {

@@ -64,6 +64,7 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
    * bytes for each entry. Note that the caller must specify the node hash and the sequence
    * number of the first log entry, which forms the base of the hash chain.
    */
+  @Override
   public SecureHistory create(String name, long baseSeq, byte[] baseHash) throws IOException {
     RandomAccessFileIOBuffer indexFile, dataFile;
 
@@ -109,6 +110,7 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
    *  'w' (read/write).
    */
 
+  @Override
   public SecureHistory open(String name, String mode) throws IOException {
     boolean readOnly = false;
 
@@ -149,6 +151,7 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
     return makeSecureHistory(indexFile, dataFile, readOnly, hashProv, this, environment.getLogManager().getLogger(SecureHistoryImpl.class, name));
   }
 
+  @Override
   public IndexEntry build(InputBuffer buf) throws IOException {
     long seq = buf.readLong();
     long fileIndex = buf.readLong();
@@ -161,10 +164,12 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
     return new IndexEntry(seq, fileIndex, type, sizeInFile, contentHash, nodeHash);
   }
 
+  @Override
   public int getSerializedSize() {
     return 8+8+4+2+hashProv.getHashSizeBytes()*2;
   }
 
+  @Override
   public SecureHistory createTemp(long baseSeq, byte[] baseHash)
       throws IOException {
     // temporary histories go to the temp directory, not the working directory, and are deleted when the JVM exits

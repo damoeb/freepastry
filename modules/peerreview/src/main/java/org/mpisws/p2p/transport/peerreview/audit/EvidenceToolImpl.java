@@ -109,6 +109,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
    * if the former doesn't hold, it returns INVALID
    * if the latter doesn't hold, it returns CERT_MISSING, and returns the nodeID of the node whose certificate we need to request
    */
+  @Override
   public Tuple<Integer, Identifier> checkSnippet(LogSnippet snippet) {
     for (SnippetEntry entry : snippet.getEntries()) {
       if (entry.isHash() && entry.getType() != EVT_CHECKPOINT && entry.getType() != EVT_SENDSIGN && entry.getType() != EVT_SEND) {
@@ -185,6 +186,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
    * the corresponding witnesses, and it delivers any new messages to the local
    * node that may be in the snippet (e.g. after an investigation)
    */
+  @Override
   public boolean checkSnippetSignatures(LogSnippet snippet,
       Handle subjectHandle, AuthenticatorStore<Identifier> authStoreOrNull,
       byte flags, CommitmentProtocol<Handle, Identifier> commitmentProtocol,
@@ -336,7 +338,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
                  have previously delivered that message. If not, we deliver it now. */
 
               if (commitmentProtocol != null && (flags & FLAG_FULL_MESSAGES_SENDER) == FLAG_FULL_MESSAGES_SENDER) {
-                assert(!sendWasHashed);
+                assert !sendWasHashed;
                 EvtSend<Identifier> evtSend = new EvtSend<Identifier>(new SimpleInputBuffer(lastEntry.getContent()),idSerializer,hashSize);
                 Identifier dest = evtSend.getReceiverId();
                 if (dest.equals(peerreview.getLocalId())) {

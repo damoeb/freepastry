@@ -58,6 +58,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  */
 public record ChallengeMessage<Identifier extends RawSerializable>(Identifier originator, long evidenceSeq, Evidence challenge) implements PeerReviewMessage {
 
+  @Override
   public short getType() {
     return PeerReviewMessageType.CHALLENGE.id();
   }
@@ -74,6 +75,7 @@ public record ChallengeMessage<Identifier extends RawSerializable>(Identifier or
     this(originator, evidenceSeq, challenge);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     originator.serialize(buf);
     buf.writeLong(evidenceSeq);

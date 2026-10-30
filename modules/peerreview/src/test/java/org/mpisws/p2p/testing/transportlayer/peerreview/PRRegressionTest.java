@@ -104,6 +104,7 @@ public class PRRegressionTest {
   public static final byte[] EMPTY_ARRAY = new byte[0];
   static class IdExtractor implements IdentifierExtractor<HandleImpl, IdImpl> {
 
+    @Override
     public IdImpl extractIdentifier(HandleImpl h) {
       return h.id;
     }
@@ -112,10 +113,12 @@ public class PRRegressionTest {
 
   static class HandleSerializer implements Serializer<HandleImpl> {
 
+    @Override
     public HandleImpl deserialize(InputBuffer buf) throws IOException {
       return HandleImpl.build(buf);
     }
 
+    @Override
     public void serialize(HandleImpl i, OutputBuffer buf) throws IOException {
       i.serialize(buf);
     }
@@ -124,10 +127,12 @@ public class PRRegressionTest {
 
   static class IdSerializer implements Serializer<IdImpl> {
 
+    @Override
     public IdImpl deserialize(InputBuffer buf) throws IOException {
       return IdImpl.build(buf);
     }
 
+    @Override
     public void serialize(IdImpl i, OutputBuffer buf) throws IOException {
       i.serialize(buf);
     }
@@ -143,6 +148,7 @@ public class PRRegressionTest {
       this.id = id;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       buf.writeUTF(name);
       id.serialize(buf);
@@ -152,14 +158,17 @@ public class PRRegressionTest {
       return new HandleImpl(buf.readUTF(), IdImpl.build(buf));
     }
 
+    @Override
     public String toString() {
       return "HandleImpl<"+name+">";
     }
 
+    @Override
     public int hashCode() {
       return id.hashCode()^name.hashCode();
     }
 
+    @Override
     public boolean equals(Object o) {
       HandleImpl that = (HandleImpl)o;
       if (!id.equals(that.id)) return false;
@@ -172,6 +181,7 @@ public class PRRegressionTest {
     public IdImpl(int id) {
       this.id = id;
     }
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       buf.writeInt(id);
     }
@@ -180,14 +190,17 @@ public class PRRegressionTest {
       return new IdImpl(buf.readInt());
     }
 
+    @Override
     public String toString() {
       return "Id<"+id+">";
     }
 
+    @Override
     public int hashCode() {
       return id;
     }
 
+    @Override
     public boolean equals(Object o) {
       IdImpl that = (IdImpl)o;
       return (this.id == that.id);
@@ -211,24 +224,29 @@ public class PRRegressionTest {
       this.env = env;
     }
 
+    @Override
     public void acceptMessages(boolean b) {
       throw new RuntimeException("implement");
     }
 
+    @Override
     public void acceptSockets(boolean b) {
       throw new RuntimeException("implement");
     }
 
+    @Override
     public HandleImpl getLocalIdentifier() {
       return localIdentifier;
     }
 
+    @Override
     public SocketRequestHandle<HandleImpl> openSocket(HandleImpl i,
         SocketCallback<HandleImpl> deliverSocketToMe,
         Map<String, Object> options) {
       throw new RuntimeException("implement");
     }
 
+    @Override
     public MessageRequestHandle<HandleImpl, ByteBuffer> sendMessage(
         HandleImpl i, ByteBuffer m,
         MessageCallback<HandleImpl, ByteBuffer> deliverAckToMe,
@@ -250,15 +268,18 @@ public class PRRegressionTest {
       });
     }
 
+    @Override
     public void setCallback(
         TransportLayerCallback<HandleImpl, ByteBuffer> callback) {
       this.callback = callback;
     }
 
+    @Override
     public void setErrorHandler(ErrorHandler<HandleImpl> handler) {
       throw new RuntimeException("implement");
     }
 
+    @Override
     public void destroy() {
       throw new RuntimeException("implement");
     }
@@ -287,6 +308,7 @@ public class PRRegressionTest {
     }
 
 
+    @Override
     public void init() {
       rand = new Random();
       if (player.localHandle.id.id == 1) {
@@ -303,6 +325,7 @@ public class PRRegressionTest {
       nextSendTime = time;
       logger.debug("scheduling message to be sent at:{}", time);
       env.getSelectorManager().schedule(new TimerTask() {
+        @Override
         public String toString() {
           return "SendMessageTask "+scheduledExecutionTime();
         }
@@ -322,11 +345,13 @@ public class PRRegressionTest {
       try {
       tl.sendMessage(dest, ByteBuffer.wrap(msg), new MessageCallback<HandleImpl, ByteBuffer>() {
 
+        @Override
         public void sendFailed(MessageRequestHandle<HandleImpl, ByteBuffer> msg,
             Exception reason) {
           logger.info("sendFailed({})", msg);
         }
 
+        @Override
         public void ack(MessageRequestHandle<HandleImpl, ByteBuffer> msg) {
           logger.debug("ack({}) {}", msg, Thread.currentThread());
         }
@@ -344,6 +369,7 @@ public class PRRegressionTest {
       return msg;
     }
 
+    @Override
     public void storeCheckpoint(OutputBuffer buffer) throws IOException {
       logger.trace("storeCheckpoint {}", nextSendTime);
       buffer.writeInt(31173);
@@ -357,6 +383,7 @@ public class PRRegressionTest {
       logger.atTrace().log(() -> "storeCheckpoint:"+Arrays.toString(((SimpleOutputBuffer)buffer).getBytes()));
     }
 
+    @Override
     public boolean loadCheckpoint(InputBuffer buffer) throws IOException {
       if (buffer.readInt() != 31173) throw new RuntimeException("invalid checkpoint");
       nextSendTime = buffer.readLong();
@@ -371,10 +398,12 @@ public class PRRegressionTest {
       return true;
     }
 
+    @Override
     public void destroy() {
       throw new RuntimeException("implement");
     }
 
+    @Override
     public void notifyCertificateAvailable(IdImpl id) {
       throw new RuntimeException("implement");
     }
@@ -387,20 +416,24 @@ public class PRRegressionTest {
       throw new RuntimeException("implement");
     }
 
+    @Override
     public void incomingSocket(P2PSocket<HandleImpl> s) throws IOException {
       throw new RuntimeException("implement");
     }
 
+    @Override
     public void messageReceived(HandleImpl i, ByteBuffer m,
         Map<String, Object> options) throws IOException {
       logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(m.array()));
     }
 
+    @Override
     public void getWitnesses(IdImpl subject,
         WitnessListener<HandleImpl, IdImpl> callback) {
       callback.notifyWitnessSet(subject, Collections.singletonList(carol.localHandle));
     }
 
+    @Override
     public void notifyStatusChange(
         IdImpl id,
         int newStatus) {
@@ -413,10 +446,12 @@ public class PRRegressionTest {
       addStatusNotification(this.player.localHandle,id,newStatus);
     }
 
+    @Override
     public Collection<HandleImpl> getMyWitnessedNodes() {
       return player.witnessed;
     }
 
+    @Override
     public PeerReviewCallback<HandleImpl, IdImpl> getReplayInstance(Verifier<HandleImpl> v) {
       BogusApp ret = new BogusApp(playerTable.get(v.getLocalIdentifier()),v,v.getEnvironment());
       return ret;
@@ -532,10 +567,12 @@ public class PRRegressionTest {
   public IdStrTranslator<IdImpl> getIdStrTranslator() {
     return new IdStrTranslator<IdImpl>(){
 
+      @Override
       public IdImpl readIdentifierFromString(String s) {
         return new IdImpl(Integer.parseInt(s));
       }
 
+      @Override
       public String toString(IdImpl id) {
         return Integer.toString(id.id);
       }};
@@ -556,11 +593,13 @@ public class PRRegressionTest {
         final Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
       return idTLTable.get(source).requestValue(source, certHolder, new Continuation<X509Certificate, Exception>() {
 
+        @Override
         public void receiveResult(X509Certificate result) {
           knownValues.put(certHolder, result);
           if (c != null) c.receiveResult(result);
         }
 
+        @Override
         public void receiveException(Exception exception) {
           if (c != null) c.receiveException(exception);
         }
@@ -705,7 +744,6 @@ public class PRRegressionTest {
 
   /**
    * @param millisToFinish Call finish() after this amount of time
-   * @throws Exception
    */
   public PRRegressionTest(int millisToFinish) throws Exception {
     this(millisToFinish, new File("."));
@@ -714,7 +752,6 @@ public class PRRegressionTest {
   /**
    * @param millisToFinish Call finish() after this amount of time
    * @param dir the directory for the nodes' PeerReview files
-   * @throws Exception
    */
   public PRRegressionTest(int millisToFinish, File dir) throws Exception {
     this.dir = dir;

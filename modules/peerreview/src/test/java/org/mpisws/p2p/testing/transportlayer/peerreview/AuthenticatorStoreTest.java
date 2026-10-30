@@ -149,26 +149,32 @@ public class AuthenticatorStoreTest {
       this.aSer = aSer;
     }
 
+    @Override
     public Serializer<MyInetSocketAddress> getIdSerializer() {
       return MyInetSocketAddress.serializer;
     }
 
+    @Override
     public Environment getEnvironment() {
       return env;
     }
 
+    @Override
     public AuthenticatorSerializer getAuthenticatorSerializer() {
       return aSer;
     }
 
+    @Override
     public long getTime() {
       return env.getTimeSource().currentTimeMillis();
     }
 
+    @Override
     public Serializer<MyInetSocketAddress> getHandleSerializer() {
       return null;
     }
 
+    @Override
     public int getHashSizeInBytes() {
       return 0;
     }
@@ -177,56 +183,68 @@ public class AuthenticatorStoreTest {
       return 0;
     }
 
+    @Override
     public IdentifierExtractor<MyInetSocketAddress, MyInetSocketAddress> getIdentifierExtractor() {
       return null;
     }
 
+    @Override
     public Authenticator extractAuthenticator(MyInetSocketAddress id, long seq,
         short entryType, byte[] entryHash, byte[] topMinusOne, byte[] signature) {
       return null;
     }
 
+    @Override
     public void challengeSuspectedNode(MyInetSocketAddress h) {
 
     }
 
+    @Override
     public long getEvidenceSeq() {
       return 0;
     }
 
+    @Override
     public void sendEvidenceToWitnesses(MyInetSocketAddress subject,
         long timestamp, Evidence evidence) {
 
     }
 
+    @Override
     public void notifyCertificateAvailable(MyInetSocketAddress id) {
 
     }
 
+    @Override
     public void incomingSocket(P2PSocket<MyInetSocketAddress> s)
         throws IOException {
 
     }
 
+    @Override
     public void messageReceived(MyInetSocketAddress i, ByteBuffer m,
         Map<String, Object> options) throws IOException {
 
     }
 
+    @Override
     public boolean hasCertificate(MyInetSocketAddress id) {
       return false;
     }
 
+    @Override
     public Cancellable requestCertificate(MyInetSocketAddress source,
         MyInetSocketAddress certHolder,
         Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
       return null;
     }
 
+    @Override
     public byte[] sign(byte[] bytes) {
       return null;
     }
 
+    @Override
     public short getSignatureSizeBytes() {
       return 0;
     }
@@ -238,18 +256,22 @@ public class AuthenticatorStoreTest {
 
     }
 
+    @Override
     public void acceptMessages(boolean b) {
 
     }
 
+    @Override
     public void acceptSockets(boolean b) {
 
     }
 
+    @Override
     public MyInetSocketAddress getLocalIdentifier() {
       return null;
     }
 
+    @Override
     public SocketRequestHandle<MyInetSocketAddress> openSocket(
         MyInetSocketAddress i,
         SocketCallback<MyInetSocketAddress> deliverSocketToMe,
@@ -257,6 +279,7 @@ public class AuthenticatorStoreTest {
       return null;
     }
 
+    @Override
     public MessageRequestHandle<MyInetSocketAddress, ByteBuffer> sendMessage(
         MyInetSocketAddress i, ByteBuffer m,
         MessageCallback<MyInetSocketAddress, ByteBuffer> deliverAckToMe,
@@ -264,35 +287,43 @@ public class AuthenticatorStoreTest {
       return null;
     }
 
+    @Override
     public void setCallback(
         TransportLayerCallback<MyInetSocketAddress, ByteBuffer> callback) {
 
     }
 
+    @Override
     public void setErrorHandler(ErrorHandler<MyInetSocketAddress> handler) {
 
     }
 
+    @Override
     public void destroy() {
 
     }
 
+    @Override
     public byte[] getEmptyHash() {
       return null;
     }
 
+    @Override
     public short getHashSizeBytes() {
       return 0;
     }
 
+    @Override
     public byte[] hash(long seq, short type, byte[] nodeHash, byte[] contentHash) {
       return null;
     }
 
+    @Override
     public byte[] hash(ByteBuffer... hashMe) {
       return null;
     }
 
+    @Override
     public PeerReviewCallback<MyInetSocketAddress, MyInetSocketAddress> getApp() {
       return null;
     }
@@ -302,73 +333,89 @@ public class AuthenticatorStoreTest {
       return SIGNATURE_BAD;
     }
 
+    @Override
     public boolean addAuthenticatorIfValid(
         AuthenticatorStore<MyInetSocketAddress> store,
         MyInetSocketAddress subject, Authenticator auth) {
       return false;
     }
 
+    @Override
     public void transmit(
         MyInetSocketAddress dest, PeerReviewMessage message,
         MessageCallback<MyInetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
     }
 
+    @Override
     public EvidenceTool<MyInetSocketAddress, MyInetSocketAddress> getEvidenceTool() {
       return null;
     }
 
+    @Override
     public MyInetSocketAddress getLocalId() {
       return null;
     }
 
+    @Override
     public boolean verify(MyInetSocketAddress subject, Authenticator auth) {
       return false;
     }
 
+    @Override
     public MyInetSocketAddress getLocalHandle() {
       return null;
     }
 
+    @Override
     public RandomSource getRandomSource() {
       return null;
     }
 
+    @Override
     public SecureHistoryFactory getHistoryFactory() {
       return null;
     }
 
+    @Override
     public VerifierFactory<MyInetSocketAddress, MyInetSocketAddress> getVerifierFactory() {
       return null;
     }
 
+    @Override
     public void init(String dirname) throws IOException {
 
     }
 
+    @Override
     public void setApp(
         PeerReviewCallback<MyInetSocketAddress, MyInetSocketAddress> callback) {
 
     }
 
+    @Override
     public Cancellable requestCertificate(MyInetSocketAddress source,
         MyInetSocketAddress certHolder) {
       return null;
     }
 
+    @Override
     public SecureHistory getHistory() {
       return null;
     }
 
+    @Override
     public long getTimeToleranceMillis() {
       return 0;
     }
 
+    @Override
     public Authenticator extractAuthenticator(long seq, short entryType,
         byte[] entryHash, byte[] topMinusOne, byte[] signature) {
       return null;
     }
 
+    @Override
     public int verify(MyInetSocketAddress id, byte[] msg, byte[] signature) {
       return 0;
     }

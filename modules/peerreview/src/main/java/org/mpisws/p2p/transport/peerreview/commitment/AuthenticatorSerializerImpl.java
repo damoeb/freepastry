@@ -50,6 +50,7 @@ public class AuthenticatorSerializerImpl implements AuthenticatorSerializer {
     this.signatureLength = signatureLength;
   }
 
+  @Override
   public Authenticator deserialize(InputBuffer buf) throws IOException {
     return new Authenticator(buf,hashLength,signatureLength);
   }

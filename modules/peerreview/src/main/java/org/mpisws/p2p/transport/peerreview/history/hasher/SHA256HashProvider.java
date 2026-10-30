@@ -53,14 +53,17 @@ public class SHA256HashProvider implements HashProvider {
   public SHA256HashProvider() {
   }
 
+  @Override
   public byte[] getEmptyHash() {
     return new byte[getHashSizeBytes()];
   }
 
+  @Override
   public short getHashSizeBytes() {
     return HashUtils.LENGTH;
   }
 
+  @Override
   public synchronized byte[] hash(long seq, short type, byte[] nodeHash, byte[] contentHash) {
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -74,6 +77,7 @@ public class SHA256HashProvider implements HashProvider {
     }
   }
 
+  @Override
   public synchronized byte[] hash(ByteBuffer... hashMe) {
 
     for (ByteBuffer bb : hashMe) {

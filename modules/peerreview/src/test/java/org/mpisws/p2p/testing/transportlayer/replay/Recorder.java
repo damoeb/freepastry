@@ -249,6 +249,7 @@ public class Recorder implements MyEvents {
 
     public abstract void doIt() throws IOException;
 
+    @Override
     public void run() {
       try {
         doIt();

@@ -93,6 +93,7 @@ public class Replayer implements MyEvents, EventCallback {
 
 
     SocketPastryNodeFactory factory = new SocketPastryNodeFactory(new NodeIdFactory() {
+      @Override
       public Id generateNodeId() {
         return id;
       }
@@ -164,9 +165,6 @@ public class Replayer implements MyEvents, EventCallback {
     BasicEntryDeserializer.printLog(arg, new MyEntryDeserializer(new InetSocketAddressSerializer()), env);
   }
 
-  /**
-   * @param args
-   */
   public static void main(String[] args) throws Exception {
     String hex = args[0];
     InetAddress a = InetAddress.getByName(args[1]);
@@ -181,6 +179,7 @@ public class Replayer implements MyEvents, EventCallback {
 
   }
 
+  @Override
   public void replayEvent(short type, InputBuffer entry) {
     logger.debug("replayEvent({})", type);
     switch (type) {

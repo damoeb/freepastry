@@ -97,14 +97,17 @@ public class SecureHistoryImpl implements SecureHistory {
     this.hashProv = hashProv;
   }
 
+  @Override
   public long getBaseSeq() {
     return baseSeq;
   }
 
+  @Override
   public long getLastSeq() {
     return topEntry.seq;
   }
 
+  @Override
   public long getNumEntries() {
     return numEntries;
   }
@@ -112,6 +115,7 @@ public class SecureHistoryImpl implements SecureHistory {
   /**
    *  Returns the node hash and the sequence number of the most recent log entry
    */
+  @Override
   public HashSeq getTopLevelEntry() {
     return new HashSeq(topEntry.nodeHash, topEntry.seq);
   }
@@ -121,6 +125,7 @@ public class SecureHistoryImpl implements SecureHistory {
    * entry is stored. If 'header' is not NULL, the log entry is formed by concatenating
    * 'header' and 'entry'; otherwise, only 'entry' is used.
    */
+  @Override
   public void appendEntry(short type, boolean storeFullEntry, ByteBuffer ... entry) throws IOException {
     assert(indexFile != null && dataFile != null);
     logger.atTrace().log(() -> "appendEntry("+type+","+storeFullEntry+","+entry.length+","+entry[0].remaining()+"):"+nextSeq);
@@ -179,6 +184,7 @@ public class SecureHistoryImpl implements SecureHistory {
    * the content type, sequence number, and hash values. No entry is made in
    * the data file.
    */
+  @Override
   public void appendHash(short type, byte[] hash) throws IOException {
     assert(indexFile != null && dataFile != null);
 
@@ -212,6 +218,7 @@ public class SecureHistoryImpl implements SecureHistory {
    * and Y a sequence number. The sequence numbers need not be contiguous
    * (and usually aren't)
    */
+  @Override
   public boolean setNextSeq(long nextSeq) {
     if (nextSeq < this.nextSeq) return false;
 
@@ -222,6 +229,7 @@ public class SecureHistoryImpl implements SecureHistory {
   /**
    * The destructor.  Closes the file handles.
    */
+  @Override
   public void close() throws IOException {
     assert(indexFile != null && dataFile != null);
     if (logger.isDebugEnabled()) logger.debug("{}.close()", this, new Exception("Stack Trace"));
@@ -232,6 +240,7 @@ public class SecureHistoryImpl implements SecureHistory {
     dataFile = null;
   }
 
+  @Override
   public long findSeq(long seq) throws IOException {
     return findSeqOrHigher(seq, false);
   }
@@ -305,6 +314,7 @@ public class SecureHistoryImpl implements SecureHistory {
    * Note that the idxFrom and idxTo arguments are record numbers, NOT sequence numbers.
    * Use findSeqOrHigher() to get these if only sequence numbers are known.
    */
+  @Override
   public LogSnippet serializeRange(long idxFrom, long idxTo, HashPolicy hashPolicy) throws IOException {
     assert((0 < idxFrom) && (idxFrom <= idxTo) && (idxTo < numEntries));
 
@@ -363,6 +373,7 @@ public class SecureHistoryImpl implements SecureHistory {
    *
    *  @param idx the index you are interested in
    */
+  @Override
   public IndexEntry statEntry(long idx) throws IOException {
     if ((idx < 0) || (idx >= numEntries))
       return null;
@@ -379,10 +390,12 @@ public class SecureHistoryImpl implements SecureHistory {
   /**
    *  Get the content of a log entry, specified by its record number
    */
+  @Override
   public byte[] getEntry(long idx, int maxSizeToRead) throws IOException {
     return getEntry(statEntry(idx), maxSizeToRead);
   }
 
+  @Override
   public byte[] getEntry(IndexEntry ie, int maxSizeToRead) throws IOException {
     if (ie == null) return null;
 
@@ -406,6 +419,7 @@ public class SecureHistoryImpl implements SecureHistory {
    * If the log already contains an entry in 'hashed' form and we learn the actual
    * contents later, this function is called.
    */
+  @Override
   public boolean upgradeHashedEntry(int idx, ByteBuffer entry) throws IOException {
     if (readOnly)
       throw new IllegalStateException("Cannot upgrade hashed entry in readonly history");
@@ -442,6 +456,7 @@ public class SecureHistoryImpl implements SecureHistory {
    * Find the most recent entry whose type is in the specified set. Useful e.g. for
    * locating the last CHECKPOINT or INIT entry.
    */
+  @Override
   public long findLastEntry(short[] types, long maxSeq) throws IOException {
     long maxIdx = findSeqOrHigher(Math.min(maxSeq, topEntry.seq), true);
     long currentIdx = maxIdx;
@@ -460,6 +475,7 @@ public class SecureHistoryImpl implements SecureHistory {
     return -1;
   }
 
+  @Override
   public void appendSnippetToHistory(LogSnippet snippet) throws IOException {
     for (SnippetEntry sEntry : snippet.getEntries()) {
 

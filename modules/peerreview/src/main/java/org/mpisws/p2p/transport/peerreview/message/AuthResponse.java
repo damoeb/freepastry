@@ -52,11 +52,10 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
   authenticator a2           // most recent authenticator
 
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public record AuthResponse<Identifier extends RawSerializable>(Identifier subject, Authenticator authFrom, Authenticator authTo) implements PeerReviewMessage {
 
+  @Override
   public short getType() {
     return PeerReviewMessageType.AUTHRESP.id();
   }
@@ -68,6 +67,7 @@ public record AuthResponse<Identifier extends RawSerializable>(Identifier subjec
     this(subject, authFrom, authTo);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     subject.serialize(buf);
     authFrom.serialize(buf);

@@ -56,8 +56,6 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
   data payload   - or -  relevantPayload, hash
 
  * @author Jeff Hoye
- *
- * @param <Handle>
  */
 public class EvtRecv<Handle extends RawSerializable> extends HistoryEvent {
   Handle senderHandle;
@@ -95,6 +93,7 @@ public class EvtRecv<Handle extends RawSerializable> extends HistoryEvent {
     }
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     senderHandle.serialize(buf);
     buf.writeLong(senderSeq);

@@ -53,6 +53,7 @@ public class VerifierFactoryImpl<Handle extends RawSerializable, Identifier exte
     this.peerreview = peerreview;
   }
 
+  @Override
   public Verifier<Handle> getVerifier(SecureHistory history,
       Handle localHandle, long firstEntryToReplay, long initialTime,
       Object extInfo) throws IOException {

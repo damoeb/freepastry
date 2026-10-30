@@ -57,6 +57,7 @@ public class EvtSign extends HistoryEvent {
     buf.read(signature);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.write(hTopMinusOne, 0, hTopMinusOne.length);
     buf.write(signature, 0, signature.length);

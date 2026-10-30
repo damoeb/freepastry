@@ -100,16 +100,19 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
   /* Start an authenticator push. We begin by determining the witness sets of all the nodes
   for which we have authenticators. */
 
+  @Override
   public void push() {
     logger.debug("Authenticator push initiated with {} subjects", authOutStore.getNumSubjects());
 
     evidenceTransferProtocol.requestWitnesses(authOutStore.getSubjects(),
         new Continuation<Map<Identifier,Collection<Handle>>, Exception>() {
 
+          @Override
           public void receiveException(Exception exception) {
             logger.warn("Error requesting witnesses {}", authOutStore.getSubjects(), exception);
           }
 
+          @Override
           public void receiveResult(Map<Identifier, Collection<Handle>> result) {
             continuePush(result);
           }
@@ -172,9 +175,6 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
 
   /**
    * TODO: make this use udp, or smaller AuthPushMessages
-   *
-   * @param h
-   * @param authenticators
    */
   protected void sendAuthenticators(Handle h, Map<Identifier, List<Authenticator>> authenticators) throws IOException {
     if (probabilistic) {
@@ -217,6 +217,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
    * the certificate from the sender, otherwise we check the auths' signatures
    * and put them into the authInStore.
    */
+  @Override
   public void handleIncomingAuthenticators(Handle source, AuthPushMessage<Identifier> msg) {
     logger.info("Received authenticators from {}", source);
     for (Entry<Identifier, List<Authenticator>> e : msg.authenticators().entrySet()) {
@@ -241,6 +242,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
    * When we receive a new certificate, we may be able to check some more
    * signatures on auths in the authPendingStore
    */
+  @Override
   public void notifyCertificateAvailable(Identifier id) {
     int numAuths = authPendingStore.numAuthenticatorsFor(id);
     if (numAuths > 0) {

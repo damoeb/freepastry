@@ -54,6 +54,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  */
 public record AuthRequest<Identifier extends RawSerializable>(long timestamp, Identifier subject) implements PeerReviewMessage {
 
+  @Override
   public short getType() {
     return PeerReviewMessageType.AUTHREQ.id();
   }
@@ -64,6 +65,7 @@ public record AuthRequest<Identifier extends RawSerializable>(long timestamp, Id
     this(timestamp, subject);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeLong(timestamp);
     subject.serialize(buf);

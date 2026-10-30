@@ -195,7 +195,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
 
   @SuppressWarnings("unchecked")
   public void makeProgressOnStatement(IncompleteStatementInfo<Handle, Identifier> idx) {
-    assert(!idx.isFinished());
+    assert !idx.isFinished();
 
     /* Fetch the statement and reset all the 'missing' fields */
 

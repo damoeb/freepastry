@@ -142,6 +142,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    */
   protected void initReceiveCache() throws IOException {
     receiveCache = new LinkedHashMap<ReceiveKey<Identifier>, ReceiveInfo<Identifier>>(RECEIVE_CACHE_SIZE, 0.75f, true) {
+      @Override
       protected boolean removeEldestEntry(Map.Entry<ReceiveKey<Identifier>, ReceiveInfo<Identifier>> eldest) {
         return size() > RECEIVE_CACHE_SIZE;
       }
@@ -173,6 +174,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     return ret;
   }
 
+  @Override
   public void notifyCertificateAvailable(Identifier id) {
     makeProgress(id);
   }
@@ -183,6 +185,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    * If not, it adds the message to the log.
    * @return The ack message and whether it was already logged.
    */
+  @Override
   public Tuple<AckMessage<Identifier>,Boolean> logMessageIfNew(UserDataMessage<Handle> udm) {
     try {
       boolean loggedPreviously; // part of the return statement
@@ -249,6 +252,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     }
   }
 
+  @Override
   public void notifyStatusChange(Identifier id, int newStatus) {
     makeProgressAllPeers();
   }
@@ -420,6 +424,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
   /**
    * Handle an incoming USERDATA message
    */
+  @Override
   public void handleIncomingMessage(Handle source, UserDataMessage<Handle> msg, Map<String, Object> options) throws IOException {
 
     /* Check whether the timestamp (in the sequence number) is close enough to our local time.
@@ -441,6 +446,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     makeProgress(peerreview.getIdentifierExtractor().extractIdentifier(source));
   }
 
+  @Override
   public MessageRequestHandle<Handle, ByteBuffer> handleOutgoingMessage(
       final Handle target, final ByteBuffer message,
       MessageCallback<Handle, ByteBuffer> deliverAckToMe,
@@ -513,6 +519,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
   }
   /* This is called if we receive an acknowledgment from another node */
 
+  @Override
   public void handleIncomingAck(Handle source, AckMessage<Identifier> ackMessage, Map<String, Object> options) throws IOException {
 
     /* Acknowledgment: Log it (if we don't have it already) and send the next message, if any */

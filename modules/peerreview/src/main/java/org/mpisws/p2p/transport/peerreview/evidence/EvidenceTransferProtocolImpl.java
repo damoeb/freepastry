@@ -90,6 +90,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    *
    *  2) Try to fill in any pending queries, (there is usually only going to be 1 or zero)
    */
+  @Override
   public void notifyWitnessSet(Identifier subject, Collection<Handle> witnesses) {
 
     /* Create a cache entry, if necessary */
@@ -128,6 +129,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    * first
    */
 
+  @Override
   public void sendMessageToWitnesses(Identifier subject, PeerReviewMessage message,
       MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
@@ -147,6 +149,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   }
 
   /* Requests witness sets for several nodes */
+  @Override
   public void requestWitnesses(Collection<Identifier> subjectList, Continuation<Map<Identifier,Collection<Handle>>, Exception> c) {
     new QueryInfo(subjectList,c);
   }
@@ -157,9 +160,6 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    * Often requestWitnesses() is called next
    *
    * If it returns null, then notifyWitnessSet() will be called later
-   *
-   * @param subject
-   * @return
    */
   protected Collection<Handle> getWitnesses(Identifier subject) {
     CacheInfo foo = witnessCache.get(subject);
@@ -171,7 +171,6 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
 
   /**
    * Only call me if there isn't already a valid witness set
-   * @param subject
    */
   protected void requestWitnesses(Identifier subject) {
     CacheInfo foo = witnessCache.get(subject);
@@ -292,6 +291,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    * of misbehavior. We send back an ACCUSATION message that contains the
    * evidence.
    */
+  @Override
   public void sendEvidence(Handle target, Identifier subject) {
     logger.trace("sendEvidence({}, subject={})", target, subject);
 

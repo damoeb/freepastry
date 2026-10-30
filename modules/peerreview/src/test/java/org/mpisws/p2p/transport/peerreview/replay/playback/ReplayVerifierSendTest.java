@@ -77,10 +77,12 @@ public class ReplayVerifierSendTest {
   static final byte[] MESSAGE = {10, 11, 12, 13, 14, 15, 16, 17};
 
   static final Serializer<Integer> SERIALIZER = new Serializer<Integer>() {
+    @Override
     public void serialize(Integer i, OutputBuffer buf) throws IOException {
       buf.writeInt(i);
     }
 
+    @Override
     public Integer deserialize(InputBuffer buf) throws IOException {
       return buf.readInt();
     }
@@ -93,56 +95,70 @@ public class ReplayVerifierSendTest {
           LoggerFactory.getLogger(SendVerifier.class));
     }
 
+    @Override
     protected void receive(Integer from, ByteBuffer msg) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     protected void incomingSocket(Integer from, int socketId) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     protected void socketIO(int socketId, boolean canRead, boolean canWrite) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     protected void socketOpened(int socketId) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     protected void socketException(int socketId, IOException ioe) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public Environment getEnvironment() {
       return null;
     }
 
+    @Override
     public SocketRequestHandle<Integer> openSocket(Integer i, SocketCallback<Integer> deliverSocketToMe,
         Map<String, Object> options) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public MessageRequestHandle<Integer, ByteBuffer> sendMessage(Integer i, ByteBuffer m,
         MessageCallback<Integer, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public Integer getLocalIdentifier() {
       return localHandle;
     }
 
+    @Override
     public void setCallback(TransportLayerCallback<Integer, ByteBuffer> callback) {
     }
 
+    @Override
     public void setErrorHandler(ErrorHandler<Integer> handler) {
     }
 
+    @Override
     public void destroy() {
     }
 
+    @Override
     public void acceptMessages(boolean b) {
     }
 
+    @Override
     public void acceptSockets(boolean b) {
     }
   }

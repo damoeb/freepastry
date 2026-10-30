@@ -323,7 +323,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
   protected void startAuditTimer() {
     long now = peerreview.getTime();
-    long nextTimeout = lastAuditStarted + (long)((AUDIT_JITTER_MIN_PERMILLE+(peerreview.getRandomSource().nextInt(AUDIT_JITTER_RANGE_PERMILLE)))*0.001*auditIntervalMillis);
+    long nextTimeout = lastAuditStarted + (long)((AUDIT_JITTER_MIN_PERMILLE+peerreview.getRandomSource().nextInt(AUDIT_JITTER_RANGE_PERMILLE))*0.001*auditIntervalMillis);
     if (nextTimeout <= now) {
       nextTimeout = now + 1;
     }
@@ -360,6 +360,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
    * an AUDIT challenge. At this point, we already know that we have all the
    * necessary certificates (because of the statement protocol).
    */
+  @Override
   public void processAuditResponse(Identifier subject, long timestamp, AuditResponse<Handle> response) throws IOException {
     LogSnippet snippet = response.logSnippet();
     ActiveAuditInfo<Handle, Identifier> aai = findOngoingAudit(subject, timestamp);
@@ -592,6 +593,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     return null;
   }
 
+  @Override
   public Evidence statOngoingAudit(Identifier subject, long evidenceSeq) {
     ActiveAuditInfo<Handle, Identifier> aii = findOngoingAudit(subject, evidenceSeq);
     if (aii == null) return null;
@@ -600,6 +602,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
   /* Handle an incoming datagram, which could be either a request for authenticators, or a response to such a request */
 
+  @Override
   public void handleIncomingDatagram(Handle handle, PeerReviewMessage message) {
 
     switch (PeerReviewMessageType.find(message.getType())) {

@@ -60,6 +60,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLU
 public record ChallengeAudit(byte flags, Authenticator from, Authenticator to) implements Evidence {
   public static final short TYPE = CHAL_AUDIT;
 
+  @Override
   public short getEvidenceType() {
     return TYPE;
   }
@@ -71,6 +72,7 @@ public record ChallengeAudit(byte flags, Authenticator from, Authenticator to) i
     this(flags, from, to);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte(flags);
     from.serialize(buf);

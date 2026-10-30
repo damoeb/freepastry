@@ -44,18 +44,22 @@ public class NullHashProvider implements HashProvider {
 
   public static final byte[] EMPTY_HASH = new byte[0];
 
+  @Override
   public byte[] hash(long seq, short type, byte[] nodeHash, byte[] contentHash) {
     return EMPTY_HASH;
   }
 
+  @Override
   public byte[] hash(ByteBuffer... hashMe) {
     return EMPTY_HASH;
   }
 
+  @Override
   public byte[] getEmptyHash() {
     return EMPTY_HASH;
   }
 
+  @Override
   public short getHashSizeBytes() {
     return 0;
   }

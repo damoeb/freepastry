@@ -113,11 +113,13 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     }
   }
 
+  @Override
   public void setStatusChangeListener(StatusChangeListener<Identifier> listener) {
     this.listener = listener;
   }
 
   /* Locates evidence, or creates a new entry if 'create' is set to true */
+  @Override
   public EvidenceRecord<Handle, Identifier> findEvidence(Identifier originator, Identifier subject, long timestamp) {
     return findEvidence(originator, subject, timestamp, false);
   }
@@ -164,9 +166,11 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
 
   /* Add a new piece of evidence */
 
+  @Override
   public void addEvidence(Identifier originator, Identifier subject, long timestamp, Evidence evidence) throws IOException {
     addEvidence(originator, subject, timestamp, evidence, null);
   }
+  @Override
   public void addEvidence(Identifier originator, Identifier subject, long timestamp, Evidence evidence, Handle interestedParty) throws IOException {
     logger.debug("addEvidence(orig={}, subj={}, seq={})", originator, subject, timestamp);
 
@@ -194,6 +198,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
 
   /* Find out whether a node is TRUSTED, SUSPECTED or EXPOSED */
 
+  @Override
   public int getStatus(Identifier id) {
     PeerInfoRecord<Handle, Identifier> rec = find(id, false);
     return (rec != null) ? rec.getStatus() : STATUS_TRUSTED;
@@ -201,6 +206,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
 
   /* Called during startup to inform the store where its files are located */
 
+  @Override
   public boolean setStorageDirectory(Path directory) throws IOException {
     /* Create the directory if it doesn't exist yet */
     if (! Files.exists(directory)) {
@@ -292,6 +298,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     return ret;
   }
 
+  @Override
   public Authenticator getLastCheckedAuth(Identifier id) {
     PeerInfoRecord<Handle, Identifier> rec = find(id, false);
     if (rec == null) return null;
@@ -299,6 +306,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     return rec.getLastCheckedAuth();
   }
 
+  @Override
   public void setLastCheckedAuth(Identifier id, Authenticator auth) {
     PeerInfoRecord<Handle, Identifier> rec = find(id, true);
     try {
@@ -313,6 +321,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   /**
    * Get the actual bytes of a piece of evidence
    */
+  @Override
   public Evidence getEvidence(Identifier originator, Identifier subject, long timestamp) throws IOException {
     EvidenceRecord<Handle, Identifier> evi = findEvidence(originator, subject, timestamp, false);
     if (evi == null) return null;
@@ -332,6 +341,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   /**
    * Record a response to a challenge
    */
+  @Override
   public void addResponse(Identifier originator, Identifier subject, long timestamp, Evidence response) throws IOException {
     EvidenceRecord<Handle, Identifier> evi = findEvidence(originator, subject, timestamp);
     assert(evi != null && !evi.isProof() && !evi.hasResponse());
@@ -344,10 +354,12 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     markResponseAvailable(originator, subject, timestamp);
   }
 
+  @Override
   public String getHistoryName(Identifier subject) {
     return directory.resolve(stringTranslator.toString(subject)+"-log").toString();
   }
 
+  @Override
   public void notifyStatusChanged(Identifier subject, int newStatus) {
     if (!notificationEnabled || listener == null) return;
     listener.notifyStatusChange(subject, newStatus);
@@ -356,6 +368,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   /**
    * Look up the first unanswered challenge to a given node
    */
+  @Override
   public EvidenceRecord<Handle, Identifier> statFirstUnansweredChallenge(Identifier subject) {
     PeerInfoRecord<Handle, Identifier> rec = find(subject);
     if (rec == null)
@@ -363,6 +376,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     return rec.getFirstUnansweredChallenge();
   }
 
+  @Override
   public EvidenceRecord<Handle, Identifier> statProof(Identifier subject) {
     PeerInfoRecord<Handle, Identifier> rec = find(subject);
     if (rec == null) return null;

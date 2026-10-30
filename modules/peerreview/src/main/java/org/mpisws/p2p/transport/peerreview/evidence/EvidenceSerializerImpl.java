@@ -68,6 +68,7 @@ public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier e
     this.authSerializer = new AuthenticatorSerializerImpl(hashSize,signatureSize);
   }
 
+  @Override
   public Evidence deserialize(InputBuffer buf, byte type, boolean response) throws IOException {
     switch(type) {
     case CHAL_AUDIT:

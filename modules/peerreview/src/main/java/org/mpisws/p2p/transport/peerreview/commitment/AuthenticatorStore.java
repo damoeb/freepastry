@@ -55,8 +55,6 @@ public interface AuthenticatorStore<Identifier> {
 
   /**
    * Also writes it to disk.
-   * @param id
-   * @param authenticator
    */
   public void addAuthenticator(Identifier id, Authenticator authenticator);
 
@@ -66,7 +64,6 @@ public interface AuthenticatorStore<Identifier> {
    * Since the authenticator file on disk is append-only, we need to garbage
    * collect it from time to time. When this becomes necessary, we clear the
    * file and then write out the authenticators currently in memory.
-   * @throws IOException
    */
   public void garbageCollect() throws IOException;
 

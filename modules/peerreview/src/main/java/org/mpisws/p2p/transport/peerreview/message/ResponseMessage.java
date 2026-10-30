@@ -69,6 +69,7 @@ public final class ResponseMessage<Identifier extends RawSerializable> extends S
     super(buf, idSerializer, evSerializer);
   }
 
+  @Override
   public short getType() {
     return PeerReviewMessageType.RESPONSE.id();
   }
