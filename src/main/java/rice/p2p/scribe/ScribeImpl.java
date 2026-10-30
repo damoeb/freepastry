@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.scribe;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -136,6 +135,11 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   private final Publisher publisher;
 
+  /**
+   * reacts to dead parents and children, drops and root changes
+   */
+  private final TreeRepair repair;
+
   Environment environment;
 
   Logger logger;
@@ -194,6 +198,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.children = new ChildManager(endpoint, localHandle, registry, this::getPolicy, maintenancePolicy, this, subscriptions, logger);
     this.anycasts = new AnycastHandler(endpoint, localHandle, registry, this::getPolicy, logger);
     this.publisher = new Publisher(endpoint, localHandle, registry, this::getPolicy, logger);
+    this.repair = new TreeRepair(registry, subscriptions, children, maintenancePolicy, this, logger);
 
     endpoint.register();
 
@@ -600,26 +605,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     } else if (message instanceof UnsubscribeMessage) {
       children.unsubscribeReceived((UnsubscribeMessage) message);
     } else if (message instanceof DropMessage) {
-      DropMessage dMessage = (DropMessage) message;
-      logger.debug("Received drop message from {} for topic {}", dMessage.getSource(), dMessage.getTopic());
-
-      TopicManager manager = registry.get(dMessage.getTopic());
-
-      if (manager != null) {
-        if ((manager.getParent() != null) && manager.getParent().equals(dMessage.getSource())) {
-          // we set the parent to be null, and then send out another subscribe message
-          setParent(dMessage.getTopic(), null, null);
-          Collection<ScribeMultiClient> clients = manager.getClients();
-
-          subscriptions.sendSubscribe(dMessage.getTopic(), null,
-              maintenancePolicy.implicitSubscribe(Collections.singletonList(dMessage.getTopic())),
-              null);
-        } else {
-          logger.warn("Received unexpected drop message from non-parent {} for topic {} - ignoring", dMessage.getSource(), dMessage.getTopic());
-        }
-      } else {
-        logger.warn("Received unexpected drop message from {} for unknown topic {} - ignoring", dMessage.getSource(), dMessage.getTopic());
-      }
+      repair.dropReceived((DropMessage) message);
     } else if (message instanceof MaintenanceMessage) {
       logger.debug("Received maintenance message");
       maintenancePolicy.doMaintenance(this);
@@ -641,23 +627,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    *
    */
   public void nodeHandleUpdate(NodeHandle handle, Object arg) {
-    if (arg.equals(NodeHandle.DECLARED_DEAD)) {
-      ArrayList<Topic> wasChildOfTopics = new ArrayList<Topic>(getTopicsByChild(handle));
-      for (Topic topic : wasChildOfTopics) {
-        removeChild(topic,handle); // TODO: check which messages removeChild() sends here
-        logger.debug("Child {} for topic {} has died - removing.", handle, topic);
-      }
-      ArrayList<Topic> wasParentOfTopics = new ArrayList<Topic>(getTopicsByParent(handle));
-      for (Topic topic : wasParentOfTopics) {
-        logger.debug("Parent {} for topic {} has died - removing.", handle, topic);
-        setParent(topic, null, null);
-      }
-
-      maintenancePolicy.nodeFaulty(this, handle,
-          wasParentOfTopics,
-          wasChildOfTopics);
-
-    }
+    repair.nodeHandleUpdate(handle, arg);
   }
 
   /**
@@ -668,23 +638,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param joined Whether the node has joined or left
    */
   public void update(NodeHandle handle, boolean joined) {
-    logger.info("update({}, {})", handle, joined);
-
-    if (joined) {
-      // NOTE: we could clean this up to use roots/pending, but this impl seems pretty safe
-      List<Topic> notRoot = new ArrayList<Topic>();
-      for(TopicManager manager : (new ArrayList<TopicManager>(registry.managers()))) {
-        Topic topic = manager.getTopic();
-        // check if new guy is root, we were old root, then subscribe
-        if (!isRoot(topic) && manager.getParent() == null){ // maybe we are already subscribing?
-          // send subscribe message
-          notRoot.add(topic);
-        }
-      }
-      if (!notRoot.isEmpty()) {
-        maintenancePolicy.noLongerRoot(this, notRoot);
-      }
-    }
+    repair.update(handle, joined);
   }
 
 
