@@ -35,66 +35,57 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 
-package rice.p2p.past.gc.messaging;
+package rice.p2p.past.messaging;
 
-import java.io.IOException;
-
-import rice.Continuation;
-import rice.environment.Environment;
-import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.PastException;
-import rice.p2p.past.messaging.PastMessage;
+import rice.p2p.commonapi.rawserialization.MessageTypeId;
+import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 
 /**
- * This class represents a message which tells GC Past that it's time to
- * delete all the expired objects in the local store.
- *
- * @version $Id: GCCollectMessage.java 4654 2009-01-08 16:33:07Z jeffh $
- *
- * @author Alan Mislove
+ * The wire type ids of Past's and GCPast's messages. They share one scope: a GCPast endpoint reads
+ * both with one deserializer. {@link #MESSAGE_LOST} and {@link #GC_COLLECT} are local messages
+ * that never go on the wire, but keep their ids reserved.
  */
-@SuppressWarnings("unchecked")
-public class GCCollectMessage extends PastMessage {
-  public static final short TYPE = 8;
+public enum PastMessageType implements MessageTypeId {
+  /** {@link CacheMessage} */
+  CACHE(1),
+  /** {@link FetchHandleMessage} */
+  FETCH_HANDLE(2),
+  /** {@link FetchMessage} */
+  FETCH(3),
+  /** {@link InsertMessage} */
+  INSERT(4),
+  /** {@link LookupHandlesMessage} */
+  LOOKUP_HANDLES(5),
+  /** {@link LookupMessage} */
+  LOOKUP(6),
+  /** {@link MessageLostMessage}, local only */
+  MESSAGE_LOST(7),
+  /** {@link GCCollectMessage}, local only */
+  GC_COLLECT(8),
+  /** {@link GCInsertMessage} */
+  GC_INSERT(9),
+  /** {@link GCLookupHandlesMessage} */
+  GC_LOOKUP_HANDLES(10),
+  /** {@link GCRefreshMessage} */
+  GC_REFRESH(11);
 
-  /**
-   * Constructor
-   *
-   * @param id The location to be stored
-   * @param source The source address
-   * @param dest The destination address
-   */
-  public GCCollectMessage(int id, NodeHandle source, Id dest) {
-    super(id, source, dest);
+  private static final MessageTypeIndex<PastMessageType> INDEX = MessageTypeIndex.of(values());
+
+  private final short id;
+
+  PastMessageType(int id) {
+    this.id = (short) id;
+  }
+
+  public short id() {
+    return id;
   }
 
   /**
-   * Method by which this message is supposed to return it's response -
-   * in this case, it lets the continuation know that a the message was
-   * lost via the receiveException method.
-   *
-   * @param c The continuation to return the reponse to.
+   * @param id a wire id
+   * @return the type with that id, or {@code null} if no Past message has it
    */
-  public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
-    c.receiveException(new PastException("Should not be called!"));
-  }
-
-  /**
-  * Returns a string representation of this message
-   *
-   * @return A string representing this message
-   */
-  public String toString() {
-    return "[GCCollectMessage]";
-  }
-
-  public short getType() {
-    return TYPE;
-  }
-
-  public void serialize(OutputBuffer buf) throws IOException {
-    throw new RuntimeException("serialize() not supported in MessageLostMessage");
+  public static PastMessageType find(short id) {
+    return INDEX.find(id);
   }
 }

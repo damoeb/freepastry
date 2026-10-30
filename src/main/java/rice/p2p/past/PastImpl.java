@@ -72,11 +72,14 @@ import rice.p2p.past.messaging.CacheMessage;
 import rice.p2p.past.messaging.ContinuationMessage;
 import rice.p2p.past.messaging.FetchHandleMessage;
 import rice.p2p.past.messaging.FetchMessage;
+import rice.p2p.past.messaging.GCCollectMessage;
+import rice.p2p.past.messaging.GCRefreshMessage;
 import rice.p2p.past.messaging.InsertMessage;
 import rice.p2p.past.messaging.LookupHandlesMessage;
 import rice.p2p.past.messaging.LookupMessage;
 import rice.p2p.past.messaging.MessageLostMessage;
 import rice.p2p.past.messaging.PastMessage;
+import rice.p2p.past.messaging.PastMessageType;
 import rice.p2p.past.rawserialization.DefaultSocketStrategy;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
@@ -196,26 +199,37 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   protected class PastDeserializer implements MessageDeserializer {
     public Message deserialize(InputBuffer buf, short type, int priority,
         NodeHandle sender) throws IOException {
+      PastMessageType t = PastMessageType.find(type);
+      if (t == null) {
+        throw unknownType(type);
+      }
       try {
-        switch(type) {
-          case CacheMessage.TYPE:
-            return CacheMessage.build(buf, endpoint, contentDeserializer);
-          case FetchHandleMessage.TYPE:
-            return FetchHandleMessage.build(buf, endpoint, contentHandleDeserializer);
-          case FetchMessage.TYPE:
-            return FetchMessage.build(buf, endpoint, contentDeserializer, contentHandleDeserializer);
-          case InsertMessage.TYPE:
-            return InsertMessage.build(buf, endpoint, contentDeserializer);
-          case LookupHandlesMessage.TYPE:
-            return LookupHandlesMessage.build(buf, endpoint);
-          case LookupMessage.TYPE:
-            return LookupMessage.build(buf, endpoint, contentDeserializer);
-        }
+        return switch (t) {
+          case CACHE -> CacheMessage.build(buf, endpoint, contentDeserializer);
+          case FETCH_HANDLE -> FetchHandleMessage.build(buf, endpoint, contentHandleDeserializer);
+          case FETCH -> FetchMessage.build(buf, endpoint, contentDeserializer, contentHandleDeserializer);
+          case INSERT -> InsertMessage.build(buf, endpoint, contentDeserializer);
+          case LOOKUP_HANDLES -> LookupHandlesMessage.build(buf, endpoint);
+          case LOOKUP -> LookupMessage.build(buf, endpoint, contentDeserializer);
+          case GC_INSERT, GC_LOOKUP_HANDLES, GC_REFRESH -> deserializeGC(buf, t);
+          // local messages, never sent
+          case MESSAGE_LOST, GC_COLLECT -> throw unknownType(type);
+        };
       } catch (IOException e) {
         logger.atError().log(() -> "Exception in deserializer in "+PastImpl.this.endpoint.toString()+":"+instance+" "+e);
         throw e;
       }
-      throw new IllegalArgumentException("Unknown type:"+type+" in "+PastImpl.this.toString());
+    }
+
+    /**
+     * Reads a GCPast message; plain Past does not know them.
+     */
+    protected Message deserializeGC(InputBuffer buf, PastMessageType type) throws IOException {
+      throw unknownType(type.id());
+    }
+
+    protected IllegalArgumentException unknownType(short type) {
+      return new IllegalArgumentException("Unknown type:"+type+" in "+PastImpl.this.toString());
     }
   }
   public PastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, StorageManager trash) {
@@ -1033,84 +1047,84 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     } else {
       logger.info("Received message {} with destination {}", message, id);
 
-      if (msg instanceof InsertMessage) {
-        final InsertMessage imsg = (InsertMessage) msg;
+      switch (msg) {
+        case InsertMessage imsg -> {
 
-        // make sure the policy allows the insert
-        if (policy.allowInsert(imsg.getContent())) {
-          inserts++;
-          final Id msgid = imsg.getContent().getId();
+          // make sure the policy allows the insert
+          if (policy.allowInsert(imsg.getContent())) {
+            inserts++;
+            final Id msgid = imsg.getContent().getId();
 
-          lockManager.lock(msgid, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
+            lockManager.lock(msgid, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
 
-            public void receiveResult(Object result) {
-              storage.getObject(msgid, new StandardContinuation<Object, Object, Exception>(parent) {
-                public void receiveResult(Object o) {
-                  try {
-                    // allow the object to check the insert, and then insert the data
-                    PastContent content = imsg.getContent().checkInsert(msgid, (PastContent) o);
-                    storage.store(msgid, null, content, new StandardContinuation<Boolean, Object, Exception>(parent) {
-                      public void receiveResult(Boolean result) {
-                        getResponseContinuation(msg).receiveResult(result);
-                        lockManager.unlock(msgid);
-                      }
-                    });
-                  } catch (PastException e) {
-                    parent.receiveException(e);
+              public void receiveResult(Object result) {
+                storage.getObject(msgid, new StandardContinuation<Object, Object, Exception>(parent) {
+                  public void receiveResult(Object o) {
+                    try {
+                      // allow the object to check the insert, and then insert the data
+                      PastContent content = imsg.getContent().checkInsert(msgid, (PastContent) o);
+                      storage.store(msgid, null, content, new StandardContinuation<Boolean, Object, Exception>(parent) {
+                        public void receiveResult(Boolean result) {
+                          getResponseContinuation(msg).receiveResult(result);
+                          lockManager.unlock(msgid);
+                        }
+                      });
+                    } catch (PastException e) {
+                      parent.receiveException(e);
+                    }
                   }
-                }
-              });
+                });
+              }
+            });
+          } else {
+            getResponseContinuation(msg).receiveResult(Boolean.valueOf(false));
+          }
+        }
+        case LookupMessage lmsg -> {
+          lookups++;
+
+          // if the data is here, we send the reply; the requester caches it (see lookup())
+          storage.getObject(lmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
+            public void receiveResult(Object o) {
+              logger.debug("Received object {} for id {}", o, lmsg.getId());
+
+              // send result back
+              parent.receiveResult(o);
             }
           });
-        } else {
-          getResponseContinuation(msg).receiveResult(Boolean.valueOf(false));
         }
-      } else if (msg instanceof LookupMessage) {
-        final LookupMessage lmsg = (LookupMessage) msg;
-        lookups++;
+        case LookupHandlesMessage lmsg -> {
+          NodeHandleSet set = endpoint.replicaSet(lmsg.getId(), lmsg.getMax());
+          logger.trace("Returning replica set {} for lookup handles of id {} max {} at {}", set, lmsg.getId(), lmsg.getMax(), endpoint.getId());
+          getResponseContinuation(msg).receiveResult(set);
+        }
+        case FetchMessage fmsg -> {
+          lookups++;
 
-        // if the data is here, we send the reply; the requester caches it (see lookup())
-        storage.getObject(lmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
-          public void receiveResult(Object o) {
-            logger.debug("Received object {} for id {}", o, lmsg.getId());
+          Continuation<Object, Exception> c;
+          c = getFetchResponseContinuation(msg); // has to be special to determine how to send the message
 
-            // send result back
-            parent.receiveResult(o);
-          }
-        });
-      } else if (msg instanceof LookupHandlesMessage) {
-        LookupHandlesMessage lmsg = (LookupHandlesMessage) msg;
-        NodeHandleSet set = endpoint.replicaSet(lmsg.getId(), lmsg.getMax());
-        logger.trace("Returning replica set {} for lookup handles of id {} max {} at {}", set, lmsg.getId(), lmsg.getMax(), endpoint.getId());
-        getResponseContinuation(msg).receiveResult(set);
-      } else if (msg instanceof FetchMessage) {
-        FetchMessage fmsg = (FetchMessage) msg;
-        lookups++;
+          storage.getObject(fmsg.getHandle().getId(), c);
+        }
+        case FetchHandleMessage fmsg -> {
+          fetchHandles++;
 
-        Continuation<Object, Exception> c;
-        c = getFetchResponseContinuation(msg); // has to be special to determine how to send the message
+          storage.getObject(fmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
+            public void receiveResult(Object o) {
+              PastContent content = (PastContent) o;
 
-        storage.getObject(fmsg.getHandle().getId(), c);
-      } else if (msg instanceof FetchHandleMessage) {
-        final FetchHandleMessage fmsg = (FetchHandleMessage) msg;
-        fetchHandles++;
-
-        storage.getObject(fmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
-          public void receiveResult(Object o) {
-            PastContent content = (PastContent) o;
-
-            if (content != null) {
-              logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
-              parent.receiveResult(content.getHandle(PastImpl.this));
-            } else {
-              parent.receiveResult(null);
+              if (content != null) {
+                logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
+                parent.receiveResult(content.getHandle(PastImpl.this));
+              } else {
+                parent.receiveResult(null);
+              }
             }
-          }
-        });
-      } else if (msg instanceof CacheMessage) {
-        cache(((CacheMessage) msg).getContent());
-      } else {
-        logger.error("ERROR - Received message {}of unknown type.", msg);
+          });
+        }
+        case CacheMessage cmsg -> cache(cmsg.getContent());
+        case MessageLostMessage _, GCRefreshMessage _, GCCollectMessage _ ->
+          logger.error("ERROR - Received message {}of unknown type.", msg);
       }
     }
   }

@@ -51,27 +51,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @version $Id: ContentHashPastContentHandle.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Peter Druschel
  */
-public class ContentHashPastContentHandle implements PastContentHandle {
+public record ContentHashPastContentHandle(NodeHandle nodeHandle, Id id) implements PastContentHandle {
   public static final short TYPE = -12;
-
-
-  // the node on which the content object resides
-  private NodeHandle storageNode;
-
-  // the object's id
-  private Id myId;
-
-  /**
-   * Constructor
-   *
-   * @param nh The handle of the node which holds the object
-   * @param id key identifying the object to be inserted
-   */
-  public ContentHashPastContentHandle(NodeHandle nh, Id id) {
-    storageNode = nh;
-    myId = id;
-  }
-
 
   // ----- PastCONTENTHANDLE METHODS -----
 
@@ -81,7 +62,7 @@ public class ContentHashPastContentHandle implements PastContentHandle {
    * @return the id
    */
   public Id getId() {
-    return myId;
+    return id;
   }
 
   /**
@@ -91,18 +72,19 @@ public class ContentHashPastContentHandle implements PastContentHandle {
    * @return the id
    */
   public NodeHandle getNodeHandle() {
-    return storageNode;
+    return nodeHandle;
   }
 
   public ContentHashPastContentHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
-    myId = endpoint.readId(buf, buf.readShort());
-    storageNode = endpoint.readNodeHandle(buf);
+    Id id = endpoint.readId(buf, buf.readShort());
+    NodeHandle nodeHandle = endpoint.readNodeHandle(buf);
+    this(nodeHandle, id);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeShort(myId.getType());
-    myId.serialize(buf);
-    storageNode.serialize(buf);
+    buf.writeShort(id.getType());
+    id.serialize(buf);
+    nodeHandle.serialize(buf);
   }
 
   public short getType() {

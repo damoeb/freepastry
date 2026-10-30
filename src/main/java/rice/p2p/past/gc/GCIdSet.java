@@ -91,8 +91,8 @@ public class GCIdSet implements IdSet {
   public void addId(Id id) {
     GCId gcid = (GCId) id;
 
-    ids.addId(gcid.getId());
-    timeouts.put(gcid.getId(), new GCPastMetadata(gcid.getExpiration()));
+    ids.addId(gcid.id());
+    timeouts.put(gcid.id(), new GCPastMetadata(gcid.expiration()));
   }
 
   /**
@@ -101,8 +101,8 @@ public class GCIdSet implements IdSet {
    */
   public void removeId(Id id) {
     GCId gcid = (GCId) id;
-    ids.removeId(gcid.getId());
-    timeouts.remove(gcid.getId());
+    ids.removeId(gcid.id());
+    timeouts.remove(gcid.id());
   }
 
   /**
@@ -112,7 +112,7 @@ public class GCIdSet implements IdSet {
    */
   public boolean isMemberId(Id id) {
     GCId gcid = (GCId) id;
-    return ids.isMemberId(gcid.getId());
+    return ids.isMemberId(gcid.id());
   }
 
   /**
@@ -121,7 +121,7 @@ public class GCIdSet implements IdSet {
    * @return the subset
    */
   public IdSet subSet(IdRange range) {
-    return new GCIdSet(ids.subSet(((GCIdRange) range).getRange()), timeouts);
+    return new GCIdSet(ids.subSet(((GCIdRange) range).range()), timeouts);
   }
 
   /**
@@ -142,7 +142,7 @@ public class GCIdSet implements IdSet {
     GCPastMetadata metadata = (GCPastMetadata) timeouts.get(id);
 
     if (metadata != null)
-      return new GCId(id, metadata.getExpiration());
+      return new GCId(id, metadata.expiration());
     else
       return new GCId(id, GCPastImpl.DEFAULT_EXPIRATION);
   }

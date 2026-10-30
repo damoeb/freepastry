@@ -60,9 +60,7 @@ import rice.p2p.past.rawserialization.PastContentDeserializer;
  * @author Peter Druschel
  */
 @SuppressWarnings("unchecked")
-public class CacheMessage extends PastMessage {
-
-  public static final short TYPE = 1;
+public final class CacheMessage extends PastMessage {
 
   // the content to be cached
   private final PastContent content;
@@ -108,7 +106,7 @@ public class CacheMessage extends PastMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return PastMessageType.CACHE.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

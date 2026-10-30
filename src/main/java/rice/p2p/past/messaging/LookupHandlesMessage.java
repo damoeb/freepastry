@@ -57,9 +57,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public class LookupHandlesMessage extends ContinuationMessage {
-  public static final short TYPE = 5;
-
+public sealed class LookupHandlesMessage extends ContinuationMessage permits GCLookupHandlesMessage {
   // the id to fetch
   private Id id;
 
@@ -111,7 +109,7 @@ public class LookupHandlesMessage extends ContinuationMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return PastMessageType.LOOKUP_HANDLES.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

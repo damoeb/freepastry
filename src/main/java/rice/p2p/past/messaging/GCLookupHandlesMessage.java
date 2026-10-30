@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 
-package rice.p2p.past.gc.messaging;
+package rice.p2p.past.messaging;
 
 import java.io.IOException;
 
@@ -44,47 +44,26 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.PastContent;
-import rice.p2p.past.messaging.InsertMessage;
-import rice.p2p.past.rawserialization.PastContentDeserializer;
 
 /**
- * This class represents a message which is an insert request in past,
- * coupled with an expiration time for the object.
+ * This class represents a message which is an request to find the leafset of
+ * a remote node in the GC Past.
  *
- * @version $Id: GCInsertMessage.java 3613 2007-02-15 14:45:14Z jstewart $
+ * @version $Id: GCLookupHandlesMessage.java 3613 2007-02-15 14:45:14Z jstewart $
  *
  * @author Alan Mislove
  */
-public class GCInsertMessage extends InsertMessage {
-  public static final short TYPE = 9;
-
-  // the timestamp at which the object expires
-  private final long expiration;
-
+public final class GCLookupHandlesMessage extends LookupHandlesMessage {
   /**
-   * Constructor which takes a unique integer Id, as well as the
-   * data to be stored
+   * Constructor
    *
    * @param uid The unique id
-   * @param content The content to be inserted
-   * @param expiration The expiration time
+   * @param id The location to be stored
    * @param source The source address
    * @param dest The destination address
    */
-  public GCInsertMessage(int uid, PastContent content, long expiration, NodeHandle source, Id dest) {
-    super(uid, content, source, dest);
-
-    this.expiration = expiration;
-  }
-
-  /**
-   * Method which returns the expiration time
-   *
-   * @return The contained expiration time
-   */
-  public long getExpiration() {
-    return expiration;
+  public GCLookupHandlesMessage(int uid, Id id, NodeHandle source, Id dest) {
+    super(uid, id, Integer.MAX_VALUE, source, dest);
   }
 
   /**
@@ -93,32 +72,30 @@ public class GCInsertMessage extends InsertMessage {
    * @return A string representing this message
    */
   public String toString() {
-    return "[GCInsertMessage for " + content + " exp " + expiration + "]";
+    return "[GCLookupHandlesMessage for " + getId() + "]";
   }
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return PastMessageType.GC_LOOKUP_HANDLES.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
-    super.serializeHelper(buf);
-    buf.writeLong(expiration);
+    serializeHelper(buf);
   }
 
-  public static GCInsertMessage buildGC(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+  public static GCLookupHandlesMessage buildGC(InputBuffer buf, Endpoint endpoint) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        return new GCInsertMessage(buf, endpoint, pcd);
+        return new GCLookupHandlesMessage(buf, endpoint);
       default:
         throw new IOException("Unknown Version: "+version);
     }
   }
 
-  private GCInsertMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
-    super(buf, endpoint, pcd);
-    expiration = buf.readLong();
+ private GCLookupHandlesMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
+    super(buf, endpoint);
   }
 }

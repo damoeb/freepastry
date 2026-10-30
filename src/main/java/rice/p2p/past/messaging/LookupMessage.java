@@ -58,9 +58,7 @@ import rice.p2p.past.PastContent;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public class LookupMessage extends ContinuationMessage {
-  public static final short TYPE = 6;
-
+public final class LookupMessage extends ContinuationMessage {
   // the id to fetch
   private Id id;
 
@@ -139,7 +137,7 @@ public class LookupMessage extends ContinuationMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return PastMessageType.LOOKUP.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

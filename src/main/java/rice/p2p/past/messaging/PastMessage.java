@@ -57,7 +57,8 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public abstract class PastMessage implements RawMessage {
+public sealed abstract class PastMessage implements RawMessage
+    permits ContinuationMessage, CacheMessage, MessageLostMessage, GCCollectMessage {
 
   // the unique id for this message
   private final int id;

@@ -54,47 +54,8 @@ import rice.p2p.util.MathUtils;
  *
  * @author Alan Mislove
  */
-public class GCId implements Id {
+public record GCId(Id id, long expiration) implements Id {
   public static final short TYPE = 3;
-
-  /**
-   * The id which this ringId represents
-   */
-  private final Id id;
-
-  /**
-   * The ringId which this ringId represents
-   */
-  private final long expiration;
-
-  /**
-   * Constructor
-   *
-   * @param id The id to wrap
-   * @param expiration The expiration time
-   */
-  public GCId(Id id, long expiration) {
-    this.id = id;
-    this.expiration = expiration;
-  }
-
-  /**
-   * Returns this gcid's id
-   *
-   * @return The id of this ringid
-   */
-  public Id getId() {
-    return id;
-  }
-
-  /**
-   * Returns this gcid's expiration time
-   *
-   * @return The expiration time of this gcid
-   */
-  public long getExpiration() {
-    return expiration;
-  }
 
   /**
    * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
@@ -104,7 +65,7 @@ public class GCId implements Id {
    * @return true if this is between ccw (inclusive) and cw (exclusive), false otherwise
    */
   public boolean isBetween(Id ccw, Id cw) {
-    return id.isBetween(((GCId) ccw).getId(), ((GCId) cw).getId());
+    return id.isBetween(((GCId) ccw).id(), ((GCId) cw).id());
   }
 
   /**
@@ -116,7 +77,7 @@ public class GCId implements Id {
    * @return true if clockwise, false otherwise.
    */
   public boolean clockwise(Id nid) {
-    return id.clockwise(((GCId) nid).getId());
+    return id.clockwise(((GCId) nid).id());
   }
 
   /**
@@ -136,7 +97,7 @@ public class GCId implements Id {
    * @return the distance between this and nid.
    */
   public Distance distanceFromId(Id nid) {
-    return id.distanceFromId(((GCId) nid).getId());
+    return id.distanceFromId(((GCId) nid).id());
   }
 
   /**
@@ -146,7 +107,7 @@ public class GCId implements Id {
    * @return the distance between this and nid.
    */
   public Distance longDistanceFromId(Id nid) {
-    return id.longDistanceFromId(((GCId) nid).getId());
+    return id.longDistanceFromId(((GCId) nid).id());
   }
 
   /**
@@ -246,7 +207,8 @@ public class GCId implements Id {
 
   public GCId(InputBuffer buf, Endpoint endpoint) throws IOException {
     buf.readShort();
-    expiration = buf.readLong();
-    id = endpoint.readId(buf, buf.readShort());
+    long expiration = buf.readLong();
+    Id id = endpoint.readId(buf, buf.readShort());
+    this(id, expiration);
   }
 }

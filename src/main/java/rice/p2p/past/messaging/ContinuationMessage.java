@@ -59,7 +59,8 @@ import rice.p2p.past.PastRemoteException;
  * @author Peter Druschel
  */
 @SuppressWarnings("unchecked")
-public abstract class ContinuationMessage extends PastMessage implements Continuation<Object, Exception> {
+public sealed abstract class ContinuationMessage extends PastMessage implements Continuation<Object, Exception>
+    permits FetchMessage, FetchHandleMessage, InsertMessage, LookupHandlesMessage, LookupMessage, GCRefreshMessage {
 
   // the response data
   protected Object response;

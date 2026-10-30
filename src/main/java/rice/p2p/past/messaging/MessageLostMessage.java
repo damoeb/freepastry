@@ -58,9 +58,7 @@ import rice.p2p.past.PastException;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public class MessageLostMessage extends PastMessage {
-  public static final short TYPE = 7;
-
+public final class MessageLostMessage extends PastMessage {
   // the id the message was sent to
   private final Id id;
 
@@ -116,7 +114,7 @@ public class MessageLostMessage extends PastMessage {
   }
 
   public short getType() {
-    return TYPE;
+    return PastMessageType.MESSAGE_LOST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

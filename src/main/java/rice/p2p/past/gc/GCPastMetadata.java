@@ -49,28 +49,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @version $Id: GCPastMetadata.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Peter Druschel
  */
-public class GCPastMetadata implements Comparable<GCPastMetadata> {
-
-  // the expiration time
-  private long expiration;
-
-  /**
-   * Constructor.
-   *
-   * @param expiration The expiration time
-   */
-  public GCPastMetadata(long expiration) {
-    this.expiration = expiration;
-  }
-
-  /**
-   * Method which returns the expiration time
-   *
-   * @return The contained expiration time
-   */
-  public long getExpiration() {
-    return expiration;
-  }
+public record GCPastMetadata(long expiration) implements Comparable<GCPastMetadata> {
 
   /**
    * Returns a copy of this metadata with the given expiration time
@@ -115,7 +94,8 @@ public class GCPastMetadata implements Comparable<GCPastMetadata> {
    * Reading constructor, the counterpart of {@link #serialize(OutputBuffer)}.
    */
   public GCPastMetadata(InputBuffer buf) throws IOException {
-    expiration = buf.readLong();
+    long expiration = buf.readLong();
+    this(expiration);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

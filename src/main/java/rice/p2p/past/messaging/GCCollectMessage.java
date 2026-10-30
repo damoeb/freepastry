@@ -35,70 +35,63 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 
-package rice.p2p.past.gc.messaging;
+package rice.p2p.past.messaging;
 
 import java.io.IOException;
 
-import rice.p2p.commonapi.Endpoint;
+import rice.Continuation;
+import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.messaging.LookupHandlesMessage;
+import rice.p2p.past.PastException;
 
 /**
- * This class represents a message which is an request to find the leafset of
- * a remote node in the GC Past.
+ * This class represents a message which tells GC Past that it's time to
+ * delete all the expired objects in the local store.
  *
- * @version $Id: GCLookupHandlesMessage.java 3613 2007-02-15 14:45:14Z jstewart $
+ * @version $Id: GCCollectMessage.java 4654 2009-01-08 16:33:07Z jeffh $
  *
  * @author Alan Mislove
  */
-public class GCLookupHandlesMessage extends LookupHandlesMessage {
-  public static final short TYPE = 10;
-
+@SuppressWarnings("unchecked")
+public final class GCCollectMessage extends PastMessage {
   /**
    * Constructor
    *
-   * @param uid The unique id
    * @param id The location to be stored
    * @param source The source address
    * @param dest The destination address
    */
-  public GCLookupHandlesMessage(int uid, Id id, NodeHandle source, Id dest) {
-    super(uid, id, Integer.MAX_VALUE, source, dest);
+  public GCCollectMessage(int id, NodeHandle source, Id dest) {
+    super(id, source, dest);
   }
 
   /**
-    * Returns a string representation of this message
+   * Method by which this message is supposed to return it's response -
+   * in this case, it lets the continuation know that a the message was
+   * lost via the receiveException method.
+   *
+   * @param c The continuation to return the reponse to.
+   */
+  public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
+    c.receiveException(new PastException("Should not be called!"));
+  }
+
+  /**
+  * Returns a string representation of this message
    *
    * @return A string representing this message
    */
   public String toString() {
-    return "[GCLookupHandlesMessage for " + getId() + "]";
+    return "[GCCollectMessage]";
   }
 
-  /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return PastMessageType.GC_COLLECT.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
-    serializeHelper(buf);
-  }
-
-  public static GCLookupHandlesMessage buildGC(InputBuffer buf, Endpoint endpoint) throws IOException {
-    byte version = buf.readByte();
-    switch(version) {
-      case 0:
-        return new GCLookupHandlesMessage(buf, endpoint);
-      default:
-        throw new IOException("Unknown Version: "+version);
-    }
-  }
-
- private GCLookupHandlesMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
-    super(buf, endpoint);
+    throw new RuntimeException("serialize() not supported in MessageLostMessage");
   }
 }

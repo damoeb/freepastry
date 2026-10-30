@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 
-package rice.p2p.past.gc.messaging;
+package rice.p2p.past.messaging;
 
 import java.io.IOException;
 
@@ -44,49 +44,44 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.gc.GCId;
-import rice.p2p.past.gc.GCIdSet;
-import rice.p2p.past.messaging.ContinuationMessage;
+import rice.p2p.past.PastContent;
+import rice.p2p.past.rawserialization.PastContentDeserializer;
 
 /**
- * This class represents a message which is an request to extend the lifetime
- * of a set of keys stored in GCPast.
+ * This class represents a message which is an insert request in past,
+ * coupled with an expiration time for the object.
  *
- * response is expected to be Boolean[]
- *
- * @version $Id: GCRefreshMessage.java 3613 2007-02-15 14:45:14Z jstewart $
+ * @version $Id: GCInsertMessage.java 3613 2007-02-15 14:45:14Z jstewart $
  *
  * @author Alan Mislove
  */
-public class GCRefreshMessage extends ContinuationMessage {
-  public static final short TYPE = 11;
-
-  // the list of keys which should be refreshed
-  private final GCId[] keys;
+public final class GCInsertMessage extends InsertMessage {
+  // the timestamp at which the object expires
+  private final long expiration;
 
   /**
    * Constructor which takes a unique integer Id, as well as the
-   * keys to be refreshed
+   * data to be stored
    *
    * @param uid The unique id
-   * @param keys The keys to be refreshed, with their new expiration times
+   * @param content The content to be inserted
+   * @param expiration The expiration time
    * @param source The source address
    * @param dest The destination address
    */
-  public GCRefreshMessage(int uid, GCIdSet keys, NodeHandle source, Id dest) {
-    super(uid, source, dest);
+  public GCInsertMessage(int uid, PastContent content, long expiration, NodeHandle source, Id dest) {
+    super(uid, content, source, dest);
 
-    this.keys = new GCId[keys.numElements()];
-    System.arraycopy(keys.asArray(),0,this.keys, 0, this.keys.length);
+    this.expiration = expiration;
   }
 
   /**
-   * Method which returns the list of keys
+   * Method which returns the expiration time
    *
-   * @return The list of keys to be refreshed
+   * @return The contained expiration time
    */
-  public GCId[] getKeys() {
-    return keys;
+  public long getExpiration() {
+    return expiration;
   }
 
   /**
@@ -95,58 +90,32 @@ public class GCRefreshMessage extends ContinuationMessage {
    * @return A string representing this message
    */
   public String toString() {
-    return "[GCRefreshMessage of " + keys.length + "]";
+    return "[GCInsertMessage for " + content + " exp " + expiration + "]";
   }
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return PastMessageType.GC_INSERT.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
-    if (response != null && response instanceof Boolean[]) {
-      super.serialize(buf, true);
-      Boolean[] array = (Boolean[])response;
-      buf.writeInt(array.length);
-      for (int i = 0; i < array.length; i++) {
-        buf.writeBoolean(array[i].booleanValue());
-      }
-    } else {
-      super.serialize(buf, false);
-    }
-
-    buf.writeInt(keys.length);
-    for (GCId key : keys) {
-      buf.writeShort(key.getType());
-      key.serialize(buf);
-    }
+    super.serializeHelper(buf);
+    buf.writeLong(expiration);
   }
 
-  public static GCRefreshMessage build(InputBuffer buf, Endpoint endpoint) throws IOException {
+  public static GCInsertMessage buildGC(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        return new GCRefreshMessage(buf, endpoint);
+        return new GCInsertMessage(buf, endpoint, pcd);
       default:
         throw new IOException("Unknown Version: "+version);
     }
   }
 
-  private GCRefreshMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
-    super(buf, endpoint);
-
-    if (serType == S_SUB) {
-      int arrayLength = buf.readInt();
-      Boolean[] array = new Boolean[arrayLength];
-      for (int i = 0; i < arrayLength; i++) {
-        array[i] = Boolean.valueOf(buf.readBoolean());
-      }
-    }
-
-    keys = new GCId[buf.readInt()];
-    for (int i = 0; i < keys.length; i++) {
-      keys[i] = (GCId)endpoint.readId(buf, buf.readShort());
-    }
+  private GCInsertMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+    super(buf, endpoint, pcd);
+    expiration = buf.readLong();
   }
 }

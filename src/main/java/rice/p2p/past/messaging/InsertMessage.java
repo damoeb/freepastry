@@ -56,9 +56,7 @@ import rice.p2p.past.rawserialization.PastContentDeserializer;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public class InsertMessage extends ContinuationMessage {
-  public static final short TYPE = 4;
-
+public sealed class InsertMessage extends ContinuationMessage permits GCInsertMessage {
   // serailver for bward compatibility
 
   // the data to insert
@@ -122,7 +120,7 @@ public class InsertMessage extends ContinuationMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return PastMessageType.INSERT.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

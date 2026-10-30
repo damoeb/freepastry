@@ -298,7 +298,7 @@ public class GCIdFactory implements IdFactory {
     }
 
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
-    public Id getKey() { return ((GCId) entry.getKey()).getId(); }
+    public Id getKey() { return ((GCId) entry.getKey()).id(); }
     public V getValue() { return entry.getValue(); }
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     public V setValue(V value) { throw new UnsupportedOperationException("setValue not supported!"); }

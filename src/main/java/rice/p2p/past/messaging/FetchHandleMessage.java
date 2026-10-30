@@ -58,9 +58,7 @@ import rice.p2p.past.PastContentHandle;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public class FetchHandleMessage extends ContinuationMessage {
-  public static final short TYPE = 2;
-
+public final class FetchHandleMessage extends ContinuationMessage {
 
 
   // the id to fetch
@@ -100,7 +98,7 @@ public class FetchHandleMessage extends ContinuationMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return PastMessageType.FETCH_HANDLE.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
