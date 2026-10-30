@@ -131,8 +131,17 @@ FreePastry uses the following libraries (managed by Maven):
 
 - Bouncy Castle (bcprov, bcpkix) - Cryptography and X.509 certificates (PKI tooling, SSL transport)
 - SLF4J API 2 (`slf4j-api`) - Logging facade; see [Logging](#logging)
+- JSpecify (`org.jspecify:jspecify`) - Nullness annotations (`@NullMarked`, `@Nullable`); see [Static analysis](#static-analysis)
 - JUnit 6 (Jupiter) - Testing framework
 - slf4j-simple (test scope only) - Logging backend for the tests
+
+## Static analysis
+
+Every module compiles with [Error Prone](https://errorprone.info/) and, for the `@NullMarked` packages, [NullAway](https://github.com/uber/NullAway). Both run inside javac as part of `./mvnw compile`, and with `-Werror` every finding fails the build. The versions and flags are in the parent `pom.xml` (`errorprone.*` and `nullaway.version` properties); the `jdk.compiler` exports Error Prone needs are in `.mvn/jvm.config`.
+
+- Error Prone runs on main and test code. Its ERROR-level checks are on in all modules. Its WARNING-level checks are on in `freepastry-core` and `freepastry-transport`; the other modules still set `errorprone.module.flags` to `-XepDisableAllWarnings` in their `pom.xml` until their warnings are fixed (phase 2). The checks that are off for the whole build are listed with their reasons in the parent `pom.xml`.
+- NullAway checks only code in `@NullMarked` packages, in JSpecify mode. For now these are all packages of `freepastry-core` and `freepastry-transport` (see their `package-info.java`); test code is not checked. In those packages every type is non-null unless it is annotated `@Nullable` (`org.jspecify.annotations.Nullable`, a type-use annotation: `String @Nullable []` for a nullable array, `Map.@Nullable Entry` for a nested type). Where a value is set after construction and always before use, the field carries `@SuppressWarnings("NullAway.Init")`; where null is impossible once the object is set up, the code says so with `Objects.requireNonNull` and a message.
+- To suppress a finding that is intended, put `@SuppressWarnings("CheckName")` (for example `"ReferenceEquality"` or `"NullAway"`) on the narrowest declaration that covers it, a method, field or local variable, and say why in a comment on the same line. To turn a check off everywhere, add `-Xep:CheckName:OFF` to `errorprone.flags` in the parent `pom.xml`, with the reason in the comment above it.
 
 ## Logging
 
