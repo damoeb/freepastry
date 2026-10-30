@@ -81,12 +81,9 @@ import rice.p2p.past.gc.GCPastContentHandle;
 import rice.p2p.past.gc.rawserialization.RawGCPastContent;
 import rice.p2p.past.rawserialization.JavaPastContentDeserializer;
 import rice.p2p.past.rawserialization.JavaPastContentHandleDeserializer;
-import rice.p2p.past.rawserialization.JavaSerializedPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
 import rice.p2p.util.DebugCommandHandler;
-import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.persistence.StorageManager;
 
 @SuppressWarnings("unchecked")
@@ -113,6 +110,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private AggregationStatistics stats;
 
   private final AggregationConfig config;
+  private final AggregateStorer storer;
 
   private Environment environment;
   private final Logger logger;
@@ -173,6 +171,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.node = node;
     this.timers = new Hashtable<Integer, CancellableTask>();
     this.aggregateList = new AggregateList(configFileName, getLocalNodeHandle().getId().toString(), factory, config.isAggregateLogEnabled(), instance, environment);
+    this.storer = new AggregateStorer(endpoint, factory, aggregateStore, aggregateList, environment.getTimeSource(), logger);
     this.stats = aggregateList.getStatistics(config.getStatsGranularity(), config.getStatsRange(), config.getNominalReferenceCount());
     if (policy == null) {
       this.policy = getDefaultPolicy();
@@ -744,60 +743,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
   }
 
-  private void storeAggregate(final Aggregate aggr, final long expiration, final ObjectDescriptor[] desc, final Id[] pointers, final Continuation<? super Boolean, Exception> command) {
-    logger.debug("storeAggregate() schedules content hash computation...");
-    endpoint.process(() -> {
-      logger.debug("storeAggregate() starts working on content hash...");
-      return factory.buildId(aggr.getContentHash());
-    }, new Continuation<Id, Exception>() {
-      public void receiveResult(Id o) {
-        if (o instanceof Id) {
-          aggr.setId((Id) o);
-          logger.atInfo().log(() -> "Storing aggregate, CH="+aggr.getId()+", expiration="+expiration+" (rel "+(expiration-environment.getTimeSource().currentTimeMillis())+") with "+desc.length+" objects:");
-          for (int j=0; j<desc.length; j++)
-            logger.info("#{}: {}", j, desc[j]);
-
-          Continuation<Boolean[], Exception> c = new Continuation<Boolean[], Exception>() {
-            public void receiveResult(Boolean[] o) {
-              AggregateDescriptor adc = new AggregateDescriptor(
-                aggr.getId(),
-                expiration,
-                desc,
-                pointers
-              );
-
-              if (o instanceof Boolean[]) {
-                aggregateList.addAggregateDescriptor(adc);
-                aggregateList.setRoot(aggr.getId());
-                aggregateList.writeToDisk();
-                logger.debug("Aggregate inserted successfully");
-                command.receiveResult(Boolean.valueOf(true));
-              } else {
-                logger.warn("Unexpected result in aggregate insert (commit): {}", (Object) o);
-                command.receiveException(new AggregationException("Unexpected result (commit): "+o));
-              }
-            }
-            public void receiveException(Exception e) {
-              command.receiveException(e);
-            }
-          };
-
-          if (aggregateStore instanceof GCPast)
-            ((GCPast)aggregateStore).insert(aggr, expiration, c);
-          else
-            aggregateStore.insert(aggr, c);
-        } else {
-          logger.warn("storeAggregate() cannot determine content hash, received {}", o);
-          command.receiveException(new AggregationException("storeAggregate() cannot determine content hash"));
-        }
-      }
-      public void receiveException(Exception e) {
-        logger.warn("storeAggregate() cannot determine content hash, exception ", e);
-        command.receiveException(e);
-      }
-    });
-  }
-
   private void flushComplete(Object o) {
     if (flushWait != null) {
       Continuation<? super Boolean, Exception> c = flushWait;
@@ -926,7 +871,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     for (int i=0; i<aggregates.size(); i++) {
       final ObjectDescriptor[] desc = aggregates.get(i);
       final GCPastContent[] obj = new GCPastContent[desc.length];
-      final long aggrExpirationF = chooseAggregateLifetime(desc, environment.getTimeSource().currentTimeMillis(), 0);
+      final long aggrExpirationF = AggregateStorer.chooseAggregateLifetime(desc);
       final Continuation<Object, Exception> thisContinuation = c.getSubContinuation(i);
       final int iF = i;
 
@@ -941,7 +886,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               waitingList.getObject(new VersionKey(desc[currentQuery].getKey(), desc[currentQuery].getVersion()), this);
             } else {
               Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), null);
-              storeAggregate(aggregateFactory.buildAggregate(obj, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
+              storer.storeAggregate(aggregateFactory.buildAggregate(obj, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
                 public void receiveResult(Boolean o) {
                   final Continuation.MultiContinuation<Object[]> c2 = new Continuation.MultiContinuation<Object[]>(thisContinuation, desc.length);
                   for (int i=0; i<desc.length; i++) {
@@ -976,16 +921,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
   }
 
-  private long chooseAggregateLifetime(ObjectDescriptor[] components, long now, long currentLifetime) {
-    long maxLifetime = 0;
-
-    for (int i=0; i<components.length; i++)
-      if (components[i].getRefreshedLifetime() > maxLifetime)
-        maxLifetime = components[i].getRefreshedLifetime();
-
-    return maxLifetime;
-  }
-
   private void refreshAggregates() {
     Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
     long now = environment.getTimeSource().currentTimeMillis();
@@ -1004,7 +939,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
         boolean isBeingRefreshed = false;
         if (aggr.getCurrentLifetime() < (now + config.getExpirationRenewThreshold())) {
-          long newLifetime = chooseAggregateLifetime(aggr.getObjects(), now, aggr.getCurrentLifetime());
+          long newLifetime = AggregateStorer.chooseAggregateLifetime(aggr.getObjects());
           if (newLifetime > aggr.getCurrentLifetime()) {
             logger.atInfo().log(() -> "Refreshing aggregate "+aggr.getKey().toStringFull()+", new expiration is "+newLifetime);
             isBeingRefreshed = true;
@@ -1190,9 +1125,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               obsoleteAggregates[i] = adc[i].getKey();
 
             Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), obsoleteAggregates);
-            final long aggrExpirationF = chooseAggregateLifetime(desc, environment.getTimeSource().currentTimeMillis(), 0);
+            final long aggrExpirationF = AggregateStorer.chooseAggregateLifetime(desc);
 
-            storeAggregate(aggregateFactory.buildAggregate(components, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
+            storer.storeAggregate(aggregateFactory.buildAggregate(components, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
               public void receiveResult(Boolean o) {
                 logger.info("Consolidated Aggregate stored OK, removing old descriptors...");
                 for (AggregateDescriptor aggregateDescriptor : adc) {
@@ -1241,7 +1176,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     logger.info("Found {} disconnected aggregates; inserting pointer array", disconnected.length);
-    storeAggregate(
+    storer.storeAggregate(
       aggregateFactory.buildAggregate(new GCPastContent[] {}, disconnected),
       environment.getTimeSource().currentTimeMillis() + config.getPointerArrayLifetime(),
       new ObjectDescriptor[] {},
@@ -1577,7 +1512,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
                       final VersionKey vkey = new VersionKey(obj.getId(), theVersion);
                       final long theVersionF = theVersion;
-                      final int theSize = getSize(obj);
+                      final int theSize = AggregateStorer.getSize(obj, logger);
 
                       if (policy.shouldBeAggregated(obj, theSize)) {
                         if (!waitingList.exists(vkey)) {
@@ -1648,25 +1583,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     theContinuation.receiveResult(null);
   }
 
-  private int getSize(PastContent obj) {
-    try {
-      RawPastContent rpc;
-      if (obj instanceof RawPastContent) {
-        rpc = (RawPastContent)obj;
-      } else {
-        rpc = new JavaSerializedPastContent(obj);
-      }
-      SimpleOutputBuffer buf = new SimpleOutputBuffer();
-      buf.writeShort(rpc.getType());
-      rpc.serialize(buf);
-      return buf.getWritten();
-    } catch (IOException ioe) {
-      logger.atWarn().log(() -> "Cannot serialize object, size unknown: "+ioe);
-    }
-
-    return 0;
-  }
-
   public Serializable getHandle() {
     return aggregateList.getRoot();
   }
@@ -1732,7 +1648,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                       aggr.getComponent(i).getVersion(),
                       aggregateExpiration,
                       aggregateExpiration,
-                      getSize(aggr.getComponent(i))
+                      AggregateStorer.getSize(aggr.getComponent(i), logger)
                     );
 
                     final GCPastContent objData = aggr.getComponent(i);
@@ -1880,7 +1796,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
     final VersionKey vkey = new VersionKey(obj.getId(), theVersion);
     final long theVersionF = theVersion;
-    final int theSize = getSize(obj);
+    final int theSize = AggregateStorer.getSize(obj, logger);
 
     if (policy.shouldBeAggregated(obj, theSize)) {
       logger.info("AGGREGATE INSERT: {} version={} size={} class={}", obj.getId(), theVersion, theSize, obj.getClass().getName());
