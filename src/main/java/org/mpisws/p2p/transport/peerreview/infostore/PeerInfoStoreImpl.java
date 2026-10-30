@@ -36,10 +36,14 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.infostore;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
@@ -65,7 +69,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     PeerInfoStore<Handle, Identifier> {
   IdentityTransport<Handle, Identifier> transport;
 
-  File directory;
+  Path directory;
   // Subject -> PeerInfoRecord
   Map<Identifier, PeerInfoRecord<Handle, Identifier>> peerInfoRecords;
   StatusChangeListener<Identifier> listener;
@@ -175,7 +179,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     /* Write the actual evidence to disk */
 
 
-    File outFile = getFile(subject, originator, timestamp, (proof ? "proof" : "challenge"));
+    Path outFile = getFile(subject, originator, timestamp, (proof ? "proof" : "challenge"));
 
     FileOutputBuffer buf = new FileOutputBuffer(outFile);
     buf.writeByte((byte)evidence.getEvidenceType());
@@ -187,8 +191,8 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     markEvidenceAvailable(originator, subject, timestamp, proof, interestedParty);
   }
 
-  protected File getFile(Identifier subject, Identifier originator, long timestamp, String suffix) {
-    File outFile = new File(directory, stringTranslator.toString(subject)+"-"+stringTranslator.toString(originator)+"-"+timestamp+"."+suffix);
+  protected Path getFile(Identifier subject, Identifier originator, long timestamp, String suffix) {
+    Path outFile = directory.resolve(stringTranslator.toString(subject)+"-"+stringTranslator.toString(originator)+"-"+timestamp+"."+suffix);
     return outFile;
   }
 
@@ -201,13 +205,17 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
 
   /* Called during startup to inform the store where its files are located */
 
-  public boolean setStorageDirectory(File directory) throws IOException {
+  public boolean setStorageDirectory(Path directory) throws IOException {
     /* Create the directory if it doesn't exist yet */
-    if (! directory.exists()) {
-      directory.mkdirs();
+    if (! Files.exists(directory)) {
+      try {
+        Files.createDirectories(directory);
+      } catch (IOException e) {
+        // as with mkdirs, a failure is ignored: the directory then reads as empty
+      }
     } else {
-      if (!directory.isDirectory()) {
-        throw new IllegalArgumentException(directory.getAbsolutePath()+" is not a directory.");
+      if (!Files.isDirectory(directory)) {
+        throw new IllegalArgumentException(directory.toAbsolutePath()+" is not a directory.");
       }
     }
     this.directory = directory;
@@ -219,11 +227,11 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     notificationEnabled = false;
 
     /* Read the entire directory */
-    File[] bar = directory.listFiles();
+    List<Path> bar = list(directory);
     if (bar != null) {
-      for (File ent : bar) {
-        if (ent.isDirectory()) continue;
-        String d_name = ent.getName();
+      for (Path ent : bar) {
+        if (Files.isDirectory(ent)) continue;
+        String d_name = ent.getFileName().toString();
         String[] foo = d_name.split("\\.");
         if (foo.length != 2) continue;
         String first = foo[0];
@@ -259,6 +267,20 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     notificationEnabled = notificationWasEnabled;
 
     return true;
+  }
+
+  /**
+   * @return the entries of the directory, or null if it cannot be listed, as File.listFiles returned
+   */
+  private static List<Path> list(Path directory) {
+    List<Path> result = new ArrayList<Path>();
+    try (DirectoryStream<Path> entries = Files.newDirectoryStream(directory)) {
+      for (Path entry : entries)
+        result.add(entry);
+    } catch (IOException e) {
+      return null;
+    }
+    return result;
   }
 
   public PeerInfoRecord<Handle, Identifier> find(Identifier id) {
@@ -299,7 +321,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     EvidenceRecord<Handle, Identifier> evi = findEvidence(originator, subject, timestamp, false);
     if (evi == null) return null;
 
-    File infile = getFile(subject, originator, timestamp, evi.isProof() ? "proof" : "challenge");
+    Path infile = getFile(subject, originator, timestamp, evi.isProof() ? "proof" : "challenge");
     // done automatically by FIB
 
     FileInputBuffer buf = new FileInputBuffer(infile, logger);
@@ -327,7 +349,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   }
 
   public String getHistoryName(Identifier subject) {
-    return new File(directory,stringTranslator.toString(subject)+"-log").toString();
+    return directory.resolve(stringTranslator.toString(subject)+"-log").toString();
   }
 
   public void notifyStatusChanged(Identifier subject, int newStatus) {

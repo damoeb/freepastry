@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.commitment;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -105,7 +105,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
    *  mixed. This method sets the name of the file and reads its current contents
    *  into memory.
    */
-  public void setFilename(File file) throws IOException {
+  public void setFilename(Path file) throws IOException {
     if (authFile != null) {
       authFile.close();
       authFile = null;

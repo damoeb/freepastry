@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.infostore;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 
@@ -48,7 +48,7 @@ public interface PeerInfoStore<Handle, Identifier> {
   public void addResponse(Identifier originator, Identifier subject, long timestamp, Evidence response) throws IOException;
   int getStatus(Identifier id);
   public void notifyStatusChanged(Identifier subject, int value);
-  public boolean setStorageDirectory(File file) throws IOException;
+  public boolean setStorageDirectory(Path file) throws IOException;
 
   public Evidence getEvidence(Identifier originator, Identifier subject, long timestamp) throws IOException;
 

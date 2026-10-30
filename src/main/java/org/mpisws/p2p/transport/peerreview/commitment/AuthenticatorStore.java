@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.commitment;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -48,7 +48,7 @@ import java.util.List;
  * haven't been sent to the corresponding witness sets yet.
  */
 public interface AuthenticatorStore<Identifier> {
-  public void setFilename(File file) throws IOException;
+  public void setFilename(Path file) throws IOException;
   public Authenticator getMostRecentAuthenticator(Identifier id);
   public Authenticator getOldestAuthenticator(Identifier id);
   public Authenticator getLastAuthenticatorBefore(Identifier id, long seq);

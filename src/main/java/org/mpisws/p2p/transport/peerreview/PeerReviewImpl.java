@@ -36,9 +36,10 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 
@@ -540,15 +541,17 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   public void init(String dirname) throws IOException {
     assert(callback != null);
-    File dir = new File(dirname);
-    if (!dir.exists()) {
-      if (!dir.mkdirs()) {
-        throw new IllegalStateException("Cannot open PeerReview directory: "+dir.getAbsolutePath());
+    Path dir = Path.of(dirname);
+    if (!Files.exists(dir)) {
+      try {
+        Files.createDirectories(dir);
+      } catch (IOException e) {
+        throw new IllegalStateException("Cannot open PeerReview directory: "+dir.toAbsolutePath(), e);
       }
     }
-    if (!dir.isDirectory()) throw new IllegalStateException("Cannot open PeerReview directory: "+dir.getAbsolutePath());
+    if (!Files.isDirectory(dir)) throw new IllegalStateException("Cannot open PeerReview directory: "+dir.toAbsolutePath());
 
-    File namebuf = new File(dir,"peers");
+    Path namebuf = dir.resolve("peers");
 
     infoStore = new PeerInfoStoreImpl<Handle, Identifier>(transport, stringTranslator, authenticatorSerialilzer, evidenceSerializer, env);
     infoStore.setStatusChangeListener(this);
@@ -573,16 +576,16 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     /* Initialize authenticator store */
 
     authInStore = new AuthenticatorStoreImpl<Identifier>(this);
-    authInStore.setFilename(new File(dir,"authenticators.in"));
+    authInStore.setFilename(dir.resolve("authenticators.in"));
 
     authOutStore = new AuthenticatorStoreImpl<Identifier>(this);
-    authOutStore.setFilename(new File(dir,"authenticators.out"));
+    authOutStore.setFilename(dir.resolve("authenticators.out"));
 
     authPendingStore = new AuthenticatorStoreImpl<Identifier>(this, true);
-    authPendingStore.setFilename(new File(dir,"authenticators.pending"));
+    authPendingStore.setFilename(dir.resolve("authenticators.pending"));
 
     authCacheStore = new AuthenticatorStoreImpl<Identifier>(this, true);
-    authCacheStore.setFilename(new File(dir,"authenticators.cache"));
+    authCacheStore.setFilename(dir.resolve("authenticators.cache"));
 
     /* Remaining protocols */
     this.evidenceTransferProtocol = new EvidenceTransferProtocolImpl<Handle, Identifier>(this,transport,infoStore);

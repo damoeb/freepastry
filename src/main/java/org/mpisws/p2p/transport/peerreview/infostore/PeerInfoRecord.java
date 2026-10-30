@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.infostore;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -205,8 +205,8 @@ public class PeerInfoRecord<Handle, Identifier> {
     return lastCheckedAuth;
   }
 
-  public void setLastCheckedAuth(Authenticator auth, File dir, IdStrTranslator<Identifier> translator) throws IOException {
-    FileOutputBuffer buf = new FileOutputBuffer(new File(dir,translator.toString(subject)+".info"));
+  public void setLastCheckedAuth(Authenticator auth, Path dir, IdStrTranslator<Identifier> translator) throws IOException {
+    FileOutputBuffer buf = new FileOutputBuffer(dir.resolve(translator.toString(subject)+".info"));
     auth.serialize(buf);
     buf.close();
     lastCheckedAuth = auth;

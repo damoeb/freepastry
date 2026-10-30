@@ -37,25 +37,24 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.util;
 
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 
 public class FileInputBuffer extends DataInputStream implements InputBuffer {
   Logger logger;
-  File file;
+  Path file;
 
-  public FileInputBuffer(File f, Logger logger) throws FileNotFoundException {
-    super(new FileInputStream(f));
+  public FileInputBuffer(Path f, Logger logger) throws IOException {
+    super(Files.newInputStream(f));
     this.file = f;
   }
 
-  public FileInputBuffer(String fileName, Logger logger) throws FileNotFoundException {
-    this(new File(fileName), logger);
+  public FileInputBuffer(String fileName, Logger logger) throws IOException {
+    this(Path.of(fileName), logger);
   }
 
   public int bytesRemaining() {

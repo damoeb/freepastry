@@ -36,8 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.history;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -72,12 +73,12 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
     String indexName = name+".index";
     String dataName = name+".data";
 
-    File f = new File(indexName);
-    if (f.exists()) {
+    Path f = Path.of(indexName);
+    if (Files.exists(f)) {
       throw new RuntimeException("File "+f+" already exists.");
     }
-    f = new File(dataName);
-    if (f.exists()) {
+    f = Path.of(dataName);
+    if (Files.exists(f)) {
       throw new RuntimeException("File "+f+" already exists.");
     }
 
@@ -124,13 +125,13 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
       fileMode = "rw"; // may be "rw"
     }
 
-    File f = new File(name+".index");
-    if (!f.exists()) {
+    Path f = Path.of(name+".index");
+    if (!Files.exists(f)) {
       return null;
     }
 
-    File f2 = new File(name+".data");
-    if (!f2.exists()) {
+    Path f2 = Path.of(name+".data");
+    if (!Files.exists(f2)) {
       return null;
     }
 
@@ -167,11 +168,12 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
   public SecureHistory createTemp(long baseSeq, byte[] baseHash)
       throws IOException {
     // temporary histories go to the temp directory, not the working directory, and are deleted when the JVM exits
-    String name = new File(System.getProperty("java.io.tmpdir"),
-        "peerReview."+environment.getTimeSource().currentTimeMillis()+"."+environment.getRandomSource().nextInt()).getPath();
+    String name = Path.of(System.getProperty("java.io.tmpdir"),
+        "peerReview."+environment.getTimeSource().currentTimeMillis()+"."+environment.getRandomSource().nextInt()).toString();
     SecureHistory result = create(name, baseSeq, baseHash);
-    new File(name+".index").deleteOnExit();
-    new File(name+".data").deleteOnExit();
+    // NIO has no deleteOnExit, so this stays on java.io.File
+    Path.of(name+".index").toFile().deleteOnExit();
+    Path.of(name+".data").toFile().deleteOnExit();
     return result;
   }
 

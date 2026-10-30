@@ -37,25 +37,27 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.util;
 
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class FileOutputBuffer extends DataOutputStream implements OutputBuffer {
 
-  public FileOutputBuffer(File f, boolean append) throws FileNotFoundException {
-    super(new FileOutputStream(f, append));
+  public FileOutputBuffer(Path f, boolean append) throws IOException {
+    super(append ? Files.newOutputStream(f, CREATE, APPEND) : Files.newOutputStream(f));
   }
 
-  public FileOutputBuffer(File f) throws FileNotFoundException {
-    super(new FileOutputStream(f));
+  public FileOutputBuffer(Path f) throws IOException {
+    super(Files.newOutputStream(f));
   }
 
-  public FileOutputBuffer(String fileName) throws FileNotFoundException {
-    super(new FileOutputStream(fileName));
+  public FileOutputBuffer(String fileName) throws IOException {
+    super(Files.newOutputStream(Path.of(fileName)));
   }
 
   public int bytesRemaining() {
