@@ -103,7 +103,7 @@ An application's own threads (`main`, a GUI) typically:
 
 - build the `Environment` and the node factory,
 - call `newNode()`, `boot()` and `buildEndpoint()`/`register()`,
-- poll `PastryNode.isReady()` with `wait()` on the node (as in the tutorials; `notifyReadyObservers()` calls `notifyAll()`),
+- wait for the node with `PastryNode.awaitReadyOrJoinFailed(timeout, unit)`, usually in a loop that also checks `joinFailed()` (as in the tutorials; it returns once the node is ready or its join has failed, or after the timeout),
 - call `Endpoint.route()`.
 
 To call into FreePastry and wait for the answer, use `Continuation.ExternalContinuation` (`sleep()` until the result arrives) or `ExternalContinuationRunnable.invoke(env)`, which runs your code on the selector and blocks the caller until it completes.
@@ -250,7 +250,7 @@ Applications are written against `rice.p2p.commonapi`:
 
 How messages are wrapped:
 
-- An endpoint's address on the node is `StandardAddress.getAddress(appClass, instance, env)`, a SHA hash of the class and the instance name.
+- An endpoint's address on the node is `StandardAddress.getAddress(appClass, instance, env)`, the first two bytes of the SHA-256 hash of the class name followed by the first two bytes of the SHA-256 hash of the instance name.
 - `PastryEndpoint.route()` wraps the application message in a `PastryEndpointMessage`, inside a `rice.pastry.routing.RouteMessage` addressed to the router.
 - On each hop the router calls `PastryEndpoint.receiveMessage()`, which calls `application.forward(rm)`. Then the endpoint either delivers locally (`application.deliver(...)`) or calls `getRouter().route(rm)` again.
 
@@ -279,7 +279,21 @@ Everything on the wire is raw-serialized; there is no Java serialization. The en
 - Content is raw in the same way: `PastContent`, `PastContentHandle` and `ScribeContent` declare `getType()` and `serialize(OutputBuffer)` and are read back by the application's `PastContentDeserializer`, `PastContentHandleDeserializer` and `ScribeContentDeserializer`. PAST starts with `PastContentDeserializer.NONE` and `PastContentHandleDeserializer.CONTENT_HASH`.
 - A PAST response that a `ContinuationMessage` subclass cannot write raw is an error. An exception travels as its class name and message and arrives as a `rice.p2p.past.PastRemoteException`.
 
-The files outside `rice.persistence` are raw too: `RingCertificate` writes certificates and key pairs, and `CertifiedNodeIdFactory` node id certificates, in small versioned binary formats; key pairs are encoded with `SecurityUtils.encodeKeyPair()`.
+The files outside `rice.persistence` are raw too: `RingCertificate` writes certificates and key pairs, and `CertifiedNodeIdFactory` node id certificates, in small versioned binary formats; key pairs are encoded with `SecurityUtils.encodeKeyPair()` and encrypted with `SecurityUtils.encryptWithPassword()`.
+
+## Cryptography
+
+`rice.p2p.util.SecurityUtils` and `rice.p2p.util.HashUtils` hold the primitives, all from the JDK or Bouncy Castle:
+
+- Hashes: SHA-256 (`HashUtils.hash()`). Ids built from data (`PastryIdFactory.buildId()`) are SHA-256 truncated to 160 bits.
+- Symmetric encryption: AES-256-GCM (`encryptSymmetric()`/`decryptSymmetric()`). GCM is authenticated: a wrong key or any change to the data makes decryption throw a `SecurityException`.
+- MACs: HMAC-SHA256 (`hmac()`).
+- Asymmetric encryption: RSA-OAEP with SHA-256 for the hash and MGF1. Signatures: SHA256withRSA.
+- Password-encrypted files (`encryptWithPassword()`/`decryptWithPassword()`): a random salt, then AES-256-GCM under a key PBKDF2-HMAC-SHA256 derives from the password. The CA key pair (`ca.keypair.enc`, read by `CertifiedNodeIdFactory` and `RingCertificate`) and the ring key pairs (`RingCertificate.readKeyPair()`) are stored this way.
+
+## Configuration
+
+Parameters come from `freepastry.params` (defaults, on the classpath) overlaid by an optional mutable params file, through `rice.environment.params.Parameters`. Components no longer read loose parameters: each reads a typed config record with a static `fromParameters(Parameters)` factory when it is constructed, for example `PastryConfig`, `PastryFactoryConfig`, `ConsistentJoinConfig`, `NetworkSimulatorConfig`, `PriorityConfig` and `NatConfig`. Set parameters before you build the component; changing them later has no effect on it.
 
 ## Persistence (`rice.persistence`)
 
@@ -354,9 +368,11 @@ The implementations:
 - Each `MultiringNode` runs its own Scribe instance ("Multiring"). A node that also belongs to another ring subscribes to the topic `RingId.build(ringId, otherRingId)`. Messages for another ring are anycast, as a `RingMessage`, to that topic, so a member of both rings carries them across.
 - `RingCertificate` describes a ring.
 
+**Where the code of the big classes lives.** `GlacierImpl`, `ScribeImpl`, `AggregationImpl`, `PersistentStorage` and `PriorityTransportLayerImpl` are facades: each keeps its public API and delegates to package-private collaborators in its own package. Examples are `GlacierInserter`, `GlacierRetriever` and `GlacierSyncProtocol`; `SubscriptionManager`, `Publisher`, `AnycastHandler` and `TreeRepair`; `AggregateFlusher`, `AggregateConsolidator` and `ObjectRetriever`; `ObjectFiles`, `StorageRecovery` and `MetadataIndex`; and `EntityManager` with `PrimarySocketOpener`. Look there for the logic behind a public method.
+
 ## Where to go next
 
-- The tutorials in `src/rice/tutorial/` (lesson1 to lesson4, `past`, `scribe`, `splitstream`, `rawserialization`, `transportlayer`, `ssl`, …) are small, runnable programs. The HTML that goes with them is in `html/rawtutorial/`.
+- The tutorials in `src/main/java/rice/tutorial/` (lesson1 to lesson4, `past`, `scribe`, `splitstream`, `rawserialization`, `transportlayer`, `ssl`, …) are small, runnable programs. The HTML that goes with them is in `html/rawtutorial/`.
 - The defaults and comments for every parameter are in `src/main/resources/freepastry.params`.
 - The `package-info.java` of each main package gives a one-paragraph summary.
-- Beware of outdated material. `docs/README.html` (release notes from the Ant era), `docs/javadoc/` (stale pre-generated Javadoc) and parts of `html/rawtutorial/` still mention the xmlpull/xpp3 and SBBI UPnP jars, which are no longer used. Generate current API docs with `mvn javadoc:javadoc`.
+- API docs are generated, not committed: run `./mvnw javadoc:javadoc` and open `target/reports/apidocs/index.html`.
