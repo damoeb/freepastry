@@ -80,6 +80,7 @@ public interface ReplicationPolicy {
      * @param factory The factory to use to create IdSets
      * @return A subset of the remote ids which need to be fetched
      */
+    @Override
     public IdSet difference(IdSet local, IdSet remote, IdFactory factory) {
       IdSet result = factory.buildIdSet();
       Iterator<Id> i = remote.getIterator();

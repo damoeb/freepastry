@@ -74,6 +74,7 @@ public class TimeoutMessage implements Message {
    *
    * @return This message's priority
    */
+  @Override
   public int getPriority() {
     return MEDIUM_PRIORITY;
   }

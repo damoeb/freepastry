@@ -93,6 +93,7 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
    *
    * @param o The object argument
    */
+  @Override
   public void receiveResult(Object o) {
     super.receiveResult(o);
     content = null;
@@ -104,6 +105,7 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
    *
    * @param e The exception argument
    */
+  @Override
   public void receiveException(Exception e) {
     super.receiveException(e);
     content = null;
@@ -114,15 +116,18 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[InsertMessage for " + content + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.INSERT.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     serializeHelper(buf);
@@ -130,8 +135,6 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
 
   /**
    * So that it can be subclassed without serializing a version here
-   * @param buf
-   * @throws IOException
    */
   protected void serializeHelper(OutputBuffer buf) throws IOException {
     if (response != null && response instanceof Boolean) {

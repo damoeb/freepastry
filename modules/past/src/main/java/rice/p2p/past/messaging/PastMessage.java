@@ -98,6 +98,7 @@ public sealed abstract class PastMessage implements RawMessage
    *
    * @return This message's priority
    */
+  @Override
   public int getPriority() {
     return MEDIUM_HIGH_PRIORITY;
   }
@@ -161,6 +162,7 @@ public sealed abstract class PastMessage implements RawMessage
     isResponse = buf.readBoolean();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeInt(id);
     buf.writeShort(dest.getType());

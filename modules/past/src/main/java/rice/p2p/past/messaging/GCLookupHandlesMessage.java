@@ -71,15 +71,18 @@ public final class GCLookupHandlesMessage extends LookupHandlesMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[GCLookupHandlesMessage for " + getId() + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.GC_LOOKUP_HANDLES.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     serializeHelper(buf);

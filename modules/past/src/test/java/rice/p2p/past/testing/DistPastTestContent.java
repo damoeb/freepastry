@@ -69,10 +69,12 @@ public class DistPastTestContent extends ContentHashPastContent {
     timestamp = buf.readLong();
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(getId().getType());
     getId().serialize(buf);

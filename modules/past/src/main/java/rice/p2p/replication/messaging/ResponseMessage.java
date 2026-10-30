@@ -97,6 +97,7 @@ public final class ResponseMessage extends ReplicationMessage {
     return ids;
   }
 
+  @Override
   public String toString() {
     int numResponses = 0;
     for (Id[] id : ids) {
@@ -107,10 +108,12 @@ public final class ResponseMessage extends ReplicationMessage {
 
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ReplicationMessageType.RESPONSE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

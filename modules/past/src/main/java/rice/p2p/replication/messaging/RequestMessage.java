@@ -93,15 +93,18 @@ public final class RequestMessage extends ReplicationMessage {
     return filters;
   }
 
+  @Override
   public String toString() {
     return "RequestMessage("+getSource()+"):"+(ranges == null?null:ranges.length);
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ReplicationMessageType.REQUEST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

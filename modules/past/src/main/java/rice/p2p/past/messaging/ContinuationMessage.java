@@ -86,6 +86,7 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
    *
    * @param o The object argument
    */
+  @Override
   public void receiveResult(Object o) {
     setResponse();
     response = o;
@@ -97,6 +98,7 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
    *
    * @param e The exception argument
    */
+  @Override
   public void receiveException(Exception e) {
     setResponse();
     exception = e;
@@ -107,6 +109,7 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
    *
    * @param c The continuation to return the reponse to.
    */
+  @Override
   public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
     if (exception == null)
       c.receiveResult(response);
@@ -130,9 +133,6 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
   /**
    * The subclass writes and reads the response; this class writes the {@code S_*} byte and an exception.
    *
-   * @param buf
-   * @param endpoint
-   * @throws IOException
    */
   public ContinuationMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
@@ -146,6 +146,7 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
     }
   }
 
+  @Override
   public abstract void serialize(OutputBuffer buf) throws IOException;
 
   protected byte serType;

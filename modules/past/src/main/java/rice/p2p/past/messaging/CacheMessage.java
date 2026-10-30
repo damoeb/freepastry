@@ -78,6 +78,7 @@ public final class CacheMessage extends PastMessage {
    *
    * @param c The continuation to return the reponse to.
    */
+  @Override
   public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
     throw new RuntimeException("ERROR: returnResponse should not be called on cacheMessage!");
   }
@@ -87,15 +88,18 @@ public final class CacheMessage extends PastMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[CacheMessage for " + content + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.CACHE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serialize(buf);

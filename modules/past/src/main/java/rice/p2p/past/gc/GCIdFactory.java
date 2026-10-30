@@ -89,6 +89,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public Id buildId(byte[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
@@ -100,6 +101,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public Id buildId(int[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
@@ -111,6 +113,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public Id buildId(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
@@ -122,10 +125,12 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public Id buildRandomId(Random rng) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
 
+  @Override
   public Id buildRandomId(RandomSource rng) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
@@ -137,6 +142,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public Id buildIdFromToString(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
@@ -150,6 +156,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public Id buildIdFromToString(char[] chars, int offset, int length) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
@@ -161,6 +168,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public IdRange buildIdRangeFromPrefix(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
@@ -171,6 +179,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public int getIdToStringLength() {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
@@ -182,6 +191,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public Id.Distance buildIdDistance(byte[] material) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build IdDistances!");  }
 
@@ -192,6 +202,7 @@ public class GCIdFactory implements IdFactory {
    * @param ccw The counterclockwise Id
    * @return An IdRange with the appropriate delimiters.
    */
+  @Override
   public IdRange buildIdRange(Id cw, Id ccw) {
     return new GCIdRange(factory.buildIdRange(cw, ccw));
   }
@@ -201,6 +212,7 @@ public class GCIdFactory implements IdFactory {
    *
    * @return an empty IdSet
    */
+  @Override
   public IdSet buildIdSet() {
     return new GCIdSet(factory);
   }
@@ -212,6 +224,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public IdSet buildIdSet(SortedMap<Id, ?> map) {
     throw new UnsupportedOperationException("GCIdFactory.buildIDSet()");
   }
@@ -222,6 +235,7 @@ public class GCIdFactory implements IdFactory {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public NodeHandleSet buildNodeHandleSet() {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build NodeHandleSets!");
   }

@@ -60,10 +60,12 @@ public final class ReminderMessage extends ReplicationMessage {
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return ReplicationMessageType.REMINDER.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     throw new RuntimeException("serialize() not supported in MaintenanceMessage");
   }

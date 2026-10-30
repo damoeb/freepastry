@@ -72,6 +72,7 @@ public abstract class ContentHashPastContent implements PastContent {
    * @return null, if the operation is not allowed; else, the new
    *         object to be stored on the local node.
    */
+  @Override
   public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
     // can't overwrite content hash objects
     if (existingContent != null) {
@@ -92,6 +93,7 @@ public abstract class ContentHashPastContent implements PastContent {
    * @param local The local past service
    * @return the handle
    */
+  @Override
   public PastContentHandle getHandle(Past local) {
     return new ContentHashPastContentHandle(local.getLocalNodeHandle(), getId());
   }
@@ -101,6 +103,7 @@ public abstract class ContentHashPastContent implements PastContent {
    *
    * @return the id
    */
+  @Override
   public Id getId() {
     return myId;
   }
@@ -110,6 +113,7 @@ public abstract class ContentHashPastContent implements PastContent {
    *
    * @return true if this object is mutable, else false
    */
+  @Override
   public boolean isMutable() {
     return false;
   }

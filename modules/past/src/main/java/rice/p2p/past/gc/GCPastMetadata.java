@@ -61,10 +61,12 @@ public record GCPastMetadata(long expiration) implements Comparable<GCPastMetada
     return new GCPastMetadata(expiration);
   }
 
+  @Override
   public boolean equals(Object o) {
     return ((GCPastMetadata) o).expiration == expiration;
   }
 
+  @Override
   public int hashCode() {
     return (int) expiration;
   }
@@ -75,6 +77,7 @@ public record GCPastMetadata(long expiration) implements Comparable<GCPastMetada
    * @param other The object ot compare to
    * @return the comparison
    */
+  @Override
   public int compareTo(GCPastMetadata other) {
     GCPastMetadata metadata = (GCPastMetadata) other;
 
@@ -86,6 +89,7 @@ public record GCPastMetadata(long expiration) implements Comparable<GCPastMetada
       return 0;
   }
 
+  @Override
   public String toString() {
     return "GCPMetadata " + expiration;
   }

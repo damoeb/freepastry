@@ -97,16 +97,19 @@ public interface PastPolicy {
      * @param past The local past instance
      * @param command The command to call with the replica to store
      */
+    @Override
     public void fetch(final Id id, final NodeHandle hint, final Cache backup, final Past past, Continuation<? super Object, Exception> command) {
       if ((backup != null) && backup.exists(id)) {
         backup.getObject(id, command);
       } else {
         past.lookup(id, false, new StandardContinuation<PastContent, Object, Exception>(command) {
+          @Override
           public void receiveResult(PastContent o) {
             if (o != null)
               parent.receiveResult(o);
             else
               past.lookupHandle(id, hint, new StandardContinuation<PastContentHandle, Object, Exception>(parent) {
+                @Override
                 public void receiveResult(PastContentHandle o) {
                   if (o != null)
                     past.fetch(o, parent);
@@ -125,6 +128,7 @@ public interface PastPolicy {
      * @param content The content about to be stored
      * @return Whether the insert should be allowed
      */
+    @Override
     public boolean allowInsert(PastContent content) {
       return true;
     }

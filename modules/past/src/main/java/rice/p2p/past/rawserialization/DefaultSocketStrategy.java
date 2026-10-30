@@ -53,6 +53,7 @@ public class DefaultSocketStrategy implements SocketStrategy {
     this.answer = answer;
   }
 
+  @Override
   public boolean sendAlongSocket(int sendType, PastContent content) {
     return answer;
   }

@@ -80,6 +80,7 @@ public class GCIdSet implements IdSet {
   /**
    * return the number of elements
    */
+  @Override
   public int numElements() {
     return ids.numElements();
   }
@@ -88,6 +89,7 @@ public class GCIdSet implements IdSet {
    * add a member
    * @param id the id to add
    */
+  @Override
   public void addId(Id id) {
     GCId gcid = (GCId) id;
 
@@ -99,6 +101,7 @@ public class GCIdSet implements IdSet {
    * remove a member
    * @param id the id to remove
    */
+  @Override
   public void removeId(Id id) {
     GCId gcid = (GCId) id;
     ids.removeId(gcid.id());
@@ -110,6 +113,7 @@ public class GCIdSet implements IdSet {
    * @param id the id to test
    * @return true of id is a member, false otherwise
    */
+  @Override
   public boolean isMemberId(Id id) {
     GCId gcid = (GCId) id;
     return ids.isMemberId(gcid.id());
@@ -120,6 +124,7 @@ public class GCIdSet implements IdSet {
    * @param range the range (a GCIdRange)
    * @return the subset
    */
+  @Override
   public IdSet subSet(IdRange range) {
     return new GCIdSet(ids.subSet(((GCIdRange) range).range()), timeouts);
   }
@@ -128,12 +133,16 @@ public class GCIdSet implements IdSet {
    * return an iterator over the elements of this set
    * @return the interator
    */
+  @Override
   public Iterator<Id> getIterator() {
     return new Iterator<Id>() {
       Iterator<Id> i = ids.getIterator();
 
+      @Override
       public boolean hasNext() { return i.hasNext(); }
+      @Override
       public Id next() { return getGCId((Id) i.next()); }
+      @Override
       public void remove() { throw new UnsupportedOperationException("Remove on GCIdSet()!"); }
     };
   }
@@ -151,6 +160,7 @@ public class GCIdSet implements IdSet {
    * return this set as an array
    * @return the array
    */
+  @Override
   public Id[] asArray() {
     Id[] array = ids.asArray();
 
@@ -166,6 +176,7 @@ public class GCIdSet implements IdSet {
    * @return never returns
    * @throws UnsupportedOperationException always
    */
+  @Override
   public byte[] hash() {
     throw new UnsupportedOperationException("hash on GCIdSet()!");
   }
@@ -176,6 +187,7 @@ public class GCIdSet implements IdSet {
    * @param o To compare to
    * @return Equals
    */
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof GCIdSet other))
       return false;
@@ -196,6 +208,7 @@ public class GCIdSet implements IdSet {
    *
    * @return hashCode
    */
+  @Override
   public int hashCode() {
     return ids.hashCode();
   }
@@ -205,6 +218,7 @@ public class GCIdSet implements IdSet {
    *
    * @return A string
    */
+  @Override
   public String toString() {
     return "{GCIdSet of size " + numElements() + "}";
   }
@@ -214,6 +228,7 @@ public class GCIdSet implements IdSet {
    *
    * @return the copy
    */
+  @Override
   public GCIdSet copy() {
     return new GCIdSet(ids.copy(), new ConcurrentRingMap<Id, Object>(timeouts));
   }
@@ -223,6 +238,7 @@ public class GCIdSet implements IdSet {
    *
    * @return A new IdSet
    */
+  @Override
   public IdSet build() {
     return new GCIdSet(ids.build(), new ConcurrentRingMap<Id, Object>());
   }

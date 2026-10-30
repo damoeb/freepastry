@@ -109,6 +109,7 @@ public class DistPastTest {
       PastContent dptc = new DistPastTestContent(env,idf,s);
       System.out.println("Inserting "+dptc);
       p.insert(dptc, new Continuation<Boolean[], Exception>() {
+        @Override
         public void receiveResult(Boolean[] result) {
           Boolean[] results = result;
           for(int ctr = 0; ctr < results.length;ctr++) {
@@ -117,6 +118,7 @@ public class DistPastTest {
 
         }
 
+        @Override
         public void receiveException(Exception result) {
           result.printStackTrace();
         }
@@ -125,10 +127,12 @@ public class DistPastTest {
       Thread.sleep(5000);
 
       p.lookup(dptc.getId(), new Continuation<PastContent, Exception>() {
+        @Override
         public void receiveResult(PastContent result) {
           System.out.println("Got a "+result);
         }
 
+        @Override
         public void receiveException(Exception result) {
           result.printStackTrace();
         }

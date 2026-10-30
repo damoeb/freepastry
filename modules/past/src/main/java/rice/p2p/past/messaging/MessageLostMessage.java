@@ -97,6 +97,7 @@ public final class MessageLostMessage extends PastMessage {
    *
    * @param c The continuation to return the reponse to.
    */
+  @Override
   public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
     Logger logger = env.getLogManager().getLogger(getClass(), instance);
     Exception e = new PastException("Outgoing message '" + messageString + "' to " + id + "/" + hint + " was lost - please try again.");
@@ -109,14 +110,17 @@ public final class MessageLostMessage extends PastMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[MessageLostMessage]";
   }
 
+  @Override
   public short getType() {
     return PastMessageType.MESSAGE_LOST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     throw new RuntimeException("serialize() not supported in MessageLostMessage");
   }

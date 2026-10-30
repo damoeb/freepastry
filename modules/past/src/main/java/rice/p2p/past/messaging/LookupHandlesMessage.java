@@ -103,15 +103,18 @@ public sealed class LookupHandlesMessage extends ContinuationMessage permits GCL
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[LookupHandlesMessage (response " + isResponse() + " " + response + ") for " + id + " max " + max + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.LOOKUP_HANDLES.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     serializeHelper(buf);
@@ -119,8 +122,6 @@ public sealed class LookupHandlesMessage extends ContinuationMessage permits GCL
 
   /**
    * So that it can be subclassed without serializing a version here
-   * @param buf
-   * @throws IOException
    */
   protected void serializeHelper(OutputBuffer buf) throws IOException {
     if (response != null && response instanceof NodeHandleSet) {

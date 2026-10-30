@@ -106,6 +106,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    * @param node The newly created node
    * @param num The number of this node
    */
+  @Override
   protected void processNode(int num, Node node) {
     clients[num] = new TestReplicationManagerClient(node);
     replications[num] = new ReplicationManagerImpl(node, clients[num], REPLICATION_FACTOR, INSTANCE);
@@ -115,6 +116,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    * Method which should run the test - this is called once all of the nodes have been created and
    * are ready.
    */
+  @Override
   protected void runTest() {
     for (int i=0; i<NUM_NODES; i++)
       simulate();
@@ -391,16 +393,19 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
       this.node = node;
     }
 
+    @Override
     public void fetch(Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
       set.addId(id);
       command.receiveResult(Boolean.valueOf(true));
     }
 
+    @Override
     public void remove(Id id, Continuation<? super Boolean, Exception> command) {
       set.removeId(id);
       command.receiveResult(Boolean.valueOf(true));
     }
 
+    @Override
     public IdSet scan(IdRange range) {
       return set.subSet(range);
     }
@@ -409,20 +414,24 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
       set.addId(id);
     }
 
+    @Override
     public boolean exists(Id id) {
       return set.isMemberId(id);
     }
 
+    @Override
     public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command) {
       // TODO: existsInOverlay() and reInsert() are not tested yet
       command.receiveResult(Boolean.TRUE);
     }
 
+    @Override
     public void reInsert(Id id, Continuation<? super Boolean, Exception> command) {
       // TODO: existsInOverlay() and reInsert() are not tested yet
       command.receiveResult(Boolean.TRUE);
     }
 
+    @Override
     public String toString() {
       String s = "TRMC:"+node;
       return s;

@@ -214,6 +214,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
    * This internal method sends out the request messages to all of the nodes
    * which hold keys this node may be interested in
    */
+  @Override
   public void replicate() {
     final NodeHandleSet handles = endpoint.neighborSet(Integer.MAX_VALUE);
     final IdRange ourRange = endpoint.range(handle, 0, handle.getId());
@@ -221,6 +222,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     endpoint.process(new BloomFilterExecutable(ourRange), new ListenerContinuation<IdBloomFilter, Exception>("Creation of our bloom filter", environment) {
       int total = 0;
 
+      @Override
       public void receiveResult(IdBloomFilter o) {
         if (destroyed) return;
         final IdBloomFilter ourFilter = (IdBloomFilter) o;
@@ -231,8 +233,9 @@ public class ReplicationImpl implements Replication, Application, Destructable {
             final IdRange handleRange = endpoint.range(handle, 0, handle.getId());
             final IdRange range = handleRange.intersectRange(getTotalRange());
 
-            if ((range != null) && (! range.intersectRange(getTotalRange()).isEmpty())) {
+            if ((range != null) && ! range.intersectRange(getTotalRange()).isEmpty()) {
               endpoint.process(new BloomFilterExecutable(range), new StandardContinuation<IdBloomFilter, IdBloomFilter, Exception>(this) {
+                @Override
                 public void receiveResult(IdBloomFilter o) {
                   IdBloomFilter filter = (IdBloomFilter) o;
 
@@ -268,6 +271,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
    *
    * @return Whether or not to forward the message further
    */
+  @Override
   public boolean forward(RouteMessage message) {
     return true;
   }
@@ -279,6 +283,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
    * @param id The destination id of the message
    * @param message The message being sent
    */
+  @Override
   public void deliver(Id id, Message message) {
     logger.debug("COUNT: Replication {} received message {}", instance, message);
 
@@ -290,6 +295,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
       case RequestMessage rm -> {
 
         MultiContinuation<Object[]> continuation = new MultiContinuation<Object[]>(new ListenerContinuation<Object[], Exception>("Processing of RequestMessage", environment) {
+          @Override
           public void receiveResult(Object[] o) {
             Object[] array = (Object[]) o;
             IdSet[] result = new IdSet[array.length];
@@ -313,7 +319,9 @@ public class ReplicationImpl implements Replication, Application, Destructable {
         for (int i=0; i<rm.getRanges().length; i++) {
           final int j = i;
           endpoint.process(new Executable<Object, Exception>() {
+            @Override
             public String toString() { return "process " + j + " of " + rm.getRanges().length + " namespace " + instance; }
+            @Override
             public Object execute() {
               IdSet set = factory.buildIdSet();
               rm.getFilters()[j].check(client.scan(rm.getRanges()[j]), set, MAX_KEYS_IN_MESSAGE);
@@ -355,11 +363,13 @@ public class ReplicationImpl implements Replication, Application, Destructable {
    * @param handle The handle that has joined/left
    * @param joined Whether the node has joined or left
    */
+  @Override
   public void update(NodeHandle handle, boolean joined) {
     updateClient();
   }
 
   private boolean destroyed = false;
+  @Override
   public void destroy() {
     destroyed = true;
   }
@@ -374,10 +384,12 @@ public class ReplicationImpl implements Replication, Application, Destructable {
       this.range = range;
     }
 
+    @Override
     public String toString() {
       return "bloomfilter range " + range + " namespace " + instance;
     }
 
+    @Override
     public IdBloomFilter execute() {
       return new IdBloomFilter(client.scan(range));
     }

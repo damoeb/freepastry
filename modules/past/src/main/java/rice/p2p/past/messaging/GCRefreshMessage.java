@@ -91,15 +91,18 @@ public final class GCRefreshMessage extends ContinuationMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[GCRefreshMessage of " + keys.length + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.GC_REFRESH.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof Boolean[]) {

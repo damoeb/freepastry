@@ -68,6 +68,7 @@ public class GCNode implements Node {
     this.node = node;
   }
 
+  @Override
   public Endpoint buildEndpoint(Application application, String instance) {
     return new GCEndpoint(node.buildEndpoint(application, instance));
   }
@@ -77,6 +78,7 @@ public class GCNode implements Node {
    *
    * @return A handle to the local node
    */
+  @Override
   public NodeHandle getLocalNodeHandle() {
     return node.getLocalNodeHandle();
   }
@@ -86,6 +88,7 @@ public class GCNode implements Node {
    *
    * @return This node's Id
    */
+  @Override
   public Id getId() {
     return node.getId();
   }
@@ -95,6 +98,7 @@ public class GCNode implements Node {
    *
    * @return A factory for creating Ids.
    */
+  @Override
   public IdFactory getIdFactory() {
     return new GCIdFactory(node.getIdFactory());
   }
@@ -104,6 +108,7 @@ public class GCNode implements Node {
    *
    * @return A string
    */
+  @Override
   public String toString() {
     return "{GCNode " + node + "}";
   }
@@ -111,10 +116,12 @@ public class GCNode implements Node {
   /* (non-Javadoc)
    * @see rice.p2p.commonapi.Node#getEnvironment()
    */
+  @Override
   public Environment getEnvironment() {
     return node.getEnvironment();
   }
 
+  @Override
   public String printRouteState() {
     return node.printRouteState();
   }

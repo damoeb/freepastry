@@ -92,15 +92,18 @@ public final class FetchHandleMessage extends ContinuationMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[FetchHandleMessage for " + id + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.FETCH_HANDLE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof PastContentHandle) {

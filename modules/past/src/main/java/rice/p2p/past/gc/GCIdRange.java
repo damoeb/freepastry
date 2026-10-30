@@ -72,6 +72,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    * @param key the key
    * @return true if the key lies within this range, false otherwise
    */
+  @Override
   public boolean containsId(Id key) {
     return range.containsId(((GCId) key).id());
   }
@@ -81,6 +82,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    *
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
+  @Override
   public Id getCCWId() {
     return new GCId(range.getCCWId(), GCPastImpl.DEFAULT_EXPIRATION);
   }
@@ -90,6 +92,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    *
    * @return the id at the clockwise edge of the range (exclusive)
    */
+  @Override
   public Id getCWId() {
     return new GCId(range.getCWId(), GCPastImpl.DEFAULT_EXPIRATION);
   }
@@ -99,6 +102,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    *
    * @return This range's complement
    */
+  @Override
   public IdRange getComplementRange() {
     return new GCIdRange(range.getComplementRange());
   }
@@ -108,6 +112,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    *
    * @return The merge
    */
+  @Override
   public IdRange mergeRange(IdRange range) {
     return new GCIdRange(this.range.mergeRange(((GCIdRange) range).range()));
   }
@@ -117,6 +122,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    *
    * @return The merge
    */
+  @Override
   public IdRange diffRange(IdRange range) {
     return new GCIdRange(this.range.diffRange(((GCIdRange) range).range()));
   }
@@ -126,6 +132,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    *
    * @return The merge
    */
+  @Override
   public IdRange intersectRange(IdRange range) {
     return new GCIdRange(this.range.intersectRange(((GCIdRange) range).range()));
   }
@@ -135,6 +142,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    *
    * @return Whether or not this range is empty
    */
+  @Override
   public boolean isEmpty() {
     return range.isEmpty();
   }
@@ -144,6 +152,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    *
    * @return THe string
    */
+  @Override
   public String toString() {
     return "{GC " + range + "}";
   }
@@ -153,6 +162,7 @@ public record GCIdRange(IdRange range) implements IdRange {
     this(range);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     range.serialize(buf);
   }

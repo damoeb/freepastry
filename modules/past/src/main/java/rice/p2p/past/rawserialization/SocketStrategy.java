@@ -56,8 +56,6 @@ public interface SocketStrategy {
    * Return true to send the content along a socket, false to send it as a message.
    *
    * @param sendType // the reason the content is being transmitted: TYPE_INSERT, TYPE_FETCH etc
-   * @param content
-   * @return
    */
   public boolean sendAlongSocket(int sendType, PastContent content);
 }

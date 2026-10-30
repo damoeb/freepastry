@@ -78,6 +78,7 @@ public sealed abstract class ReplicationMessage implements RawMessage
    *
    * @return This message's priority
    */
+  @Override
   public int getPriority() {
     return MEDIUM_PRIORITY;
   }
@@ -95,6 +96,7 @@ public sealed abstract class ReplicationMessage implements RawMessage
     source = endpoint.readNodeHandle(buf);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     source.serialize(buf);
   }

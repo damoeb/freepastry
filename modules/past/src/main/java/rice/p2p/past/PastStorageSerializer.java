@@ -62,12 +62,14 @@ public class PastStorageSerializer implements StorageSerializer {
     this.past = past;
   }
 
+  @Override
   public void writeObject(Object obj, OutputBuffer buf) throws IOException {
     PastContent content = (PastContent) obj;
     buf.writeShort(content.getType());
     content.serialize(buf);
   }
 
+  @Override
   public Object readObject(InputBuffer buf) throws IOException {
     PastImpl p = past.get();
     if (p == null) {
@@ -76,13 +78,15 @@ public class PastStorageSerializer implements StorageSerializer {
     return p.getContentDeserializer().deserializePastContent(buf, p.getEndpoint(), buf.readShort());
   }
 
+  @Override
   public void writeMetadata(Object metadata, OutputBuffer buf) throws IOException {
-    if (!(metadata instanceof GCPastMetadata)) {
+    if (!(metadata instanceof GCPastMetadata gcPastMetadata)) {
       throw new IOException("Cannot persist metadata " + metadata + " of " + metadata.getClass().getName());
     }
-    ((GCPastMetadata) metadata).serialize(buf);
+    gcPastMetadata.serialize(buf);
   }
 
+  @Override
   public Object readMetadata(InputBuffer buf) throws IOException {
     return new GCPastMetadata(buf);
   }

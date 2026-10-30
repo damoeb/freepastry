@@ -96,15 +96,18 @@ public final class LookupMessage extends ContinuationMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[LookupMessage for " + id + " data " + response + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.LOOKUP.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof PastContent) {

@@ -97,15 +97,18 @@ public final class FetchMessage extends ContinuationMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[FetchMessage for " + handle + " cached? " + cached + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.FETCH.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof PastContent) {

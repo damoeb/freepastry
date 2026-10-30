@@ -181,10 +181,11 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
     final CancellableTask timer = endpoint.scheduleMessage(new TimeoutMessage(id), TIMEOUT_DELAY);
 
     client.fetch(id, hint, new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (! Boolean.TRUE.equals(o)) {
-          if (o instanceof Throwable) {
-            logger.warn("Fetching of id {} failed with ", id, (Throwable)o);
+          if (o instanceof Throwable throwable) {
+            logger.warn("Fetching of id {} failed with ", id, throwable);
           } else {
             logger.warn("Fetching of id {} failed with {}", id, o);
           }
@@ -196,6 +197,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
         helper.message(id);
       }
 
+      @Override
       public void receiveException(Exception e) {
         receiveResult(e);
       }
@@ -222,6 +224,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    *
    * @param keySet set containing the keys that needs to be fetched
    */
+  @Override
   public void fetch(IdSet keySet, NodeHandle hint) {
     helper.fetch(keySet, hint);
   }
@@ -236,6 +239,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    * @param range the range of keys for which the local node is currently
    *              responsible
    */
+  @Override
   public void setRange(final IdRange range) {
     logger.trace("Removing range {} from the list of pending ids", range);
 
@@ -253,6 +257,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    *
    * @param range the requested range
    */
+  @Override
   public IdSet scan(IdRange range) {
     return client.scan(range);
   }
@@ -272,6 +277,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    *
    * @return Whether or not to forward the message further
    */
+  @Override
   public boolean forward(RouteMessage message) {
     return true;
   }
@@ -283,13 +289,14 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    * @param id The destination id of the message
    * @param message The message being sent
    */
+  @Override
   public void deliver(Id id, Message message) {
     if (message instanceof ReminderMessage) {
       logger.trace("Received reminder message");
       helper.wakeup();
-    } else if (message instanceof TimeoutMessage) {
+    } else if (message instanceof TimeoutMessage timeoutMessage) {
       logger.trace("Received timeout message");
-      helper.message(((TimeoutMessage) message).getId());
+      helper.message(timeoutMessage.getId());
     } else {
       logger.warn("Received unknown message {}", message);
     }
@@ -303,6 +310,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    * @param handle The handle that has joined/left
    * @param joined Whether the node has joined or left
    */
+  @Override
   public void update(NodeHandle handle, boolean joined) {
   }
 
@@ -314,6 +322,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    *
    * @return The underlying replication object
    */
+  @Override
   public Replication getReplication() {
     return replication;
   }
@@ -373,7 +382,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
 
         if (! (set.isMemberId(id) ||
                client.exists(id) ||
-               ((current != null) && (id.equals(current))))) {
+               ((current != null) && id.equals(current)))) {
           set.addId(id);
           hints.put(id, hint);
         }
@@ -453,7 +462,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
     }
 
     public synchronized void message(Id id) {
-      if ((state == STATE_WAITING) && (current != null) && (current.equals(id))) {
+      if ((state == STATE_WAITING) && (current != null) && current.equals(id)) {
         state = STATE_SLEEPING;
         current = null;
         scheduleNext();
@@ -499,7 +508,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
         count++;
         Id next = (Id) i.next();
 
-        if ((id == null) || (! (id.equals(next))))
+        if ((id == null) || ! id.equals(next))
           set.addId(next);
       }
 
@@ -523,6 +532,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
         logger.trace("Deciding whether to remove {}", id);
 
         client.existsInOverlay(id, new StandardContinuation<Boolean, Boolean, Exception>(this) {
+          @Override
           public void receiveResult(Boolean result) {
             if (Boolean.TRUE.equals(result)) {
               logger.trace("Telling client to delete id {}", id);
@@ -531,6 +541,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
             } else {
               logger.trace("Object to remove {} not found.  Reinserting.", id);
               client.reInsert(id, new StandardContinuation<Boolean, Boolean, Exception>(parent) {
+                @Override
                 public void receiveResult(Boolean result) {
                   if (Boolean.TRUE.equals(result)) {
                     logger.trace("Telling client to delete id {}", id);
@@ -554,6 +565,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
      *
      * @param o The result
      */
+    @Override
     public synchronized void receiveResult(Boolean o) {
       if (id == null)
         logger.error("ERROR: RMImpl.deleter Received result {} unexpectedly!", o);
@@ -570,6 +582,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
      *
      * @param e The exception
      */
+    @Override
     public synchronized void receiveException(Exception e) {
       logger.error("RMImpl.deleter Unstore of {} caused exception '{}'!", id, e, e);
 

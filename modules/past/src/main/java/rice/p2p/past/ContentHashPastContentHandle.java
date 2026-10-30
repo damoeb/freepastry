@@ -61,6 +61,7 @@ public record ContentHashPastContentHandle(NodeHandle nodeHandle, Id id) impleme
    *
    * @return the id
    */
+  @Override
   public Id getId() {
     return id;
   }
@@ -71,6 +72,7 @@ public record ContentHashPastContentHandle(NodeHandle nodeHandle, Id id) impleme
    *
    * @return the id
    */
+  @Override
   public NodeHandle getNodeHandle() {
     return nodeHandle;
   }
@@ -81,12 +83,14 @@ public record ContentHashPastContentHandle(NodeHandle nodeHandle, Id id) impleme
     this(nodeHandle, id);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(id.getType());
     id.serialize(buf);
     nodeHandle.serialize(buf);
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }

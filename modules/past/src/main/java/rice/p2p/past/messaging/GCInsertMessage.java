@@ -89,15 +89,18 @@ public final class GCInsertMessage extends InsertMessage {
    *
    * @return A string representing this message
    */
+  @Override
   public String toString() {
     return "[GCInsertMessage for " + content + " exp " + expiration + "]";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return PastMessageType.GC_INSERT.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     super.serializeHelper(buf);
