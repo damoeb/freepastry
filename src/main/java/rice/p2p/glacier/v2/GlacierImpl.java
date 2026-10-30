@@ -50,12 +50,10 @@ import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
-import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.FragmentKey;
@@ -101,6 +99,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierNeighborProtocol neighborProtocol;
   private final GlacierSyncProtocol syncProtocol;
   private final GlacierHandoffProtocol handoffProtocol;
   private final GlacierBulkRefresh bulkRefresh;
@@ -202,6 +201,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.inserter = new GlacierInserter(config, numFragments, numSurvivors, policy, endpoint, scheduler, router, locator, trafficShaper, retriever, bulkRefresh, environment, logger);
     this.syncProtocol = new GlacierSyncProtocol(config, numFragments, policy, endpoint, scheduler, router, locator, neighborhood, trafficShaper, fragmentStorage, factory, environment, logger);
     this.handoffProtocol = new GlacierHandoffProtocol(config, instance, policy, router, locator, neighborhood, trash, fragmentStorage, environment, logger);
+    this.neighborProtocol = new GlacierNeighborProtocol(config, endpoint, router, neighborhood, neighborStorage, factory, environment, logger);
     neighborhood.determineResponsibleRange();
     endpoint.register();
   }
@@ -210,68 +210,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Neighbor requests */
 
-    scheduler.addContinuation(new GlacierContinuation() {
-      long nextTimeout;
-
-      public String toString() {
-        return "Neighbor continuation";
-      }
-      public void init() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.expireNeighborsDelayAfterJoin();
-
-        NodeHandleSet leafSet = endpoint.neighborSet(999);
-        NodeHandle localHandle = getLocalNodeHandle();
-        NodeHandle cwExtreme = localHandle;
-        NodeHandle ccwExtreme = localHandle;
-
-        for (int i=0; i<leafSet.size(); i++) {
-          NodeHandle thisHandle = leafSet.getHandle(i);
-          if (localHandle.getId().clockwise(thisHandle.getId())) {
-            if (cwExtreme.getId().clockwise(thisHandle.getId()))
-              cwExtreme = thisHandle;
-          } else {
-            if (ccwExtreme.getId().clockwise(thisHandle.getId()))
-              ccwExtreme = thisHandle;
-          }
-        }
-
-        IdRange leafRange = factory.buildIdRange(ccwExtreme.getId(), cwExtreme.getId());
-
-        for (int k=0; k<leafSet.size(); k++) {
-          if (!leafSet.getHandle(k).getId().equals(getLocalNodeHandle().getId())) {
-            neighborhood.neighborSeen(leafSet.getHandle(k).getId(), environment.getTimeSource().currentTimeMillis());
-            if (logger.isInfoEnabled()) logger.info("Asking "+leafSet.getHandle(k).getId()+" about neighbors in "+leafRange);
-            router.sendMessage(
-              null,
-              new GlacierNeighborRequestMessage(getMyUID(), leafRange, getLocalNodeHandle(), leafSet.getHandle(k).getId(), GlacierTags.NEIGHBOR),
-              leafSet.getHandle(k)
-            );
-          }
-        }
-      }
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierNeighborResponseMessage) {
-          final GlacierNeighborResponseMessage gnrm = (GlacierNeighborResponseMessage) o;
-          logger.atDebug().log(() -> "NeighborResponse from "+gnrm.getSource()+" with "+gnrm.numNeighbors()+" neighbors");
-          for (int i=0; i<gnrm.numNeighbors(); i++)
-            neighborhood.neighborSeen(gnrm.getNeighbor(i), gnrm.getLastSeen(i));
-        } else {
-          logger.warn("Unknown response in neighbor continuation: {} -- discarded", o);
-        }
-      }
-      public void receiveException(Exception e) {
-        logger.warn("Exception in neighbor continuation: ", e);
-        terminate();
-      }
-      public void timeoutExpired() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.expireNeighborsInterval();
-
-        neighborhood.expireNeighbors(endpoint.neighborSet(999));
-      }
-      public long getTimeout() {
-        return nextTimeout;
-      }
-    });
+    scheduler.addContinuation(neighborProtocol.newNeighborTask());
 
     /* Sync */
 
@@ -1138,59 +1077,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       );
 
     } else if (msg instanceof GlacierNeighborRequestMessage) {
-      final GlacierNeighborRequestMessage gnrm = (GlacierNeighborRequestMessage) msg;
-      final IdSet requestedNeighbors = neighborStorage.scan(gnrm.getRequestedRange());
-      final int numRequested = requestedNeighbors.numElements();
-
-      if (numRequested < 1) {
-        logger.debug("No neighbors in that range -- canceled");
-        return;
-      }
-
-      logger.info("Neighbor request for {}, found {} neighbors", gnrm.getRequestedRange(), numRequested);
-
-      final Id[] neighbors = new Id[numRequested];
-      final long[] lastSeen = new long[numRequested];
-
-      Iterator<Id> iter = requestedNeighbors.getIterator();
-      for (int i=0; i<numRequested; i++)
-        neighbors[i] = (Id)(iter.next());
-
-      neighborStorage.getObject(neighbors[0], new Continuation<Object, Exception>() {
-        int currentLookup = 0;
-
-        public void receiveResult(Object o) {
-          logger.debug("Continue: NeighborRequest from {} for range {}", gnrm.getSource().getId(), gnrm.getRequestedRange());
-
-          if (o == null) {
-            logger.warn("Problem while retrieving neighbors -- canceled");
-            return;
-          }
-
-          if (o instanceof Long) {
-            logger.debug("Retr: Neighbor {} was last seen at {}", neighbors[currentLookup], o);
-            lastSeen[currentLookup] = ((Long)o).longValue();
-            currentLookup ++;
-            if (currentLookup < numRequested) {
-              neighborStorage.getObject(neighbors[currentLookup], this);
-            } else {
-              logger.debug("Sending neighbor response...");
-              router.sendMessage(
-                null,
-                new GlacierNeighborResponseMessage(gnrm.getUID(), neighbors, lastSeen, getLocalNodeHandle(), gnrm.getSource().getId(), gnrm.getTag()),
-                gnrm.getSource()
-              );
-            }
-          }
-        }
-
-        public void receiveException(Exception e) {
-          logger.warn("Problem while retrieving neighbors in range {} for {} -- canceled", gnrm.getRequestedRange(), gnrm.getSource(), e);
-        }
-      });
-
-      return;
-
+      neighborProtocol.handleNeighborRequest((GlacierNeighborRequestMessage) msg);
     } else if (msg instanceof GlacierSyncMessage) {
       syncProtocol.handleSyncRequest((GlacierSyncMessage) msg);
     } else if (msg instanceof GlacierRefreshProbeMessage) {
