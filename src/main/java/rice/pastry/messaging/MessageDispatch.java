@@ -126,6 +126,7 @@ public class MessageDispatch implements Destructable {
    * @return true if message could be dispatched, false otherwise.
    */
   public boolean dispatchMessage(Message msg) {
+    assert localNode.getEnvironment().getSelectorManager().isSelectorThread() : "messages are dispatched on the selector thread";
     if (msg.getDestination() == 0) {
       Logger logger = localNode.getEnvironment().getLogManager().getLogger(MessageDispatch.class, null);
       logger.warn("Message {},{} has no destination.", msg, msg.getClass().getName(), new Exception("Stack Trace"));

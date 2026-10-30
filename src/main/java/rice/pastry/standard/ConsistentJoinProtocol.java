@@ -353,6 +353,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    * Handle the CJM as in the MSR-TR
    */
   public void receiveMessage(Message msg) {
+    assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "join messages are received on the selector thread";
     logger.trace("CJP: receiveMessage({})", msg);
     if (msg instanceof ConsistentJoinMsg) {
       ConsistentJoinMsg cjm = (ConsistentJoinMsg)msg;

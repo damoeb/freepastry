@@ -373,6 +373,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   }
 
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+    assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
     if (!m.hasRemaining()) {
       errorHandler.receivedUnexpectedData(srFactory.getSourceRoute(etl.getLocalIdentifier(), i), m.array(), m.position(), null);
     }

@@ -361,6 +361,7 @@ public class PastryNode implements
   private boolean neverBeenReady = true;
 
   public void notifyReadyObservers() {
+    assert getEnvironment().getSelectorManager().isSelectorThread() : "a node is only set ready on the selector thread";
 
     // It is possible to have the setReady() invoked more than once if the
     // message denoting the termination of join protocol is duplicated.

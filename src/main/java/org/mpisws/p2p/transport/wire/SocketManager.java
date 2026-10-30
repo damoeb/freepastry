@@ -143,10 +143,12 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
 
         @Override
         public void write(SelectionKey key) {
+    assert tcp.wire.getEnvironment().getSelectorManager().isSelectorThread() : "selection keys are handled on the selector thread";
           SocketManager.this.write(key);
         }
         @Override
         public void read(SelectionKey key) {
+    assert tcp.wire.getEnvironment().getSelectorManager().isSelectorThread() : "selection keys are handled on the selector thread";
           SocketManager.this.read(key);
         }
         @Override

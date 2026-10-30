@@ -436,6 +436,7 @@ public class RoutingTable implements NodeSetEventSource {
    */
 
   public synchronized boolean put(NodeHandle handle) {
+    assert pn.getEnvironment().getSelectorManager().isSelectorThread() : "the routing table is modified on the selector thread only";
     logger.trace("RT: put({})", handle);
     Id nid = handle.getNodeId();
     RouteSet ns = makeBestEntry(nid);
@@ -526,6 +527,7 @@ public class RoutingTable implements NodeSetEventSource {
    */
 
   public synchronized NodeHandle remove(NodeHandle nh) {
+    assert pn.getEnvironment().getSelectorManager().isSelectorThread() : "the routing table is modified on the selector thread only";
     logger.trace("RT: remove({})", nh);
     RouteSet ns = getBestEntry(nh.getNodeId());
 

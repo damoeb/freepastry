@@ -157,6 +157,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
    * @param msg the message that was received.
    */
   public void receiveMessage(Message msg) {
+    assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "join messages are received on the selector thread";
     if (msg instanceof JoinRequest) {
       JoinRequest jr = (JoinRequest) msg;
       handleJoinRequest(jr);

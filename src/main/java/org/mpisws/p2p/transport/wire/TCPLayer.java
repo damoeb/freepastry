@@ -184,6 +184,7 @@ public class TCPLayer extends SelectionKeyHandler {
    * @param key The key which is acceptable.
    */
   public void accept(SelectionKey key) {
+    assert wire.getEnvironment().getSelectorManager().isSelectorThread() : "selection keys are handled on the selector thread";
     try {
       SocketManager sm = new SocketManager(this, key);
       synchronized (sockets) {

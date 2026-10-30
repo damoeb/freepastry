@@ -305,6 +305,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   }
 
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+    assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
     byte hdr = m.get();
     switch(hdr) {
     case HDR_NORMAL:

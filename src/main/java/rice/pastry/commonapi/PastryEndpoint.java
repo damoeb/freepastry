@@ -510,6 +510,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * @param msg the message that is arriving.
    */
   public void receiveMessage(rice.pastry.messaging.Message msg) {
+    assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "application upcalls run on the selector thread";
     logger.trace("[{}] recv {}", thePastryNode, msg);
 
     if (msg instanceof rice.pastry.routing.RouteMessage) {

@@ -143,6 +143,7 @@ public class StandardRouter extends PastryAppl implements Router {
    */
 
   public void receiveMessage(Message msg) {
+    assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "messages are received on the selector thread";
     logger.trace("receiveMessage({})", msg);
     if (msg instanceof RouteMessage) {
       // should only happen for messages coming off the wire

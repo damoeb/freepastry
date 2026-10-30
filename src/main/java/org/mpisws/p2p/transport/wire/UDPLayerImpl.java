@@ -193,6 +193,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    * @param key the selection key of the channel
    */
   public void read(SelectionKey key) {
+    assert wire.getEnvironment().getSelectorManager().isSelectorThread() : "selection keys are handled on the selector thread";
 
     try {
       InetSocketAddress address = null;

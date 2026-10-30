@@ -766,6 +766,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * Internal method which finds all due tasks and executes them.
    */
   protected void executeDueTasks() {
+    assert isSelectorThread() : "timers run on the selector thread";
     long now = timeSource.currentTimeMillis();
     logger.trace("SM.executeDueTasks() {}", now);
 

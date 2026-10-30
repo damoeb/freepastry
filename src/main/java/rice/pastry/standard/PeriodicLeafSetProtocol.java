@@ -197,6 +197,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    * @param msg the message.
    */
   public void receiveMessage(Message msg) {
+    assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "the leaf set is modified on the selector thread only";
     if (msg instanceof BroadcastLeafSet) {
       // receive a leafset from another node
       BroadcastLeafSet bls = (BroadcastLeafSet) msg;
@@ -521,6 +522,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   }
 
   public void removeFromLeafsetIfPossible(final NodeHandle nh) {
+    assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "the leaf set is modified on the selector thread only";
     if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD) return;
     Long l_time = (Long)lastTimeRenewedLease.get(nh);
     if (l_time == null) {

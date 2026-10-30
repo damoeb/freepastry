@@ -260,6 +260,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+    assert selectorManager.isSelectorThread() : "transport callbacks run on the selector thread";
     callback.messageReceived(i, m, options);
     notifyListenersRead(m.remaining(), i, options);
   }
