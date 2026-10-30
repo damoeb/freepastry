@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SecurityUtilsTest {
 
@@ -108,25 +108,29 @@ public class SecurityUtilsTest {
     return ((RSAPublicKey) pair.getPublic()).getModulus();
   }
 
+  /** Returns the value as an unsigned big-endian array of exactly the given length. */
+  static byte[] unsigned(BigInteger value, int length) {
+    byte[] signed = value.toByteArray();
+    byte[] result = new byte[length];
+    int copied = Math.min(signed.length, length);
+    System.arraycopy(signed, signed.length - copied, result, length - copied, copied);
+    return result;
+  }
+
   @Test
   public void decryptingWithTheWrongPrivateKeyThrowsSecurityException() {
-    byte[] secret = SecurityUtils.generateKeySymmetric();
     KeyPair a = SecurityUtils.generateKeyAsymmetric();
     KeyPair b = SecurityUtils.generateKeyAsymmetric();
-    // encrypt for the key with the larger modulus, decrypt with the other one
+    // a ciphertext for the key with the larger modulus, decrypted with the other one
     boolean aIsLarger = modulus(a).compareTo(modulus(b)) > 0;
     KeyPair right = aIsLarger ? a : b;
     KeyPair wrong = aIsLarger ? b : a;
     BigInteger wrongModulus = modulus(wrong);
-    // a ciphertext larger than the wrong key's modulus is the case that escaped as an unchecked DataLengthException
-    for (int i = 0; i < 1000; i++) {
-      byte[] cipher = SecurityUtils.encryptAsymmetric(secret, right.getPublic());
-      if (new BigInteger(1, cipher).compareTo(wrongModulus) >= 0) {
-        assertThrows(SecurityException.class, () -> SecurityUtils.decryptAsymmetric(cipher, wrong.getPrivate()));
-        return;
-      }
-    }
-    fail("found no ciphertext larger than the other modulus");
+    // a ciphertext larger than the wrong key's modulus is the case that escaped as an unchecked DataLengthException;
+    // the wrong modulus itself is a valid ciphertext for the right key and never fits below the wrong one
+    byte[] cipher = unsigned(wrongModulus, SecurityUtils.encryptAsymmetric(new byte[0], right.getPublic()).length);
+    assertTrue(new BigInteger(1, cipher).compareTo(modulus(right)) < 0);
+    assertThrows(SecurityException.class, () -> SecurityUtils.decryptAsymmetric(cipher, wrong.getPrivate()));
   }
 
   @Test
