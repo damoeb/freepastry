@@ -691,6 +691,10 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   @Override
   public void destroy() {
+    // the periodic tasks are scheduled by init()
+    if (maintenanceTask != null) maintenanceTask.cancel();
+    if (authPushTask != null) authPushTask.cancel();
+    if (checkpointTask != null) checkpointTask.cancel();
     transport.destroy();
   }
 
