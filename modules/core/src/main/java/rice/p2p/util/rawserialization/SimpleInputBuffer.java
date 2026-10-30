@@ -64,6 +64,7 @@ public class SimpleInputBuffer extends DataInputStream implements InputBuffer {
     super(new ByteArrayInputStream(bytes, offset, length));
   }
 
+  @Override
   public int bytesRemaining() {
     try {
       return this.available();

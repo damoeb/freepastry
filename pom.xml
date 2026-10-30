@@ -57,11 +57,17 @@
         <!--
           Error Prone runs on main and test code of every module; with -Werror its warnings fail the build too.
           NullAway checks only @NullMarked code (OnlyNullMarked) with full JSpecify semantics, and is switched off for test code (see default-testCompile below).
+          Checks disabled for the whole build, each because it is noise for this codebase:
+          - NotJavadoc: the license banner that opens every file starts with /*****, which javac parses as a doc comment
+          - MissingSummary: most legacy Javadoc consists of @param/@return tags only, and Error Prone's fix mangles the comment layout
+          Suppress anything else locally: @SuppressWarnings("CheckName") on the narrowest declaration, with a comment saying why.
         -->
         <errorprone.flags>
             -Xep:NullAway:ERROR
             -XepOpt:NullAway:OnlyNullMarked=true
             -XepOpt:NullAway:JSpecifyMode=true
+            -Xep:NotJavadoc:OFF
+            -Xep:MissingSummary:OFF
         </errorprone.flags>
         <!--
           Per-module Error Prone flags. TODO phase 2 (D7): the modules that still set this to -XepDisableAllWarnings

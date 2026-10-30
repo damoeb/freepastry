@@ -66,7 +66,9 @@ public class FutureContinuationTest {
   static class Recorder<R> implements Continuation<R, Exception> {
     final List<Object> received = new ArrayList<Object>();
     Thread thread;
+    @Override
     public void receiveResult(R result) { thread = Thread.currentThread(); received.add("result:"+result); }
+    @Override
     public void receiveException(Exception e) { thread = Thread.currentThread(); received.add(e); }
   }
 
@@ -172,7 +174,9 @@ public class FutureContinuationTest {
     CompletableFuture<String> f = CompletableFuture.completedFuture("x");
     RuntimeException bug = new RuntimeException("bug in continuation");
     CompletableFuture<Void> done = FutureContinuation.forward(f, new Continuation<String, Exception>() {
+      @Override
       public void receiveResult(String result) { throw bug; }
+      @Override
       public void receiveException(Exception exception) { fail("unexpected"); }
     }).toCompletableFuture();
     CompletionException ce = assertThrows(CompletionException.class, done::join);

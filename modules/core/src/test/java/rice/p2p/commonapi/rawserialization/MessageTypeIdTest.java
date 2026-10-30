@@ -60,6 +60,7 @@ class MessageTypeIdTest {
       this.id = (short) id;
     }
 
+    @Override
     public short id() {
       return id;
     }
@@ -74,6 +75,7 @@ class MessageTypeIdTest {
       this.id = (short) id;
     }
 
+    @Override
     public short id() {
       return id;
     }

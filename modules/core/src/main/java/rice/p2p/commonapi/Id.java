@@ -141,8 +141,6 @@ public interface Id extends Comparable<Id> {
 
   /**
    * Serialize
-   * @param buf
-   * @throws IOException
    */
   public void serialize(OutputBuffer buf) throws IOException;
 

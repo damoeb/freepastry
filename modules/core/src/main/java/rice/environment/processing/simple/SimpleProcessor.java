@@ -65,6 +65,7 @@ public class SimpleProcessor implements Processor {
 
   long seq = Long.MIN_VALUE;
 
+  @SuppressWarnings("ThreadPriorityCheck") // a hint only: CPU-heavy work must not starve the selector
   public SimpleProcessor(String name) {
     QUEUE = new PriorityBlockingQueue<ProcessingRequest<?, ?>>();
     THREAD = new ProcessingThread("FreePastry Processing -- " + name, QUEUE);
@@ -86,6 +87,7 @@ public class SimpleProcessor implements Processor {
    * @param command
    *          The command to return the result to once it's done
    */
+  @Override
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
       SelectorManager selector, TimeSource ts, LogManager log) {
     return process(task, command, 0, selector, ts, log);
@@ -102,11 +104,13 @@ public class SimpleProcessor implements Processor {
     return ret;
   }
 
+  @Override
   public Cancellable processBlockingIO(WorkRequest<?> workRequest) {
     workQueue.enqueue(workRequest);
     return workRequest;
   }
 
+  @Override
   public void destroy() {
     THREAD.shutdown();
     QUEUE.clear();
@@ -122,14 +126,16 @@ public class SimpleProcessor implements Processor {
     Processor p = env.getProcessor();
     // block the processor for 1 second while we schedule some more stuff
     p.process(() -> {
-      try { Thread.sleep(1000); } catch (InterruptedException ignored) {} // only delays the demo
+      try { Thread.sleep(1000); } catch (InterruptedException ignored) { /* only delays the demo */ }
       return null;
     }, new Continuation<Object, Exception>() {
 
+      @Override
       public void receiveResult(Object result) {
         System.out.println("Done blocking.");
       }
 
+      @Override
       public void receiveException(Exception exception) {
         exception.printStackTrace();
       }
@@ -142,10 +148,12 @@ public class SimpleProcessor implements Processor {
         System.out.println("Executed Seq: "+mySeq);
         return null;
       }, new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object result) {
           System.out.println("Received Seq: "+mySeq);
         }
 
+        @Override
         public void receiveException(Exception exception) {
           exception.printStackTrace();
         }

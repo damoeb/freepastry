@@ -17,11 +17,6 @@
     <name>FreePastry Core</name>
     <description>Shared foundations: continuations, the environment (parameters, logging, time, random), the selector, the common API and utilities</description>
 
-    <properties>
-        <!-- TODO phase 2 (D7): fix this module's Error Prone warnings, then drop this override -->
-        <errorprone.module.flags>-XepDisableAllWarnings</errorprone.module.flags>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.bouncycastle</groupId>

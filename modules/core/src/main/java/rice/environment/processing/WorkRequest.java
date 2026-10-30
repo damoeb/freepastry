@@ -74,6 +74,7 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
     c.receiveException(e);
   }
 
+  @Override
   public void run() {
     if (cancelled) return;
     running = true;
@@ -81,20 +82,24 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
     try {
       final R result = doWork();
       selectorManager.invoke(new Runnable() {
+        @Override
         public void run() {
           returnResult(result);
         }
 
+        @Override
         public String toString() {
           return "invc result of " + c;
         }
       });
     } catch (final Exception e) {
       selectorManager.invoke(new Runnable() {
+        @Override
         public void run() {
           returnError(e);
         }
 
+        @Override
         public String toString() {
           return "invc error of " + c;
         }
@@ -102,6 +107,7 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
     }
   }
 
+  @Override
   public boolean cancel() {
     cancelled = true;
     return !running;

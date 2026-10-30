@@ -178,7 +178,7 @@ public class BloomFilter {
         curByte = 0x0;
       }
       if (set.get(i))
-        curByte |= (0x1 << i%8);
+        curByte = (byte) (curByte | (0x1 << i%8));
     }
     buf.writeByte(curByte);
   }
@@ -207,7 +207,6 @@ public class BloomFilter {
 
   /**
    * Test serialize/deserialize
-   * @param args
    */
   public static void main(String[] args) throws IOException {
     Random rng = new Random();
@@ -222,21 +221,31 @@ public class BloomFilter {
       final ByteArrayOutputStream baos = new ByteArrayOutputStream();
       OutputBuffer obuf = new OutputBuffer() {
         DataOutputStream dos = new DataOutputStream(baos);
+        @Override
         public void writeInt(int v) throws IOException {
           dos.writeInt(v);
         }
+        @Override
         public void writeByte(byte v) throws IOException {
           dos.writeByte(v);
         }
-        public ByteArrayOutputStream getBaos() {return baos;}
+        @Override
         public int bytesRemaining() {throw new RuntimeException("Not Implemented.");}
+        @Override
         public void writeUTF(String str) throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public void writeShort(short v) throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public void writeLong(long v) throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public void writeFloat(float v) throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public void writeDouble(double v) throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public void writeChar(char v) throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public void writeBoolean(boolean v) throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public void write(byte[] b, int off, int len) throws IOException {throw new RuntimeException("Not Implemented.");}
       };
 
@@ -245,22 +254,33 @@ public class BloomFilter {
       final ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
       InputBuffer buf = new InputBuffer() {
         DataInputStream dis = new DataInputStream(bais);
+        @Override
         public int readInt() throws IOException {
           return dis.readInt();
         }
+        @Override
         public byte readByte() throws IOException {
           return dis.readByte();
         }
+        @Override
         public int bytesRemaining() {throw new RuntimeException("Not Implemented.");}
+        @Override
         public String readUTF() throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public short readShort() throws IOException {throw new RuntimeException("Not Implemented.");}
-        public short peakShort() throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public long readLong() throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public float readFloat() throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public double readDouble() throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public char readChar() throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public boolean readBoolean() throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public int read(byte[] b) throws IOException {throw new RuntimeException("Not Implemented.");}
+        @Override
         public int read(byte[] b, int off, int len) throws IOException {throw new RuntimeException("Not Implemented.");}
       };
 

@@ -64,7 +64,6 @@ public interface TimeSource extends Destructable {
    * block for this many millis
    *
    * @param delay the amount of time to sleep
-   * @throws InterruptedException
    */
   public void sleep(long delay) throws InterruptedException;
 

@@ -55,7 +55,6 @@ public interface AppSocket {
   long read(ByteBuffer dst) throws IOException;
   /**
    * Writes a sequence of bytes to this channel from the given buffer.
-   * @throws IOException
    */
   long write(ByteBuffer src) throws IOException;
 

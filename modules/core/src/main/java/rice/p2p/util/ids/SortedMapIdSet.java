@@ -80,28 +80,34 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
   /** Called after a member was added or removed, for example to drop a cached hash. */
   protected void membersChanged() {}
 
+  @Override
   public int numElements() {
     return members.size();
   }
 
+  @Override
   public void addId(Id id) {
     members.put(id, null);
     membersChanged();
   }
 
+  @Override
   public void removeId(Id id) {
     members.remove(id);
     membersChanged();
   }
 
+  @Override
   public boolean isMemberId(Id id) {
     return members.containsKey(id);
   }
 
+  @Override
   public Iterator<Id> getIterator() {
     return members.keySet().iterator();
   }
 
+  @Override
   public Id[] asArray() {
     return members.keySet().toArray(new Id[0]);
   }
@@ -124,6 +130,7 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
    * @param range the range
    * @return the subset
    */
+  @Override
   @SuppressWarnings("unchecked")
   public S subSet(IdRange range) {
     if (range.isEmpty()) {
@@ -143,6 +150,7 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
    *
    * @return the copy
    */
+  @Override
   public S copy() {
     if (members instanceof ConcurrentRingMap<Id, ?> ring) {
       return newSet(ring.copy());
@@ -150,6 +158,7 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
     return newSet(new ConcurrentRingMap<Id, Object>(members));
   }
 
+  @Override
   public S build() {
     return newSet(new ConcurrentRingMap<Id, Object>());
   }
@@ -159,6 +168,7 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
    *
    * @return "[ IdSet: " followed by each member and a comma, then " ]"
    */
+  @Override
   public String toString() {
     StringBuilder result = new StringBuilder("[ IdSet: ");
     Iterator<Id> it = getIterator();

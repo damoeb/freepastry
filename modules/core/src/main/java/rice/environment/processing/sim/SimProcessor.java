@@ -56,6 +56,7 @@ public class SimProcessor implements Processor {
     this.selector = selector;
   }
 
+  @Override
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
       SelectorManager selector, TimeSource ts, LogManager log) {
     return process(task, command, 0, selector, ts, log);
@@ -68,11 +69,13 @@ public class SimProcessor implements Processor {
     return ret;
   }
 
+  @Override
   public Cancellable processBlockingIO(WorkRequest<?> request) {
     selector.invoke(request);
     return request;
   }
 
+  @Override
   public void destroy() {
 
   }

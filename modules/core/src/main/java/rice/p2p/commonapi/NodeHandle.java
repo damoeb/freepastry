@@ -99,6 +99,7 @@ public abstract class NodeHandle {
       this.priority = priority;
     }
 
+    @Override
     public String toString() {
       return listener+":"+priority;
     }
@@ -110,7 +111,7 @@ public abstract class NodeHandle {
   private static final Comparator<ListenerEntry> BY_PRIORITY =
     (a, b) -> Integer.compare(b.priority, a.priority);
 
-  private List<ListenerEntry> listeners = new ArrayList<ListenerEntry>();
+  private final List<ListenerEntry> listeners = new ArrayList<ListenerEntry>();
 
   /**
    * Registers a listener with priority 0.

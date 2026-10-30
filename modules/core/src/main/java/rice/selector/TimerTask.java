@@ -58,6 +58,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
 
   protected boolean fixedRate = false;
 
+  @Override
   public abstract void run();
 
   /**
@@ -84,6 +85,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
     }
   }
 
+  @Override
   public boolean cancel() {
     if (cancelled) {
       return false;
@@ -95,10 +97,12 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
     return true;
   }
 
+  @Override
   public long scheduledExecutionTime() {
     return nextExecutionTime;
   }
 
+  @Override
   public int compareTo(TimerTask arg0) {
     TimerTask tt = (TimerTask)arg0;
     if (tt == this) return 0;

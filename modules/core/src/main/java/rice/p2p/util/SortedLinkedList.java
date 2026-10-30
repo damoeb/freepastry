@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+@SuppressWarnings("JdkObsolete") // public API: callers rely on the LinkedList operations
 public class SortedLinkedList<E extends Comparable<E>> extends LinkedList<E> {
 
   @Override
@@ -71,38 +72,47 @@ public class SortedLinkedList<E extends Comparable<E>> extends LinkedList<E> {
 
     return new ListIterator<E>(){
 
+      @Override
       public void add(E o) {
         throw new UnsupportedOperationException("Does not guarantee sortedness.");
       }
 
+      @Override
       public boolean hasNext() {
         return it.hasNext();
       }
 
+      @Override
       public boolean hasPrevious() {
         return it.hasPrevious();
       }
 
+      @Override
       public E next() {
         return it.next();
       }
 
+      @Override
       public int nextIndex() {
         return it.nextIndex();
       }
 
+      @Override
       public E previous() {
         return it.previous();
       }
 
+      @Override
       public int previousIndex() {
         return it.previousIndex();
       }
 
+      @Override
       public void remove() {
         it.remove();
       }
 
+      @Override
       public void set(E o) {
         throw new UnsupportedOperationException("Does not guarantee sortedness.");
       }

@@ -91,6 +91,7 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
     return priority;
   }
 
+  @Override
   public int compareTo(ProcessingRequest<?, ?> request) {
     if (priority == request.getPriority()) {
       if (seq > request.seq) return 1;
@@ -100,6 +101,7 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
     return -1;
   }
 
+  @Override
   public void run() {
     if (cancelled) return;
     running = true;
@@ -111,20 +113,24 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
           + r.toString());
 
       selectorManager.invoke(new Runnable() {
+        @Override
         public void run() {
           returnResult(result);
         }
 
+        @Override
         public String toString() {
           return "return ProcessingRequest for " + r + " to " + c;
         }
       });
     } catch (final Exception e) {
       selectorManager.invoke(new Runnable() {
+        @Override
         public void run() {
           returnError(e);
         }
 
+        @Override
         public String toString() {
           return "return ProcessingRequest for " + r + " to " + c;
         }
@@ -133,6 +139,7 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
     logger.trace("COUNT: Done execution of {}", this);
   }
 
+  @Override
   public boolean cancel() {
     cancelled = true;
     return !running;

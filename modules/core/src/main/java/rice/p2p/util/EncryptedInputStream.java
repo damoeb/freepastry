@@ -110,6 +110,7 @@ public class EncryptedInputStream extends InputStream {
    * @return the next byte of data, or <code>-1</code> if the end of the
    *         stream is reached.
    */
+  @Override
   public int read() throws IOException {
     if ((buffer != null) && (bufferLength < buffer.length)) {
       bufferLength++;
@@ -135,6 +136,7 @@ public class EncryptedInputStream extends InputStream {
    *             <code>-1</code> if there is no more data because the end of
    *             the stream has been reached.
    */
+  @Override
   public int read(byte b[], int off, int len) throws IOException {
     if ((buffer != null) && (bufferLength < buffer.length)) {
       int l = (len > available() ? available() : len);
@@ -167,8 +169,9 @@ public class EncryptedInputStream extends InputStream {
    *
    * @return     the number of bytes that can be read from this input stream
    *             without blocking.
-   * @exception  IOException  if an I/O error occurs.
+   * @throws  IOException  if an I/O error occurs.
    */
+  @Override
   public int available() throws IOException {
     if (buffer == null)
       return 0;
@@ -180,8 +183,9 @@ public class EncryptedInputStream extends InputStream {
    * Closes this input stream and releases any system resources associated
    * with the stream.
    *
-   * @exception  IOException  if an I/O error occurs.
+   * @throws  IOException  if an I/O error occurs.
    */
+  @Override
   public void close() throws IOException {
     stream.close();
   }

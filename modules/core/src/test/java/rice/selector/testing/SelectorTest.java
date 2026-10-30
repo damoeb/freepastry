@@ -72,6 +72,8 @@ public class SelectorTest {
       try {
         Thread.sleep(1000);
       } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        return;
       }
     }
   }
@@ -81,6 +83,7 @@ public class SelectorTest {
     final int t1Delay = 3000;
     timer.schedule(new TimerTask() {
       long lastTime = t1Start;
+      @Override
       public void run() {
         long curTime = environment.getTimeSource().currentTimeMillis();
         long delay = curTime-lastTime;
@@ -95,10 +98,11 @@ public class SelectorTest {
     final long t1Start = environment.getTimeSource().currentTimeMillis();
     final int t1Delay = 5000;
     timer.schedule(new TimerTask() {
+      @Override
       public void run() {
         long curTime = environment.getTimeSource().currentTimeMillis();
         curTime-=t1Start;
-        if ((logAll) ||(logIssues && (curTime-t1Delay) > 100))
+        if (logAll ||(logIssues && (curTime-t1Delay) > 100))
           System.out.println("Scheduled once for delay "+t1Delay+" actual delay "+curTime);
       }
     },t1Delay);
@@ -106,7 +110,7 @@ public class SelectorTest {
     sman.invoke(() -> {
       long curTime = environment.getTimeSource().currentTimeMillis();
       curTime-=i1Start;
-      if ((logAll) || (logIssues && (curTime > 100)))
+      if (logAll || (logIssues && (curTime > 100)))
         System.out.println("invoked after "+curTime+" millis.");
     });
   }

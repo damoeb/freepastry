@@ -55,14 +55,17 @@ public class SimpleTimeSource implements TimeSource {
   /**
    * Returns the System.currentTimeMillis();
    */
+  @Override
   public long currentTimeMillis() {
     return System.currentTimeMillis();
   }
 
+  @Override
   public void sleep(long delay) throws InterruptedException {
     Thread.sleep(delay);
   }
 
+  @Override
   public void destroy() {
 
   }

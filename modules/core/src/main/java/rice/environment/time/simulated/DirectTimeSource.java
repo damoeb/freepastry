@@ -49,6 +49,7 @@ import rice.environment.time.TimeSource;
 import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
 
+@SuppressWarnings("SynchronizeOnNonFinalField") // selectorManager is set once by setSelectorManager, before anyone sleeps
 public class DirectTimeSource implements TimeSource {
 
   private long time = 0;
@@ -87,13 +88,13 @@ public class DirectTimeSource implements TimeSource {
 
   }
 
+  @Override
   public long currentTimeMillis() {
     return time;
   }
 
   /**
    * Should be synchronized on the selectorManager
-   * @param newTime
    */
   public void setTime(long newTime) {
     if (newTime < time) {
@@ -115,6 +116,7 @@ public class DirectTimeSource implements TimeSource {
     boolean done = false;
     boolean interrupted = false;
 
+    @Override
     public void run() {
       synchronized(selectorManager) {
         done = true;
@@ -123,12 +125,13 @@ public class DirectTimeSource implements TimeSource {
       }
     }
 
-    public void interrupt() {
+    void interrupt() {
       interrupted = true;
     }
 
   }
 
+  @Override
   public void sleep(long delay) throws InterruptedException {
     synchronized(selectorManager) { // to prevent an out of order acquisition
       // we only lock on the selector
@@ -149,6 +152,7 @@ public class DirectTimeSource implements TimeSource {
   /**
    * Wakes up the threads blocked in {@link #sleep(long)}, they throw an InterruptedException.
    */
+  @Override
   public void destroy() {
     if (selectorManager == null) return; // nobody can be sleeping
     synchronized(selectorManager) {

@@ -91,10 +91,12 @@ public class FutureContinuation<R, E extends Exception> implements Continuation<
     return future;
   }
 
+  @Override
   public void receiveResult(R result) {
     future.complete(result);
   }
 
+  @Override
   public void receiveException(E exception) {
     future.completeExceptionally(exception == null ? new NullPointerException("receiveException(null)") : exception);
   }

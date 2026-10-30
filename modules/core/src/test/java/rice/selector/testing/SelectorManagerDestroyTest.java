@@ -117,12 +117,15 @@ public class SelectorManagerDestroyTest {
     final AtomicInteger second = new AtomicInteger();
     final AtomicInteger third = new AtomicInteger();
     sm.invoke(new Runnable() {
+      @Override
       public void run() {
         sm.destroy(); // re-entrant: from an invocation on the selector thread
         sm.invoke(new Runnable() {
+          @Override
           public void run() {
             second.set(order.incrementAndGet());
             sm.invoke(new Runnable() { // scheduled while draining
+              @Override
               public void run() {
                 third.set(order.incrementAndGet());
               }
@@ -168,6 +171,7 @@ public class SelectorManagerDestroyTest {
     // distinct invocations, each scheduling the next: all of them run (up to the round limit)
     final AtomicInteger runs = new AtomicInteger();
     sm.invoke(new Runnable() {
+      @Override
       public void run() {
         sm.destroy();
         chain(10);
@@ -189,6 +193,7 @@ public class SelectorManagerDestroyTest {
   public void selfReschedulingInvocationIsBounded() throws Exception {
     final AtomicInteger runs = new AtomicInteger();
     sm.invoke(new Runnable() {
+      @Override
       public void run() {
         if (runs.incrementAndGet() == 1) sm.destroy();
         sm.invoke(this);
@@ -247,6 +252,7 @@ public class SelectorManagerDestroyTest {
     sm.invoke(() -> ran.set(true));
     assertEquals(0, sm.getNumInvocations());
     sm.schedule(new TimerTask() {
+      @Override
       public void run() {
         ran.set(true);
       }

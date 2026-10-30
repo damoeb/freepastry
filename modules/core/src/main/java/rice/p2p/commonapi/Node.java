@@ -88,16 +88,11 @@ public interface Node {
    * before it receives messages from the network and notification of changes.
    *
    * When then application is ready, it must call endpoint.register() to receive messages.
-   *
-   * @param application
-   * @param instance
-   * @return
    */
   public Endpoint buildEndpoint(Application application, String instance);
 
   /**
    * For debugging: print the internal routing state of the Node.
-   * @return
    */
   public String printRouteState();
 }

@@ -70,6 +70,7 @@ import rice.selector.SelectorManager;
  * @author Jeff Hoye
  */
 public class Environment implements Destructable {
+  @SuppressWarnings("MutablePublicArray") // public API, passed to the Environment constructors
   public static final String[] defaultParamFileArray = {"freepastry"};
 
   private SelectorManager selectorManager;
@@ -249,8 +250,8 @@ public class Environment implements Destructable {
 
   /**
    * Tears down the environment.  Calls params.store(), selectorManager.destroy().
-   *
    */
+  @Override
   public void destroy() {
     try {
       params.store();

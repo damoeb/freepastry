@@ -65,6 +65,7 @@ public class AttachableCancellable implements Cancellable {
   /**
    * Returns false if any are false;
    */
+  @Override
   public boolean cancel() {
     Collection<Cancellable> delme;
     synchronized(lock) {

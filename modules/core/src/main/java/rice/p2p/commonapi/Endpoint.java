@@ -288,8 +288,6 @@ public interface Endpoint extends NodeHandleReader {
    * Note that when true, the overlay never purposely drops messages routed with a null
    * key:
    * endpoint.deliver(null, msg, targetNodeHandle) // will be delivered regardless of consistency
-   *
-   * @param val
    */
   public void setConsistentRouting(boolean val);
 
@@ -317,27 +315,23 @@ public interface Endpoint extends NodeHandleReader {
    * Returns an ordered list of the nearest known neighbors.
    * Note that proximity is usually an estimate, and can quickly become stale.
    *
-   * @param num
    * @return List of NodeHandle
    */
   public List<NodeHandle> networkNeighbors(int num);
 
   /**
    * To use Raw Serialization
-   * @param buf
-   * @return
-   * @throws IOException
    */
   public IdRange readIdRange(InputBuffer buf) throws IOException;
 
   public NodeHandleSet readNodeHandleSet(InputBuffer buf, short type) throws IOException;
 
+  @Override
   public NodeHandle readNodeHandle(InputBuffer buf) throws IOException;
 
   /**
    * Call this after you have set up your Endpoint:
    *   called setDeserializer(), called accept().
-   *
    */
   public void register();
 
@@ -360,8 +354,6 @@ public interface Endpoint extends NodeHandleReader {
 
   /**
    * Uses these options as defaults.
-   *
-   * @param options
    */
   public void setSendOptions(Map<String, Object> options);
 }

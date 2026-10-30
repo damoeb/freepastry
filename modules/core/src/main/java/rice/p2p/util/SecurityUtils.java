@@ -228,7 +228,7 @@ public class SecurityUtils {
    *
    * @param data The encoded key pair
    * @return The key pair
-   * @exception SecurityException If the data is not an encoded key pair
+   * @throws SecurityException If the data is not an encoded key pair
    */
   public static KeyPair decodeKeyPair(byte[] data) throws SecurityException {
     byte[] len = new byte[4];
@@ -262,7 +262,7 @@ public class SecurityUtils {
    * @param key The key, of any non-zero length
    * @param text The text
    * @return The 32-byte hmac value
-   * @exception SecurityException If the hmacing does not happen properly
+   * @throws SecurityException If the hmacing does not happen properly
    */
   public static byte[] hmac(byte[] key, byte[] text) throws SecurityException {
     try {
@@ -281,7 +281,7 @@ public class SecurityUtils {
    * @param data The data
    * @param key The 256-bit key
    * @return The 12-byte initialization vector, followed by the ciphertext and the 16-byte tag
-   * @exception SecurityException If the encryption does not happen properly
+   * @throws SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptSymmetric(byte[] data, byte[] key) throws SecurityException {
     return encryptSymmetric(data, key, 0, data.length);
@@ -296,7 +296,7 @@ public class SecurityUtils {
    * @param offset The offset into the data
    * @param length The length of data to write
    * @return The 12-byte initialization vector, followed by the ciphertext and the 16-byte tag
-   * @exception SecurityException If the encryption does not happen properly
+   * @throws SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length) throws SecurityException {
     return encryptSymmetric(data, key, offset, length, null);
@@ -313,7 +313,7 @@ public class SecurityUtils {
    * @param length The length of data to write
    * @param associatedData Data that is authenticated but neither encrypted nor included in the output, or null
    * @return The 12-byte initialization vector, followed by the ciphertext and the 16-byte tag
-   * @exception SecurityException If the encryption does not happen properly
+   * @throws SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length, byte[] associatedData) throws SecurityException {
     byte[] iv = generateIVSymmetric();
@@ -340,7 +340,7 @@ public class SecurityUtils {
    *          {@link #encryptSymmetric(byte[], byte[])}
    * @param key The 256-bit key
    * @return The decrypted data
-   * @exception SecurityException If the data was not encrypted under this key, or was changed since
+   * @throws SecurityException If the data was not encrypted under this key, or was changed since
    */
   public static byte[] decryptSymmetric(byte[] data, byte[] key) throws SecurityException {
     return decryptSymmetric(data, key, null);
@@ -354,7 +354,7 @@ public class SecurityUtils {
    * @param key The 256-bit key
    * @param associatedData The additional data the encryption authenticated, or null
    * @return The decrypted data
-   * @exception SecurityException If the data was not encrypted under this key and additional data, or was
+   * @throws SecurityException If the data was not encrypted under this key and additional data, or was
    *          changed since
    */
   public static byte[] decryptSymmetric(byte[] data, byte[] key, byte[] associatedData) throws SecurityException {
@@ -383,7 +383,7 @@ public class SecurityUtils {
    * @param data The data
    * @param password The password
    * @return The 16-byte salt, followed by the IV, the ciphertext and the tag
-   * @exception SecurityException If the encryption does not happen properly
+   * @throws SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptWithPassword(byte[] data, char[] password) throws SecurityException {
     byte[] salt = new byte[PASSWORD_SALT_LENGTH];
@@ -402,7 +402,7 @@ public class SecurityUtils {
    * @param data The salt, followed by the IV, the ciphertext and the tag
    * @param password The password
    * @return The decrypted data
-   * @exception SecurityException If the password is wrong, or the data was changed
+   * @throws SecurityException If the password is wrong, or the data was changed
    */
   public static byte[] decryptWithPassword(byte[] data, char[] password) throws SecurityException {
     if (data.length < PASSWORD_SALT_LENGTH) {
@@ -443,7 +443,7 @@ public class SecurityUtils {
    * @param data The data
    * @param key The key to use to sign
    * @return The signature
-   * @exception SecurityException If the signing does not happen properly
+   * @throws SecurityException If the signing does not happen properly
    */
   public static byte[] sign(byte[] data, PrivateKey key) throws SecurityException {
     try {
@@ -463,7 +463,7 @@ public class SecurityUtils {
    * @param sig The proposed signature
    * @param key The key to verify against
    * @return Whether or not the sig matches.
-   * @exception SecurityException If the verification does not happen properly
+   * @throws SecurityException If the verification does not happen properly
    */
   public static boolean verify(byte[] data, byte[] sig, PublicKey key) throws SecurityException {
     try {
@@ -485,7 +485,7 @@ public class SecurityUtils {
    * @param data The data to encrypt
    * @param key The key to encrypt with
    * @return The encrypted data, as long as the modulus
-   * @exception SecurityException If the encryption does not happen properly
+   * @throws SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptAsymmetric(byte[] data, PublicKey key) throws SecurityException {
     try {
@@ -504,7 +504,7 @@ public class SecurityUtils {
    * @param data The data to decrypt
    * @param key The private key to use
    * @return The decrypted data
-   * @exception SecurityException If the data was not encrypted for this key, or was changed since
+   * @throws SecurityException If the data was not encrypted for this key, or was changed since
    */
   public static byte[] decryptAsymmetric(byte[] data, PrivateKey key) throws SecurityException {
     try {

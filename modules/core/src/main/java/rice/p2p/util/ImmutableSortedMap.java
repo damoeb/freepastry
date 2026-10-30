@@ -55,7 +55,7 @@ import java.util.SortedMap;
  *
  * @author Alan Mislove
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "JdkObsolete"}) // JdkObsolete: public API implements SortedMap
 public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
 
   // the internal map
@@ -77,6 +77,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @return the comparator associated with this sorted map, or
    *          <code>null</code> if it uses its keys' natural ordering.
    */
+  @Override
   public Comparator<? super K> comparator() {
     return map.comparator();
   }
@@ -89,6 +90,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @param toKey high endpoint (exclusive) of the subMap.
    * @return a view of the specified range within this sorted map.
    */
+  @Override
   public SortedMap<K, V> subMap(K fromKey, K toKey) {
     return new ImmutableSortedMap<K, V>(map.subMap(fromKey, toKey));
   }
@@ -100,6 +102,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @param toKey high endpoint (exclusive) of the subMap.
    * @return a view of the specified initial range of this sorted map.
    */
+  @Override
   public SortedMap<K, V> headMap(K toKey) {
     return new ImmutableSortedMap<K, V>(map.headMap(toKey));
   }
@@ -111,6 +114,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @param fromKey low endpoint (inclusive) of the tailMap.
    * @return a view of the specified final range of this sorted map.
    */
+  @Override
   public SortedMap<K, V> tailMap(K fromKey) {
     return new ImmutableSortedMap<K, V>(map.tailMap(fromKey));
   }
@@ -121,6 +125,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @return the first (lowest) key currently in this sorted map.
    * @throws    NoSuchElementException if this map is empty.
    */
+  @Override
   public K firstKey() {
     return map.firstKey();
   }
@@ -131,6 +136,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @return the last (highest) key currently in this sorted map.
    * @throws     NoSuchElementException if this map is empty.
    */
+  @Override
   public K lastKey() {
     return map.lastKey();
   }
@@ -142,6 +148,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    *
    * @return the number of key-value mappings in this map.
    */
+  @Override
   public int size() {
     return map.size();
   }
@@ -151,6 +158,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    *
    * @return <code>true</code> if this map contains no key-value mappings.
    */
+  @Override
   public boolean isEmpty() {
     return map.isEmpty();
   }
@@ -162,6 +170,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @param key key whose presence in this map is to be tested.
    * @return <code>true</code> if this map contains a mapping for the specified
    */
+  @Override
   public boolean containsKey(Object key) {
     return map.containsKey(key);
   }
@@ -174,6 +183,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @return <code>true</code> if this map maps one or more keys to the
    *         specified value.
   */
+  @Override
   public boolean containsValue(Object value) {
     return map.containsValue(value);
   }
@@ -186,6 +196,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @return the value to which this map maps the specified key, or
    *         <code>null</code> if the map contains no mapping for this key.
    */
+  @Override
   public V get(Object key) {
     return map.get(key);
   }
@@ -208,6 +219,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @throws UnsupportedOperationException if the <code>put</code> operation is
    *            not supported by this map.
    */
+  @Override
   public V put(K key, V value) {
     throw new UnsupportedOperationException("put not supported by immutablemap");
   }
@@ -223,6 +235,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @return previous value associated with specified key, or <code>null</code>
    *         if there was no mapping for key.
    */
+  @Override
   public V remove(Object key) {
     throw new UnsupportedOperationException("remove not supported by immutablemap");
   }
@@ -233,6 +246,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    *
    * @param t Mappings to be stored in this map.
    */
+  @Override
   public void putAll(Map<? extends K, ? extends V> t) {
     throw new UnsupportedOperationException("putall not supported by immutablemap");
   }
@@ -243,6 +257,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * @throws UnsupportedOperationException clear is not supported by this
    *       map.
    */
+  @Override
   public void clear() {
     throw new UnsupportedOperationException("clear not supported by immutablemap");
   }
@@ -259,6 +274,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    *
    * @return a set view of the keys contained in this map.
    */
+  @Override
   public Set<K> keySet() {
     return map.keySet();
   }
@@ -276,6 +292,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    *
    * @return a collection view of the values contained in this map.
    */
+  @Override
   public Collection<V> values() {
     return map.values();
   }
@@ -293,6 +310,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    *
    * @return a set view of the mappings contained in this map.
    */
+  @Override
   public Set<Map.Entry<K, V>> entrySet() {
     return map.entrySet();
   }

@@ -44,6 +44,7 @@ package rice.selector;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -113,17 +114,19 @@ public class ProfileSelector extends SelectorManager {
     watchdog.interrupt();
   }
 
+  @Override
   protected void onLoop() {
     long curTime = timeSource.currentTimeMillis();
     if ((curTime - lastHeartBeat) > HEART_BEAT_INTERVAL) {
-      System.out.println("selector heartbeat "+DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now())+" maxInvokes:"+maxInvokes+" invokesSched:"+numInvocationsScheduled+" invokesExe:"+numInvocationsExecuted+" CurrentThread:"+Thread.currentThread()+"@"+System.identityHashCode(Thread.currentThread()));
+      System.out.println("selector heartbeat "+DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.systemDefault()))+" maxInvokes:"+maxInvokes+" invokesSched:"+numInvocationsScheduled+" invokesExe:"+numInvocationsExecuted+" CurrentThread:"+Thread.currentThread()+"@"+System.identityHashCode(Thread.currentThread()));
       printStats();
       lastHeartBeat = curTime;
     }
   }
 
   int maxInvokes = 0;
-  public void invoke(Runnable d) {
+  @Override
+  public synchronized void invoke(Runnable d) {
     synchronized(this) {
       numInvocationsScheduled++;
       super.invoke(d);
@@ -161,6 +164,7 @@ public class ProfileSelector extends SelectorManager {
     }
   }
 
+  @Override
   protected boolean executeTask(TimerTask next) {
     lastTaskType = "Executing "+next;
     long startTime = timeSource.currentTimeMillis();
@@ -171,6 +175,7 @@ public class ProfileSelector extends SelectorManager {
     return ret;
   }
 
+  @Override
   protected void doSelections() throws IOException {
     SelectionKey[] keys = selectedKeys();
 
@@ -212,9 +217,7 @@ public class ProfileSelector extends SelectorManager {
           lastTaskClass = skh.getClass().getName();
           lastTaskToString = skh.toString();
           lastTaskHash = System.identityHashCode(skh);
-          long startTime = timeSource.currentTimeMillis();
           skh.read(key);
-          int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Read Complete";
         }
 
@@ -224,9 +227,7 @@ public class ProfileSelector extends SelectorManager {
           lastTaskClass = skh.getClass().getName();
           lastTaskToString = skh.toString();
           lastTaskHash = System.identityHashCode(skh);
-          long startTime = timeSource.currentTimeMillis();
           skh.write(key);
-          int time = (int)(timeSource.currentTimeMillis() - startTime);
           lastTaskType = "Write Complete";
         }
       } else {
@@ -241,6 +242,7 @@ public class ProfileSelector extends SelectorManager {
    * Method which invokes all pending invocations. This method should *only* be
    * called by the selector thread.
    */
+  @Override
   protected void doInvocations() {
     Iterator<Runnable> i;
     synchronized(this) {
@@ -256,9 +258,7 @@ public class ProfileSelector extends SelectorManager {
         lastTaskClass = run.getClass().getName();
         lastTaskToString = run.toString();
         lastTaskHash = System.identityHashCode(run);
-        long startTime = timeSource.currentTimeMillis();
         run.run();
-        int time = (int)(timeSource.currentTimeMillis() - startTime);
         lastTaskType = "Invocation Complete";
       } catch (Exception e) {
         logger.error("Invoking runnable caused exception {} - continuing", e, e);
@@ -310,6 +310,7 @@ public class ProfileSelector extends SelectorManager {
       }
     }
 
+    @Override
     public String toString() {
       long avgTime = totalTime/num;
       return name+"\t maxTime:"+maxTime+"\t avgTime:"+avgTime+"\t numInstances:"+num+"\t totalTime:"+totalTime;

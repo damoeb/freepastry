@@ -48,7 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
@@ -78,7 +78,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   protected Selector selector;
 
   // a list of the invocations that need to be done in this thread
-  protected LinkedList<Runnable> invocations;
+  protected List<Runnable> invocations;
 
   // the list of handlers which want to change their key
   protected HashSet<SelectionKey> modifyKeys;
@@ -128,7 +128,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     if (this.random == null) this.random = new SimpleRandomSource(log);
     this.instance = instance;
     this.logger = log.getLogger(getClass(), instance);
-    this.invocations = new LinkedList<Runnable>();
+    this.invocations = new ArrayList<Runnable>();
     this.modifyKeys = new HashSet<SelectionKey>();
     this.cancelledKeys = new HashSet<SelectionKey>();
     this.timeSource = timeSource;
@@ -260,6 +260,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * This method starts the socket manager listening for events. It is designed
    * to be started when this thread's start() method is invoked.
    */
+  @Override
+  @SuppressWarnings("ThreadPriorityCheck") // the yield only lets other threads take the selector lock
   public void run() {
     logger.info("SelectorManager -- {} starting...", instance);
 
@@ -387,6 +389,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * The selector thread finishes its current loop, runs the invocations that are still pending, and closes
    * all channels that are still registered, see {@link #shutdown()}. Join this thread to wait for that.
    */
+  @Override
   public void destroy() {
     if (logger.isDebugEnabled()) {
       logger.debug("destroying SelectorManager", new Exception("Stack Trace"));
@@ -436,7 +439,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     lastTime = now;
   }
 
-  ArrayList<LoopObserver> loopObservers = new ArrayList<LoopObserver>();
+  final ArrayList<LoopObserver> loopObservers = new ArrayList<LoopObserver>();
 
   public void addLoopObserver(LoopObserver lo) {
     synchronized (loopObservers) {
@@ -554,7 +557,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    *
    * @param time the maximum time to wait in millis, capped at TIMEOUT
    * @return the number of selected keys (1 after an interrupted system call)
-   * @exception IOException if the select fails
+   * @throws IOException if the select fails
    */
   protected int select(int time) throws IOException {
     logger.trace("SM.select({})", time);
@@ -606,6 +609,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    *
    * @return Whether or not this is the selector thread
    */
+  @SuppressWarnings("ReferenceEquality") // this manager is the selector thread
   public boolean isSelectorThread() {
     return (Thread.currentThread() == this);
   }
@@ -616,11 +620,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * @param task The task to run
    * @return the task
    */
+  @Override
   public TimerTask schedule(TimerTask task) {
     addTask(task);
     return task;
   }
 
+  @Override
   public TimerTask schedule(TimerTask task, long delay) {
     task.setNextExecutionTime(timeSource.currentTimeMillis() + delay);
     addTask(task);
@@ -635,6 +641,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * @param delay The delay before first running, in milliseconds
    * @param period The period with which to run in milliseconds
    */
+  @Override
   public TimerTask schedule(TimerTask task, long delay, long period) {
     task.setNextExecutionTime(timeSource.currentTimeMillis() + delay);
     task.period = (int) period;
@@ -650,6 +657,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * @param delay The delay before first running in milliseconds
    * @param period The period with which to run in milliseconds
    */
+  @Override
   public TimerTask scheduleAtFixedRate(TimerTask task, long delay, long period) {
     task.setNextExecutionTime(timeSource.currentTimeMillis() + delay);
     task.period = (int) period;
@@ -708,7 +716,6 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   /**
    * Note, should hold the selector's (this) lock to call this.
-   *
    */
   public void wakeup() {
     selector.wakeup();

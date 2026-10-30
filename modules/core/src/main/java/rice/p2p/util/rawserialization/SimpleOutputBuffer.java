@@ -58,18 +58,22 @@ public class SimpleOutputBuffer extends DataOutputStream implements OutputBuffer
     super(new ByteArrayOutputStream());
     baos = (ByteArrayOutputStream)out;
   }
+  @Override
   public void writeByte(byte v) throws IOException {
     this.write(v);
   }
 
+  @Override
   public void writeChar(char v) throws IOException {
     writeChar((int) v);
   }
 
+  @Override
   public void writeShort(short v) throws IOException {
     writeShort((int) v);
   }
 
+  @Override
   public int bytesRemaining() {
     return Integer.MAX_VALUE;
   }
@@ -84,7 +88,6 @@ public class SimpleOutputBuffer extends DataOutputStream implements OutputBuffer
 
   /**
    * The amount of bytes written so far... the size (not the capacity).
-   * @return
    */
   public int getWritten() {
     return written;

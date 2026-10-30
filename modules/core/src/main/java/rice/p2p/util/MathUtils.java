@@ -115,7 +115,6 @@ public class MathUtils {
    *
    * From Wikipedia: http://en.wikipedia.org/wiki/Hash_table
    *
-   * @param b
    * @return A hash of b
    */
   public static int simpleHash(byte[] b) {
@@ -247,10 +246,6 @@ public class MathUtils {
    * @return A correct-length array
    */
   private static byte[] correctLength(byte[] data, int length) {
-    return correctLength(data, 0, length);
-  }
-
-  private static byte[] correctLength(byte[] data, int offset, int length) {
     if (data.length >= length)
       return data;
 

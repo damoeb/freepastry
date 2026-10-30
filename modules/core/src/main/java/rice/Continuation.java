@@ -107,6 +107,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The exception which was caused.
      */
+    @Override
     public void receiveException(E result) {
       parent.receiveException(result);
     }
@@ -144,6 +145,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The result
      */
+    @Override
     public void receiveResult(R result) {
     }
 
@@ -153,6 +155,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The exception which was caused.
      */
+    @Override
     public void receiveException(E result) {
       logger.warn("ERROR - Received exception {} during task {}", result, name, result);
     }
@@ -170,6 +173,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The exception which was caused.
      */
+    @Override
     public void receiveException(Exception result) {
       receiveResult(result);
     }
@@ -188,11 +192,13 @@ public interface Continuation<R, E extends Exception> {
     private volatile R result;
     private final CountDownLatch done = new CountDownLatch(1);
 
+    @Override
     public void receiveResult(R o) {
       result = o;
       done.countDown();
     }
 
+    @Override
     public void receiveException(E e) {
       fail(e);
     }
@@ -275,7 +281,9 @@ public interface Continuation<R, E extends Exception> {
      */
     public Continuation<Object, Exception> getSubContinuation(final int index) {
       return new Continuation<Object, Exception>() {
+        @Override
         public void receiveResult(Object o) { receive(index, o); }
+        @Override
         public void receiveException(Exception e) { receive(index, e); }
       };
     }
@@ -289,7 +297,7 @@ public interface Continuation<R, E extends Exception> {
      * @param o The result for that continuation
      */
     protected void receive(int index, Object o) {
-      if ((! done) && (! haveResult[index])) {
+      if (! done && ! haveResult[index]) {
         haveResult[index] = true;
         result[index] = o;
 
@@ -367,6 +375,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The result
      */
+    @Override
     public void receiveResult(R result) {
       parent.receiveResult(result);
     }
@@ -378,6 +387,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @param result The exception which was caused.
      */
+    @Override
     public void receiveException(E result) {
       parent.receiveException(result);
     }
@@ -387,6 +397,7 @@ public interface Continuation<R, E extends Exception> {
      *
      * @return The name
      */
+    @Override
     public String toString() {
       return name;
     }

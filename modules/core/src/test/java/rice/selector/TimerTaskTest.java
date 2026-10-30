@@ -47,6 +47,7 @@ public class TimerTaskTest {
       setNextExecutionTime(nextExecutionTime);
     }
 
+    @Override
     public void run() {
     }
   }

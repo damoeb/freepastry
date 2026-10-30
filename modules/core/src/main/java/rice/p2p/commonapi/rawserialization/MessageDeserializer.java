@@ -71,7 +71,6 @@ public interface MessageDeserializer {
    * @param priority the priority of the message
    * @param sender the sender of the Message (may be null if not specified).
    * @return The deserialized message.
-   * @throws IOException
    */
   Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException;
 }

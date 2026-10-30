@@ -54,19 +54,14 @@ import java.net.UnknownHostException;
 public interface Parameters {
   /**
    * Remove the key
-   * @param name
    */
   public void remove(String name);
   /**
    * See if the parameters contains the key
-   *
-   * @param name
-   * @return
    */
   public boolean contains(String name);
   /**
    * Persistently stores the parameters.
-   * @throws IOException
    */
   public void store() throws IOException;
 
@@ -82,9 +77,6 @@ public interface Parameters {
   /**
    * String format is dnsname
    * ex: "computer.school.edu"
-   * @param paramName
-   * @return
-   * @throws UnknownHostException
    */
   public InetAddress getInetAddress(String paramName) throws UnknownHostException;
 
@@ -92,16 +84,12 @@ public interface Parameters {
   /**
    * String format is name:port
    * ex: "computer.school.edu:1984"
-   * @param paramName
-   * @return
    */
   public InetSocketAddress getInetSocketAddress(String paramName) throws UnknownHostException;
 
   /**
    * String format is comma separated.
    * ex: "computer.school.edu:1984,computer2.school.edu:1984,computer.school.edu:1985"
-   * @param paramName
-   * @return
    */
   public InetSocketAddress[] getInetSocketAddressArray(String paramName) throws UnknownHostException;
 

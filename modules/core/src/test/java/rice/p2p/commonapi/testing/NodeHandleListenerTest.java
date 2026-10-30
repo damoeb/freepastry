@@ -56,8 +56,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class NodeHandleListenerTest {
 
   static class TestHandle extends NodeHandle {
+    @Override
     public Id getId() { return null; }
+    @Override
     public boolean checkLiveness() { return true; }
+    @Override
     public void serialize(OutputBuffer buf) throws IOException { }
 
     void fire(Object event) {
@@ -74,6 +77,7 @@ public class NodeHandleListenerTest {
       this.log = log;
     }
 
+    @Override
     public void nodeHandleUpdate(NodeHandle handle, Object event) {
       log.add(name + ":" + event);
     }
@@ -113,6 +117,7 @@ public class NodeHandleListenerTest {
     TestHandle handle = new TestHandle();
     List<String> log = new ArrayList<String>();
     handle.addNodeHandleListener(new NodeHandleListener() {
+      @Override
       public void nodeHandleUpdate(NodeHandle h, Object event) {
         log.add("once:" + event);
         assertTrue(h.removeNodeHandleListener(this));

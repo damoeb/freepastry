@@ -61,6 +61,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * Like a TreeMap view, a view's subMap, headMap and tailMap clamp their bounds into the view's range, and put() of
  * a key out of range throws IllegalArgumentException.
  */
+@SuppressWarnings("JdkObsolete") // a ring has no total order, so it cannot be a NavigableMap
 public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements SortedMap<K, V> {
 
   /** Stands in for a null value. */
@@ -149,7 +150,7 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
     return value == null ? Null.VALUE : value;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"}) // the stored values are all V or Null.VALUE
   private static <V> V unmask(Object stored) {
     return stored == Null.VALUE ? null : (V) stored;
   }

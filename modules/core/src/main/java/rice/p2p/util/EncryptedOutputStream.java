@@ -120,6 +120,7 @@ public class EncryptedOutputStream extends OutputStream {
    *
    * @param b the byte
    */
+  @Override
   public void write(int b) throws IOException {
     write(new byte[] {(byte) (b & 0xff)});
   }
@@ -131,6 +132,7 @@ public class EncryptedOutputStream extends OutputStream {
    * @param      off   the start offset in the data.
    * @param      len   the number of bytes to write.
    */
+  @Override
   public void write(byte b[], int off, int len) throws IOException {
     if (b == null) {
       throw new NullPointerException();
@@ -172,6 +174,7 @@ public class EncryptedOutputStream extends OutputStream {
    * Flushes this output stream and forces any buffered output bytes
    * to be written out.
    */
+  @Override
   public void flush() throws IOException {
     writeBuffer();
     stream.flush();
@@ -181,6 +184,7 @@ public class EncryptedOutputStream extends OutputStream {
    * Closes this output stream and releases any system resources
    * associated with this stream.
    */
+  @Override
   public void close() throws IOException {
     flush();
     stream.close();

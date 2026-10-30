@@ -46,10 +46,10 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -188,12 +188,10 @@ public class SimpleParameters implements Parameters {
    * Note, this method does not implicitly call store()
    *
    * @see #store()
-   * @param name
-   * @param value
    */
   protected void setProperty(String name, String value) {
     if ((defaults.getProperty(name) != null)
-        && (defaults.getProperty(name).equals(value))) {
+        && defaults.getProperty(name).equals(value)) {
       // setting property back to default, remove override property if any
       if (properties.getProperty(name) != null) {
         properties.remove(name);
@@ -201,24 +199,27 @@ public class SimpleParameters implements Parameters {
       }
     } else {
       if ((properties.getProperty(name) == null)
-          || (!properties.getProperty(name).equals(value))) {
+          || !properties.getProperty(name).equals(value)) {
         properties.setProperty(name, value);
         fireChangeEvent(name, value);
       }
     }
   }
 
+  @Override
   public void remove(String name) {
     properties.remove(name);
     fireChangeEvent(name, null);
   }
 
+  @Override
   public boolean contains(String name) {
     if (defaults.containsKey(name))
       return true;
     return properties.containsKey(name);
   }
 
+  @Override
   public int getInt(String name) {
     try {
       return Integer.parseInt(getProperty(name));
@@ -228,6 +229,7 @@ public class SimpleParameters implements Parameters {
     }
   }
 
+  @Override
   public double getDouble(String name) {
     try {
       return Double.parseDouble(getProperty(name));
@@ -237,6 +239,7 @@ public class SimpleParameters implements Parameters {
     }
   }
 
+  @Override
   public float getFloat(String name) {
     try {
       return Float.parseFloat(getProperty(name));
@@ -246,6 +249,7 @@ public class SimpleParameters implements Parameters {
     }
   }
 
+  @Override
   public long getLong(String name) {
     try {
       return Long.parseLong(getProperty(name));
@@ -255,26 +259,31 @@ public class SimpleParameters implements Parameters {
     }
   }
 
+  @Override
   public boolean getBoolean(String name) {
     return Boolean.valueOf(getProperty(name)).booleanValue();
   }
 
+  @Override
   public InetAddress getInetAddress(String name) throws UnknownHostException {
     return InetAddress.getByName(getString(name));
   }
 
+  @Override
   public InetSocketAddress getInetSocketAddress(String name)
       throws UnknownHostException {
     return parseInetSocketAddress(getString(name));
   }
 
+  @Override
+  @SuppressWarnings("StringSplitter") // dropping trailing empty entries is intended
   public InetSocketAddress[] getInetSocketAddressArray(String name)
       throws UnknownHostException {
     if (getString(name).length() == 0)
       return new InetSocketAddress[0];
 
     String[] addresses = getString(name).split(ARRAY_SPACER);
-    List<InetSocketAddress> result = new LinkedList<InetSocketAddress>();
+    List<InetSocketAddress> result = new ArrayList<InetSocketAddress>();
 
     for (String string : addresses) {
       InetSocketAddress address = parseInetSocketAddress(string);
@@ -286,10 +295,12 @@ public class SimpleParameters implements Parameters {
     return (InetSocketAddress[]) result.toArray(new InetSocketAddress[0]);
   }
 
+  @Override
   public String getString(String name) {
     return getProperty(name);
   }
 
+  @Override
   public String[] getStringArray(String name) {
     String list = getProperty(name);
 
@@ -299,35 +310,43 @@ public class SimpleParameters implements Parameters {
       return null;
   }
 
+  @Override
   public void setInt(String name, int value) {
     setProperty(name, Integer.toString(value));
   }
 
+  @Override
   public void setDouble(String name, double value) {
     setProperty(name, Double.toString(value));
   }
 
+  @Override
   public void setFloat(String name, float value) {
     setProperty(name, Float.toString(value));
   }
 
+  @Override
   public void setLong(String name, long value) {
     setProperty(name, Long.toString(value));
   }
 
+  @Override
   public void setBoolean(String name, boolean value) {
     setProperty(name, "" + value);
   }
 
+  @Override
   public void setInetAddress(String name, InetAddress value) {
     setProperty(name, value.getHostAddress());
   }
 
+  @Override
   public void setInetSocketAddress(String name, InetSocketAddress value) {
     setProperty(name, value.getAddress().getHostAddress() + ":"
         + value.getPort());
   }
 
+  @Override
   public void setInetSocketAddressArray(String name, InetSocketAddress[] value) {
     StringBuilder buffer = new StringBuilder();
 
@@ -341,10 +360,12 @@ public class SimpleParameters implements Parameters {
     setProperty(name, buffer.toString());
   }
 
+  @Override
   public void setString(String name, String value) {
     setProperty(name, value);
   }
 
+  @Override
   public void setStringArray(String name, String[] value) {
     StringBuilder buffer = new StringBuilder();
 
@@ -357,6 +378,7 @@ public class SimpleParameters implements Parameters {
     setProperty(name, buffer.toString());
   }
 
+  @Override
   public void store() throws IOException {
     if (configFileName == null)
       return;
@@ -375,6 +397,7 @@ public class SimpleParameters implements Parameters {
       try {
         Files.deleteIfExists(old);
       } catch (IOException ignored) {
+        // as with delete, a failed step is ignored
       }
     } catch (IOException ioe) {
       LOG.error("Unable to store properties file {}", configFileName, ioe);
@@ -386,13 +409,16 @@ public class SimpleParameters implements Parameters {
     try {
       Files.move(from, to, REPLACE_EXISTING);
     } catch (IOException ignored) {
+      // as with renameTo, a failed move is ignored
     }
   }
 
+  @Override
   public void addChangeListener(ParameterChangeListener p) {
     changeListeners.add(p);
   }
 
+  @Override
   public void removeChangeListener(ParameterChangeListener p) {
     changeListeners.remove(p);
   }
@@ -404,17 +430,20 @@ public class SimpleParameters implements Parameters {
   }
 
   protected static class MyProperties extends Properties {
-    public Enumeration<Object> keys() {
+    @Override
+    public synchronized Enumeration<Object> keys() {
       final String[] keys = (String[]) keySet().toArray(new String[0]);
       Arrays.sort(keys);
 
       return new Enumeration<Object>() {
         int pos = 0;
 
+        @Override
         public boolean hasMoreElements() {
           return (pos < keys.length);
         }
 
+        @Override
         public Object nextElement() {
           return keys[pos++];
         }

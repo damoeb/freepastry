@@ -81,5 +81,6 @@ public interface Processor extends Destructable {
   /**
    * Shuts down the processing thread.
    */
+  @Override
   public void destroy();
 }

@@ -104,6 +104,7 @@ public class SimpleRandomSource implements RandomSource {
     rnd = new Random(seed);
   }
 
+  @Override
   public boolean nextBoolean() {
     boolean ret = rnd.nextBoolean();
     if (logger != null)
@@ -111,12 +112,14 @@ public class SimpleRandomSource implements RandomSource {
     return ret;
   }
 
+  @Override
   public void nextBytes(byte[] bytes) {
     rnd.nextBytes(bytes);
     if (logger != null)
       logger.trace("nextBytes[{}] = {}", bytes.length, bytes);
   }
 
+  @Override
   public double nextDouble() {
     double ret = rnd.nextDouble();
     if (logger != null)
@@ -124,6 +127,7 @@ public class SimpleRandomSource implements RandomSource {
     return ret;
   }
 
+  @Override
   public float nextFloat() {
     float ret = rnd.nextFloat();
     if (logger != null)
@@ -131,6 +135,7 @@ public class SimpleRandomSource implements RandomSource {
     return ret;
   }
 
+  @Override
   public int nextInt() {
     int ret = rnd.nextInt();
     if (logger != null)
@@ -138,6 +143,7 @@ public class SimpleRandomSource implements RandomSource {
     return ret;
   }
 
+  @Override
   public int nextInt(int max) {
     int ret = rnd.nextInt(max);
     if (logger != null)
@@ -145,6 +151,7 @@ public class SimpleRandomSource implements RandomSource {
     return ret;
   }
 
+  @Override
   public long nextLong() {
     long ret = rnd.nextLong();
     if (logger != null)

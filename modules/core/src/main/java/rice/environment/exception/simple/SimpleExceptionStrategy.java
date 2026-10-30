@@ -50,10 +50,10 @@ public class SimpleExceptionStrategy implements ExceptionStrategy {
     logger = manager.getLogger(SimpleExceptionStrategy.class, null);
   }
 
+  @Override
   public void handleException(Object source, Throwable t) {
     logger.warn("handleException({})", source, t);
-    if (source instanceof SelectorManager) {
-      SelectorManager sm = (SelectorManager)source;
+    if (source instanceof SelectorManager sm) {
       sm.getEnvironment().destroy();
     }
   }

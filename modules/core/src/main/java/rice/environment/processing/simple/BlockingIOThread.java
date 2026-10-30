@@ -54,6 +54,7 @@ public class BlockingIOThread extends Thread {
     this.workQ = workQ;
   }
 
+  @Override
   public void run() {
     running = true;
     while (running) {

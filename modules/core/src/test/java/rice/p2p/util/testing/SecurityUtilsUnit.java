@@ -53,10 +53,10 @@ public class SecurityUtilsUnit {
    * Tests the security service.
    *
    * @param argv The command line arguments
-   * @exception NoSuchAlgorithmException If the encryption does not happen
+   * @throws NoSuchAlgorithmException If the encryption does not happen
    *      properly
-   * @exception IOException If the encryption does not happen properly
-   * @exception ClassNotFoundException If the encryption does not happen
+   * @throws IOException If the encryption does not happen properly
+   * @throws ClassNotFoundException If the encryption does not happen
    *      properly
    */
   public static void main(String[] argv) throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
@@ -154,7 +154,7 @@ public class SecurityUtilsUnit {
 
     String hmacText = "<1896.697170952@postoffice.reston.mci.net>";
     String hmacKey = "tanstaaftanstaaf";
-    byte[] hmac = SecurityUtils.hmac(hmacKey.getBytes(), hmacText.getBytes());
+    byte[] hmac = SecurityUtils.hmac(hmacKey.getBytes(StandardCharsets.UTF_8), hmacText.getBytes(StandardCharsets.UTF_8));
     // HMAC-SHA256
     byte[] hmacResult = new byte[] {(byte) 0xf0, (byte) 0x01, (byte) 0x1b, (byte) 0xbf,
       (byte) 0x7c, (byte) 0x16, (byte) 0x18, (byte) 0xef,
@@ -179,7 +179,7 @@ public class SecurityUtilsUnit {
 
     String hmacText2 = "<1080369447214@The-Edge.local>";
     String hmacKey2 = "monkey";
-    byte[] hmac2 = SecurityUtils.hmac(hmacKey2.getBytes(), hmacText2.getBytes());
+    byte[] hmac2 = SecurityUtils.hmac(hmacKey2.getBytes(StandardCharsets.UTF_8), hmacText2.getBytes(StandardCharsets.UTF_8));
     byte[] hmacResult2 = new byte[] {(byte) 0x3f, (byte) 0x63, (byte) 0x7a, (byte) 0xb2,
       (byte) 0x9c, (byte) 0xf2, (byte) 0x57, (byte) 0x3d,
       (byte) 0x93, (byte) 0x9f, (byte) 0x94, (byte) 0xbf,

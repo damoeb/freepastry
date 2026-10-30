@@ -60,16 +60,19 @@ public class ParamsNotPresentException extends RuntimeException {
     this.subexception = e;
   }
 
+  @Override
   public void printStackTrace(PrintStream arg0) {
     super.printStackTrace(arg0);
     subexception.printStackTrace(arg0);
   }
 
+  @Override
   public void printStackTrace() {
     super.printStackTrace();
     subexception.printStackTrace();
   }
 
+  @Override
   public void printStackTrace(PrintWriter pw) {
     super.printStackTrace(pw);
     subexception.printStackTrace(pw);

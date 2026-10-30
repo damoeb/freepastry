@@ -56,6 +56,7 @@ public class ProcessingThread extends Thread {
     this.queue = queue;
   }
 
+  @Override
   public void run() {
     running = true;
     while (running) {

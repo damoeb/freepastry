@@ -58,6 +58,7 @@ public class WorkQueue {
    * Put into the queue by {@link #destroy()} to wake up the threads blocked in {@link #dequeue()}.
    */
   private static final WorkRequest<Object> STOP = new WorkRequest<Object>() {
+    @Override
     public Object doWork() {
       return null;
     }
@@ -95,6 +96,7 @@ public class WorkQueue {
    *
    * @return the next request, or null once the queue is destroyed
    */
+  @SuppressWarnings("ReferenceEquality") // STOP is a sentinel instance
   public WorkRequest<?> dequeue() {
     boolean interrupted = false;
     try {
