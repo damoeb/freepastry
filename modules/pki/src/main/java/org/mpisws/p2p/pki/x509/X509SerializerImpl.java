@@ -55,6 +55,7 @@ public class X509SerializerImpl implements X509Serializer {
     certificatefactory = CertificateFactory.getInstance("X.509", "BC");
   }
 
+  @Override
   public void serialize(X509Certificate cert, OutputBuffer buf) throws IOException {
     try {
       byte[] encoded = cert.getEncoded();
@@ -67,6 +68,7 @@ public class X509SerializerImpl implements X509Serializer {
     }
   }
 
+  @Override
   public X509Certificate deserialize(InputBuffer buf) throws IOException {
     try {
       byte[] encoded = new byte[buf.readInt()];

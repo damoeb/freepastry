@@ -111,6 +111,7 @@ public class CAToolImpl implements CATool {
     this.keyPair = caPair;
   }
 
+  @Override
   public X509Certificate getCertificate() {
     return cert;
   }
@@ -118,19 +119,6 @@ public class CAToolImpl implements CATool {
   /**
    *
    * @param CN only used when generating a new CA
-   * @param pw
-   * @return
-   * @throws KeyStoreException
-   * @throws NoSuchProviderException
-   * @throws NoSuchAlgorithmException
-   * @throws CertificateException
-   * @throws FileNotFoundException
-   * @throws IOException
-   * @throws UnrecoverableKeyException
-   * @throws InvalidKeyException
-   * @throws IllegalStateException
-   * @throws SignatureException
-   * @throws InvalidAlgorithmParameterException
    */
   public static CAToolImpl getCATool(String CN, char[] pw) throws KeyStoreException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, FileNotFoundException, IOException, UnrecoverableKeyException, InvalidKeyException, IllegalStateException, SignatureException, InvalidAlgorithmParameterException {
 
@@ -194,17 +182,7 @@ public class CAToolImpl implements CATool {
   /**
    *
    * @param CN common name
-   * @param startDate
-   * @param expiryDate
-   * @param serialNumber
-   * @param keyPair
    * @return the CA cert
-   * @throws SignatureException
-   * @throws NoSuchAlgorithmException
-   * @throws NoSuchProviderException
-   * @throws IllegalStateException
-   * @throws InvalidKeyException
-   * @throws CertificateEncodingException
    */
   public static X509Certificate generateNewCA(String CN, Instant startDate, Instant expiryDate, long serialNumber, KeyPair keyPair, String signatureAlgorithm) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     X500Principal dnName = new X500Principal("CN="+CN);
@@ -237,6 +215,7 @@ public class CAToolImpl implements CATool {
     }
   }
 
+  @Override
   public X509Certificate sign(String CN, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     Instant exp = ZonedDateTime.now().plusYears(1).toInstant();
     return sign(CN,key,exp,System.currentTimeMillis());
@@ -272,9 +251,6 @@ public class CAToolImpl implements CATool {
   /**
    *
    * -p CApassword -ca CAname -cn newCN
-   *
-   * @param args
-   * @throws Exception
    */
   public static void main(String[] args) throws Exception {
     char[] pw = new char[0];

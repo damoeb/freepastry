@@ -158,21 +158,25 @@ public class SSLTest {
   /** makes alice read PAYLOAD from incoming sockets into aliceRead */
   void acceptOn(SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice) {
     alice.setErrorHandler(new ErrorHandler<InetSocketAddress>() {
+      @Override
       public void receivedUnexpectedData(InetSocketAddress i, byte[] bytes, int location, Map<String, Object> options) {
         aliceError.complete(new IOException("unexpected data from " + i));
       }
 
+      @Override
       public void receivedException(InetSocketAddress i, Throwable error) {
         aliceError.complete(error);
       }
     });
     alice.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
+      @Override
       public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
         Map<String, Object> options = s.getOptions();
         aliceSawSubject.complete(options == null ? "" : String.valueOf(options.get(SSLTransportLayer.OPTION_CERT_SUBJECT)));
         s.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
           ByteBuffer readMe = ByteBuffer.allocate(PAYLOAD.getBytes(StandardCharsets.UTF_8).length);
 
+          @Override
           public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
             if (canRead) socket.read(readMe);
             if (readMe.hasRemaining()) {
@@ -182,12 +186,14 @@ public class SSLTest {
             }
           }
 
+          @Override
           public void receiveException(P2PSocket<InetSocketAddress> socket, Exception ioe) {
             aliceRead.completeExceptionally(ioe);
           }
         });
       }
 
+      @Override
       public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) throws IOException {
       }
     });
@@ -201,23 +207,28 @@ public class SSLTest {
   CompletableFuture<P2PSocket<InetSocketAddress>> sendPayload(SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob, InetSocketAddress to) {
     final CompletableFuture<P2PSocket<InetSocketAddress>> opened = new CompletableFuture<P2PSocket<InetSocketAddress>>();
     environments.get(bob).getSelectorManager().invoke(new Runnable() {
+      @Override
       public void run() {
         bob.openSocket(to, new SocketCallback<InetSocketAddress>() {
+          @Override
           public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
             opened.complete(sock);
             sock.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {
               ByteBuffer writeMe = ByteBuffer.wrap(PAYLOAD.getBytes(StandardCharsets.UTF_8));
 
+              @Override
               public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
                 socket.write(writeMe);
                 if (writeMe.hasRemaining()) socket.register(false, true, this);
               }
 
+              @Override
               public void receiveException(P2PSocket<InetSocketAddress> socket, Exception ioe) {
               }
             });
           }
 
+          @Override
           public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception ex) {
             opened.completeExceptionally(ex);
           }
