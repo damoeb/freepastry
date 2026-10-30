@@ -137,6 +137,10 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     return logger;
   }
 
+  EntityManagerContext<Identifier> context() {
+    return ctx;
+  }
+
   public void clearState() {
     if (!selectorManager.isSelectorThread()) {
       selectorManager.invoke(() -> clearState());
@@ -217,7 +221,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     scheduleToWriteIfNeeded();
 
     // also, be able to read incoming messages on every socket
-    new SizeReader(s);
+    new SizeReader<Identifier>(this, s);
   }
 
   public void setWritingSocket(P2PSocket<Identifier> s/*, String loc*/) {
@@ -693,108 +697,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
         wrapper.reset();
         enqueue(wrapper);
       }
-    }
-  }
-
-  // *********************** Reader ************************
-
-  /**
-   * Reads the size of the object, then launches a new ObjectReader with the appropriate buffer size.
-   *
-   * @author Jeff Hoye
-   */
-  class SizeReader extends BufferReader {
-
-    public SizeReader(P2PSocket<Identifier> socket) {
-      super(4, socket);
-    }
-
-    @Override
-    public void done(P2PSocket<Identifier> socket) throws IOException {
-      int msgSize = buf.asIntBuffer().get();
-      logger.trace("{} reading message of size {}", EntityManager.this, msgSize);
-
-      if (msgSize > MAX_MSG_SIZE) {
-        logger.warn("{} attempted to send a message of size {}. MAX_MSG_SIZE = {}", socket, msgSize, MAX_MSG_SIZE);
-        closeMe(socket);
-        return;
-      }
-
-      new BufferReader(msgSize, socket);
-    }
-
-    public String toString() {
-      return "SizeReader";
-    }
-  }
-
-  /**
-   * Reads into the buf, or closes the socket.
-   *
-   * @author Jeff Hoye
-   */
-  class BufferReader implements P2PSocketReceiver<Identifier> {
-    ByteBuffer buf;
-
-    public BufferReader(int size, P2PSocket<Identifier> socket) {
-      buf = ByteBuffer.allocate(size);
-      socket.register(true, false, this);
-    }
-
-    public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
-      if (canWrite || !canRead) throw new IllegalStateException(EntityManager.this+" Expected only to read. canRead:"+canRead+" canWrite:"+canWrite+" socket:"+socket);
-
-      try {
-        if (socket.read(buf) == -1) {
-          closeMe(socket);
-          return;
-        }
-      } catch (IOException ioe) {
-        receiveException(socket, ioe);
-        return;
-      }
-
-      if(buf.remaining() == 0) {
-        buf.flip();
-        done(socket);
-      } else {
-        socket.register(true, false, this);
-      }
-    }
-
-    public void receiveException(P2PSocket<Identifier> socket, Exception e) {
-
-      if (e instanceof ClosedChannelException) {
-        return;
-      }
-
-      boolean printError = true;
-
-      if (e instanceof NodeIsFaultyException) {
-        printError = false;
-      }
-
-      if (e instanceof IOException) {
-        if (e.getMessage().equals("An established connection was aborted by the software in your host machine")) {
-          printError = false;
-        }
-      }
-
-      if (printError) {
-        ctx.errorHandler.get().receivedException(socket.getIdentifier(), e);
-      }
-      closeMe(socket);
-    }
-
-    public void done(P2PSocket<Identifier> socket) throws IOException {
-      logger.debug("{} read message of size {} from {}", EntityManager.this, buf.capacity(), socket);
-      ctx.listeners.notifyRead(buf.capacity(), socket.getIdentifier(), socket.getOptions());
-      ctx.callback.get().messageReceived(socket.getIdentifier(), buf, socket.getOptions());
-      new SizeReader(socket);
-    }
-
-    public String toString() {
-      return "BufferReader{"+buf+"}";
     }
   }
 
