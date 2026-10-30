@@ -179,9 +179,12 @@ public class PastryNode implements
    * Constructor, with NodeId. Need to set the node's ID before this node is
    * inserted as localHandle.localNode.
    */
+  private final PastryConfig config;
+
   public PastryNode(Id id, Environment e) {
     myEnvironment = e;
     myNodeId = id;
+    config = PastryConfig.fromParameters(e.getParameters());
 
     readyStrategy = getDefaultReadyStrategy();
 
@@ -283,6 +286,14 @@ public class PastryNode implements
 
   public Environment getEnvironment() {
     return myEnvironment;
+  }
+
+  /**
+   * @return the overlay geometry and protocol version, read from the parameters when the node was
+   *         built
+   */
+  public PastryConfig getConfig() {
+    return config;
   }
 
   public NodeHandle getLocalHandle() {

@@ -42,7 +42,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -53,7 +52,6 @@ import org.mpisws.p2p.transport.networkinfo.CantVerifyConnectivityException;
 import org.mpisws.p2p.transport.networkinfo.ConnectivityResult;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Cancellable;
 import rice.pastry.Id;
 import rice.pastry.NodeIdFactory;
@@ -103,6 +101,11 @@ public class InternetPastryNodeFactory extends
   Collection<InetSocketAddress> probeAddresses;
 
   /**
+   * The NAT and firewall policies, read at construction.
+   */
+  protected NatConfig natConfig;
+
+  /**
    * The ordered addresses of the nat propagation from most external to most internal
    *
    * Null if localAddress is Internet routable
@@ -135,7 +138,7 @@ public class InternetPastryNodeFactory extends
       throws IOException {
     super(nf, bindAddress, startPort, env, false);
 
-    Parameters params = env.getParameters();
+    natConfig = NatConfig.fromParameters(env.getParameters());
     // get a natHandler
     this.natHandler = handler;
     if (natHandler == null) {
@@ -146,9 +149,9 @@ public class InternetPastryNodeFactory extends
 
     this.externalAddresses = externalAddresses;
 
-    if (params.contains("external_address")) {
+    if (socketConfig.hasExternalAddress()) {
       externalAddresses = new InetAddress[1];
-      externalAddresses[0] = params.getInetSocketAddress("external_address").getAddress();
+      externalAddresses[0] = socketConfig.externalAddress().getAddress();
     }
 
     this.connectivityVerifier = new ConnectivityVerifierImpl(this);
@@ -165,9 +168,8 @@ public class InternetPastryNodeFactory extends
    * @return
    */
   protected NATHandler getDefaultNatHandler(Environment env, InetAddress localAddress) {
-    Parameters params = env.getParameters();
-    if (params.contains("nat_handler_class")) {
-      String natHandlerClassName = params.getString("nat_handler_class");
+    if (natConfig.natHandlerClass() != null) {
+      String natHandlerClassName = natConfig.natHandlerClass();
       try {
         Class<?> loaded = Class.forName(natHandlerClassName);
         if (!NATHandler.class.isAssignableFrom(loaded)) {
@@ -196,7 +198,7 @@ public class InternetPastryNodeFactory extends
   }
 
   protected boolean shouldFindExternalAddress(InetAddress address) {
-    switch (getFireWallPolicyVariable("nat_search_policy")) {
+    switch (getFireWallPolicyVariable(natConfig.natSearchPolicy())) {
     case NEVER:
       return false;
     case PREFIX_MATCH:
@@ -305,14 +307,10 @@ public class InternetPastryNodeFactory extends
       final Continuation<PastryNode, IOException> deliverResultToMe) {
 
     // see if it's specified in the configuration
-    if (environment.getParameters().contains("external_address")) {
+    if (socketConfig.hasExternalAddress()) {
       // get it from the param
-      try {
-        InetSocketAddress pAddress = environment.getParameters().getInetSocketAddress("external_address");
-        openFirewallPort(nodeId, bindAddress, deliverResultToMe, pAddress.getAddress(), pAddress.getPort());
-      } catch (UnknownHostException uhe) {
-        deliverResultToMe.receiveException(uhe);
-      }
+      InetSocketAddress pAddress = socketConfig.externalAddress();
+      openFirewallPort(nodeId, bindAddress, deliverResultToMe, pAddress.getAddress(), pAddress.getPort());
     } else {
       // pull self from probeAddresses
       Collection<InetSocketAddress> myProbeAddresses = null;
@@ -401,9 +399,8 @@ public class InternetPastryNodeFactory extends
       final InetSocketAddress bindAddress,
       final Continuation<PastryNode, IOException> deliverResultToMe,
       InetAddress externalAddress, int requestedPort) {
-    Parameters params = environment.getParameters();
-    int firewallSearchTries = params.getInt("nat_find_port_max_tries");
-    String firewallAppName = params.getString("nat_app_name");
+    int firewallSearchTries = socketConfig.findPortMaxTries();
+    String firewallAppName = socketConfig.natAppName();
 
     int port;
     if (requestedPort == -1) {
@@ -429,7 +426,7 @@ public class InternetPastryNodeFactory extends
           port = availableFireWallPort;
         } else {
           // decide how to handle this
-          switch (getFireWallPolicyVariable("nat_state_policy")) {
+          switch (getFireWallPolicyVariable(natConfig.natStatePolicy())) {
             case OVERWRITE:
               break;
             case FAIL:
@@ -563,8 +560,10 @@ public class InternetPastryNodeFactory extends
   }
 
 
-  protected int getFireWallPolicyVariable(String key) {
-    String val = environment.getParameters().getString(key);
+  /**
+   * @param val a policy parameter value, see {@link NatConfig}
+   */
+  protected int getFireWallPolicyVariable(String val) {
     if (val.equalsIgnoreCase("prefix"))
       return PREFIX_MATCH;
     if (val.equalsIgnoreCase("change"))
@@ -581,7 +580,7 @@ public class InternetPastryNodeFactory extends
       return FAIL;
     if (val.equalsIgnoreCase("rendezvous"))
       return RENDEZVOUS;
-    throw new RuntimeException("Unknown value " + val + " for " + key);
+    throw new RuntimeException("Unknown firewall policy value " + val);
   }
 
   /**
@@ -591,7 +590,7 @@ public class InternetPastryNodeFactory extends
    */
   protected boolean shouldCheckConnectivity(MultiInetSocketAddress proxyAddress, Collection<InetSocketAddress> bootstraps) {
     if (bootstraps == null) return false;
-    switch (getFireWallPolicyVariable("firewall_test_policy")) {
+    switch (getFireWallPolicyVariable(natConfig.firewallTestPolicy())) {
     case NEVER:
       return false;
     case BOOT:

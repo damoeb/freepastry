@@ -218,7 +218,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
           (rice.pastry.Id) key,
           pm,
           (rice.pastry.NodeHandle) hint,
-        (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+        thePastryNode.getConfig().routeMsgVersion());
 
     rm.setPrevNode(thePastryNode.getLocalHandle());
     if (noKey) {

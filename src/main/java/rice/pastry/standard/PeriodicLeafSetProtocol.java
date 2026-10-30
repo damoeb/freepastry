@@ -39,7 +39,6 @@ package rice.pastry.standard;
 import java.io.IOException;
 import java.util.Map;
 
-import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.TimeSource;
@@ -133,14 +132,10 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     this.localNode = ln;
     ln.addPastryNodeListener(this); // to call start() if we are the seed node
 
-    Parameters params = ln.getEnvironment().getParameters();
-    if (params.contains("pastry_periodic_leafset_protocol_use_own_random")
-        && params.getBoolean("pastry_periodic_leafset_protocol_use_own_random")) {
-      if (params.contains("pastry_periodic_leafset_protocol_random_seed")
-          && !params.getString("pastry_periodic_leafset_protocol_random_seed").equalsIgnoreCase(
-              "clock")) {
-        this.random = new SimpleRandomSource(params
-            .getLong("pastry_periodic_leafset_protocol_random_seed"), ln.getEnvironment().getLogManager(),
+    PeriodicLeafSetConfig config = PeriodicLeafSetConfig.fromParameters(ln.getEnvironment().getParameters());
+    if (config.useOwnRandom()) {
+      if (config.randomSeed().isPresent()) {
+        this.random = new SimpleRandomSource(config.randomSeed().getAsLong(), ln.getEnvironment().getLogManager(),
             "socket");
       } else {
         this.random = new SimpleRandomSource(ln.getEnvironment().getLogManager(), "periodic_leaf_set");
@@ -161,10 +156,9 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     this.routeTable = rt;
     this.lastTimeReceivedBLS = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), 300000);
     this.lastTimeSentBLS = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), 300000);
-    Parameters p = ln.getEnvironment().getParameters();
-    PING_NEIGHBOR_PERIOD = p.getInt("pastry_protocol_periodicLeafSet_ping_neighbor_period"); // 20 seconds
-    LEASE_PERIOD = p.getInt("pastry_protocol_periodicLeafSet_lease_period");  // 30 seconds
-    BLS_THROTTLE = p.getInt("pastry_protocol_periodicLeafSet_request_lease_throttle");// 10 seconds
+    PING_NEIGHBOR_PERIOD = config.pingNeighborPeriod();
+    LEASE_PERIOD = config.leasePeriod();
+    BLS_THROTTLE = config.requestLeaseThrottle();
     this.lastTimeRenewedLease = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), LEASE_PERIOD*2);
 
     pingNeighborMessage = localNode.scheduleMsgAtFixedRate(

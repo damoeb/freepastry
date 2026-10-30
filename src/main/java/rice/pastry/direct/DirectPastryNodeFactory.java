@@ -140,7 +140,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
       // this code builds a different environment for each PastryNode
       Environment environment = this.environment;
-      if (this.environment.getParameters().getBoolean("pastry_factory_multipleNodes")) {
+      if (factoryConfig.multipleNodes()) {
         if (this.environment.getLogManager() instanceof Slf4jLogManager slm) {
           environment = new Environment(
               this.environment.getSelectorManager(),

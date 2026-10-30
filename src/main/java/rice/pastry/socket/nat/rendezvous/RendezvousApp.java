@@ -204,7 +204,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       new RouteMessage(
           target.getNodeId(),
           msg,
-        (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+        thePastryNode.getConfig().routeMsgVersion());
     rm.setDestinationHandle(target);
 
     logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+") sending via "+rm);
@@ -273,7 +273,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         new RouteMessage(
             i.getNodeId(),
             msg,
-          (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+          thePastryNode.getConfig().routeMsgVersion());
       rm.setDestinationHandle(i);
 
       rm.setTLOptions(options);

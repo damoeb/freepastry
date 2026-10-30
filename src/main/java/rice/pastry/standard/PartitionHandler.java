@@ -95,6 +95,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
 
   private final Logger logger;
 
+  private final PartitionHandlerConfig config;
   private final double bootstrapRate;
   private final int maxGoneSize;
   private final int maxGoneAge;
@@ -123,9 +124,10 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     gone = new HashMap<rice.p2p.commonapi.Id, GoneSetEntry>();
     this.logger = pn.getEnvironment().getLogManager().getLogger(PartitionHandler.class,"");
 
-    maxGoneSize = env.getParameters().getInt("partition_handler_max_history_size");
-    maxGoneAge = env.getParameters().getInt("partition_handler_max_history_age");
-    bootstrapRate = env.getParameters().getDouble("partition_handler_bootstrap_check_rate");
+    config = PartitionHandlerConfig.fromParameters(env.getParameters());
+    maxGoneSize = config.maxHistorySize();
+    maxGoneAge = config.maxHistoryAge();
+    bootstrapRate = config.bootstrapCheckRate();
 
     pastryNode.getLeafSet().addNodeSetListener(this);
     pastryNode.getRoutingTable().addNodeSetListener(this);
@@ -321,8 +323,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
    */
   public void start(Timer timer) {
     logger.info("installing partition handler");
-    timer.schedule(this, env.getParameters().getInt("partition_handler_check_interval"),
-        env.getParameters().getInt("partition_handler_check_interval"));
+    timer.schedule(this, config.checkInterval(), config.checkInterval());
   }
 
   /**
@@ -338,7 +339,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
 
     RouteMessage rm = new RouteMessage(pastryNode.getLocalHandle().getNodeId(),
         jr, null, null,
-        (byte)env.getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+        pastryNode.getConfig().routeMsgVersion());
 
     rm.setPrevNode(pastryNode.getLocalHandle());
     rm.getOptions().setRerouteIfSuspected(false);

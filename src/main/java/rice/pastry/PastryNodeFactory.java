@@ -70,9 +70,10 @@ public abstract class PastryNodeFactory {
 
   public PastryNodeFactory(Environment env) {
     this.environment = env;
-    rtMax = (byte)environment.getParameters().getInt("pastry_rtMax");
-    rtBase = (byte)environment.getParameters().getInt("pastry_rtBaseBitLength");
-    lSetSize = (byte)environment.getParameters().getInt("pastry_lSetSize");
+    PastryConfig config = PastryConfig.fromParameters(environment.getParameters());
+    rtMax = config.rtMax();
+    rtBase = config.rtBaseBitLength();
+    lSetSize = config.lSetSize();
     logger = env.getLogManager().getLogger(getClass(), null);
   }
 

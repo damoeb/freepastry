@@ -122,7 +122,7 @@ public class StandardRouter extends PastryAppl implements Router {
     super(thePastryNode, null, RouterAddress.getCode(), (buf, type, priority, sender) -> {
       RouteMessage rm;
       rm = RouteMessage.build(buf, (byte)priority, thePastryNode, (NodeHandle)sender,
-          (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+          thePastryNode.getConfig().routeMsgVersion());
       return rm;
     });
     this.dispatch = dispatch;

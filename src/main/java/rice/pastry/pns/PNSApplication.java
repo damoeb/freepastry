@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
@@ -105,6 +106,11 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
   final short depth; // = (Id.IdBitLength / rtBase);
 
+  /**
+   * empty for all rows
+   */
+  private final OptionalInt numRowsToUse;
+
   public PNSApplication(PastryNode pn) {
     this(pn, pn.getEnvironment().getLogManager().getLogger(PNSApplication.class, null));
   }
@@ -113,7 +119,8 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     super(pn, null, 0, null, logger);
     setDeserializer(new PNSDeserializer());
     this.environment = pn.getEnvironment();
-    rtBase = (byte)environment.getParameters().getInt("pastry_rtBaseBitLength");
+    rtBase = pn.getConfig().rtBaseBitLength();
+    numRowsToUse = PnsConfig.fromParameters(environment.getParameters()).numRowsToUse();
     depth = (short)(Id.IdBitLength / rtBase);
   }
 
@@ -608,8 +615,8 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
               short i = 0;
 
               // make "ALL" work
-              if (!environment.getParameters().getString("pns_num_rows_to_use").equalsIgnoreCase("all")) {
-                i = (short)(depth-(short)(environment.getParameters().getInt("pns_num_rows_to_use")));
+              if (numRowsToUse.isPresent()) {
+                i = (short)(depth-(short)numRowsToUse.getAsInt());
               }
 
               // fix it up to not throw an error if the number is too big

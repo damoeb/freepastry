@@ -49,7 +49,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.liveness.LivenessTypes;
-import rice.environment.params.Parameters;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
@@ -195,12 +194,12 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     this.nextReadyStrategy = nextReadyStrategy;
     ls.addNodeSetListener(this);
     ln.addPastryNodeListener(this);
-    Parameters p = ln.getEnvironment().getParameters();
-    MAX_TIME_TO_BE_SCHEDULED = p.getInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled"); // 15000
-    RETRY_INTERVAL = p.getInt("pastry_protocol_consistentJoin_retry_interval");
-    failedNodeExpirationTime = p.getInt("pastry_protocol_consistentJoin_failedRetentionTime"); // 90000
-    maxFailedEntries = p.getInt("pastry_protocol_consistentJoin_maxFailedToSend"); // 20
-    int cleanupInterval = p.getInt("pastry_protocol_consistentJoin_cleanup_interval"); // 300000
+    ConsistentJoinConfig config = ConsistentJoinConfig.fromParameters(ln.getEnvironment().getParameters());
+    MAX_TIME_TO_BE_SCHEDULED = config.maxTimeToBeScheduled();
+    RETRY_INTERVAL = config.retryInterval();
+    failedNodeExpirationTime = config.failedRetentionTime();
+    maxFailedEntries = config.maxFailedToSend();
+    int cleanupInterval = config.cleanupInterval();
 
     ln.getEnvironment().getSelectorManager().addLoopObserver(this);
 

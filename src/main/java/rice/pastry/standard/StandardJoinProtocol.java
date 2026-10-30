@@ -182,7 +182,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
 
           public void receiveResult(JoinRequest jr) {
             RouteMessage rm = new RouteMessage(localHandle.getNodeId(), jr, null, null,
-                (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+                thePastryNode.getConfig().routeMsgVersion());
 
             rm.getOptions().setRerouteIfSuspected(false);
             rm.setPrevNode(localHandle);

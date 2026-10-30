@@ -100,7 +100,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
     logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
 
     RouteMessage rm = new RouteMessage(key, msg, hint,
-        (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+        thePastryNode.getConfig().routeMsgVersion());
     rm.setTLOptions(options);
     thePastryNode.getRouter().route(rm);
   }

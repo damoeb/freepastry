@@ -39,7 +39,6 @@ package rice.pastry.transport;
 import java.io.IOException;
 
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
@@ -71,6 +70,11 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
 
   private final int routeSetMaintFreq;
 
+  /**
+   * The factory parameters, read at construction.
+   */
+  protected final PastryFactoryConfig factoryConfig;
+
 
   /**
    * Constructor.
@@ -79,9 +83,9 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
    */
   public TransportPastryNodeFactory(Environment env) {
     super(env);
-    Parameters params = env.getParameters();
-    leafSetMaintFreq = params.getInt("pastry_leafSetMaintFreq");
-    routeSetMaintFreq = params.getInt("pastry_routeSetMaintFreq");
+    factoryConfig = PastryFactoryConfig.fromParameters(env.getParameters());
+    leafSetMaintFreq = factoryConfig.leafSetMaintFreq();
+    routeSetMaintFreq = factoryConfig.routeSetMaintFreq();
   }
 
   public PastryNode nodeHandleHelper(PastryNode pn) throws IOException {
@@ -168,7 +172,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
    * @return
    */
   protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {
-    if (environment.getParameters().getBoolean("transport_use_pns")) {
+    if (factoryConfig.usePns()) {
       PNSApplication pns = new PNSApplication(pn);
       pns.register();
       return pns;

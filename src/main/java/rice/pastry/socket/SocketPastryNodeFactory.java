@@ -106,7 +106,6 @@ import rice.FutureContinuation;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.logging.Slf4jLogManager;
-import rice.environment.params.Parameters;
 import rice.environment.processing.Processor;
 import rice.environment.processing.simple.SimpleProcessor;
 import rice.environment.random.RandomSource;
@@ -186,6 +185,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   String firewallAppName;
   int firewallSearchTries;
 
+  /**
+   * The socket parameters, read at construction.
+   */
+  protected final SocketFactoryConfig socketConfig;
+
 
   public SocketPastryNodeFactory(NodeIdFactory nf, int startPort, Environment env) throws IOException {
     this(nf, null, startPort, env);
@@ -210,14 +214,14 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     environment = env;
     nidFactory = nf;
     port = startPort;
-    Parameters params = env.getParameters();
+    socketConfig = SocketFactoryConfig.fromParameters(env.getParameters());
 
-    firewallSearchTries = params.getInt("nat_find_port_max_tries");
-    firewallAppName = params.getString("nat_app_name");
+    firewallSearchTries = socketConfig.findPortMaxTries();
+    firewallAppName = socketConfig.natAppName();
     localAddress = bindAddress;
     if (localAddress == null) {
-      if (params.contains("socket_bindAddress")) {
-        localAddress = params.getInetAddress("socket_bindAddress");
+      if (socketConfig.bindAddress() != null) {
+        localAddress = InetAddress.getByName(socketConfig.bindAddress());
       }
     }
 
@@ -228,13 +232,12 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       Socket temp = null;
       ServerSocket test2 = null;
       if (localAddress.isLoopbackAddress() &&
-          !params.getBoolean("pastry_socket_allow_loopback")) {
+          !socketConfig.allowLoopback()) {
       try {
         // os gave us the loopback address, and the user doesn't want that
 
         // try the internet
-        temp = new Socket(params.getString("pastry_socket_known_network_address"),
-            params.getInt("pastry_socket_known_network_address_port"));
+        temp = new Socket(socketConfig.knownNetworkAddress(), socketConfig.knownNetworkAddressPort());
         if (temp.getLocalAddress().equals(localAddress)) throw new IllegalStateException("Cannot bind to "+localAddress+":"+port);
         localAddress = temp.getLocalAddress();
         temp.close();
@@ -433,7 +436,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       TransportLayer<InetSocketAddress, ByteBuffer> mntl, PastryNode pn) {
     Environment environment = pn.getEnvironment();
     LimitSocketsTransportLayer<InetSocketAddress, ByteBuffer> lstl =
-      new LimitSocketsTransportLayer<InetSocketAddress, ByteBuffer>(environment.getParameters().getInt("pastry_socket_scm_max_open_sockets"),mntl,null,environment);
+      new LimitSocketsTransportLayer<InetSocketAddress, ByteBuffer>(socketConfig.maxOpenSockets(),mntl,null,environment);
     return lstl;
   }
 
@@ -845,7 +848,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         bootaddresses = bootaddresses_temp;
       }
 
-      final boolean seed = environment.getParameters().getBoolean("rice_socket_seed") || bootaddresses.isEmpty() || bootaddresses.contains(((SocketNodeHandle)pn.getLocalHandle()).getAddress().getInnermostAddress());
+      final boolean seed = socketConfig.seed() || bootaddresses.isEmpty() || bootaddresses.contains(((SocketNodeHandle)pn.getLocalHandle()).getAddress().getInnermostAddress());
 
       if (bootaddresses.isEmpty() ||
           (bootaddresses.size() == 1 && seed)) {
@@ -1035,12 +1038,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
    */
   public synchronized PastryNode newNode(final Id nodeId, InetSocketAddress pAddress) {
     if (pAddress == null) {
-      if (environment.getParameters().contains("external_address")) {
-        try {
-          pAddress = environment.getParameters().getInetSocketAddress("external_address");
-        } catch (IOException ioe) {
-          logger.warn("Could not read external_address, ignoring it", ioe);
-        }
+      if (socketConfig.hasExternalAddress()) {
+        pAddress = socketConfig.externalAddress();
       }
     }
 
@@ -1052,8 +1051,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         multiAddress = new MultiInetSocketAddress(pAddress, new InetSocketAddress(localAddress, port));
       }
       PastryNode ret = newNode(nodeId, multiAddress); // fix the method just
-      if (environment.getParameters().getBoolean(
-          "pastry_socket_increment_port_after_construction")) {
+      if (socketConfig.incrementPortAfterConstruction()) {
         port++;
       }
       return ret;
@@ -1063,8 +1061,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     } catch (BindException e) {
       logger.warn("Warning: ", e);
 
-      if (environment.getParameters().getBoolean(
-          "pastry_socket_increment_port_after_construction")) {
+      if (socketConfig.incrementPortAfterConstruction()) {
         port++;
         try {
           return newNode(nodeId, pAddress); // recursion, this will
@@ -1079,8 +1076,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         }
       } else {
         // clean up Environment
-        if (this.environment.getParameters().getBoolean(
-            "pastry_factory_multipleNodes")) {
+        if (factoryConfig.multipleNodes()) {
           environment.destroy();
         }
 
@@ -1144,8 +1140,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       // this code builds a different environment for each PastryNode
       Environment environment = cloneEnvironment(this.environment, nodeId);
 
-      Parameters params = environment.getParameters();
-
       PastryNode pn = new PastryNode(nodeId, environment);
       if (initialVars != null) pn.getVars().putAll(initialVars);
       pn.getVars().put(PROXY_ADDRESS, proxyAddress);
@@ -1161,7 +1155,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   protected Environment cloneEnvironment(Environment rootEnvironment, Id nodeId) {
     Environment ret = rootEnvironment;
-    if (rootEnvironment.getParameters().getBoolean("pastry_factory_multipleNodes")) {
+    if (factoryConfig.multipleNodes()) {
 
       // new logManager
       LogManager lman = cloneLogManager(rootEnvironment, nodeId);
@@ -1196,7 +1190,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   protected SelectorManager cloneSelectorManager(Environment rootEnvironment, Id nodeId, LogManager lman) {
     SelectorManager sman = rootEnvironment.getSelectorManager();
-    if (rootEnvironment.getParameters().getBoolean("pastry_factory_selectorPerNode")) {
+    if (factoryConfig.selectorPerNode()) {
       sman = new SelectorManager(nodeId.toString() + " Selector",
           rootEnvironment.getTimeSource(), lman, rootEnvironment.getRandomSource());
     }
@@ -1205,7 +1199,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   protected Processor cloneProcessor(Environment rootEnvironment, Id nodeId, LogManager lman) {
     Processor proc = rootEnvironment.getProcessor();
-    if (rootEnvironment.getParameters().getBoolean("pastry_factory_processorPerNode")) {
+    if (factoryConfig.processorPerNode()) {
       proc = new SimpleProcessor(nodeId.toString() + " Processor");
     }
 

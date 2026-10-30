@@ -75,7 +75,7 @@ public class FetchLeafsetApp extends PastryAppl {
       }
       throw new IOException("Unknown type:"+type);
     });
-    routeMsgVersion = (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion");
+    routeMsgVersion = thePastryNode.getConfig().routeMsgVersion();
     this.numNeighbors = numNeighbors;
   }
 

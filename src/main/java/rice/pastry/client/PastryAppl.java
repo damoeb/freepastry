@@ -298,7 +298,7 @@ public abstract class PastryAppl
   public void routeMsg(Id key, Message msg, SendOptions opt) {
     logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     RouteMessage rm = new RouteMessage(key, msg, opt,
-        (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+        thePastryNode.getConfig().routeMsgVersion());
     rm.setTLOptions(options);
     thePastryNode.getRouter().route(rm);
   }
@@ -307,7 +307,7 @@ public abstract class PastryAppl
   public MessageReceipt routeMsg(final Id key, final Message msg, final SendOptions opt, final DeliveryNotification deliverAckToMe) {
     logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     final RouteMessage rm = new RouteMessage(key, msg, opt,
-        (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+        thePastryNode.getConfig().routeMsgVersion());
 
     final MessageReceipt ret = new MessageReceipt(){
 

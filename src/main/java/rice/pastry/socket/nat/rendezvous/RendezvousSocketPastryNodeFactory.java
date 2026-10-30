@@ -71,7 +71,6 @@ import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -139,6 +138,11 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
    */
   byte localContactState = RendezvousSocketNodeHandle.CONTACT_DIRECT;
 
+  /**
+   * The rendezvous parameters, read at construction.
+   */
+  protected RendezvousConfig rendezvousConfig;
+
   public RendezvousSocketPastryNodeFactory(NodeIdFactory nf, InetAddress bindAddress, int startPort, Environment env, boolean firewalled) throws IOException {
     super(nf, bindAddress, startPort, env);
     init(firewalled);
@@ -151,6 +155,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
   private void init(boolean firewalled) {
     random = environment.getRandomSource();
+    rendezvousConfig = RendezvousConfig.fromParameters(environment.getParameters());
     if (firewalled) setContactState(RendezvousSocketNodeHandle.CONTACT_FIREWALLED);
   }
 
@@ -323,7 +328,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
   @Override
   protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {
-    if (environment.getParameters().getBoolean("transport_use_pns")) {
+    if (factoryConfig.usePns()) {
       RendezvousPNSApplication pns = new RendezvousPNSApplication(pn, (ContactDirectStrategy<RendezvousSocketNodeHandle>)pn.getVars().get(RENDEZVOUS_CONTACT_DIRECT_STRATEGY));
       pns.register();
       return pns;
@@ -381,12 +386,11 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     }
 
     // this code is for testing
-    Parameters p = environment.getParameters();
-    if (firstNode && p.getBoolean("rendezvous_test_makes_bootstrap")) {
+    if (firstNode && rendezvousConfig.testMakesBootstrap()) {
       firstNode = false;
       // this just guards the next part
-    } else if (p.getBoolean("rendezvous_test_firewall")) {
-      if (random.nextFloat() <= p.getFloat("rendezvous_test_num_firewalled")) {
+    } else if (rendezvousConfig.testFirewall()) {
+      if (random.nextFloat() <= rendezvousConfig.testNumFirewalled()) {
         pn.getVars().put(SIMULATE_FIREWALL, true);
         contactState = RendezvousSocketNodeHandle.CONTACT_FIREWALLED;
       }
@@ -417,10 +421,8 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   @Override
   protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
     TransportLayer<InetSocketAddress, ByteBuffer> baseTl = super.getWireTransportLayer(innermostAddress, pn);
-    Parameters p = pn.getEnvironment().getParameters();
-
     if ((pn.getVars().containsKey(SIMULATE_FIREWALL) && ((Boolean)pn.getVars().get(SIMULATE_FIREWALL)).booleanValue()) ||
-        (p.contains(SIMULATE_FIREWALL) && p.getBoolean(SIMULATE_FIREWALL))) {
+        rendezvousConfig.simulateFirewall()) {
       return new FirewallTLImpl<InetSocketAddress, ByteBuffer>(baseTl,5000,pn.getEnvironment());
     }
 
@@ -532,11 +534,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
    */
   protected boolean isInternetRoutablePrefix(InetAddress address) {
     String ip = address.getHostAddress();
-    String nattedNetworkPrefixes = environment.getParameters().getString(
-        "nat_network_prefixes");
-
-    String[] nattedNetworkPrefix = nattedNetworkPrefixes.split(";");
-    for (String string : nattedNetworkPrefix) {
+    for (String string : rendezvousConfig.natNetworkPrefixes()) {
       if (ip.startsWith(string)) {
         return false;
       }
