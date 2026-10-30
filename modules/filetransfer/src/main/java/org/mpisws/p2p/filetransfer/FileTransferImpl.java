@@ -45,7 +45,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -189,7 +188,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
   int seq = Integer.MIN_VALUE;
   private final Object uidLock = new Object();
-  SortedLinkedList<MessageWrapper> queue; // messages we want to send
+  final SortedLinkedList<MessageWrapper> queue; // messages we want to send
   MessageWrapper messageThatIsBeingWritten = null;
   boolean registered = false;
 
@@ -259,6 +258,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   protected boolean complete(MessageWrapper wrapper) {
     logger.trace("{}.complete({})", this, wrapper);
     if (wrapper != messageThatIsBeingWritten) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+messageThatIsBeingWritten);
@@ -272,7 +272,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     return true;
   }
 
-  ArrayList<FileTransferListener> listeners = new ArrayList<FileTransferListener>();
+  final ArrayList<FileTransferListener> listeners = new ArrayList<FileTransferListener>();
   @Override
   public void addListener(FileTransferListener listener) {
     synchronized(listeners) {
@@ -455,7 +455,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      * The whole message to send.
      */
     ByteBuffer msg;
-    LinkedList<ByteBuffer> msgList;
+    List<ByteBuffer> msgList;
     ByteBuffer header;
     MessageWrapperImpl outstanding; // = new MessageWrapper
     int wrapperSeq = Integer.MIN_VALUE+10; // to give cancel priority
@@ -472,7 +472,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       this.deliverAckToMe = c;
       this.msg = bb;
       initialPosition = msg.position();
-      msgList = new LinkedList<ByteBuffer>();
+      msgList = new ArrayList<ByteBuffer>();
       // shares msg's content, position and limit, whatever its arrayOffset()
       chunkBuffer = msg.duplicate();
 
@@ -553,7 +553,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
     @Override
     public long getSize() {
-      return msg.limit()-initialPosition;
+      return (long)msg.limit()-initialPosition;
     }
 
     @Override
@@ -880,7 +880,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     /**
      * To make this reusable
      */
-    public void clear(LinkedList<ByteBuffer> message, long seq) {
+    public void clear(List<ByteBuffer> message, long seq) {
       started = false;
       this.message = message;
       this.seq = seq;
@@ -893,7 +893,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     public int compareTo(MessageWrapper that) {
       if (this.receipt.priority == that.getPriority()) {
         if (this.receipt.uid == that.getUid()) {
-          return (int)(this.seq-that.getSeq());
+          return Long.compare(this.seq, that.getSeq());
         }
         return this.receipt.uid-that.getUid();
       }
@@ -1591,7 +1591,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     public int compareTo(MessageWrapper that) {
       if (this.getPriority() == that.getPriority()) {
         if (this.uid == that.getUid()) {
-          return (int)(this.getSeq()-that.getSeq());
+          return Long.compare(this.getSeq(), that.getSeq());
         }
         return this.uid-that.getUid();
       }

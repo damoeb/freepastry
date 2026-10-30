@@ -80,6 +80,7 @@ public class TempFileAllocationStrategy implements FileAllocationStrategy {
     try {
       Files.deleteIfExists(f);
     } catch (IOException ignored) {
+      // the temp file is left behind
     }
   }
 
