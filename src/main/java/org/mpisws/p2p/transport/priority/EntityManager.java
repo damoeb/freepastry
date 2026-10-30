@@ -45,7 +45,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -62,7 +61,6 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.SortedLinkedList;
 import rice.p2p.util.tuples.Tuple;
 import rice.selector.SelectorManager;
@@ -548,186 +546,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   }
 
   // ******************************* Big messages **************************** //
-  Map<Identifier,PendingMessages> pendingBigMessages = new HashMap<Identifier, PendingMessages>();
-  class PendingMessages implements SocketCallback<Identifier>, P2PSocketReceiver<Identifier> {
-    Identifier i;
-
-    /**
-     * Put on back, get from front
-     */
-    LinkedList<PendingMessage> msgs =
-      new LinkedList<PendingMessage>();
-    P2PSocket<Identifier> socket;
-    ByteBuffer header;
-
-    public PendingMessages(Identifier i) {
-      this.i = i;
-      header = ByteBuffer.wrap(PriorityTransportLayerImpl.BIG_MSG_SOCKET);
-    }
-
-    public void start(Map<String,Object> options) {
-      logger.trace("Opening BIG message socket to:{}", i);
-      tl.openSocket(i, this, options);
-    }
-
-    public MessageRequestHandle<Identifier, ByteBuffer> addMessage(
-        ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-        Map<String, Object> options) {
-      logger.debug("Sending BIG message of size:{} to:{}", m.remaining(), i);
-      PendingMessage ret = new PendingMessage(m,deliverAckToMe,options);
-      msgs.addLast(ret);
-      return ret;
-    }
-
-    public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
-      receiveException(ex);
-    }
-    public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
-      receiveException(ioe);
-    }
-    public void receiveException(Exception ex) {
-      pendingBigMessages.remove(this);
-      for (PendingMessage foo : msgs) {
-        foo.sendFailed(ex);
-      }
-      if (socket != null) {
-        P2PSocket<Identifier> temp = socket;
-        socket = null;
-        temp.close();
-      }
-    }
-
-    public void receiveSelectResult(P2PSocket<Identifier> socket,
-        boolean canRead, boolean canWrite) throws IOException {
-      if (header.hasRemaining()) {
-        if (socket.write(header) < 0) {
-          logger.warn("Error writing BIG message header to:{}", socket);
-          receiveException(new org.mpisws.p2p.transport.ClosedChannelException("Socket closed before writing BIG header."));
-          return;
-        }
-        if (header.hasRemaining()) {
-          // keep trying to write the header
-          socket.register(false, true, this);
-          return;
-        } else {
-          logger.trace("Wrote BIG message header to:{}", socket);
-        }
-      }
-
-      try {
-        sendNextMessage();
-      } catch (IOException ioe) {
-        receiveException(ioe);
-      }
-    }
-
-    public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-        P2PSocket<Identifier> sock) {
-      socket = sock;
-      try {
-        logger.info("Opened BIG message socket to:{}", i);
-        receiveSelectResult(sock, false, true);
-      } catch (IOException ioe) {
-        receiveException(ioe);
-      }
-    }
-
-    protected void sendNextMessage() throws IOException {
-      if (msgs.isEmpty()) {
-        socket.close();
-        pendingBigMessages.remove(i);
-        return;
-      }
-      msgs.getFirst().send();
-
-    }
-
-    class PendingMessage implements MessageRequestHandle<Identifier, ByteBuffer>, P2PSocketReceiver<Identifier> {
-      ByteBuffer msg;
-      MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
-      Map<String, Object> options;
-      ByteBuffer sizeBuffer;
-
-      boolean started = false;
-
-      public PendingMessage(ByteBuffer msg, MessageCallback<Identifier, ByteBuffer> deliverAckToMe,Map<String, Object> options) {
-        this.msg = msg;
-        this.deliverAckToMe = deliverAckToMe;
-        this.options = options;
-        this.sizeBuffer = ByteBuffer.wrap(MathUtils.intToByteArray(msg.remaining()));
-      }
-
-      public void sendFailed(Exception ex) {
-        if (deliverAckToMe != null) {
-          deliverAckToMe.sendFailed(this, ex);
-        }
-      }
-
-      public void send() throws IOException {
-        started = true;
-        receiveSelectResult(socket, false, true);
-      }
-
-      public Identifier getIdentifier() {
-        return i;
-      }
-
-      public ByteBuffer getMessage() {
-        return msg;
-      }
-
-      public Map<String, Object> getOptions() {
-        return options;
-      }
-
-      public boolean cancel() {
-        if (!started) {
-          msgs.remove(this);
-          return true;
-        }
-        return false;
-      }
-
-      /**
-       * The socket is blown, just fail them all.
-       */
-      public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
-        PendingMessages.this.receiveException(ioe);
-      }
-
-      public void receiveSelectResult(P2PSocket<Identifier> socket,
-          boolean canRead, boolean canWrite) throws IOException {
-        if (sizeBuffer.hasRemaining()) {
-          long ret = socket.write(sizeBuffer);
-          if (ret == -1) {
-            socket.close();
-            receiveException(socket, new org.mpisws.p2p.transport.ClosedChannelException("Remote node closed channel: "+socket));
-            return;
-          }
-          if (sizeBuffer.hasRemaining()) {
-            socket.register(false, true, this);
-            return;
-          }
-        }
-        if (msg.hasRemaining()) {
-          long ret = socket.write(msg);
-          if (ret == -1) {
-            socket.close();
-            receiveException(socket, new org.mpisws.p2p.transport.ClosedChannelException("Remote node closed channel: "+socket));
-            return;
-          }
-          logger.trace("BIG message wrote: {} of {}", ret, msg.capacity());
-          if (msg.hasRemaining()) {
-            socket.register(false, true, this);
-          } else {
-            // done
-            if (msgs.removeFirst() != this) throw new RuntimeException("Error, removing first was not this!"+this);
-            sendNextMessage();
-          }
-        }
-      }
-    }
-  }
+  Map<Identifier, BigMessageSender<Identifier>> pendingBigMessages = new HashMap<Identifier, BigMessageSender<Identifier>>();
 
   /**
    * Read a sizeBuf, then a msgBuff, repeat
@@ -737,63 +556,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   protected void handleBigMsgSocket(P2PSocket<Identifier> socket) {
     logger.info("handling BIG message socket from:{}", socket);
     try {
-      new P2PSocketReceiver<Identifier>() {
-        byte[] sizeBytes = new byte[4];
-        ByteBuffer sizeBuf = ByteBuffer.wrap(sizeBytes);
-        ByteBuffer msgBuf = null;
-
-        public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
-          ctx.errorHandler.get().receivedException(socket.getIdentifier(), ioe);
-          socket.close();
-        }
-
-        public void receiveSelectResult(P2PSocket<Identifier> socket,
-            boolean canRead, boolean canWrite) throws IOException {
-          if (sizeBuf.hasRemaining()) {
-            long ret = socket.read(sizeBuf);
-            if (ret == -1) {
-              socket.close();
-              return;
-            }
-            if (sizeBuf.hasRemaining()) {
-              socket.register(true, false, this);
-              return;
-            } else {
-              int size = MathUtils.byteArrayToInt(sizeBytes);
-              msgBuf = ByteBuffer.allocate(size);
-              logger.trace("Receiving BIG message of size:{} from:{}", size, socket);
-              // continue
-              if (size > MAX_BIG_MSG_SIZE) {
-                logger.warn("Closing socket, BIG message of size:{} is too big! (max:{}) from:{}", size, MAX_BIG_MSG_SIZE, socket);
-                socket.close();
-                return;
-              }
-            }
-          }
-
-          // msgBuf should not be null
-          if (msgBuf.hasRemaining()) {
-            long ret = socket.read(msgBuf);
-            if (ret == -1) {
-              socket.close();
-              return;
-            }
-            if (msgBuf.hasRemaining()) {
-              socket.register(true, false, this);
-              return;
-            } else {
-              // done with this msg
-              logger.debug("Received BIG message of size:{} from:{}", msgBuf.capacity(), socket);
-              msgBuf.flip();
-              sizeBuf.clear();
-              ctx.callback.get().messageReceived(socket.getIdentifier(), msgBuf, socket.getOptions());
-              msgBuf = null;
-              socket.register(true, false, this);
-              return;
-            }
-          }
-        }
-      }.receiveSelectResult(socket, true, false);
+      new BigMessageReader<Identifier>(ctx).receiveSelectResult(socket, true, false);
     } catch (IOException ioe) {
       logger.warn("Error reading big message from {}", socket, ioe);
     }
@@ -839,9 +602,9 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
         return ret;
       }
 
-      PendingMessages pm = pendingBigMessages.get(temp);
+      BigMessageSender<Identifier> pm = pendingBigMessages.get(temp);
       if (pm == null) {
-        pm = new PendingMessages(temp);
+        pm = new BigMessageSender<Identifier>(temp, tl, logger, pendingBigMessages);
         // note, this fixes a timing issue, because the socket is closed if there are no pending big messages
         MessageRequestHandle<Identifier, ByteBuffer> ret2 = pm.addMessage(message,deliverAckToMe,options);
         pendingBigMessages.put(temp, pm);
