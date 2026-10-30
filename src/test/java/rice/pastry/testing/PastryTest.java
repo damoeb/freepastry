@@ -37,7 +37,8 @@ advised of the possibility of such damage.
 package rice.pastry.testing;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.NoSuchElementException;
 import java.util.Vector;
 
@@ -150,7 +151,7 @@ public class PastryTest {
 
     int msgCount = 0;
 
-    Date old = new Date();
+    Instant old = Instant.now();
 
     for (int i = 0; i < n; i++) {
       pt.makePastryNode();
@@ -159,8 +160,8 @@ public class PastryTest {
         msgCount++;
 
       if ((i + 1) % m == 0) {
-        Date now = new Date();
-        System.out.println((i + 1) + " " + (now.getTime() - old.getTime())
+        Instant now = Instant.now();
+        System.out.println((i + 1) + " " + Duration.between(old, now).toMillis()
             + " " + msgCount);
         msgCount = 0;
         old = now;

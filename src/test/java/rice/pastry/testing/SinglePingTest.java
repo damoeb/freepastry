@@ -35,7 +35,8 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 package rice.pastry.testing;
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.NoSuchElementException;
 import java.util.Vector;
 
@@ -145,7 +146,7 @@ public class SinglePingTest {
 
   public void checkRoutingTable() {
     int i;
-    Date prev = new Date();
+    Instant prev = Instant.now();
 
     for (i = 0; i < testRecord.getNodeNumber(); i++) {
       PastryNode pn = makePastryNode();
@@ -157,8 +158,7 @@ public class SinglePingTest {
     }
     System.out.println(i + " nodes constructed");
 
-    Date curr = new Date();
-    long msec = curr.getTime() - prev.getTime();
+    long msec = Duration.between(prev, Instant.now()).toMillis();
     System.out.println("time used " + (msec / 60000) + ":"
         + ((msec % 60000) / 1000) + ":" + ((msec % 60000) % 1000));
 

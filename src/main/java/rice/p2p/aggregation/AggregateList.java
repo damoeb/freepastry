@@ -43,8 +43,9 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
@@ -516,7 +517,7 @@ public class AggregateList {
       Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
 
       resetMarkers();
-      configFile.println("# Aggregate list at " + label + " (" + (new Date()) + ")");
+      configFile.println("# Aggregate list at " + label + " (" + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) + ")");
       configFile.println();
       configFile.println("nextid="+nextSerial);
       configFile.println("root="+rootKey.toStringFull());

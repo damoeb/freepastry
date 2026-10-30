@@ -36,7 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import java.util.Date;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 
@@ -254,7 +255,7 @@ final class GlacierDebugCommands {
     if (cmd.startsWith("status")) {
       String result = "";
       result = result + "Responsible for: "+neighborhood.getResponsibleRange() + "\n";
-      result = result + "Local time: "+(new Date()) + "\n\n";
+      result = result + "Local time: "+DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) + "\n\n";
       result = result + fragmentStorage.scan().numElements() + " fragments\n";
       result = result + neighborStorage.scan().numElements() + " neighbors\n";
       result = result + scheduler.size() + " active continuations\n";

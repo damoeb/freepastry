@@ -63,7 +63,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
-import java.util.Calendar;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import javax.security.auth.x500.X500Principal;
 
@@ -148,11 +149,7 @@ public class CAToolImpl implements CATool {
       caPair = new KeyPair(caCert.getPublicKey(),priv);
     } else {
       // make a self-signed cert
-      Date exp = new Date();
-      Calendar cal = Calendar.getInstance();
-      cal.setTime(exp);
-      cal.add(Calendar.YEAR, 10);
-      exp = cal.getTime();
+      Instant exp = ZonedDateTime.now().plusYears(10).toInstant();
       Tuple<X509Certificate, KeyPair> t = generateNewCA(CN, exp);
       caCert = t.a();
       caPair = t.b();
@@ -176,10 +173,10 @@ public class CAToolImpl implements CATool {
     return new CAToolImpl(caCert, caPair);
   }
 
-  public static Tuple<X509Certificate, KeyPair> generateNewCA(String CN, Date expiryDate) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
+  public static Tuple<X509Certificate, KeyPair> generateNewCA(String CN, Instant expiryDate) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
     KeyPair caPair = generateKeyPair();
 
-    X509Certificate cert = generateNewCA(CN,new Date(), expiryDate, 1, caPair, DEFAULT_SIGNATURE_ALGORITHM);
+    X509Certificate cert = generateNewCA(CN,Instant.now(), expiryDate, 1, caPair, DEFAULT_SIGNATURE_ALGORITHM);
 
     return new Tuple<X509Certificate, KeyPair>(cert,caPair);
   }
@@ -208,11 +205,11 @@ public class CAToolImpl implements CATool {
    * @throws InvalidKeyException
    * @throws CertificateEncodingException
    */
-  public static X509Certificate generateNewCA(String CN, Date startDate, Date expiryDate, long serialNumber, KeyPair keyPair, String signatureAlgorithm) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
+  public static X509Certificate generateNewCA(String CN, Instant startDate, Instant expiryDate, long serialNumber, KeyPair keyPair, String signatureAlgorithm) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     X500Principal dnName = new X500Principal("CN="+CN);
 
     X509v1CertificateBuilder certGen = new JcaX509v1CertificateBuilder(
-        dnName, BigInteger.valueOf(serialNumber), startDate, expiryDate,
+        dnName, BigInteger.valueOf(serialNumber), Date.from(startDate), Date.from(expiryDate),
         dnName,                                         // note: same as issuer
         keyPair.getPublic());
 
@@ -240,19 +237,15 @@ public class CAToolImpl implements CATool {
   }
 
   public X509Certificate sign(String CN, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
-    Date exp = new Date();
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(exp);
-    cal.add(Calendar.YEAR, 1);
-    exp = cal.getTime();
+    Instant exp = ZonedDateTime.now().plusYears(1).toInstant();
     return sign(CN,key,exp,System.currentTimeMillis());
   }
 
-  public static X509Certificate sign(String CN, PublicKey publicKey, Date expiryDate, long serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
+  public static X509Certificate sign(String CN, PublicKey publicKey, Instant expiryDate, long serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     X500Principal subjectName = new X500Principal("CN="+CN);
 
     X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
-        caCert.getSubjectX500Principal(), BigInteger.valueOf(serialNumber), new Date(), expiryDate,
+        caCert.getSubjectX500Principal(), BigInteger.valueOf(serialNumber), new Date(), Date.from(expiryDate),
         subjectName, publicKey);
 
     try {
@@ -268,7 +261,7 @@ public class CAToolImpl implements CATool {
     return generate(certGen.build(signer(DEFAULT_SIGNATURE_ALGORITHM, privateKey)));   // note: private key of CA
   }
 
-  public X509Certificate sign(String CN, PublicKey publicKey, Date expiryDate, long serialNumber) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
+  public X509Certificate sign(String CN, PublicKey publicKey, Instant expiryDate, long serialNumber) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     return sign(CN,publicKey,expiryDate,serialNumber,cert,keyPair.getPrivate());
   }
 

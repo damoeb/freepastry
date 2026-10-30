@@ -45,8 +45,9 @@ import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,8 +112,9 @@ public class SSLTest {
 
   static CAToolImpl newCa(String cn) throws Exception {
     KeyPair pair = CAToolImpl.generateKeyPair();
-    Date expiry = new Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
-    X509Certificate cert = CAToolImpl.generateNewCA(cn, new Date(System.currentTimeMillis() - 60000), expiry, 1, pair, CAToolImpl.DEFAULT_SIGNATURE_ALGORITHM);
+    Instant now = Instant.now();
+    Instant expiry = now.plus(Duration.ofDays(1));
+    X509Certificate cert = CAToolImpl.generateNewCA(cn, now.minus(Duration.ofMinutes(1)), expiry, 1, pair, CAToolImpl.DEFAULT_SIGNATURE_ALGORITHM);
     return new CAToolImpl(cert, pair);
   }
 

@@ -44,9 +44,10 @@ package rice.selector;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -124,7 +125,7 @@ public class ProfileSelector extends SelectorManager {
     if (!useHeartbeat) return;
     long curTime = timeSource.currentTimeMillis();
     if ((curTime - lastHeartBeat) > HEART_BEAT_INTERVAL) {
-      System.out.println("selector heartbeat "+new Date()+" maxInvokes:"+maxInvokes+" invokesSched:"+numInvocationsScheduled+" invokesExe:"+numInvocationsExecuted+" CurrentThread:"+Thread.currentThread()+"@"+System.identityHashCode(Thread.currentThread()));
+      System.out.println("selector heartbeat "+DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now())+" maxInvokes:"+maxInvokes+" invokesSched:"+numInvocationsScheduled+" invokesExe:"+numInvocationsExecuted+" CurrentThread:"+Thread.currentThread()+"@"+System.identityHashCode(Thread.currentThread()));
       printStats();
       lastHeartBeat = curTime;
     }

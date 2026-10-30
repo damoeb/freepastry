@@ -45,11 +45,12 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -587,7 +588,7 @@ public class PRRegressionTest {
 
   public void buildCryptoMaterial(Environment env) throws Exception {
     // an in-memory CA, valid for a day (CAToolImpl.getCATool() would keep it in a key store file in the working directory)
-    Tuple<X509Certificate, KeyPair> ca = CAToolImpl.generateNewCA("CommitmentTest", new Date(System.currentTimeMillis()+24L*60*60*1000));
+    Tuple<X509Certificate, KeyPair> ca = CAToolImpl.generateNewCA("CommitmentTest", Instant.now().plus(Duration.ofDays(1)));
     caTool = new CAToolImpl(ca.a(), ca.b());
     hasher = new SHA256HashProvider();
     historyFactory = new SecureHistoryFactoryImpl(hasher,env);

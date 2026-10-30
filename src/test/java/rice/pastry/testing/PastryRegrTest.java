@@ -36,8 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.testing;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -629,7 +630,7 @@ public abstract class PastryRegrTest {
   protected static void mainfunc(PastryRegrTest pt, String args[], int n,
       int d, int k, int m, int numConcJoins) {
 
-    Date old = new Date();
+    Instant old = Instant.now();
 
     while (pt.pastryNodes.size() < n) {
       int remaining = n - pt.pastryNodes.size();
@@ -639,9 +640,9 @@ public abstract class PastryRegrTest {
       pt.makePastryNode(remaining);
 
       if (pt.pastryNodes.size() % m == 0) {
-        Date now = new Date();
+        Instant now = Instant.now();
         System.out.println(pt.pastryNodes.size() + " "
-            + (now.getTime() - old.getTime()));
+            + Duration.between(old, now).toMillis());
         old = now;
       }
 
