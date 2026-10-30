@@ -50,6 +50,9 @@ import rice.p2p.glacier.v2.messaging.GlacierTimeoutMessage;
  * self-scheduled {@link GlacierTimeoutMessage}. Runs on the selector thread.
  */
 final class GlacierScheduler {
+  /** Terminated continuations removed per pass; a full pass triggers another one. */
+  private static final int MAX_DELETES_PER_PASS = 100;
+
   private final Endpoint endpoint;
   private final Environment environment;
   private final Logger logger;
@@ -132,7 +135,7 @@ final class GlacierScheduler {
 
     do {
       long now = environment.getTimeSource().currentTimeMillis();
-      int[] deleteList = new int[100];
+      int[] deleteList = new int[MAX_DELETES_PER_PASS];
       numDelete = 0;
       earliestTimeout = -1;
 
@@ -154,7 +157,7 @@ final class GlacierScheduler {
           if ((earliestTimeout == -1) || (gc.getTimeout() < earliestTimeout))
             earliestTimeout = gc.getTimeout();
         } else {
-          if (numDelete < 100)
+          if (numDelete < MAX_DELETES_PER_PASS)
             deleteList[numDelete++] = gc.getMyUID();
         }
       }
@@ -165,7 +168,7 @@ final class GlacierScheduler {
           continuations.remove(Integer.valueOf(deleteList[i]));
       }
 
-    } while ((numDelete == 100) || ((earliestTimeout >= 0) && (earliestTimeout < environment.getTimeSource().currentTimeMillis())));
+    } while ((numDelete == MAX_DELETES_PER_PASS) || ((earliestTimeout >= 0) && (earliestTimeout < environment.getTimeSource().currentTimeMillis())));
 
     if (earliestTimeout >= 0) {
       logger.debug("Next timeout is at {}", earliestTimeout);

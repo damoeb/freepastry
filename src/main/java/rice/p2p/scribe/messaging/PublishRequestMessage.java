@@ -55,6 +55,9 @@ import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
  * @author Alan Mislove
  */
 public final class PublishRequestMessage extends ScribeMessage {
+  /** Publish requests are sent this much ahead of other Scribe messages (lower is more urgent). */
+  private static final int PRIORITY_BOOST = 5;
+
   // the content of this message
   private final ScribeContent content;
 
@@ -86,7 +89,7 @@ public final class PublishRequestMessage extends ScribeMessage {
 
   @Override
   public int getPriority() {
-    return super.getPriority()-5;
+    return super.getPriority()-PRIORITY_BOOST;
   }
 
   /***************** Raw Serialization ***************************************/

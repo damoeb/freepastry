@@ -63,6 +63,9 @@ import rice.persistence.StorageManager;
  * fetches manifests and sends patches; the fragment holders answer probes and apply patches.
  */
 final class GlacierBulkRefresh {
+  /** How often a bulk refresh tries to fetch the manifests it still needs. */
+  private static final int MANIFEST_FETCH_ATTEMPTS = 3;
+
   private final GlacierConfig config;
   private final int numFragments;
   private final int numSurvivors;
@@ -298,7 +301,7 @@ final class GlacierBulkRefresh {
             );
           } else {
             currentStage = stageFetchingManifests;
-            retriesRemaining = 3;
+            retriesRemaining = MANIFEST_FETCH_ATTEMPTS;
           }
         }
 

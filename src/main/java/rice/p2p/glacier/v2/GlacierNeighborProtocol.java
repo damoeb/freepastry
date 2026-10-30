@@ -57,6 +57,9 @@ import rice.persistence.StorageManager;
  * keeps {@link GlacierNeighborhood} up to date.
  */
 final class GlacierNeighborProtocol {
+  /** Asks neighborSet() for as many neighbors as it knows. */
+  private static final int ALL_NEIGHBORS = 999;
+
   private final GlacierConfig config;
   private final Endpoint endpoint;
   private final GlacierRouter router;
@@ -91,7 +94,7 @@ final class GlacierNeighborProtocol {
       public void init() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.expireNeighborsDelayAfterJoin();
 
-        NodeHandleSet leafSet = endpoint.neighborSet(999);
+        NodeHandleSet leafSet = endpoint.neighborSet(ALL_NEIGHBORS);
         NodeHandle localHandle = router.getLocalNodeHandle();
         NodeHandle cwExtreme = localHandle;
         NodeHandle ccwExtreme = localHandle;
@@ -138,7 +141,7 @@ final class GlacierNeighborProtocol {
       public void timeoutExpired() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.expireNeighborsInterval();
 
-        neighborhood.expireNeighbors(endpoint.neighborSet(999));
+        neighborhood.expireNeighbors(endpoint.neighborSet(ALL_NEIGHBORS));
       }
       public long getTimeout() {
         return nextTimeout;

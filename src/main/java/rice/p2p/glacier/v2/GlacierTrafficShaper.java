@@ -51,6 +51,11 @@ import rice.p2p.glacier.v2.messaging.GlacierDataMessage;
  * are bandwidth tokens left and not too many restores are active. Incoming data messages consume tokens.
  */
 final class GlacierTrafficShaper {
+  /** Estimated size of a data message without its fragments and manifests. */
+  private static final long DATA_MESSAGE_OVERHEAD_BYTES = 1000;
+  /** Estimated manifest bytes per fragment. */
+  private static final int MANIFEST_BYTES_PER_FRAGMENT = 21;
+
   private final GlacierConfig config;
   private final int numFragments;
   private final Environment environment;
@@ -126,13 +131,13 @@ final class GlacierTrafficShaper {
    * Takes the size of an incoming data message out of the token bucket.
    */
   void charge(GlacierDataMessage gdm) {
-    long thisSize = 1000;
+    long thisSize = DATA_MESSAGE_OVERHEAD_BYTES;
     updateTokenBucket();
     for (int i=0; i<gdm.numKeys(); i++) {
       if (gdm.getFragment(i) != null)
         thisSize += gdm.getFragment(i).getPayload().length;
       if (gdm.getManifest(i) != null)
-        thisSize += numFragments * 21;
+        thisSize += numFragments * MANIFEST_BYTES_PER_FRAGMENT;
     }
 
     tokenBucket -= thisSize;

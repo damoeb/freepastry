@@ -57,6 +57,9 @@ import rice.p2p.past.gc.GCPastContentHandle;
  * aggregates.
  */
 final class AggregateTree {
+  /** Asks for the handles of all replicas of an aggregate. */
+  private static final int MAX_HANDLES = 999;
+
   private final Past aggregateStore;
   private final Past objectStore;
   private final AggregateList aggregateList;
@@ -172,7 +175,7 @@ final class AggregateTree {
       keysInProgress.add(fromKey);
 
       logger.atInfo().log(() -> "Rebuild: Fetching handles for aggregate " + fromKey.toStringFull());
-      aggregateStore.lookupHandles(fromKey, 999, new Continuation<PastContentHandle[], Exception>() {
+      aggregateStore.lookupHandles(fromKey, MAX_HANDLES, new Continuation<PastContentHandle[], Exception>() {
         public void receiveResult(PastContentHandle[] o) {
           logger.debug("Got handles for {}", fromKey);
           handlesReceived(fromKey, o);

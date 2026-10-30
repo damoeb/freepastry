@@ -105,6 +105,9 @@ import rice.persistence.StorageManager;
  */
 @SuppressWarnings("unchecked")
 public class PastImpl implements Past, Application, ReplicationManagerClient {
+  /** Timeout for opening, reading and writing the app sockets that carry large messages. */
+  private static final int SOCKET_TIMEOUT_MILLIS = 10000;
+
 
 
   // ----- STATIC FIELDS -----
@@ -286,7 +289,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
       public void receiveSocket(AppSocket socket) {
         logger.debug("Received Socket from {}", socket);
-        socket.register(true, false, 10000, this);
+        socket.register(true, false, SOCKET_TIMEOUT_MILLIS, this);
         endpoint.accept(this);
       }
 
@@ -300,7 +303,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
             // read the size
             bb = new ByteBuffer[1];
-            bb[0] = ByteBuffer.allocate(4);
+            bb[0] = ByteBuffer.allocate(Integer.BYTES);
             if (socket.read(bb[0]) == -1) {
               close(socket);
               return;
@@ -344,7 +347,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           // there will be more data on the socket if we haven't received everything yet
           // need to register either way to be able to read from the sockets when they are closed remotely, could alternatively close early
           // cause we are currently only sending 1 message per socket, but it's better to just keep reading in case we one day reuse sockets
-            socket.register(true, false, 10000, this);
+            socket.register(true, false, SOCKET_TIMEOUT_MILLIS, this);
 
             // no recursive call to read the next object: calling read when not ready throws an exception
         } catch (IOException ioe) {
@@ -479,7 +482,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     }
 
     // add the size back to the beginning...
-    int size = sob.getWritten()-4; // remove the size of the size :)
+    int size = sob.getWritten()-Integer.BYTES; // remove the size of the size :)
     logger.trace("Sending size of {} to {} to send {}", size, handle, m);
     byte[] bytes = sob.getBytes();
     MathUtils.intToByteArray(size,bytes,0);
@@ -494,7 +497,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
       public void receiveSocket(AppSocket socket) {
         logger.trace("Opened socket to {}:{} to send {}", handle, socket, m);
-        socket.register(false, true, 10000, this);
+        socket.register(false, true, SOCKET_TIMEOUT_MILLIS, this);
       }
 
       public void receiveSelectResult(AppSocket socket, boolean canRead,
@@ -512,7 +515,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           return; // don't continue to try to send
         }
         if (bb[0].remaining() > 0) {
-          socket.register(false, true, 10000, this);
+          socket.register(false, true, SOCKET_TIMEOUT_MILLIS, this);
         } else {
           socket.close();
         }
@@ -522,7 +525,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         if (c != null) c.receiveException(e);
       }
     },
-    10000);
+    SOCKET_TIMEOUT_MILLIS);
   }
 
 
