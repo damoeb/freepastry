@@ -455,7 +455,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      * The whole message to send.
      */
     ByteBuffer msg;
-    byte[] msgBytes;
     LinkedList<ByteBuffer> msgList;
     ByteBuffer header;
     MessageWrapperImpl outstanding; // = new MessageWrapper
@@ -473,11 +472,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       this.deliverAckToMe = c;
       this.msg = bb;
       initialPosition = msg.position();
-      this.msgBytes = bb.array();
       msgList = new LinkedList<ByteBuffer>();
-      chunkBuffer = ByteBuffer.wrap(msgBytes);
-      chunkBuffer.position(msg.position());
-      chunkBuffer.limit(msg.limit());
+      // shares msg's content, position and limit, whatever its arrayOffset()
+      chunkBuffer = msg.duplicate();
 
       // construct header
       // byte MSG_BB_HEADER, int UID, int length
@@ -546,7 +543,11 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
     @Override
     public byte[] getBytes() {
-      return msgBytes;
+      byte[] bytes = new byte[msg.limit()-initialPosition];
+      ByteBuffer all = msg.duplicate();
+      all.position(initialPosition);
+      all.get(bytes);
+      return bytes;
     }
 
 

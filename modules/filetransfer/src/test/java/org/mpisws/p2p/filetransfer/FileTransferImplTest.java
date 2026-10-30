@@ -1,11 +1,16 @@
 package org.mpisws.p2p.filetransfer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +27,8 @@ import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.selector.SelectorManager;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class FileTransferImplTest {
@@ -71,6 +78,68 @@ class FileTransferImplTest {
     public void shutdownOutput() { }
     @Override
     public void close() { }
+  }
+
+  /** A socket that collects what is written; each write registration is answered on the selector. */
+  class CapturingSocket implements AppSocket {
+    final ByteArrayOutputStream written = new ByteArrayOutputStream();
+
+    @Override
+    public long read(ByteBuffer dst) { return 0; }
+
+    @Override
+    public long write(ByteBuffer src) {
+      int n = src.remaining();
+      while (src.hasRemaining()) written.write(src.get());
+      return n;
+    }
+
+    @Override
+    public void register(boolean wantToRead, boolean wantToWrite, int timeout, AppSocketReceiver receiver) {
+      if (wantToWrite) {
+        env.getSelectorManager().invoke(() -> {
+          try {
+            receiver.receiveSelectResult(this, false, true);
+          } catch (IOException ioe) {
+            throw new UncheckedIOException(ioe);
+          }
+        });
+      }
+    }
+
+    @Override
+    public void shutdownOutput() { }
+
+    @Override
+    public void close() { }
+  }
+
+  @Test
+  void sendMsgSendsTheBytesOfABufferWithAnArrayOffset() throws Exception {
+    // a view of the last three bytes: arrayOffset() == 3, position() == 0
+    ByteBuffer msg = ByteBuffer.wrap(new byte[] {9, 9, 9, 1, 2, 3}, 3, 3).slice();
+    CapturingSocket socket = new CapturingSocket();
+    FileTransferImpl transfer = new FileTransferImpl(socket, null, null, env, null, CHUNK_SIZE, CHUNKS_TO_WRITE);
+    CompletableFuture<BBReceipt> sent = new CompletableFuture<BBReceipt>();
+
+    BBReceipt receipt = transfer.sendMsg(msg, (byte) 0, new Continuation<BBReceipt, Exception>() {
+      @Override
+      public void receiveResult(BBReceipt result) {
+        sent.complete(result);
+      }
+
+      @Override
+      public void receiveException(Exception exception) {
+        sent.completeExceptionally(exception);
+      }
+    });
+    sent.get(10, TimeUnit.SECONDS);
+
+    // the message header and the chunk header take 9 bytes each, then comes the payload
+    byte[] wire = socket.written.toByteArray();
+    assertEquals(9 + 9 + 3, wire.length);
+    assertArrayEquals(new byte[] {1, 2, 3}, Arrays.copyOfRange(wire, 18, 21));
+    assertArrayEquals(new byte[] {1, 2, 3}, receipt.getBytes());
   }
 
   @Test
