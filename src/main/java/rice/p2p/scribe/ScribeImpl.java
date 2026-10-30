@@ -42,11 +42,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -98,9 +95,9 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   public final int MESSAGE_TIMEOUT;
 
   /**
-   * the hashtable of topic -> TopicManager
+   * the per-topic tree state and the parent/child indexes
    */
-  private final Hashtable<Topic, TopicManager> topicManagers;
+  private final TopicRegistry registry;
 
   /**
    * this scribe's policy
@@ -141,29 +138,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
   private final Node node;
 
-  /**
-   * This contains a mapping of child - > all topics for which the local node
-   * has this node(hashtable key) as a child
-   */
-  private final HashMap<NodeHandle, Collection<Topic>> allChildren;
-
-  /**
-   * This contains a mapping of parent - > all topics for which the local node
-   * has this node(hashtable key) as a parent
-   */
-  private final HashMap<NodeHandle, Collection<Topic>> allParents;
-
-  /**
-   * Topics that we are the root.
-   */
-  private final Set<Topic> roots = new HashSet<Topic>();
-
-  /**
-   * Topics that (should) have an outsanding subscription.
-   * Topics that are in this set have no parent, and we are not the root.
-   */
-  private final Set<Topic> pending = new HashSet<Topic>();
-
   ScribeContentDeserializer contentDeserializer;
 
   /**
@@ -202,8 +176,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     Parameters p = environment.getParameters();
     MAINTENANCE_INTERVAL = p.getInt("p2p_scribe_maintenance_interval");
     MESSAGE_TIMEOUT = p.getInt("p2p_scribe_message_timeout");
-    this.allChildren = new HashMap<NodeHandle, Collection<Topic>>();
-    this.allParents = new HashMap<NodeHandle, Collection<Topic>>();
     this.instance = instance;
     this.endpoint = node.buildEndpoint(this, instance);
     this.contentDeserializer = new JavaScribeContentDeserializer();
@@ -236,11 +208,11 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       }
       throw new IllegalArgumentException("Unknown type:"+type);
     });
-    this.topicManagers = new Hashtable<Topic, TopicManager>();
     this.subscribeLostMessages = new HashMap<Integer, SubscribeLostMessage>();
     this.policy = policy;
     this.maintenancePolicy = maintenancePolicy;
     this.localHandle = endpoint.getLocalNodeHandle();
+    this.registry = new TopicRegistry(endpoint, localHandle, this, logger);
     this.id = Integer.MIN_VALUE;
 
     endpoint.register();
@@ -283,10 +255,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   public int numChildren(Topic topic) {
-    if (topicManagers.get(topic) != null) {
-      return ((TopicManager) topicManagers.get(topic)).numChildren();
-    }
-    return 0;
+    return registry.numChildren(topic);
   }
 
   /**
@@ -294,32 +263,15 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * parent/children/client exists)
    */
   public boolean containsTopic(Topic topic) {
-    if (topicManagers.get(topic) != null) {
-      return true;
-    } else {
-      return false;
-    }
+    return registry.containsTopic(topic);
   }
 
   public Collection<ScribeMultiClient> getClientsByTopic(Topic topic) {
-    TopicManager manager = topicManagers.get(topic);
-    if (manager != null) {
-      return manager.getClients();
-    }
-    return new ArrayList<ScribeMultiClient>();
+    return registry.getClientsByTopic(topic);
   }
 
-
-
-
-
   public Collection<NodeHandle> getChildrenOfTopic(Topic topic) {
-    TopicManager manager = topicManagers.get(topic);
-    if (manager != null) {
-      return manager.getChildren();
-    }
-
-    return new ArrayList<NodeHandle>(0);
+    return registry.getChildrenOfTopic(topic);
   }
 
 
@@ -330,11 +282,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @return The parent of the topic
    */
   public NodeHandle getParent(Topic topic) {
-    if (topicManagers.get(topic) != null) {
-      return ((TopicManager) topicManagers.get(topic)).getParent();
-    }
-
-    return null;
+    return registry.getParent(topic);
   }
 
   /**
@@ -344,12 +292,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @return Whether or not we are currently the root
    */
   public boolean isRoot(Topic topic) {
-    NodeHandleSet set = endpoint.replicaSet(topic.getId(), 1);
-
-    if (set.size() == 0)
-      return false;
-    else
-      return set.getHandle(0).getId().equals(endpoint.getId());
+    return registry.isRoot(topic);
   }
 
   public NodeHandle getRoot(Topic topic) {
@@ -370,7 +313,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
   private void sendSubscribe(List<Topic> topics, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
     // remember that we're subscribing
-    pending.addAll(topics);
+    registry.markPending(topics);
 
     // choose the UID
     int theId;
@@ -565,13 +508,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
   // ----- SCRIBE METHODS -----
   public boolean containsChild(Topic topic, NodeHandle child) {
-    TopicManager manager = (TopicManager) topicManagers.get(topic);
-    if (manager == null) {
-      return false;
-    } else {
-      return manager.containsChild(child);
-
-    }
+    return registry.containsChild(topic, child);
   }
 
   public void subscribe(Collection<Topic> topics) {
@@ -630,15 +567,14 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     List<Topic> toSubscribe = new ArrayList<Topic>();
     List<Topic> alreadySubscribed = new ArrayList<Topic>();
 
-    synchronized(topicManagers) {
+    synchronized(registry.lock()) {
       for (Topic topic : theTopics) {
-        TopicManager manager = topicManagers.get(topic);
+        TopicManager manager = registry.get(topic);
 
         // if we don't know about this topic, subscribe
         // otherwise, we simply add the client to the list
         if (manager == null) {
-          manager = new TopicManager(topic);
-          topicManagers.put(topic, manager);
+          manager = registry.create(topic);
           toSubscribe.add(topic);
         } else {
           if ((manager.getParent() == null) && (! isRoot(topic))) {
@@ -673,12 +609,12 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    *   2)
    */
   public void unsubscribe(Collection<Topic> topicsToUnsubscribe, ScribeMultiClient client) {
-    logger.trace("Unsubscribing client {} from topic {}", client, topicManagers);
+    logger.trace("Unsubscribing client {} from topic {}", client, registry);
     HashMap<NodeHandle, List<Topic>> needToUnsubscribe = new HashMap<NodeHandle, List<Topic>>();
 
-    synchronized(topicManagers) {
+    synchronized(registry.lock()) {
       for (Topic topic : topicsToUnsubscribe) {
-        TopicManager manager = (TopicManager) topicManagers.get(topic);
+        TopicManager manager = registry.get(topic);
 
         if (manager != null) {
 
@@ -689,7 +625,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
           if (manager.removeClient(client)) {
             logger.info("Removing TopicManager for topic: {}", topic);
 
-            topicManagers.remove(topic);
+            registry.remove(topic);
 
             // After we remove the topicManager we must call updateParents() to remove the parent from the parent dat structure
             removeFromAllParents(topic, parent);
@@ -804,17 +740,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @return never null
    */
   public TopicManager getTopicManager(Topic topic) {
-    synchronized(topicManagers) {
-      TopicManager manager = (TopicManager) topicManagers.get(topic);
-
-      // if we don't know about the topic, we subscribe, otherwise,
-      // we simply add the child to the list
-      if (manager == null) {
-        manager = new TopicManager(topic);
-        topicManagers.put(topic, manager);
-      }
-      return manager;
-    }
+    return registry.getOrCreate(topic);
   }
 
   /**
@@ -832,14 +758,13 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     TopicManager manager;
 
     List<ScribeMultiClient> clientList;
-    synchronized(topicManagers) {
-      manager = (TopicManager) topicManagers.get(topic);
+    synchronized(registry.lock()) {
+      manager = registry.get(topic);
 
       // if we don't know about the topic, we subscribe, otherwise,
       // we simply add the child to the list
       if (manager == null) {
-        manager = new TopicManager(topic);
-        topicManagers.put(topic, manager);
+        manager = registry.create(topic);
 
         logger.trace("Implicitly subscribing to topic {}", topic);
         ret = true;
@@ -885,8 +810,8 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
     TopicManager manager;
 
-    synchronized(topicManagers) {
-      manager = (TopicManager) topicManagers.get(topic);
+    synchronized(registry.lock()) {
+      manager = registry.get(topic);
       if (manager != null) {
         // if this is the last child and there are no clients, then
         // we unsubscribe, if we are not the root
@@ -896,7 +821,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
         if (sendUnsubscribe) {
           logger.info("Removing TopicManager for topic: {}", topic);
 
-          topicManagers.remove(topic);
+          registry.remove(topic);
           // Since we will be removing the topicManager which will also get rid of
           // the parent, we need to remove the stale parent from the global data
           // structure of parent -> topics
@@ -926,7 +851,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       policy.childRemoved(topic, child);
 
       List<ScribeMultiClient> clientList;
-      synchronized(topicManagers) {
+      synchronized(registry.lock()) {
         clientList = new ArrayList<ScribeMultiClient>(manager.getClients());
       }
       for (ScribeMultiClient client : clientList) {
@@ -938,14 +863,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   public Collection<Topic> getTopicsByClient(ScribeMultiClient client) {
-    ArrayList<Topic> result = new ArrayList<Topic>();
-
-    for (TopicManager topicManager : topicManagers.values()) {
-      if (topicManager.containsClient(client))
-        result.add(topicManager.getTopic());
-    }
-
-    return result;
+    return registry.getTopicsByClient(client);
   }
 
   protected void recvAnycastFail(Topic topic, NodeHandle failedAtNode,
@@ -955,194 +873,53 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   /**
-   * This method should be invoked after the state change in the Topic Manager
-   * has been made. This helps us to know the current state of the system and
-   * thus generate WARNING messages only in cases of redundancy
-   *
    * Need to be holding lock: topicManagers
-   *
-   * @param t
-   * @param child
    */
   protected void addToAllChildren(Topic t, NodeHandle child) {
-    logger.info("addToAllChildren({},{})", t, child);
-
-    // Child added
-    Collection<Topic> topics = allChildren.get(child);
-
-    if (topics == null) {
-      if (endpoint.isAlive(child)) {
-        if (!allParents.containsKey(child)) child.addNodeHandleListener(this);
-      } else {
-        logger.warn("addToAllChildren({},{}) child.isAlive() == false", t, child, new Exception("Stack Trace"));
-      }
-      topics = new ArrayList<Topic>();
-      allChildren.put(child, topics);
-    }
-    if (!topics.contains(t)) {
-      topics.add(t);
-    }
+    registry.addToAllChildren(t, child);
   }
 
   /**
    * Need to be holding lock: topicManagers
-   *
-   * @param t
-   * @param child
    */
   protected void removeFromAllChildren(Topic t, NodeHandle child) {
-    logger.info("removeFromAllChildren({},{})", t, child);
-
-    // Child added
-    Collection<Topic> topics = allChildren.get(child);
-
-    if (topics == null) {
-      return;
-    }
-    topics.remove(t);
-
-    if (topics.isEmpty()) {
-      allChildren.remove(child);
-      if (!allParents.containsKey(child)) child.removeNodeHandleListener(this);
-
-    }
+    registry.removeFromAllChildren(t, child);
   }
 
-  // This method should be invoked after the state change in the Topic Manager
-  // has been made. This helps us to know the current state of the system and
-  // thus generate WARNING messages only in cases of redundancy
   protected void addToAllParents(Topic t, NodeHandle parent) {
-    logger.info("addToAllParents({},{})", t, parent);
-
-    if (parent == null || parent.equals(localHandle)) {
-      if (isRoot(t)) {
-        roots.add(t);
-      }
-      // This could very well be the case, but in such instances we need not do
-      // anything
-      return;
-    }
-
-    // Parent added
-    Collection<Topic> topics = allParents.get(parent);
-    if (topics == null) {
-      if (endpoint.isAlive(parent)) {
-        if (!allChildren.containsKey(parent)) parent.addNodeHandleListener(this);
-      } else {
-        logger.warn("addToAllParents({},{}) parent.isAlive() == false", t, parent, new Exception("Stack Trace"));
-      }
-      topics = new ArrayList<Topic>();
-      allParents.put(parent, topics);
-    }
-
-    if (!topics.contains(t)) {
-      topics.add(t);
-    }
+    registry.addToAllParents(t, parent);
   }
 
   protected void removeFromAllParents(Topic t, NodeHandle parent) {
-    logger.info("removeFromAllParents({},{})", t, parent);
-
-    if (parent == null || parent.equals(localHandle)) {
-      // This could very well be the case, but in such instances we need not do
-      // anything
-      roots.remove(t);
-      pending.remove(t);
-
-      return;
-    }
-
-    // Parent removed
-    Collection<Topic> topics = allParents.get(parent);
-
-    if (topics == null) {
-      return;
-    }
-    topics.remove(t);
-
-    if (topics.isEmpty()) {
-      allParents.remove(parent);
-      if (!allChildren.containsKey(parent)) parent.removeNodeHandleListener(this);
-    }
+    registry.removeFromAllParents(t, parent);
   }
 
   public boolean allParentsContains(Topic t, NodeHandle parent) {
-    if (parent == null) {
-      return false;
-    }
-    if (allParents.containsKey(parent)) {
-      Collection<Topic> topics = allParents.get(parent);
-      if (topics.contains(t)) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
+    return registry.allParentsContains(t, parent);
   }
 
   public boolean allParentsContainsParent(NodeHandle parent) {
-    if (parent == null) {
-      return false;
-    }
-    if (allParents.containsKey(parent)) {
-      return true;
-    } else {
-      return false;
-    }
+    return registry.allParentsContainsParent(parent);
   }
 
   public void printAllParentsDataStructure() {
-    String s = "printAllParentsDataStructure()";
-    for (NodeHandle parent: allParents.keySet()) {
-      s+="\n  parent: " + parent + " (Topics,TopicExists,ActualParent) are as follows: ";
-      for (Topic t : allParents.get(parent)) {
-        boolean topicExists = containsTopic(t);
-        NodeHandle actualParent = getParent(t);
-          s+="\n    (" + t + ", " + topicExists + ", " + actualParent + ")";
-      }
-    }
+    registry.printAllParentsDataStructure();
   }
 
   public void printAllChildrenDataStructure() {
-    String s = "printAllChildrenDataStructure()";
-    for (NodeHandle child: allChildren.keySet()) {
-      s+="\n  child: " + child + " (Topics,TopicExists, containsChild) are as follows: ";
-      for (Topic t : allChildren.get(child)) {
-        boolean topicExists = containsTopic(t);
-        boolean containsChild = containsChild(t, child);
-        s+="\n    (" + t + ", " + topicExists + ", " + containsChild + ")";
-      }
-    }
+    registry.printAllChildrenDataStructure();
   }
 
   // This returns the topics for which the parameter 'parent' is a Scribe tree parent of the local node
   public Collection<Topic> getTopicsByParent(NodeHandle parent) {
-    // handle local node as null or the localHandle
-    if (parent == null) parent = localHandle;
-    if (parent.equals(localHandle)) return roots;
-
-    Collection<Topic> topic = allParents.get(parent);
-    if (topic == null) {
-      return Collections.emptyList();
-    }
-
-    return topic;
+    return registry.getTopicsByParent(parent);
   }
 
   // This returns the topics for which the parameter 'child' is a Scribe tree child of the local node
   public Collection<Topic> getTopicsByChild(NodeHandle child) {
-    if (child.equals(localHandle)) {
-      logger.warn("ScribeImpl.getTopicsByChild() called with localHandle! Why would you do that?");
-    }
-
-    Collection<Topic> topic = allChildren.get(child);
-    if (topic == null) {
-      return Collections.emptyList();
-    }
-    return topic;
+    return registry.getTopicsByChild(child);
   }
+
 
 
   // ----- COMMON API METHODS -----
@@ -1177,7 +954,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       if (aMessage.getTopic() == null) {
         throw new RuntimeException("topic is null!");
       }
-      TopicManager manager = (TopicManager) topicManagers.get(aMessage.getTopic());
+      TopicManager manager = registry.get(aMessage.getTopic());
 
       // if it's a subscribe message, we must handle it differently
       if (internalMessage instanceof SubscribeMessage) {
@@ -1320,7 +1097,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     ArrayList<Topic> askPolicy = new ArrayList<Topic>(); // ask the policy, and take these out if the policy accepts them
 
     for (Topic topic : sMessage.getTopics()) {
-      TopicManager tmanager = topicManagers.get(topic);
+      TopicManager tmanager = registry.get(topic);
 
       if (tmanager != null) {
         List<Id> path = tmanager.getPathToRoot();
@@ -1421,7 +1198,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       // build all of the pathToRoot[]
       List<List<Id>> paths = new ArrayList<List<Id>>(toReturn.size());
       for (Topic topic : toReturn) {
-        TopicManager tmanager = topicManagers.get(topic);
+        TopicManager tmanager = registry.get(topic);
         paths.add(tmanager.getPathToRoot());
       }
 
@@ -1456,7 +1233,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       Topic topic = topicIterator.next();
 
       // the topic can change on the SubscribeMessage when we accept some of the items
-      TopicManager manager = (TopicManager) topicManagers.get(topic);
+      TopicManager manager = registry.get(topic);
 
       // we have nothing to do with this message
       if (manager == null) {
@@ -1610,7 +1387,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       Iterator<List<Id>> i = saMessage.getPathsToRoot().iterator();
       for (Topic topic : saMessage.getTopics()) {
         List<Id> pathToRoot = i.next();
-        TopicManager manager = (TopicManager) topicManagers.get(topic);
+        TopicManager manager = registry.get(topic);
 
         logger.debug("Received subscribe ack message from {} for topic {}", saMessage.getSource(), topic);
 
@@ -1666,7 +1443,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       failedMessageReceived(sfMessage);
     } else if (message instanceof PublishRequestMessage) {
       PublishRequestMessage prMessage = (PublishRequestMessage) message;
-      TopicManager manager = (TopicManager) topicManagers.get(prMessage.getTopic());
+      TopicManager manager = registry.get(prMessage.getTopic());
 
       logger.trace("Received publish request message with data {} for topic {}", prMessage.getContent(), prMessage.getTopic());
 
@@ -1679,7 +1456,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       }
     } else if (message instanceof PublishMessage) {
       PublishMessage pMessage = (PublishMessage) message;
-      TopicManager manager = (TopicManager) topicManagers.get(pMessage.getTopic());
+      TopicManager manager = registry.get(pMessage.getTopic());
 
       logger.trace("Received publish message with data {} for topic {}", pMessage.getContent(), pMessage.getTopic());
 
@@ -1734,7 +1511,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       DropMessage dMessage = (DropMessage) message;
       logger.debug("Received drop message from {} for topic {}", dMessage.getSource(), dMessage.getTopic());
 
-      TopicManager manager = (TopicManager) topicManagers.get(dMessage.getTopic());
+      TopicManager manager = registry.get(dMessage.getTopic());
 
       if (manager != null) {
         if ((manager.getParent() != null) && manager.getParent().equals(dMessage.getSource())) {
@@ -1806,8 +1583,8 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     if (joined) {
       // NOTE: we could clean this up to use roots/pending, but this impl seems pretty safe
       List<Topic> notRoot = new ArrayList<Topic>();
-      for(TopicManager manager : (new ArrayList<TopicManager>(topicManagers.values()))) {
-        Topic topic = manager.topic;
+      for(TopicManager manager : (new ArrayList<TopicManager>(registry.managers()))) {
+        Topic topic = manager.getTopic();
         // check if new guy is root, we were old root, then subscribe
         if (!isRoot(topic) && manager.getParent() == null){ // maybe we are already subscribing?
           // send subscribe message
@@ -1820,282 +1597,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     }
   }
 
-  /**
-   * Class which keeps track of a given topic
-   *
-   * @version $Id: ScribeImpl.java 4495 2008-09-26 14:48:02Z jeffh $
-   * @author amislove
-   */
-  public class TopicManager {
-
-    /**
-     * The topic this manager tracks
-     */
-    private final Topic topic;
-
-    /**
-     * The current path to the root for this node
-     */
-    private List<Id> pathToRoot;
-
-    /**
-     * The local clients subscribed to the topic
-     */
-    private final ArrayList<ScribeMultiClient> clients;
-
-    /**
-     * The local node's children in the topic's tree
-     */
-    private final ArrayList<NodeHandle> children;
-
-    /**
-     * The local node's parent in the topic's tree, or null if it has none
-     */
-    private NodeHandle parent;
-
-    /**
-     * Constructor for TopicManager.
-     *
-     * @param topic the topic to manage
-     */
-    private TopicManager(Topic topic) {
-      this.topic = topic;
-      this.clients = new ArrayList<ScribeMultiClient>();
-      this.children = new ArrayList<NodeHandle>();
-
-      // this is a bit ugly: normally we can't be holding the topicManagers lock when calling setPathToRoot()
-      // because it sends messages, but it is ok in this case because we have no children
-      setPathToRoot(null);
-    }
-
-    /**
-     * Gets the topic of the TopicManager object
-     *
-     * @return The Parent value
-     */
-    public Topic getTopic() {
-      return topic;
-    }
-
-    /**
-     * Gets the Parent attribute of the TopicManager object
-     *
-     * @return The Parent value
-     */
-    public NodeHandle getParent() {
-      return parent;
-    }
-
-    /**
-     * Gets the Clients attribute of the TopicManager object
-     *
-     * @return The Clients value
-     */
-    public Collection<ScribeMultiClient> getClients() {
-      return Collections.unmodifiableCollection(clients);
-    }
-
-    /**
-     * Returns whether or not this topic manager contains the given
-     * client.
-     *
-     * @param client The client in question
-     * @return Whether or not this manager contains the client
-     */
-    public boolean containsClient(ScribeMultiClient client) {
-      return clients.contains(client);
-    }
-
-    /**
-     * Gets the Children attribute of the TopicManager object
-     *
-     * @return The Children value
-     */
-    public Collection<NodeHandle> getChildren() {
-      return Collections.unmodifiableCollection(children);
-    }
-
-    public int numChildren() {
-      return children.size();
-    }
-
-    /**
-     * Gets the PathToRoot attribute of the TopicManager object
-     *
-     * @return The PathToRoot value
-     */
-    public List<Id> getPathToRoot() {
-      return pathToRoot;
-    }
-
-    /**
-     * Sets the PathToRoot attribute of the TopicManager object
-     *
-     * Don't hold the topicManagers lock, this method sends messages
-     *
-     * @param pathToRoot The new PathToRoot value
-     */
-    public void setPathToRoot(List<Id> pathToRoot) {
-      // make sure this returns if it didn't change
-
-      // build the path to the root for the new node
-      if (pathToRoot == null) {
-        this.pathToRoot = new ArrayList<Id>();
-      } else {
-        this.pathToRoot = new ArrayList<Id>(pathToRoot);
-      }
-      this.pathToRoot.add(endpoint.getId());
-
-      if (!children.isEmpty()) {
-        List<NodeHandle> sendDrop = new ArrayList<NodeHandle>();
-        List<NodeHandle> sendUpdate = new ArrayList<NodeHandle>();
-
-        // now send the information out to our children, prevent routing loops
-        synchronized(topicManagers) {
-          Collection<NodeHandle> children = getChildren();
-          for (NodeHandle child : children) {
-            if (this.pathToRoot.contains(child.getId())) {
-              sendDrop.add(child);
-
-              // Can't call removeChild() here because you will get a ConcurrentModificationException
-            } else {
-              sendUpdate.add(child);
-            }
-          }
-
-          for (NodeHandle child : sendDrop) {
-            removeChild(child);
-          }
-        }
-
-        for (NodeHandle child : sendDrop) {
-          endpoint.route(null, new DropMessage(localHandle, topic), child);
-        }
-        for (NodeHandle child : sendUpdate) {
-          // TODO: send a dedicated update message instead of a maintenance SubscribeAckMessage
-          endpoint.route(null, new SubscribeAckMessage(localHandle, Collections.singletonList(topic), Collections.singletonList(getPathToRoot()), MAINTENANCE_ID), child);
-        }
-      }
-    }
-
-    /**
-     * Sets the Parent attribute of the TopicManager object
-     *
-     * @param handle The new Parent value
-     */
-    public void setParent(NodeHandle handle, List<Id> pathToRoot) {
-      logger.info("{}setParent({},{}) prev:{}", this, handle, pathToRoot, parent);
-
-      if ((handle != null) && !endpoint.isAlive(handle)) {
-        logger.warn("Setting dead parent {} for {}", handle, topic);
-      }
-
-      if ((handle != null) && (parent != null)) {
-        if (handle.equals(parent)) {
-          // not a real change
-          setPathToRoot(pathToRoot);
-          return;
-        }
-        logger.debug("Unexpectedly changing parents for topic {}:{}=>{}", topic, parent, handle);
-      }
-
-      NodeHandle prevParent = parent;
-
-      parent = handle;
-      setPathToRoot(pathToRoot);
-
-      synchronized(topicManagers) {
-        // We remove the stale parent from global data structure of parent ->
-        // topics
-        removeFromAllParents(topic, prevParent);
-
-        // We add the new parent from the global data structure of parent ->
-        // topics
-        addToAllParents(topic, parent);
-      }
-    }
-
-    public String toString() {
-      return topic.toString();
-    }
-
-    /**
-     * Adds a feature to the Client attribute of the TopicManager object
-     *
-     * @param client The feature to be added to the Client attribute
-     */
-    public void addClient(ScribeMultiClient client) {
-      if (client == null) return;
-
-      if (!clients.contains(client)) {
-        clients.add(client);
-      }
-    }
-
-    /**
-     * @param client the client to remove
-     * @return true if there are no children/clients remaining (you can unsubscribe from the parent)
-     */
-    public boolean removeClient(ScribeMultiClient client) {
-      clients.remove(client);
-
-      boolean unsub = ((clients.size() == 0) && (children.size() == 0));
-
-      return unsub;
-    }
-
-    public boolean containsChild(NodeHandle child) {
-      if (children.contains(child)) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    /**
-     * Adds a feature to the Child attribute of the TopicManager object
-     *
-     * Need to be holding lock: topicManagers
-     *
-     * @param child The feature to be added to the Child attribute
-     */
-    public void addChild(NodeHandle child) {
-      logger.info("addChild( {}, {})", topic, child);
-
-      if (!children.contains(child)) {
-        if (endpoint.isAlive(child)) {
-          children.add(child);
-          // We update this information to the global data structure of children
-          // -> topics
-          addToAllChildren(topic, child);
-        } else {
-          logger.warn("WARNING: addChild({}, {}) did not add child since the child.isAlive() failed", topic, child, new Exception("Stack Trace"));
-        }
-      }
-    }
-
-    /**
-     * Removes the child from the topic.
-     *
-     * Need to be holding lock: topicManagers
-     *
-     * @param child the child to be removed
-     * @return true if we can unsubscribe (IE, no clients nor children)
-     */
-    public boolean removeChild(NodeHandle child) {
-      logger.info("removeChild( {}, {})", topic, child);
-
-      children.remove(child);
-
-      boolean unsub = ((clients.size() == 0) && (children.size() == 0));
-
-      // We update this information to the global data structure of children ->
-      // topics
-      removeFromAllChildren(topic,child);
-
-      return unsub;
-    }
-  }
 
   @Override
   public String toString() {
@@ -2105,15 +1606,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   public void destroy() {
     if (environment.getSelectorManager().isSelectorThread()) {
       logger.info("Destroying {}", this);
-      ArrayList<TopicManager> managers = new ArrayList<TopicManager>(topicManagers.values());
-      topicManagers.clear();
-
-      for (NodeHandle handle : allChildren.keySet()) {
-        handle.removeNodeHandleListener(this);
-      }
-      for (NodeHandle handle : allParents.keySet()) {
-        handle.removeNodeHandleListener(this);
-      }
+      registry.destroy();
     } else {
       environment.getSelectorManager().invoke(() -> destroy());
     }
@@ -2132,13 +1625,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   public Collection<Topic> getTopics() {
-    // it would be safer to return a copy, but faster to do it this way
-    return topicManagers.keySet();
+    return registry.topics();
   }
 
   public List<Id> getPathToRoot(Topic topic) {
-    TopicManager manager = (TopicManager) topicManagers.get(topic);
-    if (manager == null) return null;
-    return manager.getPathToRoot();
+    return registry.getPathToRoot(topic);
   }
 }
