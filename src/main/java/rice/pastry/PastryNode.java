@@ -46,6 +46,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -138,7 +141,13 @@ public class PastryNode implements
 
   ReadyStrategy readyStrategy;
 
-  private boolean joinFailed = false;
+  private volatile boolean joinFailed = false;
+
+  /**
+   * Signalled when the node becomes ready or fails to join, see {@link #awaitReadyOrJoinFailed}.
+   */
+  private final ReentrantLock readyLock = new ReentrantLock();
+  private final Condition readyOrJoinFailed = readyLock.newCondition();
 
   private boolean isDestroyed = false;
 
@@ -374,10 +383,7 @@ public class PastryNode implements
       }
 
       // signal any apps that might be waiting for the node to get ready
-      synchronized (this) {
-        // NN: not a problem, because we already changed the state in the calling method
-        notifyAll();
-      }
+      signalReadyOrJoinFailed();
     } else {
       nodeIsReady(false);
       notifyPastryNodeListeners(Boolean.valueOf(false));
@@ -713,11 +719,41 @@ public class PastryNode implements
   public void joinFailed(JoinFailedException cje) {
     logger.atWarn().log(() -> "joinFailed("+cje+")");
     joinFailedReason = cje;
-    synchronized(this) {
-      joinFailed = true;
-      this.notifyAll();
-    }
+    joinFailed = true;
+    signalReadyOrJoinFailed();
     notifyPastryNodeListeners(cje);
+  }
+
+  private void signalReadyOrJoinFailed() {
+    readyLock.lock();
+    try {
+      readyOrJoinFailed.signalAll();
+    } finally {
+      readyLock.unlock();
+    }
+  }
+
+  /**
+   * Blocks until this node is ready or failed to join, or until the timeout elapses. Don't call this on the
+   * selector thread: the node can only become ready there.
+   *
+   * @param timeout the maximum time to wait
+   * @param unit the unit of the timeout
+   * @return true if the node is ready or failed to join, false if the timeout elapsed first
+   * @throws InterruptedException if the thread was interrupted while waiting
+   */
+  public boolean awaitReadyOrJoinFailed(long timeout, TimeUnit unit) throws InterruptedException {
+    long nanos = unit.toNanos(timeout);
+    readyLock.lock();
+    try {
+      while (!isReady() && !joinFailed) {
+        if (nanos <= 0) return false;
+        nanos = readyOrJoinFailed.awaitNanos(nanos);
+      }
+      return true;
+    } finally {
+      readyLock.unlock();
+    }
   }
 
   /**

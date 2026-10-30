@@ -45,6 +45,7 @@ import java.nio.ByteBuffer;
 import java.security.KeyStore;
 import java.security.Security;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.mpisws.p2p.pki.x509.CAToolImpl;
@@ -156,15 +157,13 @@ public class DistTutorial {
     node.boot(bootaddress);
 
     // the node may require sending several messages to fully boot into the ring
-    synchronized(node) {
-      while(!node.isReady() && !node.joinFailed()) {
-        // delay so we don't busy-wait
-        node.wait(500);
+    while(!node.isReady() && !node.joinFailed()) {
+      // delay so we don't busy-wait
+      node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS);
 
-        // abort if can't join
-        if (node.joinFailed()) {
-          throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
-        }
+      // abort if can't join
+      if (node.joinFailed()) {
+        throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
       }
     }
 

@@ -39,6 +39,7 @@ package rice.tutorial.direct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
@@ -107,15 +108,13 @@ public class DirectTutorial {
       bootHandle = node.getLocalHandle();
 
       // the node may require sending several messages to fully boot into the ring
-      synchronized(node) {
-        while(!node.isReady() && !node.joinFailed()) {
-          // delay so we don't busy-wait
-          node.wait(500);
+      while(!node.isReady() && !node.joinFailed()) {
+        // delay so we don't busy-wait
+        node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS);
 
-          // abort if can't join
-          if (node.joinFailed()) {
-            throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
-          }
+        // abort if can't join
+        if (node.joinFailed()) {
+          throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
         }
       }
 

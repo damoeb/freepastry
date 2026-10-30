@@ -110,7 +110,7 @@ public class PastryTest {
     synchronized (pn) {
       while(!pn.isReady()) {
         try {
-          pn.wait();
+          pn.wait(500); // PastryNode no longer notifies its monitor, so poll
         } catch (InterruptedException ie) {}
       }
     }

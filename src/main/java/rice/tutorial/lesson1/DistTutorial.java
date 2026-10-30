@@ -39,6 +39,7 @@ package rice.tutorial.lesson1;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import rice.environment.Environment;
 import rice.pastry.NodeIdFactory;
@@ -78,15 +79,13 @@ public class DistTutorial {
     node.boot(bootaddress);
 
     // the node may require sending several messages to fully boot into the ring
-    synchronized(node) {
-      while(!node.isReady() && !node.joinFailed()) {
-        // delay so we don't busy-wait
-        node.wait(500);
+    while(!node.isReady() && !node.joinFailed()) {
+      // delay so we don't busy-wait
+      node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS);
 
-        // abort if can't join
-        if (node.joinFailed()) {
-          throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
-        }
+      // abort if can't join
+      if (node.joinFailed()) {
+        throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
       }
     }
 
