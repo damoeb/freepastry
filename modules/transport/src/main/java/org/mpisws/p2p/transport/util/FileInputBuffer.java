@@ -51,6 +51,7 @@ public class FileInputBuffer extends DataInputStream implements InputBuffer {
   public FileInputBuffer(Path f, Logger logger) throws IOException {
     super(Files.newInputStream(f));
     this.file = f;
+    this.logger = logger;
   }
 
   @Override
