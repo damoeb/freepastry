@@ -57,12 +57,12 @@ public class MultiringIdRange implements IdRange {
   /**
    * The actual IdRange
    */
-  protected IdRange range;
+  private final IdRange range;
 
   /**
    * The ringId of the nodes in the range
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
    * Constructor

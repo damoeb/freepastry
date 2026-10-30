@@ -58,12 +58,12 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
   /**
    * The internal handle
    */
-  protected NodeHandle handle;
+  private NodeHandle handle;
 
   /**
    * The handle's ringId
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
     * Constructor
@@ -85,6 +85,15 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    */
   protected NodeHandle getHandle() {
     return handle;
+  }
+
+  /**
+   * Replaces the internal handle with the endpoint's canonical instance of it
+   *
+   * @param endpoint The endpoint that coalesces the internal handle
+   */
+  protected void coalesceHandle(Endpoint endpoint) {
+    handle = endpoint.coalesce(handle);
   }
 
   /**

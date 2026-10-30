@@ -59,12 +59,12 @@ public class MultiringNodeHandleSet implements NodeHandleSet {
   /**
    * The actual node handle set
    */
-  protected NodeHandleSet set;
+  private final NodeHandleSet set;
 
   /**
    * The handle's ringId
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
    * Constructor

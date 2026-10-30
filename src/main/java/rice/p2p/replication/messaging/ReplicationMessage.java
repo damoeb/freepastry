@@ -58,7 +58,7 @@ public abstract class ReplicationMessage implements RawMessage {
   private static final long serialVersionUID = 2121558100279943464L;
 
   // the source of this message
-  protected NodeHandle source;
+  private final NodeHandle source;
 
   /**
    * Constructor

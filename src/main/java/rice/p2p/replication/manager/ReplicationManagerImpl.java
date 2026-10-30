@@ -92,38 +92,38 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
   /**
    * The id factory used for manipulating ids
    */
-  protected IdFactory factory;
+  private final IdFactory factory;
 
   /**
    * The endpoint used for sending reminder messages
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
    * The replication used by the manager
    */
-  protected ReplicationImpl replication;
+  private final ReplicationImpl replication;
 
   /**
    * The client of this manager
    */
-  protected ReplicationManagerClient client;
+  private final ReplicationManagerClient client;
 
   /**
    * The helper for the replication manager
    */
-  protected ReplicationManagerHelper helper;
+  private final ReplicationManagerHelper helper;
 
   /**
    * The deleter, for managing ids to delete
    */
-  protected ReplicationManagerDeleter deleter;
+  private final ReplicationManagerDeleter deleter;
 
-  protected String instance;
+  private final String instance;
 
-  protected Environment environment;
+  private final Environment environment;
 
-  protected Logger logger;
+  private final Logger logger;
 
   /**
     * Constructor
@@ -346,29 +346,29 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
     /**
      * The set of possible states we can be in
      */
-    public int STATE_NOTHING = 0;
-    public int STATE_WAITING = 1;
-    public int STATE_SLEEPING = 2;
+    private final int STATE_NOTHING = 0;
+    private final int STATE_WAITING = 1;
+    private final int STATE_SLEEPING = 2;
 
     /**
      * The current state that we are in
      */
-    protected int state;
+    private int state;
 
     /**
      * The set of keys we have yet to fetch
      */
-    protected IdSet set;
+    private final IdSet set;
 
     /**
      * The next message UID which is available
      */
-    protected Id current;
+    private Id current;
 
     /**
      * A cache of hints, mapping Id -> NodeHandle
      */
-    protected HashMap<Id, NodeHandle> hints;
+    private final HashMap<Id, NodeHandle> hints;
 
     /**
      * Constructor
@@ -498,12 +498,12 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
     /**
      * The set of ids we are responsible for deleting
      */
-    protected IdSet set;
+    private final IdSet set;
 
     /**
      * Whether or not we are waiting for a response
      */
-    protected Id id;
+    private Id id;
 
     /**
      * Bulds a new one

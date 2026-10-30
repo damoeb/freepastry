@@ -59,12 +59,12 @@ public class MultiringRouteMessage implements RouteMessage {
   /**
    * The internal message
    */
-  protected RouteMessage message;
+  private final RouteMessage message;
 
   /**
    * The messages's ringId
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
    * Constructor

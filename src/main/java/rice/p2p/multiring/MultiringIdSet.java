@@ -60,12 +60,12 @@ public class MultiringIdSet implements IdSet {
   /**
    * The actual IdSet
    */
-  protected IdSet set;
+  private final IdSet set;
 
   /**
   * The ringId of the ids in the set
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
    * Constructor
@@ -137,7 +137,7 @@ public class MultiringIdSet implements IdSet {
    */
   public Iterator<Id> getIterator() {
     return new Iterator<Id>() {
-      protected Iterator<Id> i = set.getIterator();
+      private final Iterator<Id> i = set.getIterator();
 
       public boolean hasNext() {
         return i.hasNext();

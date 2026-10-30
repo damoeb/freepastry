@@ -86,7 +86,7 @@ public class RingCertificate implements Serializable {
   private static final long serialVersionUID = 5915358246762577456L;
 
   // the static map of all RingCertificates available (id -> cert)
-  protected static final HashMap<Id, RingCertificate> CERTIFICATES = new HashMap<Id, RingCertificate>();
+  private static final HashMap<Id, RingCertificate> CERTIFICATES = new HashMap<Id, RingCertificate>();
 
   // load all certificates that can be found
   static {
@@ -162,31 +162,31 @@ public class RingCertificate implements Serializable {
   }
 
   // the name of this ring
-  protected String name;
+  private final String name;
 
   // the Id of this ring
-  protected Id id;
+  private final Id id;
 
   // the protocol of this ring
-  protected Integer protocol;
+  private final Integer protocol;
 
   // the list of bootstrap nodes for this ring
-  protected InetSocketAddress[] bootstraps;
+  private final InetSocketAddress[] bootstraps;
 
   // the preferred port for this ring
-  protected Integer port;
+  private final Integer port;
 
   // the logserver for this ring
-  protected InetSocketAddress logServer;
+  private InetSocketAddress logServer;
 
   // the key for the ring, used in visualization and log uploading
-  protected PublicKey key;
+  private final PublicKey key;
 
   // the version number of this certificate
-  protected Long version;
+  private final Long version;
 
   // the signature of the above info
-  protected byte[] signature;
+  private byte[] signature;
 
   /**
    * Builds a new RingCertificate given the appropriate info

@@ -58,10 +58,10 @@ public class RequestMessage extends ReplicationMessage {
   public static final short TYPE = 2;
 
   // the list of ranges for this message
-  protected IdRange[] ranges;
+  private final IdRange[] ranges;
 
   // the list of hashes for this message
-  protected IdBloomFilter[] filters;
+  private final IdBloomFilter[] filters;
 
   /**
    * Constructor

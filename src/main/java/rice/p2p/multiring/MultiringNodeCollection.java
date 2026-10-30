@@ -57,12 +57,12 @@ public class MultiringNodeCollection {
   /**
    * The routing base for ring ids, in bytes
    */
-  public int BASE;
+  private final int BASE;
 
   /**
    * The list of nodes in the collection
    */
-  protected Vector<MultiringNode> nodes;
+  private final Vector<MultiringNode> nodes;
 
   /**
    * Constructor
@@ -187,5 +187,9 @@ public class MultiringNodeCollection {
     }
 
     return (ba.length/BASE);
+  }
+
+  public int getBase() {
+    return BASE;
   }
 }

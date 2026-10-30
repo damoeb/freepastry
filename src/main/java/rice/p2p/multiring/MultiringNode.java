@@ -84,39 +84,39 @@ public class MultiringNode implements Node, ScribeMultiClient {
   /**
    * The node which this multiring node is wrapping
    */
-  protected Node node;
+  private final Node node;
 
   /**
    * The Id which represents the current ring this node is a member of
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
    * The Scribe application which the node uses to do routing
    */
-  protected Scribe scribe;
+  private final Scribe scribe;
 
   /**
    * The collection, which keeps track of the other nodes on the ring node
    */
-  protected MultiringNodeCollection collection;
+  private MultiringNodeCollection collection;
 
   /**
    * The list of all of the endpoints connected to this node
    */
-  protected Hashtable<String, Endpoint> endpoints;
+  private final Hashtable<String, Endpoint> endpoints;
 
   /**
    * A cached IdFactory for internal use
    */
-  protected MultiringIdFactory factory;
+  private final MultiringIdFactory factory;
 
   /**
    * The environment
    */
-  protected Environment environment;
+  private final Environment environment;
 
-  protected Logger logger;
+  private final Logger logger;
 
   /**
    * Constructor
@@ -310,7 +310,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
     byte[] current = id.getRingId().toByteArray();
     byte[] bytes = new byte[current.length];
 
-    for (int j=0; j<collection.BASE * length; j++)
+    for (int j=0; j<collection.getBase() * length; j++)
       bytes[bytes.length - 1 - j] = current[bytes.length - 1 - j];
 
     return factory.buildNormalId(bytes);

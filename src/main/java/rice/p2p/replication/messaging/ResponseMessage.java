@@ -59,10 +59,10 @@ public class ResponseMessage extends ReplicationMessage {
   public static final short TYPE = 3;
 
   // the list of ranges for this message
-  protected IdRange[] ranges;
+  private final IdRange[] ranges;
 
   // the list of keys for this message
-  protected Id[][] ids;
+  private final Id[][] ids;
 
   /**
    * Constructor

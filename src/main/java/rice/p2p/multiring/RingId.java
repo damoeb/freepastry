@@ -70,12 +70,12 @@ public class RingId implements Id {
   /**
    * The id which this ringId represents
    */
-  protected Id id;
+  private final Id id;
 
   /**
    * The ringId which this ringId represents
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
    * Constructor

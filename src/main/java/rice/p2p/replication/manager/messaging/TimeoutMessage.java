@@ -52,7 +52,7 @@ public class TimeoutMessage implements Message {
   /**
    * THe unique id of this message
    */
-  protected Id id;
+  private final Id id;
 
   /**
    * Constructor

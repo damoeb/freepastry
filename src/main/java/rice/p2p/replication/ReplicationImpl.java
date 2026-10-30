@@ -87,37 +87,37 @@ public class ReplicationImpl implements Replication, Application, Destructable {
   /**
    * this application's endpoint
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
    * the local node handle
    */
-  protected NodeHandle handle;
+  private final NodeHandle handle;
 
   /**
    * The factory for create IdSets and IdRanges
    */
-  protected IdFactory factory;
+  private final IdFactory factory;
 
   /**
    * This replication's client
    */
-  protected ReplicationClient client;
+  private final ReplicationClient client;
 
   /**
    * This replication's policy, which allows for application-specific replication
    */
-  protected ReplicationPolicy policy;
+  private ReplicationPolicy policy;
 
   /**
    * The replication factor for this replication
    */
-  protected int replicationFactor;
+  private final int replicationFactor;
 
   /**
    * The instance name of the replication
    */
-  protected String instance;
+  private final String instance;
 
   Environment environment;
 
@@ -382,7 +382,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     updateClient();
   }
 
-  protected boolean destroyed = false;
+  private boolean destroyed = false;
   public void destroy() {
     destroyed = true;
   }
@@ -391,7 +391,7 @@ public class ReplicationImpl implements Replication, Application, Destructable {
    * Internal class which is an executable for creating a bloom filter
    */
   protected class BloomFilterExecutable implements Executable<IdBloomFilter, Exception> {
-    protected IdRange range;
+    private final IdRange range;
 
     public BloomFilterExecutable(IdRange range) {
       this.range = range;

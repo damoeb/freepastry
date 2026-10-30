@@ -56,12 +56,12 @@ public class MultiringApplication implements Application {
   /**
    * The app which this mulitring app is wrapping
    */
-  protected Application application;
+  private final Application application;
 
   /**
    * The Id which represents the current ring this app is a member of
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
    * Constructor

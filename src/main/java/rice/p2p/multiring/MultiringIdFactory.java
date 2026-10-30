@@ -65,12 +65,12 @@ public class MultiringIdFactory implements IdFactory {
   /**
    * The multiring node supporting this endpoint
    */
-  protected Id ringId;
+  private final Id ringId;
 
   /**
    * The underlying IdFactory
    */
-  protected IdFactory factory;
+  private final IdFactory factory;
 
   /**
    * Constructor
@@ -299,7 +299,7 @@ public class MultiringIdFactory implements IdFactory {
 
   @SuppressWarnings("unchecked")
   protected class MultiringSortedMap<V> implements SortedMap<Id, V> {
-    protected SortedMap<Id, V> map;
+    private final SortedMap<Id, V> map;
 
     public MultiringSortedMap(SortedMap<Id, V> map) {
       this.map = map;
@@ -329,7 +329,7 @@ public class MultiringIdFactory implements IdFactory {
 
   @SuppressWarnings("unchecked")
   protected static class MultiringEntrySet<V> implements Set<Map.Entry<Id, V>> {
-    protected Set<Map.Entry<Id, V>> set;
+    private final Set<Map.Entry<Id, V>> set;
 
     public MultiringEntrySet(Set<Map.Entry<Id, V>> set) {
       this.set = set;
@@ -344,7 +344,7 @@ public class MultiringIdFactory implements IdFactory {
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
     public Iterator<Map.Entry<Id, V>> iterator() { return new Iterator<Map.Entry<Id, V>>() {
-      protected Iterator<Map.Entry<Id, V>> i = set.iterator();
+      private final Iterator<Map.Entry<Id, V>> i = set.iterator();
       public boolean hasNext() { return i.hasNext(); }
       public Map.Entry<Id, V> next() { return new MultiringMapEntry<V>(i.next()); }
       public void remove() { i.remove(); }
@@ -360,7 +360,7 @@ public class MultiringIdFactory implements IdFactory {
 
   @SuppressWarnings("unchecked")
   protected static class MultiringKeySet implements Set<Id> {
-    protected Set<Id> set;
+    private final Set<Id> set;
 
     public MultiringKeySet(Set<Id> set) {
       this.set = set;
@@ -375,7 +375,7 @@ public class MultiringIdFactory implements IdFactory {
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
     public Iterator<Id> iterator() { return new Iterator<Id>() {
-      protected Iterator<Id> i = set.iterator();
+      private final Iterator<Id> i = set.iterator();
       public boolean hasNext() { return i.hasNext(); }
       public Id next() { return ((RingId) i.next()).getId(); }
       public void remove() { i.remove(); }
@@ -408,7 +408,7 @@ public class MultiringIdFactory implements IdFactory {
   }
 
   protected static class MultiringMapEntry<V> implements Map.Entry<Id, V> {
-    protected Map.Entry<Id, V> entry;
+    private final Map.Entry<Id, V> entry;
 
     public MultiringMapEntry(Map.Entry<Id, V> entry) {
       this.entry = entry;

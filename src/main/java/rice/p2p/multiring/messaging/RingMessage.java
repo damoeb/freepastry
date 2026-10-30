@@ -67,17 +67,17 @@ public class RingMessage implements RawScribeContent {
   /**
    * The target of this ring message
    */
-  protected RingId id;
+  private final RingId id;
 
   /**
    * The internal message to be sent
    */
-  protected RawMessage message;
+  private final RawMessage message;
 
   /**
    * The name of the application which sent this message
    */
-  protected String application;
+  private final String application;
 
   /**
    * Constructor

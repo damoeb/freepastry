@@ -74,17 +74,17 @@ public class MultiringEndpoint implements Endpoint {
   /**
    * The multiring node supporting this endpoint
    */
-  protected MultiringNode node;
+  private final MultiringNode node;
 
   /**
    * The application this endpoint is for
    */
-  protected Application application;
+  private final Application application;
 
   /**
    * The endpoint which this multiring endpoint is wrapping
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
   * Constructor
@@ -408,7 +408,7 @@ public class MultiringEndpoint implements Endpoint {
   public NodeHandle coalesce(NodeHandle handle) {
     if (handle instanceof MultiringNodeHandle) {
       MultiringNodeHandle mnh = (MultiringNodeHandle)handle;
-      mnh.handle = endpoint.coalesce(mnh.handle);
+      mnh.coalesceHandle(endpoint);
       return mnh;
     }
     return endpoint.coalesce(handle);
