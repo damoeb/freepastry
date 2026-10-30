@@ -1482,7 +1482,7 @@ public class PersistentStorage implements Storage {
     if (prefixes.get(file) != null)
       return (String) prefixes.get(file);
 
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     while (! file.equals(appDirectory)) {
       buffer.insert(0, file.getName().replaceAll(ZERO_LENGTH_NAME, ""));
       file = file.getParentFile();

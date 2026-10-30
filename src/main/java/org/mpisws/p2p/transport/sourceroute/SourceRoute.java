@@ -116,7 +116,7 @@ public abstract class SourceRoute<Identifier> {
    * @return The string
    */
   public String toString() {
-    StringBuffer result = new StringBuffer();
+    StringBuilder result = new StringBuilder();
     result.append("{");
 
     for (int i=0; i<path.size(); i++) {

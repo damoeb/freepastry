@@ -1356,7 +1356,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     if (cmd.startsWith("ls")) {
       FragmentKeySet keyset = (FragmentKeySet) fragmentStorage.scan();
       Iterator<Id> iter = keyset.getIterator();
-      StringBuffer result = new StringBuffer();
+      StringBuilder result = new StringBuilder();
 
       long now = environment.getTimeSource().currentTimeMillis();
       if (cmd.indexOf("-r") < 0)

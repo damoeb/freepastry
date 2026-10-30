@@ -803,7 +803,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @return A String representation of this Id, abbreviated
    */
   public String toString() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("<0x");
 
     int n = IdBitLength / 4;
@@ -820,7 +820,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @return
    */
   public String toStringBare() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
 
     int n = IdBitLength / 4;
     for (int i = n-1; i >= n-6; i--)
@@ -836,7 +836,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @return The complete representation of this Id, in hexadecimal
    */
   public String toStringFull() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
 
     int n = IdBitLength / 4;
     for (int i = n - 1; i >= 0; i--)

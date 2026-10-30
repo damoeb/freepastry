@@ -212,7 +212,7 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
    * @return
    */
   private String printData(byte[] data) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < data.length-1; i++) {
       sb.append((int)data[i]);
       sb.append(',');

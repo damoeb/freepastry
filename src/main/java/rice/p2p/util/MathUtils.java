@@ -115,7 +115,7 @@ public class MathUtils {
    * @return A string representation
    */
   public static String toHex(byte[] text) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
 
     for (int i=0; i<text.length; i++) {
       buffer.append(HEX_ARRAY[0x0f & (text[i] >> 4)]);

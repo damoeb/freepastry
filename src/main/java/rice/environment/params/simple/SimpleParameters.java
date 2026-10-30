@@ -328,7 +328,7 @@ public class SimpleParameters implements Parameters {
   }
 
   public void setInetSocketAddressArray(String name, InetSocketAddress[] value) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
 
     for (int i = 0; i < value.length; i++) {
       buffer.append(value[i].getAddress().getHostAddress() + ":"
@@ -345,7 +345,7 @@ public class SimpleParameters implements Parameters {
   }
 
   public void setStringArray(String name, String[] value) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
 
     for (int i = 0; i < value.length; i++) {
       buffer.append(value[i]);

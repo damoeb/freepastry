@@ -174,7 +174,7 @@ public class BloomFilter implements Serializable {
    * @return The internal bit set as a string
    */
   public String getBitSet() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("[BloomFilter ");
     for (int i=0; i<length; i++)
       if (set.get(i))

@@ -959,7 +959,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
 
     writer.attribute("class", o.getClass().getName());
 
-    StringBuffer classes = new StringBuffer();
+    StringBuilder classes = new StringBuilder();
     Class<?>[] supers = getSuperClasses(o.getClass());
 
     for (int i=0; i<supers.length; i++) {

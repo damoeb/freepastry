@@ -427,7 +427,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
     if (cmd.startsWith("ls")) {
       Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
-      StringBuffer result = new StringBuffer();
+      StringBuilder result = new StringBuilder();
       int numAggr = 0, numObj = 0;
 
       long now = environment.getTimeSource().currentTimeMillis();
@@ -636,7 +636,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     if (cmd.startsWith("monitor ls") && monitorEnabled) {
-      StringBuffer result = new StringBuffer();
+      StringBuilder result = new StringBuilder();
       Enumeration<Id> enumeration = monitorIDs.elements();
 
       while (enumeration.hasMoreElements())
