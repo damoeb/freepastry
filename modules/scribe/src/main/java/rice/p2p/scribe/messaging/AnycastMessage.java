@@ -38,8 +38,8 @@ advised of the possibility of such damage.
 package rice.p2p.scribe.messaging;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.NodeHandle;
@@ -70,7 +70,7 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
   /**
    * the list of nodes which we are going to visit
    */
-  protected LinkedList<NodeHandle> toVisit;
+  protected ArrayDeque<NodeHandle> toVisit;
 
   private final NodeHandle initialRequestor;
 
@@ -86,7 +86,7 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
     this.initialRequestor = source;
     this.content = content;
     this.visited = new ArrayList<NodeHandle>();
-    this.toVisit = new LinkedList<NodeHandle>();
+    this.toVisit = new ArrayDeque<NodeHandle>();
 
     addVisited(source);
   }
@@ -274,7 +274,7 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
 
     initialRequestor = endpoint.readNodeHandle(buf);
 
-    toVisit = new LinkedList<NodeHandle>();
+    toVisit = new ArrayDeque<NodeHandle>();
     int toVisitLength = buf.readInt();
     for (int i = 0; i < toVisitLength; i++) {
       toVisit.addLast(endpoint.readNodeHandle(buf));

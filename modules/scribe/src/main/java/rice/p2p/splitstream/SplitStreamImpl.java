@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.splitstream;
 
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.Node;
@@ -65,9 +65,9 @@ public class SplitStreamImpl implements SplitStream {
   private final Node node;
 
   /**
-   * Hashtable of all the channels currently created on this node implicitly or explicitly.
+   * Map of all the channels currently created on this node implicitly or explicitly.
    */
-  private final Hashtable<ChannelId, Channel> channels;
+  private final ConcurrentHashMap<ChannelId, Channel> channels;
 
   private final int stripeBaseBitLength;
   private final int maxFailedSubscriptions;
@@ -106,7 +106,7 @@ public class SplitStreamImpl implements SplitStream {
     });
 
     this.node = node;
-    this.channels = new Hashtable<ChannelId, Channel>();
+    this.channels = new ConcurrentHashMap<ChannelId, Channel>();
     scribe.setPolicy(factory.getSplitStreamScribePolicy(scribe, this));
   }
 

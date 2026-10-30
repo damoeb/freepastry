@@ -38,10 +38,9 @@ package rice.p2p.splitstream;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
@@ -84,7 +83,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
   /**
    * A mapping from channelId -> maximum children
    */
-  private final Hashtable<ChannelId, Integer> policy;
+  private final ConcurrentHashMap<ChannelId, Integer> policy;
 
   /**
    * Constructor which takes a splitStream object
@@ -96,7 +95,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     DEFAULT_MAXIMUM_CHILDREN = SplitStreamConfig.fromParameters(scribe.getEnvironment().getParameters()).defaultMaximumChildren();
     this.scribe = scribe;
     this.splitStream = splitStream;
-    this.policy = new Hashtable<ChannelId, Integer>();
+    this.policy = new ConcurrentHashMap<ChannelId, Integer>();
   }
 
   /**
@@ -234,9 +233,9 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
           }
         } else {
           /* we must accept, because this is primary stripe */
-          Vector<Object> res = freeBandwidthUltimate(topic.id());
+          List<Object> res = freeBandwidthUltimate(topic.id());
           if (res != null) {
-            scribe.removeChild(new Topic((Id)res.elementAt(1)), (NodeHandle)res.elementAt(0));
+            scribe.removeChild(new Topic((Id)res.get(1)), (NodeHandle)res.get(0));
             return true;
           } else {
             return false;
@@ -307,10 +306,10 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
            b. local node is root for non-prefix match topic,
               drop a child from non-primary, non-root stripe and accept the new subscriber */
         if (this.scribe.isRoot(message.getTopic())) {
-          Vector<Object> res = freeBandwidthUltimate(message.getTopic().id());
+          List<Object> res = freeBandwidthUltimate(message.getTopic().id());
 
           if (res != null) {
-            scribe.removeChild(new Topic((Id)res.elementAt(1)), (NodeHandle)res.elementAt(0));
+            scribe.removeChild(new Topic((Id)res.get(1)), (NodeHandle)res.get(0));
             scribe.addChild(message.getTopic(),subscribeMessage.getSubscriber());
             return;
           }
@@ -383,7 +382,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @return A vector containing the child to be dropped and
    *         the corresponding stripeId
    */
-  public Vector<Object> freeBandwidthUltimate(Id stripeId){
+  public List<Object> freeBandwidthUltimate(Id stripeId){
     Channel channel = getChannel(new Topic(stripeId));
     Stripe[] stripes = channel.getStripes();
 
@@ -424,10 +423,10 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       List<NodeHandle> children = new ArrayList<NodeHandle>(this.scribe.getChildrenOfTopic(new Topic(victimStripeId)));
 
       NodeHandle child = children.get(scribe.getEnvironment().getRandomSource().nextInt(children.size()));
-      Vector<Object> result = new Vector<Object>();
+      List<Object> result = new ArrayList<Object>();
 
-      result.addElement(child);
-      result.addElement(victimStripeId);
+      result.add(child);
+      result.add(victimStripeId);
 
       return result;
     }
@@ -446,7 +445,6 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    */
   public NodeHandle freeBandwidth(Channel channel, NodeHandle newChild, Id stripeId) {
     Stripe primaryStripe = channel.getPrimaryStripe();
-    Id localId = channel.getLocalId();
 
     /* We have to drop one of child of the primary stripe */
     Collection<NodeHandle> children = new ArrayList<NodeHandle>(scribe.getChildrenOfTopic(new Topic(primaryStripe.getStripeId().id())));

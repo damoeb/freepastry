@@ -47,7 +47,6 @@ import rice.p2p.splitstream.ChannelId;
 import rice.p2p.splitstream.SplitStream;
 import rice.p2p.splitstream.SplitStreamClient;
 import rice.p2p.splitstream.SplitStreamImpl;
-import rice.p2p.splitstream.SplitStreamScribePolicy;
 import rice.p2p.splitstream.Stripe;
 import rice.p2p.util.MathUtils;
 import rice.pastry.PastryNode;
@@ -87,19 +86,12 @@ public class MySplitStreamClient implements SplitStreamClient {
    */
   private SplitStream ss;
 
-  private int numMesgsReceived = 0;
-
-  private SplitStreamScribePolicy policy = null;
-
-  private String instance;
-
   TimerTask publishTask;
 
   int curSeq = 0;
 
   public MySplitStreamClient(PastryNode n, String instance) {
     this.n = n;
-    this.instance = instance;
     this.ss = new SplitStreamImpl(n, instance);
   }
 

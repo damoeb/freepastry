@@ -38,8 +38,8 @@ advised of the possibility of such damage.
 package rice.p2p.splitstream;
 
 import java.util.Collection;
-import java.util.Hashtable;
-import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.NodeHandle;
@@ -87,7 +87,7 @@ public class Stripe implements ScribeMultiClient {
   /**
    * The list of SplitStreamClients interested in data from this client
    */
-  private final Vector<SplitStreamClient> clients;
+  private final CopyOnWriteArrayList<SplitStreamClient> clients;
 
   /**
    * This stripe's channel
@@ -97,7 +97,7 @@ public class Stripe implements ScribeMultiClient {
   /**
    * The count of failed subscribe messages
    */
-  private final Hashtable<Topic, Integer> failed;
+  private final ConcurrentHashMap<Topic, Integer> failed;
 
   Logger logger;
 
@@ -119,8 +119,8 @@ public class Stripe implements ScribeMultiClient {
     this.scribe = scribe;
     logger = scribe.getEnvironment().getLogManager().getLogger(Stripe.class, instance);
     this.channel = channel;
-    this.failed = new Hashtable<Topic, Integer>();
-    this.clients = new Vector<SplitStreamClient>();
+    this.failed = new ConcurrentHashMap<Topic, Integer>();
+    this.clients = new CopyOnWriteArrayList<SplitStreamClient>();
     this.topic = new Topic(stripeId.id());
   }
 

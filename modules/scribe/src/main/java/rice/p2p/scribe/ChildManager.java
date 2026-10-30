@@ -39,9 +39,9 @@ package rice.p2p.scribe;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -263,7 +263,6 @@ final class ChildManager {
     // askPolicy: everyone else (after the policy is asked, these will be placed into forward/dontForward appropriately)
 
     // this is the list of topics that aren't a loop or already a child
-    ArrayList<Topic> forward = new ArrayList<Topic>(); // leave these in the message
     ArrayList<Topic> dontForward = new ArrayList<Topic>(); // take these out, and maybe send a response message for these, the old policy just drops these, We should probably send a response as long as sMessage.getId() != NO_ACK_REQUIRED
     ArrayList<Topic> askPolicy = new ArrayList<Topic>(); // ask the policy, and take these out if the policy accepts them
 
@@ -283,7 +282,6 @@ final class ChildManager {
             }
             return s;
           });
-          forward.add(topic);
           continue;
         }
 
@@ -342,11 +340,6 @@ final class ChildManager {
     } else {
       accepted = askPolicy; // also empty
     }
-
-    // just a nicer name for it
-    List<Topic> rejected = askPolicy;
-
-    forward.addAll(rejected);
 
     List<Topic> toReturn; // which topics to include in the subscribeAck
 
@@ -449,7 +442,7 @@ final class ChildManager {
     logger.trace("handleForwardSubscribeMessage() here 5 {}", sMessage);
 
     // handle the multi-subscription
-    HashMap<NodeHandle, List<Topic>> manifest = subscriptions.buildManifests(noManager);
+    Map<NodeHandle, List<Topic>> manifest = subscriptions.buildManifests(noManager);
     if (manifest.containsKey(localHandle)) {
       // we are the root, but the policy would let us accept him
       List<Topic> theTopics = manifest.remove(localHandle);

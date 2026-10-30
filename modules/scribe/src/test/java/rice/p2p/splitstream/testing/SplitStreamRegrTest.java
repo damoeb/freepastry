@@ -67,7 +67,7 @@ public class SplitStreamRegrTest extends CommonAPITest {
   // the scribe impls in the ring
   protected SplitStreamImpl splitstreams[];
 
-  protected SplitStreamTestClient ssclients[];
+  private SplitStreamTestClient ssclients[];
 
   /**
    * Constructor which sets up all local variables
@@ -154,7 +154,6 @@ public class SplitStreamRegrTest extends CommonAPITest {
   }
 
   protected void testIndependence() {
-    boolean result = true;
     int count = 0;
     int num = 0;
     int[] array = new int[20];
@@ -348,24 +347,18 @@ public class SplitStreamRegrTest extends CommonAPITest {
 
     private int numMesgsReceived = 0;
 
-    private SplitStreamScribePolicy policy = null;
-
-    public SplitStreamTestClient(Node n, SplitStream ss) {
+    SplitStreamTestClient(Node n, SplitStream ss) {
       this.n = n;
       this.ss = ss;
       log("Client Created " + n);
     }
 
-    public void destroy() {
+    void destroy() {
       ss.destroy();
     }
 
-    public Channel getChannel() {
+    Channel getChannel() {
       return this.channel;
-    }
-
-    public void joinFailed(Stripe s) {
-      log("Join Failed on " + s);
     }
 
     @Override
@@ -374,51 +367,51 @@ public class SplitStreamRegrTest extends CommonAPITest {
       numMesgsReceived++;
     }
 
-    public void createChannel(ChannelId cid) {
+    void createChannel(ChannelId cid) {
       log("Channel " + cid + " created.");
       channel = ss.createChannel(cid);
     }
 
-    public void attachChannel(ChannelId cid) {
+    void attachChannel(ChannelId cid) {
       log("Attaching to Channel " + cid + ".");
       if (channel == null)
         channel = ss.attachChannel(cid);
     }
 
-    public Stripe[] getStripes() {
+    Stripe[] getStripes() {
       log("Retrieving Stripes.");
       stripes = channel.getStripes();
       return stripes;
     }
 
-    public void subscribeStripes() {
+    void subscribeStripes() {
       log("Subscribing to all Stripes.");
       for (Stripe stripe : stripes) {
         stripe.subscribe(this);
       }
     }
 
-    public void publishAll(byte[] b) {
+    void publishAll(byte[] b) {
       log("Publishing to all Stripes.");
       for (Stripe stripe : stripes) {
         publish(b, stripe);
       }
     }
 
-    public void publish(byte[] b, Stripe s) {
+    void publish(byte[] b, Stripe s) {
       log("Publishing to " + s);
       s.publish(b);
     }
 
-    public int getNumMesgs() {
+    int getNumMesgs() {
       return numMesgsReceived;
     }
 
-    public void reset() {
+    void reset() {
       numMesgsReceived = 0;
     }
 
-    public Id getId() {
+    Id getId() {
       return channel.getLocalId();
     }
 

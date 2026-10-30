@@ -42,7 +42,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
@@ -168,7 +168,6 @@ public class ScribeRegrTest extends CommonAPITest {
    */
 
   protected void testAddNode() {
-    String name = "TestAddNode";
     Topic topic = new Topic(generateId());
     Id id = topic.id();
     TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
@@ -413,9 +412,8 @@ public class ScribeRegrTest extends CommonAPITest {
         simulate();
       }
 
-      int numWithParent = 0;
       for (int i=0; i < NUM_NODES; i++) {
-        if (scribes[i].getParent(topics.get(0)) == scribes[i].getParent(topics.get(1))) {
+        if (Objects.equals(scribes[i].getParent(topics.get(0)), scribes[i].getParent(topics.get(1)))) {
           stepDone(FAILURE, "Topics "+topics.get(0)+" and "+topics.get(1)+" had same parent "+scribes[i].getParent(topics.get(0))+" on node "+scribes[i].getEndpoint().getLocalNodeHandle());
         }
       }
@@ -621,13 +619,11 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart("Drop Child");
     // now, find a scribe with a child
     ScribeImpl scribe = null;
-    TestScribeClient client = null;
     TestScribePolicy policy = null;
 
     for (int i=0; (i<NUM_NODES) && (scribe == null); i++) {
       if (scribes[i].getChildrenOfTopic(topic).size() > 0) {
         scribe = scribes[i];
-        client = clients[i];
         policy = policies[i];
       }
     }
@@ -727,7 +723,6 @@ public class ScribeRegrTest extends CommonAPITest {
     protected void testSingleRoot(String name) {
       sectionStart(name + "");
       int numTrees = 10;
-      boolean failed = false;
 
   for(int num=0; num<numTrees; num ++) {
       Topic topic = new Topic(generateId());
@@ -749,7 +744,6 @@ public class ScribeRegrTest extends CommonAPITest {
 
       if (numRoot != 1) {
     stepDone(FAILURE, "Number of roots= " + numRoot);
-    failed = true;
       }
       else
     stepDone(SUCCESS);
@@ -989,7 +983,7 @@ public class ScribeRegrTest extends CommonAPITest {
    * @version $Id: ScribeRegrTest.java 4221 2008-05-19 16:41:19Z jeffh $
    * @author amislove
    */
-  protected class TestScribeClient implements ScribeMultiClient {
+  protected static class TestScribeClient implements ScribeMultiClient {
 
     protected Scribe scribe;
 
@@ -998,12 +992,12 @@ public class ScribeRegrTest extends CommonAPITest {
     /**
      * The publish messages received so far
      */
-    protected Vector<ScribeContent> publishMessages;
+    protected CopyOnWriteArrayList<ScribeContent> publishMessages;
 
     /**
       * The anycast messages received so far
      */
-    protected Vector<ScribeContent> anycastMessages;
+    protected CopyOnWriteArrayList<ScribeContent> anycastMessages;
 
     /**
      * The topic this client is listening for
@@ -1031,8 +1025,8 @@ public class ScribeRegrTest extends CommonAPITest {
       this.scribe = scribe;
       this.i = i;
       this.topics = topics;
-      this.publishMessages = new Vector<ScribeContent>();
-      this.anycastMessages = new Vector<ScribeContent>();
+      this.publishMessages = new CopyOnWriteArrayList<ScribeContent>();
+      this.anycastMessages = new CopyOnWriteArrayList<ScribeContent>();
       this.acceptAnycast = false;
       this.subscribeFailed = false;
     }
@@ -1099,7 +1093,7 @@ public class ScribeRegrTest extends CommonAPITest {
     }
   }
 
-  public class TestScribePolicy extends ScribePolicy.DefaultScribePolicy {
+  public static class TestScribePolicy extends ScribePolicy.DefaultScribePolicy {
 
     protected Scribe scribe;
 

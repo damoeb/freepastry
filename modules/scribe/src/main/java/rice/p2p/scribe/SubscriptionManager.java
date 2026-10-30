@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -238,7 +239,7 @@ final class SubscriptionManager {
 
     if (hint == null) {
       // break them into groups based on the next hop
-      HashMap<NodeHandle, List<Topic>> manifest = buildManifests(topics);
+      Map<NodeHandle, List<Topic>> manifest = buildManifests(topics);
 
       for (NodeHandle nextHop : manifest.keySet()) {
         List<Topic> theTopics = manifest.get(nextHop);
@@ -250,7 +251,7 @@ final class SubscriptionManager {
 
         // NOTE: this may have to be further thought through and subdivided
         NodeHandleSet set = endpoint.replicaSet(msg.getTopic().id(), 2);
-        if (set.size() > 1 && set.getHandle(1) == localHandle) {
+        if (set.size() > 1 && localHandle.equals(set.getHandle(1))) {
           endpoint.route(null, msg, nextHop);
         } else {
           endpoint.route(msg.getTopic().id(), msg, nextHop);
@@ -263,7 +264,7 @@ final class SubscriptionManager {
       // see if hint is my direct neighbor, if so, route only directly, so that he will accept the connection even
       // though he may still be joining
       NodeHandleSet set = endpoint.replicaSet(msg.getTopic().id(), 2);
-      if (set.size() > 1 && set.getHandle(1) == localHandle) {
+      if (set.size() > 1 && localHandle.equals(set.getHandle(1))) {
         endpoint.route(null, msg, hint);
       } else {
         endpoint.route(msg.getTopic().id(), msg, hint);
@@ -280,7 +281,7 @@ final class SubscriptionManager {
    * Maintains the order of the Topics
    *
    */
-  HashMap<NodeHandle, List<Topic>> buildManifests(List<Topic> topics) {
+  Map<NodeHandle, List<Topic>> buildManifests(List<Topic> topics) {
     HashMap<NodeHandle, List<Topic>> manifest = new HashMap<NodeHandle, List<Topic>>();
 
     for (Topic topic : topics) {

@@ -128,7 +128,10 @@ public class SplitStreamDistTest {
           System.out.println("ImALIVE:"+env.getTimeSource().currentTimeMillis());
           try {
             Thread.sleep(IM_ALIVE_PERIOD);
-          } catch (Exception e) {}
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
         }
       },"ImALIVE").start();
     }

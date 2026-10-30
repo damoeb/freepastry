@@ -47,6 +47,8 @@ import rice.p2p.scribe.ScribeContent;
  * @version $Id: SplitStreamContent.java 3810 2007-07-30 12:59:55Z jeffh $
  * @author Alan Mislove
  */
+// the array is the payload and is never compared or used as a map key, so the identity-based equals of the record is harmless
+@SuppressWarnings("ArrayRecordComponent")
 public record SplitStreamContent(byte[] data) implements ScribeContent {
 
   /***************** Raw Serialization ***************************************/

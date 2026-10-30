@@ -65,6 +65,8 @@ final class TopicRegistry {
   /**
    * the hashtable of topic -> TopicManager
    */
+  // Hashtable on purpose: the registry locks this very object (synchronized (topicManagers)) and hands out its synchronized views
+  @SuppressWarnings("JdkObsolete")
   private final Hashtable<Topic, TopicManager> topicManagers = new Hashtable<Topic, TopicManager>();
 
   /**
