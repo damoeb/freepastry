@@ -38,12 +38,10 @@ package rice.p2p.aggregation;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.List;
 import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
@@ -77,7 +75,6 @@ import rice.p2p.past.PastImpl;
 import rice.p2p.past.gc.GCPast;
 import rice.p2p.past.gc.GCPastContent;
 import rice.p2p.past.gc.GCPastContentHandle;
-import rice.p2p.past.gc.rawserialization.RawGCPastContent;
 import rice.p2p.past.rawserialization.JavaPastContentDeserializer;
 import rice.p2p.past.rawserialization.JavaPastContentHandleDeserializer;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
@@ -111,6 +108,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final AggregateFlusher flusher;
   private final AggregateTree tree;
   private final AggregateExpiration aggregateExpiration;
+  private final AggregateConsolidator consolidator;
 
   private Environment environment;
   private final Logger logger;
@@ -180,6 +178,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     this.factory = factory;
+    this.consolidator = new AggregateConsolidator(aggregateStore, aggregateList, this.aggregateFactory, storer, config, environment.getTimeSource(), environment.getRandomSource(), logger);
     this.aggregateExpiration = new AggregateExpiration(aggregateStore, aggregateList, config, environment.getTimeSource(), logger);
     this.tree = new AggregateTree(aggregateStore, objectStore, aggregateList, storer, this.aggregateFactory, config, environment.getTimeSource(), logger);
     this.flusher = new AggregateFlusher(waitingList, aggregateList, this.aggregateFactory, storer, config, logger);
@@ -719,145 +718,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     return null;
   }
 
-  private void consolidateAggregates() {
-    final long now = environment.getTimeSource().currentTimeMillis();
-    Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
-    List<AggregateDescriptor> candidateList = new ArrayList<AggregateDescriptor>();
-
-    logger.info("Looking for aggregates to consolidate");
-
-    aggregateList.resetMarkers();
-    while (enumeration.hasMoreElements()) {
-      AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
-      if (!aggr.isMarker()) {
-        aggr.setMarker(true);
-
-        /* An aggregate is a candidate for consolidation iff
-              - it does not need to be refreshed yet, but has reached a certain age
-                (to prevent consolidation of 'garbage'),
-              - at least one of its objects is still alive, and
-              - it does not contain enough objects, or too many of them are dead
-           Pointer arrays are never consolidated; they expire after some time.
-        */
-
-        if ((aggr.getCurrentLifetime() > (now + config.getExpirationRenewThreshold())) &&
-            (aggr.getCurrentLifetime() < (now + config.getConsolidationThreshold())) &&
-            (aggr.objectsAliveAt(now) > 0)) {
-          float fractionAlive = ((float)aggr.objectsAliveAt(now)) / aggr.getObjects().length;
-          if ((aggr.getObjects().length < config.getConsolidationMinObjectsInAggregate()) ||
-              (fractionAlive < config.getConsolidationMinComponentsAlive())) {
-            logger.atDebug().log(() -> "Can consolidate: "+aggr.getKey().toStringFull()+", "+aggr.objectsAliveAt(now)+"/"+aggr.getObjects().length+" alive");
-            candidateList.add(aggr);
-          }
-        }
-      }
-    }
-
-    if (candidateList.isEmpty()) {
-      logger.info("No candidates for consolidation");
-      return;
-    }
-
-    logger.debug("{} candidate(s) for consolidation", candidateList.size());
-
-    final List<AggregateDescriptor> componentList = new ArrayList<AggregateDescriptor>();
-    int objectsSoFar = 0;
-    int bytesSoFar = 0;
-
-    while (!candidateList.isEmpty()) {
-      AggregateDescriptor adc = candidateList.remove(environment.getRandomSource().nextInt(candidateList.size()));
-      componentList.add(adc);
-      logger.atDebug().log(() -> "Picked candidate "+adc.getKey().toStringFull()+" ("+adc.objectsAliveAt(now)+"/"+adc.getObjects().length+" objects, "+adc.bytesAliveAt(now)+" bytes alive)");
-      objectsSoFar += adc.objectsAliveAt(now);
-      bytesSoFar += adc.bytesAliveAt(now);
-
-      int p = 0;
-      while (p < candidateList.size()) {
-        AggregateDescriptor adx = candidateList.get(p);
-        if (((adx.objectsAliveAt(now) + objectsSoFar) > config.getMaxObjectsInAggregate()) ||
-            ((adx.bytesAliveAt(now) + bytesSoFar) > config.getMaxAggregateSize()))
-          candidateList.remove(p);
-        else
-          p++;
-      }
-    }
-
-    if (componentList.isEmpty() || (objectsSoFar < config.getConsolidationMinObjectsInAggregate())) {
-      logger.info("Not enough objects ({} found, {} required), postponing...", objectsSoFar, config.getConsolidationMinObjectsInAggregate());
-      return;
-    }
-
-    logger.debug("Consolidation: Decided to consolidate {} objects from {} aggregates ({} bytes)", objectsSoFar, componentList.size(), bytesSoFar);
-
-    final AggregateDescriptor[] adc = (AggregateDescriptor[]) componentList.toArray(new AggregateDescriptor[] {});
-    final Aggregate[] aggr = new Aggregate[adc.length];
-    final int objectsTotal = objectsSoFar;
-    final Id firstKey = adc[0].getKey();
-
-    logger.atDebug().log(() -> "Consolidation: Fetching aggregate #0: "+firstKey.toStringFull());
-    aggregateStore.lookup(firstKey, new Continuation<PastContent, Exception>() {
-      int currentLookup = 0;
-      public void receiveResult(PastContent o) {
-        if (o instanceof Aggregate) {
-          aggr[currentLookup] = (Aggregate) o;
-          currentLookup ++;
-          if (currentLookup >= componentList.size()) {
-            RawGCPastContent[] components = new RawGCPastContent[objectsTotal];
-            ObjectDescriptor[] desc = new ObjectDescriptor[objectsTotal];
-            int componentIndex = 0;
-
-            logger.info("Consolidation: All aggregates fetched OK, forming new aggregate...");
-
-            for (int i=0; i<adc.length; i++) {
-              for (int j=0; j<adc[i].getObjects().length; j++) {
-                if (adc[i].getObjects()[j].isAliveAt(now)) {
-
-                  GCPastContent temp = aggr[i].getComponent(j);
-
-                  components[componentIndex] = (RawGCPastContent)temp;
-                  desc[componentIndex] = adc[i].getObjects()[j];
-                  if (logger.isDebugEnabled()) logger.debug("  #"+componentIndex+": "+adc[i].getObjects()[j].getKey().toStringFull());
-                  componentIndex ++;
-                } else {
-                  if (logger.isDebugEnabled()) logger.debug("Skipped (dead): "+adc[i].getObjects()[j].getKey().toStringFull());
-                }
-              }
-            }
-
-            Id[] obsoleteAggregates = new Id[adc.length];
-            for (int i=0; i<adc.length; i++)
-              obsoleteAggregates[i] = adc[i].getKey();
-
-            Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), obsoleteAggregates);
-            final long aggrExpirationF = AggregateStorer.chooseAggregateLifetime(desc);
-
-            storer.storeAggregate(aggregateFactory.buildAggregate(components, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
-              public void receiveResult(Boolean o) {
-                logger.info("Consolidated Aggregate stored OK, removing old descriptors...");
-                for (AggregateDescriptor aggregateDescriptor : adc) {
-                  if (logger.isDebugEnabled()) logger.debug("Removing "+aggregateDescriptor.getKey().toStringFull()+" ...");
-                  aggregateList.removeAggregateDescriptor(aggregateDescriptor);
-                }
-
-                aggregateList.writeToDisk();
-                logger.info("Consolidation completed, {} objects from {} aggregates consolidated", objectsTotal, aggr.length);
-              }
-              public void receiveException(Exception e) {
-                logger.warn("Exception during consolidation store: e={} -- aborting", e, e);
-              }
-            });
-          } else {
-            logger.atDebug().log(() -> "Consolidation: Fetching aggregate #"+currentLookup+": "+adc[currentLookup].getKey().toStringFull());
-            aggregateStore.lookup(adc[currentLookup].getKey(), this);
-          }
-        }
-      }
-      public void receiveException(Exception e) {
-        logger.atWarn().setCause(e).log(() -> "Exception during consolidation lookup "+adc[currentLookup].getKey().toStringFull()+": "+e+" -- aborting");
-      }
-    });
-  }
-
   private void timerExpired(char timerID) {
     logger.atDebug().log(() -> "TIMER EXPIRED: #" + (int) timerID);
 
@@ -896,7 +756,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       }
       case tiConsolidate :
       {
-        consolidateAggregates();
+        consolidator.consolidateAggregates();
         addTimer(jitterTerm(config.getConsolidationInterval()), tiConsolidate);
         break;
       }
