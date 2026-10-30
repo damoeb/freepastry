@@ -36,9 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.filetransfer;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 /**
  * Tells FileTransfer where to store the bytes of a file, usually a temp file.
@@ -54,7 +54,7 @@ public interface FileAllocationStrategy {
    * @return
    * @throws IOException
    */
-  public File getFile(ByteBuffer metadata, long offset, long length) throws IOException;
+  public Path getFile(ByteBuffer metadata, long offset, long length) throws IOException;
 
   /**
    * Notification of a cancelled transfer.
@@ -65,5 +65,5 @@ public interface FileAllocationStrategy {
    * @param downloadedLength the actual "valid" downloaded length
    * @param requestedLength the length of the original file transfer request
    */
-  public void fileCancelled(ByteBuffer metadata, File f, long offset, long downloadedLength, long requestedLength, Exception reason);
+  public void fileCancelled(ByteBuffer metadata, Path f, long offset, long downloadedLength, long requestedLength, Exception reason);
 }

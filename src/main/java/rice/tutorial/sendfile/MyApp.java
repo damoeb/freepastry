@@ -39,9 +39,11 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.sendfile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import org.mpisws.p2p.filetransfer.BBReceipt;
 import org.mpisws.p2p.filetransfer.FileReceipt;
@@ -101,12 +103,12 @@ public class MyApp implements Application {
             System.out.println("Message received: "+bb);
           }
 
-          public void fileReceived(File f, ByteBuffer metadata) {
+          public void fileReceived(Path f, ByteBuffer metadata) {
             try {
               String originalFileName = new SimpleInputBuffer(metadata).readUTF();
-              File dest = new File("delme2.txt");
+              Path dest = Path.of("delme2.txt");
               System.out.println("Moving "+f+" to "+dest+" original:"+originalFileName);
-              System.out.println(f.renameTo(dest));
+              System.out.println(move(f, dest));
             } catch (IOException ioe) {
               System.out.println("Error deserializing file name. "+ioe);
             }
@@ -235,17 +237,17 @@ public class MyApp implements Application {
 
         try {
           // get the file
-          final File f = new File("delme.txt");
+          final Path f = Path.of("delme.txt");
 
           // make sure it exists
-          if (!f.exists()) {
+          if (!Files.exists(f)) {
             System.err.println("File "+f+" does not exist.  Please create a file called "+f+" and run the tutorial again.");
             System.exit(1);
           }
 
           // serialize the filename
           SimpleOutputBuffer sob = new SimpleOutputBuffer();
-          sob.writeUTF(f.getName());
+          sob.writeUTF(f.getFileName().toString());
 
           // request transfer of the file with priority 2
           sender.sendFile(f,sob.getByteBuffer(),(byte)2,new Continuation<FileReceipt, Exception>() {
@@ -304,6 +306,18 @@ public class MyApp implements Application {
 
   public String toString() {
     return "MyApp "+endpoint.getId();
+  }
+
+  /**
+   * @return whether the file could be moved, as File.renameTo reported
+   */
+  private static boolean move(Path from, Path to) {
+    try {
+      Files.move(from, to, StandardCopyOption.REPLACE_EXISTING);
+      return true;
+    } catch (IOException e) {
+      return false;
+    }
   }
 
 }

@@ -36,12 +36,13 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.testing.filetransfer;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -86,15 +87,16 @@ public class ProfileFileTest {
    */
   public static void main(String[] args) throws Exception {
     // globals
-    File f = new File("delme.txt");
-    if (!f.exists()) {
+    Path f = Path.of("delme.txt");
+    if (!Files.exists(f)) {
       // make a 10 meg file
       Random r = new Random();
-      FileOutputStream fos = new FileOutputStream(f);
-      byte[] foo = new byte[10000];
-      for (int ctr = 0; ctr < 1000; ctr++) {
-        r.nextBytes(foo);
-        fos.write(foo);
+      try (OutputStream fos = Files.newOutputStream(f)) {
+        byte[] foo = new byte[10000];
+        for (int ctr = 0; ctr < 1000; ctr++) {
+          r.nextBytes(foo);
+          fos.write(foo);
+        }
       }
     }
 
@@ -131,10 +133,10 @@ public class ProfileFileTest {
 
           }
 
-          public void fileReceived(File f, ByteBuffer metadata) {
+          public void fileReceived(Path f, ByteBuffer metadata) {
             try {
               String name = new SimpleInputBuffer(metadata).readUTF();
-              logger.info("file received {} named:{} size:{}", f, name, f.length());
+              logger.info("file received {} named:{} size:{}", f, name, Files.size(f));
             } catch (IOException ioe) {
               logger.warn("Error interpreting filename ", ioe);
             }
@@ -226,7 +228,7 @@ public class ProfileFileTest {
 
           }
 
-          public void fileReceived(File f, ByteBuffer metadata) {
+          public void fileReceived(Path f, ByteBuffer metadata) {
 
           }
 
@@ -239,7 +241,7 @@ public class ProfileFileTest {
         try {
           SimpleOutputBuffer sob = new SimpleOutputBuffer();
           sob.writeUTF("foo");
-          ft.sendFile(new File("delme.txt"), sob.getByteBuffer(), (byte)0, new Continuation<FileReceipt, Exception>() {
+          ft.sendFile(Path.of("delme.txt"), sob.getByteBuffer(), (byte)0, new Continuation<FileReceipt, Exception>() {
 
             public void receiveResult(FileReceipt result) {
               System.out.println("Send success "+result);

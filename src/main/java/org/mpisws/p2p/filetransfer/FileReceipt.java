@@ -36,11 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.filetransfer;
 
-import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 public interface FileReceipt extends Receipt {
-  public File getFile();
+  public Path getFile();
 
   /**
    * Note that the ByteBuffer will be constructed every time it is requested.  Thus you can always read the metadata from the beginning, but

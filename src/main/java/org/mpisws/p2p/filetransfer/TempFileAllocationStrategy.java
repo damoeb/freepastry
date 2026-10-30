@@ -36,9 +36,10 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.filetransfer;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Just creates a temp file, ignoring the filename/size.  Does not delete on exit, as this is not memory safe.
@@ -49,7 +50,7 @@ import java.nio.ByteBuffer;
 public class TempFileAllocationStrategy implements FileAllocationStrategy {
   private final String prefix;
   private final String suffix;
-  private final File dir;
+  private final Path dir;
 
   public TempFileAllocationStrategy() {
     this("FreePastry",null);
@@ -59,20 +60,25 @@ public class TempFileAllocationStrategy implements FileAllocationStrategy {
     this(prefix, suffix, null);
   }
 
-  public TempFileAllocationStrategy(String prefix, String suffix, File directory) {
+  public TempFileAllocationStrategy(String prefix, String suffix, Path directory) {
     this.prefix = prefix;
     this.suffix = suffix;
     this.dir = directory;
   }
 
-  public synchronized File getFile(ByteBuffer metadata, long offset, long length) throws IOException {
-    File temp = File.createTempFile(prefix, suffix, dir);
+  public synchronized Path getFile(ByteBuffer metadata, long offset, long length) throws IOException {
+    // without a directory, File.createTempFile used java.io.tmpdir, as Files.createTempFile does
+    Path temp = (dir == null) ? Files.createTempFile(prefix, suffix) : Files.createTempFile(dir, prefix, suffix);
     return temp;
   }
 
-  public void fileCancelled(ByteBuffer metadata, File f, long offset,
+  public void fileCancelled(ByteBuffer metadata, Path f, long offset,
       long downloadedLength, long requestedLength, Exception reason) {
-    f.delete();
+    // as with File.delete, a failure is ignored
+    try {
+      Files.deleteIfExists(f);
+    } catch (IOException ignored) {
+    }
   }
 
 

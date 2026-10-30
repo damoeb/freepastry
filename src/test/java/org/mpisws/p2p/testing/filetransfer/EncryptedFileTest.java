@@ -36,11 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.testing.filetransfer;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.mpisws.p2p.filetransfer.FileReceipt;
@@ -108,10 +109,10 @@ public class EncryptedFileTest {
 
           }
 
-          public void fileReceived(File f, ByteBuffer metadata) {
+          public void fileReceived(Path f, ByteBuffer metadata) {
             try {
               String name = new SimpleInputBuffer(metadata).readUTF();
-              logger.info("file received {} named:{} size:{}", f, name, f.length());
+              logger.info("file received {} named:{} size:{}", f, name, Files.size(f));
             } catch (IOException ioe) {
               logger.warn("Error interpreting filename ", ioe);
             }
@@ -164,7 +165,7 @@ public class EncryptedFileTest {
 
           }
 
-          public void fileReceived(File f, ByteBuffer metadata) {
+          public void fileReceived(Path f, ByteBuffer metadata) {
 
           }
 
@@ -187,7 +188,7 @@ public class EncryptedFileTest {
         try {
           SimpleOutputBuffer sob = new SimpleOutputBuffer();
           sob.writeUTF("foo");
-          ft.sendFile(new File("delme.txt"), sob.getByteBuffer(), (byte)0, new Continuation<FileReceipt, Exception>() {
+          ft.sendFile(Path.of("delme.txt"), sob.getByteBuffer(), (byte)0, new Continuation<FileReceipt, Exception>() {
 
             public void receiveResult(FileReceipt result) {
               System.out.println("Send success "+result);

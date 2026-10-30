@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.filetransfer;
 
-import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
 public interface FileTransferCallback {
   /**
@@ -51,7 +51,7 @@ public interface FileTransferCallback {
    * @param f
    * @param metadata
    */
-  public void fileReceived(File f, ByteBuffer metadata);
+  public void fileReceived(Path f, ByteBuffer metadata);
 
   /**
    * Called when the FileTransfer fails.

@@ -37,11 +37,12 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.filetransfer;
 
 import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -375,14 +376,25 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
   }
 
-  public FileReceipt sendFile(File f, ByteBuffer metadata, byte priority,
-      Continuation<FileReceipt, Exception> c) throws IOException  {
-    return sendFile(f,metadata,priority,0,f.length(),c);
+  /**
+   * @return the length of the file, or 0 if it does not exist or cannot be read, as File.length() did
+   */
+  private static long length(Path f) {
+    try {
+      return Files.size(f);
+    } catch (IOException e) {
+      return 0;
+    }
   }
 
-  public FileReceipt sendFile(File f, ByteBuffer metadataBB, byte priority, long offset, long length,
+  public FileReceipt sendFile(Path f, ByteBuffer metadata, byte priority,
+      Continuation<FileReceipt, Exception> c) throws IOException  {
+    return sendFile(f,metadata,priority,0,length(f),c);
+  }
+
+  public FileReceipt sendFile(Path f, ByteBuffer metadataBB, byte priority, long offset, long length,
       Continuation<FileReceipt, Exception> c) throws IOException {
-    if (f == null || !f.exists() || f.isDirectory()) throw new IllegalArgumentException("File f must be non-null, exist, and must not be a directory. "+f);
+    if (f == null || !Files.exists(f) || Files.isDirectory(f)) throw new IllegalArgumentException("File f must be non-null, exist, and must not be a directory. "+f);
     byte[] metadata = new byte[metadataBB.remaining()];
     metadataBB.get(metadata);
     FileReceiptImpl ret = new FileReceiptImpl(f,metadata,priority,offset,length,getUid(),c);
@@ -588,9 +600,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     /**
      * The whole message to send.
      */
-    FileInputStream file;
+    InputStream file;
 
-    File f;
+    Path f;
     byte[] metadata;
     Continuation<FileReceipt, Exception> deliverAckToMe;
 
@@ -603,13 +615,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     long initialPosition;
 
 
-    public FileReceiptImpl(File f, byte[] metadata, byte priority, long offset, long length, int uid, Continuation<FileReceipt, Exception> c) throws IOException {
+    public FileReceiptImpl(Path f, byte[] metadata, byte priority, long offset, long length, int uid, Continuation<FileReceipt, Exception> c) throws IOException {
       super(priority, uid);
-      if (offset+length > f.length()) throw new IllegalArgumentException("File is only "+f.length()+" but you are trying to send "+length+" bytes starting at "+offset);
+      if (offset+length > length(f)) throw new IllegalArgumentException("File is only "+length(f)+" but you are trying to send "+length+" bytes starting at "+offset);
       this.f = f;
       this.metadata = metadata;
       try {
-        this.file = new FileInputStream(f);
+        this.file = Files.newInputStream(f);
       } catch (IOException | RuntimeException | Error e) {
         failed();
         throw e;
@@ -755,7 +767,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       return length;
     }
 
-    public File getFile() {
+    public Path getFile() {
       return f;
     }
 
@@ -1219,7 +1231,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   public void addIncomingFile(int uid, byte[] metadata, long offset, long length) throws IOException {
-    File f = fileAllocater.getFile(ByteBuffer.wrap(metadata), offset, length);
+    Path f = fileAllocater.getFile(ByteBuffer.wrap(metadata), offset, length);
     if (incomingData.containsKey(uid)) throw new IllegalArgumentException("DataReader with uid "+uid+" already exists! "+incomingData.get(uid)+" "+metadata.length);
     FileDataReader fdr = new FileDataReader(uid, metadata, f, offset, length);
     incomingData.put(uid,fdr);
@@ -1320,7 +1332,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     ByteBuffer curReader;
     RandomAccessFile file;
 
-    File f;
+    Path f;
     byte[] metadata;
     long offset;
     long length;
@@ -1336,13 +1348,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      */
     Exception exception = null;
 
-    public FileDataReader(int uid, byte[] metadata, File f, long offset, long length) throws IOException {
+    public FileDataReader(int uid, byte[] metadata, Path f, long offset, long length) throws IOException {
       this.uid = uid;
       this.f = f;
       this.ptr = offset;
       this.offset = offset;
       this.length = length;
-      file = new RandomAccessFile(f, "rw");
+      file = new RandomAccessFile(f.toFile(), "rw");
       this.metadata = metadata;
       file.seek(offset);
       bytes = new byte[CHUNK_SIZE];
@@ -1452,7 +1464,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       return requestCancel(uid);
     }
 
-    public File getFile() {
+    public Path getFile() {
       return f;
     }
 
