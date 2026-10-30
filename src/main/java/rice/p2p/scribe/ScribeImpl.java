@@ -179,35 +179,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.instance = instance;
     this.endpoint = node.buildEndpoint(this, instance);
     this.contentDeserializer = new JavaScribeContentDeserializer();
-    this.endpoint.setDeserializer((buf, type, priority, sender) -> {
-      try {
-        switch(type) {
-          case AnycastMessage.TYPE:
-            return AnycastMessage.build(buf, endpoint, contentDeserializer);
-          case SubscribeMessage.TYPE:
-            return SubscribeMessage.buildSM(buf, endpoint, contentDeserializer);
-          case SubscribeAckMessage.TYPE:
-            return SubscribeAckMessage.build(buf, endpoint);
-          case SubscribeFailedMessage.TYPE:
-            return SubscribeFailedMessage.build(buf, endpoint);
-          case DropMessage.TYPE:
-            return DropMessage.build(buf, endpoint);
-          case PublishMessage.TYPE:
-            return PublishMessage.build(buf, endpoint, contentDeserializer);
-          case PublishRequestMessage.TYPE:
-            return PublishRequestMessage.build(buf, endpoint, contentDeserializer);
-          case UnsubscribeMessage.TYPE:
-            return UnsubscribeMessage.build(buf, endpoint);
-            // new in FP 2.1:
-          case AnycastFailureMessage.TYPE:
-            return AnycastFailureMessage.build(buf, endpoint, contentDeserializer);
-        }
-      } catch (IOException e) {
-        logger.atError().log(() -> "Exception in deserializer in "+ScribeImpl.this.endpoint.toString()+":"+ScribeImpl.this.instance+" "+contentDeserializer+" "+e);
-        throw e;
-      }
-      throw new IllegalArgumentException("Unknown type:"+type);
-    });
+    this.endpoint.setDeserializer(new ScribeMessageDeserializer(endpoint, () -> contentDeserializer, instance, logger));
     this.subscribeLostMessages = new HashMap<Integer, SubscribeLostMessage>();
     this.policy = policy;
     this.maintenancePolicy = maintenancePolicy;
