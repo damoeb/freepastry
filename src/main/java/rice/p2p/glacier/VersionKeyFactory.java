@@ -35,18 +35,17 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 package rice.p2p.glacier;
+
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.StringTokenizer;
 
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.multiring.MultiringIdFactory;
 import rice.p2p.multiring.RingId;
-
 
 /**
  * Builds VersionKeys, and ranges and sets of them, on top of a MultiringIdFactory.
@@ -54,9 +53,7 @@ import rice.p2p.multiring.RingId;
  * @version $Id: VersionKeyFactory.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author ahae
  */
-public class VersionKeyFactory implements IdFactory {
-
-  private MultiringIdFactory FACTORY;
+public class VersionKeyFactory extends GlacierKeyFactory {
 
   /**
    * Constructor for VersionKeyFactory.
@@ -64,40 +61,7 @@ public class VersionKeyFactory implements IdFactory {
    * @param factory the factory used to build the underlying ids
    */
   public VersionKeyFactory(MultiringIdFactory factory) {
-    FACTORY = factory;
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param material the raw id material
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public rice.p2p.commonapi.Id buildId(byte[] material) {
-    throw new RuntimeException("VersionKeyFactory.buildId(byte[]) is not supported!");
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param material The material to use
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public rice.p2p.commonapi.Id buildId(int[] material) {
-    throw new RuntimeException("VersionKeyFactory.buildId(int[]) is not supported!");
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param string The string to use as source data
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public rice.p2p.commonapi.Id buildId(String string) {
-    throw new RuntimeException("VersionKeyFactory.buildId(String) is not supported!");
+    super(factory);
   }
 
   /**
@@ -106,12 +70,12 @@ public class VersionKeyFactory implements IdFactory {
    * @param rng A random number generator
    * @return The built Id.
    */
-  public rice.p2p.commonapi.Id buildRandomId(Random rng) {
-    return new VersionKey(FACTORY.buildRandomId(rng), rng.nextLong());
+  public Id buildRandomId(Random rng) {
+    return new VersionKey(factory.buildRandomId(rng), rng.nextLong());
   }
 
-  public rice.p2p.commonapi.Id buildRandomId(RandomSource rng) {
-    return new VersionKey(FACTORY.buildRandomId(rng), rng.nextLong());
+  public Id buildRandomId(RandomSource rng) {
+    return new VersionKey(factory.buildRandomId(rng), rng.nextLong());
   }
 
   /**
@@ -120,7 +84,7 @@ public class VersionKeyFactory implements IdFactory {
    * @param string the string form
    * @return the key
    */
-  public rice.p2p.commonapi.Id buildIdFromToString(String string) {
+  public Id buildIdFromToString(String string) {
     StringTokenizer stok = new StringTokenizer(string, "(,)- :v#");
     if (stok.countTokens() < 3) {
       return null;
@@ -129,36 +93,9 @@ public class VersionKeyFactory implements IdFactory {
     String keyRingS = stok.nextToken();
     String keyNodeS = stok.nextToken();
     String versionS = stok.nextToken();
-    RingId key = FACTORY.buildRingId(rice.pastry.Id.build(keyRingS), rice.pastry.Id.build(keyNodeS));
+    RingId key = factory.buildRingId(rice.pastry.Id.build(keyRingS), rice.pastry.Id.build(keyNodeS));
 
     return new VersionKey(key, Long.valueOf(versionS).longValue());
-  }
-
-  public rice.p2p.commonapi.Id buildIdFromToString(char[] chars, int offset, int length) {
-    return buildIdFromToString(new String(chars, offset, length));
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param material The material to use
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public rice.p2p.commonapi.Id.Distance buildIdDistance(byte[] material) {
-    throw new RuntimeException("VersionKeyFactory.buildIdDistance() is not supported!");
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param cw The clockwise Id
-   * @param ccw The counterclockwise Id
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public IdRange buildIdRange(rice.p2p.commonapi.Id cw, rice.p2p.commonapi.Id ccw) {
-    throw new RuntimeException("VersionKeyFactory.buildIdRange() is not supported!");
   }
 
   /**
@@ -170,7 +107,7 @@ public class VersionKeyFactory implements IdFactory {
    * @return The built Id.
    */
   public IdRange buildIdRangeFromPrefix(String string) {
-    return new VersionKeyRange(FACTORY.buildIdRangeFromPrefix(string));
+    return new VersionKeyRange(factory.buildIdRangeFromPrefix(string));
   }
 
   /**
@@ -183,26 +120,16 @@ public class VersionKeyFactory implements IdFactory {
   }
 
   /**
-   * Creates an empty IdSet.
+   * Creates an IdSet whose members are the keys of the given map.
    *
    * @param map The map which to take the keys from to create the IdSet's elements
-   * @return an empty IdSet
+   * @return the IdSet
    */
-  public IdSet buildIdSet(SortedMap<rice.p2p.commonapi.Id, ?> map) {
+  public IdSet buildIdSet(SortedMap<Id, ?> map) {
     return new VersionKeySet(map);
   }
 
-  /**
-   * Not supported.
-   *
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public NodeHandleSet buildNodeHandleSet() {
-    throw new RuntimeException("VersionKeyFactory.buildNodeHandleSet() is not supported!");
-  }
-
   public int getIdToStringLength() {
-    return FACTORY.getIdToStringLength() + 13;
+    return factory.getIdToStringLength() + 13;
   }
 }

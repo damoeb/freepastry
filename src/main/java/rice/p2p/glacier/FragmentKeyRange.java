@@ -36,13 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier;
 
-import java.io.IOException;
-
-import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * A range of FragmentKeys, backed by a range of the underlying ids.
@@ -50,12 +45,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @version $Id: FragmentKeyRange.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author ahae
  */
-public class FragmentKeyRange implements IdRange {
-
-  /**
-   * The actual IdRange
-   */
-  private IdRange range;
+public class FragmentKeyRange extends GlacierKeyRange {
 
   /**
    * Constructor
@@ -63,87 +53,15 @@ public class FragmentKeyRange implements IdRange {
    * @param range the underlying range of ids
    */
   protected FragmentKeyRange(IdRange range) {
-    this.range = range;
+    super(range);
   }
 
-  /**
-   * get counterclockwise edge of range
-   *
-   * @return the id at the counterclockwise edge of the range (inclusive)
-   */
-  public Id getCCWId() {
-    return new FragmentKey(new VersionKey(range.getCCWId(), 0L), 0);
+  protected Id toKey(Id id) {
+    return new FragmentKey(new VersionKey(id, 0L), 0);
   }
 
-  /**
-   * get clockwise edge of range
-   *
-   * @return the id at the clockwise edge of the range (exclusive)
-   */
-  public Id getCWId() {
-    return new FragmentKey(new VersionKey(range.getCWId(), 0L), 0);
-  }
-
-  /**
-   * Not supported.
-   *
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public IdRange getComplementRange() {
-    throw new RuntimeException("FragmentKeyRange.getComplementRange() is not supported!");
-  }
-
-  /**
-   * returns whether or not this range is empty
-   *
-   * @return Whether or not this range is empty
-   */
-  public boolean isEmpty() {
-    return range.isEmpty();
-  }
-
-  /**
-   * test if a given key lies within this range
-   *
-   * @param key the key
-   * @return true if the key lies within this range, false otherwise
-   */
-  public boolean containsId(Id key) {
-    return range.containsId(((FragmentKey)key).versionKey().id());
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param merge the range to merge with
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public IdRange mergeRange(IdRange merge) {
-    throw new RuntimeException("FragmentKeyRange.mergeRange() is not supported!");
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param diff the range to subtract
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public IdRange diffRange(IdRange diff) {
-    throw new RuntimeException("FragmentKeyRange.diffRange() is not supported!");
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param intersect the range to intersect with
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public IdRange intersectRange(IdRange intersect) {
-    throw new RuntimeException("FragmentKeyRange.intersectRange() is not supported!");
+  protected Id toId(Id key) {
+    return ((FragmentKey) key).versionKey().id();
   }
 
   /**
@@ -157,28 +75,11 @@ public class FragmentKeyRange implements IdRange {
   }
 
   /**
-   * Returns the hash code of the underlying range.
-   *
-   * @return the hash code
-   */
-  public int hashCode() {
-    return range.hashCode();
-  }
-
-  /**
    * Returns a string representation of this range.
    *
    * @return the underlying range, marked as a FragmentKeyRange
    */
   public String toString() {
     return "FragmentKeyRange[" + range + "]";
-  }
-
-  public void FragmentKeyRange(InputBuffer buf, Endpoint endpoint) throws IOException {
-    range = endpoint.readIdRange(buf);
-  }
-
-  public void serialize(OutputBuffer buf) throws IOException {
-    range.serialize(buf);
   }
 }

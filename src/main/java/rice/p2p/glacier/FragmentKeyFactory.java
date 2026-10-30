@@ -40,10 +40,9 @@ import java.util.SortedMap;
 import java.util.StringTokenizer;
 
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.multiring.MultiringIdFactory;
 import rice.p2p.multiring.RingId;
 
@@ -53,9 +52,7 @@ import rice.p2p.multiring.RingId;
  * @version $Id: FragmentKeyFactory.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author ahae
  */
-public class FragmentKeyFactory implements IdFactory {
-
-  private MultiringIdFactory FACTORY;
+public class FragmentKeyFactory extends GlacierKeyFactory {
 
   /**
    * Constructor for FragmentKeyFactory.
@@ -63,40 +60,7 @@ public class FragmentKeyFactory implements IdFactory {
    * @param factory the factory used to build the underlying ids
    */
   public FragmentKeyFactory(MultiringIdFactory factory) {
-    FACTORY = factory;
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param material the raw id material
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public rice.p2p.commonapi.Id buildId(byte[] material) {
-    throw new RuntimeException("FragmentKeyFactory.buildId(byte[]) is not supported!");
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param material The material to use
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public rice.p2p.commonapi.Id buildId(int[] material) {
-    throw new RuntimeException("FragmentKeyFactory.buildId(byte[]) is not supported!");
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param string The string to use as source data
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public rice.p2p.commonapi.Id buildId(String string) {
-    throw new RuntimeException("FragmentKeyFactory.buildId(String) is not supported!");
+    super(factory);
   }
 
   /**
@@ -105,12 +69,12 @@ public class FragmentKeyFactory implements IdFactory {
    * @param rng A random number generator
    * @return The built Id.
    */
-  public rice.p2p.commonapi.Id buildRandomId(Random rng) {
-    return new FragmentKey(new VersionKey(FACTORY.buildRandomId(rng), rng.nextLong()), rng.nextInt());
+  public Id buildRandomId(Random rng) {
+    return new FragmentKey(new VersionKey(factory.buildRandomId(rng), rng.nextLong()), rng.nextInt());
   }
 
-  public rice.p2p.commonapi.Id buildRandomId(RandomSource rng) {
-    return new FragmentKey(new VersionKey(FACTORY.buildRandomId(rng), rng.nextLong()), rng.nextInt());
+  public Id buildRandomId(RandomSource rng) {
+    return new FragmentKey(new VersionKey(factory.buildRandomId(rng), rng.nextLong()), rng.nextInt());
   }
 
   /**
@@ -119,7 +83,7 @@ public class FragmentKeyFactory implements IdFactory {
    * @param string the string form
    * @return the key
    */
-  public rice.p2p.commonapi.Id buildIdFromToString(String string) {
+  public Id buildIdFromToString(String string) {
     StringTokenizer stok = new StringTokenizer(string, "(,) :v#");
     if (stok.countTokens() < 4) {
       return null;
@@ -129,36 +93,9 @@ public class FragmentKeyFactory implements IdFactory {
     String keyNodeS = stok.nextToken();
     String versionS = stok.nextToken();
     String fragmentIdS = stok.nextToken();
-    RingId key = FACTORY.buildRingId(rice.pastry.Id.build(keyRingS), rice.pastry.Id.build(keyNodeS));
+    RingId key = factory.buildRingId(rice.pastry.Id.build(keyRingS), rice.pastry.Id.build(keyNodeS));
 
     return new FragmentKey(new VersionKey(key, Long.valueOf(versionS).longValue()), Integer.valueOf(fragmentIdS).intValue());
-  }
-
-  public rice.p2p.commonapi.Id buildIdFromToString(char[] chars, int offset, int length) {
-    return buildIdFromToString(new String(chars, offset, length));
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param material The material to use
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public rice.p2p.commonapi.Id.Distance buildIdDistance(byte[] material) {
-    throw new RuntimeException("FragmentKeyFactory.buildIdDistance() is not supported!");
-  }
-
-  /**
-   * Not supported.
-   *
-   * @param cw The clockwise Id
-   * @param ccw The counterclockwise Id
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public IdRange buildIdRange(rice.p2p.commonapi.Id cw, rice.p2p.commonapi.Id ccw) {
-    throw new RuntimeException("FragmentKeyFactory.buildIdRange() is not supported!");
   }
 
   /**
@@ -170,7 +107,7 @@ public class FragmentKeyFactory implements IdFactory {
    * @return The built Id.
    */
   public IdRange buildIdRangeFromPrefix(String string) {
-    return new FragmentKeyRange(FACTORY.buildIdRangeFromPrefix(string));
+    return new FragmentKeyRange(factory.buildIdRangeFromPrefix(string));
   }
 
   /**
@@ -183,26 +120,16 @@ public class FragmentKeyFactory implements IdFactory {
   }
 
   /**
-   * Creates an empty IdSet.
+   * Creates an IdSet whose members are the keys of the given map.
    *
    * @param map The map which to take the keys from to create the IdSet's elements
-   * @return an empty IdSet
+   * @return the IdSet
    */
-  public IdSet buildIdSet(SortedMap<rice.p2p.commonapi.Id, ?> map) {
+  public IdSet buildIdSet(SortedMap<Id, ?> map) {
     return new FragmentKeySet(map);
   }
 
-  /**
-   * Not supported.
-   *
-   * @return never returns
-   * @throws RuntimeException always
-   */
-  public NodeHandleSet buildNodeHandleSet() {
-    throw new RuntimeException("FragmentKeyFactory.buildNodeHandleSet() is not supported!");
-  }
-
   public int getIdToStringLength() {
-    return FACTORY.getIdToStringLength() + 4;
+    return factory.getIdToStringLength() + 4;
   }
 }
