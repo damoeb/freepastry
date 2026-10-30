@@ -52,7 +52,7 @@ public class SimpleInputBuffer extends DataInputStream implements InputBuffer {
   private static final Logger LOG = LoggerFactory.getLogger(SimpleInputBuffer.class);
 
   public SimpleInputBuffer(ByteBuffer bb) {
-    this(bb.array(),bb.position(),bb.remaining());
+    this(bb.array(),bb.arrayOffset()+bb.position(),bb.remaining());
   }
   public SimpleInputBuffer(byte[] bytes) {
     this(bytes,0,bytes.length);
