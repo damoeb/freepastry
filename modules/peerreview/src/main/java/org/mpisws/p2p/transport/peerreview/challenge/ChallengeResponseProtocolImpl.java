@@ -315,14 +315,12 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     /* It's not an AUDIT, so let's see whether it matches any of our evidence (if not, the
        sender is responding to a challenge we haven't even made) */
 
-    Handle interestedParty = null;
-
     EvidenceRecord<Handle, Identifier> record = infoStore.findEvidence(message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
-    interestedParty = record.getInterestedParty();
     if (record == null) {
       logger.warn("Received response, but matching request is missing; discarding");
       return;
     }
+    Handle interestedParty = record.getInterestedParty();
 
     /* The evidence has to be a CHALLENGE; for PROOFs there is no valid response */
 
