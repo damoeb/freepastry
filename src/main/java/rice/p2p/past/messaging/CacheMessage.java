@@ -67,7 +67,7 @@ public class CacheMessage extends PastMessage {
   public static final short TYPE = 1;
 
   // the content to be cached
-  protected RawPastContent content;
+  private final RawPastContent content;
 
   /**
    * Constructor which takes a unique integer Id and the local id

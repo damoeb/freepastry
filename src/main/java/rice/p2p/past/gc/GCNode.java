@@ -57,7 +57,7 @@ public class GCNode implements Node {
   /**
    * The node which this GC node is wrapping
    */
-  protected Node node;
+  private final Node node;
 
   /**
    * Constructor

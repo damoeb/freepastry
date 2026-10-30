@@ -94,11 +94,11 @@ public class GCPastImpl extends PastImpl implements GCPast {
   /**
    * The real factory, which is not wrapped with a GCIdFactory
    */
-  protected IdFactory realFactory;
+  private final IdFactory realFactory;
 
   // internal tracing stats
-  public int collected = 0;
-  public int refreshed = 0;
+  private int collected = 0;
+  private int refreshed = 0;
 
   protected class GCPastDeserializer extends PastDeserializer {
 
@@ -106,14 +106,14 @@ public class GCPastImpl extends PastImpl implements GCPast {
       try {
         switch(type) {
           case GCInsertMessage.TYPE:
-            return GCInsertMessage.buildGC(buf, endpoint, contentDeserializer);
+            return GCInsertMessage.buildGC(buf, getEndpoint(), contentDeserializer);
           case GCLookupHandlesMessage.TYPE:
-            return GCLookupHandlesMessage.buildGC(buf, endpoint);
+            return GCLookupHandlesMessage.buildGC(buf, getEndpoint());
           case GCRefreshMessage.TYPE:
-            return GCRefreshMessage.build(buf, endpoint);
+            return GCRefreshMessage.build(buf, getEndpoint());
         }
       } catch (IOException e) {
-        logger.atError().log(() -> "Exception in deserializer in "+GCPastImpl.this.endpoint.toString()+":"+instance+" "+e);
+        logger.atError().log(() -> "Exception in deserializer in "+GCPastImpl.this.getEndpoint().toString()+":"+getInstance()+" "+e);
         throw e;
       }
 
@@ -122,8 +122,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
   }
 
   public String toString() {
-    if (endpoint == null) return super.toString();
-    return "GCPastImpl["+endpoint.getInstance()+"]";
+    if (getEndpoint() == null) return super.toString();
+    return "GCPastImpl["+getEndpoint().getInstance()+"]";
   }
 
 
@@ -158,8 +158,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
     super(new GCNode(node), manager, backup, replicas, instance, policy, trash);
     this.realFactory = node.getIdFactory();
 
-    endpoint.scheduleMessage(new GCCollectMessage(0, getLocalNodeHandle(), node.getId()), collectionInterval, collectionInterval);
-    endpoint.setDeserializer(new GCPastDeserializer());
+    getEndpoint().scheduleMessage(new GCCollectMessage(0, getLocalNodeHandle(), node.getId()), collectionInterval, collectionInterval);
+    getEndpoint().setDeserializer(new GCPastDeserializer());
   }
 
   /**
@@ -277,7 +277,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * @param command The command to return the result to
    */
   protected void refresh(final GCIdSet ids, Continuation<? super Object, Exception> command) {
-    final Logger logger = environment.getLogManager().getLogger(GCPastImpl.class, instance);
+    final Logger logger = getEnvironment().getLogManager().getLogger(GCPastImpl.class, getInstance());
     logger.atDebug().log(() -> "REFRESH: CALLED WITH "+ ids.numElements() + " ELEMENTS");
 
     if (ids.numElements() == 0) {
@@ -298,16 +298,16 @@ public class GCPastImpl extends PastImpl implements GCPast {
 
         logger.debug("REFRESH: GOT {} SET OF HANDLES!", set);
 
-        endpoint.process(() -> {
+        getEndpoint().process(() -> {
           logger.debug("REFRESH: ON PROCESSING THREAD!");
 
           for (int i=0; i<array.length; i++) {
             GCId id = (GCId) array[i];
 
-            NodeHandleSet replicas = endpoint.replicaSet(id.getId(), replicationFactor+1, set.getHandle(set.size()-1), set);
+            NodeHandleSet replicas = getEndpoint().replicaSet(id.getId(), getReplicationFactor()+1, set.getHandle(set.size()-1), set);
 
             // if we have all of the replicas, go ahead and refresh this item
-            if ((replicas != null) && ((replicas.size() == set.size()) || (replicas.size() == replicationFactor+1))) {
+            if ((replicas != null) && ((replicas.size() == set.size()) || (replicas.size() == getReplicationFactor()+1))) {
               for (int j=0; j<replicas.size(); j++)
                 map.addReplica(replicas.getHandle(j), id);
 
@@ -369,7 +369,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
    */
   public boolean forward(final RouteMessage message) {
     try {
-      if (message.getMessage(endpoint.getDeserializer()) instanceof GCLookupHandlesMessage)
+      if (message.getMessage(getEndpoint().getDeserializer()) instanceof GCLookupHandlesMessage)
         return true;
       else
         return super.forward(message);
@@ -480,18 +480,18 @@ public class GCPastImpl extends PastImpl implements GCPast {
         process.receiveResult(null);
       } else if (msg instanceof GCLookupHandlesMessage) {
         GCLookupHandlesMessage lmsg = (GCLookupHandlesMessage) msg;
-        NodeHandleSet set = endpoint.neighborSet(lmsg.getMax());
+        NodeHandleSet set = getEndpoint().neighborSet(lmsg.getMax());
         set.removeHandle(getLocalNodeHandle().getId());
         set.putHandle(getLocalNodeHandle());
 
-        logger.trace("Returning neighbor set {} for lookup handles of id {} max {} at {}", set, lmsg.getId(), lmsg.getMax(), endpoint.getId());
+        logger.trace("Returning neighbor set {} for lookup handles of id {} max {} at {}", set, lmsg.getId(), lmsg.getMax(), getEndpoint().getId());
         getResponseContinuation(msg).receiveResult(set);
       } else if (msg instanceof GCCollectMessage) {
         // get all ids which expiration before now
-        collect(storage.scanMetadataValuesHead(new GCPastMetadata(environment.getTimeSource().currentTimeMillis())), new ListenerContinuation<Object, Exception>("Removal of expired ids", environment) {
+        collect(storage.scanMetadataValuesHead(new GCPastMetadata(getEnvironment().getTimeSource().currentTimeMillis())), new ListenerContinuation<Object, Exception>("Removal of expired ids", getEnvironment()) {
           public void receiveResult(Object o) {
-            if (environment.getTimeSource().currentTimeMillis() > DEFAULT_EXPIRATION)
-              collect(storage.scanMetadataValuesNull(), new ListenerContinuation<Object, Exception>("Removal of default expired ids", environment));
+            if (getEnvironment().getTimeSource().currentTimeMillis() > DEFAULT_EXPIRATION)
+              collect(storage.scanMetadataValuesNull(), new ListenerContinuation<Object, Exception>("Removal of default expired ids", getEnvironment()));
           }
         });
       } else if (msg instanceof FetchHandleMessage) {
@@ -578,7 +578,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
     logger.trace("Sending out replication fetch request for the id {}", id);
     final GCId gcid = (GCId) id;
 
-    if (gcid.getExpiration() < environment.getTimeSource().currentTimeMillis()) {
+    if (gcid.getExpiration() < getEnvironment().getTimeSource().currentTimeMillis()) {
       command.receiveResult(Boolean.TRUE);
     } else if (storage.exists(gcid.getId())) {
       GCPastMetadata metadata = (GCPastMetadata) storage.getMetadata(gcid.getId());
@@ -599,7 +599,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
       policy.fetch(gcid.getId(), hint, backup, this, new StandardContinuation<Serializable, Boolean, Exception>(command) {
         public void receiveResult(Serializable o) {
           if (o == null) {
-            logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, instance);
+            logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, getInstance());
             parent.receiveResult(Boolean.valueOf(false));
           } else {
             GCPastContent content = (GCPastContent) o;
@@ -697,7 +697,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   }
 
   protected class ReplicaMap {
-    protected HashMap<NodeHandle, IdSet> map = new HashMap<NodeHandle, IdSet>();
+    private final HashMap<NodeHandle, IdSet> map = new HashMap<NodeHandle, IdSet>();
     public void addReplica(NodeHandle handle, GCId id) {
       IdSet set = (IdSet) map.get(handle);
 

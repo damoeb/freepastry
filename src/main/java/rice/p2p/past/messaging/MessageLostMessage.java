@@ -64,13 +64,13 @@ public class MessageLostMessage extends PastMessage {
   private static final long serialVersionUID = -8664827144233122095L;
 
   // the id the message was sent to
-  protected Id id;
+  private final Id id;
 
   // the hint the message was sent to
-  protected NodeHandle hint;
+  private final NodeHandle hint;
 
   // the message
-  protected String messageString;
+  private final String messageString;
 
   /**
    * Constructor which takes a unique integer Id and the local id

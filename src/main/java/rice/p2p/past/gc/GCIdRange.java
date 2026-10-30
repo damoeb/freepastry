@@ -57,7 +57,7 @@ public class GCIdRange implements IdRange {
   /**
    * The internal (normal) IdRange
    */
-  protected IdRange range;
+  private final IdRange range;
 
   /**
    * Constructor, which takes a normal IdRange

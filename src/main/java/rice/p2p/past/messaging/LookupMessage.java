@@ -181,7 +181,7 @@ public class LookupMessage extends ContinuationMessage {
     try {
       id = endpoint.readId(buf, buf.readShort());
     } catch (IllegalArgumentException iae) {
-      endpoint.getEnvironment().getLogManager().getLogger(LookupMessage.class, null).atWarn().log(() -> iae+" "+this+" serType:"+serType+" UID:"+getUID()+" d:"+dest+" s:"+source);
+      endpoint.getEnvironment().getLogManager().getLogger(LookupMessage.class, null).atWarn().log(() -> iae+" "+this+" serType:"+serType+" UID:"+getUID()+" d:"+getDestination()+" s:"+getSource());
       throw iae;
     }
     cached = buf.readBoolean();

@@ -72,7 +72,7 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
   protected Object response;
 
   // the response exception, if one is thrown
-  protected Exception exception;
+  private Exception exception;
 
   /**
     * Constructor which takes a unique integer Id, as well as the

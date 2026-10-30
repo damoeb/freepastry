@@ -52,7 +52,7 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
 public class JavaSerializedPastContentHandle implements RawPastContentHandle {
   public static final short TYPE = 0;
 
-  public PastContentHandle handle;
+  private final PastContentHandle handle;
 
   public JavaSerializedPastContentHandle(PastContentHandle handle) {
     this.handle = handle;

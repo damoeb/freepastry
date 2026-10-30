@@ -57,10 +57,10 @@ import rice.p2p.util.RedBlackMap;
 public class GCIdSet implements IdSet {
 
   // internal representation of the ids
-  protected IdSet ids;
+  private final IdSet ids;
 
   // interal list of the timeouts
-  protected SortedMap<Id, Serializable> timeouts;
+  private final SortedMap<Id, Serializable> timeouts;
 
   /**
    * Constructor

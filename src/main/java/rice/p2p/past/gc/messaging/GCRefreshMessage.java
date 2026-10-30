@@ -62,7 +62,7 @@ public class GCRefreshMessage extends ContinuationMessage {
   public static final short TYPE = 11;
 
   // the list of keys which should be refreshed
-  protected GCId[] keys;
+  private final GCId[] keys;
 
   /**
    * Constructor which takes a unique integer Id, as well as the

@@ -60,12 +60,12 @@ public class GCId implements Id {
   /**
    * The id which this ringId represents
    */
-  protected Id id;
+  private final Id id;
 
   /**
    * The ringId which this ringId represents
    */
-  protected long expiration;
+  private final long expiration;
 
   /**
    * Constructor

@@ -65,7 +65,7 @@ public class GCIdFactory implements IdFactory {
   /**
    * The underlying IdFactory
    */
-  protected IdFactory factory;
+  private final IdFactory factory;
 
   /**
    * Constructor
@@ -232,7 +232,7 @@ public class GCIdFactory implements IdFactory {
   }
 
   protected static class GCSortedMap<V> implements SortedMap<Id, V> {
-    protected SortedMap<Id, V> map;
+    private final SortedMap<Id, V> map;
 
     public GCSortedMap(SortedMap<Id, V> map) {
       this.map = map;
@@ -261,7 +261,7 @@ public class GCIdFactory implements IdFactory {
   }
 
   protected static class GCEntrySet<V> implements Set<Map.Entry<Id, V>> {
-    protected Set<Map.Entry<Id, V>> set;
+    private final Set<Map.Entry<Id, V>> set;
 
     public GCEntrySet(Set<Map.Entry<Id, V>> set) {
       this.set = set;
@@ -276,7 +276,7 @@ public class GCIdFactory implements IdFactory {
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
     public Iterator<Map.Entry<Id, V>> iterator() { return new Iterator<Map.Entry<Id, V>>() {
-      protected Iterator<Map.Entry<Id, V>> i = set.iterator();
+      private final Iterator<Map.Entry<Id, V>> i = set.iterator();
       public boolean hasNext() { return i.hasNext(); }
       public Map.Entry<Id, V> next() { return new GCMapEntry<V>(i.next()); }
       public void remove() { i.remove(); }
@@ -291,7 +291,7 @@ public class GCIdFactory implements IdFactory {
   }
 
   protected static class GCMapEntry<V> implements Map.Entry<Id, V> {
-    protected Map.Entry<Id, V> entry;
+    private final Map.Entry<Id, V> entry;
 
     public GCMapEntry(Map.Entry<Id, V> entry) {
       this.entry = entry;

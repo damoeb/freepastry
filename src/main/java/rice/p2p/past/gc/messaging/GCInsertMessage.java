@@ -60,7 +60,7 @@ public class GCInsertMessage extends InsertMessage {
   public static final short TYPE = 9;
 
   // the timestamp at which the object expires
-  protected long expiration;
+  private final long expiration;
 
   /**
    * Constructor which takes a unique integer Id, as well as the

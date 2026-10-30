@@ -63,16 +63,16 @@ public abstract class PastMessage implements RawMessage {
   private static final long serialVersionUID = -7195054010358285316L;
 
   // the unique id for this message
-  protected int id;
+  private final int id;
 
   // the source Id of this message
-  protected NodeHandle source;
+  private final NodeHandle source;
 
   // the destination of this message
-  protected Id dest;
+  private final Id dest;
 
   // whether or not this message is a response
-  protected boolean isResponse;
+  private boolean isResponse;
 
   /**
    * Constructor which takes a unique integer Id

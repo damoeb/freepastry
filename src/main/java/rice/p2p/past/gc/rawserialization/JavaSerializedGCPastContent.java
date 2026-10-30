@@ -58,7 +58,7 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
 public class JavaSerializedGCPastContent implements RawGCPastContent {
   public static final short TYPE = 0;
 
-  public GCPastContent content;
+  private final GCPastContent content;
 
   public JavaSerializedGCPastContent(GCPastContent content) {
     this.content = content;

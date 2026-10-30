@@ -54,7 +54,7 @@ public class GCPastMetadata implements Serializable, Comparable<GCPastMetadata> 
   private static final long serialVersionUID = -2432306227012003387L;
 
   // the expiration time
-  protected long expiration;
+  private long expiration;
 
   /**
    * Constructor.

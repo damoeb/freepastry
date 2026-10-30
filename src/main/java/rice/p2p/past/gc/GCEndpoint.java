@@ -71,7 +71,7 @@ public class GCEndpoint implements Endpoint {
   /**
    * The endpoint which this GC endpoint is wrapping
    */
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
   * Constructor

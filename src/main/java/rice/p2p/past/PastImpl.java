@@ -120,7 +120,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   // ----- VARIABLE FIELDS -----
 
   // this application's endpoint
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   // the storage manager used by this Past
   protected StorageManager storage;
@@ -132,12 +132,12 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   protected Cache backup;
 
   // the replication factor for Past
-  protected int replicationFactor;
+  private final int replicationFactor;
 
   // the replica manager used by Past
-  protected ReplicationManager replicaManager;
+  private final ReplicationManager replicaManager;
 
-  protected LockManager lockManager;
+  private final LockManager lockManager;
 
   // the policy used for application-specific behavior
   protected PastPolicy policy;
@@ -153,24 +153,24 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   private final Map<Integer, CancellableTask> timers;
 
   // the factory for manipulating ids
-  protected IdFactory factory;
+  private final IdFactory factory;
 
   // the instance name we are running with
-  protected String instance;
+  private final String instance;
 
   // debug variables
-  public int inserts = 0;
-  public int lookups = 0;
-  public int fetchHandles = 0;
-  public int other = 0;
+  protected int inserts = 0;
+  private int lookups = 0;
+  protected int fetchHandles = 0;
+  protected int other = 0;
 
-  protected Environment environment;
+  private final Environment environment;
   protected Logger logger;
 
   protected PastContentDeserializer contentDeserializer;
-  protected PastContentHandleDeserializer contentHandleDeserializer;
+  private PastContentHandleDeserializer contentHandleDeserializer;
 
-  public SocketStrategy socketStrategy;
+  protected SocketStrategy socketStrategy;
 
   /**
    * Constructor for Past, using the default policy
