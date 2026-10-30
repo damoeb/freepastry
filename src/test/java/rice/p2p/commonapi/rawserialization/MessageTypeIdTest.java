@@ -76,7 +76,8 @@ class MessageTypeIdTest {
       "rice.pastry.pns.messages.PNSMessageType",
       "rice.pastry.peerreview.FetchLeafsetMessageType",
       "rice.pastry.socket.nat.rendezvous.RendezvousMessageType",
-      "rice.pastry.socket.nat.probe.ProbeMessageType");
+      "rice.pastry.socket.nat.probe.ProbeMessageType",
+      "rice.p2p.replication.messaging.ReplicationMessageType");
 
   private enum Clean implements MessageTypeId {
     ONE(1), TWO(2);

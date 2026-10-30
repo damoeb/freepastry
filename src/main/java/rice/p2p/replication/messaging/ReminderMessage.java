@@ -49,9 +49,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  *
  * @author Alan Mislove
  */
-public class ReminderMessage extends ReplicationMessage {
-  public static final short TYPE = 1;
-
+public final class ReminderMessage extends ReplicationMessage {
   /**
    * Constructor which takes a unique integer Id
    *
@@ -63,7 +61,7 @@ public class ReminderMessage extends ReplicationMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return ReplicationMessageType.REMINDER.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

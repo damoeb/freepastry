@@ -55,9 +55,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  *
  * @author Alan Mislove
  */
-public class ResponseMessage extends ReplicationMessage {
-  public static final short TYPE = 3;
-
+public final class ResponseMessage extends ReplicationMessage {
   // the list of ranges for this message
   private final IdRange[] ranges;
 
@@ -110,7 +108,7 @@ public class ResponseMessage extends ReplicationMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return ReplicationMessageType.RESPONSE.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

@@ -60,6 +60,8 @@ import rice.p2p.commonapi.RangeCannotBeDeterminedException;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.replication.ReplicationPolicy.DefaultReplicationPolicy;
 import rice.p2p.replication.messaging.ReminderMessage;
+import rice.p2p.replication.messaging.ReplicationMessage;
+import rice.p2p.replication.messaging.ReplicationMessageType;
 import rice.p2p.replication.messaging.RequestMessage;
 import rice.p2p.replication.messaging.ResponseMessage;
 import rice.p2p.util.IdBloomFilter;
@@ -160,13 +162,12 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     this.endpoint = node.buildEndpoint(this, instance);
 
     endpoint.setDeserializer((buf, type, priority, sender) -> {
-      switch(type) {
-        case RequestMessage.TYPE:
-          return RequestMessage.build(buf, endpoint);
-        case ResponseMessage.TYPE:
-          return ResponseMessage.build(buf, endpoint);
-      }
-      throw new IllegalArgumentException("Unknown type:"+type);
+      return switch (ReplicationMessageType.of(type)) {
+        case REQUEST -> RequestMessage.build(buf, endpoint);
+        case RESPONSE -> ResponseMessage.build(buf, endpoint);
+        // local timer message, never sent
+        case REMINDER -> throw new IllegalArgumentException("Unknown type:"+type);
+      };
     });
 
 
@@ -307,64 +308,68 @@ public class ReplicationImpl implements Replication, Application, Destructable {
   public void deliver(Id id, Message message) {
     logger.debug("COUNT: Replication {} received message {}", instance, message);
 
-    if (message instanceof RequestMessage) {
-      final RequestMessage rm = (RequestMessage) message;
+    if (!(message instanceof ReplicationMessage replicationMessage)) {
+      logger.warn("Received unknown message {} - dropping on floor.", message);
+      return;
+    }
+    switch (replicationMessage) {
+      case RequestMessage rm -> {
 
-      MultiContinuation<Object[]> continuation = new MultiContinuation<Object[]>(new ListenerContinuation<Object[], Exception>("Processing of RequestMessage", environment) {
-        public void receiveResult(Object[] o) {
-          Object[] array = (Object[]) o;
-          IdSet[] result = new IdSet[array.length];
-          if ((array.length > 0) && (array[0] instanceof Throwable)) {
-            logger.error("Errors in Multicontinuation:", (Throwable)array[0]);
-          } else {
-            try {
-              System.arraycopy(array, 0, result, 0, array.length);
-            } catch (ArrayStoreException ase) {
-              if (array.length > 0) {
-                logger.error("Error copying {}:{}", array[0].getClass().getName(), array.length, ase);
-                throw ase;
+        MultiContinuation<Object[]> continuation = new MultiContinuation<Object[]>(new ListenerContinuation<Object[], Exception>("Processing of RequestMessage", environment) {
+          public void receiveResult(Object[] o) {
+            Object[] array = (Object[]) o;
+            IdSet[] result = new IdSet[array.length];
+            if ((array.length > 0) && (array[0] instanceof Throwable)) {
+              logger.error("Errors in Multicontinuation:", (Throwable)array[0]);
+            } else {
+              try {
+                System.arraycopy(array, 0, result, 0, array.length);
+              } catch (ArrayStoreException ase) {
+                if (array.length > 0) {
+                  logger.error("Error copying {}:{}", array[0].getClass().getName(), array.length, ase);
+                  throw ase;
+                }
               }
             }
+            logger.debug("COUNT: Telling node {} to fetch", rm.getSource());
+            endpoint.route(null, new ResponseMessage(handle, rm.getRanges(), result), rm.getSource());
           }
-          logger.debug("COUNT: Telling node {} to fetch", rm.getSource());
-          endpoint.route(null, new ResponseMessage(handle, rm.getRanges(), result), rm.getSource());
+        }, rm.getRanges().length);
+
+        for (int i=0; i<rm.getRanges().length; i++) {
+          final int j = i;
+          endpoint.process(new Executable<Object, Exception>() {
+            public String toString() { return "process " + j + " of " + rm.getRanges().length + " namespace " + instance; }
+            public Object execute() {
+              IdSet set = factory.buildIdSet();
+              rm.getFilters()[j].check(client.scan(rm.getRanges()[j]), set, MAX_KEYS_IN_MESSAGE);
+
+              return set;
+            }
+          }, continuation.getSubContinuation(i));
         }
-      }, rm.getRanges().length);
+      }
+      case ResponseMessage rm -> {
 
-      for (int i=0; i<rm.getRanges().length; i++) {
-        final int j = i;
-        endpoint.process(new Executable<Object, Exception>() {
-          public String toString() { return "process " + j + " of " + rm.getRanges().length + " namespace " + instance; }
-          public Object execute() {
-            IdSet set = factory.buildIdSet();
-            rm.getFilters()[j].check(client.scan(rm.getRanges()[j]), set, MAX_KEYS_IN_MESSAGE);
-
-            return set;
+        for (int i=0; i<rm.getIdSets().length; i++) {
+          IdSet temp = factory.buildIdSet();
+          Id[] tempA = rm.getIdSets()[i];
+          for (Id setId : tempA) {
+            temp.addId(setId);
           }
-        }, continuation.getSubContinuation(i));
-      }
-    } else if (message instanceof ResponseMessage) {
-      ResponseMessage rm = (ResponseMessage) message;
 
-      for (int i=0; i<rm.getIdSets().length; i++) {
-        IdSet temp = factory.buildIdSet();
-        Id[] tempA = rm.getIdSets()[i];
-        for (Id setId : tempA) {
-          temp.addId(setId);
+          IdSet fetch = policy.difference(client.scan(rm.getRanges()[i]), temp, factory);
+
+          logger.atDebug().log(() -> "COUNT: Was told to fetch " + fetch.numElements() + " in instance " + instance);
+
+          if (fetch.numElements() > 0)
+            client.fetch(fetch, rm.getSource());
         }
-
-        IdSet fetch = policy.difference(client.scan(rm.getRanges()[i]), temp, factory);
-
-        logger.atDebug().log(() -> "COUNT: Was told to fetch " + fetch.numElements() + " in instance " + instance);
-
-        if (fetch.numElements() > 0)
-          client.fetch(fetch, rm.getSource());
       }
-    } else if (message instanceof ReminderMessage) {
-      replicate();
-      updateClient();
-    } else {
-      logger.warn("Received unknown message {} - dropping on floor.", message);
+      case ReminderMessage reminder -> {
+        replicate();
+        updateClient();
+      }
     }
   }
 

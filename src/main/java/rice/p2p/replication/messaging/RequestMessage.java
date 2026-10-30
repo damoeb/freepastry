@@ -54,9 +54,7 @@ import rice.p2p.util.IdBloomFilter;
  *
  * @author Alan Mislove
  */
-public class RequestMessage extends ReplicationMessage {
-  public static final short TYPE = 2;
-
+public final class RequestMessage extends ReplicationMessage {
   // the list of ranges for this message
   private final IdRange[] ranges;
 
@@ -101,7 +99,7 @@ public class RequestMessage extends ReplicationMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return ReplicationMessageType.REQUEST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

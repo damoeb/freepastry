@@ -52,7 +52,8 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  *
  * @author Alan Mislove
  */
-public abstract class ReplicationMessage implements RawMessage {
+public sealed abstract class ReplicationMessage implements RawMessage
+    permits ReminderMessage, RequestMessage, ResponseMessage {
 
   // the source of this message
   private final NodeHandle source;
