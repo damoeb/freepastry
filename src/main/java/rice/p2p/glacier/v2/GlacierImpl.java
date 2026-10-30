@@ -111,11 +111,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierNeighborhood neighborhood;
   private final GlacierScheduler scheduler;
   private final FragmentLocator locator;
   private final Hashtable<Id, Continuation<Object, Exception>> pendingTraffic;
   private StorageManager trashStorage;
-  private IdRange responsibleRange;
   private GlacierStatistics statistics;
   private final Vector<GlacierStatisticsListener> listeners;
   private long currentFragmentRequestTimeout;
@@ -129,7 +129,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
 
 
-  private long neighborTimeout;
 
   private long syncInterval;
   private int syncMaxFragments;
@@ -166,7 +165,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.syncInterval = config.syncInterval();
     this.syncMaxFragments = config.syncMaxFragments();
     this.rateLimitedRequestsPerSecond = config.rateLimitedRequestsPerSecond();
-    this.neighborTimeout = config.neighborTimeout();
     this.bucketTokensPerSecond = config.bucketTokensPerSecond();
     this.bucketMaxBurstSize = config.bucketMaxBurstSize();
 
@@ -219,7 +217,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.numSurvivors = numSurvivorsArg;
     this.factory = factoryArg;
     this.locator = new FragmentLocator(factoryArg, numFragmentsArg);
-    this.responsibleRange = null;
     this.pendingTraffic = new Hashtable<Id, Continuation<Object, Exception>>();
     this.statistics = new GlacierStatistics(GlacierTags.MAX, environment);
     this.listeners = new Vector<GlacierStatisticsListener>();
@@ -228,7 +225,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.currentFragmentRequestTimeout = config.fragmentRequestTimeoutDefault();
     this.tokenBucket = 0;
     this.bucketLastUpdated = environment.getTimeSource().currentTimeMillis();
-    determineResponsibleRange();
+    this.neighborhood = new GlacierNeighborhood(neighborStorage, factory, endpoint.getLocalNodeHandle().getId(), config.neighborTimeout(), environment, logger);
+    neighborhood.determineResponsibleRange();
     endpoint.register();
   }
 
@@ -265,7 +263,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         for (int k=0; k<leafSet.size(); k++) {
           if (!leafSet.getHandle(k).getId().equals(getLocalNodeHandle().getId())) {
-            neighborSeen(leafSet.getHandle(k).getId(), environment.getTimeSource().currentTimeMillis());
+            neighborhood.neighborSeen(leafSet.getHandle(k).getId(), environment.getTimeSource().currentTimeMillis());
             if (logger.isInfoEnabled()) logger.info("Asking "+leafSet.getHandle(k).getId()+" about neighbors in "+leafRange);
             sendMessage(
               null,
@@ -280,7 +278,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           final GlacierNeighborResponseMessage gnrm = (GlacierNeighborResponseMessage) o;
           logger.atDebug().log(() -> "NeighborResponse from "+gnrm.getSource()+" with "+gnrm.numNeighbors()+" neighbors");
           for (int i=0; i<gnrm.numNeighbors(); i++)
-            neighborSeen(gnrm.getNeighbor(i), gnrm.getLastSeen(i));
+            neighborhood.neighborSeen(gnrm.getNeighbor(i), gnrm.getLastSeen(i));
         } else {
           logger.warn("Unknown response in neighbor continuation: {} -- discarded", o);
         }
@@ -292,50 +290,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       public void timeoutExpired() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.expireNeighborsInterval();
 
-        final long earliestAcceptableDate = environment.getTimeSource().currentTimeMillis() - neighborTimeout;
-        IdSet allNeighbors = neighborStorage.scan();
-        Iterator<Id> iter = allNeighbors.getIterator();
-        NodeHandleSet leafSet = endpoint.neighborSet(999);
-
-        logger.info("Checking neighborhood for expired certificates...");
-
-        while (iter.hasNext()) {
-          final Id thisNeighbor = (Id) iter.next();
-          if (leafSet.memberHandle(thisNeighbor)) {
-            logger.debug("CNE: Refreshing current neighbor: {}", thisNeighbor);
-            neighborSeen(thisNeighbor, environment.getTimeSource().currentTimeMillis());
-          } else {
-            logger.debug("CNE: Retrieving {}", thisNeighbor);
-            neighborStorage.getObject(thisNeighbor, new Continuation<Object, Exception>() {
-              public void receiveResult(Object o) {
-                if (o==null) {
-                  logger.warn("CNE: Cannot retrieve neighbor {}", thisNeighbor);
-                  return;
-                }
-
-                long lastSeen = ((Long)o).longValue();
-                if (lastSeen < earliestAcceptableDate) {
-                  logger.info("CNE: Removing expired neighbor {} ({}<{})", thisNeighbor, lastSeen, earliestAcceptableDate);
-                  neighborStorage.unstore(thisNeighbor, new Continuation<Object, Exception>() {
-                    public void receiveResult(Object o) {
-                      logger.debug("CNE unstore successful: {}, returned {}", thisNeighbor, o);
-                    }
-                    public void receiveException(Exception e) {
-                      logger.atWarn().log(() -> "CNE unstore failed: "+thisNeighbor+", returned "+e);
-                    }
-                  });
-                } else {
-                  logger.info("CNE: Neighbor {} still active, last seen {}", thisNeighbor, lastSeen);
-                }
-              }
-              public void receiveException(Exception e) {
-                logger.atWarn().log(() -> "CNE: Exception while retrieving neighbor "+thisNeighbor+", e="+e);
-              }
-            });
-          }
-        }
-
-        determineResponsibleRange();
+        neighborhood.expireNeighbors(endpoint.neighborSet(999));
       }
       public long getTimeout() {
         return nextTimeout;
@@ -424,8 +379,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           offset = 1+environment.getRandomSource().nextInt(numFragments-1);
 
           Id dest = locator.getFragmentLocation(getLocalNodeHandle().getId(), offset, 0);
-          Id ccwId = locator.getFragmentLocation(responsibleRange.getCCWId(), offset, 0);
-          Id cwId = locator.getFragmentLocation(responsibleRange.getCWId(), offset, 0);
+          Id ccwId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getCCWId(), offset, 0);
+          Id cwId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getCWId(), offset, 0);
           IdRange requestedRange = factory.buildIdRange(ccwId, cwId);
 
           logger.info("Sending range query for ({}) to {}", requestedRange, dest);
@@ -461,7 +416,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             if (grm.getAuthoritative(i)) {
               if (grm.getHaveIt(i)) {
                 Id thisPos = locator.getFragmentLocation(thisKey);
-                if (!responsibleRange.containsId(thisPos)) {
+                if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
                   logger.debug("Deleting fragment {}", thisKey);
                   deleteFragment(thisKey, new Continuation<Object, Exception>() {
                     public void receiveResult(Object o) {
@@ -508,7 +463,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             if ((thisFragment != null) && (thisManifest != null)) {
               logger.info("Handoff: Received Fragment+Manifest for {}", thisKey);
 
-              if (!responsibleRange.containsId(locator.getFragmentLocation(thisKey))) {
+              if (!neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
                 logger.atWarn().log(() -> "Handoff: Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
                 continue;
               }
@@ -535,7 +490,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                       sendMessage(
                         null,
-                        new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), responsibleRange.containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
+                        new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
                         gdm.getSource()
                       );
                     }
@@ -572,7 +527,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       public void timeoutExpired() {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + jitterTerm(config.handoffInterval());
         logger.info("Checking fragment storage for fragments to hand off...");
-        logger.debug("Currently responsible for: {}", responsibleRange);
+        logger.debug("Currently responsible for: {}", neighborhood.getResponsibleRange());
         Iterator<Id> iter = fragmentStorage.scan().getIterator();
         List<Id> handoffs = new ArrayList<Id>();
         Id destination = null;
@@ -580,7 +535,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         while (iter.hasNext()) {
           FragmentKey fkey = (FragmentKey) iter.next();
           Id thisPos = locator.getFragmentLocation(fkey);
-          if (!responsibleRange.containsId(thisPos)) {
+          if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
             logger.debug("Must hand off {} @{}", fkey, thisPos);
             handoffs.add(fkey);
 
@@ -712,14 +667,14 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             final int fidLeft = (thisFragmentID + numFragments - 1) % numFragments;
             final int fidRight = (thisFragmentID + 1) % numFragments;
 
-            if (responsibleRange.containsId(locator.getFragmentLocation(thisObjectKey, fidLeft, thisVersion))) {
+            if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisObjectKey, fidLeft, thisVersion))) {
               if (!fragments.isMemberId(thisKey.getPeerKey(fidLeft))) {
                 logger.trace("Missing: {} L={}", thisKey, fidLeft);
                 queries.add(thisKey.getVersionKey());
               }
             }
 
-            if (responsibleRange.containsId(locator.getFragmentLocation(thisObjectKey, fidRight, thisVersion))) {
+            if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisObjectKey, fidRight, thisVersion))) {
               if (!fragments.isMemberId(thisKey.getPeerKey(fidRight))) {
                 logger.trace("Missing: {} R={}", thisKey, fidRight);
                 queries.add(thisKey.getVersionKey());
@@ -745,7 +700,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
               if (fragments.isMemberId(keyHere)) {
                 localFragmentID = i;
                 break;
-              } else if (responsibleRange.containsId(locator.getFragmentLocation(keyHere))) {
+              } else if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(keyHere))) {
                 queriesHere ++;
               }
             }
@@ -760,7 +715,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                   for (int i=0; i<numFragments; i++) {
                     final FragmentKey thisKey = new FragmentKey(thisVKey, i);
-                    if (responsibleRange.containsId(locator.getFragmentLocation(thisKey))) {
+                    if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
                       if (!fragments.isMemberId(thisKey)) {
                         logger.debug("Local scan: Sending query for {}", thisKey);
                         final long tStart = environment.getTimeSource().currentTimeMillis();
@@ -900,7 +855,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           statistics.setNumNeighbors(neighborStorage.scan().numElements());
           statistics.setNumFragments(fragmentStorage.scan().numElements());
           statistics.setNumContinuations(scheduler.size());
-          statistics.setResponsibleRange(responsibleRange);
+          statistics.setResponsibleRange(neighborhood.getResponsibleRange());
           statistics.setActiveFetches(numActiveRestores[0]);
           statistics.setBucketMin(bucketMin);
           statistics.setBucketMax(bucketMax);
@@ -1039,60 +994,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     return result;
   }
 
-  private void determineResponsibleRange() {
-    Id cwPeer = null, ccwPeer = null, xcwPeer = null, xccwPeer = null, myNodeId = getLocalNodeHandle().getId();
-
-    logger.debug("Determining responsible range");
-
-    Iterator<Id> iter = neighborStorage.scan().getIterator();
-    while (iter.hasNext()) {
-      Id thisNeighbor = (Id) iter.next();
-      logger.trace("Considering neighbor: {}", thisNeighbor);
-      if (myNodeId.clockwise(thisNeighbor)) {
-        if ((cwPeer == null) || thisNeighbor.isBetween(myNodeId, cwPeer))
-          cwPeer = thisNeighbor;
-        if ((xcwPeer == null) || xcwPeer.clockwise(thisNeighbor))
-          xcwPeer = thisNeighbor;
-      } else {
-        if ((ccwPeer == null) || thisNeighbor.isBetween(ccwPeer, myNodeId))
-          ccwPeer = thisNeighbor;
-        if ((xccwPeer == null) || !xccwPeer.clockwise(thisNeighbor))
-          xccwPeer = thisNeighbor;
-      }
-    }
-
-    if (ccwPeer == null)
-      ccwPeer = xcwPeer;
-    if (cwPeer == null)
-      cwPeer = xccwPeer;
-
-    if (logger.isDebugEnabled()) logger.debug("XCCW: "+xccwPeer+" CCW: "+ccwPeer+" ME: "+myNodeId+" CW: "+cwPeer+" XCW: "+xcwPeer);
-
-    if ((ccwPeer == null) || (cwPeer == null)) {
-      responsibleRange = factory.buildIdRange(myNodeId, myNodeId);
-      return;
-    }
-
-    Id.Distance ccwHalfDistance;
-    if (!myNodeId.clockwise(ccwPeer))
-      ccwHalfDistance = ccwPeer.distanceFromId(myNodeId).shiftDistance(1,0);
-    else
-      ccwHalfDistance = ccwPeer.longDistanceFromId(myNodeId).shiftDistance(1,0);
-
-    Id.Distance cwHalfDistance;
-    if (myNodeId.clockwise(cwPeer))
-      cwHalfDistance = cwPeer.distanceFromId(myNodeId).shiftDistance(1,0);
-    else
-      cwHalfDistance = cwPeer.longDistanceFromId(myNodeId).shiftDistance(1,0);
-
-    responsibleRange = factory.buildIdRange(
-      ccwPeer.addToId(ccwHalfDistance),
-      myNodeId.addToId(cwHalfDistance)
-    );
-
-    logger.info("New range: {}", responsibleRange);
-  }
-
   /**
    * This method is called when Glacier encounters a fatal error
    *
@@ -1140,7 +1041,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
       while (iter.hasNext()) {
         FragmentKey thisKey = (FragmentKey) iter.next();
-        boolean isMine = responsibleRange.containsId(locator.getFragmentLocation(thisKey));
+        boolean isMine = neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey));
         FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
         if (metadata != null) {
           result.append(((Id)thisKey).toStringFull()+" "+(isMine ? "OK" : "MI")+" "+
@@ -1160,7 +1061,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         "config.refreshTimeout() = " + (int)(config.refreshTimeout() / GlacierConfig.SECONDS) + " sec\n" +
         "config.expireNeighborsDelayAfterJoin() = " + (int)(config.expireNeighborsDelayAfterJoin() / GlacierConfig.SECONDS) + " sec\n" +
         "config.expireNeighborsInterval() = " + (int)(config.expireNeighborsInterval() / GlacierConfig.MINUTES) + " min\n" +
-        "neighborTimeout = " + (int)(neighborTimeout / GlacierConfig.HOURS) + " hrs\n" +
+        "neighborTimeout = " + (int)(neighborhood.getNeighborTimeout() / GlacierConfig.HOURS) + " hrs\n" +
         "config.syncDelayAfterJoin() = " + (int)(config.syncDelayAfterJoin() / GlacierConfig.SECONDS) + " sec\n" +
         "config.syncMinRemainingLifetime() = " + (int)(config.syncMinRemainingLifetime() / GlacierConfig.SECONDS) + " sec\n" +
         "config.syncMinQuietTime() = " + (int)(config.syncMinQuietTime() / GlacierConfig.SECONDS) + " sec\n" +
@@ -1258,7 +1159,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     if (cmd.startsWith("status")) {
       String result = "";
-      result = result + "Responsible for: "+responsibleRange + "\n";
+      result = result + "Responsible for: "+neighborhood.getResponsibleRange() + "\n";
       result = result + "Local time: "+(new Date()) + "\n\n";
       result = result + fragmentStorage.scan().numElements() + " fragments\n";
       result = result + neighborStorage.scan().numElements() + " neighbors\n";
@@ -2218,53 +2119,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     });
   }
 
-  public void neighborSeen(Id nodeId, long when) {
-
-    if (nodeId.equals(getLocalNodeHandle().getId()))
-      return;
-
-    logger.debug("Neighbor {} was seen at {}", nodeId, when);
-
-    if (when > environment.getTimeSource().currentTimeMillis()) {
-      if (logger.isWarnEnabled()) logger.warn("Neighbor: "+when+" is in the future (now="+environment.getTimeSource().currentTimeMillis()+")");
-      when = environment.getTimeSource().currentTimeMillis();
-    }
-
-    final Id fNodeId = nodeId;
-    final long fWhen = when;
-
-    neighborStorage.getObject(nodeId,
-      new Continuation<Object, Exception>() {
-        public void receiveResult(Object o) {
-          logger.debug("Continue: neighborSeen ({}, {}) after getObject", fNodeId, fWhen);
-
-          final long previousWhen = (o!=null) ? ((Long)o).longValue() : 0;
-          logger.debug("Neighbor: {} previously seen at {}", fNodeId, previousWhen);
-          if (previousWhen >= fWhen) {
-            logger.debug("Neighbor: No update needed (new TS={})", fWhen);
-            return;
-          }
-
-          neighborStorage.store(fNodeId, null, Long.valueOf(fWhen),
-            new Continuation<Object, Exception>() {
-              public void receiveResult(Object o) {
-                logger.debug("Continue: neighborSeen ({}, {}) after store", fNodeId, fWhen);
-                logger.debug("Neighbor: Updated {} from {} to {}", fNodeId, previousWhen, fWhen);
-                determineResponsibleRange();
-              }
-              public void receiveException(Exception e) {
-                logger.warn("receiveException({}) while storing a neighbor ({})", e, fNodeId);
-              }
-            }
-          );
-        }
-        public void receiveException(Exception e) {
-          logger.warn("receiveException({}) while retrieving a neighbor ({})", e, fNodeId);
-        }
-      }
-    );
-  }
-
   public boolean forward(final RouteMessage message) {
     return true;
   }
@@ -2275,7 +2129,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     if (!joined)
       return;
 
-    neighborSeen(handle.getId(), environment.getTimeSource().currentTimeMillis());
+    neighborhood.neighborSeen(handle.getId(), environment.getTimeSource().currentTimeMillis());
   }
 
   public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command) {
@@ -2807,68 +2661,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       prev.receiveException(new GlacierException("Key collision in traffic shaper (rateLimitedRetrieveFragment)"));
   }
 
-  public Id[][] getNeighborRanges() {
-    Iterator<Id> iter = neighborStorage.scan().getIterator();
-    List<Id> ccwIDs = new ArrayList<Id>();
-    List<Id> cwIDs = new ArrayList<Id>();
-    Id myID = getLocalNodeHandle().getId();
-
-    while (iter.hasNext()) {
-      Id thisNeighbor = (Id)iter.next();
-      if (myID.clockwise(thisNeighbor))
-        cwIDs.add(thisNeighbor);
-      else
-        ccwIDs.add(thisNeighbor);
-    }
-
-    for (int j=0; j<2; j++) {
-      List<Id> v = (j==0) ? cwIDs : ccwIDs;
-      boolean madeProgress = true;
-      while (madeProgress) {
-        madeProgress = false;
-        for (int i=0; i<(v.size()-1); i++) {
-          if (v.get(i+1).clockwise(v.get(i))) {
-            Id h = v.get(i);
-            v.set(i, v.get(i+1));
-            v.set(i+1, h);
-            madeProgress = true;
-          }
-        }
-      }
-    }
-
-    List<Id> allIDs = new ArrayList<Id>();
-    allIDs.addAll(ccwIDs);
-    allIDs.add(myID);
-    allIDs.addAll(cwIDs);
-
-    Id[][] result = new Id[allIDs.size()][3];
-    for (int i=0; i<allIDs.size(); i++) {
-      Id currentElement = allIDs.get(i);
-      Id cwId, ccwId;
-
-      if (i>0) {
-        Id previousElement = allIDs.get(i-1);
-        ccwId = previousElement.addToId(previousElement.distanceFromId(currentElement).shiftDistance(1,0));
-      } else {
-        ccwId = currentElement;
-      }
-
-      if (i<(allIDs.size()-1)) {
-        Id nextElement = allIDs.get(i+1);
-        cwId = currentElement.addToId(currentElement.distanceFromId(nextElement).shiftDistance(1,0));
-      } else {
-        cwId = currentElement;
-      }
-
-      result[i][0] = ccwId;
-      result[i][1] = currentElement;
-      result[i][2] = cwId;
-    }
-
-    return result;
-  }
-
   public void deliver(Id id, Message message) {
 
     final GlacierMessage msg = (GlacierMessage) message;
@@ -2940,9 +2732,9 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         } else {
           expirationA[i] = 0;
         }
-        logger.debug("My range is {}", responsibleRange);
+        logger.debug("My range is {}", neighborhood.getResponsibleRange());
         logger.debug("Location is {}", fragmentLocation);
-        authoritativeA[i] = responsibleRange.containsId(fragmentLocation);
+        authoritativeA[i] = neighborhood.getResponsibleRange().containsId(fragmentLocation);
         logger.debug("Result: haveIt={} amAuthority={} expiration={}", haveItA[i], authoritativeA[i], expirationA[i]);
       }
 
@@ -3122,14 +2914,14 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       final GlacierRefreshProbeMessage grpm = (GlacierRefreshProbeMessage) msg;
       Id requestedId = grpm.getRequestedId();
 
-      logger.info("Refresh probe for {} (RR={})", requestedId, responsibleRange);
+      logger.info("Refresh probe for {} (RR={})", requestedId, neighborhood.getResponsibleRange());
 
-      Id[][] ranges = getNeighborRanges();
+      Id[][] ranges = neighborhood.getNeighborRanges();
       IdRange returnedRange = null;
       boolean online = false;
 
-      if (responsibleRange.containsId(requestedId)) {
-        returnedRange = responsibleRange;
+      if (neighborhood.getResponsibleRange().containsId(requestedId)) {
+        returnedRange = neighborhood.getResponsibleRange();
         online = true;
       } else {
         online = false;
@@ -3250,7 +3042,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
       logger.info("Range query for {}", requestedRange);
 
-      Id[][] ranges = getNeighborRanges();
+      Id[][] ranges = neighborhood.getNeighborRanges();
 
       for (int i=0; i<ranges.length; i++) {
         IdRange thisRange = factory.buildIdRange(ranges[i][0], ranges[i][2]);
@@ -3277,7 +3069,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         return;
       }
 
-      IdRange commonRange = responsibleRange.intersectRange(grfm.getRequestedRange());
+      IdRange commonRange = neighborhood.getResponsibleRange().intersectRange(grfm.getRequestedRange());
       if (!commonRange.isEmpty()) {
         logger.info("Range forward: Returning common range {} to requestor {}", commonRange, grfm.getRequestor());
         sendMessage(
@@ -3355,7 +3147,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         if ((thisFragment != null) && (thisManifest != null)) {
           logger.info("Data: Fragment+Manifest for {}", thisKey);
 
-          if (!responsibleRange.containsId(locator.getFragmentLocation(thisKey))) {
+          if (!neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
             logger.atWarn().log(() -> "Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
             continue;
           }
@@ -3382,7 +3174,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                   sendMessage(
                     null,
-                    new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), responsibleRange.containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
+                    new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
                     gdm.getSource()
                   );
                 }
@@ -3402,7 +3194,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         if ((thisFragment == null) && (thisManifest != null)) {
 
-          if (!responsibleRange.containsId(locator.getFragmentLocation(thisKey))) {
+          if (!neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
             logger.atWarn().log(() -> "Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
             continue;
           }
@@ -3561,7 +3353,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public void setNeighborTimeout(long neighborTimeoutMin) {
-    this.neighborTimeout = neighborTimeoutMin * GlacierConfig.MINUTES;
+    neighborhood.setNeighborTimeout(neighborTimeoutMin * GlacierConfig.MINUTES);
   }
 
   public void setBandwidthLimit(long bytesPerSecond, long maxBurst) {
