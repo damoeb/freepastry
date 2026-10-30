@@ -54,7 +54,6 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.FragmentKeySet;
 import rice.p2p.glacier.Glacier;
@@ -98,6 +97,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierRequestHandler requestHandler;
   private final GlacierMaintenance maintenance;
   private final GlacierNeighborProtocol neighborProtocol;
   private final GlacierSyncProtocol syncProtocol;
@@ -203,6 +203,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.handoffProtocol = new GlacierHandoffProtocol(config, instance, policy, router, locator, neighborhood, trash, fragmentStorage, environment, logger);
     this.neighborProtocol = new GlacierNeighborProtocol(config, endpoint, router, neighborhood, neighborStorage, factory, environment, logger);
     this.maintenance = new GlacierMaintenance(config, numFragments, locator, neighborhood, trash, retriever, fragmentStorage, environment, logger);
+    this.requestHandler = new GlacierRequestHandler(config, numFragments, numSurvivors, instance, policy, router, locator, neighborhood, retriever, fragmentStorage, environment, logger);
     neighborhood.determineResponsibleRange();
     endpoint.register();
   }
@@ -841,46 +842,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     }
 
     if (msg instanceof GlacierQueryMessage) {
-
-      /* When a QueryMessage arrives, we check whether we have the fragment
-         with the corresponding key and then send back a ResponseMessage. */
-
-      GlacierQueryMessage gqm = (GlacierQueryMessage) msg;
-      FragmentKey[] keyA = new FragmentKey[gqm.numKeys()];
-      boolean[] haveItA = new boolean[gqm.numKeys()];
-      long[] expirationA = new long[gqm.numKeys()];
-      boolean[] authoritativeA = new boolean[gqm.numKeys()];
-
-      for (int i=0; i<gqm.numKeys(); i++) {
-        Id fragmentLocation = locator.getFragmentLocation(gqm.getKey(i));
-        if (logger.isInfoEnabled()) logger.info("Queried for " + gqm.getKey(i) + " (at "+fragmentLocation+")");
-
-        keyA[i] = gqm.getKey(i);
-        haveItA[i] = fragmentStorage.exists(gqm.getKey(i));
-        if (haveItA[i]) {
-          FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(gqm.getKey(i));
-          if (metadata != null) {
-            expirationA[i] = metadata.getCurrentExpiration();
-          } else {
-            if (logger.isWarnEnabled()) logger.warn("QUERY cannot read metadata in object "+gqm.getKey(i).toStringFull()+", storage returned null");
-            expirationA[i] = 0;
-            haveItA[i] = false;
-          }
-        } else {
-          expirationA[i] = 0;
-        }
-        logger.debug("My range is {}", neighborhood.getResponsibleRange());
-        logger.debug("Location is {}", fragmentLocation);
-        authoritativeA[i] = neighborhood.getResponsibleRange().containsId(fragmentLocation);
-        logger.debug("Result: haveIt={} amAuthority={} expiration={}", haveItA[i], authoritativeA[i], expirationA[i]);
-      }
-
-      router.sendMessage(
-        null,
-        new GlacierResponseMessage(gqm.getUID(), keyA, haveItA, expirationA, authoritativeA, getLocalNodeHandle(), gqm.getSource().getId(), true, gqm.getTag()),
-        gqm.getSource()
-      );
-
+      requestHandler.handleQuery((GlacierQueryMessage) msg);
     } else if (msg instanceof GlacierNeighborRequestMessage) {
       neighborProtocol.handleNeighborRequest((GlacierNeighborRequestMessage) msg);
     } else if (msg instanceof GlacierSyncMessage) {
@@ -894,242 +856,9 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     } else if (msg instanceof GlacierRangeForwardMessage) {
       syncProtocol.handleRangeForward((GlacierRangeForwardMessage) msg);
     } else if (msg instanceof GlacierFetchMessage) {
-      final GlacierFetchMessage gfm = (GlacierFetchMessage) msg;
-      logger.atInfo().log(() -> "Fetch request for " + gfm.getKey(0) + ((gfm.getNumKeys()>1) ? (" and " + (gfm.getNumKeys() - 1) + " other keys") : "") + ", request="+gfm.getRequest());
-
-      /* FetchMessages are sent during recovery to retrieve a fragment from
-         another node. They are answered from the local fragment storage;
-         keys that are not stored here get null entries in the response. */
-
-      fragmentStorage.getObject(gfm.getKey(0), new Continuation<Object, Exception>() {
-        int currentLookup = 0;
-        Fragment fragment[] = new Fragment[gfm.getNumKeys()];
-        Manifest manifest[] = new Manifest[gfm.getNumKeys()];
-        int numFragments = 0, numManifests = 0;
-
-        public void returnResponse() {
-          logger.debug("Returning response with {} fragments, {} manifests ({} queries originally)", numFragments, numManifests, gfm.getNumKeys());
-          router.sendMessage(
-            null,
-            new GlacierDataMessage(gfm.getUID(), gfm.getAllKeys(), fragment, manifest, getLocalNodeHandle(), gfm.getSource().getId(), true, gfm.getTag()),
-            gfm.getSource()
-          );
-        }
-        public void receiveResult(Object o) {
-          if (o != null) {
-            logger.atInfo().log(() -> "Fragment "+gfm.getKey(currentLookup)+" found ("+o+")");
-            FragmentAndManifest fam = (FragmentAndManifest) o;
-            fragment[currentLookup] = ((gfm.getRequest() & GlacierFetchMessage.FETCH_FRAGMENT)!=0) ? fam.getFragment() : null;
-            if (fragment[currentLookup] != null)
-              numFragments ++;
-            manifest[currentLookup] = ((gfm.getRequest() & GlacierFetchMessage.FETCH_MANIFEST)!=0) ? fam.getManifest() : null;
-            if (manifest[currentLookup] != null)
-              numManifests ++;
-          } else {
-            logger.atInfo().log(() -> "Fragment "+gfm.getKey(currentLookup)+" not found");
-            fragment[currentLookup] = null;
-            manifest[currentLookup] = null;
-          }
-
-          nextLookup();
-        }
-        public void nextLookup() {
-          currentLookup ++;
-          if (currentLookup >= gfm.getNumKeys())
-            returnResponse();
-          else
-            fragmentStorage.getObject(gfm.getKey(currentLookup), this);
-        }
-        public void receiveException(Exception e) {
-          logger.atWarn().setCause(e).log(() -> "Exception while retrieving fragment "+gfm.getKey(currentLookup)+" (lookup #"+currentLookup+"), e=");
-          fragment[currentLookup] = null;
-          manifest[currentLookup] = null;
-          nextLookup();
-        }
-      });
+      requestHandler.handleFetch((GlacierFetchMessage) msg);
     } else if (msg instanceof GlacierDataMessage) {
-      final GlacierDataMessage gdm = (GlacierDataMessage) msg;
-      for (int i=0; i<gdm.numKeys(); i++) {
-        final FragmentKey thisKey = gdm.getKey(i);
-        final Fragment thisFragment = gdm.getFragment(i);
-        final Manifest thisManifest = gdm.getManifest(i);
-
-        if ((thisFragment != null) && (thisManifest != null)) {
-          logger.info("Data: Fragment+Manifest for {}", thisKey);
-
-          if (!neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
-            logger.atWarn().log(() -> "Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
-            continue;
-          }
-
-          if (!policy.checkSignature(thisManifest, thisKey.getVersionKey())) {
-            logger.warn("Manifest is not signed properly");
-            continue;
-          }
-
-          if (!thisManifest.validatesFragment(thisFragment, thisKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
-            logger.warn("Manifest does not validate this fragment");
-            continue;
-          }
-
-          if (!fragmentStorage.exists(thisKey)) {
-            logger.debug("Verified ok. Storing locally.");
-
-            FragmentAndManifest fam = new FragmentAndManifest(thisFragment, thisManifest);
-
-            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
-              new Continuation<Object, Exception>() {
-                public void receiveResult(Object o) {
-                  logger.info("Stored OK, sending receipt: {}", thisKey);
-
-                  router.sendMessage(
-                    null,
-                    new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
-                    gdm.getSource()
-                  );
-                }
-
-                public void receiveException(Exception e) {
-                  logger.warn("receiveException({}) while storing a fragment -- unexpected, ignored (key={})", e, thisKey);
-                }
-              }
-            );
-          } else {
-            logger.warn("We already have a fragment with this key! -- discarding");
-            continue;
-          }
-
-          continue;
-        }
-
-        if ((thisFragment == null) && (thisManifest != null)) {
-
-          if (!neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
-            logger.atWarn().log(() -> "Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
-            continue;
-          }
-
-          /* We are being informed of a fragment that
-               a) we should have, but currently don't, or
-               b) we already have, but whose manifest will soon expire */
-
-          if (fragmentStorage.exists(thisKey)) {
-            final FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
-            if ((metadata == null) || (metadata.getCurrentExpiration() < thisManifest.getExpiration())) {
-              logger.atInfo().log(() -> "Replacing old manifest for "+thisKey+" (expires "+((metadata == null) ? "(broken)" : ""+metadata.getCurrentExpiration())+") by new one (expires "+thisManifest.getExpiration()+")");
-
-              fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
-                public void receiveResult(Object o) {
-                  if (o instanceof FragmentAndManifest) {
-                    FragmentAndManifest fam = (FragmentAndManifest) o;
-
-                    logger.debug("Got FAM for {}, now replacing old manifest with new one...", thisKey);
-
-                    String fault = null;
-
-                    if (!thisManifest.validatesFragment(fam.getFragment(), thisKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance)))
-                      fault = "Update: Manifest does not validate this fragment";
-                    if (!policy.checkSignature(thisManifest, thisKey.getVersionKey()))
-                      fault = "Update: Manifest is not signed properly";
-                    if (!Arrays.equals(thisManifest.getObjectHash(), fam.getManifest().getObjectHash()))
-                      fault = "Update: Object hashes not equal";
-                    for (int i=0; i<numFragments; i++)
-                      if (!Arrays.equals(thisManifest.getFragmentHash(i), fam.getManifest().getFragmentHash(i)))
-                        fault = "Update: Fragment hash #"+i+" does not match";
-
-                    if (fault == null) {
-                      fam.replaceManifest(thisManifest);
-                      fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), ((metadata == null) ? 0 : metadata.getCurrentExpiration()), environment.getTimeSource().currentTimeMillis()), fam,
-                        new Continuation<Object, Exception>() {
-                          public void receiveResult(Object o) {
-                            logger.debug("Old manifest for {} replaced OK, sending receipt", thisKey);
-                            router.sendMessage(
-                              null,
-                              new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), true, getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
-                              gdm.getSource()
-                            );
-                          }
-                          public void receiveException(Exception e) {
-                            logger.warn("Cannot store refreshed manifest: ", e);
-                          }
-                        }
-                      );
-                    } else {
-                      logger.warn(fault);
-                    }
-                  } else {
-                    logger.warn("Fragment store returns something other than a FAM: {}", o);
-                  }
-                }
-                public void receiveException(Exception e) {
-                  logger.warn("Cannot retrieve FAM for {}: ", thisKey, e);
-                }
-              });
-            } else {
-              logger.atWarn().log(() -> "We already have exp="+((metadata == null) ? "(broken)" : ""+metadata.getCurrentExpiration())+", discarding manifest for "+thisKey+" with exp="+thisManifest.getExpiration());
-            }
-
-            continue;
-          }
-
-          logger.info("Data: Manifest for: {}, must fetch", thisKey);
-
-          final long tStart = environment.getTimeSource().currentTimeMillis();
-          retriever.rateLimitedRetrieveFragment(thisKey, thisManifest, GlacierTags.SYNC_FETCH, new GlacierContinuation() {
-            public String toString() {
-              return "Fetch synced fragment: "+thisKey;
-            }
-            public void receiveResult(Object o) {
-              if (o instanceof Fragment) {
-                if (!fragmentStorage.exists(thisKey)) {
-                  logger.info("Received fragment {} (from primary) matches existing manifest, storing...", thisKey);
-
-                  FragmentAndManifest fam = new FragmentAndManifest((Fragment) o, thisManifest);
-
-                  fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
-                    new Continuation<Object, Exception>() {
-                      public void receiveResult(Object o) {
-                        logger.debug("Recovered fragment stored OK");
-                      }
-                      public void receiveException(Exception e) {
-                        logger.warn("receiveException({}) while storing a fragment with existing manifest (key={})", e, thisKey);
-                      }
-                    }
-                  );
-                } else {
-                  logger.warn("Received fragment {}, but it already exists in the fragment store", thisKey);
-                }
-              } else {
-                logger.warn("FS received something other than a fragment: {}", o);
-              }
-            }
-            public void receiveException(Exception e) {
-              if (e instanceof GlacierNotEnoughFragmentsException) {
-                GlacierNotEnoughFragmentsException gnf = (GlacierNotEnoughFragmentsException) e;
-                logger.atInfo().log(() -> "Not enough fragments to reconstruct "+thisKey+": "+gnf.getChecked()+"/"+numFragments+" checked, "+gnf.getFound()+" found, "+numSurvivors+" needed");
-              } else {
-                logger.warn("Exception while recovering synced fragment {}: ", thisKey, e);
-              }
-
-              terminate();
-            }
-            public void timeoutExpired() {
-              logger.warn("Timeout while fetching synced fragment {} -- aborted", thisKey);
-              terminate();
-            }
-            public long getTimeout() {
-              return tStart + config.overallRestoreTimeout();
-            }
-          });
-
-          continue;
-        }
-
-        logger.warn("Case not implemented! -- GDM");
-      }
-
-      return;
-
+      requestHandler.handleData((GlacierDataMessage) msg);
     } else if (msg instanceof GlacierTimeoutMessage) {
 
       /* TimeoutMessages are generated by the local node when a
