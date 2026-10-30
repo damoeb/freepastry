@@ -72,10 +72,12 @@ public final class IdSet extends SortedMapIdSet<IdSet> {
     super(s);
   }
 
+  @Override
   protected IdSet newSet(SortedMap<rice.p2p.commonapi.Id, ?> members) {
     return new IdSet(members);
   }
 
+  @Override
   protected void membersChanged() {
     cachedHash = null;
   }
@@ -85,6 +87,7 @@ public final class IdSet extends SortedMapIdSet<IdSet> {
    *
    * @return the 32-byte SHA-256 content hash of the members, in order
    */
+  @Override
   public byte[] hash() {
     if (cachedHash != null) return cachedHash;
 

@@ -62,14 +62,17 @@ public final class RouteRowRequest extends PRawMessage implements PNSMessage {
   }
 
 
+  @Override
   public String toString() {
     return "RRReq["+index+"]";
   }
 
+  @Override
   public short getType() {
     return PNSMessageType.ROUTE_ROW_REQUEST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     buf.writeShort(index);

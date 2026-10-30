@@ -51,6 +51,7 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
     side = (int)(maxDiameter/Math.sqrt(2.0));
   }
 
+  @Override
   public NodeRecord generateNodeRecord() {
     return new EuclideanNodeRecord();
   }
@@ -72,16 +73,18 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
      * Constructor for NodeRecord.
      *
      */
-    public EuclideanNodeRecord() {
+    EuclideanNodeRecord() {
       x = random.nextInt() % side;
       y = random.nextInt() % side;
 
     }
 
+    @Override
     public float proximity(NodeRecord that) {
       return Math.round((networkDelay(that)*2.0));
     }
 
+    @Override
     public float networkDelay(NodeRecord that) {
       EuclideanNodeRecord nr = (EuclideanNodeRecord)that;
       int dx = x - nr.x;
@@ -93,12 +96,14 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
       return ret;
     }
 
+    @Override
     public String toString() {
       return "ENR("+x+","+y+")";
     }
 
   }
 
+  @Override
   public void setRandom(RandomSource random) {
     this.random = random;
   }

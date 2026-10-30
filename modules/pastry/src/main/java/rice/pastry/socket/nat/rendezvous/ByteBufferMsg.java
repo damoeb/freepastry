@@ -61,14 +61,17 @@ public final class ByteBufferMsg extends PRawMessage implements RendezvousMessag
     originalSender = sender;
   }
 
+  @Override
   public String toString() {
     return "BBM["+buffer+"] from "+originalSender;
   }
 
+  @Override
   public short getType() {
     return RendezvousMessageType.BYTE_BUFFER.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     originalSender.serialize(buf);

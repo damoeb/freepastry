@@ -90,6 +90,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
 
 
+  @Override
   public NodeRecord generateNodeRecord() {
     return new GNNodeRecord();
   }
@@ -107,10 +108,12 @@ public class GenericProximityGenerator implements ProximityGenerator {
       incrementStub(index);
     }
 
+    @Override
     public float proximity(NodeRecord that) {
       return Math.round(networkDelay(that)+that.networkDelay(this));
     }
 
+    @Override
     public float networkDelay(NodeRecord that) {
       GNNodeRecord nr = (GNNodeRecord)that;
       float res = distance[index][nr.index];
@@ -187,6 +190,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
   }
 
 
+  @Override
   public void setRandom(RandomSource random) {
     this.random = random;
   }

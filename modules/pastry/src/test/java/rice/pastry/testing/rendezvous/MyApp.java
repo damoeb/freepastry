@@ -100,6 +100,7 @@ public class MyApp implements Application {
   /**
    * Called when we receive a message.
    */
+  @Override
   public void deliver(Id id, Message message) {
     System.out.println(this+" received "+message);
   }
@@ -108,6 +109,7 @@ public class MyApp implements Application {
    * Called when you hear about a new neighbor.
    * Don't worry about this method for now.
    */
+  @Override
   public void update(NodeHandle handle, boolean joined) {
   }
 
@@ -115,10 +117,12 @@ public class MyApp implements Application {
    * Called a message travels along your path.
    * Don't worry about this method for now.
    */
+  @Override
   public boolean forward(RouteMessage message) {
     return true;
   }
 
+  @Override
   public String toString() {
     return "MyApp "+endpoint.getId();
   }

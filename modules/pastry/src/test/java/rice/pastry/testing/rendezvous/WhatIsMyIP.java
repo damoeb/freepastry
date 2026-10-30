@@ -75,10 +75,12 @@ public class WhatIsMyIP {
 
     verifier.findExternalAddress(factory.getNextInetSocketAddress(), Collections.singleton(bootaddress), new Continuation<InetAddress, IOException>() {
 
+      @Override
       public void receiveResult(InetAddress result) {
         System.out.println(result);
       }
 
+      @Override
       public void receiveException(IOException exception) {
       }
     });

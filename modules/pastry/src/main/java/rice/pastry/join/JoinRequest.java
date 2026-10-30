@@ -191,16 +191,19 @@ public class JoinRequest extends PRawMessage {
     rows = new RouteSet[rowCount][];
   }
 
+  @Override
   public String toString() {
     return "JoinRequest(" + (handle != null ? handle.getNodeId() : null) + ","
         + (joinHandle != null ? joinHandle.getNodeId() : null) +","+timestamp+ ")";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return JoinMessageType.JOIN_REQUEST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
 
     // version 1

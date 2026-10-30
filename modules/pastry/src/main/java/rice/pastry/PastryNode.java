@@ -213,6 +213,7 @@ public class PastryNode implements
     defaultReadyStrategy = new ReadyStrategy() {
       private boolean ready = false;
 
+      @Override
       public void setReady(boolean r) {
         if (r != ready) {
           synchronized(PastryNode.this) {
@@ -222,14 +223,17 @@ public class PastryNode implements
         }
       }
 
+      @Override
       public boolean isReady() {
         return ready;
       }
 
+      @Override
       public void start() {
         setReady(true);
       }
 
+      @Override
       public void stop() {
         // don't need to do any initialization
       }
@@ -273,10 +277,12 @@ public class PastryNode implements
   }
 
 
+  @Override
   public rice.p2p.commonapi.NodeHandle getLocalNodeHandle() {
     return localhandle;
   }
 
+  @Override
   public Environment getEnvironment() {
     return myEnvironment;
   }
@@ -341,6 +347,7 @@ public class PastryNode implements
     readyStrategy.setReady(ready);
   }
 
+  @Override
   public NodeHandle coalesce(NodeHandle newHandle) {
     logger.trace("coalesce({})", newHandle);
     return coalesce(handleFactory, newHandle);
@@ -455,10 +462,10 @@ public class PastryNode implements
       l = pastryNodeListeners.toArray(new PastryNodeListener[pastryNodeListeners.size()]);
     }
     for (int i = l.length-1; i >= 0; i--) {
-      if (event instanceof Boolean) {
-        l[i].pastryNodeReady(this, ((Boolean)event).booleanValue());
-      } else if (event instanceof JoinFailedException) {
-        l[i].pastryNodeJoinFailed(this, (JoinFailedException)event);
+      if (event instanceof Boolean b) {
+        l[i].pastryNodeReady(this, b.booleanValue());
+      } else if (event instanceof JoinFailedException joinFailedException) {
+        l[i].pastryNodeJoinFailed(this, joinFailedException);
       }
     }
   }
@@ -500,12 +507,14 @@ public class PastryNode implements
     apps.add(app);
   }
 
+  @Override
   public String toString() {
     return "PastryNode"+localhandle;
   }
 
   // Common API Support
 
+  @Override
   public rice.p2p.commonapi.Endpoint buildEndpoint(
       rice.p2p.commonapi.Application application, String instance) {
     return new rice.pastry.commonapi.PastryEndpoint(this, application, instance);
@@ -516,6 +525,7 @@ public class PastryNode implements
    *
    * @return This node's Id
    */
+  @Override
   public rice.p2p.commonapi.Id getId() {
     return getNodeId();
   }
@@ -525,6 +535,7 @@ public class PastryNode implements
    *
    * @return A factory for creating Ids.
    */
+  @Override
   public rice.p2p.commonapi.IdFactory getIdFactory() {
     return new rice.pastry.commonapi.PastryIdFactory(getEnvironment());
   }
@@ -564,6 +575,7 @@ public class PastryNode implements
    *
    * Make sure to call super.destroy() !!!
    */
+  @Override
   public void destroy() {
     if (isDestroyed) return;
     logger.info("Destroying {}", this);
@@ -598,6 +610,7 @@ public class PastryNode implements
     final SocketRequestHandleImpl<NodeHandle> handle = new SocketRequestHandleImpl<NodeHandle>(i, null, logger);
 
     Runnable r = new Runnable() {
+      @Override
       public void run() {
 
         // use the proper application address
@@ -608,6 +621,7 @@ public class PastryNode implements
 
         handle.setSubCancellable(tl.openSocket(i,
           new SocketCallback<NodeHandle>(){
+            @Override
             public void receiveResult(SocketRequestHandle<NodeHandle> c,
                 P2PSocket<NodeHandle> result) {
 
@@ -615,6 +629,7 @@ public class PastryNode implements
 
               logger.trace("openSocket({}):receiveResult({})", i, result);
               result.register(false, true, new P2PSocketReceiver<NodeHandle>() {
+                @Override
                 public void receiveSelectResult(P2PSocket<NodeHandle> socket,
                     boolean canRead, boolean canWrite) throws IOException {
                   if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
@@ -634,6 +649,7 @@ public class PastryNode implements
                     final ByteBuffer answer = ByteBuffer.allocate(1);
                     socket.register(true, false, new P2PSocketReceiver<NodeHandle>(){
 
+                      @Override
                       public void receiveSelectResult(P2PSocket<NodeHandle> socket, boolean canRead, boolean canWrite) throws IOException {
 
                         if (socket.read(answer) == -1) {
@@ -665,6 +681,7 @@ public class PastryNode implements
                         }
                       }
 
+                      @Override
                       public void receiveException(P2PSocket<NodeHandle> socket, Exception ioe) {
                         deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), ioe);
                       }
@@ -672,6 +689,7 @@ public class PastryNode implements
                   }
                 }
 
+                @Override
                 public void receiveException(P2PSocket<NodeHandle> socket,
                     Exception e) {
                   deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), e);
@@ -679,6 +697,7 @@ public class PastryNode implements
               });
             }
 
+            @Override
             public void receiveException(SocketRequestHandle<NodeHandle> s, Exception ex) {
               // TODO: return something with a proper toString()
               deliverSocketToMe.receiveException(null, ex);
@@ -742,7 +761,6 @@ public class PastryNode implements
 
   /**
    * Returns true if there was a fatal error Joining
-   * @return
    */
   public boolean joinFailed() {
     return joinFailed;
@@ -756,6 +774,7 @@ public class PastryNode implements
     return router;
   }
 
+  @Override
   public String printRouteState() {
     String ret = leafSet.toString()+"\n";
     ret+=routeSet.toString();
@@ -768,8 +787,6 @@ public class PastryNode implements
   // 0 means never.
   private int leafSetMaintFreq, routeSetMaintFreq;
 
-  private ScheduledMessage leafSetRoutineMaintenance = null;
-  private ScheduledMessage routeSetRoutineMaintenance = null;
 
   private LivenessProvider<NodeHandle> livenessProvider;
 
@@ -795,6 +812,7 @@ public class PastryNode implements
     return vars;
   }
 
+  @Override
   public void incomingSocket(P2PSocket<NodeHandle> s) throws IOException {
 
     // read the appId
@@ -802,6 +820,7 @@ public class PastryNode implements
 
     s.register(true, false, new P2PSocketReceiver<NodeHandle>() {
 
+      @Override
       public void receiveSelectResult(
           P2PSocket<NodeHandle> socket,
           boolean canRead, boolean canWrite) throws IOException {
@@ -822,6 +841,7 @@ public class PastryNode implements
           // the alternative approach is to return a dummy socket (or a wrapper) and cache any registration request until we write the response
           socket.register(false, true, new P2PSocketReceiver<NodeHandle>(){
 
+            @Override
             public void receiveSelectResult(P2PSocket<NodeHandle> socket,
                 boolean canRead, boolean canWrite) throws IOException {
 
@@ -864,14 +884,15 @@ public class PastryNode implements
               } // if (acceptorAppl!=null)
             } // rSR()
 
+            @Override
             public void receiveException(P2PSocket<NodeHandle> socket, Exception ioe) {
               logger.warn("incomingSocket({})", socket, ioe);
-              return;
             }
           });
         }
       }
 
+      @Override
       public void receiveException(
           P2PSocket<NodeHandle> socket,
           Exception ioe) {
@@ -887,13 +908,12 @@ public class PastryNode implements
   /**
    * The proximity of the node handle.
    *
-   * @param nh
-   * @return
    */
   public int proximity(NodeHandle nh) {
     return proximity(nh, null);
   }
 
+  @Override
   public int proximity(NodeHandle nh, Map<String, Object> options) {
     return proxProvider.proximity(nh, options);
   }
@@ -982,21 +1002,26 @@ public class PastryNode implements
       receiveMessage(msg);
       PMessageReceipt ret = new PMessageReceipt() {
 
+        @Override
         public boolean cancel() {
           return false;
         }
 
+        @Override
         public NodeHandle getIdentifier() {
           return localhandle;
         }
 
+        @Override
         public Map<String, Object> getOptions() {
           return options;
         }
 
+        @Override
         public Message getMessage() {
           return msg;
         }
+        @Override
         public String toString() {
           return "TLPN$PMsgRecpt{"+msg+","+localhandle+"}";
         }
@@ -1013,10 +1038,12 @@ public class PastryNode implements
       callback = null;
     } else {
       callback = new MessageCallback<NodeHandle, RawMessage>(){
+        @Override
         public void ack(MessageRequestHandle<NodeHandle, RawMessage> msg) {
           if (ret.getInternal() == null) ret.setInternal(msg);
           deliverAckToMe.sent(ret);
         }
+        @Override
         public void sendFailed(MessageRequestHandle<NodeHandle, RawMessage> msg, Exception reason) {
           if (ret.getInternal() == null) ret.setInternal(msg);
           deliverAckToMe.sendFailed(ret, reason);
@@ -1031,11 +1058,13 @@ public class PastryNode implements
     return ret;
   }
 
+  @Override
   public void messageReceived(NodeHandle i, RawMessage m, Map<String, Object> options) throws IOException {
     receiveMessage((Message)m);
   }
 
 
+  @Override
   public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
     return handleFactory.readNodeHandle(buf);
   }
@@ -1063,13 +1092,13 @@ public class PastryNode implements
     logger.info("doneNode:{}", bootstrap);
     if (routeSetMaintFreq > 0) {
       // schedule the routeset maintenance event
-      routeSetRoutineMaintenance = scheduleMsgAtFixedRate(new InitiateRouteSetMaintenance(),
+      scheduleMsgAtFixedRate(new InitiateRouteSetMaintenance(),
         routeSetMaintFreq * 1000, routeSetMaintFreq * 1000);
       logger.atInfo().log(() -> "Scheduling routeSetMaint for "+routeSetMaintFreq * 1000+","+routeSetMaintFreq * 1000);
     }
     if (leafSetMaintFreq > 0) {
       // schedule the leafset maintenance event
-      leafSetRoutineMaintenance = scheduleMsgAtFixedRate(new InitiateLeafSetMaintenance(),
+      scheduleMsgAtFixedRate(new InitiateLeafSetMaintenance(),
         leafSetMaintFreq * 1000, leafSetMaintFreq * 1000);
       logger.atInfo().log(() -> "Scheduling leafSetMaint for "+leafSetMaintFreq * 1000+","+leafSetMaintFreq * 1000);
     }
@@ -1077,6 +1106,7 @@ public class PastryNode implements
     joiner.initiateJoin(bootstrap);
   }
 
+  @Override
   public void livenessChanged(NodeHandle i, int val, Map<String, Object> options) {
     if (val == LIVENESS_ALIVE) {
       i.update(NodeHandle.DECLARED_LIVE);
@@ -1090,12 +1120,14 @@ public class PastryNode implements
   }
 
   Collection<LivenessListener<NodeHandle>> livenessListeners = new ArrayList<LivenessListener<NodeHandle>>();
+  @Override
   public void addLivenessListener(LivenessListener<NodeHandle> name) {
     synchronized(livenessListeners) {
       livenessListeners.add(name);
     }
   }
 
+  @Override
   public boolean removeLivenessListener(LivenessListener<NodeHandle> name) {
     synchronized(livenessListeners) {
       return livenessListeners.remove(name);
@@ -1113,10 +1145,12 @@ public class PastryNode implements
     }
   }
 
+  @Override
   public boolean checkLiveness(NodeHandle i, Map<String, Object> options) {
     return livenessProvider.checkLiveness(i, options);
   }
 
+  @Override
   public int getLiveness(NodeHandle i, Map<String, Object> options) {
     return livenessProvider.getLiveness(i, options);
   }
@@ -1126,6 +1160,7 @@ public class PastryNode implements
   }
 
 
+  @Override
   public void proximityChanged(NodeHandle handle, int val, Map<String, Object> options) {
     handle.update(NodeHandle.PROXIMITY_CHANGED);
   }
@@ -1134,23 +1169,28 @@ public class PastryNode implements
     return livenessProvider;
   }
 
+  @Override
   public void clearState(NodeHandle i) {
     livenessProvider.clearState(i);
   }
 
+  @Override
   public void addProximityListener(ProximityListener<NodeHandle> listener) {
     proxProvider.addProximityListener(listener);
   }
 
+  @Override
   public boolean removeProximityListener(ProximityListener<NodeHandle> listener) {
     return proxProvider.removeProximityListener(listener);
   }
 
 
+  @Override
   public void addNodeHandleFactoryListener(NodeHandleFactoryListener<? super NodeHandle> listener) {
     handleFactory.addNodeHandleFactoryListener(listener);
   }
 
+  @Override
   public void removeNodeHandleFactoryListener(NodeHandleFactoryListener<? super NodeHandle> listener) {
 
     handleFactory.removeNodeHandleFactoryListener(listener);

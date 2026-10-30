@@ -62,6 +62,7 @@ public class SPNFIdentitySerializer implements
     this.factory = factory;
   }
 
+  @Override
   public void serialize(OutputBuffer buf,
       TransportLayerNodeHandle<MultiInetSocketAddress> i)
       throws IOException {
@@ -74,6 +75,7 @@ public class SPNFIdentitySerializer implements
   /**
    * This is different from the normal deserializer b/c we already have the address
    */
+  @Override
   public TransportLayerNodeHandle<MultiInetSocketAddress> deserialize(
       InputBuffer buf, SourceRoute<MultiInetSocketAddress> i)
       throws IOException {
@@ -88,20 +90,24 @@ public class SPNFIdentitySerializer implements
     return new SocketNodeHandle(i, epoch, nid, pn);
   }
 
+  @Override
   public MultiInetSocketAddress translateDown(
       TransportLayerNodeHandle<MultiInetSocketAddress> i) {
     return i.getAddress();
   }
 
+  @Override
   public MultiInetSocketAddress translateUp(SourceRoute<MultiInetSocketAddress> i) {
     return i.getLastHop();
   }
 
   Map<SerializerListener<TransportLayerNodeHandle<MultiInetSocketAddress>>, NodeHandleFactoryListener<SocketNodeHandle>> listeners =
     new HashMap<SerializerListener<TransportLayerNodeHandle<MultiInetSocketAddress>>, NodeHandleFactoryListener<SocketNodeHandle>>();
+  @Override
   public void addSerializerListener(final
       SerializerListener<TransportLayerNodeHandle<MultiInetSocketAddress>> listener) {
     NodeHandleFactoryListener<SocketNodeHandle> foo = new NodeHandleFactoryListener<SocketNodeHandle>() {
+      @Override
       public void nodeHandleFound(SocketNodeHandle nodeHandle) {
         listener.nodeHandleFound(nodeHandle);
       }
@@ -110,6 +116,7 @@ public class SPNFIdentitySerializer implements
     factory.addNodeHandleFactoryListener(foo);
   }
 
+  @Override
   public void removeSerializerListener(final
       SerializerListener<TransportLayerNodeHandle<MultiInetSocketAddress>> listener) {
     factory.removeNodeHandleFactoryListener(listeners.get(listener));

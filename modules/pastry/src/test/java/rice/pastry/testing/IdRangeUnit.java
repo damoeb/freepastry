@@ -252,7 +252,6 @@ public class IdRangeUnit {
       re2 = re2.merge(d2);
       re2 = re2.merge(i2);
     }
-    r12 = r1.merge(r2);
 
     if (!re1.equals(r1) && !re2.equals(r1))
       System.out.println("ALERT: subtract error 25." + r1 + r2 + d1 + d2 + i1
@@ -283,7 +282,6 @@ public class IdRangeUnit {
       re2 = re2.merge(d2);
       re2 = re2.merge(i2);
     }
-    r12 = r1.merge(r2);
 
     if (!re1.equals(r2) && !re2.equals(r2))
       System.out.println("ALERT: subtract error 5." + r1 + r2 + d1 + d2 + i1
@@ -494,6 +492,6 @@ public class IdRangeUnit {
   }
 
   public static void main(String args[]) {
-    IdRangeUnit niu = new IdRangeUnit();
+    new IdRangeUnit(); // the constructor runs the tests
   }
 }

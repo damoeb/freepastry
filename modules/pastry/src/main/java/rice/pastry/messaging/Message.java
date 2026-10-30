@@ -114,6 +114,7 @@ public abstract class Message implements rice.p2p.commonapi.Message {
    *
    * @return the priority of this message.
    */
+  @Override
   public int getPriority() {
     return priorityLevel;
   }

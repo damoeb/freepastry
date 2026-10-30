@@ -50,7 +50,6 @@ import rice.pastry.NodeIdFactory;
 import rice.pastry.NodeSetEventSource;
 import rice.pastry.NodeSetListener;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.leafset.SimilarSet;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 /**
@@ -136,12 +135,8 @@ public class LeafSetTest {
       this.ls = ls;
     }
 
+    @Override
     public void nodeSetUpdate(NodeSetEventSource set, NodeHandle handle, boolean added) {
-      SimilarSet caller;
-      if (set instanceof SimilarSet) {
-        caller = (SimilarSet) set;
-      }
-
       if (ls.overlaps() && (ls.ccwSize() != ls.cwSize())) {
         System.out.println("FAILURE: overlaps and different size" + ls);
       }
@@ -341,38 +336,46 @@ public class LeafSetTest {
       this.id = id;
     }
 
+    @Override
     public Id getNodeId() {
       return id;
     }
 
+    @Override
     public int getLiveness() {
       return LIVENESS_ALIVE;
     }
 
+    @Override
     public boolean ping() {
       return true;
     }
 
+    @Override
     public boolean equals(Object obj) {
-      if (obj instanceof TestNodeHandle) {
-        return ((TestNodeHandle) obj).id.equals(id);
+      if (obj instanceof TestNodeHandle testNodeHandle) {
+        return testNodeHandle.id.equals(id);
       }
 
       return false;
     }
 
+    @Override
     public int hashCode() {
       return id.hashCode();
     }
 
+    @Override
     public int compareTo(TestNodeHandle o) {
       return id.compareTo(((TestNodeHandle) o).id);
     }
 
+    @Override
     public String toString() {
       return id.toString();
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       throw new RuntimeException("not implemented.");
     }

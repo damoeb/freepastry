@@ -143,23 +143,6 @@ public abstract class PastryRegrTest {
    * make a new pastry node
    */
 
-  private void makePastryNode() {
-    NodeHandle bootstrap = getBootstrap(pastryNodes.size() == 0);
-    PastryNode pn = generateNode(bootstrap);
-
-    pastryNodes.addElement(pn);
-    pastryNodesSorted.put(pn.getNodeId(), pn);
-    pastryNodesLastAdded.clear();
-    pastryNodesLastAdded.addElement(pn);
-
-    RegrTestApp rta = new RegrTestApp(pn, this);
-    rtApps.addElement(rta);
-
-    registerapp(pn, rta);
-
-    checkLeafSet(rta);
-    checkRoutingTable(rta);
-  }
 
   protected PastryNode generateNode(NodeHandle bootstrap) {
     PastryNode pn;
@@ -169,8 +152,8 @@ public abstract class PastryRegrTest {
       throw new RuntimeException(ioe);
     }
     // the socket factory hands out BogusNodeHandles, which have to be booted from their addresses
-    if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle) {
-      pn.boot(((rice.pastry.transport.BogusNodeHandle)bootstrap).getAddress());
+    if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle bogusNodeHandle) {
+      pn.boot(bogusNodeHandle.getAddress());
     } else {
       pn.boot(bootstrap);
     }
@@ -356,10 +339,11 @@ public abstract class PastryRegrTest {
     class DistComp implements Comparator<Id> {
       Id id;
 
-      public DistComp(Id id) {
+      DistComp(Id id) {
         this.id = id;
       }
 
+      @Override
       public int compare(Id o1, Id o2) {
         Id nid1 = (Id) o1;
         Id nid2 = (Id) o2;

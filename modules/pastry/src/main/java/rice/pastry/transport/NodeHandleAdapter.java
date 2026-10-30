@@ -72,50 +72,65 @@ public class NodeHandleAdapter implements
     this.proxProvider = (ProximityProvider<NodeHandle>)proxProvider;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
+  @Override
   public NodeHandle getLocalIdentifier() {
     return (NodeHandle)tl.getLocalIdentifier();
   }
+  @Override
   public SocketRequestHandle<NodeHandle> openSocket(NodeHandle i, SocketCallback<NodeHandle> deliverSocketToMe, Map<String, Object> options) {
     return tl.openSocket(i, deliverSocketToMe, options);
   }
 
+  @Override
   public MessageRequestHandle<NodeHandle, RawMessage> sendMessage(NodeHandle i, RawMessage m, MessageCallback<NodeHandle, RawMessage> deliverAckToMe, Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
+  @Override
   public void setCallback(TransportLayerCallback<NodeHandle, RawMessage> callback) {
     tl.setCallback(callback);
   }
+  @Override
   public void setErrorHandler(ErrorHandler<NodeHandle> handler) {
     tl.setErrorHandler(handler);
   }
+  @Override
   public void destroy() {
     tl.destroy();
   }
 
+  @Override
   public void addLivenessListener(LivenessListener<NodeHandle> name) {
     livenessProvider.addLivenessListener(name);
   }
+  @Override
   public boolean checkLiveness(NodeHandle i, Map<String, Object> options) {
     return livenessProvider.checkLiveness(i, options);
   }
+  @Override
   public int getLiveness(NodeHandle i, Map<String, Object> options) {
     return livenessProvider.getLiveness(i, options);
   }
+  @Override
   public boolean removeLivenessListener(LivenessListener<NodeHandle> name) {
     return livenessProvider.removeLivenessListener(name);
   }
+  @Override
   public void addProximityListener(ProximityListener<NodeHandle> listener) {
     proxProvider.addProximityListener(listener);
   }
+  @Override
   public int proximity(NodeHandle i, Map<String, Object> options) {
     return proxProvider.proximity(i, options);
   }
+  @Override
   public boolean removeProximityListener(ProximityListener<NodeHandle> listener) {
     return proxProvider.removeProximityListener(listener);
   }
@@ -125,6 +140,7 @@ public class NodeHandleAdapter implements
     return tl;
   }
 
+  @Override
   public void clearState(NodeHandle i) {
     livenessProvider.clearState(i);
   }

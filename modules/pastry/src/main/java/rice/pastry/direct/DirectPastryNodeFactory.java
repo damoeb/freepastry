@@ -116,6 +116,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     }
   }
 
+  @Override
   public PastryNode newNode() throws IOException {
     return newNode(nidFactory.generateNodeId());
   }
@@ -127,6 +128,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
    *
    * @return a new PastryNode
    */
+  @Override
   public PastryNode newNode(Id nodeId) throws IOException {
 
       // this code builds a different environment for each PastryNode
@@ -161,10 +163,12 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     // simulator handles are shared objects: they are never serialized, and each one is already canonical
     return new NodeHandleFactory<NodeHandle>(){
 
+      @Override
       public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
         throw new IOException("The direct simulator does not deserialize node handles");
       }
 
+      @Override
       public NodeHandle coalesce(NodeHandle handle) {
         notifyListeners(handle);
         return handle;
@@ -173,7 +177,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       /**
        * Notify the listeners that this new handle has come along.
        */
-      protected void notifyListeners(NodeHandle nh) {
+      void notifyListeners(NodeHandle nh) {
         Collection<NodeHandleFactoryListener<? super NodeHandle>> temp = listeners;
         synchronized (listeners) {
           temp = new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>(listeners);
@@ -183,6 +187,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
         }
       }
 
+      @Override
       public void addNodeHandleFactoryListener(
           NodeHandleFactoryListener<? super NodeHandle> listener) {
         synchronized(listeners) {
@@ -191,6 +196,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       }
 
 
+      @Override
       public void removeNodeHandleFactoryListener(
           NodeHandleFactoryListener<? super NodeHandle> listener) {
         synchronized(listeners) {
@@ -210,20 +216,24 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     TransportLayer<? extends NodeHandle, RawMessage> tl = getDirectTransportLayer(pn, nr);
 
     NodeHandleAdapter nha = new NodeHandleAdapter(tl,simulator.getLivenessProvider(),new ProximityProvider<NodeHandle>(){
+      @Override
       public int proximity(NodeHandle i, Map<String, Object> options) {
         return (int)simulator.proximity((DirectNodeHandle)pn.getLocalHandle(), (DirectNodeHandle)i);
       }
 
       // proximity won't change, so don't worry about it
       List<ProximityListener<NodeHandle>> proxListeners = new ArrayList<ProximityListener<NodeHandle>>();
+      @Override
       public void addProximityListener(ProximityListener<NodeHandle> name) {
         proxListeners.add(name);
       }
 
+      @Override
       public boolean removeProximityListener(ProximityListener<NodeHandle> name) {
         return proxListeners.remove(name);
       }
 
+      @Override
       public void clearState(NodeHandle i) {
 
       }
@@ -234,9 +244,6 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   /**
    * Override me
-   * @param pn
-   * @param nr
-   * @return
    */
   protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, NodeRecord nr) {
     DirectNodeHandle local = (DirectNodeHandle)pn.getLocalHandle();
@@ -251,10 +258,12 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector pns) {
     return bootaddresses -> {
       pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {
+        @Override
         public void receiveResult(Collection<NodeHandle> result) {
           logger.info("boot() calling pn.doneNode({})", result);
           pn.doneNode(result);
         }
+        @Override
         public void receiveException(Exception exception) {
         }
       });

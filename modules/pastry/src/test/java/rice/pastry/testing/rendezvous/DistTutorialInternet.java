@@ -169,7 +169,7 @@ public class DistTutorialInternet {
       if (args.length >= 4) bindaddr = InetAddress.getByName(args[3]);
 
       // launch our node!
-      DistTutorialInternet dt = new DistTutorialInternet(bindaddr, bindport, bootaddress, env);
+      new DistTutorialInternet(bindaddr, bindport, bootaddress, env);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

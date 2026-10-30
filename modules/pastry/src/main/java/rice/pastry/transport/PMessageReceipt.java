@@ -43,9 +43,12 @@ import rice.pastry.NodeHandle;
 import rice.pastry.messaging.Message;
 
 public interface PMessageReceipt extends MessageRequestHandle<NodeHandle, Message> {
+  @Override
   public NodeHandle getIdentifier();
 
+  @Override
   public Message getMessage();
 
+  @Override
   public Map<String, Object> getOptions();
 }

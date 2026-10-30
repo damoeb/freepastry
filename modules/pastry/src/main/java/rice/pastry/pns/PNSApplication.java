@@ -126,6 +126,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
   /**
    * We always want to receive messages.
    */
+  @Override
   public boolean deliverWhenNotReady() {
     return true;
   }
@@ -193,6 +194,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     }
   }
 
+  @Override
   public Cancellable getNearHandles(final Collection<NodeHandle> bootHandles, final Continuation<Collection<NodeHandle>, Exception> deliverResultToMe) {
     if (bootHandles == null || bootHandles.size() == 0 || bootHandles.iterator().next() == null) {
       deliverResultToMe.receiveResult(bootHandles);
@@ -218,6 +220,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       final NodeHandle handle = nh;
       Continuation<Integer, IOException> c = new Continuation<Integer, IOException>() {
 
+        @Override
         public void receiveResult(Integer result) {
           logger.debug("got proximity for {} in getNearHandles()", handle);
           if ((best.handle != null) &&
@@ -234,18 +237,20 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
           // set ourself as best
           Cancellable cancellable = getNearest(handle, new Continuation<Collection<NodeHandle>, Exception>() {
 
+            @Override
             public void receiveResult(Collection<NodeHandle> result) {
               logger.debug("receiveResult({}) in getNearHandles()", result);
               ret.cancel(); // go ahead and cancel everything
               finish();
             }
 
+            @Override
             public void receiveException(Exception exception) {
               logger.warn("PNS got an exception in getNearHandles() returning what we got.", exception);
               finish();
             }
 
-            public void finish() {
+            void finish() {
               thePastryNode.removeProximityListener(PNSApplication.this);
               List<NodeHandle> ret = sortedProximityCache();
               purgeProximityCache();
@@ -259,6 +264,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
           best.cancellable = cancellable;
         }
 
+        @Override
         public void receiveException(IOException exception) {
           remaining.remove(handle);
         }
@@ -273,8 +279,6 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    *
    * Can be overridden to select out any handles that shouldn't be returned.
    *
-   * @param handles
-   * @return
    */
   protected List<NodeHandle> getNearHandlesHelper(List<NodeHandle> handles) {
     return handles;
@@ -293,6 +297,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    */
   public Cancellable getLeafSet(final NodeHandle handle, final Continuation<LeafSet, Exception> c) {
     final AttachableCancellable cancellable = new AttachableCancellable(){
+      @Override
       public boolean cancel() {
         removeFromWaitingForLeafSet(handle, c);
         super.cancel();
@@ -314,8 +319,10 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     cancellable.attach(task);
 
     cancellable.attach(thePastryNode.send(handle, new LeafSetRequest(this.getNodeHandle(), this.getAddress()), new PMessageNotification() {
+      @Override
       public void sent(PMessageReceipt msg) {
       }
+      @Override
       public void sendFailed(PMessageReceipt msg, Exception reason) {
         cancellable.cancel();
         c.receiveException(reason);
@@ -371,6 +378,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    */
   public Cancellable getRouteRow(final NodeHandle handle, final short row, final Continuation<RouteSet[], Exception> c) {
     final AttachableCancellable cancellable = new AttachableCancellable(){
+      @Override
       public boolean cancel() {
         removeFromWaitingForRouteRow(handle, row, c);
         super.cancel();
@@ -392,8 +400,10 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     cancellable.attach(task);
 
     cancellable.attach(thePastryNode.send(handle, new RouteRowRequest(this.getNodeHandle(), row, this.getAddress()), new PMessageNotification() {
+      @Override
       public void sent(PMessageReceipt msg) {
       }
+      @Override
       public void sendFailed(PMessageReceipt msg, Exception reason) {
         cancellable.cancel();
         c.receiveException(reason);
@@ -466,8 +476,6 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    *
    * TODO: fail early if the handle is already known to be faulty.
    *
-   * @param handle
-   * @param c
    */
   public Cancellable getProximity(final NodeHandle handle, final Continuation<Integer, IOException> c, int timeout) {
     logger.trace("getProximity({})", handle);
@@ -488,6 +496,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
         waiters.add(c);
 
         final AttachableCancellable cancellable = new AttachableCancellable(){
+          @Override
           public boolean cancel() {
             synchronized(waitingForPing) {
               Collection<Continuation<Integer, IOException>> waiters = waitingForPing.get(handle);
@@ -533,6 +542,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
   Map<NodeHandle, Collection<Continuation<Integer, IOException>>> waitingForPing =
     new HashMap<NodeHandle, Collection<Continuation<Integer, IOException>>>();
+  @Override
   public void proximityChanged(NodeHandle i, int newProximity, Map<String, Object> options) {
     logger.debug("proximityChanged({},{})", i, newProximity);
     synchronized(pingCache) {
@@ -586,19 +596,20 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     ret.attach(getLeafSet(seed,
       new Continuation<LeafSet, Exception>() {
 
+        @Override
         public void receiveResult(LeafSet result) {
           // ping everyone in the leafset:
           logger.debug("getNearest({}) got {}", seed, result);
 
           // seed is the bootstrap node that we use to enter the pastry ring
           NodeHandle nearNode = seed;
-          NodeHandle currentClosest = seed;
 
           ret.attach(closestToMe(nearNode, result, new Continuation<NodeHandle, Exception>() {
 
             /**
              * Now we have the closest node in the leafset.
              */
+            @Override
             public void receiveResult(NodeHandle result) {
               NodeHandle nearNode = result;
               // get the number of rows in a routing table
@@ -618,23 +629,26 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
               ret.attach(seekThroughRouteRows(i,depth,nearNode,new Continuation<NodeHandle, Exception>(){
 
+                @Override
                 public void receiveResult(NodeHandle result) {
-                  NodeHandle nearNode = result;
                   retToMe.receiveResult(sortedProximityCache());
                 }
 
+                @Override
                 public void receiveException(Exception exception) {
                   retToMe.receiveResult(sortedProximityCache());
                 }
               }));
             }
 
+            @Override
             public void receiveException(Exception exception) {
               retToMe.receiveResult(sortedProximityCache());
             }
           }));
         }
 
+        @Override
         public void receiveException(Exception exception) {
           retToMe.receiveException(exception);
         }
@@ -660,10 +674,12 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
     // base case
     ret.attach(getRouteRow(currentClosest, i, new Continuation<RouteSet[], Exception>(){
+      @Override
       public void receiveResult(RouteSet[] result) {
         ret.attach(closestToMe(currentClosest,result,new Continuation<NodeHandle, Exception>() {
+          @Override
           public void receiveResult(NodeHandle nearNode) {
-            if ((i >= depth-1) && (currentClosest.equals(nearNode))) {
+            if ((i >= depth-1) && currentClosest.equals(nearNode)) {
               // base case
               // i == depth and we didn't find a closer node
               returnToMe.receiveResult(nearNode);
@@ -675,6 +691,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
             }
           }
 
+          @Override
           public void receiveException(Exception exception) {
             returnToMe.receiveException(exception);
           }
@@ -682,6 +699,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
       }
 
+      @Override
       public void receiveException(Exception exception) {
         returnToMe.receiveException(exception);
       }
@@ -767,6 +785,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       logger.trace("closestToMe checking prox on {}({},{})", tempNode, handle, handles);
       ret.attach(getProximity(handle, new Continuation<Integer, IOException>(){
 
+        @Override
         public void receiveResult(Integer result) {
           logger.atTrace().log(() -> "closestToMe got prox("+result.intValue()+") on "+tempNode+"("+handle+","+handles+")");
           remaining.remove(tempNode);
@@ -778,12 +797,13 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
           finish();
         }
 
+        @Override
         public void receiveException(IOException exception) {
           remaining.remove(tempNode);
           finish();
         }
 
-        public void finish() {
+        void finish() {
           if (remaining.isEmpty()) {
             ret.cancel();
             c.receiveResult(closestNode[0]);
@@ -798,6 +818,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
 
   class PNSDeserializer implements MessageDeserializer {
+    @Override
     public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
       return switch (PNSMessageType.find(type)) {
         case LEAF_SET_REQUEST -> LeafSetRequest.build(buf, (NodeHandle)sender, getAddress());

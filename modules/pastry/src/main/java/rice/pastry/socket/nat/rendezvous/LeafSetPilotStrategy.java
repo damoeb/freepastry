@@ -68,6 +68,7 @@ public class LeafSetPilotStrategy<Identifier extends RendezvousContact> implemen
     leafSet.addNodeSetListener(this);
   }
 
+  @Override
   public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
     logger.trace("nodeSetUpdate({})", handle);
     Identifier nh = (Identifier)handle;
@@ -80,10 +81,12 @@ public class LeafSetPilotStrategy<Identifier extends RendezvousContact> implemen
     }
   }
 
+  @Override
   public void pilotOpening(Identifier i) {
 
   }
 
+  @Override
   public void pilotClosed(Identifier i) {
     if (leafSet.contains((NodeHandle)i)) {
       manager.openPilot(i, null);

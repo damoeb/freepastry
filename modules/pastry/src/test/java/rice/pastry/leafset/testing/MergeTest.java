@@ -71,8 +71,6 @@ public class MergeTest {
   /**
    * Input of the form:
    * <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..> [ <0xEA5EAF..> ] <0xEBC2BB..><0xEBD2CB..><0xEF7F43..><0xF09044..><0xF10B96..><0xF33C36..><0xF64DA9..><0xF66CD9..><0xF9E251..><0xFB7F46..><0xFC1B02..><0xFC4718..>
-   * @param str
-   * @return
    */
   public static LeafSet getLeafSet(String str) {
     String a[] = str.split("\\[");
@@ -106,16 +104,14 @@ public class MergeTest {
   /**
    * Input of the form:
    * <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..>
-   * @param str
-   * @return
    */
   public static NodeHandle[] getHandles(String str) {
     ArrayList<NodeHandle> list = new ArrayList<NodeHandle>();
     String a[] = str.split("[< ]");
     for (int ctr = 0; ctr < a.length; ctr++) {
       if (a[ctr].length() > 3) {
-        assert(a[ctr].substring(0,2).equals("0x"));
-        assert(a[ctr].substring(a[ctr].length()-3,a[ctr].length()).equals("..>"));
+        assert a[ctr].substring(0,2).equals("0x");
+        assert a[ctr].substring(a[ctr].length()-3,a[ctr].length()).equals("..>");
         a[ctr] = a[ctr].substring(2,a[ctr].length()-3);
 
         list.add(new TestNodeHandle(Id.build(a[ctr])));
@@ -125,9 +121,6 @@ public class MergeTest {
     return list.toArray(new NodeHandle[0]);
   }
 
-  /**
-   * @param args
-   */
   public static void main(String[] args) {
     Environment env = new Environment();
 
@@ -142,6 +135,7 @@ public class MergeTest {
 
     PastryNode pn = new PastryNode((rice.pastry.Id)ls2.get(0).getId(),env){
 
+      @Override
       public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
         return null;
       }
@@ -171,6 +165,7 @@ public class MergeTest {
         return 0;
       }
 
+      @Override
       public int proximity(NodeHandle nh, Map<String, Object> options) {
         return 0;
       }
@@ -191,34 +186,42 @@ public class MergeTest {
         return null;
       }
 
+      @Override
       public void addLivenessListener(LivenessListener<NodeHandle> name) {
 
       }
 
+      @Override
       public boolean checkLiveness(NodeHandle i, Map<String, Object> options) {
         return false;
       }
 
+      @Override
       public int getLiveness(NodeHandle i, Map<String, Object> options) {
         return 0;
       }
 
+      @Override
       public boolean removeLivenessListener(LivenessListener<NodeHandle> name) {
         return false;
       }
 
+      @Override
       public void clearState(NodeHandle i) {
 
       }
 
+      @Override
       public void addProximityListener(ProximityListener<NodeHandle> listener) {
 
       }
 
+      @Override
       public boolean removeProximityListener(ProximityListener<NodeHandle> listener) {
         return false;
       }
 
+      @Override
       public String printRouteState() {
         return null;
       }
@@ -228,6 +231,7 @@ public class MergeTest {
 
     ls2.addNodeSetListener(new NodeSetListener() {
 
+      @Override
       public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource,
           NodeHandle handle, boolean added) {
         System.out.println("nodeSetUpdate("+handle+","+added+")");
@@ -249,34 +253,41 @@ public class MergeTest {
       this.id = id;
     }
 
+    @Override
     public Id getNodeId() {
       return id;
     }
 
+    @Override
     public int getLiveness() {
       return NodeHandle.LIVENESS_ALIVE;
     }
 
+    @Override
     public boolean ping() {
       return true;
     }
 
+    @Override
     public boolean equals(Object obj) {
-      if (obj instanceof TestNodeHandle) {
-        return ((TestNodeHandle) obj).id.equals(id);
+      if (obj instanceof TestNodeHandle testNodeHandle) {
+        return testNodeHandle.id.equals(id);
       }
 
       return false;
     }
 
+    @Override
     public int hashCode() {
       return id.hashCode();
     }
 
+    @Override
     public String toString() {
       return id.toString();
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       throw new RuntimeException("not implemented.");
     }

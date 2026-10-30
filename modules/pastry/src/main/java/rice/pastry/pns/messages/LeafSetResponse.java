@@ -53,10 +53,12 @@ public final class LeafSetResponse extends PRawMessage implements PNSMessage {
     setPriority(HIGH_PRIORITY);
   }
 
+  @Override
   public short getType() {
     return PNSMessageType.LEAF_SET_RESPONSE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     leafset.serialize(buf);

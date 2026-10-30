@@ -88,6 +88,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    *
    * @return The NodeId value
    */
+  @Override
   public Id getNodeId() {
     return localnode.getNodeId();
   }
@@ -97,6 +98,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    *
    * @return The Alive value
    */
+  @Override
   public int getLiveness() {
     if (simulator.isAlive(this)) {
       return LIVENESS_ALIVE;
@@ -116,10 +118,12 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   /**
    * @return true if the node is not dead
    */
+  @Override
   public boolean ping() {
     return getLiveness() < LIVENESS_DEAD;
   }
 
+  @Override
   public final void assertLocalNode() {
     if (DirectPastryNode.getCurrentNode() == null) {
       throw new RuntimeException("PANIC: localnode is null in " + this+"@"+System.identityHashCode(this));
@@ -133,6 +137,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    * @param obj the other nodehandle .
    * @return true if they are equal, false otherwise.
    */
+  @Override
   public boolean equals(Object obj) {
     // we know that there is only one of these per node in the simulator
     return obj == this;
@@ -144,10 +149,12 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    *
    * @return a hash code.
    */
+  @Override
   public int hashCode() {
     return this.getNodeId().hashCode();
   }
 
+  @Override
   public String toString() {
     return "[DNH " + getNodeId() + "]";
   }
@@ -158,10 +165,12 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
    * the simulator.  If we leave in the first arg, the node notifies DECLARED_LIVE
    * way too often.
    */
+  @Override
   public void pastryNodeReady(PastryNode node, boolean ready) {
     localNodeUpdate();
   }
 
+  @Override
   public void pastryNodeJoinFailed(PastryNode node, JoinFailedException reason) {
     localNodeUpdate();
   }
@@ -173,18 +182,21 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
     }
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    if (buf instanceof SizeCheckOutputBuffer) {
-      ((SizeCheckOutputBuffer)buf).writeSpecial(this);
+    if (buf instanceof SizeCheckOutputBuffer sizeCheckOutputBuffer) {
+      sizeCheckOutputBuffer.writeSpecial(this);
     } else {
       throw new RuntimeException("DirectNodeHandle.serialize() Should not be called.  If you are doing this to determine the size, please use a SizeCheckOutputBuffer such as the DirectSizeChecker.");
     }
   }
 
+  @Override
   public NodeRecord getAddress() {
     return simulator.getNodeRecord(this);
   }
 
+  @Override
   public long getEpoch() {
     return 0;
   }

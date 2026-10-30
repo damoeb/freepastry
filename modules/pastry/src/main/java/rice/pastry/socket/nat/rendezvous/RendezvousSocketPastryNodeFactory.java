@@ -41,7 +41,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.SocketRequestHandle;
@@ -171,11 +170,6 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   /**
    * Can override the contactState on a per-node basis
    *
-   * @param nodeId
-   * @param proxyAddress
-   * @param deliverResultToMe
-   * @param initialVars
-   * @param firewalled
    */
   protected void newNodeSelector(Id nodeId,
       MultiInetSocketAddress proxyAddress,
@@ -196,11 +190,6 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   /**
    * Can override the contactState on a per-node basis
    *
-   * @param nodeId
-   * @param proxyAddress
-   * @param deliverResultToMe
-   * @param initialVars
-   * @param contactState
    */
   protected void newNodeSelector(Id nodeId,
       MultiInetSocketAddress proxyAddress,
@@ -300,23 +289,28 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   protected ContactDeserializer<InetSocketAddress, RendezvousSocketNodeHandle> getContactDeserializer(final PastryNode pn) {
     return new ContactDeserializer<InetSocketAddress, RendezvousSocketNodeHandle>(){
 
+      @Override
       public Map<String, Object> getOptions(RendezvousSocketNodeHandle high) {
         return OptionsFactory.addOption(null, IdentityImpl.NODE_HANDLE_FROM_INDEX, high);
       }
 
+      @Override
       public RendezvousSocketNodeHandle deserialize(InputBuffer sib) throws IOException {
         return (RendezvousSocketNodeHandle)pn.readNodeHandle(sib);
       }
 
+      @Override
       public InetSocketAddress convert(RendezvousSocketNodeHandle high) {
         // TODO: is this the correct one?
         return high.getAddress().getAddress(0);
       }
 
+      @Override
       public void serialize(RendezvousSocketNodeHandle i, OutputBuffer buf) throws IOException {
         i.serialize(buf);
       }
 
+      @Override
       public ByteBuffer serialize(RendezvousSocketNodeHandle i)
           throws IOException {
         SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -367,8 +361,8 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
     super.registerApps(pn, leafSet, routeTable, nha, handleFactory);
     RendezvousStrategy<RendezvousSocketNodeHandle> app = (RendezvousStrategy<RendezvousSocketNodeHandle>)pn.getVars().get(RENDEZVOUS_STRATEGY);
-    if (app instanceof RendezvousApp) {
-      ((RendezvousApp)app).register();
+    if (app instanceof RendezvousApp rendezvousApp) {
+      rendezvousApp.register();
     }
   }
 
@@ -468,10 +462,10 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     booted[0] = false;
     final ArrayList<RendezvousSocketNodeHandle> closeMeWhenReady = new ArrayList<RendezvousSocketNodeHandle>();
     PastryNodeListener obs = new PastryNodeListener() {
+      @Override
       public void pastryNodeReady(PastryNode o, boolean ready) {
         if (ready) {
           // node is ready
-          List<RendezvousSocketNodeHandle> temp;
           synchronized(closeMeWhenReady) {
             booted[0] = true;
           }
@@ -501,6 +495,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
         manager.openPilot((RendezvousSocketNodeHandle)h, new Continuation<SocketRequestHandle<RendezvousSocketNodeHandle>, Exception>() {
 
+          @Override
           public void receiveResult(
               SocketRequestHandle<RendezvousSocketNodeHandle> result) {
 
@@ -525,6 +520,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
             pn.getLivenessProvider().checkLiveness(h, null);
           }
 
+          @Override
           public void receiveException(Exception exception) {
             logger.warn("In Rendezvous Bootstrapper.checkLiveness({})", h, exception);
           }

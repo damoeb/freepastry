@@ -70,6 +70,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    */
   public abstract Id getNodeId();
 
+  @Override
   public rice.p2p.commonapi.Id getId() {
     return getNodeId();
   }
@@ -89,6 +90,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    *
    * @return true if node is currently alive.
    */
+  @Override
   public boolean checkLiveness() {
     return ping();
   }
@@ -125,6 +127,7 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    * @param obj a nodehandle object
    * @return true if they are equal, false otherwise.
    */
+  @Override
   public abstract boolean equals(Object obj);
 
   /**
@@ -132,8 +135,10 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
    *
    * @return a hash code.
    */
+  @Override
   public abstract int hashCode();
 
+  @Override
   public abstract void serialize(OutputBuffer buf) throws IOException;
 
   /****************** Listeners with priority, see rice.p2p.commonapi.NodeHandleListener **********/

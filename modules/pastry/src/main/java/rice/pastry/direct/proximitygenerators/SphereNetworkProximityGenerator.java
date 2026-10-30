@@ -51,6 +51,7 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
   }
 
 
+  @Override
   public NodeRecord generateNodeRecord() {
     return new SphereNodeRecord();
   }
@@ -71,12 +72,12 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
     /**
      * Creates a record at a uniformly random position on the sphere.
      */
-    public SphereNodeRecord() {
+    SphereNodeRecord() {
       this(Math.asin(2.0 * random.nextDouble() - 1.0),
            2.0 * Math.PI * random.nextDouble());
     }
 
-    public SphereNodeRecord(double theta, double phi) {
+    SphereNodeRecord(double theta, double phi) {
       this.theta = theta;
       this.phi = phi;
       radius = maxDiameter/Math.PI;
@@ -88,10 +89,12 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
      * @param that the other node's record
      * @return the proximity
      */
+    @Override
     public float proximity(NodeRecord that) {
       return (float)Math.round(networkDelay(that)*2.0);
     }
 
+    @Override
     public float networkDelay(NodeRecord that) {
       SphereNodeRecord nr = (SphereNodeRecord)that;
       double ret = (radius * Math.acos(Math.cos(phi - nr.phi) * Math.cos(theta) * Math.cos(nr.theta) +
@@ -116,6 +119,7 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
     new SphereNetworkProximityGenerator(NetworkSimulatorConfig.fromParameters(Environment.directEnvironment().getParameters()).maxDiameter()).test();
   }
 
+  @Override
   public void setRandom(RandomSource random) {
     this.random = random;
   }

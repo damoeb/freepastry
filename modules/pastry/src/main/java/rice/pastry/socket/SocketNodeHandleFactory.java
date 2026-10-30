@@ -67,9 +67,6 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
    * This is kind of weird, may need to rethink this.  This is called to build one w/o
    * deserializing anything.  (Either the local node, or one with a bogus id).
    *
-   * @param i
-   * @param id
-   * @return
    */
   public SocketNodeHandle getNodeHandle(MultiInetSocketAddress i, long epoch, Id id) {
     SocketNodeHandle handle = new SocketNodeHandle(i, epoch, id, pn);
@@ -77,10 +74,12 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
     return (SocketNodeHandle)coalesce(handle);
   }
 
+  @Override
   public SocketNodeHandle readNodeHandle(InputBuffer buf) throws IOException {
     return coalesce(SocketNodeHandle.build(buf, pn));
   }
 
+  @Override
   public SocketNodeHandle coalesce(SocketNodeHandle h) {
     SocketNodeHandle handle = (SocketNodeHandle)h;
     if (handleSet.containsKey(handle)) {
@@ -108,6 +107,7 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   }
 
 
+  @Override
   public void addNodeHandleFactoryListener(
       NodeHandleFactoryListener<? super SocketNodeHandle> listener) {
     synchronized(listeners) {
@@ -116,6 +116,7 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   }
 
 
+  @Override
   public void removeNodeHandleFactoryListener(
       NodeHandleFactoryListener<? super SocketNodeHandle> listener) {
     synchronized(listeners) {
@@ -124,11 +125,13 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   }
 
 
+  @Override
   public SocketNodeHandle deserialize(InputBuffer buf) throws IOException {
     return readNodeHandle(buf);
   }
 
 
+  @Override
   public void serialize(SocketNodeHandle i, OutputBuffer buf)
       throws IOException {
     i.serialize(buf);

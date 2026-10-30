@@ -81,12 +81,14 @@ public abstract class PastryAppl
   protected Map<String, Object> options;
 
   private class LeafSetObserver implements NodeSetListener {
+    @Override
     public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
       leafSetChange(handle, added);
     }
   }
 
   private class RouteSetObserver implements NodeSetListener {
+    @Override
     public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
       routeSetChange(handle, added);
     }
@@ -190,8 +192,7 @@ public abstract class PastryAppl
   public void receiveMessage(Message msg) {
 
     logger.trace("[{}] recv {}", thePastryNode, msg);
-    if (msg instanceof RouteMessage) {
-      RouteMessage rm = (RouteMessage) msg;
+    if (msg instanceof RouteMessage rm) {
 
         // if the message has a destinationHandle, it should be for me, and it should always be delivered
         NodeHandle destinationHandle = rm.getDestinationHandle();
@@ -373,7 +374,6 @@ public abstract class PastryAppl
 
   /**
    * Sets an AppSocketReceiver to be called when the next socket arrives.
-   * @param receiver
    */
   public void accept(AppSocketReceiver receiver) {
     this.receiver = receiver;

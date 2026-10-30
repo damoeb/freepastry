@@ -69,6 +69,7 @@ public class PingMessageNew extends PRawMessage {
   target = tgt;
     }
 
+    @Override
     public String toString() {
   String s="";
   s += "ping from " + getSender().getNodeId() + " to " + target;
@@ -94,10 +95,12 @@ public class PingMessageNew extends PRawMessage {
       fDistance = buf.readDouble();
     }
 
+    @Override
     public short getType() {
       return TYPE;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       target.serialize(buf);
       buf.writeInt(nHops);

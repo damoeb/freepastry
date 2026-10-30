@@ -116,7 +116,6 @@ public class MemoryTest {
 
       while (!node.isReady()) {
         Thread.sleep(1000);
-        long waitedFor = env.getTimeSource().currentTimeMillis() - waitTime;
       }
 
       // print the current status

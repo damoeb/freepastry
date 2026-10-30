@@ -70,10 +70,12 @@ public class ProbeRequestMessage extends PRawMessage {
   }
 
   // ***************** Raw Serialization ****************
+  @Override
   public short getType() {
     return ProbeMessageType.PROBE_REQUEST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     probeRequestor.serialize(buf);

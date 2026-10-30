@@ -58,10 +58,12 @@ public final class LeafSetRequest extends PRawMessage implements PNSMessage {
     throw new IllegalStateException("Unknown version:"+version);
   }
 
+  @Override
   public short getType() {
     return PNSMessageType.LEAF_SET_REQUEST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
   }

@@ -94,15 +94,16 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     manager.getTimer().schedule(dtt);
   }
 
+  @Override
   public CancellableTask enqueueDelivery(Delivery d, int delay) {
     long time = timeSource.currentTimeMillis()+delay;
     logger.debug("BNS: enqueueDelivery {}:{}", d, time);
-    DeliveryTimerTask dtt = null;
-    dtt = new DeliveryTimerTask(d, time, d.getSeq());
+    DeliveryTimerTask dtt = new DeliveryTimerTask(d, time, d.getSeq());
     addTask(dtt);
     return dtt;
   }
 
+  @Override
   public Cancellable deliverMessage(MessageType msg, Identifier node, Identifier from,
       int delay) {
     if (delay > 0) {
@@ -133,20 +134,24 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     nodes.put(i, new Tupel<>(i, dtl, record));
   }
 
+  @Override
   public void remove(Identifier i) {
     if (!environment.getSelectorManager().isSelectorThread()) throw new IllegalStateException("Operation not permitted on non-selector thread.");
     nodes.remove(i);
     notifyLivenessListeners(i, LivenessTypes.LIVENESS_DEAD, null);
   }
 
+  @Override
   public Environment getEnvironment(Identifier i) {
     return nodes.get(i).tl.getEnvironment();
   }
 
+  @Override
   public boolean isAlive(Identifier i) {
     return nodes.containsKey(i);
   }
 
+  @Override
   public DirectTransportLayer<Identifier, MessageType> getTL(Identifier i) {
     Tupel<Identifier, MessageType> t = nodes.get(i);
     if (t == null) return null;
@@ -160,6 +165,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
    * @param b the second NodeId
    * @return the proximity between the two input NodeIds
    */
+  @Override
   public float networkDelay(Identifier a, Identifier b) {
     Tupel<Identifier, MessageType> ta = nodes.get(a);
     Tupel<Identifier, MessageType> tb = nodes.get(b);
@@ -208,12 +214,14 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
 
   List<LivenessListener<Identifier>> livenessListeners = new ArrayList<LivenessListener<Identifier>>();
+  @Override
   public void addLivenessListener(LivenessListener<Identifier> name) {
     synchronized(livenessListeners) {
       livenessListeners.add(name);
     }
   }
 
+  @Override
   public boolean removeLivenessListener(LivenessListener<Identifier> name) {
     synchronized(livenessListeners) {
       return livenessListeners.remove(name);
@@ -231,10 +239,12 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     }
   }
 
+  @Override
   public boolean checkLiveness(Identifier i, Map<String, Object> options) {
     return false;
   }
 
+  @Override
   public int getLiveness(Identifier i, Map<String, Object> options) {
     if (nodes.containsKey(i)) {
       return LivenessTypes.LIVENESS_ALIVE;
@@ -242,6 +252,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     return LivenessTypes.LIVENESS_DEAD;
   }
 
+  @Override
   public void clearState(Identifier i) {
     throw new IllegalStateException("not implemented");
   }

@@ -68,6 +68,7 @@ public abstract class DistNodeHandle<Identifier> extends TransportLayerNodeHandl
      *
      * @return the node id.
      */
+    @Override
     public final Id getNodeId() {
       return nodeId;
     }
@@ -79,6 +80,7 @@ public abstract class DistNodeHandle<Identifier> extends TransportLayerNodeHandl
      *
      * @return A String representation of the node handle.
      */
+    @Override
     public abstract String toString();
 
     /**
@@ -88,6 +90,7 @@ public abstract class DistNodeHandle<Identifier> extends TransportLayerNodeHandl
      * @param obj the other nodehandle .
      * @return true if they are equal, false otherwise.
      */
+    @Override
     public abstract boolean equals(Object obj);
 
     /**
@@ -96,5 +99,6 @@ public abstract class DistNodeHandle<Identifier> extends TransportLayerNodeHandl
      *
      * @return a hash code.
      */
+    @Override
     public abstract int hashCode();
 }

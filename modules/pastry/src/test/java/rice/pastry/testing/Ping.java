@@ -72,6 +72,7 @@ public class Ping extends PastryAppl {
     });
   }
 
+  @Override
   public int getAddress() {
     return pingAddress;
   }
@@ -81,6 +82,7 @@ public class Ping extends PastryAppl {
         new SendOptions());
   }
 
+  @Override
   public void messageForAppl(Message msg) {
 
     PingMessageNew pMsg = (PingMessageNew) msg;
@@ -88,9 +90,9 @@ public class Ping extends PastryAppl {
     double fDistance = pMsg.getDistance();
     double rDistance;
 
-    NetworkSimulator<DirectNodeHandle, RawMessage> sim = ((DirectNodeHandle) (thePastryNode)
+    NetworkSimulator<DirectNodeHandle, RawMessage> sim = ((DirectNodeHandle) thePastryNode
         .getLocalHandle()).getSimulator();
-    PingTestRecord tr = (PingTestRecord) (sim.getTestRecord());
+    PingTestRecord tr = (PingTestRecord) sim.getTestRecord();
 
     double dDistance = sim.networkDelay((DirectNodeHandle)thePastryNode.getLocalHandle(), (DirectNodeHandle)pMsg
         .getSender());
@@ -104,12 +106,13 @@ public class Ping extends PastryAppl {
 
   }
 
+  @Override
   public boolean enrouteMessage(Message msg, Id from, NodeHandle nextHop,
       SendOptions opt) {
 
     PingMessageNew pMsg = (PingMessageNew) msg;
     pMsg.incrHops();
-    pMsg.incrDistance(((DirectNodeHandle) (thePastryNode)
+    pMsg.incrDistance(((DirectNodeHandle) thePastryNode
         .getLocalHandle()).getSimulator().networkDelay(
             (DirectNodeHandle)thePastryNode.getLocalHandle(),
             (DirectNodeHandle)nextHop));
@@ -117,9 +120,11 @@ public class Ping extends PastryAppl {
     return true;
   }
 
+  @Override
   public void leafSetChange(NodeHandle nh, boolean wasAdded) {
   }
 
+  @Override
   public void routeSetChange(NodeHandle nh, boolean wasAdded) {
   }
 }

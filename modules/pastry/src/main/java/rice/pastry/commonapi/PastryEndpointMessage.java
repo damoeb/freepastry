@@ -107,6 +107,7 @@ public class PastryEndpointMessage extends PRawMessage {
    *
    * @return The string
    */
+  @Override
   public String toString() {
     return getMessage().toString();
   }
@@ -115,10 +116,12 @@ public class PastryEndpointMessage extends PRawMessage {
   /**
    * @return the type of the application's message, or 0 for a message only scheduled for local delivery
    */
+  @Override
   public short getType() {
     return message instanceof RawMessage raw ? raw.getType() : 0;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     if (!(message instanceof RawMessage raw)) {
       throw new IllegalStateException("Message "+message+" is not a RawMessage and cannot be sent.");

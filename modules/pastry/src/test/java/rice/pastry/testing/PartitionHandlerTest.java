@@ -50,11 +50,6 @@ public class PartitionHandlerTest {
   private static final int PORT_A = 2323;
   private static final int PORT_B = 4646;
 
-  /**
-   * @param args
-   * @throws IOException
-   * @throws InterruptedException
-   */
   public static void main(String[] args) throws IOException, InterruptedException {
     Environment env;
     env = new Environment();
@@ -67,7 +62,7 @@ public class PartitionHandlerTest {
     b.boot(new InetSocketAddress("localhost", PORT_B));
 
     PartitionHandler handlerA = new PartitionHandler(a, factoryA, null);
-    PartitionHandler handlerB = new PartitionHandler(b, factoryB, null);
+    new PartitionHandler(b, factoryB, null); // the constructor registers the handler with b
 
     // wait for a to boot
     // wait for b to boot

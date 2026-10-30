@@ -74,7 +74,6 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
   private static final int CERTIFICATE_FORMAT_VERSION = 1;
 
   private final int port;
-  private final IPNodeIdFactory realFactory;
 
   private final Environment environment;
 
@@ -87,7 +86,7 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
     this.environment = env;
     this.port = port;
     this.logger = environment.getLogManager().getLogger(CertifiedNodeIdFactory.class,null);
-    this.realFactory = new IPNodeIdFactory(localIP, port, env);
+    new IPNodeIdFactory(localIP, port, env); // logs an alert if localIP is a loopback address
   }
 
   /**
@@ -95,6 +94,7 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
    *
    * @return the new nodeId
    */
+  @Override
   public Id generateNodeId() {
     Path f = Path.of(NODE_ID_FILENAME);
 

@@ -317,8 +317,8 @@ public abstract class CommonAPITest {
       throw new RuntimeException(ioe);
     }
     // the socket factory hands out BogusNodeHandles, which have to be booted from their addresses
-    if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle) {
-      ret.boot(((rice.pastry.transport.BogusNodeHandle) bootstrap).getAddress());
+    if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle bogusNodeHandle) {
+      ret.boot(bogusNodeHandle.getAddress());
     } else {
       ret.boot((Object) bootstrap);
     }
@@ -454,7 +454,7 @@ public abstract class CommonAPITest {
   protected final void stepDone(String status, String message) {
     System.out.println("[" + status + "]");
 
-    if ((message != null) && (! message.equals(""))) {
+    if ((message != null) && ! message.equals("")) {
       System.out.println("     " + message);
     }
 

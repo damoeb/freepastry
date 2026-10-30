@@ -78,9 +78,6 @@ public class RendezvousPNSApplication extends PNSApplication {
    *   c.receiveException()
    *   return true
    *
-   * @param handle
-   * @param c
-   * @return
    */
   protected boolean ignore(NodeHandle handle, Continuation<?, Exception> c) {
 
@@ -93,8 +90,6 @@ public class RendezvousPNSApplication extends PNSApplication {
   /**
    * Separate this out to make it super easy to change the policy.
    *
-   * @param handle
-   * @return
    */
   protected boolean useHandle(NodeHandle handle) {
     RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)handle;
@@ -149,6 +144,7 @@ public class RendezvousPNSApplication extends PNSApplication {
     if (ignore(input, c)) return null;
     return super.getLeafSet(input, new Continuation<LeafSet, Exception>() {
 
+      @Override
       public void receiveResult(LeafSet result) {
         for (NodeHandle handle : result) {
           if (!useHandle(handle)) {
@@ -159,6 +155,7 @@ public class RendezvousPNSApplication extends PNSApplication {
         c.receiveResult(result);
       }
 
+      @Override
       public void receiveException(Exception exception) {
         c.receiveException(exception);
       }
@@ -171,6 +168,7 @@ public class RendezvousPNSApplication extends PNSApplication {
     if (ignore(input, c)) return null;
     return super.getRouteRow(input, row, new Continuation<RouteSet[], Exception>() {
 
+      @Override
       public void receiveResult(RouteSet[] result) {
         for (int ctr = 0; ctr < result.length; ctr++) {
           RouteSet rs = result[ctr];
@@ -187,6 +185,7 @@ public class RendezvousPNSApplication extends PNSApplication {
         c.receiveResult(result);
       }
 
+      @Override
       public void receiveException(Exception exception) {
         c.receiveException(exception);
       }

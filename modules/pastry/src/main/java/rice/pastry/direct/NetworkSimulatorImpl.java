@@ -70,18 +70,22 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     livenessProvider = simulator;
   }
 
+  @Override
   public void setFullSpeed() {
     simulator.setFullSpeed();
   }
 
+  @Override
   public void setMaxSpeed(float rate) {
     simulator.setMaxSpeed(rate);
   }
 
+  @Override
   public void start() {
     simulator.start();
   }
 
+  @Override
   public void stop() {
     simulator.stop();
   }
@@ -93,6 +97,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
    *
    * @return the returned TestRecord
    */
+  @Override
   public TestRecord getTestRecord() {
     return testRecord;
   }
@@ -102,6 +107,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
    *
    * @param tr input TestRecord
    */
+  @Override
   public void setTestRecord(TestRecord tr) {
     testRecord = tr;
   }
@@ -109,6 +115,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
 
   /************** SimulatorListeners handling *******************/
   List<GenericSimulatorListener<Identifier, MessageType>> listeners = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>();
+  @Override
   public boolean addSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl) {
     synchronized(listeners) {
       if (listeners.contains(sl)) return false;
@@ -117,12 +124,14 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     }
   }
 
+  @Override
   public boolean removeSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl) {
     synchronized(listeners) {
       return listeners.remove(sl);
     }
   }
 
+  @Override
   public void notifySimulatorListenersSent(MessageType m, Identifier from, Identifier to, int delay) {
     List<GenericSimulatorListener<Identifier, MessageType>> temp;
 
@@ -136,6 +145,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     }
   }
 
+  @Override
   public void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to) {
     List<GenericSimulatorListener<Identifier, MessageType>> temp;
 
@@ -149,38 +159,47 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     }
   }
 
+  @Override
   public NodeRecord generateNodeRecord() {
     return generator.generateNodeRecord();
   }
 
+  @Override
   public DirectNodeHandle getClosest(DirectNodeHandle nh) {
     return null;
   }
 
+  @Override
   public boolean isAlive(Identifier nh) {
     return simulator.isAlive(nh);
   }
 
+  @Override
   public float networkDelay(Identifier a, Identifier b) {
     return simulator.networkDelay(a, b);
   }
 
+  @Override
   public float proximity(Identifier a, Identifier b) {
     return simulator.proximity(a, b);
   }
 
+  @Override
   public NodeRecord getNodeRecord(DirectNodeHandle handle) {
     return simulator.getNodeRecord(handle);
   }
 
+  @Override
   public LivenessProvider<Identifier> getLivenessProvider() {
     return livenessProvider;
   }
 
+  @Override
   public GenericNetworkSimulator<Identifier, MessageType> getGenericSimulator() {
     return simulator;
   }
 
+  @Override
   public void registerNode(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord nr) {
     simulator.registerIdentifier(i, dtl, nr);
   }

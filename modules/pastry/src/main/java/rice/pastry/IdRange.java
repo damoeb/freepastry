@@ -104,6 +104,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
     this.cw = o.cw;
   }
 
+  @Override
   public int hashCode() {
     if (empty) return 0;
     if (isFull()) return 1;
@@ -116,10 +117,10 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @param obj the other IdRange
    * @return true if the IdRanges are equal
    */
+  @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
-    if (!(obj instanceof IdRange)) return false;
-    IdRange o = (IdRange) obj;
+    if (!(obj instanceof IdRange o)) return false;
 
     if (empty && o.empty)
       return true;
@@ -148,6 +149,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return true if the range is empty
    */
+  @Override
   public boolean isEmpty() {
     return empty;
   }
@@ -379,6 +381,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * Returns a string representation of the range.
    */
 
+  @Override
   public String toString() {
     if (empty)
       return "IdRange: empty";
@@ -394,6 +397,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @param key the key
    * @return true if the key lies within this range, false otherwise
    */
+  @Override
   public boolean containsId(rice.p2p.commonapi.Id key) {
     return contains((Id) key);
   }
@@ -403,6 +407,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
+  @Override
   public rice.p2p.commonapi.Id getCCWId() {
     return getCCW();
   }
@@ -412,6 +417,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return the id at the clockwise edge of the range (exclusive)
    */
+  @Override
   public rice.p2p.commonapi.Id getCWId() {
     return getCW();
   }
@@ -421,6 +427,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return This range's complement
    */
+  @Override
   public rice.p2p.commonapi.IdRange getComplementRange() {
     return complement();
   }
@@ -430,6 +437,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return The merge
    */
+  @Override
   public rice.p2p.commonapi.IdRange mergeRange(rice.p2p.commonapi.IdRange range) {
     return merge((IdRange) range);
   }
@@ -439,6 +447,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return The merge
    */
+  @Override
   public rice.p2p.commonapi.IdRange diffRange(rice.p2p.commonapi.IdRange range) {
     return diff((IdRange) range);
   }
@@ -448,6 +457,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return The merge
    */
+  @Override
   public rice.p2p.commonapi.IdRange intersectRange(
       rice.p2p.commonapi.IdRange range) {
     return intersect((IdRange) range);
@@ -459,6 +469,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
     empty = buf.readBoolean();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     cw.serialize(buf);
     ccw.serialize(buf);

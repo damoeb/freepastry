@@ -133,8 +133,8 @@ public class MessageDispatch implements Destructable {
     PastryAppl mr = (PastryAppl) addressBook.get(Integer.valueOf(msg.getDestination()));
 
     if (mr == null) {
-      if ((logger.isDebugEnabled()) ||
-          (localNode.isReady() && (logger.isInfoEnabled()))) {
+      if (logger.isDebugEnabled() ||
+          (localNode.isReady() && logger.isInfoEnabled())) {
         logger.info("Dropping message " + msg + " because the application address " + msg.getDestination() + " is unknown.");
       }
       return false;
@@ -144,6 +144,7 @@ public class MessageDispatch implements Destructable {
     }
   }
 
+  @Override
   public void destroy() {
     for (PastryAppl mr : addressBook.values()) {
       logger.info("Destroying {}", mr);

@@ -137,7 +137,6 @@ public abstract class CommonAPIAppl extends PastryAppl {
    */
 
   public void forward(RouteMessage msg) {
-    return;
   }
 
   /**
@@ -155,6 +154,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * send and receive messages
    */
 
+  @Override
   public void notifyReady() {
   }
 
@@ -163,6 +163,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    */
 
   // hide defunct methods from PastryAppl
+  @Override
   public final void messageForAppl(Message msg) {
   }
 
@@ -173,6 +174,7 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * @param wasAdded true if the node was added, false if the node was removed.
    */
 
+  @Override
   public final void leafSetChange(NodeHandle nh, boolean wasAdded) {
     update(nh, wasAdded);
   }
@@ -183,11 +185,11 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * @param msg the message that is arriving.
    */
 
+  @Override
   public void receiveMessage(Message msg) {
     logger.trace("[{}] recv {}", thePastryNode, msg);
 
-    if (msg instanceof RouteMessage) {
-      RouteMessage rm = (RouteMessage) msg;
+    if (msg instanceof RouteMessage rm) {
 
       // call application
       forward(rm);

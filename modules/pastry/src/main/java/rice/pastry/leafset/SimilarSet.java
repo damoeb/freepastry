@@ -207,12 +207,14 @@ public class SimilarSet implements NodeSetEventSource {
 
   ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
 
+  @Override
   public void addNodeSetListener(NodeSetListener listener) {
     synchronized (listeners) {
       listeners.add(listener);
     }
   }
 
+  @Override
   public void removeNodeSetListener(NodeSetListener listener) {
     synchronized (listeners) {
       listeners.remove(listener);
@@ -340,8 +342,6 @@ public class SimilarSet implements NodeSetEventSource {
 
   /**
    * Return true if done
-   * @param rs
-   * @return
    */
   private boolean addNextEntry(RouteSet rs) {
     if (rs == null) return false;
@@ -495,7 +495,6 @@ public class SimilarSet implements NodeSetEventSource {
    *
    * This is thread safe, in that it won't throw an error if not properly synchronized.
    *
-   * @return
    */
   public Collection<NodeHandle> getCollection() {
     ArrayList<NodeHandle> al = new ArrayList<NodeHandle>();
@@ -508,6 +507,7 @@ public class SimilarSet implements NodeSetEventSource {
     return al;
   }
 
+  @Override
   public String toString() {
     return "SimilarSet{"+ln+"}";
   }

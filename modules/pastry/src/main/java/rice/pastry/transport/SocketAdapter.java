@@ -55,12 +55,14 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     this.logger = env.getLogManager().getLogger(SocketAdapter.class, null);
   }
 
+  @Override
   public void close() {
     internal.close();
   }
 
   AppSocketReceiver reader = null;
   AppSocketReceiver writer = null;
+  @Override
   public void register(boolean wantToRead, boolean wantToWrite, int timeout, AppSocketReceiver receiver) {
     if (wantToRead) {
       if (reader != null && reader != receiver) throw new IllegalStateException("Already registered "+reader+" for reading. Can't register "+receiver);
@@ -73,6 +75,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     internal.register(wantToRead, wantToWrite, this);
   }
 
+  @Override
   public void receiveException(P2PSocket<Identifier> s, Exception e) {
     if (writer != null) {
       if (writer == reader) {
@@ -94,6 +97,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     }
   }
 
+  @Override
   public void receiveSelectResult(P2PSocket<Identifier> s,
       boolean canRead, boolean canWrite) throws IOException {
     logger.trace("{}rsr({},{},{})", this, internal, canRead, canWrite);
@@ -126,18 +130,22 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     }
   }
 
+  @Override
   public void shutdownOutput() {
     internal.shutdownOutput();
   }
 
+  @Override
   public long read(ByteBuffer dst) throws IOException {
     return internal.read(dst);
   }
 
+  @Override
   public long write(ByteBuffer src) throws IOException {
     return internal.write(src);
   }
 
+  @Override
   public String toString() {
     return "SA["+internal+"]";
   }

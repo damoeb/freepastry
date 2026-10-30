@@ -94,6 +94,7 @@ public final class BroadcastRouteRow extends PRawMessage implements RouteSetProt
     return row;
   }
 
+  @Override
   public String toString() {
     String s = "";
 
@@ -111,10 +112,12 @@ public final class BroadcastRouteRow extends PRawMessage implements RouteSetProt
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return RouteSetMessageType.BROADCAST_ROUTE_ROW.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     fromNode.serialize(buf);

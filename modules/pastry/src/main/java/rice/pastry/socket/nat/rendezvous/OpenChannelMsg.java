@@ -66,16 +66,19 @@ public final class OpenChannelMsg extends PRawMessage implements RendezvousMessa
     return uid;
   }
 
+  @Override
   public String toString() {
     return "OpenChannelMsg<"+uid+"> source:"+source+" rendezvous:"+rendezvous;
   }
 
   /************** Serialization **************/
 
+  @Override
   public short getType() {
     return RendezvousMessageType.OPEN_CHANNEL.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     rendezvous.serialize(buf);

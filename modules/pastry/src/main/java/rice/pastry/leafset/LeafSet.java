@@ -173,9 +173,6 @@ public class LeafSet implements Iterable<NodeHandle> {
    *
    * Note: previous to FP2.1a3, this always returned the cw index if it existed.
    *
-   * @param nh
-   * @return
-   * @throws NoSuchElementException
    */
   public int getIndex(NodeHandle nh) throws NoSuchElementException {
 
@@ -326,7 +323,6 @@ public class LeafSet implements Iterable<NodeHandle> {
     Id.Distance ccwMinDist;
     int cwMS;
     int ccwMS;
-    int res;
 
     if (baseId.clockwise(nid)) {
       cwMS = cwSet.mostSimilar(nid);
@@ -466,15 +462,14 @@ public class LeafSet implements Iterable<NodeHandle> {
    *
    * TODO: Make this in order from nearest neighbor to farthest neighbor, not by replica, but take cw[0], cc2[0], cw[1], ccw[1] etc...
    *
-   * @return
    */
+  @Override
   public Iterator<NodeHandle> iterator() {
     return getUniqueSet().iterator();
   }
 
   /**
    * Set of nodes in the leafset, not the local node, each node only once.
-   * @return
    */
   public Collection<NodeHandle> getUniqueSet() {
     HashSet<NodeHandle> superset = new HashSet<NodeHandle>();
@@ -505,7 +500,6 @@ public class LeafSet implements Iterable<NodeHandle> {
    * i-roots for the key fail, O&lt;=i&lt;r, where a key's 0-root is the numerically closest node to the key.
    *
    * @param n the nodehandle
-   * @param r
    * @return the range of keys, or null if n is not a member of the leafset, or if the range cannot be computed
    */
   public IdRange range(NodeHandle n, int r) {
@@ -554,8 +548,8 @@ public class LeafSet implements Iterable<NodeHandle> {
 
    // otherwise, we then construct the ranges which comprise the main range, and finally
    // return the overlap
-   IdRange cwRange = (new IdRange(n.getNodeId(), cw.getNodeId())).ccwHalf();
-   IdRange ccwRange = (new IdRange(ccw.getNodeId(), n.getNodeId())).cwHalf();
+   IdRange cwRange = new IdRange(n.getNodeId(), cw.getNodeId()).ccwHalf();
+   IdRange ccwRange = new IdRange(ccw.getNodeId(), n.getNodeId()).cwHalf();
 
    return ccwRange.merge(cwRange);
   }
@@ -568,7 +562,6 @@ public class LeafSet implements Iterable<NodeHandle> {
    * there can be two contiguous ranges of keys; the cw parameter selects which one is returned.
    *
    * @param n the nodehandle
-   * @param r
    * @param cw if true returns the clockwise range, else the counterclockwise range
    * @return the range of keys, or null if n is not a member of the leafset, or if the range cannot be computed
    */
@@ -807,6 +800,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    * Returns a string representation of the leaf set
    *
    */
+  @Override
   public String toString()
   {
     String s = "leafset: ";

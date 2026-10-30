@@ -137,6 +137,7 @@ public class NodeSet implements NodeSetI {
    * @return the size.
    */
 
+  @Override
   public int size() {
     return set.size();
   }
@@ -182,6 +183,7 @@ public class NodeSet implements NodeSetI {
    * Returns a string representation of the NodeSet
    */
 
+  @Override
   public String toString() {
     String s = "NodeSet: ";
     for (int i = 0; i < size(); i++)
@@ -199,6 +201,7 @@ public class NodeSet implements NodeSetI {
    *
    * @return true if the put succeeded, false otherwise.
    */
+  @Override
   public boolean putHandle(rice.p2p.commonapi.NodeHandle handle) {
     return put((NodeHandle) handle);
   }
@@ -210,6 +213,7 @@ public class NodeSet implements NodeSetI {
    * @return the handle associated with that id or null if no such handle is
    *         found.
    */
+  @Override
   public rice.p2p.commonapi.NodeHandle getHandle(rice.p2p.commonapi.Id id) {
     synchronized(set) {
       for (NodeHandle nh : set) {
@@ -226,6 +230,7 @@ public class NodeSet implements NodeSetI {
    * @return the handle associated with that id or null if no such handle is
    *         found.
    */
+  @Override
   public rice.p2p.commonapi.NodeHandle getHandle(int i) {
     return get(i);
   }
@@ -236,6 +241,7 @@ public class NodeSet implements NodeSetI {
    * @param id a node id.
    * @return true if that node id is in the set, false otherwise.
    */
+  @Override
   public boolean memberHandle(rice.p2p.commonapi.Id id) {
     return memberId(id);
   }
@@ -247,6 +253,7 @@ public class NodeSet implements NodeSetI {
    *
    * @return the node handle removed or null if nothing.
    */
+  @Override
   public rice.p2p.commonapi.NodeHandle removeHandle(rice.p2p.commonapi.Id id) {
     return remove((rice.pastry.Id) id);
   }
@@ -258,6 +265,7 @@ public class NodeSet implements NodeSetI {
    *
    * @return the index or throws a NoSuchElementException.
    */
+  @Override
   public int getIndexHandle(rice.p2p.commonapi.Id id)
       throws NoSuchElementException {
     return getIndex((Id)id);
@@ -272,6 +280,7 @@ public class NodeSet implements NodeSetI {
     }
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort((short)set.size());
     for (NodeHandle nh : set) {
@@ -279,6 +288,7 @@ public class NodeSet implements NodeSetI {
     }
   }
 
+  @Override
   public short getType() {
     return NodeHandleSetType.NODE_SET.id();
   }

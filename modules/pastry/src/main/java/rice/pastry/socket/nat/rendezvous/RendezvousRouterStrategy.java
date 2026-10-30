@@ -65,6 +65,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     this.logger = env.getLogManager().getLogger(RendezvousRouterStrategy.class, null);
   }
 
+  @Override
   public NodeHandle pickNextHop(RouteMessage msg, Iterator<NodeHandle> i) {
     if (!i.hasNext()) return null;
     NodeHandle best = i.next();
@@ -76,7 +77,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     while (i.hasNext()) {
       NodeHandle next = i.next();
       int nextRating = routingQuality(next);
-      if (logger.isTraceEnabled()) logger.trace("Routing "+msg+"("+(ctr++)+") "+next+":"+nextRating);
+      if (logger.isTraceEnabled()) logger.trace("Routing "+msg+"(" + ctr++ + ") "+next+":"+nextRating);
 
       // found a perfect node?
       if (nextRating == 0) return next;
@@ -112,8 +113,6 @@ public class RendezvousRouterStrategy implements RouterStrategy {
    * not directly connectable = 5 (unless connected)
    * 10 if faulty
    *
-   * @param nh
-   * @return
    */
   protected int routingQuality(NodeHandle nh) {
     RendezvousSocketNodeHandle rnh = (RendezvousSocketNodeHandle)nh;

@@ -63,7 +63,7 @@ public class HelloWorldApp extends PastryAppl {
   private static class HelloAddress {
     private static int myCode = 0x1984abcd;
 
-    public static int getCode() {
+    static int getCode() {
       return myCode;
     }
   }
@@ -102,6 +102,7 @@ public class HelloWorldApp extends PastryAppl {
    *
    * @return the address of this application.
    */
+  @Override
   public int getAddress() {
     return addr;
   }
@@ -111,6 +112,7 @@ public class HelloWorldApp extends PastryAppl {
    *
    * @param msg Message being routed around
    */
+  @Override
   public void messageForAppl(Message msg) {
     if (logger.isDebugEnabled()) {
       System.out.println("Received " + msg + " at " + getNodeId());
@@ -126,6 +128,7 @@ public class HelloWorldApp extends PastryAppl {
    * @param opt send options
    * @return true if message needs to be forwarded according to plan.
    */
+  @Override
   public boolean enrouteMessage(Message msg, Id key, NodeHandle nextHop,
       SendOptions opt) {
     if (logger.isTraceEnabled()) {
@@ -140,6 +143,7 @@ public class HelloWorldApp extends PastryAppl {
    * @param nh node handle that got added/removed
    * @param wasAdded added (true) or removed (false)
    */
+  @Override
   public void leafSetChange(NodeHandle nh, boolean wasAdded) {
     if (logger.isTraceEnabled()) {
       String s = "In " + getNodeId() + "'s leaf set, " + "node " + nh.getNodeId()
@@ -159,6 +163,7 @@ public class HelloWorldApp extends PastryAppl {
    * @param nh node handle that got added/removed
    * @param wasAdded added (true) or removed (false)
    */
+  @Override
   public void routeSetChange(NodeHandle nh, boolean wasAdded) {
     if (logger.isTraceEnabled()) {
       String s = "In " + getNodeId() + "'s route set, " + "node "
@@ -176,6 +181,7 @@ public class HelloWorldApp extends PastryAppl {
    * Invoked by {RMI,Direct}PastryNode when the node has something in its leaf
    * set, and has become ready to receive application messages.
    */
+  @Override
   public void notifyReady() {
     if (logger.isInfoEnabled())
       System.out.println("Node " + getNodeId()

@@ -75,6 +75,7 @@ import org.slf4j.Logger;
       logger = ((DirectTransportLayer<Identifier, MessageType>)sim.getTL(to)).getLogger();
     }
 
+    @Override
     public void deliver() {
       logger.debug("MD: deliver {} to {}", msg, node);
       try {
@@ -93,10 +94,12 @@ import org.slf4j.Logger;
 
     }
 
+    @Override
     public int getSeq() {
       return seq;
     }
 
+    @Override
     public String toString() {
       return "MD["+msg+":"+from+"=>"+node+":"+seq+"]";
     }

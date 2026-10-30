@@ -128,7 +128,7 @@ public class DistHelloWorld {
   /**
    * process command line args,
    */
-  private static void doIinitstuff(String args[], Environment env) {
+  private static void doIinitstuff(String args[]) {
 
     // process command line arguments
 
@@ -240,7 +240,7 @@ public class DistHelloWorld {
 
 
     Environment env = new Environment();
-    doIinitstuff(args, env);
+    doIinitstuff(args);
     DistHelloWorld driver = new DistHelloWorld(env);
 
     // create first node

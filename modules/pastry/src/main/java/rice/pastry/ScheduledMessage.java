@@ -67,6 +67,7 @@ public class ScheduledMessage extends TimerTask {
   /**
    * deliver the message
    */
+  @Override
   public void run() {
     try {
       // timing with cancellation
@@ -78,6 +79,7 @@ public class ScheduledMessage extends TimerTask {
     }
   }
 
+  @Override
   public String toString() {
     return "SchedMsg for " + msg;
   }
@@ -87,6 +89,7 @@ public class ScheduledMessage extends TimerTask {
    *
    * @see rice.p2p.commonapi.CancellableTask#cancel()
    */
+  @Override
   public boolean cancel() {
     // memory management
     msg = null;

@@ -154,7 +154,6 @@ public class ClosestRegrTest {
    */
   protected void test(int i, DirectNodeHandle handle) {
     PastryNode bootNode = (PastryNode) pastryNodes.elementAt(environment.getRandomSource().nextInt(i));
-    NodeHandle bootstrap = bootNode.getLocalHandle();
 
     DirectNodeHandle closest = null; // TODO: fix this, old code: (DirectNodeHandle)factory.getNearest(handle, bootstrap)[0];
     DirectNodeHandle realClosest = simulator.getClosest(handle);

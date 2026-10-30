@@ -56,5 +56,6 @@ public interface NodeSetI extends rice.p2p.commonapi.NodeHandleSet
      * @return the size.
      */
 
+    @Override
     public int size();
 }

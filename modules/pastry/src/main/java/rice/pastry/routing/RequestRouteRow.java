@@ -88,6 +88,7 @@ public final class RequestRouteRow extends PRawMessage implements RouteSetProtoc
     return row;
   }
 
+  @Override
   public String toString() {
     String s = "";
 
@@ -97,10 +98,12 @@ public final class RequestRouteRow extends PRawMessage implements RouteSetProtoc
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return RouteSetMessageType.REQUEST_ROUTE_ROW.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     buf.writeShort(row);

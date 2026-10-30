@@ -107,7 +107,7 @@ public class PartitionChecker {
 
 
     while(unmatchedBootstraps.size() > 0) {
-      rings.add(buildRing(factory, (InetSocketAddress)(unmatchedBootstraps.iterator().next())));
+      rings.add(buildRing(factory, (InetSocketAddress) unmatchedBootstraps.iterator().next()));
     }
     Collections.sort(rings);
     for (Ring ring : rings) {
@@ -174,6 +174,7 @@ public class PartitionChecker {
             ring.addNode(handle);
 
             Thread t = new Thread() {
+              @Override
               public void run() {
                 try {
                   LeafSet ls = getLeafSet(handle);
@@ -190,7 +191,7 @@ public class PartitionChecker {
 
                   synchronized (unseen) {
                     for (int i=1; i<ns.size(); i++)
-                      if ((! ring.contains(ns.get(i))) && (! dead.contains(ns.get(i))))
+                      if (! ring.contains(ns.get(i)) && ! dead.contains(ns.get(i)))
                         unseen.add(ns.get(i));
                   }
 
@@ -243,25 +244,14 @@ public class PartitionChecker {
       nodes = new HashSet<SocketNodeHandle>();
     }
 
-    /**
-     * @param handle
-     * @return
-     */
     public boolean contains(NodeHandle handle) {
       return nodes.contains(handle);
     }
 
-    /**
-     * @return
-     */
     public String getName() {
       return name;
     }
 
-    /**
-     * @param handle
-     * @param e
-     */
     public void addFailure(SocketNodeHandle handle, Exception e) {
     }
 
@@ -280,6 +270,7 @@ public class PartitionChecker {
       nodes.add(snh);
     }
 
+    @Override
     public String toString() {
       String s = nodes.size()+":"+myBootstraps.size()+": boots:";
       synchronized(myBootstraps) {
@@ -299,6 +290,7 @@ public class PartitionChecker {
       return s;
     }
 
+    @Override
     public int compareTo(Ring arg0) {
       Ring that = (Ring)arg0;
       return this.size() - that.size();

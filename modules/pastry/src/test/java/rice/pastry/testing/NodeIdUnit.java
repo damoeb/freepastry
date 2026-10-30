@@ -328,6 +328,6 @@ public class NodeIdUnit {
   }
 
   public static void main(String args[]) {
-    NodeIdUnit niu = new NodeIdUnit();
+    new NodeIdUnit(); // the constructor runs the tests
   }
 }

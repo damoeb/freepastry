@@ -68,6 +68,7 @@ public class HelloMsg extends PRawMessage {
     this.src = src;
   }
 
+  @Override
   public String toString() {
     return "Hello #" + msgid+ " from "+src.getId();
   }
@@ -98,10 +99,12 @@ public class HelloMsg extends PRawMessage {
     src = node.readNodeHandle(buf);
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     target.serialize(buf);
     buf.writeInt(msgid);

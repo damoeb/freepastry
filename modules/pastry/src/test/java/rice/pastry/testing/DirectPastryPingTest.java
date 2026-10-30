@@ -40,10 +40,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.StringTokenizer;
-import java.util.Vector;
 
 import rice.environment.Environment;
-import rice.pastry.direct.TestRecord;
 
 /**
  * DirectPastryPingTest
@@ -75,7 +73,6 @@ public class DirectPastryPingTest {
     if (token.startsWith("q")) { //quit
       return true;
     } else if (token.startsWith("s")) { //standalone
-      Vector<TestRecord> trlist = new Vector<TestRecord>();
 
       for (i = 0; i < 8; i++) {
         n = k = (i + 1) * 1000;

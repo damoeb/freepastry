@@ -79,6 +79,7 @@ public class DirectPastryRegrTest extends PastryRegrTest {
   /**
    * Get pastryNodes.last() to bootstrap with, or return null.
    */
+  @Override
   protected NodeHandle getBootstrap(boolean firstNode) {
     NodeHandle bootstrap = null;
     try {
@@ -96,24 +97,28 @@ public class DirectPastryRegrTest extends PastryRegrTest {
    * @param pn pastry node
    * @param app newly created application
    */
+  @Override
   protected void registerapp(PastryNode pn, RegrTestApp app) {
   }
 
   /**
    * send one simulated message
    */
+  @Override
   protected boolean simulate() {
     try { Thread.sleep(300); } catch (InterruptedException ie) {}
     return false;
   }
 
   // do nothing in the simulated world
+  @Override
   public void pause(int ms) {
   }
 
   /**
    * get authoritative information about liveness of node.
    */
+  @Override
   protected boolean isReallyAlive(NodeHandle nh) {
     return simulator.isAlive((DirectNodeHandle)nh);
   }
@@ -121,10 +126,12 @@ public class DirectPastryRegrTest extends PastryRegrTest {
   /**
    * murder the node. comprehensively.
    */
+  @Override
   protected void killNode(PastryNode pn) {
     pn.destroy();
   }
 
+  @Override
   protected void checkRoutingTable(final RegrTestApp rta) {
     PastryNode temp = DirectPastryNode.setCurrentNode(rta.getPastryNode());
     try {

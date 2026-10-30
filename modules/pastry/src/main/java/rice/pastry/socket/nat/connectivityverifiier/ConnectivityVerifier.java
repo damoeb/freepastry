@@ -73,9 +73,6 @@ public interface ConnectivityVerifier {
   /**
    * Verify my connectivity using a 3rd party
    *
-   * @param local
-   * @param probeAddresses
-   * @param deliverResultToMe
    * @return cancel the operation
    */
   Cancellable verifyConnectivity(MultiInetSocketAddress local, Collection<InetSocketAddress> probeAddresses, ConnectivityResult deliverResultToMe);

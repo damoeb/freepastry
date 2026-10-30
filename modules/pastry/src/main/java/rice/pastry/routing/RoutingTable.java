@@ -258,8 +258,6 @@ public class RoutingTable implements NodeSetEventSource {
 
   /**
    * More efficient implementation, but less accurate, doesn't include lower levels of rt.
-   * @param key
-   * @return
    */
   public Iterator<NodeHandle> alternateRoutesIterator(final Id key) {
     final int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
@@ -287,7 +285,7 @@ public class RoutingTable implements NodeSetEventSource {
         rs = getRouteSet(diffDigit, digit);
       }
 
-      protected NodeHandle findNext() {
+      NodeHandle findNext() {
 
               // start, assume good initialized state
               if (rs != null && k < rs.size()) {
@@ -336,11 +334,13 @@ public class RoutingTable implements NodeSetEventSource {
       }
 
 
+      @Override
       public boolean hasNext() {
         if (next == null) next = findNext();
         return (next != null);
       }
 
+      @Override
       public NodeHandle next() {
         if (hasNext()) { // make sure next != null
           NodeHandle temp = next;
@@ -350,6 +350,7 @@ public class RoutingTable implements NodeSetEventSource {
         return null; // is this what the iterator is supposed to do?  Maybe it's supposed to throw an exception
       }
 
+      @Override
       public void remove() {
         throw new RuntimeException("Not implemented.");
       }
@@ -541,6 +542,7 @@ public class RoutingTable implements NodeSetEventSource {
    *
    */
 
+  @Override
   public String toString() {
     String s = "routing table: \n";
 
@@ -551,7 +553,7 @@ public class RoutingTable implements NodeSetEventSource {
         else
           s += ("" + 0 + "\t");
       }
-      s += ("\n");
+      s += "\n";
     }
 
     return s;
@@ -592,7 +594,7 @@ public class RoutingTable implements NodeSetEventSource {
         }
         s+="\t";
       }
-      s += ("\n");
+      s += "\n";
     }
 
     return s;
@@ -633,12 +635,14 @@ public class RoutingTable implements NodeSetEventSource {
 
   ArrayList<NodeSetListener> listeners = new ArrayList<NodeSetListener>();
 
+  @Override
   public void addNodeSetListener(NodeSetListener listener) {
     synchronized (listeners) {
       listeners.add(listener);
     }
   }
 
+  @Override
   public void removeNodeSetListener(NodeSetListener listener) {
     synchronized (listeners) {
       listeners.remove(listener);

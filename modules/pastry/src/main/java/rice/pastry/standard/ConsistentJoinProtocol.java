@@ -122,12 +122,14 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       this.time = time;
       this.handle = handle;
     }
+    @Override
     public int compareTo(FailedTime arg0) {
       FailedTime ft = (FailedTime)arg0;
       // note this is backwards, because we want them sorted in reverse order
       return (int)(ft.time-this.time);
     }
 
+    @Override
     public String toString() {
       return "FT:"+handle+" "+time;
     }
@@ -181,12 +183,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   /**
    * Constructor takes in the usual suspects.
    *
-   * @param ln
-   * @param lh
-   * @param rt
-   * @param ls
    * @param nextReadyStrategy if non-null, will call nextRenderStrategy.start() when complete
-   * @param md
    */
   public ConsistentJoinProtocol(PastryNode ln, NodeHandle lh,
       RoutingTable rt, LeafSet ls, ReadyStrategy nextReadyStrategy,
@@ -208,6 +205,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     ln.getEnvironment().getSelectorManager().addLoopObserver(this);
 
     cleanupTask = new TimerTask() {
+      @Override
       public void run() {
         logger.debug("CJP: Cleanup task.");
         synchronized(failed) {
@@ -228,6 +226,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
         }
       }
 
+      @Override
       public String toString() {
         return "CJP$cleanupTask{"+thePastryNode+"}"+cancelled;
       }
@@ -239,6 +238,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    * This is where we start out, when the StandardJoinProtocol would call
    * setReady();
    */
+  @Override
   protected void setReady() {
     if (joinEvent != null) {
       logger.info("cancelling {}", joinEvent);
@@ -333,7 +333,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
 
   /**
    * Returns all members of the leafset that are not in gotResponse
-   * @return
    */
   public Collection<NodeHandle> whoDoWeNeedAResponseFrom() {
     HashSet<NodeHandle> ret = new HashSet<NodeHandle>();
@@ -355,11 +354,11 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   /**
    * Handle the CJM as in the MSR-TR
    */
+  @Override
   public void receiveMessage(Message msg) {
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "join messages are received on the selector thread";
     logger.trace("CJP: receiveMessage({})", msg);
-    if (msg instanceof ConsistentJoinMsg) {
-      ConsistentJoinMsg cjm = (ConsistentJoinMsg)msg;
+    if (msg instanceof ConsistentJoinMsg cjm) {
       // identify node j, the sender of the message
       NodeHandle j = cjm.ls.get(0);
 
@@ -515,7 +514,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
 
   /**
    * Sends a consistent join protocol message.
-   * @param nh
    * @param reply if the reason we are sending this message is just as a response
    */
   public void sendTheMessage(NodeHandle nh, boolean reply) {
@@ -541,6 +539,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     thePastryNode.send(nh,new ConsistentJoinMsg(leafSet,toSend,!reply),null,options);
   }
 
+  @Override
   public void nodeSetUpdate(NodeSetEventSource set, NodeHandle handle, boolean added) {
     if (thePastryNode.isReady()) return;
     if (added) {
@@ -551,12 +550,12 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       doneProbing();
     }
 
-    return;
   }
 
   /**
    * PastryNode updates are only logged.
    */
+  @Override
   public void pastryNodeReady(PastryNode node, boolean ready) {
     update((Object)node, Boolean.valueOf(ready));
   }
@@ -564,6 +563,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   /**
    * PastryNode updates are only logged.
    */
+  @Override
   public void pastryNodeJoinFailed(PastryNode node, JoinFailedException reason) {
     update((Object)node, reason);
   }
@@ -571,6 +571,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   /**
    * NodeHandle updates.
    */
+  @Override
   public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle handle, Object arg) {
     update((Object)handle, arg);
   }
@@ -578,11 +579,10 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   private void update(Object arg0, Object arg) {
     logger.trace("CJP: update({},{}){}", arg0, arg, arg.getClass().getName());
 
-    if (arg0 instanceof NodeHandle) {
+    if (arg0 instanceof NodeHandle nh) {
 
         // assume it's a NodeHandle, cause we
         // want to throw the exception if it is something we don't recognize
-      NodeHandle nh = (NodeHandle)arg0;
       if (NodeHandle.DECLARED_DEAD.equals(arg)) {
         logger.debug("CJP:{} declared dead", arg0);
         if (!failed.containsKey(nh)) {
@@ -613,6 +613,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    *
    * @return the minimum loop time we are interested in being notified about.
    */
+  @Override
   public int delayInterest() {
     return MAX_TIME_TO_BE_SCHEDULED;
   }
@@ -624,12 +625,14 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    *
    * @param loopTime the time it took to do a single selection loop.
    */
+  @Override
   public void loopTime(int loopTime) {
     // may want to do a full rejoin if this one trips... but make it longer
     // partition handler may handle this anyway
     otherNodesMaySuspectFaulty(loopTime);
   }
 
+  @Override
   public void destroy() {
     logger.info("CJP: destroy() called");
     thePastryNode.getEnvironment().getSelectorManager().removeLoopObserver(this);

@@ -186,6 +186,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
    * @return the priority of this message.
    */
 
+  @Override
   public int getPriority() {
     if (internalMsg != null)
       return internalMsg.getPriority();
@@ -205,6 +206,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     return opts;
   }
 
+  @Override
   public String toString() {
     if (internalMsg == null) {
       return "R[serialized{"+auxAddress+","+internalType+"}]";
@@ -216,23 +218,28 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
 
   // Common API Support
 
+  @Override
   public rice.p2p.commonapi.Id getDestinationId() {
     return getTarget();
   }
 
+  @Override
   public rice.p2p.commonapi.NodeHandle getNextHopHandle() {
     return nextHop;
   }
 
+  @Override
   public rice.p2p.commonapi.Message getMessage(MessageDeserializer md) throws IOException {
     endpointDeserializer.setSubDeserializer(md);
     return ((PastryEndpointMessage) unwrap(endpointDeserializer)).getMessage();
   }
 
+  @Override
   public void setDestinationId(rice.p2p.commonapi.Id id) {
     target = (Id) id;
   }
 
+  @Override
   public void setNextHopHandle(rice.p2p.commonapi.NodeHandle nextHop) {
     this.nextHop = (NodeHandle) nextHop;
   }
@@ -241,6 +248,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
    * Replaces the application's message; the message must have been read with
    * {@link #getMessage(MessageDeserializer)} first.
    */
+  @Override
   public void setMessage(RawMessage message) {
     if (internalMsg == null) {
       throw new IllegalStateException("The message of "+this+" is still serialized, read it with getMessage() first");
@@ -296,8 +304,6 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
    *   +            Internal Message                                   +
    *   +  (see below)                                                  +
    *   +                                                               +
-   * @param buf
-   * @return
    */
   public static RouteMessage build(InputBuffer buf, byte priority, PastryNode pn, NodeHandle prev, byte outputVersion) throws IOException {
 
@@ -341,6 +347,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
 
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte(version); // version (deserialized in build())
     buf.writeInt(auxAddress); // (deserialized in build())
@@ -441,6 +448,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     return internalMsg;
   }
 
+  @Override
   public short getType() {
     return RouterMessageType.ROUTE.id();
   }
@@ -456,6 +464,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
       sub = md;
     }
 
+    @Override
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
       return new PastryEndpointMessage(auxAddress, buf, sub, type, priority, sender);
     }
@@ -507,8 +516,6 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
   /**
    * Return true if it notified a higher layer.
    *
-   * @param e
-   * @return
    */
   public boolean sendFailed(Exception e) {
     if (notifyMe != null) notifyMe.sendFailed(this, e);

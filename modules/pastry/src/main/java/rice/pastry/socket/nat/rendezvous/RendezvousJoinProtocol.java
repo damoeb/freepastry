@@ -112,7 +112,7 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
     ContactDirectStrategy<RendezvousSocketNodeHandle> contactStrat =
       (ContactDirectStrategy<RendezvousSocketNodeHandle>)
       thePastryNode.getVars().get(RendezvousSocketPastryNodeFactory.RENDEZVOUS_CONTACT_DIRECT_STRATEGY);
-    if ((((RendezvousSocketNodeHandle)thePastryNode.getLocalHandle()).canContactDirect()) || // I can be contacted directly
+    if (((RendezvousSocketNodeHandle)thePastryNode.getLocalHandle()).canContactDirect() || // I can be contacted directly
          (!bootstrap.canContactDirect() && contactStrat.canContactDirect(bootstrap))) { // I can contact the bootstrap even though he's firewalled
       super.getJoinRequest(bootstrap, deliverJRToMe);
       return;
@@ -125,10 +125,12 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
     pilotManager.openPilot((RendezvousSocketNodeHandle)bootstrap,
         new Continuation<SocketRequestHandle<RendezvousSocketNodeHandle>, Exception>(){
 
+      @Override
       public void receiveException(Exception exception) {
         deliverJRToMe.receiveException(exception);
       }
 
+      @Override
       public void receiveResult(
           SocketRequestHandle<RendezvousSocketNodeHandle> result) {
         RendezvousJoinRequest jr = new RendezvousJoinRequest(localHandle, thePastryNode
@@ -146,8 +148,7 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
   @Override
   protected Map<String, Object> getOptions(JoinRequest jr, Map<String, Object> existing) {
     if (jr.accepted()) {
-      if (jr instanceof RendezvousJoinRequest) {
-        RendezvousJoinRequest rjr = (RendezvousJoinRequest)jr;
+      if (jr instanceof RendezvousJoinRequest rjr) {
         return OptionsFactory.addOption(existing, RendezvousTransportLayerImpl.OPTION_USE_PILOT, rjr.getPilot());
       }
     }

@@ -109,6 +109,7 @@ public class DistPastryRegrTest extends PastryRegrTest {
    * @param firstNode true if bootstraping the first virtual node on this host
    * @return handle to bootstrap node, or null.
    */
+  @Override
   protected NodeHandle getBootstrap(boolean firstNode) {
     if (firstNode)
       return ((SocketPastryNodeFactory) factory).getNodeHandle(bsaddress);
@@ -197,14 +198,17 @@ public class DistPastryRegrTest extends PastryRegrTest {
    * @param pn pastry node
    * @param app newly created application
    */
+  @Override
   protected void registerapp(PastryNode pn, RegrTestApp app) {
   }
 
   // do nothing in the DIST world
+  @Override
   public boolean simulate() {
     return false;
   }
 
+  @Override
   public synchronized void pause(int ms) {
     System.out.println("Waiting " + ms + "ms...");
     try {
@@ -213,11 +217,13 @@ public class DistPastryRegrTest extends PastryRegrTest {
     }
   }
 
+  @Override
   public boolean isReallyAlive(NodeHandle nh) {
     // xxx
     return false;
   }
 
+  @Override
   protected void killNode(PastryNode pn) {
     pn.destroy();
     pause(50000);

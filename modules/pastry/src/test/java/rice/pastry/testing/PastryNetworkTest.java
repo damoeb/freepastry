@@ -107,6 +107,7 @@ public class PastryNetworkTest {
           System.out.println("Fetching leafset of " + handle + " (thread " + numThreads + " of "+MAX_THREADS+")");
 
           Thread t = new Thread() {
+            @Override
             public void run() {
               boolean gotResponse = false;
               try {
@@ -130,7 +131,7 @@ public class PastryNetworkTest {
                 }
 
                 for (int i=1; i<ns.size(); i++)
-                  if ((! nodes.contains(ns.get(i))) && (! dead.contains(ns.get(i))))
+                  if (! nodes.contains(ns.get(i)) && ! dead.contains(ns.get(i)))
                     unseen.add(ns.get(i));
 
               } catch (java.net.ConnectException e) {
@@ -180,7 +181,7 @@ public class PastryNetworkTest {
 
           if (dead.contains(node) && set.member(node)) {
             System.out.println("LEAFSET ERROR: Leafset for " + set.get(0) + " contains dead node " + node);
-          } else if ((! dead.contains(node)) && set.isComplete() && set.test(node)) {
+          } else if (! dead.contains(node) && set.isComplete() && set.test(node)) {
             System.out.println("LEAFSET ERROR: Leafset for " + set.get(0) + " is missing " + node);
           }
         }

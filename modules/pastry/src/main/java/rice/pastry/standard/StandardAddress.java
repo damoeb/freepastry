@@ -69,7 +69,7 @@ public class StandardAddress {
     digest[0] = classHash[0];
     digest[1] = classHash[1];
 
-    if ((instance == null) || (instance.equals(""))) {
+    if ((instance == null) || instance.equals("")) {
       // digest 2,3 == 0
     } else {
       byte[] instanceHash = HashUtils.hash(instance.getBytes(StandardCharsets.UTF_8));
@@ -86,9 +86,6 @@ public class StandardAddress {
   /**
    * Returns the short prefix to look for.
    *
-   * @param c
-   * @param env
-   * @return
    */
   public static short getAddress(Class<?> c, Environment env) {
     int myCode = getAddress(c, null, env);

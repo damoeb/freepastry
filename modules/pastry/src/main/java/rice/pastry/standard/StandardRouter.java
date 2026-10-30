@@ -85,6 +85,7 @@ public class StandardRouter extends PastryAppl implements Router {
    *
    */
   static class AliveRouterStrategy implements RouterStrategy {
+    @Override
     public NodeHandle pickNextHop(RouteMessage msg, Iterator<NodeHandle> i) {
       NodeHandle first = i.next();
       if (first.getLiveness() < NodeHandle.LIVENESS_SUSPECTED) {
@@ -132,17 +133,19 @@ public class StandardRouter extends PastryAppl implements Router {
    * @param msg the message.
    */
 
+  @Override
   public void receiveMessage(Message msg) {
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "messages are received on the selector thread";
     logger.trace("receiveMessage({})", msg);
-    if (msg instanceof RouteMessage) {
+    if (msg instanceof RouteMessage routeMessage) {
       // should only happen for messages coming off the wire
-      route((RouteMessage) msg);
+      route(routeMessage);
     } else {
       throw new Error("message " + msg + " bounced at StandardRouter");
     }
   }
 
+  @Override
   public void route(final RouteMessage rm) {
     if (!thePastryNode.getEnvironment().getSelectorManager().isSelectorThread()) {
       thePastryNode.getEnvironment().getSelectorManager().invoke(() -> route(rm));
@@ -192,9 +195,11 @@ public class StandardRouter extends PastryAppl implements Router {
   protected void sendTheMessage(final RouteMessage rm, final NodeHandle handle) {
     logger.trace("sendTheMessage({},{})", rm, handle);
     rm.setTLCancellable(thePastryNode.send(handle, rm, new PMessageNotification(){
+      @Override
       public void sent(PMessageReceipt msg) {
         rm.sendSuccess(handle);
       }
+      @Override
       public void sendFailed(PMessageReceipt msg, Exception reason) {
         if (rm.sendFailed(reason)) {
           logger.info("sendFailed({})=>{}", rm, handle, reason);
@@ -226,8 +231,6 @@ public class StandardRouter extends PastryAppl implements Router {
     if (target == null)
       target = thePastryNode.getNodeId();
 
-    int cwSize = thePastryNode.getLeafSet().cwSize();
-    int ccwSize = thePastryNode.getLeafSet().ccwSize();
 
     int lsPos = thePastryNode.getLeafSet().mostSimilar(target);
 
@@ -257,6 +260,7 @@ public class StandardRouter extends PastryAppl implements Router {
     deliverToApplication(msg);
   }
 
+  @Override
   public Iterator<NodeHandle> getBestRoutingCandidates(final Id target) {
     int cwSize = thePastryNode.getLeafSet().cwSize();
     int ccwSize = thePastryNode.getLeafSet().ccwSize();
@@ -303,12 +307,13 @@ public class StandardRouter extends PastryAppl implements Router {
       }
 
 
+      @Override
       public boolean hasNext() {
         if (next == null) next = getNext();
         return (next != null);
       }
 
-      public NodeHandle getNext() {
+      NodeHandle getNext() {
         // return best candidate first
         if (iterator == null && best != null) {
           NodeHandle ret = best.get(k);
@@ -348,6 +353,7 @@ public class StandardRouter extends PastryAppl implements Router {
         return null;
       }
 
+      @Override
       public NodeHandle next() {
         if (hasNext()) {
           NodeHandle ret = next;
@@ -357,6 +363,7 @@ public class StandardRouter extends PastryAppl implements Router {
         throw new NoSuchElementException();
       }
 
+      @Override
       public void remove() {
         throw new RuntimeException("Operation not allowed.");
       }
@@ -468,10 +475,12 @@ public class StandardRouter extends PastryAppl implements Router {
   private final Map<NodeHandle, Long> lastTimeSentRouteTablePatch = new HashMap<NodeHandle, Long>();
 
 
+  @Override
   public boolean deliverWhenNotReady() {
     return true;
   }
 
+  @Override
   public void messageForAppl(Message msg) {
     throw new RuntimeException("Should not be called.");
   }

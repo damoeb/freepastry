@@ -90,10 +90,10 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    *
    * @param msg the message.
    */
+  @Override
   public void messageForAppl(Message msg) {
-    if (msg instanceof BroadcastLeafSet) {
+    if (msg instanceof BroadcastLeafSet bls) {
       // receive a leafset from another node
-      BroadcastLeafSet bls = (BroadcastLeafSet) msg;
       int type = bls.type();
 
       NodeHandle from = bls.from();
@@ -119,9 +119,8 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       // the same leaf set
       checkLeafSet(remotels, from, true);
 
-    } else if (msg instanceof RequestLeafSet) {
+    } else if (msg instanceof RequestLeafSet rls) {
       // request for leaf set from a remote node
-      RequestLeafSet rls = (RequestLeafSet) msg;
 
       NodeHandle returnHandle = rls.returnHandle();
 
@@ -325,6 +324,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
   }
 
+  @Override
   public boolean deliverWhenNotReady() {
     return true;
   }
@@ -347,6 +347,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
   /**
    * If nodehandle is dead, remove it from the leafset.
    */
+  @Override
   public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle o, Object arg) {
       if (arg == NodeHandle.DECLARED_DEAD) {
         leafSet.remove((NodeHandle)o);

@@ -65,7 +65,7 @@ public class RegrTestApp extends CommonAPIAppl {
   private static class RTAddress {
     private static int myCode = 0x9219d6ff;
 
-    public static int getCode() {
+    static int getCode() {
       return myCode;
     }
   }
@@ -87,6 +87,7 @@ public class RegrTestApp extends CommonAPIAppl {
 
   }
 
+  @Override
   public int getAddress() {
     return addr;
   }
@@ -105,10 +106,10 @@ public class RegrTestApp extends CommonAPIAppl {
    * Makes sure the message was delivered to the correct node by cross-referencing the
    * sorted nodes list in the simulator.
    */
+  @Override
   public void deliver(Id key, Message msg) {
 
     // check if numerically closest
-    RTMessage rmsg = (RTMessage) msg;
     Id localId = getNodeId();
 
     if (localId != key) {
@@ -136,6 +137,7 @@ public class RegrTestApp extends CommonAPIAppl {
     }
   }
 
+  @Override
   public void forward(RouteMessage rm) {
     Message msg;
     try {
@@ -170,6 +172,7 @@ public class RegrTestApp extends CommonAPIAppl {
 
   }
 
+  @Override
   public void update(NodeHandle nh, boolean wasAdded) {
     final Id nid = nh.getNodeId();
 
@@ -211,6 +214,7 @@ public class RegrTestApp extends CommonAPIAppl {
     }
   }
 
+  @Override
   public void routeSetChange(NodeHandle nh, boolean wasAdded) {
     Id nid = nh.getNodeId();
 
@@ -227,6 +231,7 @@ public class RegrTestApp extends CommonAPIAppl {
    * send and receive messages
    */
 
+  @Override
   public void notifyReady() {
   }
 
@@ -259,15 +264,18 @@ class RTMessage extends PRawMessage {
     target = Id.build(buf);
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     sourceNode.serialize(buf);
     target.serialize(buf);
   }
 
+  @Override
   public String toString() {
     String s = "";
     s += "RTMsg from " + sourceNode + " to " + target;

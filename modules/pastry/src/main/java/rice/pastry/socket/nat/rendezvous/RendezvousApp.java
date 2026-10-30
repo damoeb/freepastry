@@ -80,6 +80,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     super(pn,null,0,null);
     setDeserializer(new MessageDeserializer() {
 
+      @Override
       public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type,
           int priority, NodeHandle sender) throws IOException {
         byte version;
@@ -147,10 +148,12 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     }
   }
 
+  @Override
   public boolean deliverWhenNotReady() {
     return true;
   }
 
+  @Override
   public Cancellable openChannel(final RendezvousSocketNodeHandle target,
       final RendezvousSocketNodeHandle rendezvous,
       final RendezvousSocketNodeHandle source,
@@ -197,12 +200,14 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     };
 
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
-    if ((deliverAckToMe != null) || (logger.isInfoEnabled())) {
+    if ((deliverAckToMe != null) || logger.isInfoEnabled()) {
       rm.setRouteMessageNotification(new RouteMessageNotification() {
+        @Override
         public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
           logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
           if (deliverAckToMe != null) deliverAckToMe.receiveResult(uid);
         }
+        @Override
         public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
           logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendFailed("+e+")");
           if (deliverAckToMe != null) deliverAckToMe.receiveException(e);
@@ -217,6 +222,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     return ret;
   }
 
+  @Override
   public MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer> sendMessage(
       final RendezvousSocketNodeHandle i,
       final ByteBuffer m,
@@ -240,9 +246,11 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       final MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer> ret =
         new MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer>(i,m,options);
       ret.setSubCancellable(thePastryNode.send(pilot, new PilotForwardMsg(getAddress(),msg,i), new PMessageNotification(){
+        @Override
         public void sent(PMessageReceipt msg) {
           if (deliverAckToMe != null) deliverAckToMe.ack(ret);
         }
+        @Override
         public void sendFailed(PMessageReceipt msg, Exception reason) {
           if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, reason);
         }
@@ -264,31 +272,37 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
       final MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer> ret = new MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer>() {
 
+        @Override
         public boolean cancel() {
           logger.debug("sendMessage({},{},{},{}).cancel()", i, m, deliverAckToMe, options);
           return rm.cancel();
         }
 
+        @Override
         public ByteBuffer getMessage() {
           return m;
         }
 
+        @Override
         public RendezvousSocketNodeHandle getIdentifier() {
           return i;
         }
 
+        @Override
         public Map<String, Object> getOptions() {
           return options;
         }
       };
 
       // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
-      if ((deliverAckToMe != null) || (logger.isDebugEnabled())) {
+      if ((deliverAckToMe != null) || logger.isDebugEnabled()) {
         rm.setRouteMessageNotification(new RouteMessageNotification() {
+          @Override
           public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
             logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
             if (deliverAckToMe != null) deliverAckToMe.ack(ret);
           }
+          @Override
           public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
             logger.atDebug().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendFailed("+e+")");
             if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
@@ -304,10 +318,12 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     }
   }
 
+  @Override
   public String toString() {
     return "RendezvousApp{"+thePastryNode+"}";
   }
 
+  @Override
   public void setTransportLayer(
       RendezvousTransportLayer<RendezvousSocketNodeHandle> tl) {
     this.tl = tl;

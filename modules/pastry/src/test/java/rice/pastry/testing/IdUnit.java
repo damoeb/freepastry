@@ -40,25 +40,13 @@ import rice.pastry.Id;
 
 public class IdUnit {
 
-  /**
-   * @param args
-   */
   public static void main(String[] args) {
     Id id0 = Id.build("0");
     Id id1 = Id.build("1");
     Id id2 = Id.build("2");
-    Id id3 = Id.build("3");
     Id id4 = Id.build("4");
-    Id id5 = Id.build("5");
-    Id id6 = Id.build("6");
-    Id id7 = Id.build("7");
     Id id8 = Id.build("8");
     Id id9 = Id.build("9");
-    Id ida = Id.build("A");
-    Id idb = Id.build("B");
-    Id idc = Id.build("C");
-    Id idd = Id.build("D");
-    Id ide = Id.build("E");
     Id idf = Id.build("F");
 
     test("clockwise 0-1",id0.clockwise(id1));

@@ -64,16 +64,19 @@ public class RendezvousJoinRequest extends JoinRequest {
     this.pilot = pilot;
   }
 
+  @Override
   public String toString() {
     return "RendezvousJoinRequest(" + (getHandle() != null ? getHandle().getNodeId() : null) + ","
     + (getJoinHandle() != null ? getJoinHandle().getNodeId() : null) +","+getTimestamp()+ " pilot:"+pilot+")";
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return JoinMessageType.RENDEZVOUS_JOIN_REQUEST.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     super.serialize(buf);
     pilot.serialize(buf);

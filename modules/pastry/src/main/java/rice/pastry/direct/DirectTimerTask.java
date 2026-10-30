@@ -56,10 +56,12 @@ public class DirectTimerTask extends TimerTask {
     this(md,nextExecutionTime,period,false);
   }
 
+  @Override
   public void run() {
     md.deliver();
   }
 
+  @Override
   public String toString() {
     return "DirectTT for " + md.getMsg() + " to "+md.getNode();
   }

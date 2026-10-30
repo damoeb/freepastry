@@ -273,7 +273,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
     super.registerApps(pn, leafSet, routeTable, nha, handleFactory);
 
-    ProbeStrategy probeStrategy = getProbeStrategy(pn);
+    getProbeStrategy(pn); // registers the ProbeApp and hands it to the IP service
   }
 
   protected ProbeStrategy getProbeStrategy(PastryNode pn) {
@@ -296,6 +296,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
 
   public static final String NODE_HANDLE_FACTORY = "SocketPastryNodeFactory.NODE_HANDLE_FACTORY";
+  @Override
   public NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) {
     if (pn.getVars().containsKey(NODE_HANDLE_FACTORY)) {
       return (NodeHandleFactory<?>) pn.getVars().get(NODE_HANDLE_FACTORY);
@@ -307,7 +308,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   /**
    * This is split off so we can get the IpServiceLayer easily.
-   * @return
    */
   public TransportLayer<InetSocketAddress, ByteBuffer> getBottomLayers(PastryNode pn, MultiInetSocketAddress proxyAddress) throws IOException {
     // wire layer
@@ -325,12 +325,12 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     return iptl;
   }
 
+  @Override
   public NodeHandleAdapter getNodeHandleAdapter(
       final PastryNode pn,
       NodeHandleFactory<?> handleFactory2,
       TLDeserializer deserializer) throws IOException {
 
-    Environment environment = pn.getEnvironment();
 
     SocketNodeHandle localhandle = (SocketNodeHandle)pn.getLocalHandle();
     final SocketNodeHandleFactory handleFactory = (SocketNodeHandleFactory)handleFactory2;
@@ -437,10 +437,12 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
     // install the NodeHandleFetcher for the NodeHandle
     pn.setNodeHandleFetcher(new NodeHandleFetcher() {
+      @Override
       public Cancellable getNodeHandle(Object o, final Continuation<NodeHandle, Exception> c) {
         InetSocketAddress addr = (InetSocketAddress)o;
         return ipTL.getId(addr, NETWORK_INFO_NODE_HANDLE_INDEX, new Continuation<byte[], IOException>() {
 
+          @Override
           public void receiveResult(byte[] result) {
             try {
               NodeHandle nh = getNodeHandleFactory(pn).readNodeHandle(new SimpleInputBuffer(result));
@@ -450,6 +452,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
             }
           }
 
+          @Override
           public void receiveException(IOException exception) {
             c.receiveException(exception);
           }
@@ -522,6 +525,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
             ByteBuffer, SourceRoute<MultiInetSocketAddress>>(
           localHandleBytes, serializer,
           new NodeChangeStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>>(){
+            @Override
             public boolean canChange(
                 TransportLayerNodeHandle<MultiInetSocketAddress> oldDest,
                 TransportLayerNodeHandle<MultiInetSocketAddress> newDest) {
@@ -541,6 +545,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           },
           new SanityChecker<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress>() {
 
+            @Override
             public boolean isSane(TransportLayerNodeHandle<MultiInetSocketAddress> upper,
                 MultiInetSocketAddress middle) {
               return upper.getAddress().equals(middle);
@@ -578,15 +583,19 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           LivenessConfig.fromParameters(environment.getParameters()));
 
     return new TransLiveness<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(){
+        @Override
         public TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getTransportLayer() {
           return ltl;
         }
+        @Override
         public LivenessProvider<SourceRoute<MultiInetSocketAddress>> getLivenessProvider() {
           return ltl;
         }
+        @Override
         public OverrideLiveness<SourceRoute<MultiInetSocketAddress>> getOverrideLiveness() {
           return ltl;
         }
+        @Override
         public Pinger<SourceRoute<MultiInetSocketAddress>> getPinger() {
           return ltl;
         }
@@ -608,12 +617,15 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     final SourceRouteManager<MultiInetSocketAddress> srm =
       new SourceRouteManagerImpl<MultiInetSocketAddress>(esrFactory,ltl,livenessProvider,prox,environment,srStrategy);
     return new TransLivenessProximity<MultiInetSocketAddress, ByteBuffer>(){
+        @Override
         public TransportLayer<MultiInetSocketAddress, ByteBuffer> getTransportLayer() {
           return srm;
         }
+        @Override
         public ProximityProvider<MultiInetSocketAddress> getProximityProvider() {
           return srm;
         }
+        @Override
         public LivenessProvider<MultiInetSocketAddress> getLivenessProvider() {
           return srm;
         }
@@ -673,12 +685,15 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     identity.initUpperLayer(localhandle, priorityTL, live, prox, overrideLiveness);
     final UpperIdentity<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> upperIdentityLayer = identity.getUpperIdentity();
     return new TransLivenessProximity<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer>(){
+        @Override
         public TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> getTransportLayer() {
           return upperIdentityLayer;
         }
+        @Override
         public ProximityProvider<TransportLayerNodeHandle<MultiInetSocketAddress>> getProximityProvider() {
           return upperIdentityLayer;
         }
+        @Override
         public LivenessProvider<TransportLayerNodeHandle<MultiInetSocketAddress>> getLivenessProvider() {
           return upperIdentityLayer;
         }
@@ -690,6 +705,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       PastryNode pn, TLDeserializer deserializer) {
     final Environment environment = pn.getEnvironment();
     IdFactory idFactory = new IdFactory(){
+      @Override
       public rice.p2p.commonapi.Id build(InputBuffer buf) throws IOException {
         return Id.build(buf);
       }
@@ -704,6 +720,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         getOptionsAdder(pn),
         new ErrorHandler<TransportLayerNodeHandle<MultiInetSocketAddress>>() {
           Logger logger = environment.getLogManager().getLogger(SocketPastryNodeFactory.class, null);
+          @Override
           public void receivedUnexpectedData(
               TransportLayerNodeHandle<MultiInetSocketAddress> id, byte[] bytes,
               int location, Map<String, Object> options) {
@@ -719,11 +736,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
             }
           }
 
+          @Override
           public void receivedException(
               TransportLayerNodeHandle<MultiInetSocketAddress> i, Throwable error) {
             if (logger.isInfoEnabled()) {
-              if (error instanceof NodeIsFaultyException) {
-                NodeIsFaultyException nife = (NodeIsFaultyException)error;
+              if (error instanceof NodeIsFaultyException nife) {
                 logger.info("Dropping message "+nife.getAttemptedMessage()+" to "+nife.getIdentifier()+" because it is faulty.");
                 if (i.getLiveness() < NodeHandle.LIVENESS_DEAD) {
                   TransportLayerNodeHandle<MultiInetSocketAddress> nh = (TransportLayerNodeHandle<MultiInetSocketAddress>)i;
@@ -738,7 +755,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   protected OptionsAdder getOptionsAdder(PastryNode pn) {
-    byte[] foo = pn.getId().toByteArray();
 
     return (options, m1) -> {
       Message m = m1;
@@ -819,6 +835,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
      * Continuation.receiveResult() unregisters the LivenessListener and then calls ProximityNeighborSelection.nearNodes()
      * PNS.nearNodes() calls into the continuation which calls PastryNode.doneNode()
      */
+    @Override
     public void boot(Collection<InetSocketAddress> bootaddresses_temp) {
       logger.debug("boot({})", bootaddresses_temp);
       final Collection<InetSocketAddress> bootaddresses;
@@ -862,8 +879,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
          * This is usually going to get called twice.  The first time when bootHandles is complete,
          * the second time on a timeout.
          *
-         * @param result
          */
+        @Override
         public void receiveResult(Collection<NodeHandle> initialSet) {
           // make sure this only gets called once
           if (done) return;
@@ -876,6 +893,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           // do proximity neighbor selection
           pns.getNearHandles(initialSet, new Continuation<Collection<NodeHandle>, Exception>(){
 
+            @Override
             public void receiveResult(Collection<NodeHandle> result) {
               // done!!!
               if (!seed && result.isEmpty()) {
@@ -886,12 +904,14 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
               pn.doneNode(result);
             }
 
+            @Override
             public void receiveException(Exception exception) {
             }
 
           });
         }
 
+        @Override
         public void receiveException(Exception exception) {
         }
       };
@@ -901,6 +921,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       listener.add(
         new LivenessListener<NodeHandle>() {
           Logger logger = pn.getEnvironment().getLogManager().getLogger(SocketPastryNodeFactory.class, null);
+          @Override
           public void livenessChanged(NodeHandle i2, int val, Map<String, Object> options) {
             SocketNodeHandle i = (SocketNodeHandle)i2;
             logger.debug("livenessChanged({},{})", i, val);
@@ -959,8 +980,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     /**
      * Used as a helper to TLBootstrapper.boot() to generate a temporary node handle
      *
-     * @param addr
-     * @return
      */
     protected SocketNodeHandle getTempNodeHandle(InetSocketAddress addr) {
       return handleFactory.getNodeHandle(new MultiInetSocketAddress(addr), -1, Id.build());
@@ -995,11 +1014,12 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
    *
    * n.getBootstrapper().boot(addresses);
    *
-   * @return
    */
+  @Override
   public PastryNode newNode() {
     return newNode(nidFactory.generateNodeId(), (InetSocketAddress)null);
   }
+  @Override
   public PastryNode newNode(Id id) {
     return newNode(id, (InetSocketAddress)null);
   }
@@ -1008,9 +1028,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
    * This method uses the pAddress as the outer address if it's non-null.
    * It automatically generates the internal address from the localAddress, and increments the port as necessary.
    *
-   * @param nodeId
-   * @param pAddress
-   * @return
    */
   public synchronized PastryNode newNode(final Id nodeId, InetSocketAddress pAddress) {
     if (pAddress == null) {
@@ -1096,8 +1113,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       throw new RuntimeException(ie);
     } catch (ExecutionException ee) {
       Exception e = FutureContinuation.toException(ee);
-      if (e instanceof IOException) throw (IOException)e;
-      if (e instanceof RuntimeException) throw (RuntimeException)e;
+      if (e instanceof IOException ioException) throw ioException;
+      if (e instanceof RuntimeException runtimeException) throw runtimeException;
       throw new RuntimeException(e);
     }
   }

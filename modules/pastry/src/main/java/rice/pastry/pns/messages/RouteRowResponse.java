@@ -59,10 +59,12 @@ public final class RouteRowResponse extends PRawMessage implements PNSMessage {
     setPriority(HIGH_PRIORITY);
   }
 
+  @Override
   public String toString() {
     return "RRresp["+index+"]:"+getSender();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     buf.writeShort(index);
@@ -97,6 +99,7 @@ public final class RouteRowResponse extends PRawMessage implements PNSMessage {
     }
   }
 
+  @Override
   public short getType() {
     return PNSMessageType.ROUTE_ROW_RESPONSE.id();
   }

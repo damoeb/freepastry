@@ -57,15 +57,18 @@ public class PMessageReceiptImpl implements PMessageReceipt {
     this.options = options;
   }
 
+  @Override
   public NodeHandle getIdentifier() {
     if (internal == null) return null;
     return (NodeHandle)internal.getIdentifier();
   }
 
+  @Override
   public Message getMessage() {
     return message;
   }
 
+  @Override
   public Map<String, Object> getOptions() {
     return options;
   }
@@ -81,6 +84,7 @@ public class PMessageReceiptImpl implements PMessageReceipt {
    *
    * @return true if it has been cancelled for sure, false if it may/may-not be cancelled
    */
+  @Override
   public boolean cancel() {
     boolean callCancel = false;
     synchronized(lock) {
@@ -95,7 +99,6 @@ public class PMessageReceiptImpl implements PMessageReceipt {
   /**
    * See synchronization note on cancel()
    *
-   * @param name
    */
   public void setInternal(MessageRequestHandle<NodeHandle, RawMessage> name) {
     boolean callCancel = false;
@@ -113,6 +116,7 @@ public class PMessageReceiptImpl implements PMessageReceipt {
     return internal;
   }
 
+  @Override
   public String toString() {
     return "PMsgRecptI{"+message+","+getIdentifier()+"}";
   }

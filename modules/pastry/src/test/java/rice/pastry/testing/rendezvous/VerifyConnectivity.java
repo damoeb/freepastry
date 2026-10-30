@@ -78,6 +78,7 @@ public class VerifyConnectivity {
     final ConnectivityVerifier verifier = new ConnectivityVerifierImpl(factory);
     verifier.findExternalAddress(factory.getNextInetSocketAddress(), Collections.singleton(bootaddress), new Continuation<InetAddress, IOException>() {
 
+      @Override
       public void receiveResult(final InetAddress result) {
         System.out.println("My external address is "+result);
 
@@ -91,14 +92,17 @@ public class VerifyConnectivity {
 
           verifier.verifyConnectivity(local, Collections.singleton(bootaddress), new ConnectivityResult() {
 
+            @Override
             public void udpSuccess(InetSocketAddress from, Map<String, Object> options) {
               System.out.println("UDP works. "+from);
             }
 
+            @Override
             public void tcpSuccess(InetSocketAddress from, Map<String, Object> options) {
               System.out.println("TCP works. "+from);
             }
 
+            @Override
             public void receiveException(Exception exception) {
               exception.printStackTrace();
             }
@@ -107,6 +111,7 @@ public class VerifyConnectivity {
         env.getSelectorManager().invoke(r);
       }
 
+      @Override
       public void receiveException(IOException exception) {
         exception.printStackTrace();
       }

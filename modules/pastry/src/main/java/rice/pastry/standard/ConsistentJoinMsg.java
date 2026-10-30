@@ -69,15 +69,18 @@ public class ConsistentJoinMsg extends PRawMessage {
     this.failed = failed;
   }
 
+  @Override
   public String toString() {
     return "ConsistentJoinMsg "+ls+" request:"+request;
   }
 
   /***************** Raw Serialization ***************************************/
+  @Override
   public short getType() {
     return JoinMessageType.CONSISTENT_JOIN.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     ls.serialize(buf);

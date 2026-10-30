@@ -49,8 +49,6 @@ public interface NodeHandleFactory<NH extends NodeHandle> {
    * Needed for legacy java deserialization of NodeHanlde because we aren't given any
    * other way to do this properly such as a protected constructor.
    *
-   * @param handle
-   * @return
    */
   public NH coalesce(NH handle);
 

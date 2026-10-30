@@ -127,6 +127,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
    *
    * @return gets the address.
    */
+  @Override
   public int getAddress() {
     return JoinAddress.getCode();
   }
@@ -134,6 +135,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
   // join retransmission stuff
   protected ScheduledMessage joinEvent;
 
+  @Override
   public void initiateJoin(Collection<NodeHandle> bootstrap) {
     logger.info("initiateJoin({})", bootstrap);
     if (bootstrap == null || bootstrap.isEmpty()) {
@@ -153,16 +155,14 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
    *
    * @param msg the message that was received.
    */
+  @Override
   public void receiveMessage(Message msg) {
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "join messages are received on the selector thread";
-    if (msg instanceof JoinRequest) {
-      JoinRequest jr = (JoinRequest) msg;
+    if (msg instanceof JoinRequest jr) {
       handleJoinRequest(jr);
-    } else if (msg instanceof RouteMessage) { // a join request message at an intermediate node
-      RouteMessage rm = (RouteMessage) msg;
+    } else if (msg instanceof RouteMessage rm) { // a join request message at an intermediate node
       handleIntermediateHop(rm);
-    } else if (msg instanceof InitiateJoin) { // request from the local node to join
-      InitiateJoin ij = (InitiateJoin) msg;
+    } else if (msg instanceof InitiateJoin ij) { // request from the local node to join
       handleInitiateJoin(ij);
     }
   }
@@ -177,6 +177,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
       logger.info("InitiateJoin attempting to join:{} liveness:{}", nh, nh.getLiveness());
         getJoinRequest(nh, new Continuation<JoinRequest, Exception>() {
 
+          @Override
           public void receiveResult(JoinRequest jr) {
             RouteMessage rm = new RouteMessage(localHandle.getNodeId(), jr, null, null,
                 thePastryNode.getConfig().routeMsgVersion());
@@ -186,6 +187,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
             thePastryNode.send(nh, rm, null, getOptions(jr, options));
           }
 
+          @Override
           public void receiveException(Exception exception) {
 
           }
@@ -222,10 +224,12 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
         }
 
         rm.setRouteMessageNotification(new RouteMessageNotification(){
+          @Override
           public void sendSuccess(RouteMessage message, NodeHandle nextHop) {
             logger.info("sendSuccess({}):{}", message, nextHop);
           }
 
+          @Override
           public void sendFailed(RouteMessage message, Exception e) {
             logger.info("sendFailed({}) ", message, e);
           }
@@ -258,9 +262,11 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
       logger.info("acceptJoin {}", jr);
       jr.acceptJoin(localHandle, leafSet);
       thePastryNode.send(joiner,jr,new PMessageNotification(){
+        @Override
         public void sent(PMessageReceipt msg) {
           logger.info("acceptJoin.sent({}):{}", msg, jr);
         }
+        @Override
         public void sendFailed(PMessageReceipt msg, Exception reason2) {
           Throwable reason = reason2;
           if (logger.isInfoEnabled()) {
@@ -360,6 +366,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
    * Should not be called because we are overriding the receiveMessage()
    * interface anyway.
    */
+  @Override
   public void messageForAppl(Message msg) {
     throw new RuntimeException("Should not be called.");
   }
@@ -367,6 +374,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
   /**
    * We always want to receive messages.
    */
+  @Override
   public boolean deliverWhenNotReady() {
     return true;
   }

@@ -75,6 +75,7 @@ public class RendezvousSocketNodeHandle extends SocketNodeHandle implements Rend
     buf.writeByte(contactStatus);
   }
 
+  @Override
   public boolean canContactDirect() {
     return contactStatus != CONTACT_FIREWALLED;
   }
@@ -91,6 +92,7 @@ public class RendezvousSocketNodeHandle extends SocketNodeHandle implements Rend
     return contactStatus;
   }
 
+  @Override
   public String toString() {
     String s = "[RSNH: " + getNodeId() + "/" + getAddress();
     if (!canContactDirect()) s+="(FIREWALLED)";

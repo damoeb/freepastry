@@ -51,18 +51,22 @@ public class StubNATHandler implements NATHandler {
   public StubNATHandler(Environment environment, InetAddress address) {
   }
 
+  @Override
   public InetAddress getFireWallExternalAddress() {
     return null;
   }
 
+  @Override
   public InetAddress findFireWall(InetAddress bindAddress) throws IOException {
     throw new IOException(errorString);
   }
 
+  @Override
   public int findAvailableFireWallPort(int internal, int external, int tries, String appName) throws IOException {
     throw new IOException(errorString);
   }
 
+  @Override
   public void openFireWallPort(int local, int external, String appName) throws IOException {
     throw new IOException(errorString);
   }

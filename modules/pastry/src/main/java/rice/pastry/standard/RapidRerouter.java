@@ -143,8 +143,6 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
   /**
    * Return true if it was still pending.
    *
-   * @param notifyMe
-   * @param handle
    * @return true if still pending
    */
   private boolean removeFromPending(RouterNotification notifyMe, NodeHandle handle) {
@@ -165,6 +163,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     }
   }
 
+  @Override
   public void livenessChanged(NodeHandle i, int val, Map<String, Object> options) {
     if (val >= LIVENESS_SUSPECTED) {
       Collection<RouterNotification> rerouteMe;
@@ -204,6 +203,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       this.cancellable = receipt;
     }
 
+    @Override
     public void sendFailed(PMessageReceipt msg, Exception reason) {
       // what to do..., rapidly reroute?
       failed = true;
@@ -255,6 +255,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     boolean sent = false;
     boolean cancelled = false;
 
+    @Override
     public void sent(PMessageReceipt msg) {
       logger.debug("Send success {} to:{} {}", rm, dest, msg);
       sent = true;
@@ -264,6 +265,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       rm.sendSuccess(dest);
     }
 
+    @Override
     public boolean cancel() {
       logger.debug("cancelling {}", this);
       if (cancellable == null && logger.isWarnEnabled()) logger.warn("cancellable = null c:"+cancelled+" s:"+sent+" f:"+failed);
@@ -272,6 +274,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       return true;
     }
 
+    @Override
     public String toString() {
       return "RN{"+rm+"->"+dest+"}";
     }

@@ -78,6 +78,7 @@ public class InitiateJoin extends Message {
     return null;
   }
 
+  @Override
   public String toString() {
     String s = "IJ{";
     for (int i = 0; i < handle.length; i++) {

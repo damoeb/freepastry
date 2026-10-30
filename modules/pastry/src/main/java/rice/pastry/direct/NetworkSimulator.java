@@ -96,7 +96,6 @@ public interface NetworkSimulator<Identifier, MessageType> {
   /**
    * Generates a random node record
    *
-   * @return
    */
   public NodeRecord generateNodeRecord();
 
@@ -153,14 +152,12 @@ public interface NetworkSimulator<Identifier, MessageType> {
 
   /**
    *
-   * @param sl
    * @return true if added, false if already a listener
    */
   public boolean addSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl);
 
   /**
    *
-   * @param sl
    * @return true if removed, false if not already a listener
    */
   public boolean removeSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl);

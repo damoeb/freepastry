@@ -129,8 +129,8 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     LeafSetProtocol lsProtocol = getLeafSetProtocol(pn, leafSet, routeTable);
 
     ReadyStrategy readyStrategy;
-    if (lsProtocol instanceof ReadyStrategy) {
-      readyStrategy = (ReadyStrategy)lsProtocol;
+    if (lsProtocol instanceof ReadyStrategy rs) {
+      readyStrategy = rs;
     } else {
       readyStrategy = pn.getDefaultReadyStrategy();
     }
@@ -168,8 +168,6 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
 
   /**
    * Can be overridden.
-   * @param pn
-   * @return
    */
   protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {
     if (factoryConfig.usePns()) {

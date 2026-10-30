@@ -161,7 +161,7 @@ public class HelloWorld {
     return false;
   }
 
-  private static void doIinitstuff(String args[], Environment env) {
+  private static void doIinitstuff(String args[]) {
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-nodes") && i + 1 < args.length)
         numnodes = Integer.parseInt(args[i + 1]);
@@ -194,7 +194,7 @@ public class HelloWorld {
   public static void main(String args[]) {
     Environment env = Environment.directEnvironment();
 
-    doIinitstuff(args, env);
+    doIinitstuff(args);
 
     HelloWorld driver = new HelloWorld(env);
 

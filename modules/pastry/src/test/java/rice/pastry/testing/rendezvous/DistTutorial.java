@@ -163,7 +163,7 @@ public class DistTutorial {
       boolean firewalled = Boolean.parseBoolean(args[3]);
 
       // launch our node!
-      DistTutorial dt = new DistTutorial(bindport, bootaddress, env, firewalled);
+      new DistTutorial(bindport, bootaddress, env, firewalled);
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");

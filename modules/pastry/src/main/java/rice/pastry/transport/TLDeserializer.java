@@ -64,6 +64,7 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
     this.logger = environment.getLogManager().getLogger(TLDeserializer.class, null);
   }
 
+  @Override
   public RawMessage deserialize(InputBuffer buf, NodeHandle sender) throws IOException {
 
     int address = buf.readInt();
@@ -84,6 +85,7 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
     return (RawMessage)msg;
   }
 
+  @Override
   public void serialize(RawMessage m, OutputBuffer o) throws IOException {
     PRawMessage msg = (PRawMessage)m;
     int address = msg.getDestination();
@@ -106,6 +108,7 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
     return deserializers.get(address);
   }
 
+  @Override
   public void setDeserializer(int address, MessageDeserializer md) {
     deserializers.put(address, md);
   }

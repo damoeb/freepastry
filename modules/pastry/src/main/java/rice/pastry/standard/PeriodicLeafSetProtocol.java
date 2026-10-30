@@ -115,6 +115,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       super(pn);
     }
 
+    @Override
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
       return switch (LeafSetMessageType.find(type)) {
         case REQUEST_LEAF_SET -> new RequestLeafSet(sender, buf);
@@ -193,11 +194,11 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    *
    * @param msg the message.
    */
+  @Override
   public void receiveMessage(Message msg) {
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "the leaf set is modified on the selector thread only";
-    if (msg instanceof BroadcastLeafSet) {
+    if (msg instanceof BroadcastLeafSet bls) {
       // receive a leafset from another node
-      BroadcastLeafSet bls = (BroadcastLeafSet) msg;
 
       // if we have now successfully joined the ring, set the local node ready
       if (bls.type() == BroadcastLeafSet.JoinInitial) {
@@ -235,9 +236,8 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
         updateRecBLS(bls.from(), bls.getTimeStamp());
       }
 
-    } else if (msg instanceof RequestLeafSet) {
+    } else if (msg instanceof RequestLeafSet rls) {
       // request for leaf set from a remote node
-      RequestLeafSet rls = (RequestLeafSet) msg;
 
       if (rls.getTimeStamp() > 0) { // without a timestamp, this is just a normal request, not a lease request
         // remember that we gave out a lease, and go unReady() if the node goes faulty
@@ -312,6 +312,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   // Ready Strategy
   boolean hasSetStrategy = false;
 
+  @Override
   public void start() {
     if (!hasSetStrategy) {
       logger.info("PLSP.start(): Setting self as ReadyStrategy");
@@ -323,6 +324,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     }
   }
 
+  @Override
   public void stop() {
     if (hasSetStrategy) {
       logger.info("PLSP.start(): Removing self as ReadyStrategy");
@@ -336,6 +338,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    */
   NodeHandle lastLeft;
   NodeHandle lastRight;
+  @Override
   public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
     NodeHandle newLeft = leafSet.get(-1);
     if (newLeft != null && (lastLeft != newLeft)) {
@@ -350,6 +353,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   }
 
   boolean ready = false;
+  @Override
   public void setReady(boolean r) {
     if (ready != r) {
       synchronized(thePastryNode) {
@@ -363,6 +367,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    *
    *
    */
+  @Override
   public boolean isReady() {
     // check to see if we've heard from the left/right neighbors recently enough
     boolean shouldBeReady = shouldBeReady(); // temp
@@ -422,7 +427,6 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
   /**
    *
-   * @param sendTo
    * @return true if we sent it, false if we didn't because of throttled
    */
   private boolean sendBLS(NodeHandle sendTo, boolean checkLiveness) {
@@ -456,6 +460,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    * Should not be called because we are overriding the receiveMessage()
    * interface anyway.
    */
+  @Override
   public void messageForAppl(Message msg) {
     throw new RuntimeException("Should not be called.");
   }
@@ -463,11 +468,13 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   /**
    * We always want to receive messages.
    */
+  @Override
   public boolean deliverWhenNotReady() {
     return true;
   }
 
   boolean destroyed = false;
+  @Override
   public void destroy() {
     logger.info("PLSP: destroy() called");
     destroyed = true;
@@ -498,11 +505,12 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   /**
    * Only remove the item if you did not give a lease.
    */
+  @Override
   public void nodeHandleUpdate(final rice.p2p.commonapi.NodeHandle o, final Object arg) {
     if (destroyed) return;
-    if (o instanceof NodeHandle) {
+    if (o instanceof NodeHandle nodeHandle) {
       if (arg == NodeHandle.DECLARED_DEAD) {
-        removeFromLeafsetIfPossible((NodeHandle)o);
+        removeFromLeafsetIfPossible(nodeHandle);
       }
     }
   }
@@ -510,6 +518,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   /**
    * this is if we are the "seed" node
    */
+  @Override
   public void pastryNodeReady(PastryNode node, boolean ready) {
     if (destroyed) return;
     if (ready) {

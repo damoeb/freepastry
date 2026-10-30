@@ -113,7 +113,6 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
    *
    * @param pn the local pastry node
    * @param factory the SocketPastryNodeFactory
-   * @param bootstraps
    */
   public PartitionHandler(PastryNode pn, SocketPastryNodeFactory factory, InetSocketAddress[] bootstraps) {
     pastryNode = pn;
@@ -244,12 +243,14 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     factory.getNodeHandle(bootstraps, c);
   }
 
+  @Override
   public void run() {
     logger.info("running partition handler");
     doGoneMaintainence();
 
     getNodeHandleToProbe(new Continuation<NodeHandle, Exception>() {
 
+      @Override
       public void receiveResult(NodeHandle result) {
         if (result != null) {
           rejoin((NodeHandle)result);
@@ -258,6 +259,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
         }
       }
 
+      @Override
       public void receiveException(Exception result) {
         // oh well
         logger.info("exception in PartitionHandler", result);
@@ -266,6 +268,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     });
   }
 
+  @Override
   public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
     if (nodeSetEventSource.equals(pastryNode.getLeafSet())) {
       if (added) {
@@ -294,21 +297,23 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     private NodeHandle nh;
     private final long timestamp;
 
-    public GoneSetEntry(NodeHandle nh, long timestamp) {
+    GoneSetEntry(NodeHandle nh, long timestamp) {
       this.nh = nh;
       this.timestamp = timestamp;
     }
 
+    @Override
     public boolean equals(Object o) {
-      if (!(o instanceof GoneSetEntry)) return false;
-      GoneSetEntry other = (GoneSetEntry)o;
+      if (!(o instanceof GoneSetEntry other)) return false;
       return other.nh.getId().equals(nh.getId());
     }
 
+    @Override
     public int hashCode() {
       return nh.getId().hashCode();
     }
 
+    @Override
     public String toString() {
       return nh.toString() + " "+timestamp;
     }

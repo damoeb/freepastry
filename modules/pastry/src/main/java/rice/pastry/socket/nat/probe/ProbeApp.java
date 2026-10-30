@@ -94,6 +94,7 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
    * If no such candidate can be found, use someone who does.
    * If there are no candidates at all, send the message to self (or call handleProbeRequest()
    */
+  @Override
   public Cancellable requestProbe(MultiInetSocketAddress addr, long uid, final Continuation<Boolean, Exception> deliverResultToMe) {
     logger.debug("requestProbe({},{},{})", addr, uid, deliverResultToMe);
     // Step 1: find valid helpers
@@ -125,15 +126,18 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
     // Step 3: send the probeRequest
     ProbeRequestMessage prm = new ProbeRequestMessage(addr, uid, getAddress());
     return thePastryNode.send(handle, prm, new PMessageNotification() {
+      @Override
       public void sent(PMessageReceipt msg) {
         deliverResultToMe.receiveResult(true);
       }
+      @Override
       public void sendFailed(PMessageReceipt msg, Exception reason) {
         deliverResultToMe.receiveResult(false);
       }
     }, null);
   }
 
+  @Override
   public Collection<InetSocketAddress> getExternalAddresses() {
     ArrayList<InetSocketAddress> ret = new ArrayList<InetSocketAddress>();
     for (NodeHandle nh : thePastryNode.getLeafSet()) {

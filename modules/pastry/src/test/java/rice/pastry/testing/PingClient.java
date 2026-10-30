@@ -60,7 +60,7 @@ public class PingClient extends PastryAppl {
   private static class PingAddress {
     private static int myCode = 0x9219d8ff;
 
-    public static int getCode() {
+    static int getCode() {
       return myCode;
     }
   }
@@ -78,6 +78,7 @@ public class PingClient extends PastryAppl {
     });
   }
 
+  @Override
   public int getAddress() {
     return pingAddress;
   }
@@ -95,11 +96,13 @@ public class PingClient extends PastryAppl {
         new SendOptions());
   }
 
+  @Override
   public void messageForAppl(Message msg) {
     System.out.print(msg);
     System.out.println(" received");
   }
 
+  @Override
   public boolean enrouteMessage(Message msg, Id from, NodeHandle nextHop,
       SendOptions opt) {
     System.out.print(msg);
@@ -108,6 +111,7 @@ public class PingClient extends PastryAppl {
     return true;
   }
 
+  @Override
   public void leafSetChange(NodeHandle nh, boolean wasAdded) {
     if (true) return;
     System.out.println("at... " + getNodeId() + "'s leaf set");
@@ -118,6 +122,7 @@ public class PingClient extends PastryAppl {
       System.out.println("removed");
   }
 
+  @Override
   public void routeSetChange(NodeHandle nh, boolean wasAdded) {
     if (true) return;
     System.out.println("at... " + getNodeId() + "'s route set");
@@ -152,15 +157,18 @@ class PingMessage extends PRawMessage {
     target = Id.build(buf);
   }
 
+  @Override
   public short getType() {
     return TYPE;
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     source.serialize(buf);
     target.serialize(buf);
   }
 
+  @Override
   public String toString() {
     String s = "";
     s += "ping from " + source + " to " + target;

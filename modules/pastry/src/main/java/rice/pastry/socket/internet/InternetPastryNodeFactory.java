@@ -162,9 +162,7 @@ public class InternetPastryNodeFactory extends
   /**
    * Return a NATHandler
    *
-   * @param env
    * @param localAddress the address of the interface we should search for a NAT on
-   * @return
    */
   protected NATHandler getDefaultNatHandler(Environment env, InetAddress localAddress) {
     if (natConfig.natHandlerClass() != null) {
@@ -216,9 +214,6 @@ public class InternetPastryNodeFactory extends
    *
    * Throws an exception if firewall was found and disagrees with the existing externalAddress (if it's not null).
    *
-   * @param address
-   * @return
-   * @throws IOException
    */
   protected boolean findExternalAddressIfNecessary(InetAddress address /*, Collection<InetSocketAddress> probeAddresses*/) throws IOException {
     if (!shouldFindExternalAddress(address)) return true;
@@ -349,10 +344,12 @@ public class InternetPastryNodeFactory extends
 
     connectivityVerifier.findExternalNodes(bindAddress, nonInternetRoutable, new Continuation<Collection<InetSocketAddress>, IOException>() {
 
+      @Override
       public void receiveResult(Collection<InetSocketAddress> result) {
         findExternalAddressHelper(nodeId, bindAddress, deliverResultToMe, result);
       }
 
+      @Override
       public void receiveException(IOException exception) {
         if (nonInternetRoutable == null || nonInternetRoutable.isEmpty()) findExternalAddressHelper(nodeId, bindAddress, deliverResultToMe, null);
       }
@@ -367,6 +364,7 @@ public class InternetPastryNodeFactory extends
     if (myProbeAddresses != null && !myProbeAddresses.isEmpty()) {
       connectivityVerifier.findExternalAddress(bindAddress, myProbeAddresses, new Continuation<InetAddress, IOException>() {
 
+        @Override
         public void receiveResult(InetAddress result) {
           if (externalAddresses != null) {
             if (!externalAddresses[0].equals(result)) {
@@ -377,6 +375,7 @@ public class InternetPastryNodeFactory extends
           openFirewallPort(nodeId, bindAddress, deliverResultToMe, result, -1);
         }
 
+        @Override
         public void receiveException(IOException exception) {
           deliverResultToMe.receiveException(exception);
         }
@@ -471,9 +470,6 @@ public class InternetPastryNodeFactory extends
    *
    * if connectivity fails, then uses Rendezvous
    *
-   * @param nodeId
-   * @param proxyAddress
-   * @param deliverResultToMe
    */
   protected void verifyConnectivityThenMakeNewNode(final Id nodeId,
       final MultiInetSocketAddress proxyAddress,
@@ -503,6 +499,7 @@ public class InternetPastryNodeFactory extends
 
         // invoke to let the cancel succeed, seems to need to take a second sometimes
         environment.getSelectorManager().schedule(new TimerTask() {
+          @Override
           public void run() {
             newNodeSelector(nodeId, proxyAddress, deliverResultToMe, null, true);
           }
@@ -515,23 +512,26 @@ public class InternetPastryNodeFactory extends
       boolean udpSuccess = false;
       boolean tcpSuccess = false;
 
+      @Override
       public void udpSuccess(InetSocketAddress from, Map<String, Object> options) {
         udpSuccess = true;
         complete();
       }
 
+      @Override
       public void tcpSuccess(InetSocketAddress from, Map<String, Object> options) {
         tcpSuccess = true;
         complete();
       }
 
-      public void complete() {
+      void complete() {
         if (tcpSuccess && udpSuccess && !timeout[0]) {
           timer.cancel();
           newNodeSelector(nodeId, proxyAddress, deliverResultToMe, null, false);
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         timer.cancel();
         if (e instanceof CantVerifyConnectivityException) {
@@ -582,11 +582,6 @@ public class InternetPastryNodeFactory extends
     throw new RuntimeException("Unknown firewall policy value " + val);
   }
 
-  /**
-   *
-   * @param proxyAddress
-   * @return
-   */
   protected boolean shouldCheckConnectivity(MultiInetSocketAddress proxyAddress, Collection<InetSocketAddress> bootstraps) {
     if (bootstraps == null) return false;
     switch (getFireWallPolicyVariable(natConfig.firewallTestPolicy())) {

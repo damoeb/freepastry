@@ -51,7 +51,6 @@ public interface Router {
 
   /**
    * Send the RouteMessage based on the Pastry Algorithm
-   * @param rm
    */
   void route(RouteMessage rm);
 
@@ -59,8 +58,6 @@ public interface Router {
    * Returns an ordered list of the best candidates for the next to the key.  Always starts with
    * a node that matches an additional prefix, if it is available.
    *
-   * @param key
-   * @return
    */
   Iterator<NodeHandle> getBestRoutingCandidates(Id key);
 

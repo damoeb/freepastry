@@ -53,15 +53,12 @@ public interface NATHandler {
    * Search for the firewall on the NIC specified by the bindAddress
    *
    * @param bindAddress the network to find the firewall on
-   * @return
-   * @throws IOException
    */
   public InetAddress findFireWall(InetAddress bindAddress) throws IOException;
 
   /**
    * The name of the firewall's external address.  null if there is no firewall.
    *
-   * @return
    */
   InetAddress getFireWallExternalAddress();
 
@@ -69,10 +66,6 @@ public interface NATHandler {
    * Search for an available port forwarding, starting with the external address specified.  The internal
    * one is given so you can detect that the rule was already in place.
    *
-   * @param internal
-   * @param external
-   * @return
-   * @throws IOException
    */
   public int findAvailableFireWallPort(int internal, int external, int tries, String appName) throws IOException;
   public void openFireWallPort(int local, int external, String appName) throws IOException;

@@ -52,10 +52,12 @@ public final class PilotForwardMsg extends PRawMessage implements RendezvousMess
     this.target = target;
   }
 
+  @Override
   public short getType() {
     return RendezvousMessageType.PILOT_FORWARD.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     target.serialize(buf);
@@ -70,6 +72,7 @@ public final class PilotForwardMsg extends PRawMessage implements RendezvousMess
     return target;
   }
 
+  @Override
   public String toString() {
     return "PFM{"+msg+"->"+target+"}";
   }
