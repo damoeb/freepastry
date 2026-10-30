@@ -45,21 +45,12 @@ package rice.persistence;
  *
  * @version $Id: PersistentStorage.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.SortedMap;
 
@@ -72,11 +63,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.ImmutableSortedMap;
-import rice.p2p.util.JavaSerializationFilter;
 import rice.p2p.util.RedBlackMap;
-import rice.p2p.util.ReverseTreeMap;
-import rice.p2p.util.rawserialization.JavaSerializationException;
 
 /**
  * This class is an implementation of Storage which provides
@@ -165,9 +152,8 @@ public class PersistentStorage implements Storage {
   private boolean index;            // whether or not we are indexing the objects
   private HashMap<File, File[]> directories;      // the in-memory map of directories (for efficiency)
   private HashMap<File, String> prefixes;         // an in-memory cache of the directory prefixes
-  private HashSet<File> dirty;            // the list of directories which have dirty metadata
 
-  private ReverseTreeMap<Id, Serializable> metadata;  // the in-memory cache of object metadata
+  private MetadataIndex metadataIndex; // the in-memory cache of object metadata (if indexing)
 
   private String rootDir;           // rootDirectory
 
@@ -224,8 +210,7 @@ public class PersistentStorage implements Storage {
     this.prefixes = new HashMap<File, String>();
     this.stats = new StorageStatistics(name, environment.getTimeSource(), logger);
     if (index) {
-      this.dirty = new HashSet<File>();
-      this.metadata = new ReverseTreeMap<Id, Serializable>();
+      this.metadataIndex = new MetadataIndex(environment, logger);
     }
 
     logger.info("Launching persistent storage in {} with name {} spliting factor {}", rootDir, name, MAX_FILES);
@@ -234,7 +219,7 @@ public class PersistentStorage implements Storage {
   }
 
   private void printStats() {
-    stats.printStats(() -> (index ? "" + metadata.keySet().size() : "?"), this::getTotalSize);
+    stats.printStats(() -> (index ? "" + metadataIndex.keyCountUnlocked() : "?"), this::getTotalSize);
   }
 
   /**
@@ -286,10 +271,7 @@ public class PersistentStorage implements Storage {
           checkDirectory(g.getParentFile());
 
           if (index) {
-            synchronized (metadata) {
-              metadata.put(newId, metadata.get(oldId));
-              metadata.remove(oldId);
-            }
+            metadataIndex.rename(oldId, newId);
           }
 
           return Boolean.TRUE;
@@ -365,10 +347,7 @@ public class PersistentStorage implements Storage {
 
         /* mark the metadata cache of this file to be dirty */
         if (index) {
-          synchronized (PersistentStorage.this.metadata) {
-            PersistentStorage.this.metadata.put(id, metadata);
-            dirty.add(objFile.getParentFile());
-          }
+          metadataIndex.put(id, metadata, objFile.getParentFile());
         }
 
         /* finally, check to see if this directory needs to be split */
@@ -409,10 +388,7 @@ public class PersistentStorage implements Storage {
 
         /* remove id from stored list */
         if (index) {
-          synchronized (metadata) {
-            metadata.remove(id);
-            dirty.add(objFile.getParentFile());
-          }
+          metadataIndex.remove(id, objFile.getParentFile());
         }
 
         /* check to make sure file exists */
@@ -436,9 +412,7 @@ public class PersistentStorage implements Storage {
    */
   public boolean exists(Id id) {
     if (index) {
-      synchronized (metadata) {
-        return metadata.containsKey(id);
-      }
+      return metadataIndex.exists(id);
     } else {
       throw new UnsupportedOperationException("exists() not supported without indexing");
     }
@@ -454,9 +428,7 @@ public class PersistentStorage implements Storage {
    */
   public Serializable getMetadata(Id id) {
     if (index) {
-      synchronized (metadata) {
-        return (Serializable) metadata.get(id);
-      }
+      return metadataIndex.get(id);
     } else {
       throw new UnsupportedOperationException("getMetadata() not supported without indexing");
     }
@@ -490,10 +462,7 @@ public class PersistentStorage implements Storage {
 
           /* then update our cache */
           if (index) {
-            synchronized (PersistentStorage.this.metadata) {
-              PersistentStorage.this.metadata.put(id, metadata);
-              dirty.add(objFile.getParentFile());
-            }
+            metadataIndex.put(id, metadata, objFile.getParentFile());
           }
 
           return Boolean.TRUE;
@@ -532,10 +501,7 @@ public class PersistentStorage implements Storage {
           } catch (Exception e) {
             /* remove our index for this file */
             if (index) {
-              synchronized (metadata) {
-                metadata.remove(id);
-                dirty.add(objFile.getParentFile());
-              }
+              metadataIndex.remove(id, objFile.getParentFile());
             }
 
             /* if there's a problem, move the file to the lost+found */
@@ -568,9 +534,7 @@ public class PersistentStorage implements Storage {
       else if (range.getCCWId().equals(range.getCWId()))
         return scan();
       else
-        synchronized (metadata) {
-          return factory.buildIdSet(new ImmutableSortedMap<Id, Serializable>(metadata.keySubMap(range.getCCWId(), range.getCWId())));
-        }
+        return factory.buildIdSet(metadataIndex.keySubMap(range.getCCWId(), range.getCWId()));
     } else {
       throw new UnsupportedOperationException("scan() not supported without indexing");
     }
@@ -589,9 +553,7 @@ public class PersistentStorage implements Storage {
    */
   public IdSet scan() {
     if (index) {
-      synchronized (metadata){
-        return factory.buildIdSet(new ImmutableSortedMap<Id, Serializable>(metadata.keyMap()));
-      }
+      return factory.buildIdSet(metadataIndex.keyMap());
     } else {
       throw new UnsupportedOperationException("scan() not supported without indexing");
     }
@@ -611,9 +573,7 @@ public class PersistentStorage implements Storage {
       else if (range.getCCWId().equals(range.getCWId()))
         return scanMetadata();
       else
-        synchronized (metadata) {
-          return new ImmutableSortedMap<Id, Serializable>(metadata.keySubMap(range.getCCWId(), range.getCWId()));
-        }
+        return metadataIndex.keySubMap(range.getCCWId(), range.getCWId());
     } else {
       throw new UnsupportedOperationException("scanMetadata() not supported without indexing");
     }
@@ -627,7 +587,7 @@ public class PersistentStorage implements Storage {
    */
   public SortedMap<Id, Serializable> scanMetadata() {
     if (index) {
-      return new ImmutableSortedMap<Id, Serializable>(metadata.keyMap());
+      return metadataIndex.keyMapUnlocked();
     } else {
       throw new UnsupportedOperationException("scanMetadata() not supported without indexing");
     }
@@ -642,7 +602,7 @@ public class PersistentStorage implements Storage {
    */
   public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
     if (index) {
-      return new ImmutableSortedMap<Id, Serializable>(metadata.valueHeadMap((Serializable)value));
+      return metadataIndex.valueHeadMapUnlocked((Serializable)value);
     } else {
       throw new UnsupportedOperationException("scanMetadataValuesHead() not supported without indexing");
     }
@@ -655,7 +615,7 @@ public class PersistentStorage implements Storage {
    */
   public SortedMap<Id, Serializable> scanMetadataValuesNull() {
     if (index) {
-      return new ImmutableSortedMap<Id, Serializable>(metadata.valueNullMap());
+      return metadataIndex.valueNullMapUnlocked();
     } else {
       throw new UnsupportedOperationException("scanMetadataValuesNull() not supported without indexing");
     }
@@ -677,7 +637,7 @@ public class PersistentStorage implements Storage {
    */
   public int getSize() {
     if (index) {
-      return metadata.size();
+      return metadataIndex.sizeUnlocked();
     } else {
       throw new UnsupportedOperationException("getSize() not supported without indexing");
     }
@@ -838,7 +798,7 @@ public class PersistentStorage implements Storage {
 
     if (index) {
       try {
-        modified = readMetadataFile(dir);
+        modified = metadataIndex.readMetadataFile(dir, this::getRangeForDirectory, this::getPrefix);
       } catch (IOException e) {
         logger.error("Got exception {} reading metadata file - regenerating", e, e);
       }
@@ -861,17 +821,17 @@ public class PersistentStorage implements Storage {
 
           /* if the file is newer than the metadata file, update the metadata
           if we don't have the metadata for this file, update it */
-          if (index && ((! metadata.containsKey(id)) || (files[i].lastModified() > modified))) {
-            if (logger.isTraceEnabled()) logger.trace("Reading newer metadata out of file " + files[i] + " id " + id.toStringFull() + " " + files[i].lastModified() + " " + modified + " " + metadata.containsKey(id));
-            metadata.put(id, ObjectFileFormat.readMetadata(files[i], logger));
-            dirty.add(dir);
+          if (index && ((! metadataIndex.containsUnlocked(id)) || (files[i].lastModified() > modified))) {
+            if (logger.isTraceEnabled()) logger.trace("Reading newer metadata out of file " + files[i] + " id " + id.toStringFull() + " " + files[i].lastModified() + " " + modified + " " + metadataIndex.containsUnlocked(id));
+            metadataIndex.putUnlocked(id, ObjectFileFormat.readMetadata(files[i], logger));
+            metadataIndex.markDirtyUnlocked(dir);
           }
         } else {
           moveToLost(files[i]);
 
-          if (index && metadata.containsKey(id)) {
-            metadata.remove(id);
-            dirty.add(dir);
+          if (index && metadataIndex.containsUnlocked(id)) {
+            metadataIndex.removeUnlocked(id);
+            metadataIndex.markDirtyUnlocked(dir);
           }
         }
       } catch (Exception e) {
@@ -1085,7 +1045,7 @@ public class PersistentStorage implements Storage {
 
       /* mark this directory for metadata syncing */
       if (index)
-        dirty.add(dirs[i]);
+        metadataIndex.markDirtyUnlocked(dirs[i]);
     }
 
     /* add the list of directories to the map */
@@ -1205,9 +1165,7 @@ public class PersistentStorage implements Storage {
 
       /* remove id from stored list */
       if (index) {
-        synchronized (metadata) {
-          metadata.remove(id);
-        }
+        metadataIndex.remove(id);
       }
 
       /* record the space collected and delete the file */
@@ -1481,119 +1439,7 @@ public class PersistentStorage implements Storage {
    * them as clean.
    */
   protected void writeDirty() {
-    File[] files = (File[]) dirty.toArray(new File[0]);
-
-    for (int i=0; i<files.length; i++) {
-      HashMap<Id, Serializable> map = new HashMap<Id, Serializable>();
-      IdRange range = getRangeForDirectory(files[i]);
-      Iterator<Id> keys = null;
-
-      if (range.getCCWId().compareTo(range.getCWId()) <= 0)
-        keys = metadata.keySubMap(range.getCCWId(), range.getCWId()).keySet().iterator();
-      else
-        keys = metadata.keyTailMap(range.getCCWId()).keySet().iterator();
-
-      while (keys.hasNext()) {
-        Id next = keys.next();
-        map.put(next, (Serializable) metadata.get(next));
-      }
-
-      try {
-        writeMetadataFile(files[i], map);
-
-        synchronized (metadata) {
-          dirty.remove(files[i]);
-        }
-      } catch (FileNotFoundException f) {
-        try {
-          synchronized (metadata) {
-            dirty.remove(files[i]);
-          }
-
-          logger.warn("ERROR: Could not find directory while writing out metadata in '{}' - removing from dirty list and continuing!", files[i].getCanonicalPath(), f);
-        } catch (IOException g) {
-          logger.error("PANIC: Got IOException {} trying to detail FNF exception {} while writing out file {}", g, f, files[i], g);
-        }
-      } catch (IOException e) {
-        try {
-          logger.warn("ERROR: Got error {} while writing out metadata in '{}' - aborting!", e, files[i].getCanonicalPath(), e);
-        } catch (IOException f) {
-          logger.error("PANIC: Got IOException {} trying to detail exception {} while writing out file {}", f, e, files[i], f);
-        }
-      }
-    }
-  }
-
-  /**
-   * Utility function which reads the metadata file off of disk and stores the
-   * result into the memory cache.
-   *
-   * @param file The directory to read the metadata file for
-   */
-  private long readMetadataFile(File file) throws IOException {
-    File metadata = new File(file, METADATA_FILENAME);
-
-    if (! metadata.exists())
-      return -1L;
-
-    FileInputStream fin = null;
-
-    try {
-      fin = new FileInputStream(metadata);
-      ObjectInputStream objin = new ObjectInputStream(new BufferedInputStream(fin));
-      // defense in depth against a planted metadata file: only admit allowlisted classes
-      JavaSerializationFilter.install(objin, environment);
-
-      IdRange range = getRangeForDirectory(file);
-
-      try {
-        HashMap<?, ?> map = (HashMap<?, ?>) objin.readObject();
-        Iterator<?> keys = map.keySet().iterator();
-
-        while (keys.hasNext()) {
-          Id id = (Id) keys.next();
-
-          if ((range.containsId(id)) && (new File(file, id.toStringFull().substring(getPrefix(file).length())).exists()))
-            this.metadata.put(id, (Serializable)map.get(id));
-          else
-            dirty.add(file);
-        }
-
-        return metadata.lastModified();
-      } catch (ClassNotFoundException e) {
-        logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
-        StorageFiles.deleteFile(metadata);
-        return 0L;
-      } catch (IOException e) {
-        logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
-        StorageFiles.deleteFile(metadata);
-        return 0L;
-      }
-    } finally {
-      fin.close();
-    }
-  }
-
-  /**
-   * Utility function which writes the metadata file out to disk.
-   *
-   * @param file The directory to write the file to
-   * @param map The data to write
-   */
-  private static void writeMetadataFile(File file, HashMap<Id, Serializable> map) throws IOException {
-    FileOutputStream fout = null;
-
-    try {
-      fout = new FileOutputStream(new File(file, METADATA_FILENAME));
-      ObjectOutputStream objout = new ObjectOutputStream(new BufferedOutputStream(fout));
-      objout.writeObject(map);
-      objout.close();
-    } catch (IOException ioe) {
-      throw new JavaSerializationException(map, ioe);
-    } finally {
-      if (fout != null)
-        fout.close();
-    }
+    metadataIndex.writeDirty(this::getRangeForDirectory);
   }
 
   /**
