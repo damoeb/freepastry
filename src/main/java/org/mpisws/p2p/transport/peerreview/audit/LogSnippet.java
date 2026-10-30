@@ -67,7 +67,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  */
 public class LogSnippet {
   byte[] baseHash;
-  public List<SnippetEntry> entries;
+  private final List<SnippetEntry> entries;
 
   public LogSnippet(byte[] baseHash, List<SnippetEntry> entries) {
     this.baseHash = baseHash;
@@ -75,7 +75,7 @@ public class LogSnippet {
   }
 
   public String toString() {
-    return "LogSnippet["+entries.get(0).seq+"-"+entries.get(entries.size()-1).seq+"]";
+    return "LogSnippet["+entries.get(0).getSeq()+"-"+entries.get(entries.size()-1).getSeq()+"]";
   }
 
   public boolean equals(Object o) {
@@ -95,7 +95,7 @@ public class LogSnippet {
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeLong(entries.get(0).seq);
+    buf.writeLong(entries.get(0).getSeq());
     buf.writeByte((byte)0);
     buf.write(baseHash, 0, baseHash.length);
     Iterator<SnippetEntry> i = entries.iterator();
@@ -127,7 +127,7 @@ public class LogSnippet {
   }
 
   public long getFirstSeq() {
-    return entries.get(0).seq;
+    return entries.get(0).getSeq();
   }
 
   public Object getExtInfo() {
@@ -142,22 +142,22 @@ public class LogSnippet {
     logger.debug("Checking whether hash chain in snippet contains node #{}", keyNodeSeq);
 
     for (SnippetEntry entry : entries) {
-      if (entry.seq > keyNodeSeq) break; // fail
+      if (entry.getSeq() > keyNodeSeq) break; // fail
 
       logger.trace("Entry {}", entry);
 
       byte[] contentHash;
-      if (entry.isHash) {
-        contentHash = entry.content;
+      if (entry.isHash()) {
+        contentHash = entry.getContent();
       } else {
-        contentHash = transport.hash(ByteBuffer.wrap(entry.content));
+        contentHash = transport.hash(ByteBuffer.wrap(entry.getContent()));
       }
 
-      currentNodeHash = transport.hash(entry.seq, entry.type, currentNodeHash, contentHash);
+      currentNodeHash = transport.hash(entry.getSeq(), entry.getType(), currentNodeHash, contentHash);
 
       /* If this is the first entry, its hash must match the first authenticator in the challenge */
 
-      if (entry.seq == keyNodeSeq) {
+      if (entry.getSeq() == keyNodeSeq) {
         if (Arrays.equals(currentNodeHash, keyNodeHash)) {
           logger.trace("Yes, the node was found and has the specified hash");
           return true;
@@ -175,4 +175,7 @@ public class LogSnippet {
     return false;
   }
 
+  public List<SnippetEntry> getEntries() {
+    return entries;
+  }
 }

@@ -61,9 +61,9 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_CHALLE
 public class ChallengeMessage<Identifier extends RawSerializable> implements PeerReviewMessage {
   public static final short TYPE = MSG_CHALLENGE;
 
-  public Identifier originator;
-  public long evidenceSeq;
-  public Evidence challenge;
+  private final Identifier originator;
+  private final long evidenceSeq;
+  private final Evidence challenge;
 
   public ChallengeMessage(Identifier originator, long evidenceSeq, Evidence challenge) {
     this.originator = originator;
@@ -97,4 +97,11 @@ public class ChallengeMessage<Identifier extends RawSerializable> implements Pee
     return challenge;
   }
 
+  public long getEvidenceSeq() {
+    return evidenceSeq;
+  }
+
+  public Identifier getOriginator() {
+    return originator;
+  }
 }

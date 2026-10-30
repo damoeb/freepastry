@@ -54,7 +54,7 @@ import rice.p2p.util.RandomAccessFileIOBuffer;
 
 public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implements AuthenticatorStore<Identifier> {
 
-  protected boolean allowDuplicateSeqs;
+  private final boolean allowDuplicateSeqs;
   PeerReview<?, Identifier> peerreview;
   int numSubjects;
   RandomAccessFileIOBuffer authFile;

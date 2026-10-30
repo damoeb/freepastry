@@ -49,8 +49,8 @@ import rice.pastry.messaging.PRawMessage;
 public class FetchLeafsetResponse extends PRawMessage {
   public static final short TYPE = 2;
 
-  public Id subject;
-  public LeafSet leafSet;
+  private final Id subject;
+  private final LeafSet leafSet;
 
   public FetchLeafsetResponse(Id subject, LeafSet leafSet) {
     super(FetchLeafsetApp.APP_ID);
@@ -71,5 +71,13 @@ public class FetchLeafsetResponse extends PRawMessage {
     super(FetchLeafsetApp.APP_ID);
     subject = Id.build(buf);
     leafSet = LeafSet.build(buf, nhf);
+  }
+
+  public LeafSet getLeafSet() {
+    return leafSet;
+  }
+
+  public Id getSubject() {
+    return subject;
   }
 }

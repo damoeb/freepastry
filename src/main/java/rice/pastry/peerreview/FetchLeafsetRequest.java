@@ -49,7 +49,7 @@ public class FetchLeafsetRequest extends PRawMessage {
   /**
    * Stored in the RouteMessage
    */
-  public Id subject;
+  private final Id subject;
 
   public FetchLeafsetRequest(NodeHandle sender, Id subject) {
     super(FetchLeafsetApp.APP_ID);
@@ -66,4 +66,7 @@ public class FetchLeafsetRequest extends PRawMessage {
     subject.serialize(buf);
   }
 
+  public Id getSubject() {
+    return subject;
+  }
 }

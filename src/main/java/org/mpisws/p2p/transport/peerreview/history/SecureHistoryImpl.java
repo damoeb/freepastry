@@ -58,15 +58,15 @@ public class SecureHistoryImpl implements SecureHistory {
 
   protected Logger logger;
 
-  protected HashProvider hashProv;
-  protected boolean pointerAtEnd;
+  private final HashProvider hashProv;
+  private boolean pointerAtEnd;
   protected IndexEntry topEntry;
-  protected long baseSeq;
-  protected long nextSeq;
+  private final long baseSeq;
+  private long nextSeq;
   protected long numEntries;
   protected RandomAccessFileIOBuffer indexFile;
   protected RandomAccessFileIOBuffer dataFile;
-  protected boolean readOnly;
+  private final boolean readOnly;
 
   protected IndexEntryFactory indexFactory;
 
@@ -553,16 +553,16 @@ public class SecureHistoryImpl implements SecureHistory {
   }
 
   public void appendSnippetToHistory(LogSnippet snippet) throws IOException {
-    for (SnippetEntry sEntry : snippet.entries) {
+    for (SnippetEntry sEntry : snippet.getEntries()) {
 
-      if (sEntry.seq > getLastSeq()) {
-        if (!setNextSeq(sEntry.seq))
+      if (sEntry.getSeq() > getLastSeq()) {
+        if (!setNextSeq(sEntry.getSeq()))
           throw new RuntimeException("Audit: Cannot set history sequence number?!?");
 
-        if (!sEntry.isHash) {
-          appendEntry(sEntry.type, true, ByteBuffer.wrap(sEntry.content));
+        if (!sEntry.isHash()) {
+          appendEntry(sEntry.getType(), true, ByteBuffer.wrap(sEntry.getContent()));
         } else {
-          appendHash(sEntry.type, sEntry.content);
+          appendHash(sEntry.getType(), sEntry.getContent());
         }
       } else {
       }

@@ -42,11 +42,11 @@ import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
  * Here we remember calls to investigate() that have not been resolved yet
  */
 public class ActiveInvestigationInfo<Handle> {
-  public Handle target;
-  public long since; // in nanoseconds
-  public long currentTimeout;
-  public Authenticator authFrom;
-  public Authenticator authTo;
+  private final Handle target;
+  private long since; // in nanoseconds
+  private long currentTimeout;
+  private Authenticator authFrom;
+  private Authenticator authTo;
 
   public ActiveInvestigationInfo(Handle target, long since,
       long currentTimeout, Authenticator authFrom, Authenticator authTo) {
@@ -55,5 +55,44 @@ public class ActiveInvestigationInfo<Handle> {
     this.currentTimeout = currentTimeout;
     this.authFrom = authFrom;
     this.authTo = authTo;
+  }
+
+  /** Keeps the earliest authFrom and the latest authTo seen so far. */
+  public void offerAuthenticators(Authenticator from, Authenticator to) {
+    if (authFrom == null || (from.getSeq()<authFrom.getSeq())) {
+      authFrom = from;
+    }
+
+    if (authTo == null || (to.getSeq()>authTo.getSeq())) {
+      authTo = to;
+    }
+  }
+
+  public void extendTimeout(long millis) {
+    currentTimeout += millis;
+  }
+
+  public void extendSince(long since) {
+    this.since = since;
+  }
+
+  public Authenticator getAuthFrom() {
+    return authFrom;
+  }
+
+  public Authenticator getAuthTo() {
+    return authTo;
+  }
+
+  public long getCurrentTimeout() {
+    return currentTimeout;
+  }
+
+  public long getSince() {
+    return since;
+  }
+
+  public Handle getTarget() {
+    return target;
   }
 }

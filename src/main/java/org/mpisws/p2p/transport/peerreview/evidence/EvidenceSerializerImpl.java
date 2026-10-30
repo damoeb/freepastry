@@ -54,11 +54,11 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_INCO
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONCONFORMANT;
 
 public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements EvidenceSerializer {
-  protected int hashSize;
-  protected int signatureSize;
-  protected Serializer<Handle> handleSerializer;
-  protected Serializer<Identifier> idSerializer;
-  protected AuthenticatorSerializerImpl authSerializer;
+  private final int hashSize;
+  private final int signatureSize;
+  private final Serializer<Handle> handleSerializer;
+  private final Serializer<Identifier> idSerializer;
+  private final AuthenticatorSerializerImpl authSerializer;
 
   public EvidenceSerializerImpl(Serializer<Handle> handleSerializer, Serializer<Identifier> idSerializer, int hashSize, int signatureSize) {
     super();

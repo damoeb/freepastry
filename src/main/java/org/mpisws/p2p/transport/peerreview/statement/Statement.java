@@ -47,10 +47,10 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public abstract class Statement<Identifier extends RawSerializable> implements PeerReviewMessage {
-  public Identifier originator;
-  public Identifier subject;
-  public long evidenceSeq;
-  public Evidence evidence;
+  private final Identifier originator;
+  private final Identifier subject;
+  private final long evidenceSeq;
+  private final Evidence evidence;
 
   public Statement(Identifier originator, Identifier subject,
       long evidenceSeq, Evidence evidence) {
@@ -76,4 +76,20 @@ public abstract class Statement<Identifier extends RawSerializable> implements P
   }
 
   protected abstract boolean isResponse();
+
+  public Evidence getEvidence() {
+    return evidence;
+  }
+
+  public long getEvidenceSeq() {
+    return evidenceSeq;
+  }
+
+  public Identifier getOriginator() {
+    return originator;
+  }
+
+  public Identifier getSubject() {
+    return subject;
+  }
 }

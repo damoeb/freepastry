@@ -71,9 +71,9 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   StatusChangeListener<Identifier> listener;
   boolean notificationEnabled;
 
-  protected Environment environment;
+  private final Environment environment;
 
-  protected Logger logger;
+  private final Logger logger;
   IdStrTranslator<Identifier> stringTranslator;
   AuthenticatorSerializer authSerializer;
 

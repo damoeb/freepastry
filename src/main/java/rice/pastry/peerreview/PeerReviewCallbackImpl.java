@@ -122,7 +122,7 @@ public class PeerReviewCallbackImpl implements PeerReviewCallback<TransportLayer
     NodeHandleFactory<?> nodeHandleFactory = nodeFactory.getNodeHandleFactory(pn);
     NodeHandle handle = nodeHandleFactory.readNodeHandle(buffer);
     // put this in the localHandleTable, where it will be read/removed in the hacked PastryNodeFactory
-    nodeFactory.localHandleTable.put(pn,handle);
+    nodeFactory.getLocalHandleTable().put(pn,handle);
     nodeFactory.nodeHandleHelper(pn);
 
     // load rt/leafset, liveness state

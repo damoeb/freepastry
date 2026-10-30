@@ -64,11 +64,11 @@ public class ProofInconsistent implements Evidence {
   public static final byte LOG_SNIPPET = 1;
 
 
-  public Authenticator auth1;
+  private final Authenticator auth1;
 
-  public Authenticator auth2;
+  private final Authenticator auth2;
 
-  public LogSnippet snippet;
+  private LogSnippet snippet;
 
   public ProofInconsistent(Authenticator auth1, Authenticator auth2) {
     this.auth1 = auth1;
@@ -114,4 +114,15 @@ public class ProofInconsistent implements Evidence {
   }
 
 
+  public Authenticator getAuth1() {
+    return auth1;
+  }
+
+  public Authenticator getAuth2() {
+    return auth2;
+  }
+
+  public LogSnippet getSnippet() {
+    return snippet;
+  }
 }

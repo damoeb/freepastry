@@ -78,16 +78,16 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONC
 
 public class StatementProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements StatementProtocol<Handle, Identifier> {
 
-  protected Logger logger;
+  private final Logger logger;
 
-  protected Map<Identifier, LinkedList<IncompleteStatementInfo<Handle, Identifier>>> incompleteStatement =
+  private final Map<Identifier, LinkedList<IncompleteStatementInfo<Handle, Identifier>>> incompleteStatement =
     new HashMap<Identifier, LinkedList<IncompleteStatementInfo<Handle, Identifier>>>();
 
-  protected ChallengeResponseProtocol<Handle, Identifier> challengeProtocol;
-  protected IdentityTransport<Handle, Identifier> transport;
-  protected PeerReview<Handle, Identifier> peerreview;
-  protected PeerInfoStore<Handle, Identifier> infoStore;
-  protected boolean progressTimerActive;
+  private final ChallengeResponseProtocol<Handle, Identifier> challengeProtocol;
+  private final IdentityTransport<Handle, Identifier> transport;
+  private final PeerReview<Handle, Identifier> peerreview;
+  private final PeerInfoStore<Handle, Identifier> infoStore;
+  private boolean progressTimerActive;
 
   public StatementProtocolImpl(
       PeerReview<Handle, Identifier> peerreview,
@@ -131,7 +131,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
         IncompleteStatementInfo<Handle, Identifier> bar = barIter.next();
         if (bar.isFinished() || (bar.getCurrentTimeout() < now)) {
           if (!bar.isFinished()) {
-            logger.warn("Statement by {} is incomplete after the timeout; discarding {}", bar.sender, bar);
+            logger.warn("Statement by {} is incomplete after the timeout; discarding {}", bar.getSender(), bar);
           }
           barIter.remove();
         }
@@ -161,10 +161,10 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
 
     /* Find an empty spot in our message buffer and store the message there */
     IncompleteStatementInfo<Handle, Identifier> idx = new IncompleteStatementInfo<Handle, Identifier>(false,source,peerreview.getTime() + STATEMENT_COMPLETION_TIMEOUT_MILLIS,statement,false,null,options);
-    LinkedList<IncompleteStatementInfo<Handle, Identifier>> foo = incompleteStatement.get(statement.subject);
+    LinkedList<IncompleteStatementInfo<Handle, Identifier>> foo = incompleteStatement.get(statement.getSubject());
     if (foo == null) {
       foo = new LinkedList<IncompleteStatementInfo<Handle,Identifier>>();
-      incompleteStatement.put(statement.subject, foo);
+      incompleteStatement.put(statement.getSubject(), foo);
     }
     foo.add(idx);
 
@@ -188,10 +188,9 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
     if (code == CERT_MISSING) {
       assert(missingCertID != null);
 
-      idx.isMissingCertificate = true;
-      idx.missingCertificateID = missingCertID;
+      idx.markMissingCertificate(missingCertID);
       logger.debug("AUDIT RESPONSE requires certificate for {}; requesting", missingCertID);
-      peerreview.requestCertificate(idx.sender, missingCertID);
+      peerreview.requestCertificate(idx.getSender(), missingCertID);
 
     }
 
@@ -204,25 +203,24 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
 
   @SuppressWarnings("unchecked")
   public void makeProgressOnStatement(IncompleteStatementInfo<Handle, Identifier> idx) {
-    assert(!idx.finished);
+    assert(!idx.isFinished());
 
     /* Fetch the statement and reset all the 'missing' fields */
 
-    Statement<Identifier> statement = idx.statement;
-    idx.isMissingCertificate = false;
+    Statement<Identifier> statement = idx.getStatement();
+    idx.clearMissingCertificate();
 
-    Identifier originator = statement.originator;
-    Identifier subject = statement.subject;
-    long timestamp = statement.evidenceSeq;
-    Evidence payload = statement.evidence;
+    Identifier originator = statement.getOriginator();
+    Identifier subject = statement.getSubject();
+    long timestamp = statement.getEvidenceSeq();
+    Evidence payload = statement.getEvidence();
 
     /* Retrieve the subject's public key if we don't have it already */
 
     if (!transport.hasCertificate(subject)) {
       logger.debug("Need subject's certificate to verify statement; asking source for it");
-      idx.isMissingCertificate = true;
-      idx.missingCertificateID = subject;
-      peerreview.requestCertificate(idx.sender, subject);
+      idx.markMissingCertificate(subject);
+      peerreview.requestCertificate(idx.getSender(), subject);
       return;
     }
 
@@ -237,15 +235,15 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
        case CHAL_AUDIT: {
          ChallengeAudit auditEvidence = (ChallengeAudit)payload;
 
-         if (!peerreview.verify(subject, auditEvidence.from)) {
+         if (!peerreview.verify(subject, auditEvidence.getFrom())) {
            logger.warn("AUDIT challenge's first authenticator has an invalid signature");
-           idx.finished = true;
+           idx.finish();
            return;
          }
 
-         if (!peerreview.verify(subject, auditEvidence.to)) {
+         if (!peerreview.verify(subject, auditEvidence.getTo())) {
            logger.warn("AUDIT challenge's second authenticator has an invalid signature");
-           idx.finished = true;
+           idx.finish();
            return;
          }
 
@@ -261,7 +259,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
          Authenticator authenticator = peerreview.extractAuthenticator(peerreview.getIdentifierExtractor().extractIdentifier(udm.getSenderHandle()), udm.getTopSeq(), EVT_SEND, innerHash, udm.getHTopMinusOne(), udm.getSignature());
          if (authenticator == null) {
            logger.warn("Message in SEND challenge is not properly signed; discarding");
-           idx.finished = true;
+           idx.finish();
            return;
          }
          break;
@@ -269,54 +267,54 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
        case PROOF_INCONSISTENT: {
          ProofInconsistent pi = (ProofInconsistent)payload;
 
-         if (!peerreview.verify(subject, pi.auth1)) {
+         if (!peerreview.verify(subject, pi.getAuth1())) {
            logger.warn("INCONSISTENT proof's first authenticator has an invalid signature");
-           idx.finished = true;
+           idx.finish();
            return;
          }
 
-         if (!peerreview.verify(subject, pi.auth2)) {
+         if (!peerreview.verify(subject, pi.getAuth2())) {
            logger.warn("INCONSISTENT proof's second authenticator has an invalid signature");
-           idx.finished = true;
+           idx.finish();
            return;
          }
 
-         long seq1 = pi.auth1.getSeq();
-         long seq2 = pi.auth2.getSeq();
-         byte[] hash1 = pi.auth1.getHash();
-         byte[] hash2 = pi.auth2.getHash();
+         long seq1 = pi.getAuth1().getSeq();
+         long seq2 = pi.getAuth2().getSeq();
+         byte[] hash1 = pi.getAuth1().getHash();
+         byte[] hash2 = pi.getAuth2().getHash();
 
-         if(pi.snippet == null) {
+         if(pi.getSnippet() == null) {
            if (seq1 != seq2) {
              logger.warn("INCONSISTENT-0 proof's authenticators don't have matching sequence numbers (seq1={}, seq2={}) -- discarding", seq1, seq2);
-             idx.finished = true;
+             idx.finish();
              return;
            }
 
            if (Arrays.equals(hash1, hash2)) {
              logger.atWarn().log(() -> "INCONSISTENT-0 proof's authenticators have the same hash (seq1="+seq1+", seq2="+seq2+") hash: "+MathUtils.toBase64(hash1)+" -- discarding");
-             idx.finished = true;
+             idx.finish();
              return;
            }
          } else {
 
-           long firstSeq = pi.snippet.getFirstSeq();
+           long firstSeq = pi.getSnippet().getFirstSeq();
 
            if (!((firstSeq<seq2) && (seq2<seq1))) {
              logger.warn("INCONSISTENT-1 proof's sequence numbers do not make sense (first={}, seq2={}, seq1={}) -- discarding", firstSeq, seq2, seq1);
-             idx.finished = true;
+             idx.finish();
              return;
            }
 
-           if (!pi.snippet.checkHashChainContains(hash1, seq1, transport, logger)) {
+           if (!pi.getSnippet().checkHashChainContains(hash1, seq1, transport, logger)) {
              logger.warn("Snippet in INCONSISTENT-1 proof cannot be authenticated using first authenticator (#{}) -- discarding", seq1);
-             idx.finished = true;
+             idx.finish();
              return;
            }
 
-           if (pi.snippet.checkHashChainContains(hash2, seq2, transport, logger)) {
+           if (pi.getSnippet().checkHashChainContains(hash2, seq2, transport, logger)) {
              logger.warn("INCONSISTENT-1 proof claims that authenticator 2 (#{}) is not in the snippet, but it is -- discarding", seq2);
-             idx.finished = true;
+             idx.finish();
              return;
            }
          }
@@ -328,18 +326,18 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
 
          /* Is the authenticator properly signed? */
 
-         if (!peerreview.verify(subject, pn.to)) {
+         if (!peerreview.verify(subject, pn.getTo())) {
            logger.warn("NONCONFORMANT proof's authenticator has an invalid signature");
-           idx.finished = true;
+           idx.finish();
            return;
          }
 
          /* Is the snippet well-formed, and do we have all the certificates? */
 
-         switch (checkSnippetAndRequestCertificates(pn.snippet, idx)) {
+         switch (checkSnippetAndRequestCertificates(pn.getSnippet(), idx)) {
            case INVALID:
              logger.warn("PROOF NONCONFORMANT is not well-formed; discarding");
-             idx.finished = true;
+             idx.finish();
              return;
            case CERT_MISSING:
              return;
@@ -350,7 +348,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
          /* Are the signatures in the snippet okay, and does int contain the authenticated node? */
 
          if (!peerreview.getEvidenceTool().checkSnippetSignatures(
-             pn.snippet,pn.myHandle,null, FLAG_INCLUDE_CHECKPOINT,null,pn.to.getHash(),pn.to.getSeq())) {
+             pn.getSnippet(),pn.getMyHandle(),null, FLAG_INCLUDE_CHECKPOINT,null,pn.getTo().getHash(),pn.getTo().getSeq())) {
            logger.warn("PROOF NONCONFORMANT cannot be validated (signatures or authenticator)");
            return;
          }
@@ -361,17 +359,17 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
               - the snippet starts with a checkpoint and contains the authenticated node
             We must now replay the log; if the proof is valid, it won't check out. */
          try {
-           SecureHistory subjectHistory = peerreview.getHistoryFactory().createTemp(pn.snippet.getFirstSeq()-1, pn.snippet.getBaseHash());
-           subjectHistory.appendSnippetToHistory(pn.snippet);
+           SecureHistory subjectHistory = peerreview.getHistoryFactory().createTemp(pn.getSnippet().getFirstSeq()-1, pn.getSnippet().getBaseHash());
+           subjectHistory.appendSnippetToHistory(pn.getSnippet());
 
            // TODO: pass the extInfo of the proof to the verifier (null for now; inherited from the C++ PeerReview port)
-           Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, pn.myHandle, 1, pn.snippet.getFirstSeq()/1000000, null);
+           Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, pn.getMyHandle(), 1, pn.getSnippet().getFirstSeq()/1000000, null);
            PeerReviewCallback<Handle, Identifier> replayApp = peerreview.getApp().getReplayInstance(verifier);
            verifier.setApplication(replayApp);
 
            logger.info("REPLAY ============================================");
-           logger.debug("Node being replayed: {}", pn.myHandle);
-           logger.debug("Range in log       : {}-?", pn.snippet.getFirstSeq());
+           logger.debug("Node being replayed: {}", pn.getMyHandle());
+           logger.debug("Range in log       : {}-?", pn.getSnippet().getFirstSeq());
 
            while (verifier.makeProgress());
            boolean verifiedOK = verifier.verifiedOK();
@@ -387,7 +385,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
        }
        default: {
          logger.warn("Unknown payload type #{} in accusation; discarding", payload.getEvidenceType());
-         idx.finished = true;
+         idx.finish();
          return;
        }
      }
@@ -414,7 +412,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
          switch (checkSnippetAndRequestCertificates(auditResponse.getLogSnippet(), idx)) {
            case INVALID:
              logger.warn("AUDIT RESPONSE is not well-formed; discarding");
-             idx.finished = true;
+             idx.finish();
              return;
            case CERT_MISSING:
              return;
@@ -435,7 +433,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
        default :
        {
          logger.warn("Unknown payload type #{} in response; discarding", payload.getEvidenceType());
-         idx.finished = true;
+         idx.finish();
          return;
        }
      }
@@ -445,11 +443,11 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
       necessary supplemental material to be able to check it and any responses to it */
 
     try {
-      challengeProtocol.handleStatement(idx.sender, statement, idx.options);
+      challengeProtocol.handleStatement(idx.getSender(), statement, idx.getOptions());
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
-    idx.finished = true;
+    idx.finish();
   }
 
 }

@@ -50,7 +50,7 @@ import rice.pastry.transport.TLDeserializer;
 
 public class CallbackFactory extends SocketPastryNodeFactory {
 
-  public Map<PastryNode, NodeHandle> localHandleTable;
+  private final Map<PastryNode, NodeHandle> localHandleTable;
 
   public CallbackFactory(Environment env)
       throws IOException {
@@ -74,4 +74,7 @@ public class CallbackFactory extends SocketPastryNodeFactory {
     return ret;
   }
 
+  public Map<PastryNode, NodeHandle> getLocalHandleTable() {
+    return localHandleTable;
+  }
 }

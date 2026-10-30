@@ -61,9 +61,9 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
  * @param <Identifier>
  */
 public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
-  public Identifier receiverId;
-  public ByteBuffer payload;
-  public byte[] hash;
+  private final Identifier receiverId;
+  private final ByteBuffer payload;
+  private byte[] hash;
 
   public EvtSend(Identifier receiverId, ByteBuffer payload, int relevantPayload, HashProvider hasher) {
     this.receiverId = receiverId;
@@ -107,5 +107,13 @@ public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
 
   public short getType() {
     return EVT_SEND;
+  }
+
+  public ByteBuffer getPayload() {
+    return payload;
+  }
+
+  public Identifier getReceiverId() {
+    return receiverId;
   }
 }

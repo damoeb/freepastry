@@ -87,7 +87,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
   AuthenticatorStore<Identifier> authOutStore;
   AuditProtocol<Handle, Identifier> auditProtocol;
   CommitmentProtocol<Handle, Identifier> commitmentProtocol;
-  protected Logger logger;
+  private final Logger logger;
   Map<Handle, LinkedList<PacketInfo<Handle, Identifier>>> queue = new HashMap<Handle,LinkedList<PacketInfo<Handle, Identifier>>>();
 
   public ChallengeResponseProtocolImpl(
@@ -162,11 +162,11 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       case CHAL_AUDIT: {
         ChallengeAudit audit = (ChallengeAudit)challenge.getChallenge();
 
-        byte flags = audit.flags;
-        long seqFrom = audit.from.getSeq();
-        long seqTo = audit.to.getSeq();
+        byte flags = audit.getFlags();
+        long seqFrom = audit.getFrom().getSeq();
+        long seqTo = audit.getTo().getSeq();
         logger.atTrace().log(() -> "Received an AUDIT challenge for ["+seqFrom+","+seqTo+"] from "+source+
-            " (eseq="+challenge.evidenceSeq+", flags="+audit.flags+")");
+            " (eseq="+challenge.getEvidenceSeq()+", flags="+audit.getFlags()+")");
 
         if (seqTo < seqFrom) {
           logger.warn("Received an AUDIT challenge with seqTo<seqFrom:{}<{}", seqTo, seqFrom);
@@ -227,16 +227,16 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
           /* Serialize the requested log snippet */
 
-          HashPolicy hashPolicy = new ChallengeHashPolicy<Identifier>(flags, challenge.originator, peerreview.getIdSerializer());
+          HashPolicy hashPolicy = new ChallengeHashPolicy<Identifier>(flags, challenge.getOriginator(), peerreview.getIdSerializer());
           LogSnippet snippet;
           if ((snippet = history.serializeRange(idxFrom, idxTo, hashPolicy)) != null) {
             /* Put together a RESPONSE message */
             ResponseMessage<Identifier> response = new ResponseMessage<Identifier>(
-                challenge.originator,peerreview.getLocalId(),challenge.evidenceSeq,new AuditResponse<Handle>(peerreview.getLocalHandle(),snippet));
+                challenge.getOriginator(),peerreview.getLocalId(),challenge.getEvidenceSeq(),new AuditResponse<Handle>(peerreview.getLocalHandle(),snippet));
 
             /* ... and send it back to the challenger */
 
-            logger.trace("Answering AUDIT challenge with {}-entry log snippet", snippet.entries.size());
+            logger.trace("Answering AUDIT challenge with {}-entry log snippet", snippet.getEntries().size());
             peerreview.transmit(source, response, null, options);
           } else {
             logger.warn("Error accessing history in handleChallenge({},{})", source, challenge);
@@ -271,7 +271,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
         /* Put together a RESPONSE with an authenticator for the message in the challenge */
 
-        ResponseMessage<Identifier> rMsg = new ResponseMessage<Identifier>(challenge.originator,peerreview.getLocalId(),challenge.evidenceSeq,ret.a());
+        ResponseMessage<Identifier> rMsg = new ResponseMessage<Identifier>(challenge.getOriginator(),peerreview.getLocalId(),challenge.getEvidenceSeq(),ret.a());
 
         /* ... and send it back to the challenger */
 
@@ -296,14 +296,14 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
   protected void handleResponse(ResponseMessage<Identifier> message, Map<String, Object> options) throws IOException {
     /* If this is a response to an AUDIT, we let the AuditProtocol handle it */
 
-    if (message.originator.equals(peerreview.getLocalId())) {
-      Evidence auditEvidence = auditProtocol.statOngoingAudit(message.subject, message.evidenceSeq);
+    if (message.getOriginator().equals(peerreview.getLocalId())) {
+      Evidence auditEvidence = auditProtocol.statOngoingAudit(message.getSubject(), message.getEvidenceSeq());
       if (auditEvidence != null) {
-        if (isValidResponse(message.subject, auditEvidence, message.evidence, true)) {
-          logger.debug("Received response to ongoing AUDIT from {}", message.subject);
-          auditProtocol.processAuditResponse(message.subject, message.evidenceSeq, (AuditResponse<Handle>)message.evidence);
+        if (isValidResponse(message.getSubject(), auditEvidence, message.getEvidence(), true)) {
+          logger.debug("Received response to ongoing AUDIT from {}", message.getSubject());
+          auditProtocol.processAuditResponse(message.getSubject(), message.getEvidenceSeq(), (AuditResponse<Handle>)message.getEvidence());
         } else {
-          logger.warn("Invalid response to ongoing audit of {}", message.subject);
+          logger.warn("Invalid response to ongoing audit of {}", message.getSubject());
         }
 
         return;
@@ -315,7 +315,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
     Handle interestedParty = null;
 
-    EvidenceRecord<Handle, Identifier> record = infoStore.findEvidence(message.originator, message.subject, message.evidenceSeq);
+    EvidenceRecord<Handle, Identifier> record = infoStore.findEvidence(message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
     interestedParty = record.getInterestedParty();
     if (record == null) {
       logger.warn("Received response, but matching request is missing; discarding");
@@ -338,13 +338,13 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
     /* Retrieve the evidence */
     try {
-      Evidence evidence = infoStore.getEvidence(message.originator, message.subject, message.evidenceSeq);
+      Evidence evidence = infoStore.getEvidence(message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
 
       /* Check the response against the evidence; if it is valid, add it to our store */
 
-      if (isValidResponse(message.subject, evidence, message.evidence)) {
-        logger.debug("Received valid response (orig={}, subject={}, t={}); adding", message.originator, message.subject, message.evidenceSeq);
-        infoStore.addResponse(message.originator, message.subject, message.evidenceSeq, message.evidence);
+      if (isValidResponse(message.getSubject(), evidence, message.getEvidence())) {
+        logger.debug("Received valid response (orig={}, subject={}, t={}); adding", message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
+        infoStore.addResponse(message.getOriginator(), message.getSubject(), message.getEvidenceSeq(), message.getEvidence());
 
         /* If we've only relayed this challenge for another node (probably in our
            capacity as a witness), we need to forward the response back to
@@ -379,8 +379,8 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     case CHAL_AUDIT: {
       ChallengeAudit evidenceAudit = (ChallengeAudit)evidence;
       AuditResponse<Handle> responseAudit = (AuditResponse<Handle>)response;
-      long requestedBeginSeq = evidenceAudit.from.getSeq();
-      long finalSeq = evidenceAudit.to.getSeq();
+      long requestedBeginSeq = evidenceAudit.getFrom().getSeq();
+      long finalSeq = evidenceAudit.getTo().getSeq();
       boolean includePrevCheckpoint = evidenceAudit.isIncludePrevCheckpoint();
 
       long firstSeq = responseAudit.getFirstSeq();
@@ -397,7 +397,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
 
       boolean snippetOK = peerreview.getEvidenceTool().checkSnippetSignatures(
           responseAudit.getLogSnippet(), responseAudit.getLogOwner(), extractAuthsFromResponse ? authOutStore : null,
-              evidenceAudit.flags,commitmentProtocol,evidenceAudit.from.getHash(),fromNodeMaxSeq);
+              evidenceAudit.getFlags(),commitmentProtocol,evidenceAudit.getFrom().getHash(),fromNodeMaxSeq);
 
       if (!snippetOK)
         return false;
@@ -464,7 +464,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     switch(m.getType()) {
     case MSG_RESPONSE: {
         ResponseMessage<Identifier> message = (ResponseMessage<Identifier>)m;
-        logger.debug("Statement completed: RESPONSE  (orig={}, subject={}, ts={})", message.originator, message.subject, message.evidenceSeq);
+        logger.debug("Statement completed: RESPONSE  (orig={}, subject={}, ts={})", message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
         handleResponse(message, options);
         if (infoStore.getStatus(peerreview.getIdentifierExtractor().extractIdentifier(source)) == STATUS_SUSPECTED) {
           logger.debug("RECHALLENGE {}", source);
@@ -474,7 +474,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       }
     case MSG_ACCUSATION:
       AccusationMessage<Identifier> message = (AccusationMessage<Identifier>)m;
-      logger.debug("Statement completed: ACCUSATION  (orig={}, subject={}, ts={})", message.originator, message.subject, message.evidenceSeq);
+      logger.debug("Statement completed: ACCUSATION  (orig={}, subject={}, ts={})", message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
 
       int status = infoStore.getStatus(peerreview.getIdentifierExtractor().extractIdentifier(source));
         switch (status) {
@@ -483,9 +483,9 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
           break;
         case STATUS_TRUSTED:
           try {
-            Evidence foo = infoStore.getEvidence(message.originator, message.subject, message.evidenceSeq);
+            Evidence foo = infoStore.getEvidence(message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
             if (foo == null) {
-              infoStore.addEvidence(message.originator, message.subject, message.evidenceSeq, message.evidence, source);
+              infoStore.addEvidence(message.getOriginator(), message.getSubject(), message.getEvidenceSeq(), message.getEvidence(), source);
             } else {
               logger.debug("We already have a copy of that challenge; discarding");
             }
@@ -498,7 +498,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
           /* If the status is SUSPECTED, we queue the message for later delivery */
 
           logger.warn("Incoming accusation from SUSPECTED node {}; queueing and challenging the node", source);
-          copyAndEnqueueTail(source, message.evidence, true, message.subject, message.originator, message.evidenceSeq, options);
+          copyAndEnqueueTail(source, message.getEvidence(), true, message.getSubject(), message.getOriginator(), message.getEvidenceSeq(), options);
 
           /* Furthermore, we must have an unanswered challenge, which we send to the remote node */
 

@@ -62,9 +62,9 @@ public class ProofNonconformant<Handle extends RawSerializable> implements Evide
   /**
    * Authenticates the last entry in the snippet
    */
-  public Authenticator to;
-  public Handle myHandle;
-  public LogSnippet snippet;
+  private final Authenticator to;
+  private final Handle myHandle;
+  private final LogSnippet snippet;
 
   public ProofNonconformant(Authenticator to, Handle myHandle,
       LogSnippet snippet) {
@@ -87,5 +87,17 @@ public class ProofNonconformant<Handle extends RawSerializable> implements Evide
     to.serialize(buf);
     myHandle.serialize(buf);
     snippet.serialize(buf);
+  }
+
+  public Handle getMyHandle() {
+    return myHandle;
+  }
+
+  public LogSnippet getSnippet() {
+    return snippet;
+  }
+
+  public Authenticator getTo() {
+    return to;
   }
 }

@@ -110,8 +110,8 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
   /**
    * Null if there is no current timer.
    */
-  protected TimerTask auditTimer;
-  protected TimerTask progressTimer;
+  private TimerTask auditTimer;
+  private TimerTask progressTimer;
 
   Logger logger;
 
@@ -172,7 +172,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
     /* Send the AUDIT challenge to the target node */
 
-    logger.debug("Sending AUDIT request to {} (range={}-{},eseq={})", aai.target, authFrom.getSeq(), authTo.getSeq(), evidenceSeq);
+    logger.debug("Sending AUDIT request to {} (range={}-{},eseq={})", aai.getTarget(), authFrom.getSeq(), authTo.getSeq(), evidenceSeq);
     peerreview.transmit(target, auditRequest, null, null);
   }
 
@@ -263,19 +263,19 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     long now = peerreview.getTime();
 
     for (ActiveAuditInfo<Handle, Identifier> foo : activeAudit.values()) {
-      if ((now >= foo.currentTimeout) && !foo.isReplaying) {
-        Identifier i = peerreview.getIdentifierExtractor().extractIdentifier(foo.target);
+      if ((now >= foo.getCurrentTimeout()) && !foo.isReplaying()) {
+        Identifier i = peerreview.getIdentifierExtractor().extractIdentifier(foo.getTarget());
 
-        logger.warn("No response to AUDIT request; filing as evidence {}", foo.evidenceSeq);
+        logger.warn("No response to AUDIT request; filing as evidence {}", foo.getEvidenceSeq());
         try {
-          infoStore.addEvidence(peerreview.getLocalId(), i, foo.evidenceSeq,
-              foo.request.challenge);
+          infoStore.addEvidence(peerreview.getLocalId(), i, foo.getEvidenceSeq(),
+              foo.getRequest().getChallenge());
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
-        peerreview.sendEvidenceToWitnesses(i, foo.evidenceSeq, foo.request.challenge);
+        peerreview.sendEvidenceToWitnesses(i, foo.getEvidenceSeq(), foo.getRequest().getChallenge());
 
-        terminateAudit(foo.target);
+        terminateAudit(foo.getTarget());
       }
     }
   }
@@ -292,24 +292,24 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     long now = peerreview.getTime();
 
     for (ActiveInvestigationInfo<Handle> aii : activeInvestigation.values()) {
-      if (aii.currentTimeout < now) {
-        long authFromSeq = aii.authFrom!=null ? aii.authFrom.getSeq() : -1;
-        long authToSeq = aii.authTo!=null ? aii.authTo.getSeq() : -1;
-        if ((0<=authFromSeq) && (authFromSeq <= aii.since) && (aii.since < authToSeq)) {
-          logger.debug("Investigation of {} (since {}) is proceeding with an audit", aii.target, aii.since);
+      if (aii.getCurrentTimeout() < now) {
+        long authFromSeq = aii.getAuthFrom()!=null ? aii.getAuthFrom().getSeq() : -1;
+        long authToSeq = aii.getAuthTo()!=null ? aii.getAuthTo().getSeq() : -1;
+        if ((0<=authFromSeq) && (authFromSeq <= aii.getSince()) && (aii.getSince() < authToSeq)) {
+          logger.debug("Investigation of {} (since {}) is proceeding with an audit", aii.getTarget(), aii.getSince());
 
           if (authToSeq > authFromSeq) {
             logger.trace("Authenticators: {}-{}", authFromSeq, authToSeq);
-            beginAudit(aii.target, aii.authFrom, aii.authTo, FLAG_FULL_MESSAGES_SENDER, false);
-            terminateInvestigation(aii.target);
+            beginAudit(aii.getTarget(), aii.getAuthFrom(), aii.getAuthTo(), FLAG_FULL_MESSAGES_SENDER, false);
+            terminateInvestigation(aii.getTarget());
           } else {
-            logger.warn("Cannot start investigation; authTo<authFrom ?!? (since={}, authFrom={}, authTo={})", aii.since, authFromSeq, authToSeq);
-            terminateInvestigation(aii.target);
+            logger.warn("Cannot start investigation; authTo<authFrom ?!? (since={}, authFrom={}, authTo={})", aii.getSince(), authFromSeq, authToSeq);
+            terminateInvestigation(aii.getTarget());
           }
         } else {
-          logger.debug("Retransmitting investigation requests for {} at {}", aii.target, aii.since);
-          sendInvestigation(aii.target);
-          aii.currentTimeout += INVESTIGATION_INTERVAL_MILLIS;
+          logger.debug("Retransmitting investigation requests for {} at {}", aii.getTarget(), aii.getSince());
+          sendInvestigation(aii.getTarget());
+          aii.extendTimeout(INVESTIGATION_INTERVAL_MILLIS);
         }
       }
     }
@@ -381,9 +381,9 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
     /* Read the header of the log snippet */
 
-    ChallengeAudit challengeAudit = (ChallengeAudit)aai.request.challenge;
-    long fromSeq = challengeAudit.from.getSeq();
-    Authenticator toAuthenticator = challengeAudit.to;
+    ChallengeAudit challengeAudit = (ChallengeAudit)aai.getRequest().getChallenge();
+    long fromSeq = challengeAudit.getFrom().getSeq();
+    Authenticator toAuthenticator = challengeAudit.getTo();
     long toSeq = toAuthenticator.getSeq();
     byte[] currentNodeHash = snippet.baseHash;
     byte[] initialNodeHash = snippet.baseHash;
@@ -425,24 +425,24 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     long nextAuthSeq = (authPtr<0) ? -1 : nextAuth.getSeq();
     logger.trace("  NA #{} {}", authPtr, nextAuthSeq);
 
-    for (SnippetEntry sEntry : snippet.entries) {
-      currentSeq = sEntry.seq;
-      if (logger.isTraceEnabled()) logger.trace("[2] Entry type "+sEntry.type+", size="+sEntry.content.length+
-          ", seq="+currentSeq+(sEntry.isHash ? " (hashed)" : ""));
+    for (SnippetEntry sEntry : snippet.getEntries()) {
+      currentSeq = sEntry.getSeq();
+      if (logger.isTraceEnabled()) logger.trace("[2] Entry type "+sEntry.getType()+", size="+sEntry.getContent().length+
+          ", seq="+currentSeq+(sEntry.isHash() ? " (hashed)" : ""));
 
-      byte[] entry = sEntry.content;
+      byte[] entry = sEntry.getContent();
 
       /* Calculate the node hash from the entry */
 
       byte[] contentHash;
-      if (sEntry.isHash) {
-        contentHash = sEntry.content;
+      if (sEntry.isHash()) {
+        contentHash = sEntry.getContent();
         assert(contentHash.length == peerreview.getHashSizeInBytes());
       } else {
         contentHash = transport.hash(ByteBuffer.wrap(entry));
       }
 
-      currentNodeHash = transport.hash(currentSeq, sEntry.type, currentNodeHash, contentHash);
+      currentNodeHash = transport.hash(currentSeq, sEntry.getType(), currentNodeHash, contentHash);
       if (logger.isTraceEnabled()) logger.trace("NH ["+MathUtils.toBase64(currentNodeHash)+"]");
 
       /* If we have an authenticator for this entry (matched by sequence number), the hash in the
@@ -477,7 +477,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
           infoStore.addEvidence(peerreview.getLocalId(), subject, evidenceSeq, proof);
           peerreview.sendEvidenceToWitnesses(subject, evidenceSeq, proof);
 
-          terminateAudit(aai.target);
+          terminateAudit(aai.getTarget());
           return;
 
         }
@@ -511,9 +511,9 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     /* If it should not be replayed (e.g. because it was retrieved during an investigation),
        we stop here */
 
-    if (!aai.shouldBeReplayed/* && !logCanBeAppended*/) {
+    if (!aai.shouldBeReplayed()/* && !logCanBeAppended*/) {
       logger.debug("This audit response does not need to be replayed; discarding");
-      terminateAudit(aai.target);
+      terminateAudit(aai.getTarget());
       return;
     }
 
@@ -557,8 +557,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
       verifier.setApplication(replayApp);
 
-      aai.verifier = verifier;
-      aai.isReplaying = true;
+      aai.startReplay(verifier);
 
       logger.info("REPLAY ============================================");
       logger.debug("Node being replayed: {}", subjectHandle);
@@ -595,14 +594,14 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     /* Terminate the audit, and remember the last authenticator for further reference */
 
     logger.debug("Audit completed; terminating");
-    infoStore.setLastCheckedAuth(peerreview.getIdentifierExtractor().extractIdentifier(aai.target), ((ChallengeAudit)aai.request.challenge).to);
-    terminateAudit(aai.target);
+    infoStore.setLastCheckedAuth(peerreview.getIdentifierExtractor().extractIdentifier(aai.getTarget()), ((ChallengeAudit)aai.getRequest().getChallenge()).getTo());
+    terminateAudit(aai.getTarget());
   }
 
   public ActiveAuditInfo<Handle, Identifier> findOngoingAudit(Identifier subject, long evidenceSeq) {
     ActiveAuditInfo<Handle, Identifier> ret = activeAudit.get(subject);
     if (ret == null) return null;
-    if (!ret.isReplaying && ret.evidenceSeq == evidenceSeq) {
+    if (!ret.isReplaying() && ret.getEvidenceSeq() == evidenceSeq) {
         return ret;
     }
     return null;
@@ -611,7 +610,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
   public Evidence statOngoingAudit(Identifier subject, long evidenceSeq) {
     ActiveAuditInfo<Handle, Identifier> aii = findOngoingAudit(subject, evidenceSeq);
     if (aii == null) return null;
-    return aii.request.challenge;
+    return aii.getRequest().getChallenge();
   }
 
   /* Handle an incoming datagram, which could be either a request for authenticators, or a response to such a request */
@@ -625,59 +624,53 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
           /* The request contains a timestamp T; we're being asked to return two authenticators,
              one has to be older than T, and the other must be as recent as possible */
 
-          logger.info("Received authenticator request for {} (since {})", request.subject, request.timestamp);
+          logger.info("Received authenticator request for {} (since {})", request.getSubject(), request.getTimestamp());
 
           /* There are several places we might find 'old' authenticators. Check all of them,
              and pick the authenticator that is closest to T */
 
-          Authenticator a1 = authInStore.getLastAuthenticatorBefore(request.subject, request.timestamp);
-          Authenticator a2 = authCacheStore.getLastAuthenticatorBefore(request.subject, request.timestamp);
-          Authenticator a3 = authInStore.getOldestAuthenticator(request.subject);
+          Authenticator a1 = authInStore.getLastAuthenticatorBefore(request.getSubject(), request.getTimestamp());
+          Authenticator a2 = authCacheStore.getLastAuthenticatorBefore(request.getSubject(), request.getTimestamp());
+          Authenticator a3 = authInStore.getOldestAuthenticator(request.getSubject());
 
           Authenticator best = null;
 
-          if (a1 != null && (best == null || (!(best.getSeq()<request.timestamp) && (a1.getSeq()<request.timestamp)) || ((best.getSeq()<request.timestamp) && (a1.getSeq()<request.timestamp) && (best.getSeq()<a1.getSeq())))) {
+          if (a1 != null && (best == null || (!(best.getSeq()<request.getTimestamp()) && (a1.getSeq()<request.getTimestamp())) || ((best.getSeq()<request.getTimestamp()) && (a1.getSeq()<request.getTimestamp()) && (best.getSeq()<a1.getSeq())))) {
             best = a1;
           }
 
-          if (a2 != null && (best == null || (!(best.getSeq()<request.timestamp) && (a2.getSeq()<request.timestamp)) || ((best.getSeq()<request.timestamp) && (a2.getSeq()<request.timestamp) && (best.getSeq()<a2.getSeq())))) {
+          if (a2 != null && (best == null || (!(best.getSeq()<request.getTimestamp()) && (a2.getSeq()<request.getTimestamp())) || ((best.getSeq()<request.getTimestamp()) && (a2.getSeq()<request.getTimestamp()) && (best.getSeq()<a2.getSeq())))) {
             best = a2;
           }
 
-          if (a3 != null && (best == null || (!(best.getSeq()<request.timestamp) && (a3.getSeq()<request.timestamp)) || ((best.getSeq()<request.timestamp) && (a3.getSeq()<request.timestamp) && (best.getSeq()<a3.getSeq())))) {
+          if (a3 != null && (best == null || (!(best.getSeq()<request.getTimestamp()) && (a3.getSeq()<request.getTimestamp())) || ((best.getSeq()<request.getTimestamp()) && (a3.getSeq()<request.getTimestamp()) && (best.getSeq()<a3.getSeq())))) {
             best = a3;
           }
 
           /* Recent authenticators can be found in two places; check both */
 
-          Authenticator foo = authInStore.getMostRecentAuthenticator(request.subject);
+          Authenticator foo = authInStore.getMostRecentAuthenticator(request.getSubject());
           if (foo == null) {
-            foo = authCacheStore.getMostRecentAuthenticator(request.subject);
+            foo = authCacheStore.getMostRecentAuthenticator(request.getSubject());
           }
 
           if (best != null && foo != null) {
-            AuthResponse<Identifier> response = new AuthResponse<Identifier>(request.subject,best,foo);
+            AuthResponse<Identifier> response = new AuthResponse<Identifier>(request.getSubject(),best,foo);
             peerreview.transmit(handle, response, null, null);
           } else {
-            logger.warn("Cannot respond to this request; we don't have any authenticators for {}", request.subject);
+            logger.warn("Cannot respond to this request; we don't have any authenticators for {}", request.getSubject());
           }
         }
 
         break;
       case MSG_AUTHRESP: { /* Response to a request for authenticators */
         AuthResponse<Identifier> response = (AuthResponse<Identifier>)message;
-          logger.debug("Received AUTHRESP(<{}>, {}..{}) from {}", response.subject, response.authFrom, response.authTo, handle);
+          logger.debug("Received AUTHRESP(<{}>, {}..{}) from {}", response.getSubject(), response.getAuthFrom(), response.getAuthTo(), handle);
 
           // TODO: check the signatures of response.authFrom and response.authTo
-          ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(response.subject);
+          ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(response.getSubject());
           if (investigation != null) {
-            if (investigation.authFrom == null || (response.authFrom.getSeq()<investigation.authFrom.getSeq())) {
-              investigation.authFrom =  response.authFrom;
-            }
-
-            if (investigation.authTo == null || (response.authTo.getSeq()>investigation.authTo.getSeq())) {
-              investigation.authTo = response.authTo;
-            }
+            investigation.offerAuthenticators(response.getAuthFrom(), response.getAuthTo());
           } else {
             logger.warn("AUTH response does not match any ongoing investigations; ignoring");
           }
@@ -695,8 +688,8 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
    * pick the authenticators that work best for us.
    */
   protected void sendInvestigation(ActiveInvestigationInfo<Handle> investigation) {
-    Identifier id = peerreview.getIdentifierExtractor().extractIdentifier(investigation.target);
-    AuthRequest<Identifier> request = new AuthRequest<Identifier>(investigation.since,id);
+    Identifier id = peerreview.getIdentifierExtractor().extractIdentifier(investigation.getTarget());
+    AuthRequest<Identifier> request = new AuthRequest<Identifier>(investigation.getSince(),id);
 
     evidenceTransferProtocol.sendMessageToWitnesses(id, request, null, null);
   }
@@ -710,13 +703,13 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         target);
     ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(id);
     if (investigation != null) {
-      if (since * 1000000 > investigation.since) {
-        logger.debug("Skipping investigation request for {} at {}, since an investigation at {} is already ongoing", target, since, investigation.since);
+      if (since * 1000000 > investigation.getSince()) {
+        logger.debug("Skipping investigation request for {} at {}, since an investigation at {} is already ongoing", target, since, investigation.getSince());
         return;
       }
 
-      if (logger.isDebugEnabled()) logger.debug("Extending existing investigation from "+ investigation.since + " to " + since * 1000000);
-      investigation.since = since * 1000000; /* log granularity */
+      if (logger.isDebugEnabled()) logger.debug("Extending existing investigation from "+ investigation.getSince() + " to " + since * 1000000);
+      investigation.extendSince(since * 1000000); /* log granularity */
     } else {
       investigation = new ActiveInvestigationInfo<Handle>(target, since * 1000000,
           peerreview.getTime() + INVESTIGATION_INTERVAL_MILLIS, null, null);

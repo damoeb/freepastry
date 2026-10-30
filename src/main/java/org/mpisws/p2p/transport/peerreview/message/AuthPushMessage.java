@@ -59,7 +59,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHPU
  */
 public class AuthPushMessage<Identifier extends RawSerializable> implements PeerReviewMessage {
 
-  public Map<Identifier, List<Authenticator>> authenticators;
+  private final Map<Identifier, List<Authenticator>> authenticators;
 
   public AuthPushMessage(Map<Identifier, List<Authenticator>> authenticators) {
     this.authenticators = authenticators;
@@ -93,5 +93,9 @@ public class AuthPushMessage<Identifier extends RawSerializable> implements Peer
         a.serialize(buf);
       }
     }
+  }
+
+  public Map<Identifier, List<Authenticator>> getAuthenticators() {
+    return authenticators;
   }
 }

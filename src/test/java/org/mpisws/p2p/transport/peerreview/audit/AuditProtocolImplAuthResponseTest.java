@@ -153,12 +153,12 @@ public class AuditProtocolImplAuthResponseTest {
     audit.handleIncomingDatagram(new Id(8), new AuthResponse<Id>(subject, from, to));
 
     ActiveInvestigationInfo<Id> investigation = audit.activeInvestigation.get(subject);
-    assertSame(from, investigation.authFrom);
-    assertSame(to, investigation.authTo);
+    assertSame(from, investigation.getAuthFrom());
+    assertSame(to, investigation.getAuthTo());
 
     // a later response only widens the range
     audit.handleIncomingDatagram(new Id(9), new AuthResponse<Id>(subject, auth(15), auth(30)));
-    assertSame(from, investigation.authFrom);
-    assertEquals(30, investigation.authTo.getSeq());
+    assertSame(from, investigation.getAuthFrom());
+    assertEquals(30, investigation.getAuthTo().getSeq());
   }
 }

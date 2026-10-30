@@ -48,9 +48,9 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 
 public class ReplaySocket<Identifier> implements P2PSocket<Identifier>, SocketRequestHandle<Identifier> {
 
-  protected Identifier identifier;
-  protected int socketId;
-  protected ReplayVerifier<Identifier> verifier;
+  private final Identifier identifier;
+  private final int socketId;
+  private final ReplayVerifier<Identifier> verifier;
   boolean closed = false;
   boolean outputShutdown = false;
   Map<String, Object> options;

@@ -60,10 +60,10 @@ import rice.p2p.util.MathUtils;
  */
 public class SnippetEntry {
 
-  public byte type;
-  public long seq;
-  public boolean isHash = false;
-  public byte[] content; // may be a hash
+  private final byte type;
+  private final long seq;
+  private boolean isHash = false;
+  private final byte[] content; // may be a hash
 
   public static final int NUM_INDEXES = 1000000;
 
@@ -189,4 +189,19 @@ public class SnippetEntry {
     return MathUtils.uByteToInt(b);
   }
 
+  public byte[] getContent() {
+    return content;
+  }
+
+  public boolean isHash() {
+    return isHash;
+  }
+
+  public long getSeq() {
+    return seq;
+  }
+
+  public byte getType() {
+    return type;
+  }
 }

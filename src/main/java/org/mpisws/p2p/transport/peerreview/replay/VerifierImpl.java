@@ -99,8 +99,8 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
    */
   Map<Long, VerifierMRH<Handle>> callbacks = new HashMap<Long, VerifierMRH<Handle>>();
 
-  protected Handle localHandle;
-  protected SecureHistory history;
+  private final Handle localHandle;
+  private final SecureHistory history;
   PeerReviewCallback<Handle, Identifier> app;
   boolean foundFault;
 
@@ -110,8 +110,8 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
   boolean initialized;
   int[] eventToCallback = new int[256];
-  protected Logger logger;
-  protected IdentityTransport<Handle, Identifier> transport;
+  private final Logger logger;
+  private final IdentityTransport<Handle, Identifier> transport;
 
   RandomSource prng;
 

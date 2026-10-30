@@ -44,8 +44,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
 
 public class EvtSign extends HistoryEvent {
-  public byte[] hTopMinusOne;
-  public byte[] signature;
+  private final byte[] hTopMinusOne;
+  private final byte[] signature;
   public EvtSign(byte[] hTopMinusOne, byte[] signature) {
     this.hTopMinusOne = hTopMinusOne;
     this.signature = signature;
@@ -65,5 +65,13 @@ public class EvtSign extends HistoryEvent {
   public void serialize(OutputBuffer buf) throws IOException {
     buf.write(hTopMinusOne, 0, hTopMinusOne.length);
     buf.write(signature, 0, signature.length);
+  }
+
+  public byte[] getHTopMinusOne() {
+    return hTopMinusOne;
+  }
+
+  public byte[] getSignature() {
+    return signature;
   }
 }

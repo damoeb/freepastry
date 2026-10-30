@@ -55,8 +55,8 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRE
  *
  */
 public class AuthRequest<Identifier extends RawSerializable> implements PeerReviewMessage {
-  public long timestamp;
-  public Identifier subject;
+  private final long timestamp;
+  private final Identifier subject;
 
   public AuthRequest(long timestamp, Identifier subject) {
     this.timestamp = timestamp;
@@ -75,5 +75,13 @@ public class AuthRequest<Identifier extends RawSerializable> implements PeerRevi
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeLong(timestamp);
     subject.serialize(buf);
+  }
+
+  public Identifier getSubject() {
+    return subject;
+  }
+
+  public long getTimestamp() {
+    return timestamp;
   }
 }

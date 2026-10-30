@@ -58,9 +58,9 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRE
  * @param <Identifier>
  */
 public class AuthResponse<Identifier extends RawSerializable> implements PeerReviewMessage {
-  public Identifier subject;
-  public Authenticator authFrom;
-  public Authenticator authTo;
+  private final Identifier subject;
+  private final Authenticator authFrom;
+  private final Authenticator authTo;
 
   public AuthResponse(Identifier subject, Authenticator authFrom, Authenticator authTo) {
     this.subject = subject;
@@ -82,5 +82,17 @@ public class AuthResponse<Identifier extends RawSerializable> implements PeerRev
     subject.serialize(buf);
     authFrom.serialize(buf);
     authTo.serialize(buf);
+  }
+
+  public Authenticator getAuthFrom() {
+    return authFrom;
+  }
+
+  public Authenticator getAuthTo() {
+    return authTo;
+  }
+
+  public Identifier getSubject() {
+    return subject;
   }
 }

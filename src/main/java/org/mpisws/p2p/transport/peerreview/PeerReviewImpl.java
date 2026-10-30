@@ -137,46 +137,46 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     PeerReview<Handle, Identifier>, StatusChangeListener<Identifier> {
 
   // above/below layers
-  protected PeerReviewCallback<Handle, Identifier> callback;
-  protected IdentityTransport<Handle, Identifier> transport;
+  private PeerReviewCallback<Handle, Identifier> callback;
+  private final IdentityTransport<Handle, Identifier> transport;
 
   // strategies for management of Generics
-  protected Serializer<Handle> handleSerializer;
-  protected Serializer<Identifier> idSerializer;
-  protected IdentifierExtractor<Handle, Identifier> identifierExtractor;
-  protected IdStrTranslator<Identifier> stringTranslator;
-  protected EvidenceSerializer evidenceSerializer;
-  protected AuthenticatorSerializer authenticatorSerialilzer;
-  protected EvidenceTool<Handle, Identifier> evidenceTool;
+  private final Serializer<Handle> handleSerializer;
+  private final Serializer<Identifier> idSerializer;
+  private final IdentifierExtractor<Handle, Identifier> identifierExtractor;
+  private final IdStrTranslator<Identifier> stringTranslator;
+  private final EvidenceSerializer evidenceSerializer;
+  private final AuthenticatorSerializer authenticatorSerialilzer;
+  private EvidenceTool<Handle, Identifier> evidenceTool;
 
   // compatibility with rice environment
-  protected Environment env;
-  protected Logger logger;
+  private final Environment env;
+  private final Logger logger;
 
   // storage
-  protected AuthenticatorStore<Identifier> authInStore;
-  protected AuthenticatorStore<Identifier> authOutStore;
-  protected AuthenticatorStore<Identifier> authCacheStore;
-  protected AuthenticatorStore<Identifier> authPendingStore;
-  protected PeerInfoStore<Handle, Identifier> infoStore;
-  protected SecureHistoryFactory historyFactory;
-  protected SecureHistory history;
-  protected VerifierFactory<Handle, Identifier> verifierFactory;
+  private AuthenticatorStore<Identifier> authInStore;
+  private AuthenticatorStore<Identifier> authOutStore;
+  private AuthenticatorStore<Identifier> authCacheStore;
+  private AuthenticatorStore<Identifier> authPendingStore;
+  private PeerInfoStore<Handle, Identifier> infoStore;
+  private final SecureHistoryFactory historyFactory;
+  private SecureHistory history;
+  private VerifierFactory<Handle, Identifier> verifierFactory;
 
   // protocols
-  protected CommitmentProtocol<Handle, Identifier> commitmentProtocol;
-  protected EvidenceTransferProtocol<Handle, Identifier> evidenceTransferProtocol;
-  protected AuthenticatorPushProtocol<Handle, Identifier> authPushProtocol;
-  protected AuditProtocol<Handle, Identifier> auditProtocol;
-  protected ChallengeResponseProtocol<Handle, Identifier> challengeProtocol;
-  protected StatementProtocolImpl<Handle, Identifier> statementProtocol;
+  private CommitmentProtocol<Handle, Identifier> commitmentProtocol;
+  private EvidenceTransferProtocol<Handle, Identifier> evidenceTransferProtocol;
+  private AuthenticatorPushProtocol<Handle, Identifier> authPushProtocol;
+  private AuditProtocol<Handle, Identifier> auditProtocol;
+  private ChallengeResponseProtocol<Handle, Identifier> challengeProtocol;
+  private StatementProtocolImpl<Handle, Identifier> statementProtocol;
 
   long nextEvidenceSeq = 0L;
   private TimerTask maintenanceTask;
   private TimerTask authPushTask;
   private TimerTask checkpointTask;
 
-  protected RandomSource random;
+  private final RandomSource random;
 
   public RandomSource getRandomSource() {
     return random;
@@ -184,7 +184,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   long lastLogEntry = -1;
   boolean initialized = false;
-  protected long timeToleranceMillis = DEFAULT_TIME_TOLERANCE_MILLIS;
+  private long timeToleranceMillis = DEFAULT_TIME_TOLERANCE_MILLIS;
 
   public PeerReviewImpl(IdentityTransport<Handle, Identifier> transport,
       Environment env, Serializer<Handle> handleSerializer,

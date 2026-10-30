@@ -60,9 +60,9 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLU
 public class ChallengeAudit implements Evidence {
   public static final short TYPE = CHAL_AUDIT;
 
-  public byte flags;
-  public Authenticator from;
-  public Authenticator to;
+  private final byte flags;
+  private final Authenticator from;
+  private final Authenticator to;
 
   public ChallengeAudit(byte flags, Authenticator from, Authenticator to) {
     this.flags = flags;
@@ -90,4 +90,15 @@ public class ChallengeAudit implements Evidence {
     return (flags & FLAG_INCLUDE_CHECKPOINT) == FLAG_INCLUDE_CHECKPOINT;
   }
 
+  public byte getFlags() {
+    return flags;
+  }
+
+  public Authenticator getFrom() {
+    return from;
+  }
+
+  public Authenticator getTo() {
+    return to;
+  }
 }

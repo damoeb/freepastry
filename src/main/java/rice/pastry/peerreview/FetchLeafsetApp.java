@@ -57,12 +57,12 @@ import rice.selector.TimerTask;
 public class FetchLeafsetApp extends PastryAppl {
   public static final int APP_ID = 0xf80d17e8;
 
-  protected Map<Id, Tuple<TimerTask,Collection<Continuation<Collection<NodeHandle>,Exception>>>> pendingLookups =
+  private final Map<Id, Tuple<TimerTask,Collection<Continuation<Collection<NodeHandle>,Exception>>>> pendingLookups =
     new HashMap<Id, Tuple<TimerTask,Collection<Continuation<Collection<NodeHandle>,Exception>>>>();
 
 
-  protected int numNeighbors;
-  protected byte routeMsgVersion;
+  private final int numNeighbors;
+  private final byte routeMsgVersion;
 
   public FetchLeafsetApp(final PastryNode pn, int numNeighbors) {
     super(pn, null, APP_ID, (buf, type, priority, sender) -> {
@@ -85,9 +85,9 @@ public class FetchLeafsetApp extends PastryAppl {
     switch(m.getType()) {
     case FetchLeafsetRequest.TYPE:
       FetchLeafsetRequest req = (FetchLeafsetRequest)m;
-      logger.info("getNeighbors({}) sending response", req.subject);
+      logger.info("getNeighbors({}) sending response", req.getSubject());
 
-      thePastryNode.send(req.getSender(),new FetchLeafsetResponse(req.subject,thePastryNode.getLeafSet()),null,null);
+      thePastryNode.send(req.getSender(),new FetchLeafsetResponse(req.getSubject(),thePastryNode.getLeafSet()),null,null);
       return;
     case FetchLeafsetResponse.TYPE:
       handleResponse((FetchLeafsetResponse)m);
@@ -96,12 +96,12 @@ public class FetchLeafsetApp extends PastryAppl {
   }
 
   protected void handleResponse(FetchLeafsetResponse response) {
-    logger.info("handleResponse({})", response.subject);
-    Tuple<TimerTask, Collection<Continuation<Collection<NodeHandle>, Exception>>> foo = pendingLookups.remove(response.subject);
+    logger.info("handleResponse({})", response.getSubject());
+    Tuple<TimerTask, Collection<Continuation<Collection<NodeHandle>, Exception>>> foo = pendingLookups.remove(response.getSubject());
     if (foo == null) return;
     foo.a().cancel();
 
-    NodeSet ns = response.leafSet.replicaSet(response.subject, numNeighbors+1); // don't use self as the neighbor, so, need an extra
+    NodeSet ns = response.getLeafSet().replicaSet(response.getSubject(), numNeighbors+1); // don't use self as the neighbor, so, need an extra
     Collection<NodeHandle> ret = ns.getCollection();
     for (Continuation<Collection<NodeHandle>, Exception> c : foo.b()) {
       c.receiveResult(ret);

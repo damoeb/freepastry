@@ -226,10 +226,10 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    * is queued in here
    */
   public static class MessageInfo<Handle, Identifier> {
-    public Identifier subject; // deliver to my witnesses
-    public PeerReviewMessage message;
-    public MessageCallback<Handle, ByteBuffer> deliverAckToMe;
-    public Map<String, Object> options;
+    private final Identifier subject; // deliver to my witnesses
+    private final PeerReviewMessage message;
+    private final MessageCallback<Handle, ByteBuffer> deliverAckToMe;
+    private final Map<String, Object> options;
 
     public MessageInfo(Identifier subject, PeerReviewMessage message,
         MessageCallback<Handle, ByteBuffer> deliverAckToMe,

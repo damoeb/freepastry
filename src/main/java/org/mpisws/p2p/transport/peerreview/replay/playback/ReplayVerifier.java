@@ -81,7 +81,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_Un
 public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier> {
 
   protected Identifier localHandle;
-  protected SecureHistory history;
+  private final SecureHistory history;
   PeerReviewCallback<Identifier, ?> app;
   int numEventCallbacks;
   boolean foundFault;
@@ -98,8 +98,8 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   int numTimers;
   int[] eventToCallback = new int[256];
   protected Logger logger;
-  protected Serializer<Identifier> serializer; // was transport in c++ impl
-  protected HashProvider hashProv;
+  private final Serializer<Identifier> serializer; // was transport in c++ impl
+  private final HashProvider hashProv;
 
   // these are shortcuts in the Java impl, they would all be true in the c++ impl, but in some cases it's more efficient if we can turn them off
   boolean useSendSign = false;  // true if we're sending the signature after the message

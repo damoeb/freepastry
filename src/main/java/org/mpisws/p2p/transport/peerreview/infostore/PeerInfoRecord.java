@@ -113,8 +113,8 @@ public class PeerInfoRecord<Handle, Identifier> {
 
 
   public class EvidenceRecordImpl implements EvidenceRecord<Handle, Identifier> {
-    public Identifier originator;
-    public long timestamp;
+    private final Identifier originator;
+    private final long timestamp;
     Handle interestedParty;
     boolean isProof;
 

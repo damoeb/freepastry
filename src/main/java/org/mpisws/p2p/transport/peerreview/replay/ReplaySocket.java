@@ -49,9 +49,9 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public class ReplaySocket<Identifier extends RawSerializable> implements P2PSocket<Identifier>, SocketRequestHandle<Identifier> {
 
-  protected Identifier identifier;
-  protected int socketId;
-  protected VerifierImpl<Identifier, ?> verifier;
+  private final Identifier identifier;
+  private final int socketId;
+  private final VerifierImpl<Identifier, ?> verifier;
   boolean closed = false;
   boolean outputShutdown = false;
   Map<String, Object> options;

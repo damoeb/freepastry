@@ -233,7 +233,7 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
    */
   public void handleIncomingAuthenticators(Handle source, AuthPushMessage<Identifier> msg) {
     logger.info("Received authenticators from {}", source);
-    for (Entry<Identifier, List<Authenticator>> e : msg.authenticators.entrySet()) {
+    for (Entry<Identifier, List<Authenticator>> e : msg.getAuthenticators().entrySet()) {
       Identifier id = e.getKey();
       logger.debug("  Subject <{}>, {} authenticators", id, e.getValue().size());
       if (transport.hasCertificate(id)) {

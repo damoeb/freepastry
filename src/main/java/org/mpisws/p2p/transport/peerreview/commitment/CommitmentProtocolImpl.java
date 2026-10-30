@@ -76,14 +76,14 @@ import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECT
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
 
 public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements CommitmentProtocol<Handle, Identifier> {
-  public int MAX_PEERS = 250;
-  public int INITIAL_TIMEOUT_MILLIS = 1000;
-  public int RETRANSMIT_TIMEOUT_MILLIS = 1000;
-  public int RECEIVE_CACHE_SIZE = 100;
-  public int MAX_RETRANSMISSIONS = 2;
-  public int TI_PROGRESS = 1;
-  public int PROGRESS_INTERVAL_MILLIS = 1000;
-  public int MAX_ENTRIES_PER_MS = 1000000;      /* Max number of entries per millisecond */
+  private final int MAX_PEERS = 250;
+  private final int INITIAL_TIMEOUT_MILLIS = 1000;
+  private final int RETRANSMIT_TIMEOUT_MILLIS = 1000;
+  private final int RECEIVE_CACHE_SIZE = 100;
+  private final int MAX_RETRANSMISSIONS = 2;
+  private final int TI_PROGRESS = 1;
+  private final int PROGRESS_INTERVAL_MILLIS = 1000;
+  private final int MAX_ENTRIES_PER_MS = 1000000;      /* Max number of entries per millisecond */
 
   /**
    * We need to keep some state for each peer, including separate transmit and

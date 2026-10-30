@@ -41,13 +41,13 @@ import java.util.Map;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public class IncompleteStatementInfo<Handle, Identifier extends RawSerializable> {
-  public boolean finished;
-  public Handle sender;
-  public long currentTimeout;
-  public Statement<Identifier> statement;
-  public boolean isMissingCertificate;
-  public Identifier missingCertificateID;
-  public Map<String, Object> options;
+  private boolean finished;
+  private final Handle sender;
+  private final long currentTimeout;
+  private final Statement<Identifier> statement;
+  private boolean isMissingCertificate;
+  private Identifier missingCertificateID;
+  private final Map<String, Object> options;
 
   public IncompleteStatementInfo(boolean finished, Handle source, long currentTimeout,
       Statement<Identifier> statement, boolean isMissingCertificate, Identifier missingCertificateId, Map<String, Object> options) {
@@ -64,11 +64,37 @@ public class IncompleteStatementInfo<Handle, Identifier extends RawSerializable>
     return isMissingCertificate;
   }
 
+  public void finish() {
+    finished = true;
+  }
+
+  /** Records that the statement cannot be processed until the certificate of {@code id} arrives. */
+  public void markMissingCertificate(Identifier id) {
+    isMissingCertificate = true;
+    missingCertificateID = id;
+  }
+
+  public void clearMissingCertificate() {
+    isMissingCertificate = false;
+  }
+
   public boolean isFinished() {
     return finished;
   }
 
   public long getCurrentTimeout() {
     return currentTimeout;
+  }
+
+  public Map<String, Object> getOptions() {
+    return options;
+  }
+
+  public Handle getSender() {
+    return sender;
+  }
+
+  public Statement<Identifier> getStatement() {
+    return statement;
   }
 }

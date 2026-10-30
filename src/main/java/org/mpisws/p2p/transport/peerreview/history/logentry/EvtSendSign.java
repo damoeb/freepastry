@@ -52,8 +52,8 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSI
  *
  */
 public class EvtSendSign {
-  public byte[] signature;
-  public byte[] restOfMessage;
+  private final byte[] signature;
+  private final byte[] restOfMessage;
 
   public EvtSendSign(byte[] signature, byte[] restOfMessage) {
     this.signature = signature;
@@ -76,4 +76,11 @@ public class EvtSendSign {
     return EVT_SENDSIGN;
   }
 
+  public byte[] getRestOfMessage() {
+    return restOfMessage;
+  }
+
+  public byte[] getSignature() {
+    return signature;
+  }
 }

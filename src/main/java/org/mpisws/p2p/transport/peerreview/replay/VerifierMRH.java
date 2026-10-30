@@ -44,7 +44,7 @@ import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 
 public class VerifierMRH<Handle> extends MessageRequestHandleImpl<Handle, ByteBuffer> {
 
-  public MessageCallback<Handle, ByteBuffer> callback;
+  private final MessageCallback<Handle, ByteBuffer> callback;
 
   public VerifierMRH(Handle i, ByteBuffer m, MessageCallback<Handle, ByteBuffer> callback, Map<String, Object> options) {
     super(i, m, options);
