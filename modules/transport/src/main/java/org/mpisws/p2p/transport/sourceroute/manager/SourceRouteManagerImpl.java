@@ -439,12 +439,12 @@ public class SourceRouteManagerImpl<Identifier> implements
 
       @Override
       public void ack(MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> msg) {
-        deliverAckToMe.ack(this);
+        if (deliverAckToMe != null) deliverAckToMe.ack(this);
       }
 
       @Override
       public void sendFailed(MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> msg, Exception reason) {
-        deliverAckToMe.sendFailed(this, reason);
+        if (deliverAckToMe != null) deliverAckToMe.sendFailed(this, reason);
       }
 
       public void fail(Exception reason) {
