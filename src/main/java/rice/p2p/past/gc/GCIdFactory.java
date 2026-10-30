@@ -231,7 +231,7 @@ public class GCIdFactory implements IdFactory {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build NodeHandleSets!");
   }
 
-  protected class GCSortedMap<V> implements SortedMap<Id, V> {
+  protected static class GCSortedMap<V> implements SortedMap<Id, V> {
     protected SortedMap<Id, V> map;
 
     public GCSortedMap(SortedMap<Id, V> map) {
@@ -260,7 +260,7 @@ public class GCIdFactory implements IdFactory {
     public Collection<V> values() { throw new UnsupportedOperationException("values not supported!"); }
   }
 
-  protected class GCEntrySet<V> implements Set<Map.Entry<Id, V>> {
+  protected static class GCEntrySet<V> implements Set<Map.Entry<Id, V>> {
     protected Set<Map.Entry<Id, V>> set;
 
     public GCEntrySet(Set<Map.Entry<Id, V>> set) {
@@ -290,7 +290,7 @@ public class GCIdFactory implements IdFactory {
     public <T> T[] toArray(T[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
   }
 
-  protected class GCMapEntry<V> implements Map.Entry<Id, V> {
+  protected static class GCMapEntry<V> implements Map.Entry<Id, V> {
     protected Map.Entry<Id, V> entry;
 
     public GCMapEntry(Map.Entry<Id, V> entry) {

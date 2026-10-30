@@ -705,7 +705,7 @@ public class XMLParser {
   /**
     * This class implements a char array buffer
    */
-  public class CharArrayBuffer {
+  public static class CharArrayBuffer {
 
     /**
     * The default initial capacity

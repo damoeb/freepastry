@@ -220,7 +220,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       // write NORMAL_SOCKET and continue
       tl.openSocket(i, new SocketCallback<Identifier>(){
         public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
-          sock.register(false, true, new ByteWriter(NORMAL_SOCKET, new Continuation<P2PSocket<Identifier>, Exception>() {
+          sock.register(false, true, new ByteWriter<>(NORMAL_SOCKET, new Continuation<P2PSocket<Identifier>, Exception>() {
             public void receiveResult(P2PSocket<Identifier> socket) {
               deliverSocketToMe.receiveResult(handle, socket);
             }
@@ -537,7 +537,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
             final Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>> deliverSocketToMe = removeExpectedIncomingSocket(target, uid);
             if (deliverSocketToMe == null) {
               logger.warn("Got accept socket to me, that I'm not expecting: t:{} o:{} uid:{} {}", target, opener, uid, acceptorSocket);
-              new ByteWriter(CONNECTION_RESPONSE_FAILURE,new Continuation<P2PSocket<Identifier>, Exception>(){
+              new ByteWriter<>(CONNECTION_RESPONSE_FAILURE,new Continuation<P2PSocket<Identifier>, Exception>(){
 
                 public void receiveException(Exception exception) {
                   // just ignore this, it's not important
@@ -550,7 +550,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
               return;
             }
 
-            new ByteWriter(CONNECTION_RESPONSE_SUCCESS,new Continuation<P2PSocket<Identifier>, Exception>() {
+            new ByteWriter<>(CONNECTION_RESPONSE_SUCCESS,new Continuation<P2PSocket<Identifier>, Exception>() {
               public void receiveException(Exception exception) {
                 deliverSocketToMe.a().receiveException(deliverSocketToMe.b(), exception);
               }
@@ -571,7 +571,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
           if (connectorSocket == null) {
             logger.debug("writing failed bytes in readAcceptHeader({},{},{},{})", acceptorSocket, target, opener, uid);
             // write failed to socket
-            P2PSocketReceiver<Identifier> acceptorFailed = new ByteWriter(CONNECTION_RESPONSE_FAILURE,
+            P2PSocketReceiver<Identifier> acceptorFailed = new ByteWriter<>(CONNECTION_RESPONSE_FAILURE,
                 new Continuation<P2PSocket<Identifier>, Exception>() {
                   public void receiveResult(P2PSocket<Identifier> result) {
                     // send the failure, then close
@@ -590,7 +590,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
             logger.trace("writing success bytes in readAcceptHeader({},{},{},{})", acceptorSocket, target, opener, uid);
             // write success to connectorSocket/acceptorSocket
             // when both writes succeed, bridge them
-            P2PSocketReceiver<Identifier> connectorSuccess = new ByteWriter(CONNECTION_RESPONSE_SUCCESS,
+            P2PSocketReceiver<Identifier> connectorSuccess = new ByteWriter<>(CONNECTION_RESPONSE_SUCCESS,
                 new Continuation<P2PSocket<Identifier>, Exception>(){
               public void receiveResult(P2PSocket<Identifier> result) {
                 // done, set up the forwarder
@@ -607,7 +607,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
             });
             connectorSuccess.receiveSelectResult(connectorSocket, false, true);
 
-            P2PSocketReceiver<Identifier> acceptorSuccess = new ByteWriter(CONNECTION_RESPONSE_SUCCESS,
+            P2PSocketReceiver<Identifier> acceptorSuccess = new ByteWriter<>(CONNECTION_RESPONSE_SUCCESS,
                 new Continuation<P2PSocket<Identifier>, Exception>(){
               public void receiveResult(P2PSocket<Identifier> result) {
                 // done, set up the forwarder
@@ -1402,7 +1402,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
    * Writes a byte then notifies the continuation.
    * @author Jeff Hoye
    */
-  class ByteWriter implements P2PSocketReceiver<Identifier> {
+  static class ByteWriter<Identifier> implements P2PSocketReceiver<Identifier> {
     ByteBuffer bytesToWrite;
     Continuation<P2PSocket<Identifier>, Exception> callMeWhenDone;
 

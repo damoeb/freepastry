@@ -274,7 +274,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    * Used to trigger timer events.
    * @author Jeff Hoye
    */
-  class RequestFromEveryoneMsg extends Message {
+  static class RequestFromEveryoneMsg extends Message {
     public RequestFromEveryoneMsg(int address) {
       super(address);
     }

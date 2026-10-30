@@ -1420,7 +1420,7 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    * the XMLObjectOutputStream.  It works in the same manner as the
    * ObjectInputStream.PutField.
    */
-  public class PutField extends ObjectOutputStream.PutField {
+  public static class PutField extends ObjectOutputStream.PutField {
 
     protected Hashtable<String, Object> primitives = new Hashtable<String, Object>();
 

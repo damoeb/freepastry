@@ -228,7 +228,7 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
     System.out.println(endpoint.getId()+" deliver("+s+"):seq:"+data[0]+" stripe:"+data[1]+" "+printData(data)+")");
   }
 
-  class PublishContent implements Message {
+  static class PublishContent implements Message {
     public int getPriority() {
       return Message.MEDIUM_PRIORITY;
     }

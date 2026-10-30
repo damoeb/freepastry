@@ -61,7 +61,7 @@ import rice.selector.TimerTask;
 
 public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulator implements
     GenericNetworkSimulator<Identifier, MessageType> {
-  class Tupel {
+  static class Tupel<Identifier, MessageType> {
     Identifier i;
     DirectTransportLayer<Identifier, MessageType> tl;
     NodeRecord record;
@@ -77,7 +77,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   /**
    * This maps to the next highest transport layer
    */
-  Map<Identifier, Tupel> nodes = Collections.synchronizedMap(new HashMap<Identifier, Tupel>());
+  Map<Identifier, Tupel<Identifier, MessageType>> nodes = Collections.synchronizedMap(new HashMap<Identifier, Tupel<Identifier, MessageType>>());
 
 
   // to notify of send/receive
@@ -151,7 +151,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
 
 
   public void registerIdentifier(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord record) {
-    nodes.put(i, new Tupel(i, dtl, record));
+    nodes.put(i, new Tupel<>(i, dtl, record));
   }
 
   public void remove(Identifier i) {
@@ -177,7 +177,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
 
   public DirectTransportLayer<Identifier, MessageType> getTL(Identifier i) {
-    Tupel t = nodes.get(i);
+    Tupel<Identifier, MessageType> t = nodes.get(i);
     if (t == null) return null;
     return t.tl;
   }
@@ -190,8 +190,8 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
    * @return the proximity between the two input NodeIds
    */
   public float networkDelay(Identifier a, Identifier b) {
-    Tupel ta = nodes.get(a);
-    Tupel tb = nodes.get(b);
+    Tupel<Identifier, MessageType> ta = nodes.get(a);
+    Tupel<Identifier, MessageType> tb = nodes.get(b);
     if (ta == null) {
       throw new RuntimeException("asking about node proximity for unknown node "+a);
     }
@@ -214,8 +214,8 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
    * @return the proximity between the two input NodeIds
    */
   public float proximity(Identifier a, Identifier b) {
-    Tupel ta = nodes.get(a);
-    Tupel tb = nodes.get(b);
+    Tupel<Identifier, MessageType> ta = nodes.get(a);
+    Tupel<Identifier, MessageType> tb = nodes.get(b);
     if (ta == null) {
       throw new RuntimeException("asking about node proximity for unknown node "+a+" "+b);
     }
@@ -231,7 +231,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
 
   public NodeRecord getNodeRecord(DirectNodeHandle handle) {
-    Tupel t = nodes.get(handle);
+    Tupel<Identifier, MessageType> t = nodes.get(handle);
     if (t == null) return null;
     return t.record;
   }

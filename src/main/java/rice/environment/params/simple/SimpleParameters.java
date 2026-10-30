@@ -388,7 +388,7 @@ public class SimpleParameters implements Parameters {
     }
   }
 
-  protected class MyProperties extends Properties {
+  protected static class MyProperties extends Properties {
     public Enumeration<Object> keys() {
       final String[] keys = (String[]) keySet().toArray(new String[0]);
       Arrays.sort(keys);

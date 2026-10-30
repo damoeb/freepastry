@@ -85,7 +85,7 @@ public class MyApp implements Application {
    * attempt to send over the wire, you will get a
    * NotSerializableException!
    */
-  class MessageToSelf implements Message {
+  static class MessageToSelf implements Message {
     public int getPriority() {
       return MAX_PRIORITY;
     }

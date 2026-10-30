@@ -76,7 +76,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   PeerInfoStore<Handle, Identifier> infoStore;
 
   Map<Identifier, CacheInfo> witnessCache = new HashMap<Identifier, CacheInfo>();
-  Map<Identifier, LinkedList<MessageInfo>> pendingMessage = new HashMap<Identifier, LinkedList<MessageInfo>>();
+  Map<Identifier, LinkedList<MessageInfo<Handle, Identifier>>> pendingMessage = new HashMap<Identifier, LinkedList<MessageInfo<Handle, Identifier>>>();
   Collection<QueryInfo> pendingQuery = new HashSet<QueryInfo>();
 
   Logger logger;
@@ -107,9 +107,9 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     }
     idx.updateWitnesses(witnesses);
 
-    Collection<MessageInfo> sendMe = pendingMessage.remove(subject);
+    Collection<MessageInfo<Handle, Identifier>> sendMe = pendingMessage.remove(subject);
     if (sendMe != null) {
-      for (MessageInfo m : sendMe) {
+      for (MessageInfo<Handle, Identifier> m : sendMe) {
         doSendMessageToWitnesses(idx.witness,m);
       }
     }
@@ -121,7 +121,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     }
   }
 
-  void doSendMessageToWitnesses(Collection<Handle> witnesses, MessageInfo m) {
+  void doSendMessageToWitnesses(Collection<Handle> witnesses, MessageInfo<Handle, Identifier> m) {
 
     for (Handle h : witnesses) {
       peerreview.transmit(h,m.message,m.deliverAckToMe,m.options);
@@ -137,12 +137,12 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   public void sendMessageToWitnesses(Identifier subject, PeerReviewMessage message,
       MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
-    MessageInfo m = new MessageInfo(subject, message, deliverAckToMe, options);
+    MessageInfo<Handle, Identifier> m = new MessageInfo<>(subject, message, deliverAckToMe, options);
     Collection<Handle> witnesses = getWitnesses(subject);
     if (witnesses == null) {
-      LinkedList<MessageInfo> foo = pendingMessage.get(subject);
+      LinkedList<MessageInfo<Handle, Identifier>> foo = pendingMessage.get(subject);
       if (foo == null) {
-        foo = new LinkedList<MessageInfo>();
+        foo = new LinkedList<MessageInfo<Handle, Identifier>>();
         pendingMessage.put(subject, foo);
       }
       foo.addLast(m);
@@ -225,7 +225,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    * When we have a message for a node whose witness set is not (yet) known, it
    * is queued in here
    */
-  public class MessageInfo {
+  public static class MessageInfo<Handle, Identifier> {
     public Identifier subject; // deliver to my witnesses
     public PeerReviewMessage message;
     public MessageCallback<Handle, ByteBuffer> deliverAckToMe;

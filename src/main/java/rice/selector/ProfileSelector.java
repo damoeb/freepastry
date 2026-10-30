@@ -339,7 +339,7 @@ public class ProfileSelector extends SelectorManager {
    *
    * @author Jeff Hoye
    */
-  class Stat {
+  static class Stat {
     int num = 0;
     String name = null;
     long totalTime = 0;

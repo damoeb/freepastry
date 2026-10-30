@@ -328,7 +328,7 @@ public class MultiringIdFactory implements IdFactory {
   }
 
   @SuppressWarnings("unchecked")
-  protected class MultiringEntrySet<V> implements Set<Map.Entry<Id, V>> {
+  protected static class MultiringEntrySet<V> implements Set<Map.Entry<Id, V>> {
     protected Set<Map.Entry<Id, V>> set;
 
     public MultiringEntrySet(Set<Map.Entry<Id, V>> set) {
@@ -359,7 +359,7 @@ public class MultiringIdFactory implements IdFactory {
   }
 
   @SuppressWarnings("unchecked")
-  protected class MultiringKeySet implements Set<Id> {
+  protected static class MultiringKeySet implements Set<Id> {
     protected Set<Id> set;
 
     public MultiringKeySet(Set<Id> set) {
@@ -407,7 +407,7 @@ public class MultiringIdFactory implements IdFactory {
     }
   }
 
-  protected class MultiringMapEntry<V> implements Map.Entry<Id, V> {
+  protected static class MultiringMapEntry<V> implements Map.Entry<Id, V> {
     protected Map.Entry<Id, V> entry;
 
     public MultiringMapEntry(Map.Entry<Id, V> entry) {

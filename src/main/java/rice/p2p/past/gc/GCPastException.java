@@ -56,7 +56,7 @@ public class GCPastException extends PastException {
     super(msg);
   }
 
-  public class ObjectNotFoundException extends PastException {
+  public static class ObjectNotFoundException extends PastException {
     public ObjectNotFoundException(String msg) {
       super(msg);
     }

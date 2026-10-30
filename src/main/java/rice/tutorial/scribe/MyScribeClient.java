@@ -201,7 +201,7 @@ public class MyScribeClient implements ScribeMultiClient, Application {
 
   }
 
-  class PublishContent implements Message {
+  static class PublishContent implements Message {
     public int getPriority() {
       return MAX_PRIORITY;
     }

@@ -1465,7 +1465,7 @@ public class XMLObjectInputStream extends ObjectInputStream {
    * the XMLObjectInputStream.  It works in the same manner as the
    * ObjectInputStream.GetField.
    */
-  public class GetField extends ObjectInputStream.GetField {
+  public static class GetField extends ObjectInputStream.GetField {
 
     protected HashMap<String, Object> primitives = new HashMap<String, Object>();
 
