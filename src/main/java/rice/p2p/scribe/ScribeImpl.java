@@ -131,6 +131,11 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   private final AnycastHandler anycasts;
 
+  /**
+   * pushes published content down the trees
+   */
+  private final Publisher publisher;
+
   Environment environment;
 
   Logger logger;
@@ -188,6 +193,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.subscriptions = new SubscriptionManager(endpoint, localHandle, node, registry, this::getPolicy, maintenancePolicy, this, MESSAGE_TIMEOUT, logger);
     this.children = new ChildManager(endpoint, localHandle, registry, this::getPolicy, maintenancePolicy, this, subscriptions, logger);
     this.anycasts = new AnycastHandler(endpoint, localHandle, registry, this::getPolicy, logger);
+    this.publisher = new Publisher(endpoint, localHandle, registry, this::getPolicy, logger);
 
     endpoint.register();
 
@@ -351,9 +357,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   public void publish(Topic topic, RawScribeContent content) {
-    logger.trace("Publishing content {} to topic {}", content, topic);
-
-    endpoint.route(topic.getId(), new PublishRequestMessage(localHandle, topic, content), null);
+    publisher.publish(topic, content);
   }
 
   /**
@@ -587,52 +591,12 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
       subscriptions.failedMessageReceived(sfMessage);
     } else if (message instanceof PublishRequestMessage) {
-      PublishRequestMessage prMessage = (PublishRequestMessage) message;
-      TopicManager manager = registry.get(prMessage.getTopic());
-
-      logger.trace("Received publish request message with data {} for topic {}", prMessage.getContent(), prMessage.getTopic());
-
-      // if message is for a non-existant topic, drop it on the floor (we are the root, after all)
-      // otherwise, turn it into a publish message, and forward it on
-      if (manager == null) {
-        logger.debug("Received publish request message for non-existent topic {} - dropping on floor.", prMessage.getTopic());
-      } else {
-        deliver(prMessage.getTopic().getId(), new PublishMessage(prMessage.getSource(), prMessage.getTopic(), prMessage.getContent()));
+      PublishMessage pMessage = publisher.publishRequestReceived((PublishRequestMessage) message);
+      if (pMessage != null) {
+        deliver(pMessage.getTopic().getId(), pMessage);
       }
     } else if (message instanceof PublishMessage) {
-      PublishMessage pMessage = (PublishMessage) message;
-      TopicManager manager = registry.get(pMessage.getTopic());
-
-      logger.trace("Received publish message with data {} for topic {}", pMessage.getContent(), pMessage.getTopic());
-
-      // if we don't know about this topic, or this message did
-      // not come from our parent, send an unsubscribe message
-      // otherwise, we deliver the message to all clients and forward the
-      // message to all children
-      if ((manager != null) && ((manager.getParent() == null) || (manager.getParent().equals(pMessage.getSource())))) {
-        pMessage.setSource(localHandle);
-
-        Collection<ScribeMultiClient> clients = manager.getClients();
-
-        // We also do an upcall intermediateNode() to allow implicit subscribers to change state in the message
-        policy.intermediateNode(pMessage);
-
-        for (ScribeMultiClient client : clients) {
-          logger.trace("Delivering publish message with data {} for topic {} to client {}", pMessage.getContent(), pMessage.getTopic(), client);
-          client.deliver(pMessage.getTopic(), pMessage.getContent());
-        }
-
-        Collection<NodeHandle> handles = new ArrayList<NodeHandle>(manager.getChildren());
-
-        for (NodeHandle handle : handles) {
-          logger.trace("Forwarding publish message with data {} for topic {} to child {}", pMessage.getContent(), pMessage.getTopic(), handle);
-          endpoint.route(null, new PublishMessage(endpoint.getLocalNodeHandle(), pMessage.getTopic(), pMessage.getContent()), handle);
-        }
-      } else {
-        logger.warn("Received unexpected publish message from {} for unknown topic {}", pMessage.getSource(), pMessage.getTopic());
-
-        endpoint.route(null, new UnsubscribeMessage(localHandle, Collections.singletonList(pMessage.getTopic())), pMessage.getSource());
-      }
+      publisher.publishReceived((PublishMessage) message);
     } else if (message instanceof UnsubscribeMessage) {
       children.unsubscribeReceived((UnsubscribeMessage) message);
     } else if (message instanceof DropMessage) {
