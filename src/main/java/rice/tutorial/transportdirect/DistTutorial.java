@@ -95,7 +95,8 @@ public class DistTutorial {
       @Override
       protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(final InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         DirectTransportLayer<InetSocketAddress, ByteBuffer> tl = new DirectTransportLayer<InetSocketAddress, ByteBuffer>(
-            innermostAddress, simulator, simulator.generateNodeRecord(), pn.getEnvironment());
+            innermostAddress, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pn.getEnvironment());
+        simulator.registerNode(innermostAddress, tl, simulator.generateNodeRecord());
 
         return tl;
       }

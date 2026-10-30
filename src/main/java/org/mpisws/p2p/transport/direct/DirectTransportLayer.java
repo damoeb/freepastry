@@ -57,8 +57,6 @@ import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.CancellableTask;
-import rice.pastry.direct.NetworkSimulator;
-import rice.pastry.direct.NodeRecord;
 
 
 public class DirectTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType> {
@@ -75,17 +73,19 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   private final Environment environment;
   private final Logger logger;
 
+  /**
+   * The caller registers the new layer with its simulator, for example with
+   * {@code rice.pastry.direct.NetworkSimulator.registerNode()}, before using it.
+   */
   public DirectTransportLayer(Identifier local,
-      NetworkSimulator<Identifier, MessageType> simulator,
-      NodeRecord nr, Environment env) {
+      GenericNetworkSimulator<Identifier, MessageType> simulator,
+      LivenessProvider<Identifier> livenessProvider, Environment env) {
     this.localIdentifier = local;
-    this.simulator = simulator.getGenericSimulator();
-    this.livenessProvider = simulator.getLivenessProvider();
+    this.simulator = simulator;
+    this.livenessProvider = livenessProvider;
 
     this.environment = env;
     this.logger = environment.getLogManager().getLogger(DirectTransportLayer.class, null);
-    simulator.registerNode(local, this, nr);
-
   }
 
   public void acceptMessages(boolean b) {
