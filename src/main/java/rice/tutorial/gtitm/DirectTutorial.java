@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.tutorial.gtitm;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -79,7 +79,7 @@ public class DirectTutorial {
     // Generate the NodeIds Randomly
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 
-    NetworkSimulator<DirectNodeHandle,RawMessage> simulator = new GenericNetwork<DirectNodeHandle,RawMessage>(env, new File(fileName));
+    NetworkSimulator<DirectNodeHandle,RawMessage> simulator = new GenericNetwork<DirectNodeHandle,RawMessage>(env, Path.of(fileName));
 
     // limit the max speed so the simulation doesn't run away
     simulator.setMaxSpeed(1.0f);

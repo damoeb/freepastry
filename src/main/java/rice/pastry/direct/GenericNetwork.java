@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.direct;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import rice.environment.Environment;
 import rice.pastry.direct.proximitygenerators.GenericProximityGenerator;
@@ -49,14 +49,14 @@ public class GenericNetwork<Identifier, MessageType> extends NetworkSimulatorImp
   // pastry_direct_gtitm_max_overlay_size should be set to the n, where its input
   // is a N*N matrix
   public GenericNetwork(Environment env, String inFile) throws IOException {
-    this(env, new File(inFile));
+    this(env, Path.of(inFile));
   }
 
   public GenericNetwork(Environment env) throws IOException {
-    this(env, (File)null);
+    this(env, (Path)null);
   }
 
-  public GenericNetwork(Environment env, File inFile) throws IOException {
+  public GenericNetwork(Environment env, Path inFile) throws IOException {
     super(env, new GenericProximityGenerator(env, inFile));
   }
 }

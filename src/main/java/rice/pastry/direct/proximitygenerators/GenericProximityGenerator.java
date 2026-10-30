@@ -37,10 +37,11 @@ advised of the possibility of such damage.
 package rice.pastry.direct.proximitygenerators;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
@@ -68,9 +69,9 @@ public class GenericProximityGenerator implements ProximityGenerator {
   // index -> ctr
   private final HashMap<Integer, Integer> assignedIndices = new HashMap<Integer, Integer>();
 
-  private File inFile_Matrix;
+  private Path inFile_Matrix;
 
-  public GenericProximityGenerator(Environment env, File inFile) throws IOException {
+  public GenericProximityGenerator(Environment env, Path inFile) throws IOException {
     logger = env.getLogManager().getLogger(GenericProximityGenerator.class, null);
     GenericProximityConfig config = GenericProximityConfig.fromParameters(env.getParameters());
     maxOverlaySize = config.maxOverlaySize();
@@ -79,7 +80,7 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
     inFile_Matrix = inFile;
     if (inFile_Matrix == null) {
-      inFile_Matrix = new File(config.matrixFile());
+      inFile_Matrix = Path.of(config.matrixFile());
     }
 
     setNodesPerStub(config.nodesPerStub());
@@ -139,17 +140,16 @@ public class GenericProximityGenerator implements ProximityGenerator {
   }
 
   public void readOverlayMatrix(float delayFactor) throws IOException {
-    FileReader fr = null;
+    InputStream fr;
     try {
-      fr = new FileReader(inFile_Matrix);
-    } catch (FileNotFoundException e) {
-      throw new IOException("ERROR: The required inter-host distance matrix for Generic Network not found:"+inFile_Matrix.getAbsolutePath(), e);
+      fr = Files.newInputStream(inFile_Matrix);
+    } catch (IOException e) {
+      throw new IOException("ERROR: The required inter-host distance matrix for Generic Network not found:"+inFile_Matrix.toAbsolutePath(), e);
     }
-    BufferedReader in = new BufferedReader(fr);
 
     int lineCount = 0;
     String line = null;
-    try {
+    try (BufferedReader in = new BufferedReader(new InputStreamReader(fr))) {
       while ((line = in.readLine()) != null) {
         String[] words;
         words = line.split("[ \t]+");

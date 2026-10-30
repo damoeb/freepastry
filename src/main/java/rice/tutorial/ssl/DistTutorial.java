@@ -36,12 +36,13 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.tutorial.ssl;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.Security;
 import java.util.Map;
@@ -83,7 +84,7 @@ public class DistTutorial {
    * @param bootaddress the IP:port of the node to boot from
    * @param env the environment for these nodes
    */
-  public DistTutorial(int bindport, InetSocketAddress bootaddress, Environment env, File keyStoreFile) throws Exception {
+  public DistTutorial(int bindport, InetSocketAddress bootaddress, Environment env, Path keyStoreFile) throws Exception {
 
     // Generate the NodeIds Randomly
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
@@ -94,12 +95,12 @@ public class DistTutorial {
     // create the keystore
     // written by "CAToolImpl -store" (PKCS12, blank password)
     final KeyStore store = KeyStore.getInstance(CAToolImpl.DEFAULT_KEYSTORE_TYPE);
-    try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
+    try (InputStream fis = Files.newInputStream(keyStoreFile)) {
       store.load(fis, "".toCharArray());
     }
 
     // create the id from the file name
-    rice.pastry.Id id = rice.pastry.Id.build(keyStoreFile.getName().split("\\.")[0]);
+    rice.pastry.Id id = rice.pastry.Id.build(keyStoreFile.getFileName().toString().split("\\.")[0]);
 
     // construct the PastryNodeFactory, this is how we use rice.pastry.socket
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
@@ -233,8 +234,8 @@ public class DistTutorial {
 
       // get the keystore file
       String keystoreFileName = args[3];
-      File keystoreFile = new File(keystoreFileName);
-      if (!keystoreFile.exists()) throw new IllegalArgumentException("The file: "+keystoreFileName+" was not found.");
+      Path keystoreFile = Path.of(keystoreFileName);
+      if (!Files.exists(keystoreFile)) throw new IllegalArgumentException("The file: "+keystoreFileName+" was not found.");
 
       // launch our node!
       DistTutorial dt = new DistTutorial(bindport, bootaddress, env, keystoreFile);
