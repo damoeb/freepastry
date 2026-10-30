@@ -4,9 +4,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import rice.environment.Environment;
+import rice.p2p.commonapi.Id;
 import rice.pastry.commonapi.PastryIdFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
@@ -36,5 +38,22 @@ class GCIdSetTest {
     assertEquals(new GCIdSet(idFactory), set);
     assertNotEquals(set, "not a set");
     assertNotEquals(set, null);
+  }
+
+  @Test
+  void copyHasItsOwnIdsAndExpirations() {
+    Id a = idFactory.buildId("a");
+    Id b = idFactory.buildId("b");
+    GCIdSet original = new GCIdSet(idFactory);
+    original.addId(new GCId(a, 100));
+
+    GCIdSet copy = original.copy();
+    copy.addId(new GCId(b, 200));
+    copy.addId(new GCId(a, 300));
+
+    assertEquals(1, original.numElements());
+    assertFalse(original.isMemberId(new GCId(b, 200)));
+    assertEquals(new GCId(a, 100), original.getIterator().next());
+    assertEquals(2, copy.numElements());
   }
 }

@@ -270,10 +270,23 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   }
 
   /**
-   * Note: the copy shares this set's backing map, as clone() did before.
+   * Returns an independent copy of this set, with the same members in the same order.
+   *
+   * @return the copy
    */
   public IdSet copy() {
-    return new IdSet(idSet);
+    return new IdSet(copyOf(idSet));
+  }
+
+  /**
+   * Copies a backing map, keeping its iteration order: a ConcurrentRingMap keeps its ring range, any other map is copied
+   * in natural order.
+   */
+  static SortedMap<rice.p2p.commonapi.Id, ?> copyOf(SortedMap<rice.p2p.commonapi.Id, ?> map) {
+    if (map instanceof ConcurrentRingMap<rice.p2p.commonapi.Id, ?> ring) {
+      return ring.copy();
+    }
+    return new ConcurrentRingMap<rice.p2p.commonapi.Id, Object>(map);
   }
 
 

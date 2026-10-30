@@ -112,6 +112,17 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
     }
   }
 
+  /**
+   * Returns an independent copy of this map or view: the same mappings, iterated in the same order and limited to the
+   * same range, but with entries of its own, so that a change to either map does not show in the other.
+   */
+  public ConcurrentRingMap<K, V> copy() {
+    ConcurrentNavigableMap<K, Object> entries = new ConcurrentSkipListMap<K, Object>(backing.comparator());
+    entries.putAll(first);
+    if (second != null) entries.putAll(second);
+    return new ConcurrentRingMap<K, V>(entries, lo, hi);
+  }
+
   @SuppressWarnings("unchecked")
   private int compare(Object k1, Object k2) {
     Comparator<? super K> c = backing.comparator();

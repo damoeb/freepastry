@@ -210,12 +210,12 @@ public class GCIdSet implements IdSet {
   }
 
   /**
-   * Returns a copy of this set. Note: the copy shares this set's ids and timeouts, as clone() did before.
+   * Returns an independent copy of this set, with the same members and expiration times.
    *
    * @return the copy
    */
   public GCIdSet copy() {
-    return new GCIdSet(ids, timeouts);
+    return new GCIdSet(ids.copy(), new ConcurrentRingMap<Id, Object>(timeouts));
   }
 
   /**
