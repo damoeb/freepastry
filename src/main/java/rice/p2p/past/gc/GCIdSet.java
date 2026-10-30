@@ -211,11 +211,11 @@ public class GCIdSet implements IdSet {
   }
 
   /**
-   * Clones this object
+   * Returns a copy of this set. Note: the copy shares this set's ids and timeouts, as clone() did before.
    *
-   * @return a clone
+   * @return the copy
    */
-  public Object clone() {
+  public GCIdSet copy() {
     return new GCIdSet(ids, timeouts);
   }
 

@@ -103,11 +103,11 @@ public interface IdSet extends Serializable {
   public byte[] hash();
 
   /**
-   * Override clone() to make it publicly accessible
+   * Returns a copy of this set, of the same type.
    *
-   * @return A clone of this set
+   * @return A copy of this set
    */
-  public Object clone();
+  public IdSet copy();
 
   /**
    * Returns a new, empty IdSet of this type

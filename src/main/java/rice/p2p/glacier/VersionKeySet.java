@@ -255,7 +255,7 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
    *
    * @return the copy
    */
-  public Object clone() {
+  public VersionKeySet copy() {
     return new VersionKeySet(this);
   }
 

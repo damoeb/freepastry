@@ -47,15 +47,6 @@ import rice.p2p.util.RedBlackMap;
 /**
  * Represents a set of Pastry ids.
  *
- * needs to be final otherwise:
- * clone method does not call super.clone()
- * This non-final class defines a clone() method that does not call super.
- * clone(). If this class ("A") is extended by a subclass ("B"), and the subclass
- * B calls super.clone(), then it is likely that B's clone() method will return an
- * object of type A, which violates the standard contract for clone().
- * If all clone() methods call super.clone(), then they are guaranteed to use
- * Object.clone(), which always returns an object of the correct type.
- *
  * @version $Id: IdSet.java 4654 2009-01-08 16:33:07Z jeffh $
  *
  * @author Peter Druschel
@@ -285,7 +276,10 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
     return (rice.p2p.commonapi.Id[]) idSet.keySet().toArray(new rice.p2p.commonapi.Id[0]);
   }
 
-  public Object clone(){
+  /**
+   * Note: the copy shares this set's backing map, as clone() did before.
+   */
+  public IdSet copy() {
     return new IdSet(idSet);
   }
 

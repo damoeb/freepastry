@@ -63,7 +63,7 @@ import java.util.SortedSet;
  * were subsequently added, but it will not die.
  */
 @SuppressWarnings("unchecked")
-public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>, Cloneable, java.io.Serializable {
+public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>, java.io.Serializable {
     /**
      * The Comparator used to maintain order in this RedBlackMap, or
      * null if this RedBlackMap uses its elements natural ordering.
@@ -512,38 +512,6 @@ public class RedBlackMap<K,V> extends AbstractMap<K,V> implements SortedMap<K,V>
         size = 0;
         root = null;
     }
-
-    /**
-     * Returns a shallow copy of this <tt>RedBlackMap</tt> instance. (The keys and
-     * values themselves are not cloned.)
-     *
-     * @return a shallow copy of this Map.
-     */
-    @SuppressWarnings("unchecked")
-    public synchronized Object clone() {
-        RedBlackMap<K,V> clone = null;
-        try {
-            clone = (RedBlackMap<K,V>)super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new InternalError();
-        }
-
-        // Put clone into "virgin" state (except for comparator)
-        clone.root = null;
-        clone.size = 0;
-        clone.modCount = 0;
-        clone.entrySet = null;
-
-        // Initialize clone with our mappings
-        try {
-            clone.buildFromSorted(size, entrySet().iterator(), null, null);
-        } catch (java.io.IOException | ClassNotFoundException ignored) {
-            // no stream is passed, so buildFromSorted cannot throw these
-        }
-
-        return clone;
-    }
-
 
     // Views
 

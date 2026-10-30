@@ -262,7 +262,7 @@ public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
    *
    * @return the copy
    */
-  public Object clone() {
+  public FragmentKeySet copy() {
     return new FragmentKeySet(this);
   }
 
