@@ -192,16 +192,13 @@ public class XMLObjectStreamTest {
     xoos.writeInt(42);
     xoos.close();
 
-    XMLObjectInputStream xois = new XMLObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
-    try {
+    try (XMLObjectInputStream xois = new XMLObjectInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
       Object first = xois.readObject();
       assertSame(first, xois.readObject());
       Object afterReset = xois.readObject();
       assertNotSame(first, afterReset, "an object written after reset() is a new copy");
       assertEquals("node", ((Node) afterReset).name);
       assertEquals(42, xois.readInt());
-    } finally {
-      xois.close();
     }
   }
 
@@ -216,11 +213,8 @@ public class XMLObjectStreamTest {
   }
 
   private static Object read(byte[] data) throws IOException, ClassNotFoundException {
-    XMLObjectInputStream xois = new XMLObjectInputStream(new ByteArrayInputStream(data));
-    try {
+    try (XMLObjectInputStream xois = new XMLObjectInputStream(new ByteArrayInputStream(data))) {
       return xois.readObject();
-    } finally {
-      xois.close();
     }
   }
 

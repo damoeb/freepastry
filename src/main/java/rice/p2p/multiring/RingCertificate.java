@@ -326,14 +326,8 @@ public class RingCertificate implements Serializable {
    * @param file The file to write to
    */
   private void writeToFile(File file) throws IOException {
-    ObjectOutputStream oos = null;
-
-    try {
-      oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file))));
+    try (ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file))))) {
       oos.writeObject(this);
-    } finally {
-      if (oos != null)
-        oos.close();
     }
   }
 
@@ -343,16 +337,10 @@ public class RingCertificate implements Serializable {
    * @param stream The file to write to
    */
   private static RingCertificate readFromStream(InputStream stream) throws IOException {
-    ObjectInputStream ois = null;
-
-    try {
-      ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(stream)));
+    try (ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(stream)))) {
       return (RingCertificate) ois.readObject();
     } catch (ClassNotFoundException e) {
       throw new IOException(e.getMessage());
-    } finally {
-      if (ois != null)
-        ois.close();
     }
   }
 
