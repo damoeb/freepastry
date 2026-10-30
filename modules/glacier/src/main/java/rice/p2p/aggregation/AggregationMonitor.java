@@ -36,9 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.aggregation;
 
-import java.util.Enumeration;
-import java.util.Vector;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -64,7 +64,7 @@ final class AggregationMonitor {
   private final AggregationSettings config;
   private final Logger logger;
 
-  private final Vector<Id> monitorIDs;
+  private final List<Id> monitorIDs;
 
   AggregationMonitor(AggregationImpl aggregation, Past objectStore, Past aggregateStore, AggregateList aggregateList, IdFactory factory, Environment environment, AggregationSettings config, Logger logger) {
     this.aggregation = aggregation;
@@ -75,7 +75,7 @@ final class AggregationMonitor {
     this.environment = environment;
     this.config = config;
     this.logger = logger;
-    this.monitorIDs = new Vector<Id>();
+    this.monitorIDs = new CopyOnWriteArrayList<>();
   }
 
   /**
@@ -100,6 +100,7 @@ final class AggregationMonitor {
    * @return the output of a "monitor ..." debug command, or null if {@code cmd} is none (or the monitor is
    *         disabled)
    */
+  @SuppressWarnings("StringSplitter") // splits debug command arguments; dropping trailing empty ones is intended
   String handleDebugCommand(String cmd) {
     if (cmd.startsWith("monitor remove") && config.isMonitorEnabled()) {
       String[] args = cmd.substring(15).split(" ");
@@ -110,7 +111,7 @@ final class AggregationMonitor {
           howMany = monitorIDs.size();
 
         for (int i=0; i<howMany; i++)
-          monitorIDs.removeElementAt(environment.getRandomSource().nextInt(monitorIDs.size()));
+          monitorIDs.remove(environment.getRandomSource().nextInt(monitorIDs.size()));
 
         return "Removed "+howMany+" elements; "+monitorIDs.size()+" elements left";
       } else return "Syntax: monitor remove <howMany>";
@@ -122,10 +123,8 @@ final class AggregationMonitor {
 
     if (cmd.startsWith("monitor ls") && config.isMonitorEnabled()) {
       StringBuilder result = new StringBuilder();
-      Enumeration<Id> enumeration = monitorIDs.elements();
-
-      while (enumeration.hasMoreElements())
-        result.append(((Id)enumeration.nextElement()).toStringFull() + "\n");
+      for (Id id : monitorIDs)
+        result.append(id.toStringFull() + "\n");
 
       result.append(monitorIDs.size() + " object(s)");
       return result.toString();
@@ -160,6 +159,7 @@ final class AggregationMonitor {
    * reports the remaining lifetimes.
    */
   private String check() {
+    @SuppressWarnings("JdkObsolete") // appended from lookup continuations that may run on different threads
     final StringBuffer result = new StringBuffer();
     final CompletableFuture<String> ret = new CompletableFuture<String>();
 
@@ -175,7 +175,7 @@ final class AggregationMonitor {
       @Override
       public void receiveResult(PastContentHandle[] o) {
         logger.debug("Monitor: Retr {} a={} got {}", currentLookup, lookupInAggrStore, o);
-        Id currentId = (Id) monitorIDs.elementAt(currentLookup);
+        Id currentId = (Id) monitorIDs.get(currentLookup);
         PastContentHandle[] handles = (PastContentHandle[]) o;
         GCPastContentHandle handle = null;
         boolean skipToNext = true;
@@ -214,7 +214,7 @@ final class AggregationMonitor {
           currentLookup++;
           if (currentLookup < monitorIDs.size()) {
             logger.debug("Monitor: Continuing with element {}", currentLookup);
-            objectStore.lookupHandles((Id) monitorIDs.elementAt(currentLookup), 1, this);
+            objectStore.lookupHandles((Id) monitorIDs.get(currentLookup), 1, this);
           } else {
             logger.debug("Monitor: Done");
             ret.complete("done");
@@ -228,7 +228,7 @@ final class AggregationMonitor {
       }
     };
 
-    objectStore.lookupHandles((Id) monitorIDs.elementAt(0), 1, c);
+    objectStore.lookupHandles((Id) monitorIDs.get(0), 1, c);
     String outcome = AggregationDebugCommands.await(ret, environment);
     // the StringBuffer is synchronized, and complete() happens-after the last append
     return outcome.equals("done") ? result.toString() : result.toString() + outcome;

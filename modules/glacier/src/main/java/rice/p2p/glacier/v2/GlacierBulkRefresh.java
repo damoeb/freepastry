@@ -230,7 +230,7 @@ final class GlacierBulkRefresh {
                 if (logger.isWarnEnabled()) logger.warn("Node "+grcm.getSource()+" reports "+grcm.getUpdates(i)+" for "+grcm.getKey(i)+", but is responsible for only "+maxSuccesses+" fragments -- duplicate message, or under attack?");
                 successes[index] += maxSuccesses;
               } else {
-                successes[index] += grcm.getUpdates(i);
+                successes[index] += (int) grcm.getUpdates(i); // at most maxSuccesses, checked above
               }
             } else {
               if (logger.isWarnEnabled()) logger.warn("Node "+grcm.getSource()+" reports completion for "+grcm.getKey(i)+", but no refresh request matches?!?");

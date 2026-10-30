@@ -506,7 +506,7 @@ final class GlacierRetriever {
           null
         );
       } else {
-        timeout = timeout + 3 * config.restoreMaxBoosts() * currentFragmentRequestTimeout;
+        timeout = timeout + 3L * config.restoreMaxBoosts() * currentFragmentRequestTimeout;
         if (inPhaseTwo) {
           logger.warn("retrieveFragment: Already in phase two");
         }

@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import java.util.ArrayList;
-import java.util.Vector;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -59,7 +59,7 @@ final class GlacierStatisticsCollector {
   private final String instance;
   private final Environment environment;
   private final Logger logger;
-  private final Vector<GlacierStatisticsListener> listeners;
+  private final List<GlacierStatisticsListener> listeners;
   private GlacierStatistics statistics;
 
   GlacierStatisticsCollector(GlacierConfig config, GlacierScheduler scheduler, GlacierTrafficShaper trafficShaper, GlacierNeighborhood neighborhood, GlacierTrash trash, StorageManager fragmentStorage, StorageManager neighborStorage, String instance, Environment environment, Logger logger) {
@@ -73,7 +73,7 @@ final class GlacierStatisticsCollector {
     this.instance = instance;
     this.environment = environment;
     this.logger = logger;
-    this.listeners = new Vector<GlacierStatisticsListener>();
+    this.listeners = new CopyOnWriteArrayList<>();
     this.statistics = new GlacierStatistics(GlacierTags.MAX, environment);
   }
 
@@ -86,7 +86,7 @@ final class GlacierStatisticsCollector {
   }
 
   void removeListener(GlacierStatisticsListener gsl) {
-    listeners.removeElement(gsl);
+    listeners.remove(gsl);
   }
 
   /**
@@ -136,8 +136,8 @@ final class GlacierStatisticsCollector {
           if (config.logStatistics())
             statistics.dump(environment.getLogManager().getLogger(GlacierStatistics.class, instance));
 
-          // listeners are added and removed by other threads; copying the Vector is atomic, enumerating it is not
-          for (GlacierStatisticsListener gsl : new ArrayList<GlacierStatisticsListener>(listeners)) {
+          // listeners are added and removed by other threads; the copy-on-write list iterates over a snapshot
+          for (GlacierStatisticsListener gsl : listeners) {
             gsl.receiveStatistics(statistics);
           }
         }

@@ -182,6 +182,7 @@ public record VersionKey(Id id, long version) implements Id {
   }
 
   public static VersionKey build(String s) {
+    @SuppressWarnings("StringSplitter") // the fixed format of toString(), no trailing empty fields
     String[] sArray = s.split("v");
     return new VersionKey(RingId.build(sArray[0]), Long.parseLong(sArray[1]));
   }

@@ -49,14 +49,14 @@ import rice.p2p.glacier.v2.BloomFilter;
 public final class GlacierSyncMessage extends GlacierMessage {
   private final IdRange range;
   private final int offsetFID;
-  private final BloomFilter BloomFilter;
+  private final BloomFilter bloomFilter;
 
-  public GlacierSyncMessage(int uid, IdRange range, int offsetFID, BloomFilter BloomFilter, NodeHandle source, Id dest, char tag) {
+  public GlacierSyncMessage(int uid, IdRange range, int offsetFID, BloomFilter bloomFilter, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, false, tag);
 
     this.range = range;
     this.offsetFID = offsetFID;
-    this.BloomFilter = BloomFilter;
+    this.bloomFilter = bloomFilter;
   }
 
   public int getOffsetFID() {
@@ -68,7 +68,7 @@ public final class GlacierSyncMessage extends GlacierMessage {
   }
 
   public BloomFilter getBloomFilter() {
-    return BloomFilter;
+    return bloomFilter;
   }
 
   @Override
@@ -88,7 +88,7 @@ public final class GlacierSyncMessage extends GlacierMessage {
     super.serialize(buf);
     buf.writeInt(offsetFID);
     range.serialize(buf);
-    BloomFilter.serialize(buf);
+    bloomFilter.serialize(buf);
   }
 
   public static GlacierSyncMessage build(InputBuffer buf, Endpoint endpoint) throws IOException {
@@ -105,6 +105,6 @@ public final class GlacierSyncMessage extends GlacierMessage {
     super(buf, endpoint);
     offsetFID = buf.readInt();
     range = endpoint.readIdRange(buf);
-    BloomFilter = new BloomFilter(buf);
+    bloomFilter = new BloomFilter(buf);
   }
 }

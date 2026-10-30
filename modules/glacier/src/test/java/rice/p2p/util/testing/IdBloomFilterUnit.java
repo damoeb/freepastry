@@ -116,7 +116,7 @@ public class IdBloomFilterUnit {
 
   private static Id addToId(IdFactory FACTORY, Id id, int num) {
     byte[] bytes = id.toByteArray();
-    bytes[0] += num;
+    bytes[0] = (byte) (bytes[0] + num);
 
     return FACTORY.buildId(bytes);
   }

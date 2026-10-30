@@ -250,7 +250,7 @@ public class ErasureCodec {
 
     for (int row = 0; row < nExtra; row++) {
       for (int col = 0; col < nExtra; col++) {
-        InvMat[row][col] = E[col] + F[row] - C[col] - D[row] -
+        InvMat[row][col] = (long) E[col] + F[row] - C[col] - D[row] -
           FieldEltToExp[RowInd[col] ^ ColInd[row] ^ (1 << (Lfield - 1))];
         if (InvMat[row][col] >= 0) {
           InvMat[row][col] = InvMat[row][col] % MultField;
@@ -329,12 +329,12 @@ public class ErasureCodec {
    * This is the inverter for the previous field. Note that 0
    * is not invertible!
    */
-  private static int[] buildFieldEltToExp(int[] expToFieldElt) {
+  private static int[] buildFieldEltToExp(int[] exponentTable) {
     int[] fieldEltToExp = new int[MultField + 1];
 
     fieldEltToExp[0] = -1;
     for (int i = 0; i < MultField; i++) {
-      fieldEltToExp[expToFieldElt[i]] = i;
+      fieldEltToExp[exponentTable[i]] = i;
     }
     return fieldEltToExp;
   }

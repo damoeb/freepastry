@@ -98,7 +98,9 @@ class IdSetCharacterizationTest {
   private static String expected(String prefix, int from, int to, String... suffixes) {
     List<String> result = new ArrayList<>();
     for (int i = from; i < to; i++) {
-      for (String suffix : suffixes[i].split(" ")) {
+      @SuppressWarnings("StringSplitter") // the test data has no trailing blanks
+      String[] split = suffixes[i].split(" ");
+      for (String suffix : split) {
         result.add(prefix + SORTED_HEX[i] + suffix);
       }
     }

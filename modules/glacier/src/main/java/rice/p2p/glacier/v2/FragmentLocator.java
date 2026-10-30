@@ -61,7 +61,7 @@ final class FragmentLocator {
       result[i] = 0;
       for (int j=7; j>=0; j--) {
         if (d >= c) {
-          result[i] |= (1<<j);
+          result[i] = (byte) (result[i] | (1<<j));
           d -= c;
         }
         c /= 2;

@@ -36,8 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -60,7 +59,7 @@ final class GlacierTrafficShaper {
   private final int numFragments;
   private final Environment environment;
   private final Logger logger;
-  private final Hashtable<Id, Continuation<Object, Exception>> pendingTraffic;
+  private final ConcurrentHashMap<Id, Continuation<Object, Exception>> pendingTraffic;
   private final int[] numActiveRestores;
   private long tokenBucket;
   private long bucketLastUpdated;
@@ -76,7 +75,7 @@ final class GlacierTrafficShaper {
     this.numFragments = numFragments;
     this.environment = environment;
     this.logger = logger;
-    this.pendingTraffic = new Hashtable<Id, Continuation<Object, Exception>>();
+    this.pendingTraffic = new ConcurrentHashMap<>();
     this.numActiveRestores = new int[1];
     this.numActiveRestores[0] = 0;
     this.tokenBucket = 0;
@@ -137,7 +136,7 @@ final class GlacierTrafficShaper {
       if (gdm.getFragment(i) != null)
         thisSize += gdm.getFragment(i).getPayload().length;
       if (gdm.getManifest(i) != null)
-        thisSize += numFragments * MANIFEST_BYTES_PER_FRAGMENT;
+        thisSize += (long) numFragments * MANIFEST_BYTES_PER_FRAGMENT;
     }
 
     tokenBucket -= thisSize;
@@ -229,8 +228,7 @@ final class GlacierTrafficShaper {
         if ((numCurrentRestores < config.maxActiveRestores()) && (tokenBucket>0)) {
           for (int i=0; i<rateLimitedRequestsPerSecond; i++) {
             if (!pendingTraffic.isEmpty()) {
-              Enumeration<Id> keys = pendingTraffic.keys();
-              Object thisKey = (Object) keys.nextElement();
+              Id thisKey = pendingTraffic.keySet().iterator().next();
               logger.debug("Sending request {}", thisKey);
               Continuation<Object, Exception> c = pendingTraffic.remove(thisKey);
               c.receiveResult(Boolean.valueOf(true));

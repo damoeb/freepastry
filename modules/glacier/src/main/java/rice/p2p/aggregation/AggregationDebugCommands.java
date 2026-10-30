@@ -255,6 +255,7 @@ final class AggregationDebugCommands {
     }
 
     if (cmd.startsWith("vlookup")) {
+      @SuppressWarnings("StringSplitter") // splits debug command arguments; dropping trailing empty ones is intended
       String[] vkeyS = cmd.substring(8).split("v");
       Id key = factory.buildIdFromToString(vkeyS[0]);
       long version = Long.parseLong(vkeyS[1]);

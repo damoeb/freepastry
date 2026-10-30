@@ -38,8 +38,9 @@ package rice.p2p.aggregation;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -84,7 +85,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final char tiConsolidate = 3;
   private final char tiStatistics = 4;
   private final char tiExpire = 5;
-  private final Hashtable<Integer, CancellableTask> timers;
+  private final Map<Integer, CancellableTask> timers;
   private AggregationStatistics stats;
 
   private final AggregationSettings config;
@@ -155,7 +156,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     });
 
     this.objectStore = objectStore;
-    this.timers = new Hashtable<Integer, CancellableTask>();
+    this.timers = new ConcurrentHashMap<>();
     this.aggregateList = new AggregateList(configFileName, getLocalNodeHandle().getId().toString(), factory, config.isAggregateLogEnabled(), instance, environment);
     this.storer = new AggregateStorer(endpoint, factory, aggregateStore, aggregateList, environment.getTimeSource(), logger);
     this.stats = aggregateList.getStatistics(config.getStatsGranularity(), config.getStatsRange(), config.getNominalReferenceCount());

@@ -36,8 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -56,7 +55,7 @@ final class GlacierScheduler {
   private final Endpoint endpoint;
   private final Environment environment;
   private final Logger logger;
-  private final Hashtable<Integer, GlacierContinuation> continuations;
+  private final ConcurrentHashMap<Integer, GlacierContinuation> continuations;
   private long nextContinuationTimeout;
   private int nextUID;
   private CancellableTask timer;
@@ -65,7 +64,7 @@ final class GlacierScheduler {
     this.endpoint = endpoint;
     this.environment = environment;
     this.logger = logger;
-    this.continuations = new Hashtable<Integer, GlacierContinuation>();
+    this.continuations = new ConcurrentHashMap<>();
     this.nextContinuationTimeout = -1;
     this.nextUID = 0;
     this.timer = null;
@@ -140,9 +139,7 @@ final class GlacierScheduler {
 
       logger.debug("Timer run at {}", now);
 
-      Enumeration<GlacierContinuation> enu = continuations.elements();
-      while (enu.hasMoreElements()) {
-        GlacierContinuation gc = (GlacierContinuation) enu.nextElement();
+      for (GlacierContinuation gc : continuations.values()) {
         long currentTimeout = gc.getTimeout();
 
         if (!gc.hasTerminated() && currentTimeout < (now + 1*GlacierConfig.SECONDS)) {

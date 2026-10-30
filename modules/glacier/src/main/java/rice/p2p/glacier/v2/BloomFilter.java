@@ -91,7 +91,7 @@ public class BloomFilter {
       cache = (cache<<8) + data[i] + ((data[i]<0) ? 256 : 0);
       if ((++ctr == 7) || (i==(data.length-1))) {
         for (int j=0; j<hashParams.length; j++)
-          hash[j] += cache % hashParams[j];
+          hash[j] = (int) (hash[j] + cache % hashParams[j]);
         ctr = 0;
         cache = 0;
       }
@@ -108,7 +108,7 @@ public class BloomFilter {
 
 
     for (int i=0; i<hashParams.length; i++)
-      bitfield[hash[i]/8] |= (1<<(hash[i]&7));
+      bitfield[hash[i]/8] = (byte) (bitfield[hash[i]/8] | (1<<(hash[i]&7)));
   }
 
   public boolean contains(byte[] data) {

@@ -227,7 +227,9 @@ final class ObjectRefresher {
         }
 
         lastResult = refreshObject(ids[currentIndex], expirations[currentIndex]);
-        if (lastResult == PENDING)
+        @SuppressWarnings("ReferenceEquality") // PENDING is a sentinel instance
+        boolean pending = lastResult == PENDING;
+        if (pending)
           return;
       }
     }

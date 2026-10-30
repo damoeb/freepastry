@@ -44,15 +44,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -63,7 +66,7 @@ import rice.p2p.glacier.VersionKey;
 @SuppressWarnings("unchecked")
 public class AggregateList {
 
-  private final Hashtable<Id, AggregateDescriptor> aggregateList;
+  private final ConcurrentHashMap<Id, AggregateDescriptor> aggregateList;
   private final String configFileName;
   private final String logFileName;
   private final String label;
@@ -78,7 +81,7 @@ public class AggregateList {
 
   public AggregateList(String configFileName, String label, IdFactory factory, boolean loggingEnabled, String instance, Environment env) throws IOException {
     this.configFileName = configFileName;
-    this.aggregateList = new Hashtable<Id, AggregateDescriptor>();
+    this.aggregateList = new ConcurrentHashMap<>();
     this.factory = factory;
     this.label = label;
     this.rootKey = null;
@@ -102,7 +105,7 @@ public class AggregateList {
   }
 
   public Enumeration<AggregateDescriptor> elements() {
-    return aggregateList.elements();
+    return Collections.enumeration(aggregateList.values());
   }
 
   public void recoverLog() {
@@ -111,7 +114,7 @@ public class AggregateList {
     int entriesReplayed = 0;
 
     try {
-      logFile = new BufferedReader(new InputStreamReader(Files.newInputStream(Path.of(logFileName))));
+      logFile = new BufferedReader(new InputStreamReader(Files.newInputStream(Path.of(logFileName)), StandardCharsets.UTF_8));
 
       while (true) {
         String line = readLineSkipComments(logFile);
@@ -126,6 +129,7 @@ public class AggregateList {
         if ((line.lastIndexOf('$') != 0) || (line.indexOf('@') != line.length()-1))
           throw new AggregationException("Overlapping log entries: "+line);
 
+        @SuppressWarnings("StringSplitter") // parses the fixed format writeToDisk/appendLog write, no trailing empty fields
         String[] parts = line.split("\\|");
 
         long thisSerial = Long.parseLong(parts[1]);
@@ -290,11 +294,8 @@ public class AggregateList {
   }
 
   public void resetMarkers() {
-    Enumeration<AggregateDescriptor> enumerationeration = aggregateList.elements();
-    while (enumerationeration.hasMoreElements()) {
-      AggregateDescriptor aggr = (AggregateDescriptor) enumerationeration.nextElement();
+    for (AggregateDescriptor aggr : aggregateList.values())
       aggr.setMarker(false);
-    }
   }
 
   public void refreshAggregate(AggregateDescriptor adc, long lifetime) {
@@ -358,9 +359,7 @@ public class AggregateList {
   }
 
   public void recalculateReferenceCounts(Id[] excludes) {
-    Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
-    while (enumeration.hasMoreElements()) {
-      AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
+    for (AggregateDescriptor aggr : aggregateList.values()) {
       aggr.resetReferenceCount();
       aggr.setMarker(false);
 
@@ -372,9 +371,7 @@ public class AggregateList {
             aggr.setMarker(true);
     }
 
-    enumeration = aggregateList.elements();
-    while (enumeration.hasMoreElements()) {
-      AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
+    for (AggregateDescriptor aggr : aggregateList.values()) {
       if (!aggr.isMarker()) {
         aggr.setMarker(true);
         for (int i=0; i<aggr.getPointers().length; i++) {
@@ -395,6 +392,7 @@ public class AggregateList {
     }
   }
 
+  @SuppressWarnings("StringSplitter") // parses the fixed format writeToDisk/appendLog write, no trailing empty fields
   private AggregateDescriptor readAggregate(BufferedReader reader, Id aggrKey) throws AggregationException, IOException {
     String[] expiresS = readLineSkipComments(reader).split("=");
     if (!expiresS[0].equals("expires"))
@@ -434,6 +432,7 @@ public class AggregateList {
     return new AggregateDescriptor(aggrKey, expires, objects, pointers);
   }
 
+  @SuppressWarnings("StringSplitter") // parses the fixed format writeToDisk/appendLog write, no trailing empty fields
   public boolean readFromDisk() {
     rootKey = null;
     aggregateList.clear();
@@ -451,7 +450,7 @@ public class AggregateList {
     boolean readSuccessful = false;
 
     try {
-      configFile = new BufferedReader(new InputStreamReader(Files.newInputStream(Path.of(fileName))));
+      configFile = new BufferedReader(new InputStreamReader(Files.newInputStream(Path.of(fileName)), StandardCharsets.UTF_8));
 
       String[] root = readLineSkipComments(configFile).split("=");
       if (root[0].equals("nextid")) {
@@ -517,17 +516,14 @@ public class AggregateList {
 
     try {
       PrintStream configFile = new PrintStream(Files.newOutputStream(Path.of(configFileName + ".new")));
-      Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
-
       resetMarkers();
-      configFile.println("# Aggregate list at " + label + " (" + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) + ")");
+      configFile.println("# Aggregate list at " + label + " (" + DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.systemDefault())) + ")");
       configFile.println();
       configFile.println("nextid="+nextSerial);
       configFile.println("root="+rootKey.toStringFull());
       configFile.println();
 
-      while (enumeration.hasMoreElements()) {
-        AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
+      for (AggregateDescriptor aggr : aggregateList.values()) {
         if (!aggr.isMarker()) {
           configFile.println("["+aggr.getKey().toStringFull()+"]");
           writeAggregate(configFile, aggr);
@@ -541,12 +537,10 @@ public class AggregateList {
       // as with delete and renameTo, a failed step is ignored: readFromDisk falls back to the .new file
       try {
         Files.deleteIfExists(Path.of(configFileName));
-      } catch (IOException ignored) {
-      }
+      } catch (IOException ignored) { /* readFromDisk falls back to the .new file */ }
       try {
         Files.move(Path.of(configFileName + ".new"), Path.of(configFileName), REPLACE_EXISTING);
-      } catch (IOException ignored) {
-      }
+      } catch (IOException ignored) { /* readFromDisk falls back to the .new file */ }
     } catch (IOException ioe) {
       logger.warn("AggregationImpl cannot write to its aggregate list: {} ({})", configFileName, ioe, ioe);
     }

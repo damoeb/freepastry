@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
@@ -110,6 +111,7 @@ final class GlacierDebugCommands {
     return DebugCommandHandler.await(result, environment.getSelectorManager(), timeoutMillis);
   }
 
+  @SuppressWarnings("StringSplitter") // splits debug command arguments; dropping trailing empty ones is intended
   String handleDebugCommand(String command) {
     if (command.indexOf(" ") < 0)
       return null;
@@ -225,6 +227,7 @@ final class GlacierDebugCommands {
 
     if (cmd.startsWith("neighbors")) {
       final Iterator<Id> iter = neighborStorage.scan().getIterator();
+      @SuppressWarnings("JdkObsolete") // appended from lookup continuations that may run on different threads
       final StringBuffer result = new StringBuffer();
       final long now = (cmd.indexOf("-r") < 0) ? 0 : environment.getTimeSource().currentTimeMillis();
       final CompletableFuture<String> ret = new CompletableFuture<String>();
@@ -261,7 +264,7 @@ final class GlacierDebugCommands {
     if (cmd.startsWith("status")) {
       String result = "";
       result = result + "Responsible for: "+neighborhood.getResponsibleRange() + "\n";
-      result = result + "Local time: "+DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()) + "\n\n";
+      result = result + "Local time: "+DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.systemDefault())) + "\n\n";
       result = result + fragmentStorage.scan().numElements() + " fragments\n";
       result = result + neighborStorage.scan().numElements() + " neighbors\n";
       result = result + scheduler.size() + " active continuations\n";
@@ -432,6 +435,7 @@ final class GlacierDebugCommands {
     if (cmd.startsWith("validate")) {
       FragmentKeySet keyset = (FragmentKeySet) fragmentStorage.scan();
       final Iterator<Id> iter = keyset.getIterator();
+      @SuppressWarnings("JdkObsolete") // appended from lookup continuations that may run on different threads
       final StringBuffer result = new StringBuffer();
 
       result.append(keyset.numElements()+ " fragment(s)\n");
