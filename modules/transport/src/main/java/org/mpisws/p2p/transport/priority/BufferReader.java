@@ -100,7 +100,7 @@ class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
     }
 
     if (e instanceof IOException) {
-      if (e.getMessage().equals("An established connection was aborted by the software in your host machine")) {
+      if ("An established connection was aborted by the software in your host machine".equals(e.getMessage())) {
         printError = false;
       }
     }
