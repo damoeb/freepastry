@@ -738,27 +738,12 @@ public class RawPastRegrTest extends CommonAPITest {
 
                 stepDone();
 
-                stepStart("Cache Should Contain Object");
+                // PastImpl caches only at the requester (lookup()), never in forward(), so there is no
+                // cached copy of file3 to check here; a lookup answered from the cache is covered by
+                // "Local Lookup Satisfied by Cache" above
+                sectionDone();
 
-                // check cache
-                local.getStorageManager().getObject(id2, new TestCommand() {
-                  public void receive(Object result) throws Exception {
-                    // TODO: this step and the next check nothing; their assertions were disabled
-
-                    stepDone();
-
-                    // check lookup
-                    LookupMessage lmsg = new LookupMessage(-1, id2, local.getLocalNodeHandle(), id2);
-
-                    stepStart("Lookup Satisfied By Cache");
-                    stepDone();
-
-                    sectionDone();
-
-                    cleanUp();
-                  }
-                });
-                simulate();
+                cleanUp();
               }
             });
             simulate();
