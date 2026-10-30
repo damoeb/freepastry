@@ -36,7 +36,10 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.util;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
@@ -45,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SecurityUtilsTest {
 
@@ -98,6 +102,31 @@ public class SecurityUtilsTest {
     byte[] iv = SecurityUtils.generateIVSymmetric();
     assertEquals(IV_BYTES, iv.length);
     assertFalse(Arrays.equals(iv, SecurityUtils.generateIVSymmetric()));
+  }
+
+  static BigInteger modulus(KeyPair pair) {
+    return ((RSAPublicKey) pair.getPublic()).getModulus();
+  }
+
+  @Test
+  public void decryptingWithTheWrongPrivateKeyThrowsSecurityException() {
+    byte[] secret = SecurityUtils.generateKeySymmetric();
+    KeyPair a = SecurityUtils.generateKeyAsymmetric();
+    KeyPair b = SecurityUtils.generateKeyAsymmetric();
+    // encrypt for the key with the larger modulus, decrypt with the other one
+    boolean aIsLarger = modulus(a).compareTo(modulus(b)) > 0;
+    KeyPair right = aIsLarger ? a : b;
+    KeyPair wrong = aIsLarger ? b : a;
+    BigInteger wrongModulus = modulus(wrong);
+    // a ciphertext larger than the wrong key's modulus is the case that escaped as an unchecked DataLengthException
+    for (int i = 0; i < 1000; i++) {
+      byte[] cipher = SecurityUtils.encryptAsymmetric(secret, right.getPublic());
+      if (new BigInteger(1, cipher).compareTo(wrongModulus) >= 0) {
+        assertThrows(SecurityException.class, () -> SecurityUtils.decryptAsymmetric(cipher, wrong.getPrivate()));
+        return;
+      }
+    }
+    fail("found no ciphertext larger than the other modulus");
   }
 
   @Test

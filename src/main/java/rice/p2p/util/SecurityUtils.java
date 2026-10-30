@@ -74,6 +74,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.bouncycastle.crypto.DataLengthException;
+
 /**
  * This class contains a large number of static methods for performing
  * security-related primitives, such as encrypt, decrypt, etc...
@@ -590,6 +592,9 @@ public class SecurityUtils {
       throw new SecurityException("IllegalBlockSizeException decrypting object: " + e);
     } catch (BadPaddingException e) {
       throw new SecurityException("BadPaddingException decrypting object: " + e);
+    } catch (DataLengthException e) {
+      // the ciphertext is larger than the modulus of this key, so it was encrypted with another one
+      throw new SecurityException("DataLengthException decrypting object: " + e);
     }
   }
 
