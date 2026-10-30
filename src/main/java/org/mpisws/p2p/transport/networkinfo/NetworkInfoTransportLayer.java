@@ -90,22 +90,22 @@ public class NetworkInfoTransportLayer implements
     Prober,
     TransportLayer<InetSocketAddress, ByteBuffer>,
     TransportLayerCallback<InetSocketAddress, ByteBuffer> {
-  protected Logger logger;
-  protected Environment environment;
+  private final Logger logger;
+  private final Environment environment;
 
-  protected TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
-  protected ErrorHandler<InetSocketAddress> errorHandler;
-  protected TransportLayer<InetSocketAddress, ByteBuffer> tl;
+  private TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
+  private ErrorHandler<InetSocketAddress> errorHandler;
+  private final TransportLayer<InetSocketAddress, ByteBuffer> tl;
 
-  protected static final byte HEADER_PASSTHROUGH_BYTE = (byte)0;
-  protected static final byte HEADER_IP_ADDRESS_REQUEST_BYTE = (byte)1;
-  protected static final byte HEADER_PROBE_REQUEST_BYTE = (byte)2;
-  protected static final byte HEADER_PROBE_RESPONSE_BYTE = (byte)3;
-  protected static final byte HEADER_NODES_REQUEST_BYTE = (byte)4;
-  protected static final byte HEADER_ID_REQUEST_BYTE = (byte)5;
-  protected static final byte[] HEADER_PASSTHROUGH = {HEADER_PASSTHROUGH_BYTE};
-  protected static final byte[] HEADER_IP_ADDRESS_REQUEST = {HEADER_IP_ADDRESS_REQUEST_BYTE};
-  protected static final byte[] HEADER_NODES_REQUEST = {HEADER_NODES_REQUEST_BYTE};
+  private static final byte HEADER_PASSTHROUGH_BYTE = (byte)0;
+  private static final byte HEADER_IP_ADDRESS_REQUEST_BYTE = (byte)1;
+  private static final byte HEADER_PROBE_REQUEST_BYTE = (byte)2;
+  private static final byte HEADER_PROBE_RESPONSE_BYTE = (byte)3;
+  private static final byte HEADER_NODES_REQUEST_BYTE = (byte)4;
+  private static final byte HEADER_ID_REQUEST_BYTE = (byte)5;
+  private static final byte[] HEADER_PASSTHROUGH = {HEADER_PASSTHROUGH_BYTE};
+  private static final byte[] HEADER_IP_ADDRESS_REQUEST = {HEADER_IP_ADDRESS_REQUEST_BYTE};
+  private static final byte[] HEADER_NODES_REQUEST = {HEADER_NODES_REQUEST_BYTE};
 
   Map<Byte, byte[]> serializedIds = new HashMap<Byte, byte[]>();
 
@@ -663,7 +663,7 @@ public class NetworkInfoTransportLayer implements
   /**
    * Ask this strategy to probe a requesting node, but from a 3rd party node
    */
-  protected ProbeStrategy probeStrategy;
+  private ProbeStrategy probeStrategy;
   public void setProbeStrategy(ProbeStrategy probeStrategy) {
     this.probeStrategy = probeStrategy;
   }

@@ -82,20 +82,20 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD_FOREVER;
 
 public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> {
-  protected byte[] localIdentifier;
+  private final byte[] localIdentifier;
 
-  protected LowerIdentityImpl lower;
-  protected UpperIdentityImpl upper;
+  private LowerIdentityImpl lower;
+  private UpperIdentityImpl upper;
 
-  protected Map<UpperIdentifier, Set<IdentityMessageHandle>> pendingMessages;
-  protected Set<UpperIdentifier> deadForever;  // TODO: make TimerWeakHashSet
+  private final Map<UpperIdentifier, Set<IdentityMessageHandle>> pendingMessages;
+  private final Set<UpperIdentifier> deadForever;  // TODO: make TimerWeakHashSet
 
-  protected Environment environment;
-  protected Logger logger;
+  private final Environment environment;
+  private final Logger logger;
 
-  protected IdentitySerializer<UpperIdentifier, MiddleIdentifier, LowerIdentifier> serializer;
-  protected NodeChangeStrategy<UpperIdentifier> nodeChangeStrategy;
-  protected SanityChecker<UpperIdentifier, MiddleIdentifier> sanityChecker;
+  private final IdentitySerializer<UpperIdentifier, MiddleIdentifier, LowerIdentifier> serializer;
+  private final NodeChangeStrategy<UpperIdentifier> nodeChangeStrategy;
+  private final SanityChecker<UpperIdentifier, MiddleIdentifier> sanityChecker;
 
   /**
    * Multiple UpperIdentifiers claim the same binding to the
@@ -108,7 +108,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
    * Note, that it's possible to have the UpperIdentifier in multiple places if it
    * has multiple paths (such as source routing)
    */
-  protected Map<MiddleIdentifier, UpperIdentifier> bindings;  // this one may be difficult as the Upper has a ref to the lower
+  private final Map<MiddleIdentifier, UpperIdentifier> bindings;  // this one may be difficult as the Upper has a ref to the lower
 
   /**
    * Held in the options map of the message/socket.  This is a pointer from the upper
@@ -126,7 +126,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
   public static final String NODE_HANDLE_FROM_INDEX = "identity.node_handle_to_index";
   public static final String DONT_VERIFY = "identity.dont_verify_dest";
 
-  public BindStrategy<UpperIdentifier, LowerIdentifier> bindStrategy;
+  private final BindStrategy<UpperIdentifier, LowerIdentifier> bindStrategy;
 
   public IdentityImpl(
       byte[] localIdentifier,
@@ -1079,7 +1079,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
 
     // todo, make this a timer weak hash map
-    protected Map<UpperIdentifier, Integer> liveness = new HashMap<UpperIdentifier, Integer>();
+    private final Map<UpperIdentifier, Integer> liveness = new HashMap<UpperIdentifier, Integer>();
 
     protected void notifyLivenessListeners(UpperIdentifier i, int liveness, Map<String, Object> options) {
       logger.trace("notifyLivenessListeners({},{})", i, liveness);

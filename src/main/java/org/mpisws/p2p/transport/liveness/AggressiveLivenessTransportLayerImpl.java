@@ -64,9 +64,9 @@ public class AggressiveLivenessTransportLayerImpl<Identifier> extends
   }
 
   public P2PSocket<Identifier> getLSocket(P2PSocket<Identifier> s, EntityManager manager) {
-    ALSocket sock = new ALSocket(manager, s, manager.identifier.get());
-    synchronized(manager.sockets) {
-      manager.sockets.add(sock);
+    ALSocket sock = new ALSocket(manager, s, manager.getIdentifier().get());
+    synchronized(manager.getSockets()) {
+      manager.getSockets().add(sock);
     }
     return sock;
   }

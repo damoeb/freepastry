@@ -41,7 +41,7 @@ import java.net.InetSocketAddress;
 
 public class StalledSocketException extends IOException {
 
-  protected Object addr;
+  private final Object addr;
 
   public StalledSocketException(Object addr, String s) {
     super(s);

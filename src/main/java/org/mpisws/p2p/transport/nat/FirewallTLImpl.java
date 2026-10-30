@@ -63,22 +63,22 @@ import rice.environment.time.TimeSource;
  */
 public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType> {
 
-  protected final int UDP_OPEN_MILLIS;
+  private final int UDP_OPEN_MILLIS;
 
   /**
    * Holds when we last refreshed the UDP connection
    */
-  protected Map<Identifier, Long> udpTable;
+  private final Map<Identifier, Long> udpTable;
 
-  protected TransportLayer<Identifier, MessageType> tl;
+  private final TransportLayer<Identifier, MessageType> tl;
 
-  protected TransportLayerCallback<Identifier, MessageType> callback;
+  private TransportLayerCallback<Identifier, MessageType> callback;
 
-  protected TimeSource timeSource;
+  private final TimeSource timeSource;
 
-  protected Environment environment;
+  private final Environment environment;
 
-  protected Logger logger;
+  private final Logger logger;
 
   /**
    *

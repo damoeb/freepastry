@@ -47,9 +47,9 @@ import java.nio.ByteBuffer;
  *
  */
 public class TempFileAllocationStrategy implements FileAllocationStrategy {
-  protected String prefix;
-  protected String suffix;
-  protected File dir;
+  private final String prefix;
+  private final String suffix;
+  private final File dir;
 
   public TempFileAllocationStrategy() {
     this("FreePastry",null);

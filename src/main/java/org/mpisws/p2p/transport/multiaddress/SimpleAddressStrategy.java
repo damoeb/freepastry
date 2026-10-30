@@ -49,16 +49,16 @@ public class SimpleAddressStrategy implements AddressStrategy {
     // start from the outside address, and return the first one not equal to the local address (sans port)
 
     try {
-      for (int ctr = 0; ctr < remote.address.length; ctr++) {
-        if (!local.address[ctr].getAddress().equals(remote.address[ctr].getAddress())) {
-          return remote.address[ctr];
+      for (int ctr = 0; ctr < remote.getNumAddresses(); ctr++) {
+        if (!local.getAddress(ctr).getAddress().equals(remote.getAddress(ctr).getAddress())) {
+          return remote.getAddress(ctr);
         }
       }
     } catch (ArrayIndexOutOfBoundsException aioobe) {
       // same computer
       return remote.getInnermostAddress();
     }
-    return remote.address[remote.address.length-1]; // the last address if we are on the same computer
+    return remote.getInnermostAddress(); // the last address if we are on the same computer
   }
 
 }

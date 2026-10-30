@@ -52,8 +52,8 @@ import org.slf4j.Logger;
 
 public class EncryptedSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier>{
 
-  public Cipher encryptCipher;
-  public Cipher decryptCipher;
+  private final Cipher encryptCipher;
+  private final Cipher decryptCipher;
 
   SecretKey key;  // This is the key for the socket (it's already been hashed with a seed).
 

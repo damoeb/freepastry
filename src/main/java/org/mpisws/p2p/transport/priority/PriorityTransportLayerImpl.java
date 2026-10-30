@@ -97,17 +97,17 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   public static final byte[] PRIMARY_SOCKET = {PRIMARY_SOCKET_B};
   public static final byte[] BIG_MSG_SOCKET = {BIG_MSG_SOCKET_B};
 
-  public int MAX_MSG_SIZE = 10000;
-  public int MAX_QUEUE_SIZE = 30;
+  private int MAX_MSG_SIZE = 10000;
+  private int MAX_QUEUE_SIZE = 30;
 
   /**
    * BIG messages open a socket especially for big messages.  This is the biggest message size allowed.
    */
-  public int MAX_BIG_MSG_SIZE = Integer.MAX_VALUE;
+  private final int MAX_BIG_MSG_SIZE = Integer.MAX_VALUE;
 
-  public Logger logger;
+  private final Logger logger;
 
-  protected Map<Identifier, EntityManager> entityManagers;
+  private final Map<Identifier, EntityManager> entityManagers;
 
   /**
    * Never null: until the layer above calls {@link #setCallback}, (or after it passes null) this is
@@ -118,10 +118,10 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
 
   private ErrorHandler<Identifier> errorHandler;
 
-  protected SelectorManager selectorManager;
-  protected Environment environment;
+  private final SelectorManager selectorManager;
+  private final Environment environment;
 
-  protected ArrayList<PrimarySocketListener<Identifier>> primarySocketListeners = new ArrayList<PrimarySocketListener<Identifier>>();
+  private final ArrayList<PrimarySocketListener<Identifier>> primarySocketListeners = new ArrayList<PrimarySocketListener<Identifier>>();
 
   /**
    * The maximum message size;
@@ -320,7 +320,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     this.errorHandler = handler;
   }
 
-  protected boolean destroyed = false;
+  private boolean destroyed = false;
   public void destroy() {
     if (destroyed) return;
     if (environment.getSelectorManager().isSelectorThread()) {

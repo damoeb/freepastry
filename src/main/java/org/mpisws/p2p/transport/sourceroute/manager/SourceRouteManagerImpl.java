@@ -93,9 +93,9 @@ public class SourceRouteManagerImpl<Identifier> implements
   // the default distance, which is used before a ping
   public static final int DEFAULT_PROXIMITY = 60*60*1000;
   // the minimum amount of time between pings
-  public long PING_THROTTLE;
-  public int NUM_SOURCE_ROUTE_ATTEMPTS;
-  public int CHECK_LIVENESS_THROTTLE = 5000;
+  private final long PING_THROTTLE;
+  private final int NUM_SOURCE_ROUTE_ATTEMPTS;
+  private final int CHECK_LIVENESS_THROTTLE = 5000;
 
   TransportLayer<SourceRoute<Identifier>, ByteBuffer> tl;
   LivenessProvider<SourceRoute<Identifier>> livenessProvider;
@@ -276,7 +276,7 @@ public class SourceRouteManagerImpl<Identifier> implements
   protected class AddressManager {
 
     // the remote address of this manager
-    protected Identifier address;
+    private final Identifier address;
 
     /**
      * the current best route to this remote address
@@ -284,23 +284,23 @@ public class SourceRouteManagerImpl<Identifier> implements
      * if best == null, we are already in a CheckDead, which means
      * we are searching for a path
      */
-    protected SourceRoute<Identifier> best;
+    private SourceRoute<Identifier> best;
 
     /**
      *  the queue of messages waiting for a route
      *
      *  of SocketBuffer
      */
-    protected LinkedList<PendingMessage> pendingMessages;
+    private final LinkedList<PendingMessage> pendingMessages;
 
     // the queue of appSockets waiting for a connection
-    protected LinkedList<PendingSocket> pendingSockets;
+    private final LinkedList<PendingSocket> pendingSockets;
 
     // the current liveness of this address
-    protected int liveness;
+    private int liveness;
 
     // the last time this address was pinged
-    protected long updated;
+    private long updated;
 
     public static final int LIVENESS_UNKNOWN = -1;
 

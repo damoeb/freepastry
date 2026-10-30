@@ -66,41 +66,41 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   /**
    * The cert of the remote node. (not applicable for non-clientAuth servers.
    */
-  protected X509Certificate peerCert = null;
+  private X509Certificate peerCert = null;
 
-  protected P2PSocket<Identifier> socket;
+  private final P2PSocket<Identifier> socket;
 
-  protected SSLEngine engine;
-  protected SSLTransportLayerImpl<Identifier, ?> sslTL;
+  private final SSLEngine engine;
+  private final SSLTransportLayerImpl<Identifier, ?> sslTL;
 
-  protected Logger logger;
+  private final Logger logger;
 
-  protected boolean handshaking = true;
-  protected boolean closed = true;
+  private final boolean handshaking = true;
+  private boolean closed = true;
 
-  protected SSLEngineResult result;
-  protected HandshakeStatus status;
+  private SSLEngineResult result;
+  private HandshakeStatus status;
 
-  protected LinkedList<ByteBuffer> writeMe = new LinkedList<ByteBuffer>(); // cipher, outgoing
-  protected LinkedList<ByteBuffer> unwrapMe = new LinkedList<ByteBuffer>(); // cipher, incoming
-  protected LinkedList<ByteBuffer> readMe; // plain, incoming
+  private final LinkedList<ByteBuffer> writeMe = new LinkedList<ByteBuffer>(); // cipher, outgoing
+  private final LinkedList<ByteBuffer> unwrapMe = new LinkedList<ByteBuffer>(); // cipher, incoming
+  private final LinkedList<ByteBuffer> readMe; // plain, incoming
 
 
-  protected ByteBuffer bogusEncryptMe;
+  private final ByteBuffer bogusEncryptMe;
 
-  protected int appBufferMax;
-  protected int netBufferMax;
+  private final int appBufferMax;
+  private final int netBufferMax;
 
-  protected Continuation<SSLSocketManager<Identifier>, Exception> c;
+  private final Continuation<SSLSocketManager<Identifier>, Exception> c;
 
-  protected boolean doneHandshaking = false;
+  private boolean doneHandshaking = false;
 
-  protected Map<String, Object> options;
+  private Map<String, Object> options;
 
-  protected boolean useClientAuth;
-  protected boolean server;
+  private final boolean useClientAuth;
+  private final boolean server;
 
-  protected String name;
+  private String name;
 
   /**
    * Called on incoming side
@@ -119,9 +119,9 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     this.sslTL = sslTL;
     this.socket = s;
     this.c = c;
-    this.logger = sslTL.logger;
+    this.logger = sslTL.getLogger();
 
-    engine = sslTL.context.createSSLEngine(s.getIdentifier().toString(), 0);
+    engine = sslTL.getContext().createSSLEngine(s.getIdentifier().toString(), 0);
     engine.setUseClientMode(!server);
     if (server && useClientAuth) engine.setNeedClientAuth(true);
 
@@ -342,7 +342,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   private void runDelegatedTasks() {
     if (status == HandshakeStatus.NEED_TASK) {
       runningTaskLock = true;
-      sslTL.environment.getProcessor().process(() -> {
+      sslTL.getEnvironment().getProcessor().process(() -> {
         Runnable runnable;
         while ((runnable = engine.getDelegatedTask()) != null) {
           runnable.run();
@@ -362,7 +362,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
           continueHandshaking();
         };
       }
-      , sslTL.environment.getSelectorManager(), sslTL.environment.getTimeSource(), sslTL.environment.getLogManager());
+      , sslTL.getEnvironment().getSelectorManager(), sslTL.getEnvironment().getTimeSource(), sslTL.getEnvironment().getLogManager());
     }
   }
 

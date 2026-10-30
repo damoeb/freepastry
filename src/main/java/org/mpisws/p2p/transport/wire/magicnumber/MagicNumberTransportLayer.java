@@ -75,15 +75,15 @@ public class MagicNumberTransportLayer<Identifier> implements
     TransportLayerCallback<Identifier, ByteBuffer>,
     ListenableTransportLayer<Identifier> {
 
-  protected Logger logger;
-  protected Environment environment;
+  private final Logger logger;
+  private final Environment environment;
 
-  protected TransportLayerCallback<Identifier, ByteBuffer> callback;
-  protected ErrorHandler<Identifier> errorHandler;
-  protected TransportLayer<Identifier, ByteBuffer> wire;
+  private TransportLayerCallback<Identifier, ByteBuffer> callback;
+  private ErrorHandler<Identifier> errorHandler;
+  private final TransportLayer<Identifier, ByteBuffer> wire;
 
-  public byte[] HEADER;
-  public int SOCKET_TIMEOUT;
+  private final byte[] HEADER;
+  private final int SOCKET_TIMEOUT;
 
   /**
    *

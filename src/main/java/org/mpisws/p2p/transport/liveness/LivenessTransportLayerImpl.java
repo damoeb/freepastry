@@ -93,9 +93,9 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   public final int BACKOFF_LIMIT;
 
   // the minimum amount of time between check dead checks on dead routes
-  public long CHECK_DEAD_THROTTLE;
+  private final long CHECK_DEAD_THROTTLE;
 
-  public int DEFAULT_RTO;
+  private final int DEFAULT_RTO;
 
   /**
    * RTO helper see RFC 1122 for a detailed description of RTO calculation
@@ -117,12 +117,12 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   double gainG;
 
 
-  protected TransportLayer<Identifier, ByteBuffer> tl;
-  protected Logger logger;
-  protected Environment environment;
-  protected TimeSource time;
+  private final TransportLayer<Identifier, ByteBuffer> tl;
+  private final Logger logger;
+  private final Environment environment;
+  private final TimeSource time;
   protected Timer timer;
-  protected RandomSource random;
+  private final RandomSource random;
 
   /**
    * Pass the msg to the callback if it is NORMAL
@@ -544,13 +544,13 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   protected class DeadChecker extends TimerTask {
 
     // The number of tries that have occurred so far
-    protected int tries = 1;
+    private int tries = 1;
 
     // the total number of tries before declaring death
-    protected int numTries;
+    private final int numTries;
 
     // the path to check
-    protected EntityManager manager;
+    private final EntityManager manager;
 
     // for debugging
     long startTime; // the start time
@@ -664,18 +664,18 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
 
 
     // the remote route of this manager
-    protected WeakReference<Identifier> identifier;
+    private final WeakReference<Identifier> identifier;
 
     // the current liveness of this route
-    protected int liveness;
+    private int liveness;
 
     // the last time the liveness information was updated
-    protected long updated;
+    private long updated;
 
     // whether or not a check dead is currently being carried out on this route
     private DeadChecker pendingDeadchecker;
 
-    protected Set<LSocket> sockets;
+    private final Set<LSocket> sockets;
 
     /**
      * Constructor - builds a manager for the given identifier
@@ -889,6 +889,14 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
 
     public void destroy() {
       if (getPending() != null) getPending().cancel();
+    }
+
+    public WeakReference<Identifier> getIdentifier() {
+      return identifier;
+    }
+
+    public Set<LSocket> getSockets() {
+      return sockets;
     }
   }
 

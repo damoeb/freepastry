@@ -77,11 +77,11 @@ public class TableTransprotLayerImpl<Identifier, Key, Value> implements
    */
   protected TableStore<Key, Value> knownValues;
 
-  protected TransportLayerCallback<Identifier, ByteBuffer> callback;
+  private TransportLayerCallback<Identifier, ByteBuffer> callback;
   protected TransportLayer<Identifier, ByteBuffer> tl;
 
-  protected Serializer<Key> keySerializer;
-  protected Serializer<Value> valueSerializer;
+  private final Serializer<Key> keySerializer;
+  private final Serializer<Value> valueSerializer;
 
   protected ErrorHandler<Identifier> errorHandler;
   protected Logger logger;

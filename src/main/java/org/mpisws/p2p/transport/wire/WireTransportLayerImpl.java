@@ -60,24 +60,24 @@ import rice.environment.params.Parameters;
 
 public class WireTransportLayerImpl implements WireTransportLayer, SocketOpeningTransportLayer<InetSocketAddress> {
   // state
-  protected InetSocketAddress bindAddress;
+  private final InetSocketAddress bindAddress;
 
   // helpers
-  protected UDPLayer udp;
-  protected TCPLayer tcp;
+  private final UDPLayer udp;
+  private final TCPLayer tcp;
 
 
   // abstract helpers
-  protected Logger logger;
-  protected Environment environment;
+  private final Logger logger;
+  private final Environment environment;
 
   private TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
-  protected ErrorHandler<InetSocketAddress> errorHandler;
+  private ErrorHandler<InetSocketAddress> errorHandler;
 
   /**
    * true for modelnet, who needs to set the bind address even on outgoing sockets
    */
-  public boolean forceBindAddress = false;
+  private boolean forceBindAddress = false;
 
 
   /**
@@ -245,5 +245,17 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
   public void broadcastChannelClosed(InetSocketAddress addr, Map<String, Object> options) {
     for (SocketCountListener<InetSocketAddress> listener : getSlisteners())
       listener.socketClosed(addr, options);
+  }
+
+  public Environment getEnvironment() {
+    return environment;
+  }
+
+  public ErrorHandler<InetSocketAddress> getErrorHandler() {
+    return errorHandler;
+  }
+
+  public boolean isForceBindAddress() {
+    return forceBindAddress;
   }
 }

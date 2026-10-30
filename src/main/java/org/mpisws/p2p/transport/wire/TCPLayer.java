@@ -67,7 +67,7 @@ public class TCPLayer extends SelectionKeyHandler {
 
   // the size of the buffers for the socket
   public final int SOCKET_BUFFER_SIZE;
-  public boolean TCP_NO_DELAY = false;
+  private boolean TCP_NO_DELAY = false;
 
   WireTransportLayerImpl wire;
 
@@ -81,9 +81,9 @@ public class TCPLayer extends SelectionKeyHandler {
 
   public TCPLayer(WireTransportLayerImpl wire, boolean enableServer) throws IOException {
     this.wire = wire;
-    this.logger = wire.environment.getLogManager().getLogger(TCPLayer.class, null);
+    this.logger = wire.getEnvironment().getLogManager().getLogger(TCPLayer.class, null);
 
-    Parameters p = wire.environment.getParameters();
+    Parameters p = wire.getEnvironment().getParameters();
     MAX_OPEN_SOCKETS = p.getInt("pastry_socket_scm_max_open_sockets");
     SOCKET_BUFFER_SIZE = p.getInt("pastry_socket_scm_socket_buffer_size"); // 32768
     if (p.contains("transport_tcp_no_delay")) {
@@ -97,10 +97,10 @@ public class TCPLayer extends SelectionKeyHandler {
       temp = channel;
       channel.configureBlocking(false);
       channel.socket().setReuseAddress(true);
-      channel.socket().bind(wire.bindAddress);
-      logger.info("TCPLayer bound to {}", wire.bindAddress);
+      channel.socket().bind(wire.getLocalIdentifier());
+      logger.info("TCPLayer bound to {}", wire.getLocalIdentifier());
 
-      this.key = wire.environment.getSelectorManager().register(channel, this, SelectionKey.OP_ACCEPT);
+      this.key = wire.getEnvironment().getSelectorManager().register(channel, this, SelectionKey.OP_ACCEPT);
     }
   }
 
@@ -148,7 +148,7 @@ public class TCPLayer extends SelectionKeyHandler {
         key.attach(null);
       }
     } catch (IOException ioe) {
-      wire.errorHandler.receivedException(null, ioe);
+      wire.getErrorHandler().receivedException(null, ioe);
     }
 
     // TODO: add a flag to disable this to simulate a silent fault
@@ -167,10 +167,10 @@ public class TCPLayer extends SelectionKeyHandler {
     };
 
     // thread safety
-    if (wire.environment.getSelectorManager().isSelectorThread()) {
+    if (wire.getEnvironment().getSelectorManager().isSelectorThread()) {
       r.run();
     } else {
-      wire.environment.getSelectorManager().invoke(r);
+      wire.getEnvironment().getSelectorManager().invoke(r);
     }
   }
 
@@ -192,11 +192,15 @@ public class TCPLayer extends SelectionKeyHandler {
       wire.incomingSocket(sm);
     } catch (IOException e) {
       logger.atWarn().log(() -> "ERROR (accepting connection): " + e);
-      wire.errorHandler.receivedException(null, e);
+      wire.getErrorHandler().receivedException(null, e);
     }
   }
 
   public boolean isDestroyed() {
     return wire.isDestroyed();
+  }
+
+  public boolean isTcpNoDelay() {
+    return TCP_NO_DELAY;
   }
 }

@@ -99,7 +99,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
    * Current measure, last measure
    */
   Map<Identifier, Tuple<int[], Collection<MySocket>>> measured = new HashMap<Identifier, Tuple<int[], Collection<MySocket>>>();
-  protected rice.environment.time.TimeSource time;
+  private final rice.environment.time.TimeSource time;
 
   public BandwidthMeasuringTransportLayer(int measurementPeriod, TransportLayer<Identifier, ByteBuffer> tl, Environment env) {
     this.tl = tl;

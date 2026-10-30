@@ -56,7 +56,7 @@ public class MultiInetSocketAddress implements Serializable {
   static final InetSocketAddressSerializer serializer = new InetSocketAddressSerializer();
 
   // the address list, most external first
-  protected InetSocketAddress address[];
+  private final InetSocketAddress address[];
 
   /**
    * Constructor for a node with a single address

@@ -97,15 +97,15 @@ import rice.environment.random.RandomSource;
  */
 public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Identifier,MsgType>, TransportLayerCallback<Identifier, MsgType> {
 
-  protected TransportLayer<Identifier,MsgType> tl;
-  protected TransportLayerCallback<Identifier, MsgType> callback;
+  private final TransportLayer<Identifier,MsgType> tl;
+  private TransportLayerCallback<Identifier, MsgType> callback;
 
-  protected Environment env;
-  protected Logger logger;
+  private final Environment env;
+  private final Logger logger;
 
-  protected ErrorHandler<Identifier> errorHandler;
+  private ErrorHandler<Identifier> errorHandler;
 
-  protected MessageDigest md;
+  private final MessageDigest md;
 
   public static final int KEY_LENGTH = 16;
 

@@ -55,7 +55,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
    * so this is the timeout for it to increase, you could set this to infinity,
    * but that may be bad because it doesn't account for intermediate link failures
    */
-   public int PROX_TIMEOUT;
+   private int PROX_TIMEOUT;
 
    /**
     * Holds only pending DeadCheckers
@@ -121,12 +121,12 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
   public class EntityManager {
 
     // the remote route of this manager
-    protected Identifier identifier;
+    private final Identifier identifier;
 
     // the current best-known proximity of this route
-    protected int proximity;
+    private int proximity;
 
-    protected long lastPingTime = Integer.MIN_VALUE; // we don't want underflow, but we don't want this to be zero either
+    private long lastPingTime = Integer.MIN_VALUE; // we don't want underflow, but we don't want this to be zero either
     /**
      * Constructor - builds a manager for the given identifier
      *

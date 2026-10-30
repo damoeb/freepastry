@@ -56,15 +56,15 @@ import rice.selector.SelectionKeyHandler;
 public class SocketManager extends SelectionKeyHandler implements P2PSocket<InetSocketAddress>, SocketRequestHandle<InetSocketAddress> {
 
   // the key to read from
-  protected SelectionKey key;
+  private SelectionKey key;
 
   // the channel we are associated with
-  protected SocketChannel channel;
+  private final SocketChannel channel;
 
   // the timer we use to check for stalled nodes
-  protected rice.selector.TimerTask timer;
+  private rice.selector.TimerTask timer;
 
-  protected TCPLayer tcp;
+  private final TCPLayer tcp;
 
   Logger logger;
 
@@ -72,7 +72,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
 
   Map<String, Object> options;
 
-  protected P2PSocketReceiver<InetSocketAddress> reader, writer;
+  private P2PSocketReceiver<InetSocketAddress> reader, writer;
 
   /**
    * becomes true before we deliver this to the SocketCallback, this invalidates the cancel() operation
@@ -97,14 +97,14 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     channel = (SocketChannel) ((ServerSocketChannel) serverKey.channel()).accept();
     channel.socket().setSendBufferSize(tcp.SOCKET_BUFFER_SIZE);
     channel.socket().setReceiveBufferSize(tcp.SOCKET_BUFFER_SIZE);
-    channel.socket().setTcpNoDelay(tcp.TCP_NO_DELAY);
+    channel.socket().setTcpNoDelay(tcp.isTcpNoDelay());
 
     channel.configureBlocking(false);
     addr = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
 
     logger.debug("(SA) Accepted incoming connection from {}", addr);
 
-    key = tcp.wire.environment.getSelectorManager().register(channel, this, 0);
+    key = tcp.wire.getEnvironment().getSelectorManager().register(channel, this, 0);
   }
 
   /**
@@ -128,18 +128,18 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     channel = SocketChannel.open();
     channel.socket().setSendBufferSize(tcp.SOCKET_BUFFER_SIZE);
     channel.socket().setReceiveBufferSize(tcp.SOCKET_BUFFER_SIZE);
-    if (tcp.wire.forceBindAddress && tcp.wire.bindAddress != null) channel.socket().bind(new InetSocketAddress(tcp.wire.bindAddress.getAddress(),0));
+    if (tcp.wire.isForceBindAddress() && tcp.wire.getLocalIdentifier() != null) channel.socket().bind(new InetSocketAddress(tcp.wire.getLocalIdentifier().getAddress(),0));
     channel.configureBlocking(false);
 
     logger.debug("(SM) Initiating socket connection to {}", addr);
 
     if (channel.connect(addr)) {
-      key = tcp.wire.environment.getSelectorManager().register(channel, this, 0);
+      key = tcp.wire.getEnvironment().getSelectorManager().register(channel, this, 0);
       delivered = true;
       logger.debug("delivering1 {}", SocketManager.this);
       c.receiveResult(SocketManager.this, SocketManager.this);
     } else {
-      key = tcp.wire.environment.getSelectorManager().register(channel, new SelectionKeyHandler(){
+      key = tcp.wire.getEnvironment().getSelectorManager().register(channel, new SelectionKeyHandler(){
 
         @Override
         public void write(SelectionKey key) {
@@ -164,7 +164,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
           try {
             // unregister interest in connecting to this socket
             if (channel.finishConnect()) {
-              key = tcp.wire.environment.getSelectorManager().register(channel, SocketManager.this, key.interestOps() & ~SelectionKey.OP_CONNECT);
+              key = tcp.wire.getEnvironment().getSelectorManager().register(channel, SocketManager.this, key.interestOps() & ~SelectionKey.OP_CONNECT);
               delivered = true;
               logger.debug("delivering2 {}", SocketManager.this);
               tcp.wire.broadcastChannelOpened(addr, SocketManager.this.options, true);
@@ -172,7 +172,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
             }
           } catch (IOException e) {
             if (c == null) {
-              tcp.wire.errorHandler.receivedException(addr, e);
+              tcp.wire.getErrorHandler().receivedException(addr, e);
             } else {
               c.receiveException(SocketManager.this, e);
             }
@@ -212,7 +212,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       tcp.socketClosed(this);
 
 
-      tcp.wire.environment.getSelectorManager().invoke(() -> {
+      tcp.wire.getEnvironment().getSelectorManager().invoke(() -> {
         // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
         if (writer != null) {
           if (writer == reader) {
@@ -277,7 +277,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     } catch (IOException ioe) {
       temp.receiveException(this, ioe);
     }
-    tcp.wire.environment.getSelectorManager().modifyKey(key);
+    tcp.wire.getEnvironment().getSelectorManager().modifyKey(key);
   }
 
   /**
@@ -300,7 +300,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     } catch (IOException ioe) {
       temp.receiveException(this, ioe);
     }
-    tcp.wire.environment.getSelectorManager().modifyKey(key);
+    tcp.wire.getEnvironment().getSelectorManager().modifyKey(key);
   }
 
   public synchronized void register(final boolean wantToRead, final boolean wantToWrite, P2PSocketReceiver<InetSocketAddress> receiver) {
@@ -336,7 +336,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     if (wantToWrite) {
       writer = receiver;
     }
-    tcp.wire.environment.getSelectorManager().modifyKey(key);
+    tcp.wire.getEnvironment().getSelectorManager().modifyKey(key);
   }
 
   /**
@@ -361,7 +361,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
 
             channel.socket().shutdownOutput();
 
-            tcp.wire.environment.getSelectorManager().invoke(() -> {
+            tcp.wire.getEnvironment().getSelectorManager().invoke(() -> {
               // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
               if (writer != null) {
                   writer.receiveException(SocketManager.this, new ClosedChannelException("Channel shut down."));
@@ -374,7 +374,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
         closeMe = true;
       }
     } // synchronized(this)
-    tcp.wire.environment.getSelectorManager().modifyKey(key);
+    tcp.wire.getEnvironment().getSelectorManager().modifyKey(key);
 
     // close has it's own synchronization semantics, don't want to be holding a lock when calling
     if (closeMe) {
@@ -424,7 +424,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   }
 
   private void exceptionAndClose(IOException e) {
-    tcp.wire.errorHandler.receivedException(addr, e);
+    tcp.wire.getErrorHandler().receivedException(addr, e);
     close();
   }
 
@@ -437,7 +437,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   }
 
   public SocketChannel getSocketChannel() {
-    tcp.wire.environment.getSelectorManager().cancel(key);
+    tcp.wire.getEnvironment().getSelectorManager().cancel(key);
     return channel;
   }
 

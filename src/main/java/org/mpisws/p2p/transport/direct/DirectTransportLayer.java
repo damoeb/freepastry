@@ -62,17 +62,17 @@ import rice.pastry.direct.NodeRecord;
 
 
 public class DirectTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType> {
-  protected boolean acceptMessages = true;
-  protected boolean acceptSockets = true;
+  private boolean acceptMessages = true;
+  private boolean acceptSockets = true;
 
-  protected Identifier localIdentifier;
-  protected TransportLayerCallback<Identifier, MessageType> callback;
-  protected GenericNetworkSimulator<Identifier, MessageType> simulator;
-  protected ErrorHandler<Identifier> errorHandler;
-  protected LivenessProvider<Identifier> livenessProvider;
+  private final Identifier localIdentifier;
+  private TransportLayerCallback<Identifier, MessageType> callback;
+  private final GenericNetworkSimulator<Identifier, MessageType> simulator;
+  private ErrorHandler<Identifier> errorHandler;
+  private final LivenessProvider<Identifier> livenessProvider;
 
-  protected Environment environment;
-  protected Logger logger;
+  private final Environment environment;
+  private final Logger logger;
 
   public DirectTransportLayer(Identifier local,
       NetworkSimulator<Identifier, MessageType> simulator,

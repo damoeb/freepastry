@@ -152,23 +152,23 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   /**
    * options.get(RENDEZVOUS_CONTACT_STRING) returns a RendezvousContact
    */
-  public String RENDEZVOUS_CONTACT_STRING;  // usually: identity.node_handle_to_index
+  private final String RENDEZVOUS_CONTACT_STRING;  // usually: identity.node_handle_to_index
 
-  protected TransportLayer<Identifier, ByteBuffer> tl;
-  protected TransportLayerCallback<Identifier, ByteBuffer> callback;
-  protected RendezvousGenerationStrategy<HighIdentifier> rendezvousGenerator;
-  protected PilotFinder<HighIdentifier> pilotFinder;
-  protected RendezvousStrategy<HighIdentifier> rendezvousStrategy;
-  protected ResponseStrategy<Identifier> responseStrategy;
-  protected HighIdentifier localNodeHandle;
-  protected Logger logger;
-  protected ContactDeserializer<Identifier, HighIdentifier> serializer;
-  protected SelectorManager selectorManager;
-  protected RandomSource random;
-  protected TimeSource time;
-  protected EphemeralDB<Identifier, HighIdentifier> ephemeralDB;
-  protected ContactDirectStrategy<HighIdentifier> contactDirectStrategy;
-  protected ErrorHandler<Identifier> errorHandler;
+  private final TransportLayer<Identifier, ByteBuffer> tl;
+  private TransportLayerCallback<Identifier, ByteBuffer> callback;
+  private final RendezvousGenerationStrategy<HighIdentifier> rendezvousGenerator;
+  private final PilotFinder<HighIdentifier> pilotFinder;
+  private final RendezvousStrategy<HighIdentifier> rendezvousStrategy;
+  private final ResponseStrategy<Identifier> responseStrategy;
+  private final HighIdentifier localNodeHandle;
+  private final Logger logger;
+  private final ContactDeserializer<Identifier, HighIdentifier> serializer;
+  private final SelectorManager selectorManager;
+  private final RandomSource random;
+  private final TimeSource time;
+  private final EphemeralDB<Identifier, HighIdentifier> ephemeralDB;
+  private final ContactDirectStrategy<HighIdentifier> contactDirectStrategy;
+  private ErrorHandler<Identifier> errorHandler;
 
   public RendezvousTransportLayerImpl(
       TransportLayer<Identifier, ByteBuffer> tl,
@@ -1154,9 +1154,9 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
   class OutgoingPilot extends AbstractPilot implements SocketRequestHandle<HighIdentifier> {
 
-    protected SocketRequestHandle<Identifier> cancellable;
+    private SocketRequestHandle<Identifier> cancellable;
 
-    protected Map<String, Object> options;
+    private final Map<String, Object> options;
 
     /**
      * Must call init(), but don't do it while holding a lock

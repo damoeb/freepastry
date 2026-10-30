@@ -72,12 +72,12 @@ import rice.selector.TimerTask;
  */
 public class LimitSocketsTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType> {
   int MAX_SOCKETS;
-  protected TransportLayer<Identifier, MessageType> tl;
-  protected LinkedHashMap<LSSocket, LSSocket> cache;
-  protected Logger logger;
-  protected TransportLayerCallback<Identifier, MessageType> callback;
-  protected Timer timer;
-  protected ErrorHandler<Identifier> handler;
+  private final TransportLayer<Identifier, MessageType> tl;
+  private final LinkedHashMap<LSSocket, LSSocket> cache;
+  private final Logger logger;
+  private TransportLayerCallback<Identifier, MessageType> callback;
+  private final Timer timer;
+  private ErrorHandler<Identifier> handler;
 
 
   public LimitSocketsTransportLayer(int max_sockets, TransportLayer<Identifier, MessageType> tl, ErrorHandler<Identifier> handler, Environment env) {

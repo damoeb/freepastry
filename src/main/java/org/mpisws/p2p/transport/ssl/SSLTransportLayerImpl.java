@@ -71,13 +71,13 @@ import rice.environment.Environment;
  * @param <Identifier>
  */
 public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransportLayer<Identifier, MessageType> {
-  protected TransportLayer<Identifier, MessageType> tl;
-  protected TransportLayerCallback<Identifier, MessageType> callback;
-  protected ErrorHandler<Identifier> errorHandler;
-  protected Logger logger;
-  protected Environment environment;
+  private final TransportLayer<Identifier, MessageType> tl;
+  private TransportLayerCallback<Identifier, MessageType> callback;
+  private ErrorHandler<Identifier> errorHandler;
+  private final Logger logger;
+  private final Environment environment;
 
-  protected SSLContext context;
+  private final SSLContext context;
 
   KeyPair keyPair;
   private int clientAuth;
@@ -213,4 +213,15 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
     return new SSLSocketManager<Identifier>(sslTL,s,c,server,useClientAuth);
   }
 
+  public SSLContext getContext() {
+    return context;
+  }
+
+  public Environment getEnvironment() {
+    return environment;
+  }
+
+  public Logger getLogger() {
+    return logger;
+  }
 }

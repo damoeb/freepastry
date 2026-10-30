@@ -52,8 +52,8 @@ import org.slf4j.event.Level;
  */
 public class DefaultErrorHandler<Identifier> implements
     ErrorHandler<Identifier> {
-  public int NUM_BYTES_TO_PRINT = 8;
-  protected Level printlevel;
+  private final int NUM_BYTES_TO_PRINT = 8;
+  private final Level printlevel;
   private Logger logger;
 
   public DefaultErrorHandler(Logger logger) {

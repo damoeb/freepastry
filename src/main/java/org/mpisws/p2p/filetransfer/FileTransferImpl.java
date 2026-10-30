@@ -91,16 +91,16 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   public static final byte MSG_CANCEL_REQUEST = 5;
 
 
-  protected FileAllocationStrategy fileAllocater;
-  protected AppSocket socket;
-  protected FileTransferCallback callback;
+  private FileAllocationStrategy fileAllocater;
+  private final AppSocket socket;
+  private final FileTransferCallback callback;
 
   int MAX_QUEUE_SIZE = 1024;
 
   /**
    * Max size of a message, (the size that can't be preempted)
    */
-  protected int CHUNK_SIZE = 8192;
+  private int CHUNK_SIZE = 8192;
 
   int NUM_OUTSTANDING_CHUNKS_TO_WRITE_TO_NETWORK = 10;
 
@@ -111,14 +111,14 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
    *
    * Is there a way to make this adaptive?  Think about it...
    */
-  protected int FILE_CACHE = 10;
+  private final int FILE_CACHE = 10;
 
   ByteBuffer byteBuffer;
-  protected SelectorManager selectorManager;
-  protected Logger logger;
+  private final SelectorManager selectorManager;
+  private final Logger logger;
 
-  protected Processor processor;
-  protected Environment environment;
+  private Processor processor;
+  private final Environment environment;
 
   public static final byte MAX_PRIORITY = -15;
   public static final byte HIGH_PRIORITY = -10;
@@ -137,7 +137,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
    * Synchronized by only being mutated/checked on selector thread
    * can be reading when below MAX_PENDING_CHUNKS, allowed to be greater
    */
-  public int fileChunksInMemory = 0;
+  private int fileChunksInMemory = 0;
 
   public FileTransferImpl(AppSocket socket, FileTransferCallback callback, FileAllocationStrategy fileAllocater, Environment env, Processor p) {
     this(socket,callback,fileAllocater,env,null,-1,-1);

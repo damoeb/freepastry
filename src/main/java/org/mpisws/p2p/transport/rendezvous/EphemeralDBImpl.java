@@ -52,18 +52,18 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
    *
    * Default 2 hours
    */
-  protected long STALE_PORT_TIME = 2*60*60*1000;
+  private long STALE_PORT_TIME = 2*60*60*1000;
 
   TimeSource time;
   Logger logger;
 
-  protected long nextTag = NO_TAG+1;
-  protected Map<HighIdentifier, Long> highToTag = new HashMap<HighIdentifier, Long>();
-  protected Map<Identifier, Long> ephemeralToTag = new HashMap<Identifier, Long>();
+  private long nextTag = NO_TAG+1;
+  private final Map<HighIdentifier, Long> highToTag = new HashMap<HighIdentifier, Long>();
+  private final Map<Identifier, Long> ephemeralToTag = new HashMap<Identifier, Long>();
   /**
    * maps tag to ephemeral and timestamp
    */
-  protected Map<Long, MutableTuple<Identifier, Long>> tagToEphemeral = new HashMap<Long, MutableTuple<Identifier,Long>>();
+  private final Map<Long, MutableTuple<Identifier, Long>> tagToEphemeral = new HashMap<Long, MutableTuple<Identifier,Long>>();
 
   /**
    *

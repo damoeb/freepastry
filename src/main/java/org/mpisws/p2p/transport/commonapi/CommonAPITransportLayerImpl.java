@@ -79,7 +79,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
   public static final String MSG_TYPE = "commonapi_msg_type";
   public static final String MSG_ADDR = "commonapi_msg_addr";
 
-  protected OptionsAdder optionsAdder;
+  private OptionsAdder optionsAdder;
 
   public CommonAPITransportLayerImpl(
       TransportLayer<Identifier, ByteBuffer> tl,
@@ -213,7 +213,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
     this.errorHandler = handler;
   }
 
-  protected boolean destroyed = false;
+  private boolean destroyed = false;
   public void destroy() {
     destroyed = true;
     tl.destroy();

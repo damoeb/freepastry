@@ -73,11 +73,11 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   // the size of the buffer used to read incoming datagrams must be big enough
   // to encompass multiple datagram packets
-  public int DATAGRAM_RECEIVE_BUFFER_SIZE;
+  private int DATAGRAM_RECEIVE_BUFFER_SIZE;
 
   // the size of the buffer used to send outgoing datagrams this is also the
   // largest message size than can be sent via UDP
-  public int DATAGRAM_SEND_BUFFER_SIZE;
+  private int DATAGRAM_SEND_BUFFER_SIZE;
 
   List<Envelope> pendingMsgs;
 
@@ -88,7 +88,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   public UDPLayerImpl(WireTransportLayerImpl wire) throws IOException {
     this.wire = wire;
 
-    this.logger = wire.environment.getLogManager().getLogger(UDPLayer.class, null);
+    this.logger = wire.getEnvironment().getLogManager().getLogger(UDPLayer.class, null);
 
     this.pendingMsgs = new LinkedList<Envelope>();
     openServerSocket();
@@ -113,12 +113,12 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
         pendingMsgs.add(envelope);
       }
 
-      wire.environment.getSelectorManager().modifyKey(key);
+      wire.getEnvironment().getSelectorManager().modifyKey(key);
       return envelope;
   }
 
   protected void openServerSocket() throws IOException {
-    Parameters p = wire.environment.getParameters();
+    Parameters p = wire.getEnvironment().getParameters();
     DATAGRAM_RECEIVE_BUFFER_SIZE = p.getInt("transport_wire_datagram_receive_buffer_size");
     DATAGRAM_SEND_BUFFER_SIZE = p.getInt("transport_wire_datagram_send_buffer_size");
 
@@ -170,16 +170,16 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
        */
       channel.socket().setReuseAddress(false);
 
-      channel.socket().bind(wire.bindAddress);
+      channel.socket().bind(wire.getLocalIdentifier());
       channel.socket().setSendBufferSize(DATAGRAM_SEND_BUFFER_SIZE);
       channel.socket().setReceiveBufferSize(DATAGRAM_RECEIVE_BUFFER_SIZE);
 
-      key = wire.environment.getSelectorManager().register(channel, this, 0);
+      key = wire.getEnvironment().getSelectorManager().register(channel, this, 0);
       key.interestOps(SelectionKey.OP_READ);
-      logger.info("UDPLayer bound to {}", wire.bindAddress);
+      logger.info("UDPLayer bound to {}", wire.getLocalIdentifier());
     } catch (BindException be) {
       // Java's stupid exception isn't helpful, make a helpful one...
-      throw new BindException("Address already in use:"+wire.bindAddress);
+      throw new BindException("Address already in use:"+wire.getLocalIdentifier());
     } catch (IOException e) {
       throw e;
     }
@@ -209,7 +209,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
         }
       }
     } catch (IOException e) {
-      wire.errorHandler.receivedException(null, e);
+      wire.getErrorHandler().receivedException(null, e);
     } finally {
       readBuffer.clear();
     }
@@ -249,7 +249,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
             }
           } catch (IOException e) {
             if (write.continuation == null) {
-              wire.errorHandler.receivedException(write.destination, e);
+              wire.getErrorHandler().receivedException(write.destination, e);
             } else {
               write.continuation.sendFailed(write, e);
             }
@@ -286,12 +286,12 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    * @author amislove
    */
   public class Envelope implements MessageRequestHandle<InetSocketAddress, ByteBuffer> {
-    protected InetSocketAddress destination;
+    private final InetSocketAddress destination;
     /**
      * The message sans header.
      */
-    protected ByteBuffer msg;
-    protected MessageCallback<InetSocketAddress, ByteBuffer> continuation;
+    private final ByteBuffer msg;
+    private final MessageCallback<InetSocketAddress, ByteBuffer> continuation;
     Map<String, Object> options;
 
     /**
@@ -348,10 +348,10 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     };
 
     // thread safety
-    if (wire.environment.getSelectorManager().isSelectorThread()) {
+    if (wire.getEnvironment().getSelectorManager().isSelectorThread()) {
       r.run();
     } else {
-      wire.environment.getSelectorManager().invoke(r);
+      wire.getEnvironment().getSelectorManager().invoke(r);
     }
   }
 
@@ -365,10 +365,10 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     };
 
     // thread safety
-    if (wire.environment.getSelectorManager().isSelectorThread()) {
+    if (wire.getEnvironment().getSelectorManager().isSelectorThread()) {
       r.run();
     } else {
-      wire.environment.getSelectorManager().invoke(r);
+      wire.getEnvironment().getSelectorManager().invoke(r);
     }
   }
 }

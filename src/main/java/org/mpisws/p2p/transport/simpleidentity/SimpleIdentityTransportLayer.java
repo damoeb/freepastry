@@ -70,11 +70,11 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType>{
 
-  protected TransportLayer<Identifier, MessageType> tl;
-  protected Logger logger;
+  private final TransportLayer<Identifier, MessageType> tl;
+  private final Logger logger;
   private TransportLayerCallback<Identifier, MessageType> callback;
-  protected ErrorHandler<Identifier> errorHandler;
-  protected Serializer<Identifier> serializer;
+  private ErrorHandler<Identifier> errorHandler;
+  private final Serializer<Identifier> serializer;
   LocalIdentifierStrategy<Identifier> localIdStrategy;
 
   /**

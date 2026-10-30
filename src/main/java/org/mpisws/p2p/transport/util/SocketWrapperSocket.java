@@ -61,8 +61,9 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
   protected Logger logger;
   protected Map<String, Object> options;
   // TODO: make getters
-  protected P2PSocketReceiver<Identifier> reader, writer;
-  protected ErrorHandler<Identifier> errorHandler;
+  private P2PSocketReceiver<Identifier> reader;
+  protected P2PSocketReceiver<Identifier> writer;
+  private final ErrorHandler<Identifier> errorHandler;
 
   public SocketWrapperSocket(Identifier identifier, P2PSocket<SubIdentifier> socket, Logger logger, ErrorHandler<Identifier> errorHandler, Map<String, Object> options) {
     this.identifier = identifier;
