@@ -17,12 +17,6 @@ pastry_lSetSize = 24
 pastry_leafSetMaintFreq = 60
 pastry_routeSetMaintFreq = 900
 
-# drop the message if pastry is not ready
-pastry_messageDispatch_bufferIfNotReady = false
-
-# number of messages to buffer while an app hasn't yet been registered
-pastry_messageDispatch_bufferSize = 32
-
 # FP 2.1 uses the new transport layer
 transport_wire_datagram_receive_buffer_size = 131072
 transport_wire_datagram_send_buffer_size = 65536
@@ -74,11 +68,6 @@ pastry_direct_guarantee_consistency=true
 pastry_factory_multipleNodes = true
 pastry_factory_selectorPerNode = false
 pastry_factory_processorPerNode = false
-# number of bootstap nodehandles to fetch in parallel
-pastry_factory_bootsInParallel = 1
-
-# the maximum size of a message
-pastry_socket_reader_selector_deserialization_max_size = 1000000
 
 # Java deserialization filter (rice.p2p.util.JavaSerializationFilter), applied to all Java-serialized
 # messages, PAST/Scribe content and storage metadata. Only rice.**, org.mpisws.** and the JDK value and
@@ -95,13 +84,8 @@ java_serialization_filter_enabled = true
 # the maximum number of outgoing messages to queue when a socket is slower than the number of messages you are queuing
 pastry_socket_writer_max_queue_length = 30
 pastry_socket_writer_max_msg_size = 20480
-pastry_socket_repeater_buffer_size = 65536
-pastry_socket_pingmanager_smallPings=true
-pastry_socket_pingmanager_datagram_receive_buffer_size = 131072
-pastry_socket_pingmanager_datagram_send_buffer_size = 65536
 # the time before it will retry a route that was already found dead
 pastry_socket_srm_check_dead_throttle = 300000
-pastry_socket_srm_proximity_timeout = 3600000
 pastry_socket_srm_ping_throttle = 30000
 pastry_socket_srm_default_rto = 3000
 pastry_socket_srm_rto_ubound = 10000
@@ -109,7 +93,6 @@ pastry_socket_srm_rto_lbound = 50
 pastry_socket_srm_gain_h = 0.25
 pastry_socket_srm_gain_g = 0.125
 pastry_socket_scm_max_open_sockets = 300
-pastry_socket_scm_max_open_source_routes = 30
 # the maximum number of source routes to attempt, setting this to 0 will 
 # effectively eliminate source route attempts
 # setting higher than the leafset does no good, it will be bounded by the leafset
@@ -123,18 +106,14 @@ pastry_socket_scm_ping_delay = 800
 pastry_socket_scm_ping_jitter = 0.1
 # how many pings until we call the node faulty
 pastry_socket_scm_num_ping_tries = 5
-pastry_socket_scm_write_wait_time = 30000
 pastry_socket_scm_backoff_initial = 250
 pastry_socket_scm_backoff_limit = 5
-pastry_socket_pingmanager_testSourceRouting = false
 pastry_socket_increment_port_after_construction = true
 # if you want to allow connection to 127.0.0.1, set this to true
 pastry_socket_allow_loopback = false
 # these params will be used if the computer attempts to bind to the loopback address, they will open a socket to this address/port to identify which network adapter to bind to
 pastry_socket_known_network_address = yahoo.com
 pastry_socket_known_network_address_port = 80
-pastry_socket_use_own_random = true
-pastry_socket_random_seed = clock
 # force the node to be a seed node
 rice_socket_seed = false
 
@@ -145,21 +124,10 @@ rendezvous_test_num_firewalled = 0.3
 # don't firewall the first node, useful for testing
 rendezvous_test_makes_bootstrap = false
 
-# FP 2.1 uses the new transport layer
-transport_wire_datagram_receive_buffer_size = 131072
-transport_wire_datagram_send_buffer_size = 65536
-
 # NAT/UPnP settings
 nat_network_prefixes = 127.0.0.1;10.;192.168.
 # Enable and set this if you have already set up port forwarding and know the external address
 #external_address = 123.45.67.89:1234
-#enable this if you set up port forwarding (on the same port), but you don't 
-#know the external address and you don't have UPnP enabled
-#this is useful for a firwall w/o UPnP support, and your IP address isn't static
-probe_for_external_address = false
-# values how to probe
-pastry_proxy_connectivity_timeout = 15000 
-pastry_proxy_connectivity_tries = 3
 # possible values: always, never, prefix (prefix is if the localAddress matches any of the nat_network_prefixes
 # whether to search for a nat using UPnP (default: prefix)
 nat_search_policy = prefix
@@ -170,22 +138,11 @@ firewall_test_policy = boot
 nat_state_policy = change
 # the name of the application in the firewall, set this if you want your application to have a more specific name
 nat_app_name = freepastry
-# how long to wait for responses from the firewall, in millis
-nat_discovery_timeout = 5000
 # how many searches to try to find a free firewall port
 nat_find_port_max_tries = 10
 # set this to a rice.pastry.socket.nat.NATHandler implementation (constructor: Environment, InetAddress)
 # to enable NAT port forwarding; the former SBBI UPnP handler was removed (its library is unmaintained)
 #nat_handler_class = 
-# hairpinning: 
-# default "prefix" requires more bandwidth if you are behind a NAT.  It enables multiple IP 
-# addresses in the NodeHandle if you are behind a NAT.  These are usually the internet routable address, 
-# and the LAN address (usually 192.168.x.x)
-# you can set this to never if any of the following conditions hold:
-#  a) you are the only FreePastry node behind this address
-#  b) you firewall supports hairpinning see
-# http://scm.sipfoundry.org/rep/ietf-drafts/behave/draft-ietf-behave-nat-udp-03.html#rfc.section.6
-nat_nodehandle_multiaddress = prefix
 
 # if we are not scheduled for time on cpu in this time, we setReady(false)
 # otherwise there could be message inconsistency, because
@@ -263,11 +220,7 @@ p2p_scribe_maintenance_interval = 180000
 #time for a subscribe fail to be thrown (in millis)
 p2p_scribe_message_timeout = 15000
 
-#util
-p2p_util_encryptedOutputStream_buffer = 32678
-
 #aggregation
-p2p_aggregation_logStatistics = true
 p2p_aggregation_flushDelayAfterJoin = 30000
 #5 MINS
 p2p_aggregation_flushStressInterval = 300000 
