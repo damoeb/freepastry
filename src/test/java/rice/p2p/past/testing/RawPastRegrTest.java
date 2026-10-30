@@ -1075,10 +1075,6 @@ public class RawPastRegrTest extends CommonAPITest {
       this.nextHop = nextHop;
     }
 
-    public void setMessage(Message message) {
-      this.message = message;
-    }
-
     public void setMessage(RawMessage message) {
       this.message = message;
     }

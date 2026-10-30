@@ -48,7 +48,6 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.multiring.RingId;
 import rice.p2p.scribe.ScribeContent;
-import rice.p2p.util.rawserialization.JavaSerializedMessage;
 
 /**
  * This class the abstraction of a message used internally by the multiring hierarchy.
@@ -126,9 +125,6 @@ public class RingMessage implements ScribeContent {
   }
 
   public Message getMessage() {
-    if (message.getType() == 0) {
-      return ((JavaSerializedMessage)message).getMessage();
-    }
     return message;
   }
 
@@ -183,12 +179,7 @@ public class RingMessage implements ScribeContent {
     short type = buf.readShort();
     byte priority = buf.readByte();
     // the sender is not serialized, so the inner message is deserialized without one
-    Message m = md.deserialize(buf, type, priority, null);
-    if (type == 0) {
-      message = new JavaSerializedMessage(m);
-    } else {
-      message = (RawMessage)m;
-    }
+    message = (RawMessage)md.deserialize(buf, type, priority, null);
   }
 
 }

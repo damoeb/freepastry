@@ -963,10 +963,6 @@ public class ScribeRegrTest extends CommonAPITest {
      *
      * @param message The new Message value
      */
-    public void setMessage(Message message) {
-      this.message = message;
-    }
-
     public void setMessage(RawMessage message) {
       this.message = message;
     }

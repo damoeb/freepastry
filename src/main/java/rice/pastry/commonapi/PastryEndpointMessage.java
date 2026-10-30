@@ -44,7 +44,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.p2p.util.rawserialization.JavaSerializedMessage;
 import rice.pastry.NodeHandle;
 import rice.pastry.messaging.PRawMessage;
 
@@ -58,65 +57,48 @@ import rice.pastry.messaging.PRawMessage;
  */
 public class PastryEndpointMessage extends PRawMessage {
 
-  private static final long serialVersionUID = 4499456388556140871L;
-
-  private RawMessage message;
+  /**
+   * The application's message: a {@link RawMessage} when it is routed, any {@link Message} when it is only
+   * scheduled for local delivery, which never serializes it.
+   */
+  private Message message;
 
   /**
-    * Constructor.
+   * Constructor.
    *
    * @param address the application address
    */
   public PastryEndpointMessage(int address, Message message, NodeHandle sender) {
-    this(address, message instanceof RawMessage ? (RawMessage) message : new JavaSerializedMessage(message), sender);
-  }
-
-  public static void checkRawType(RawMessage message) {
-    if (message.getType() == 0) {
-      if (!(message instanceof JavaSerializedMessage)) {
-        throw new IllegalArgumentException("Message "+message+" is raw, but its type is 0, this is only allowed by Java Serialized Messages.");
-      }
-    }
-  }
-
-  public PastryEndpointMessage(int address, RawMessage message, NodeHandle sender) {
     super(address);
-    checkRawType(message);
+    if (message instanceof RawMessage raw) {
+      checkRawType(raw);
+    }
     setSender(sender);
     this.message = message;
     setPriority(message.getPriority());
   }
 
+  public static void checkRawType(RawMessage message) {
+    if (message.getType() == 0) {
+      throw new IllegalArgumentException("Message "+message+" is raw, but its type is 0, which is reserved.");
+    }
+  }
+
   /**
    * Returns the internal message
    *
-   * @return the credentials.
+   * @return the internal message
    */
   public Message getMessage() {
-    if (message.getType() == 0) return ((JavaSerializedMessage)message).getMessage();
     return message;
   }
 
-
   /**
-   * Sets the internal message, wrapping it in a JavaSerializedMessage if it is not raw.
+   * Sets the internal message.
    *
    * @param message the internal message
    */
- public void setMessage(Message message) {
-   if (message instanceof RawMessage) {
-     setMessage((RawMessage)message);
-   } else {
-     this.message = new JavaSerializedMessage(message);
-   }
- }
-
- /**
-  * Sets the internal message.
-   *
-   * @param message the internal message
-   */
-  public void setMessage(RawMessage message) {
+  public void setMessage(Message message) {
     this.message = message;
   }
 
@@ -130,37 +112,31 @@ public class PastryEndpointMessage extends PRawMessage {
   }
 
   /***************** Raw Serialization ***************************************/
+  /**
+   * @return the type of the application's message, or 0 for a message only scheduled for local delivery
+   */
   public short getType() {
-    return message.getType();
+    return message instanceof RawMessage raw ? raw.getType() : 0;
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
+    if (!(message instanceof RawMessage raw)) {
+      throw new IllegalStateException("Message "+message+" is not a RawMessage and cannot be sent.");
+    }
 
-//    // range check priority
+    // range check priority
     int priority = message.getPriority();
     if (priority > Byte.MAX_VALUE) throw new IllegalStateException("Priority must be in the range of "+Byte.MIN_VALUE+" to "+Byte.MAX_VALUE+".  Lower values are higher priority. Priority of "+message+" was "+priority+".");
     if (priority < Byte.MIN_VALUE) throw new IllegalStateException("Priority must be in the range of "+Byte.MIN_VALUE+" to "+Byte.MAX_VALUE+".  Lower values are higher priority. Priority of "+message+" was "+priority+".");
-    message.serialize(buf);
+    raw.serialize(buf);
   }
 
   public PastryEndpointMessage(int address, InputBuffer buf, MessageDeserializer md, short type, int priority, NodeHandle sender) throws IOException {
     super(address);
 
-    byte version = 0;
-    switch(version) {
-      case 0:
-        setSender(sender);
-        if (type == 0) {
-          message = new JavaSerializedMessage(md.deserialize(buf, type, priority, sender));
-        } else {
-          message = (RawMessage)md.deserialize(buf, type, priority, sender);
-        }
-        if (getMessage() == null) throw new IOException("PEM.deserialize() message = null type:"+type+" md:"+md);
-        break;
-      default:
-        throw new IOException("Unknown Version: "+version);
-    }
-
+    setSender(sender);
+    message = md.deserialize(buf, type, priority, sender);
+    if (message == null) throw new IOException("PEM.deserialize() message = null type:"+type+" md:"+md);
   }
 
 }

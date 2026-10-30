@@ -61,7 +61,7 @@ import rice.pastry.leafset.LeafSetProtocol;
 import rice.pastry.leafset.LeafSetProtocolAddress;
 import rice.pastry.leafset.RequestLeafSet;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PJavaSerializedDeserializer;
+import rice.pastry.messaging.PMessageDeserializer;
 import rice.pastry.routing.RoutingTable;
 import rice.selector.TimerTask;
 
@@ -104,7 +104,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
   TimeSource timeSource;
 
-  public static class PLSPMessageDeserializer extends PJavaSerializedDeserializer {
+  public static class PLSPMessageDeserializer extends PMessageDeserializer {
 
     public PLSPMessageDeserializer(PastryNode pn) {
       super(pn);

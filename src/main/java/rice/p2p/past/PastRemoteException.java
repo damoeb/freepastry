@@ -34,37 +34,32 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Mar 17, 2006
- */
-package rice.pastry.messaging;
-
-import java.io.IOException;
-
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.pastry.NodeHandle;
-import rice.pastry.PastryNode;
+package rice.p2p.past;
 
 /**
- * The purpose of this class is just for programming convenience to disambiguate
- * between rice.p2p.commonapi and rice.pastry with the interfaces/classes
- *   Message
- *   NodeHandle
- *
- * @author Jeff Hoye
+ * An exception thrown on a remote node and sent back in a Past response. Exceptions travel as their class
+ * name and message only, so this is what arrives for every kind.
  */
-public abstract class PJavaSerializedDeserializer extends JavaSerializedDeserializer {
+public class PastRemoteException extends PastException {
 
-  public PJavaSerializedDeserializer(PastryNode pn) {
-    super(pn);
+  private final String remoteClassName;
+  private final String remoteMessage;
+
+  /**
+   * @param remoteClassName the class of the exception on the remote node
+   * @param remoteMessage its message, may be null
+   */
+  public PastRemoteException(String remoteClassName, String remoteMessage) {
+    super(remoteMessage == null ? remoteClassName : remoteClassName + ": " + remoteMessage);
+    this.remoteClassName = remoteClassName;
+    this.remoteMessage = remoteMessage;
   }
 
-  public abstract Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException;
-
-  public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
-    rice.p2p.commonapi.Message ret = deserialize(buf, type, priority, (NodeHandle)sender);
-    if (ret == null) return super.deserialize(buf, type, priority, sender);
-    return ret;
+  public String getRemoteClassName() {
+    return remoteClassName;
   }
 
+  public String getRemoteMessage() {
+    return remoteMessage;
+  }
 }

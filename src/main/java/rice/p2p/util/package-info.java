@@ -38,8 +38,6 @@ advised of the possibility of such damage.
  * Utilities shared by the applications: bloom filters, sorted and soft collections, encryption and
  * hashing helpers ({@code SecurityUtils}, and {@code HashUtils} for content hashes and Id material), {@code Base64}, the XML object streams
  * ({@link rice.p2p.util.XMLObjectOutputStream} and {@link rice.p2p.util.XMLObjectInputStream}, which
- * write and read Java object graphs as XML and are used for on-disk persistence), and
- * {@code JavaSerializationFilter}, the allowlist filter installed on the object input streams that
- * read Java-serialized data.
+ * write and read Java object graphs as XML).
  */
 package rice.p2p.util;

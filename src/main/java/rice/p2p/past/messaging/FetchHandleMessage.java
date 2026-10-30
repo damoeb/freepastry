@@ -106,12 +106,12 @@ public class FetchHandleMessage extends ContinuationMessage {
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof PastContentHandle) {
-      super.serialize(buf, false);
+      super.serialize(buf, true);
       PastContentHandle rpch = (PastContentHandle)response;
       buf.writeShort(rpch.getType());
       rpch.serialize(buf);
     } else {
-      super.serialize(buf, true);
+      super.serialize(buf, false);
     }
     buf.writeShort(id.getType());
     id.serialize(buf);

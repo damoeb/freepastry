@@ -84,7 +84,6 @@ import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.LeafSetProtocol;
 import rice.pastry.messaging.Message;
 import rice.pastry.messaging.MessageDispatch;
-import rice.pastry.messaging.PJavaSerializedMessage;
 import rice.pastry.messaging.PRawMessage;
 import rice.pastry.routing.InitiateRouteSetMaintenance;
 import rice.pastry.routing.RouteSetProtocol;
@@ -1040,12 +1039,7 @@ public class PastryNode implements
       return ret;
     }
 
-    final PRawMessage rm;
-    if (msg instanceof PRawMessage) {
-      rm = (PRawMessage)msg;
-    } else {
-      rm = new PJavaSerializedMessage(msg);
-    }
+    final PRawMessage rm = msg;
 
     final PMessageReceiptImpl ret = new PMessageReceiptImpl(msg, options);
     final MessageCallback<NodeHandle, RawMessage> callback;
@@ -1072,11 +1066,7 @@ public class PastryNode implements
   }
 
   public void messageReceived(NodeHandle i, RawMessage m, Map<String, Object> options) throws IOException {
-    if (m.getType() == 0 && (m instanceof PJavaSerializedMessage)) {
-      receiveMessage(((PJavaSerializedMessage)m).getMessage());
-    } else {
-      receiveMessage((Message)m);
-    }
+    receiveMessage((Message)m);
   }
 
 

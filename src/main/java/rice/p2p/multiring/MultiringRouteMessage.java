@@ -131,17 +131,6 @@ public class MultiringRouteMessage implements RouteMessage {
    *
    * @param message The internal message
    */
-  public void setMessage(Message message) {
-    if (message instanceof RawMessage) {
-      setMessage((RawMessage)message);
-    } else {
-      this.message.setMessage(message);
-    }
-  }
-
-  /**
-   * Better performance.
-   */
   public void setMessage(RawMessage message) {
     this.message.setMessage(message);
   }

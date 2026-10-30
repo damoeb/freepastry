@@ -46,7 +46,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PJavaSerializedDeserializer;
+import rice.pastry.messaging.PMessageDeserializer;
 import rice.pastry.routing.BroadcastRouteRow;
 import rice.pastry.routing.InitiateRouteSetMaintenance;
 import rice.pastry.routing.RequestRouteRow;
@@ -74,7 +74,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
   private final Logger logger;
 
-  static class SRSPDeserializer extends PJavaSerializedDeserializer {
+  static class SRSPDeserializer extends PMessageDeserializer {
     public SRSPDeserializer(PastryNode pn) {
       super(pn);
     }

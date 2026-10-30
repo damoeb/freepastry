@@ -138,10 +138,10 @@ public class InsertMessage extends ContinuationMessage {
    */
   protected void serializeHelper(OutputBuffer buf) throws IOException {
     if (response != null && response instanceof Boolean) {
-      super.serialize(buf, false);
+      super.serialize(buf, true);
       buf.writeBoolean(((Boolean)response).booleanValue());
     } else {
-      super.serialize(buf, true);
+      super.serialize(buf, false);
     }
 
     buf.writeBoolean(content != null);

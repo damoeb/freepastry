@@ -50,10 +50,8 @@ import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryEndpointMessage;
-import rice.pastry.messaging.JavaSerializedDeserializer;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PJavaSerializedDeserializer;
-import rice.pastry.messaging.PJavaSerializedMessage;
+import rice.pastry.messaging.PMessageDeserializer;
 import rice.pastry.messaging.PRawMessage;
 
 /**
@@ -150,22 +148,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
     this(target, msg, firstHop, null, serializeVersion);
   }
 
-  private static PRawMessage convert(Message msg) {
-    if (msg instanceof PRawMessage) {
-      PRawMessage prm = (PRawMessage)msg;
-      if (prm.getType() == 0)
-        if (prm instanceof PJavaSerializedMessage) throw new RuntimeException("Cannot route a PJavaSerializedMessage, this is used internally in RouteMessage."+msg+" "+msg.getClass().getName());
-      return prm;
-    }
-    return new PJavaSerializedMessage(msg);
-  }
-
-  public RouteMessage(Id target, PRawMessage msg, NodeHandle firstHop, SendOptions opts, byte serializeVersion) {
-    this(target, (Message)msg, firstHop, opts, serializeVersion);
-    rawInternalMsg = msg;
-    if (msg != null) internalType = msg.getType();
-  }
-
   /**
    * Constructor.
    *
@@ -175,11 +157,13 @@ public class RouteMessage extends PRawMessage implements Serializable,
    * @param opts the send options for the message.
    * @param serializeVersion the serialization version of the message
    */
-  public RouteMessage(Id target, Message msg, NodeHandle firstHop, SendOptions opts, byte serializeVersion) {
+  public RouteMessage(Id target, PRawMessage msg, NodeHandle firstHop, SendOptions opts, byte serializeVersion) {
     super(RouterAddress.getCode());
     this.version = serializeVersion;
     this.target = (Id) target;
     internalMsg = msg;
+    rawInternalMsg = msg;
+    if (msg != null) internalType = msg.getType();
     nextHop = firstHop;
     this.opts = opts;
     if (this.opts == null) this.opts = new SendOptions();
@@ -273,29 +257,15 @@ public class RouteMessage extends PRawMessage implements Serializable,
     this.nextHop = (NodeHandle) nextHop;
   }
 
-  public void setMessage(rice.p2p.commonapi.Message message) {
-    ((PastryEndpointMessage) unwrapJavaSerialized()).setMessage(message);
-  }
-
-  public void setMessage(RawMessage message) {
-    ((PastryEndpointMessage) unwrapJavaSerialized()).setMessage(message);
-  }
-
   /**
-   * The wrapped message, deserializing it with a JavaSerializedDeserializer if necessary.
-   *
-   * @return the wrapped message.
+   * Replaces the application's message; the message must have been read with
+   * {@link #getMessage(MessageDeserializer)} first.
    */
-  private Message unwrapJavaSerialized() {
-    if (internalMsg != null) {
-      return internalMsg;
+  public void setMessage(RawMessage message) {
+    if (internalMsg == null) {
+      throw new IllegalStateException("The message of "+this+" is still serialized, read it with getMessage() first");
     }
-    try {
-      endpointDeserializer.setSubDeserializer(new JavaSerializedDeserializer(pn));
-      return unwrap(endpointDeserializer);
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
-    }
+    ((PastryEndpointMessage) internalMsg).setMessage(message);
   }
 
   /**
@@ -379,7 +349,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
   }
 
   public RouteMessage(Id target, int auxAddress, NodeHandle prev, InputBuffer buf, byte priority, PastryNode pn, NodeHandle destinationHandle, byte serializeVersion) throws IOException {
-    this(target, null, null, null, serializeVersion);
+    this(target, (PRawMessage) null, null, null, serializeVersion);
     hasSender = buf.readBoolean();
     internalPriority = priority;
     internalType = buf.readShort();
@@ -419,13 +389,10 @@ public class RouteMessage extends PRawMessage implements Serializable,
       buf.write(raw,0,raw.length);
       serializedMsg = new SimpleInputBuffer(raw);
     } else {
-      if (rawInternalMsg == null) {
-        rawInternalMsg = convert(internalMsg);
-      }
 //    address was already peeled off as the auxAddress
 //    different wire to deserialize the Address and eliminate unneeded junk
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//    +bool hasSender +   Priority    +  Type (Application specific)   + // zero is java serialization
+//    +bool hasSender +   Priority    +  Type (Application specific)   + // zero is reserved
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //
 //    optional
@@ -469,7 +436,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
 //  address was already peeled off as the auxAddress
 //  different wire to deserialize the Address and eliminate unneeded junk
 //  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//  +bool hasSender +   Priority    +  Type (Application specific)   + // zero is java serialization
+//  +bool hasSender +   Priority    +  Type (Application specific)   + // zero is reserved
 //  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //
 //  optional
@@ -498,12 +465,10 @@ public class RouteMessage extends PRawMessage implements Serializable,
     return TYPE;
   }
 
-  class RMDeserializer extends PJavaSerializedDeserializer {
+  class RMDeserializer extends PMessageDeserializer {
     MessageDeserializer sub;
 
     public RMDeserializer() {
-      // the late binding of pn is pretty problematic, we'll set it right before we deserialize
-      // the thing is, we usually won't even need it
       super(null);
     }
 
@@ -512,9 +477,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
     }
 
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-      // just in case we have to do java serialization
-      pn = RouteMessage.this.pn;
-          return new PastryEndpointMessage(auxAddress, buf, sub, type, priority, sender);
+      return new PastryEndpointMessage(auxAddress, buf, sub, type, priority, sender);
     }
 
   }
@@ -526,10 +489,7 @@ public class RouteMessage extends PRawMessage implements Serializable,
   public short getInternalType() {
     if (rawInternalMsg != null) return rawInternalMsg.getType();
     if (internalMsg != null) {
-      if (internalMsg instanceof RawMessage) {
-        return ((RawMessage)internalMsg).getType();
-      }
-      return 0;
+      return ((RawMessage)internalMsg).getType();
     }
     // we don't yet know the internal type because we haven't deserialized it far enough yet
     return -1;

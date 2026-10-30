@@ -57,7 +57,7 @@ import rice.pastry.join.JoinRequest;
 import rice.pastry.leafset.BroadcastLeafSet;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PJavaSerializedDeserializer;
+import rice.pastry.messaging.PMessageDeserializer;
 import rice.pastry.routing.BroadcastRouteRow;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteMessageNotification;
@@ -92,7 +92,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
 
   protected LeafSet leafSet;
 
-  public static class SJPDeserializer extends PJavaSerializedDeserializer {
+  public static class SJPDeserializer extends PMessageDeserializer {
     public SJPDeserializer(PastryNode pn) {
       super(pn);
     }

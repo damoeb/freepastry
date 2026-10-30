@@ -126,12 +126,12 @@ public class LookupHandlesMessage extends ContinuationMessage {
    */
   protected void serializeHelper(OutputBuffer buf) throws IOException {
     if (response != null && response instanceof NodeHandleSet) {
-      super.serialize(buf, false);
+      super.serialize(buf, true);
       NodeHandleSet set = (NodeHandleSet)response;
       buf.writeShort(set.getType());
       set.serialize(buf);
     } else {
-      super.serialize(buf, true);
+      super.serialize(buf, false);
     }
     buf.writeInt(max);
     buf.writeShort(id.getType());

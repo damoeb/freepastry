@@ -83,14 +83,8 @@ public interface Endpoint extends NodeHandleReader {
    * @param message The message to deliver
    * @param hint The first node to send this message to, optional
    * @param deliverAckToMe notified when the message is sent
+   * @param options transport options for this message, may be null
    * @return can cancel the request
-   */
-
-  /**
-   * Same as the other call, but uses the Raw serialization rather than java serialization.
-   * @param id
-   * @param message
-   * @param hint
    */
   MessageReceipt route(Id id, RawMessage message, NodeHandle hint,
       DeliveryNotification deliverAckToMe, Map<String, Object> options);
@@ -267,15 +261,16 @@ public interface Endpoint extends NodeHandleReader {
   public void connect(NodeHandle handle, AppSocketReceiver receiver, int timeout);
 
   /**
-   * To use a more efficient serialization format than Java Serialization
+   * Sets the deserializer that reads this endpoint's raw messages back; every message an application
+   * routes is a {@link RawMessage}, so it has to set one before it can receive any.
    *
    * @param md the deserializer for this endpoint's raw messages
    */
   public void setDeserializer(MessageDeserializer md);
 
   /**
-   * Returns the deserializer.  The default deserializer can deserialize rice.p2p.util.JavaSerializedMessage
-   * @return
+   * Returns the deserializer, {@link MessageDeserializer#NONE} until one is set.
+   * @return the deserializer
    */
   public MessageDeserializer getDeserializer();
 

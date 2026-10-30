@@ -42,7 +42,6 @@ import org.mpisws.p2p.transport.MessageRequestHandle;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.p2p.util.rawserialization.JavaSerializedMessage;
 
 /**
  * Addapts a RawMessage to a normal Message
@@ -61,11 +60,7 @@ public class MRHAdapter implements MessageRequestHandle<NodeHandle, Message> {
   }
 
   public Message getMessage() {
-    RawMessage rawMessage = internal.getMessage();
-    if (rawMessage.getType() == 0) {
-      return ((JavaSerializedMessage)rawMessage).getMessage();
-    }
-    return rawMessage;
+    return internal.getMessage();
   }
 
   public Map<String, Object> getOptions() {

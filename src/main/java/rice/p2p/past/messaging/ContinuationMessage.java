@@ -37,11 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.messaging;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
 import rice.Continuation;
 import rice.environment.Environment;
@@ -50,8 +46,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.util.rawserialization.JavaDeserializer;
-import rice.p2p.util.rawserialization.JavaSerializationException;
+import rice.p2p.past.PastRemoteException;
 
 /**
  * This class the abstraction of a message used internally by Past which serves
@@ -134,22 +129,16 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
    */
   public static final byte S_EMPTY = 0;
   /**
-   * Subclass handled serialization.
+   * The subclass wrote the response.
    */
   public static final byte S_SUB = 1;
   /**
-   * Java Serialized Response
+   * An exception: its class name and its message.
    */
-  public static final byte S_JAVA_RESPONSE = 3;
-  /**
-   * Java Serialized Exception
-   */
-  public static final byte S_JAVA_EXCEPTION = 2;
-
+  public static final byte S_EXCEPTION = 2;
 
   /**
-   * The serialization stategy is that usually the subtype will have an optimal
-   * serialization strategy, but sometimes we will have to revert to java serialization
+   * The subclass writes and reads the response; this class writes the {@code S_*} byte and an exception.
    *
    * @param buf
    * @param endpoint
@@ -158,28 +147,12 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
   public ContinuationMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
     serType = buf.readByte();
-    if (serType > S_SUB) deserialize(buf, endpoint); // not empty, and not handled by the sub
-  }
-
-  /**
-   *
-   * @param buf
-   * @throws IOException
-   */
-  public void deserialize(InputBuffer buf, Endpoint endpoint) throws IOException {
-    byte[] array = new byte[buf.readInt()];
-    buf.read(array);
-    ObjectInputStream ois = new JavaDeserializer(new ByteArrayInputStream(array), endpoint);
-    Object content;
-    try {
-      content = ois.readObject();
-      if (serType == S_JAVA_RESPONSE) {
-        response = content;
-      } else {
-        exception = (Exception)content;
-      }
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException("Unknown class type in message - closing channel.", e);
+    if (serType == S_EXCEPTION) {
+      String className = buf.readUTF();
+      String message = buf.readBoolean() ? buf.readUTF() : null;
+      exception = new PastRemoteException(className, message);
+    } else if (serType > S_EXCEPTION) {
+      throw new IOException("Unknown response encoding " + serType);
     }
   }
 
@@ -188,49 +161,32 @@ public abstract class ContinuationMessage extends PastMessage implements Continu
   protected byte serType;
 
   /**
-   * If you want this class to serialize itself, set javaSerialize to true,
-   * otherwise, the subclass is expected to do an optimal serialization
+   * Writes the header and the {@code S_*} byte; with {@code S_SUB} the subclass writes the response next.
+   * An exception is sent as its class name and message, and arrives as a {@link PastRemoteException}.
    *
-   * @param buf the buffer to write to
-   * @param javaSerialize whether to Java-serialize the response or exception
-   * @throws IOException if writing fails
+   * @param subclassWritesResponse whether the response is of the type the subclass serializes
+   * @throws IOException if there is a response the subclass cannot serialize
    */
-  public void serialize(OutputBuffer buf, boolean javaSerialize) throws IOException {
+  public void serialize(OutputBuffer buf, boolean subclassWritesResponse) throws IOException {
     super.serialize(buf);
 
-    serType = S_EMPTY;
-
-    if (javaSerialize) {
-      Object content = response;
-      if (response != null) {
-        serType = S_JAVA_RESPONSE;
-      } else {
-        serType = S_JAVA_EXCEPTION;
-        content = exception;
+    if (subclassWritesResponse) {
+      serType = S_SUB;
+      buf.writeByte(serType);
+    } else if (exception != null) {
+      serType = S_EXCEPTION;
+      buf.writeByte(serType);
+      buf.writeUTF(exception instanceof PastRemoteException remote ? remote.getRemoteClassName() : exception.getClass().getName());
+      String message = exception instanceof PastRemoteException remote ? remote.getRemoteMessage() : exception.getMessage();
+      buf.writeBoolean(message != null);
+      if (message != null) {
+        buf.writeUTF(message);
       }
-
-      if (content == null) {
-        serType = S_EMPTY;
-        buf.writeByte(serType);
-      } else {
-        try {
-          buf.writeByte(serType);
-          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          ObjectOutputStream oos = new ObjectOutputStream(baos);
-
-          // write out object and find its length
-          oos.writeObject(content);
-          oos.close();
-
-          byte[] temp = baos.toByteArray();
-          buf.writeInt(temp.length);
-          buf.write(temp, 0, temp.length);
-        } catch (IOException ioe) {
-          throw new JavaSerializationException(content, ioe);
-        }
-      }
+    } else if (response == null) {
+      serType = S_EMPTY;
+      buf.writeByte(serType);
     } else {
-      buf.writeByte(S_SUB);
+      throw new IOException("Cannot serialize the response " + response + " of " + response.getClass().getName() + " in " + this);
     }
   }
 }

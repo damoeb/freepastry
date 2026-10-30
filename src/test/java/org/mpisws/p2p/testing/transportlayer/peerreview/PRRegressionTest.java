@@ -36,12 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer.peerreview;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -353,11 +349,10 @@ public class PRRegressionTest {
       buffer.writeLong(nextSendTime);
       buffer.writeBoolean(dest != null);
       if (dest != null) dest.serialize(buffer);
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      new ObjectOutputStream(baos).writeObject(rand);
-      byte[] bytes = baos.toByteArray();
-      buffer.writeInt(bytes.length);
-      buffer.write(bytes, 0, bytes.length);
+      // reseed, so that the generator's state is just the seed the checkpoint keeps
+      long seed = rand.nextLong();
+      rand = new Random(seed);
+      buffer.writeLong(seed);
       logger.atTrace().log(() -> "storeCheckpoint:"+Arrays.toString(((SimpleOutputBuffer)buffer).getBytes()));
     }
 
@@ -368,16 +363,7 @@ public class PRRegressionTest {
         dest = new HandleSerializer().deserialize(buffer);
       }
       logger.trace("loadCheckpoint {}", nextSendTime);
-      byte[] bytes = new byte[buffer.readInt()];
-      buffer.read(bytes);
-      ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-      try {
-        rand = (Random)new ObjectInputStream(bais).readObject();
-      } catch (ClassNotFoundException cnfe) {
-        IOException ioe = new IOException("Error reading random number from checkpoint");
-        ioe.initCause(cnfe);
-        throw ioe;
-      }
+      rand = new Random(buffer.readLong());
       if (nextSendTime > 0) {
         scheduleMessageToBeSent(nextSendTime, true);
       }

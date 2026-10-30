@@ -106,14 +106,14 @@ public class GCRefreshMessage extends ContinuationMessage {
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof Boolean[]) {
-      super.serialize(buf, false);
+      super.serialize(buf, true);
       Boolean[] array = (Boolean[])response;
       buf.writeInt(array.length);
       for (int i = 0; i < array.length; i++) {
         buf.writeBoolean(array[i].booleanValue());
       }
     } else {
-      super.serialize(buf, true);
+      super.serialize(buf, false);
     }
 
     buf.writeInt(keys.length);

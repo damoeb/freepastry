@@ -45,15 +45,20 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 
 /**
- * Because Pastry/Transport layer cannot know about all messge types, each app needs to
- * provide a deserializer.  Default, there is a Java Serializer
+ * Because Pastry/Transport layer cannot know about all message types, each app needs to
+ * provide a deserializer.  Until it does, {@link #NONE} rejects every message.
  */
 public interface MessageDeserializer {
+
+  /**
+   * The deserializer in place until the application sets its own: it knows no message type.
+   */
+  MessageDeserializer NONE = (buf, type, priority, sender) -> {
+    throw new IOException("No MessageDeserializer set to read message type " + type);
+  };
+
   /**
    * Typical implementation:
-   *
-   * RawMessage ret = super.deserialize();
-   * if (ret != null) return ret;
    *
    * Endpoint endpoint;
    * switch(type) {

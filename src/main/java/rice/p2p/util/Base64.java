@@ -210,7 +210,6 @@ public class Base64
     private Base64(){}
 
 
-
 /* ********  E N C O D I N G   M E T H O D S  ******** */
 
 
@@ -226,7 +225,6 @@ public class Base64
     {
         return encode3to4( threeBytes, 3 );
     }   // end encodeToBytes
-
 
 
     /**
@@ -340,105 +338,6 @@ public class Base64
     }   // end encode3to4
 
 
-
-    /**
-     * Serializes an object and returns the Base64-encoded
-     * version of that serialized object. If the object
-     * cannot be serialized or there is another error,
-     * the method will return <tt>null</tt>.
-     * The object is not GZip-compressed before being encoded.
-     *
-     * @param serializableObject The object to encode
-     * @return The Base64-encoded object
-     * @since 1.4
-     */
-    public static String encodeObject( java.io.Serializable serializableObject )
-    {
-        return encodeObject( serializableObject, NO_OPTIONS );
-    }   // end encodeObject
-
-
-
-    /**
-     * Serializes an object and returns the Base64-encoded
-     * version of that serialized object. If the object
-     * cannot be serialized or there is another error,
-     * the method will return <tt>null</tt>.
-     * <p>
-     * Valid options:<pre>
-     *   GZIP: gzip-compresses object before encoding it.
-     *   DONT_BREAK_LINES: don't break lines at 76 characters
-     *     <i>Note: Technically, this makes your encoding non-compliant.</i>
-     * </pre>
-     * <p>
-     * Example: <code>encodeObject( myObj, Base64.GZIP )</code> or
-     * <p>
-     * Example: <code>encodeObject( myObj, Base64.GZIP | Base64.DONT_BREAK_LINES )</code>
-     *
-     * @param serializableObject The object to encode
-     * @options Specified options
-     * @return The Base64-encoded object
-     * @see Base64#GZIP
-     * @see Base64#DONT_BREAK_LINES
-     * @since 2.0
-     */
-    public static String encodeObject( java.io.Serializable serializableObject, int options )
-    {
-        // Streams
-        java.io.ByteArrayOutputStream  baos  = null;
-        java.io.OutputStream           b64os = null;
-        java.io.ObjectOutputStream     oos   = null;
-        java.util.zip.GZIPOutputStream gzos  = null;
-
-        // Isolate options
-        int gzip           = (options & GZIP);
-        int dontBreakLines = (options & DONT_BREAK_LINES);
-
-        try
-        {
-            // ObjectOutputStream -> (GZIP) -> Base64 -> ByteArrayOutputStream
-            baos  = new java.io.ByteArrayOutputStream();
-            b64os = new Base64.OutputStream( baos, ENCODE | dontBreakLines );
-
-            // GZip?
-            if( gzip == GZIP )
-            {
-                gzos = new java.util.zip.GZIPOutputStream( b64os );
-                oos  = new java.io.ObjectOutputStream( gzos );
-            }   // end if: gzip
-            else
-                oos   = new java.io.ObjectOutputStream( b64os );
-
-            oos.writeObject( serializableObject );
-        }   // end try
-        catch( java.io.IOException e )
-        {
-            LOG.warn("Base64: error serializing object", e);
-            return null;
-        }   // end catch
-        finally
-        {
-            // best-effort close; a stream is null if an earlier one failed to open
-            try{ oos.close();   } catch( Exception ignored ){}
-            try{ gzos.close();  } catch( Exception ignored ){}
-            try{ b64os.close(); } catch( Exception ignored ){}
-            try{ baos.close();  } catch( Exception ignored ){}
-        }   // end finally
-
-        // Return value according to relevant encoding.
-        try
-        {
-            return new String( baos.toByteArray(), PREFERRED_ENCODING );
-        }   // end try
-        catch (java.io.UnsupportedEncodingException uue)
-        {
-            return new String( baos.toByteArray() );
-        }   // end catch
-
-    }   // end encode
-
-
-
     /**
      * Encodes a byte array into Base64 notation.
      * Does not GZip-compress data.
@@ -450,7 +349,6 @@ public class Base64
     {
         return encodeBytes( source, 0, source.length, NO_OPTIONS );
     }   // end encodeBytes
-
 
 
     /**
@@ -492,7 +390,6 @@ public class Base64
     {
         return encodeBytes( source, off, len, NO_OPTIONS );
     }   // end encodeBytes
-
 
 
     /**
@@ -614,9 +511,6 @@ public class Base64
     }   // end encodeBytes
 
 
-
-
-
 /* ********  D E C O D I N G   M E T H O D S  ******** */
 
 
@@ -640,8 +534,6 @@ public class Base64
 
         return outBuff2;
     }
-
-
 
 
     /**
@@ -713,8 +605,6 @@ public class Base64
     }   // end decodeToBytes
 
 
-
-
     /**
      * Very low-level access to decoding ASCII characters in
      * the form of a byte array. Does not support automatically
@@ -771,8 +661,6 @@ public class Base64
         System.arraycopy( outBuff, 0, out, 0, outBuffPosn );
         return out;
     }   // end decode
-
-
 
 
     /**
@@ -851,57 +739,7 @@ public class Base64
     }   // end decode
 
 
-
-
-    /**
-     * Attempts to decode Base64 data and deserialize a Java
-     * Object within. Returns <tt>null</tt> if there was an error.
-     *
-     * @param encodedObject The Base64 data to decode
-     * @return The decoded and deserialized object
-     * @since 1.5
-     */
-    public static Object decodeToObject( String encodedObject )
-    {
-        // Decode and gunzip if necessary
-        byte[] objBytes = decode( encodedObject );
-
-        java.io.ByteArrayInputStream  bais = null;
-        java.io.ObjectInputStream     ois  = null;
-        Object obj = null;
-
-        try
-        {
-            bais = new java.io.ByteArrayInputStream( objBytes );
-            ois  = new java.io.ObjectInputStream( bais );
-            // the encoded string may come from anywhere: only admit allowlisted classes
-            ois.setObjectInputFilter( JavaSerializationFilter.getDefault() );
-
-            obj = ois.readObject();
-        }   // end try
-        catch( java.io.IOException e )
-        {
-            LOG.warn("Base64: error deserializing object", e);
-            obj = null;
-        }   // end catch
-        catch( java.lang.ClassNotFoundException e )
-        {
-            LOG.warn("Base64: error deserializing object", e);
-            obj = null;
-        }   // end catch
-        finally
-        {
-            // best-effort close; a stream is null if an earlier one failed to open
-            try{ bais.close(); } catch( Exception ignored ){}
-            try{ ois.close();  } catch( Exception ignored ){}
-        }   // end finally
-
-        return obj;
-    }   // end decodeObject
-
-
     /* ********  I N N E R   C L A S S   I N P U T S T R E A M  ******** */
-
 
 
     /**
@@ -1126,12 +964,7 @@ public class Base64
     }   // end inner class InputStream
 
 
-
-
-
-
     /* ********  I N N E R   C L A S S   O U T P U T S T R E A M  ******** */
-
 
 
     /**
@@ -1264,7 +1097,6 @@ public class Base64
         }   // end write
 
 
-
         /**
          * Calls {@link #write} repeatedly until <var>len</var>
          * bytes are written.
@@ -1289,7 +1121,6 @@ public class Base64
             }   // end for: each byte written
 
         }   // end write
-
 
 
         /**
@@ -1333,7 +1164,6 @@ public class Base64
         }   // end close
 
 
-
         /**
          * Suspends encoding of the stream.
          * May be helpful if you need to embed a piece of
@@ -1359,7 +1189,6 @@ public class Base64
         {
             this.suspendEncoding = false;
         }   // end resumeEncoding
-
 
 
     }   // end inner class OutputStream

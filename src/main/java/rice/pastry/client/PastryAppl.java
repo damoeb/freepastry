@@ -54,7 +54,6 @@ import rice.pastry.NodeSetEventSource;
 import rice.pastry.NodeSetListener;
 import rice.pastry.PastryNode;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.messaging.JavaSerializedDeserializer;
 import rice.pastry.messaging.Message;
 import rice.pastry.messaging.PRawMessage;
 import rice.pastry.messaging.RawMessageDelivery;
@@ -143,7 +142,7 @@ public abstract class PastryAppl
     }
     deserializer = md;
     if (deserializer == null)
-      deserializer = new JavaSerializedDeserializer(pn);
+      deserializer = MessageDeserializer.NONE;
   }
 
   /**

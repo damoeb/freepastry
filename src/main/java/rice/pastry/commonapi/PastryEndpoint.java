@@ -125,7 +125,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
 
   /**
-   * The commonapi's deserializer.  Java Deserializer by default.
+   * The commonapi's deserializer, {@link MessageDeserializer#NONE} until the application sets one.
    */
   MessageDeserializer appDeserializer;
 

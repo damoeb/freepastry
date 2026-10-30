@@ -69,18 +69,6 @@ pastry_factory_multipleNodes = true
 pastry_factory_selectorPerNode = false
 pastry_factory_processorPerNode = false
 
-# Java deserialization filter (rice.p2p.util.JavaSerializationFilter), applied to all Java-serialized
-# messages, PAST/Scribe content and storage metadata. Only rice.**, org.mpisws.** and the JDK value and
-# collection types they use are allowed by default. Add the classes your application puts into messages
-# or storage here (';'-separated, jdk.serialFilter syntax: a.b.C, a.b.*, a.b.**, prefix*), e.g.
-# java_serialization_filter_allow = com.example.myapp.**
-java_serialization_filter_allow =
-java_serialization_filter_maxdepth = 200
-java_serialization_filter_maxrefs = 1000000
-java_serialization_filter_maxbytes = 67108864
-java_serialization_filter_maxarray = 16777216
-# setting this to false disables the filter: NOT recommended, deserializing untrusted input can run code
-java_serialization_filter_enabled = true
 # the maximum number of outgoing messages to queue when a socket is slower than the number of messages you are queuing
 pastry_socket_writer_max_queue_length = 30
 pastry_socket_writer_max_msg_size = 20480

@@ -91,17 +91,6 @@ public interface RouteMessage extends Serializable {
    *
    * @param message The internal message
    */
-  public void setMessage(Message message);
-
-  /**
-   * Sets the internal message for this message
-   *
-   * Does the same as setMessage(Message) but with better
-   * performance, because it doesn't have to introspect
-   * if the message is a RawMessage
-   *
-   * @param message The internal message
-   */
   public void setMessage(RawMessage message);
 
 }

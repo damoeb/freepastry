@@ -34,67 +34,35 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Feb 21, 2006
- */
 package rice.pastry.messaging;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.StreamCorruptedException;
 
-import rice.p2p.commonapi.Message;
-import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 
 /**
- * Handles "old" java serialized messages for programming convenience
- * and reverse compatibility.
+ * A {@link MessageDeserializer} for the Pastry protocol messages: the subclass deserializes with the
+ * rice.pastry {@link Message} and {@link NodeHandle} types instead of the rice.p2p.commonapi ones, and
+ * returns null for a type it does not know, which is reported as an {@link IOException}.
  *
  * @author Jeff Hoye
  */
-public class JavaSerializedDeserializer implements MessageDeserializer {
+public abstract class PMessageDeserializer implements MessageDeserializer {
 
   protected PastryNode pn;
-  private boolean deserializeOnlyTypeZero = true;
 
-  public JavaSerializedDeserializer(PastryNode pn) {
+  public PMessageDeserializer(PastryNode pn) {
     this.pn = pn;
   }
 
-  public void setAlwaysUseJavaSerialization(boolean val) {
-    deserializeOnlyTypeZero = !val;
+  public abstract Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException;
+
+  public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
+    rice.p2p.commonapi.Message ret = deserialize(buf, type, priority, (NodeHandle)sender);
+    if (ret == null) throw new IOException("Unknown message type " + type + " for " + getClass().getName());
+    return ret;
   }
-
-  public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-    if (deserializeOnlyTypeZero && (type != 0)) throw new IllegalArgumentException("Type must be zero, was "+type+".  See http://freepastry.org/FreePastry/extendingRawMessages.html for more information.");
-    // the plan here is to provide a mechanism to easily java serialize RawMessages in case the user is having problems
-    // provide a static method to java serialize the object then setAlwaysUsejavaSerialization(true)
-
-    Object o = null;
-    try {
-      byte[] array = new byte[buf.bytesRemaining()];
-      buf.read(array);
-
-      ObjectInputStream ois = new PastryObjectInputStream(new ByteArrayInputStream(array), pn);
-
-      o = ois.readObject();
-      Message ret = (Message)o;
-
-      return ret;
-    } catch (StreamCorruptedException sce) {
-      if (!deserializeOnlyTypeZero)
-        throw new RuntimeException("Not a java serialized message!  See http://freepastry.org/FreePastry/extendingRawMessages.html for more information.", sce);
-      else
-        throw sce;
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException("Unknown class type in message - closing channel.", e);
-    }
-  }
-
-
-
 }

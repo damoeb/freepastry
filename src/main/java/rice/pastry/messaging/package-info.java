@@ -37,8 +37,8 @@ advised of the possibility of such damage.
 /**
  * Pastry-internal messages and their dispatch. {@link rice.pastry.messaging.Message} is the base class
  * of all messages exchanged by Pastry's own protocols and carries the destination application address;
- * {@link rice.pastry.messaging.PRawMessage} is its raw-serializable form and
- * {@link rice.pastry.messaging.PJavaSerializedMessage} wraps a Java-serialized message.
+ * {@link rice.pastry.messaging.PRawMessage} is its raw-serializable form, the only one that goes on the
+ * wire, and {@link rice.pastry.messaging.PMessageDeserializer} reads such messages back.
  * {@link rice.pastry.messaging.MessageDispatch} delivers incoming messages to the {@code PastryAppl}
  * registered at their address, on the selector thread.
  */

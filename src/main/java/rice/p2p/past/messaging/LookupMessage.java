@@ -145,12 +145,12 @@ public class LookupMessage extends ContinuationMessage {
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof PastContent) {
-      super.serialize(buf, false);
+      super.serialize(buf, true);
       PastContent rpc = (PastContent)response;
       buf.writeShort(rpc.getType());
       rpc.serialize(buf);
     } else {
-      super.serialize(buf, true);
+      super.serialize(buf, false);
     }
 
     buf.writeBoolean(handle != null);

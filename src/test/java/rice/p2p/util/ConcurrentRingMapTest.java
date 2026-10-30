@@ -36,11 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -180,27 +175,5 @@ public class ConcurrentRingMapTest {
   public void copyKeepsTheOrderOfARing() {
     ConcurrentRingMap<Integer, String> copy = new ConcurrentRingMap<Integer, String>(map().subMap(70, 30));
     assertEquals(List.of(10, 20, 70, 80, 90), keys(copy));
-  }
-
-  @Test
-  public void survivesJavaSerialization() throws Exception {
-    ConcurrentRingMap<Integer, String> map = map();
-    SortedMap<Integer, String> copy = javaRoundTrip(map);
-    assertEquals(map, copy);
-    assertTrue(copy.containsKey(50));
-    assertNull(copy.get(50));
-    assertEquals(List.of(70, 80, 90, 10, 20), keys(javaRoundTrip(map.subMap(70, 30))));
-  }
-
-  @SuppressWarnings("unchecked")
-  static <T> T javaRoundTrip(T o) throws IOException, ClassNotFoundException {
-    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    try (ObjectOutputStream out = new ObjectOutputStream(bytes)) {
-      out.writeObject(o);
-    }
-    try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
-      in.setObjectInputFilter(JavaSerializationFilter.getDefault());
-      return (T) in.readObject();
-    }
   }
 }
