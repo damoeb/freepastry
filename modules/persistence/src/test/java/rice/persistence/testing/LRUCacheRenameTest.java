@@ -65,10 +65,12 @@ public class LRUCacheRenameTest {
   private static class Recorder implements Continuation<Boolean, Exception> {
     final List<Object> results = new ArrayList<Object>();
 
+    @Override
     public void receiveResult(Boolean result) {
       results.add(result);
     }
 
+    @Override
     public void receiveException(Exception exception) {
       results.add(exception);
     }

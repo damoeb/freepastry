@@ -62,6 +62,7 @@ public class LockManagerImpl implements LockManager {
   }
 
 
+  @Override
   public void lock(Id id, Continuation<?, ?> c) {
     Continuation<?, ?> torun = null;
     logger.debug("locking on id {} for continuation {}", id, c);
@@ -81,6 +82,7 @@ public class LockManagerImpl implements LockManager {
       torun.receiveResult(null);
   }
 
+  @Override
   public void unlock(Id id) {
     Continuation<?, ?> torun = null;
     logger.debug("unlocking on id {}", id);

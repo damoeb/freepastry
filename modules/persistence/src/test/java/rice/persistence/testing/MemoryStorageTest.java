@@ -91,6 +91,7 @@ public class MemoryStorageTest extends Test {
 
   public void setUp(final Continuation<Object, Exception> c) {
     final Continuation<Object, Exception> put4 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
@@ -103,12 +104,14 @@ public class MemoryStorageTest extends Test {
         c.receiveResult(Boolean.valueOf(true));
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     final Continuation<Object, Exception> put3 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
@@ -121,12 +124,14 @@ public class MemoryStorageTest extends Test {
         storage.store(data[4], metadata[4], "Fourth Object", put4);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     final Continuation<Object, Exception> put2 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
@@ -139,12 +144,14 @@ public class MemoryStorageTest extends Test {
         storage.store(data[3], metadata[3], "Third Object", put3);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     Continuation<Object, Exception> put1 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
@@ -157,6 +164,7 @@ public class MemoryStorageTest extends Test {
         storage.store(data[2], metadata[2], "Second Object", put2);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -170,6 +178,7 @@ public class MemoryStorageTest extends Test {
 
   public void testRetrieval(final Continuation<Object, Exception> c) {
     final Continuation<Object, Exception> get5 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o == null) {
           stepDone(SUCCESS);
@@ -182,12 +191,14 @@ public class MemoryStorageTest extends Test {
         c.receiveResult(Boolean.valueOf(true));
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     final Continuation<Object, Exception> get4 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o == null) {
           stepDone(FAILURE, "Returned object was null.");
@@ -205,12 +216,14 @@ public class MemoryStorageTest extends Test {
         storage.getObject(data[5], get5);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     final Continuation<Object, Exception> get3 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o == null) {
           stepDone(FAILURE, "Returned object was null.");
@@ -228,12 +241,14 @@ public class MemoryStorageTest extends Test {
         storage.getObject(data[4], get4);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     final Continuation<Object, Exception> get2 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o == null) {
           stepDone(FAILURE, "Returned object was null.");
@@ -251,12 +266,14 @@ public class MemoryStorageTest extends Test {
         storage.getObject(data[3], get3);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     final Continuation<Object, Exception> get1 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o == null) {
           stepDone(FAILURE, "Returned object was null.");
@@ -274,12 +291,14 @@ public class MemoryStorageTest extends Test {
         storage.getObject(data[2], get2);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     Continuation<Object, Exception> get0 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           sectionStart("Retrieving Objects");
@@ -291,6 +310,7 @@ public class MemoryStorageTest extends Test {
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -305,6 +325,7 @@ public class MemoryStorageTest extends Test {
 
   public void testExists(final Continuation<Object, Exception> c) {
     testRetrieval(new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           sectionStart("Checking for Objects");
@@ -336,16 +357,18 @@ public class MemoryStorageTest extends Test {
           sectionStart("Modifying Metadata");
           stepStart("Changing Metadata");
           storage.setMetadata(data[4], Integer.valueOf(5001), new Continuation<Object, Exception>() {
+            @Override
             public void receiveResult(Object o) {
               stepDone(SUCCESS);
 
               stepStart("Checking for New Metadata");
-              if ((Integer.valueOf(5001)).equals(storage.getMetadata(data[4]))) stepDone(SUCCESS); else stepDone(FAILURE);
+              if (Integer.valueOf(5001).equals(storage.getMetadata(data[4]))) stepDone(SUCCESS); else stepDone(FAILURE);
               sectionEnd();
 
               c.receiveResult(Boolean.valueOf(true));
             }
 
+            @Override
             public void receiveException(Exception e) {
               stepException(e);
             }
@@ -355,6 +378,7 @@ public class MemoryStorageTest extends Test {
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -363,6 +387,7 @@ public class MemoryStorageTest extends Test {
 
   private void testRemoval(final Continuation<Object, Exception> c) {
     final Continuation<Object, Exception> done1 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o == null) {
           stepDone(SUCCESS);
@@ -375,6 +400,7 @@ public class MemoryStorageTest extends Test {
         c.receiveResult(Boolean.valueOf(true));
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -382,18 +408,21 @@ public class MemoryStorageTest extends Test {
 
 
     final Continuation<Object, Exception> retrieve1 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
 
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     final Continuation<Object, Exception> check1 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
-        if ((! store) || o.equals(Boolean.valueOf(true))) {
+        if (! store || o.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
         } else {
           stepDone(FAILURE);
@@ -402,7 +431,7 @@ public class MemoryStorageTest extends Test {
         stepStart("Checking for First Object");
         boolean result = storage.exists(data[1]);
 
-        if ((! store) || (! result)) {
+        if (! store || ! result) {
           stepDone(SUCCESS);
         } else {
           stepDone(FAILURE);
@@ -412,12 +441,14 @@ public class MemoryStorageTest extends Test {
         storage.getObject(data[1], done1);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     Continuation<Object, Exception> remove1 = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           sectionStart("Testing Removal");
@@ -429,6 +460,7 @@ public class MemoryStorageTest extends Test {
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -439,10 +471,12 @@ public class MemoryStorageTest extends Test {
 
   private void testScan(final Continuation<Object, Exception> c) {
     final Continuation<Object, Exception> handleBadScan = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         stepDone(FAILURE, "Query returned; should have thrown exception");
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepDone(SUCCESS);
 
@@ -453,6 +487,7 @@ public class MemoryStorageTest extends Test {
     };
 
     final Continuation<Object, Exception> query = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
@@ -469,7 +504,7 @@ public class MemoryStorageTest extends Test {
         }
 
 
-        if (! ((result.isMemberId(data[3])) && (result.isMemberId(data[4])))) {
+        if (! (result.isMemberId(data[3]) && result.isMemberId(data[4]))) {
           stepDone(FAILURE, "Result had incorrect elements " + data[0] + ", " + data[1] + ", expected 3 and 4.");
           return;
         }
@@ -490,12 +525,14 @@ public class MemoryStorageTest extends Test {
         handleBadScan.receiveException(new Exception());
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     Continuation<Object, Exception> insertString = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           sectionStart("Testing Scan");
@@ -507,6 +544,7 @@ public class MemoryStorageTest extends Test {
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -524,6 +562,7 @@ public class MemoryStorageTest extends Test {
     final int NUM_ELEMENTS = 1 + ((END_NUM - START_NUM) / SKIP);
 
     final Continuation<Object, Exception> checkRandom = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         stepStart("Checking object deletion");
         int NUM_DELETED = ((Integer) o).intValue();
@@ -542,6 +581,7 @@ public class MemoryStorageTest extends Test {
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -553,6 +593,7 @@ public class MemoryStorageTest extends Test {
       private int count = START_NUM;
       private int num_deleted = 0;
 
+      @Override
       public void receiveResult(Object o) {
         if (count == START_NUM) {
           stepStart("Removing random subset of objects");
@@ -578,6 +619,7 @@ public class MemoryStorageTest extends Test {
         }
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -587,6 +629,7 @@ public class MemoryStorageTest extends Test {
 
       private int count = START_NUM;
 
+      @Override
       public void receiveResult(Object o) {
           stepStart("Checking scans for all ranges");
 
@@ -604,12 +647,14 @@ public class MemoryStorageTest extends Test {
         removeRandom.receiveResult(Boolean.valueOf(true));
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
     };
 
     final Continuation<Object, Exception> checkExists = new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         stepStart("Checking exists for all 50 objects");
 
@@ -626,6 +671,7 @@ public class MemoryStorageTest extends Test {
         checkScan.receiveResult(Boolean.valueOf(true));
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -636,6 +682,7 @@ public class MemoryStorageTest extends Test {
 
       private int count = START_NUM;
 
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(false))) {
           stepDone(FAILURE, "Insertion of " + count + " failed.");
@@ -659,6 +706,7 @@ public class MemoryStorageTest extends Test {
         storage.store(data[13 + num], null, new byte[num * num], this);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -671,6 +719,7 @@ public class MemoryStorageTest extends Test {
   private void testErrors(final Continuation<Object, Exception> c) {
     final Continuation<Object, Exception> validateNullValue = new Continuation<Object, Exception>() {
 
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           stepDone(FAILURE, "Null value should return false");
@@ -683,6 +732,7 @@ public class MemoryStorageTest extends Test {
         c.receiveResult(Boolean.valueOf(true));
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -690,6 +740,7 @@ public class MemoryStorageTest extends Test {
 
     final Continuation<Object, Exception> insertNullValue = new Continuation<Object, Exception>() {
 
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(true))) {
           stepDone(FAILURE, "Null key should return false");
@@ -703,6 +754,7 @@ public class MemoryStorageTest extends Test {
         storage.store(data[12], null, null, validateNullValue);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -710,6 +762,7 @@ public class MemoryStorageTest extends Test {
 
     final Continuation<Object, Exception> insertNullKey = new Continuation<Object, Exception>() {
 
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(false))) {
           stepDone(FAILURE, "Randon insert tests failed.");
@@ -722,6 +775,7 @@ public class MemoryStorageTest extends Test {
         storage.store(null, null, "null key", insertNullValue);
       }
 
+      @Override
       public void receiveException(Exception e) {
         stepException(e);
       }
@@ -734,8 +788,10 @@ public class MemoryStorageTest extends Test {
   // this storage. A storage keeps its Ids in an IdSet of its IdFactory, here rice.pastry.IdSet, which holds only
   // rice.pastry.Ids, so that section failed with a ClassCastException. Even with another IdSet the stub could not
   // work: its compareTo collapses all Ids in sorted maps. Storing Ids of another factory is not supported.
+  @Override
   public void start() {
     testErrors(new Continuation<Object, Exception>() {
+      @Override
       public void receiveResult(Object o) {
         if (o.equals(Boolean.valueOf(false))) {
           stepDone(FAILURE, "Error tests failed");
@@ -743,6 +799,7 @@ public class MemoryStorageTest extends Test {
         }
         testsPassed();
       }
+      @Override
       public void receiveException(Exception e) { stepException(e); }
     });
   }

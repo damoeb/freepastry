@@ -52,18 +52,22 @@ public class TestStorageSerializer implements StorageSerializer {
   private static final byte BYTES = 2;
   private static final byte INTEGER = 3;
 
+  @Override
   public void writeObject(Object obj, OutputBuffer buf) throws IOException {
     write(obj, buf);
   }
 
+  @Override
   public Object readObject(InputBuffer buf) throws IOException {
     return read(buf);
   }
 
+  @Override
   public void writeMetadata(Object metadata, OutputBuffer buf) throws IOException {
     write(metadata, buf);
   }
 
+  @Override
   public Object readMetadata(InputBuffer buf) throws IOException {
     return read(buf);
   }

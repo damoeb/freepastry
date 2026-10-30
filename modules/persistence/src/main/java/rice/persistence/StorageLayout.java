@@ -170,7 +170,7 @@ final class StorageLayout {
     } else if (dirs > MAX_DIRECTORIES) {
       reformatDirectory(directory);
       return true;
-    } else if ((files == 0) && (dirs == 0) && (! directory.equals(appDirectory))) {
+    } else if ((files == 0) && (dirs == 0) && ! directory.equals(appDirectory)) {
       pruneDirectory(directory);
       return true;
     }
@@ -610,7 +610,7 @@ final class StorageLayout {
   /**
    * Accepts only stored files: neither directories nor the metadata file.
    */
-  static final DirectoryStream.Filter<Path> FILES = entry -> (! Files.isDirectory(entry)) && (! entry.getFileName().toString().equals(METADATA_FILENAME));
+  static final DirectoryStream.Filter<Path> FILES = entry -> ! Files.isDirectory(entry) && ! entry.getFileName().toString().equals(METADATA_FILENAME);
 
   /**
    * Class for a hashtable of primitive characters

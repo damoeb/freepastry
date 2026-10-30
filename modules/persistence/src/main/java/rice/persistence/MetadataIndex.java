@@ -268,7 +268,7 @@ final class MetadataIndex {
         Id id = factory.buildIdFromToString(buf.readUTF());
         Object value = buf.readBoolean() ? serializer.readMetadata(buf) : null;
 
-        if ((range.containsId(id)) && (Files.exists(file.resolve(id.toStringFull().substring(prefixOf.apply(file).length())))))
+        if (range.containsId(id) && Files.exists(file.resolve(id.toStringFull().substring(prefixOf.apply(file).length()))))
           this.metadata.put(id, value);
         else
           dirty.add(file);

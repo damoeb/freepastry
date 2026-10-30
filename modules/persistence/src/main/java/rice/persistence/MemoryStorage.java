@@ -100,6 +100,7 @@ public class MemoryStorage implements Storage {
    *
    * @param c The command to run once done
    */
+  @Override
   public void flush(Continuation<? super Boolean, Exception> c) {
     storage = new HashMap<Id, Object>();
     metadata = new ReverseTreeMap<Id, Object>();
@@ -117,6 +118,7 @@ public class MemoryStorage implements Storage {
    * @param newId The new id of the object in question.
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void rename(Id oldId, Id newId, Continuation<? super Boolean, Exception> c) {
     if (! idSet.isMemberId(oldId)) {
       c.receiveResult(Boolean.valueOf(false));
@@ -147,6 +149,7 @@ public class MemoryStorage implements Storage {
    * @param metadata The object's metadata
    * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
+  @Override
   public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
     if (id == null || obj == null) {
       c.receiveResult(Boolean.valueOf(false));
@@ -172,6 +175,7 @@ public class MemoryStorage implements Storage {
    * @param id The object's persistence id
    * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
+  @Override
   public void unstore(Id id, Continuation<? super Boolean, Exception> c) {
     Object stored = storage.remove(id);
     metadata.remove(id);
@@ -191,6 +195,7 @@ public class MemoryStorage implements Storage {
    * @param id The id to check
    * @return Whether or not the given id is stored
    */
+  @Override
   public boolean exists(Id id) {
     return storage.containsKey(id);
   }
@@ -203,6 +208,7 @@ public class MemoryStorage implements Storage {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
+  @Override
   public Object getMetadata(Id id) {
     return metadata.get(id);
   }
@@ -216,6 +222,7 @@ public class MemoryStorage implements Storage {
    * @param metadata The metadata to store
    * @param command The command to run once the operation is complete
    */
+  @Override
   public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> command) {
     if (exists(id))
       this.metadata.put(id, metadata);
@@ -230,6 +237,7 @@ public class MemoryStorage implements Storage {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void getObject(Id id, Continuation<? super Object, Exception> c) {
     c.receiveResult(storage.get(id));
   }
@@ -247,6 +255,7 @@ public class MemoryStorage implements Storage {
    * @param range The range to query
    * @return The idset containg the keys
    */
+  @Override
   public IdSet scan(IdRange range){
     return idSet.subSet(range);
   }
@@ -259,6 +268,7 @@ public class MemoryStorage implements Storage {
    *
    * @return The idset containg the keys
    */
+  @Override
   public IdSet scan() {
     return idSet;
   }
@@ -270,6 +280,7 @@ public class MemoryStorage implements Storage {
    * @param range The range to query
    * @return The map containg the keys
    */
+  @Override
   public SortedMap<Id, Object> scanMetadata(IdRange range) {
     if (range.isEmpty())
       return new ConcurrentRingMap<Id, Object>();
@@ -285,6 +296,7 @@ public class MemoryStorage implements Storage {
    *
    * @return The treemap mapping ids to metadata
    */
+  @Override
   public SortedMap<Id, Object> scanMetadata() {
     return new ImmutableSortedMap<Id, Object>(metadata.keyMap());
   }
@@ -296,6 +308,7 @@ public class MemoryStorage implements Storage {
    * @param value The maximal metadata value
    * @return The submapping
    */
+  @Override
   public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
     return new ImmutableSortedMap<Id, Object>(metadata.valueHeadMap(value));
   }
@@ -305,6 +318,7 @@ public class MemoryStorage implements Storage {
    *
    * @return The submapping
    */
+  @Override
   public SortedMap<Id, Object> scanMetadataValuesNull() {
     return new ImmutableSortedMap<Id, Object>(metadata.valueNullMap());
   }
@@ -314,6 +328,7 @@ public class MemoryStorage implements Storage {
    *
    * @return The total size, in bytes, of data stored.
    */
+  @Override
   public long getTotalSize() {
     return currentSize;
   }
@@ -323,6 +338,7 @@ public class MemoryStorage implements Storage {
    *
    * @return The number of ids in the catalog
    */
+  @Override
   public int getSize() {
     return idSet.numElements();
   }

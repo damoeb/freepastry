@@ -104,8 +104,10 @@ public class LRUCache implements Cache {
    * @param newId The new id of the object in question.
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
     storage.rename(oldId, newId, new StandardContinuation<Boolean, Boolean, Exception>(c) {
+      @Override
       public void receiveResult(Boolean o) {
         if (Boolean.TRUE.equals(o)) {
           synchronized (order) {
@@ -135,6 +137,7 @@ public class LRUCache implements Cache {
    * @param obj The object to cache.
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void cache(final Id id, final Object metadata, final Object obj, final Continuation<? super Boolean, Exception> c) {
     final int size = getSize(obj);
 
@@ -155,6 +158,7 @@ public class LRUCache implements Cache {
 
 
     final Continuation<Boolean, Exception> store = new Continuation<Boolean, Exception>() {
+      @Override
       public void receiveResult(Boolean o) {
         synchronized (order) {
           order.addFirst(id);
@@ -163,6 +167,7 @@ public class LRUCache implements Cache {
         storage.store(id, metadata, obj, c);
       }
 
+      @Override
       public void receiveException(Exception e) {
         c.receiveException(e);
       }
@@ -187,6 +192,7 @@ public class LRUCache implements Cache {
    * @param id The object's id
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
     synchronized (order) {
       order.remove(id);
@@ -201,6 +207,7 @@ public class LRUCache implements Cache {
    * @param id The id of the object in question.
    * @return Whether or not an object is present at id.
    */
+  @Override
   public boolean exists(Id id) {
     return storage.exists(id);
   }
@@ -211,6 +218,7 @@ public class LRUCache implements Cache {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
+  @Override
   public void getObject(Id id, Continuation<? super Object, Exception> c) {
     if (! exists(id)) {
       c.receiveResult(null);
@@ -233,6 +241,7 @@ public class LRUCache implements Cache {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
+  @Override
   public Object getMetadata(Id id) {
     return storage.getMetadata(id);
   }
@@ -246,6 +255,7 @@ public class LRUCache implements Cache {
    * @param metadata The metadata to store
    * @param command The command to run once the operation is complete
    */
+  @Override
   public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> command) {
     storage.setMetadata(id, metadata, command);
   }
@@ -263,6 +273,7 @@ public class LRUCache implements Cache {
    * @param range The range to query
    * @return The idset containg the keys
    */
+   @Override
    public synchronized IdSet scan(IdRange range){
      return storage.scan(range);
    }
@@ -275,6 +286,7 @@ public class LRUCache implements Cache {
    *
    * @return The idset containg the keys
    */
+  @Override
   public synchronized IdSet scan() {
     return storage.scan();
   }
@@ -286,6 +298,7 @@ public class LRUCache implements Cache {
    * @param range The range to query
    * @return The map containg the keys
    */
+  @Override
   public SortedMap<Id, Object> scanMetadata(IdRange range) {
     return storage.scanMetadata(range);
   }
@@ -296,6 +309,7 @@ public class LRUCache implements Cache {
    *
    * @return The treemap mapping ids to metadata
    */
+  @Override
   public SortedMap<Id, Object> scanMetadata() {
     return storage.scanMetadata();
   }
@@ -307,6 +321,7 @@ public class LRUCache implements Cache {
    * @param value The maximal metadata value
    * @return The submapping
    */
+  @Override
   public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
     return storage.scanMetadataValuesHead(value);
   }
@@ -316,6 +331,7 @@ public class LRUCache implements Cache {
    *
    * @return The submapping
    */
+  @Override
   public SortedMap<Id, Object> scanMetadataValuesNull() {
     return storage.scanMetadataValuesNull();
   }
@@ -325,6 +341,7 @@ public class LRUCache implements Cache {
    *
    * @return The maximum size, in bytes, of the cache.
    */
+  @Override
   public long getMaximumSize() {
     return maximumSize;
   }
@@ -334,6 +351,7 @@ public class LRUCache implements Cache {
    *
    * @return The number of ids in the catalog
    */
+  @Override
   public int getSize() {
     return storage.getSize();
   }
@@ -343,6 +361,7 @@ public class LRUCache implements Cache {
    *
    * @return The total size, in bytes, of data stored.
    */
+  @Override
   public long getTotalSize() {
     return storage.getTotalSize();
   }
@@ -355,14 +374,17 @@ public class LRUCache implements Cache {
    * @param size The new maximum size, in bytes, of the cache.
    * @param c The command to run once the operation is complete; receives the success or failure of the setSize operation
    */
+  @Override
   public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> c) {
     Continuation<Boolean, Exception> local = new Continuation<Boolean, Exception>() {
+      @Override
       public void receiveResult(Boolean o) {
         maximumSize = size;
 
         c.receiveResult(Boolean.valueOf(true));
       }
 
+      @Override
       public void receiveException(Exception e) {
         c.receiveException(e);
       }
@@ -386,6 +408,7 @@ public class LRUCache implements Cache {
     final Continuation<Boolean, Exception> remove = new StandardContinuation<Boolean, Boolean, Exception>(c) {
       private boolean waitingForSize = true;
 
+      @Override
       public void receiveResult(Boolean o) {
         if (storage.getTotalSize() > size) {
           uncache((Id) order.getLast(), this);
@@ -421,8 +444,10 @@ public class LRUCache implements Cache {
    *
    * @param c The command to run once done
    */
+  @Override
   public void flush(Continuation<? super Boolean, Exception> c) {
     storage.flush(new StandardContinuation<Boolean, Boolean, Exception>(c) {
+      @Override
       public void receiveResult(Boolean o) {
         order.clear();
         parent.receiveResult(Boolean.TRUE);

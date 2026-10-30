@@ -80,6 +80,7 @@ public class EmptyCache implements Cache {
    * @param newId The new id of the object in question.
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
     c.receiveException(new IllegalArgumentException("EmptyCache has no objects!"));
   }
@@ -100,6 +101,7 @@ public class EmptyCache implements Cache {
    * @param obj The object to cache.
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.valueOf(true));
   }
@@ -115,6 +117,7 @@ public class EmptyCache implements Cache {
    * @param id The object's id
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.valueOf(true));
   }
@@ -125,6 +128,7 @@ public class EmptyCache implements Cache {
    * @param id The id of the object in question.
    * @return Whether or not an object is present at id.
    */
+  @Override
   public boolean exists(Id id) {
     return false;
   }
@@ -135,6 +139,7 @@ public class EmptyCache implements Cache {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
+  @Override
   public void getObject(Id id, Continuation<? super Object, Exception> c) {
     c.receiveResult(null);
   }
@@ -147,6 +152,7 @@ public class EmptyCache implements Cache {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
+  @Override
   public Object getMetadata(Id id) {
     return null;
   }
@@ -160,6 +166,7 @@ public class EmptyCache implements Cache {
    * @param metadata The metadata to store
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.valueOf(true));
   }
@@ -177,6 +184,7 @@ public class EmptyCache implements Cache {
    * @param range The range to query
    * @return The idset containg the keys
    */
+   @Override
    public IdSet scan(IdRange range){
      return factory.buildIdSet();
    }
@@ -189,6 +197,7 @@ public class EmptyCache implements Cache {
    *
    * @return The idset containg the keys
    */
+  @Override
   public IdSet scan() {
     return factory.buildIdSet();
   }
@@ -200,6 +209,7 @@ public class EmptyCache implements Cache {
    * @param range The range to query
    * @return The map containg the keys
    */
+  @Override
   public SortedMap<Id, Object> scanMetadata(IdRange range) {
     return new ConcurrentRingMap<Id, Object>();
   }
@@ -210,6 +220,7 @@ public class EmptyCache implements Cache {
    *
    * @return The treemap mapping ids to metadata
    */
+  @Override
   public SortedMap<Id, Object> scanMetadata() {
     return new ConcurrentRingMap<Id, Object>();
   }
@@ -221,6 +232,7 @@ public class EmptyCache implements Cache {
    * @param value The maximal metadata value
    * @return The submapping
    */
+  @Override
   public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
     return new ConcurrentRingMap<Id, Object>();
   }
@@ -230,6 +242,7 @@ public class EmptyCache implements Cache {
    *
    * @return The submapping
    */
+  @Override
   public SortedMap<Id, Object> scanMetadataValuesNull() {
     return new ConcurrentRingMap<Id, Object>();
   }
@@ -239,6 +252,7 @@ public class EmptyCache implements Cache {
    *
    * @return The maximum size, in bytes, of the cache.
    */
+  @Override
   public long getMaximumSize() {
     return 0;
   }
@@ -248,6 +262,7 @@ public class EmptyCache implements Cache {
    *
    * @return The total size, in bytes, of data stored.
    */
+  @Override
   public long getTotalSize() {
     return 0;
   }
@@ -257,6 +272,7 @@ public class EmptyCache implements Cache {
    *
    * @return The number of ids in the catalog
    */
+  @Override
   public int getSize() {
     return 0;
   }
@@ -269,6 +285,7 @@ public class EmptyCache implements Cache {
    * @param size The new maximum size, in bytes, of the cache.
    * @param c The command to run once the operation is complete; receives the success or failure of the setSize operation
    */
+  @Override
   public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.TRUE);
   }
@@ -279,6 +296,7 @@ public class EmptyCache implements Cache {
    *
    * @param c The command to run once done
    */
+  @Override
   public void flush(Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.TRUE);
   }

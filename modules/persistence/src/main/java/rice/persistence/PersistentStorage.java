@@ -204,6 +204,7 @@ public class PersistentStorage implements Storage {
    * @param newId The new id of the object in question.
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
     printStats();
 
@@ -228,6 +229,7 @@ public class PersistentStorage implements Storage {
    * @param metadata The object's metadata
    * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
+  @Override
   public void store(final Id id, final Object metadata, final Object obj, Continuation<? super Boolean, Exception> c) {
     if (id == null || obj == null) {
       c.receiveResult(Boolean.valueOf(false));
@@ -254,6 +256,7 @@ public class PersistentStorage implements Storage {
    * @param id The object's persistence id
    * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
+  @Override
   public void unstore(final Id id, Continuation<? super Boolean, Exception> c) {
     printStats();
 
@@ -266,6 +269,7 @@ public class PersistentStorage implements Storage {
    * @param id The id of the object in question.
    * @return Whether or not an object is present at id.
    */
+  @Override
   public boolean exists(Id id) {
     if (index) {
       return metadataIndex.exists(id);
@@ -282,6 +286,7 @@ public class PersistentStorage implements Storage {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
+  @Override
   public Object getMetadata(Id id) {
     if (index) {
       return metadataIndex.get(id);
@@ -299,6 +304,7 @@ public class PersistentStorage implements Storage {
    * @param metadata The metadata to store
    * @param c The command to run once the operation is complete
    */
+  @Override
   public void setMetadata(final Id id, final Object metadata, Continuation<? super Boolean, Exception> c) {
     printStats();
 
@@ -315,10 +321,11 @@ public class PersistentStorage implements Storage {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
+  @Override
   public void getObject(final Id id, Continuation<? super Object, Exception> c) {
     printStats();
 
-    if (index && (! exists(id))) {
+    if (index && ! exists(id)) {
       c.receiveResult(null);
     } else {
       blockingIO.run(() -> "getObject " + id, c, () -> objectFiles.getObject(id));
@@ -338,6 +345,7 @@ public class PersistentStorage implements Storage {
    * @param range The range to query
    * @return The idset containing the keys
    */
+  @Override
   public IdSet scan(IdRange range){
     if (index) {
       if (range.isEmpty())
@@ -362,6 +370,7 @@ public class PersistentStorage implements Storage {
    *
    * @return The idset containing the keys
    */
+  @Override
   public IdSet scan() {
     if (index) {
       return factory.buildIdSet(metadataIndex.keyMap());
@@ -377,6 +386,7 @@ public class PersistentStorage implements Storage {
    * @param range The range to query
    * @return The map containing the keys
    */
+  @Override
   public SortedMap<Id, Object> scanMetadata(IdRange range) {
     if (index) {
       if (range.isEmpty())
@@ -396,6 +406,7 @@ public class PersistentStorage implements Storage {
    *
    * @return The treemap mapping ids to metadata
    */
+  @Override
   public SortedMap<Id, Object> scanMetadata() {
     if (index) {
       return metadataIndex.keyMapUnlocked();
@@ -411,6 +422,7 @@ public class PersistentStorage implements Storage {
    * @param value The maximal metadata value
    * @return The submapping
    */
+  @Override
   public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
     if (index) {
       return metadataIndex.valueHeadMapUnlocked(value);
@@ -424,6 +436,7 @@ public class PersistentStorage implements Storage {
    *
    * @return The submapping
    */
+  @Override
   public SortedMap<Id, Object> scanMetadataValuesNull() {
     if (index) {
       return metadataIndex.valueNullMapUnlocked();
@@ -437,6 +450,7 @@ public class PersistentStorage implements Storage {
    *
    * @return The total size, in bytes, of data stored.
    */
+  @Override
   public long getTotalSize(){
     return quota.getUsedSpace();
   }
@@ -446,6 +460,7 @@ public class PersistentStorage implements Storage {
    *
    * @return The number of ids in the catalog
    */
+  @Override
   public int getSize() {
     if (index) {
       return metadataIndex.sizeUnlocked();
@@ -460,6 +475,7 @@ public class PersistentStorage implements Storage {
    *
    * @param c The command to run once done
    */
+  @Override
   public void flush(Continuation<? super Boolean, Exception> c) {
     blockingIO.run(() -> "flush", c, () -> objectFiles.flush());
   }

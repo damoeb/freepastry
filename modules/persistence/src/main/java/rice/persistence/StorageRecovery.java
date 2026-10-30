@@ -189,7 +189,7 @@ final class StorageRecovery {
 
           /* if the file is newer than the metadata file, update the metadata
           if we don't have the metadata for this file, update it */
-          if ((metadataIndex != null) && ((! metadataIndex.containsUnlocked(id)) || (StorageFiles.lastModified(files[i]) > modified))) {
+          if ((metadataIndex != null) && (! metadataIndex.containsUnlocked(id) || (StorageFiles.lastModified(files[i]) > modified))) {
             if (logger.isTraceEnabled()) logger.trace("Reading newer metadata out of file " + files[i] + " id " + id.toStringFull() + " " + StorageFiles.lastModified(files[i]) + " " + modified + " " + metadataIndex.containsUnlocked(id));
             metadataIndex.putUnlocked(id, format.readMetadata(files[i]));
             metadataIndex.markDirtyUnlocked(dir);

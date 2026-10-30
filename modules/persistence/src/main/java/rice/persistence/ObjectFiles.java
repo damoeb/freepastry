@@ -77,7 +77,7 @@ final class ObjectFiles {
 
     Path f = layout.getFile(oldId);
 
-    if ((f != null) && (Files.exists(f))) {
+    if ((f != null) && Files.exists(f)) {
       Path g = layout.getFile(newId);
       StorageFiles.renameFile(f, g);
 
@@ -153,7 +153,7 @@ final class ObjectFiles {
     }
 
     /* check to make sure file exists */
-    if ((objFile == null) || (! Files.exists(objFile)))
+    if ((objFile == null) || ! Files.exists(objFile))
       return Boolean.FALSE;
 
     /* record the space collected and delete the file */
@@ -188,7 +188,7 @@ final class ObjectFiles {
 
     try {
       /* and make sure that it exists */
-      if ((objFile == null) || (! Files.exists(objFile)))
+      if ((objFile == null) || ! Files.exists(objFile))
         return null;
 
       logger.atTrace().log(() -> "COUNT: Fetching data under " + id.toStringFull() + " of size " + StorageFiles.getFileLength(objFile) + " in " + name);

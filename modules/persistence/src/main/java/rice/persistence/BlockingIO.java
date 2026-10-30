@@ -69,7 +69,9 @@ final class BlockingIO {
    */
   <R> void run(final Supplier<String> description, Continuation<? super R, Exception> c, final Work<R> work) {
     environment.getProcessor().processBlockingIO(new WorkRequest<R>(c, environment.getSelectorManager()) {
+      @Override
       public String toString() { return description.get(); }
+      @Override
       public R doWork() throws Exception {
         return work.doWork();
       }

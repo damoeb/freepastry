@@ -134,7 +134,7 @@ final class StorageFiles {
    * @param newFile The new name
    */
   static void renameFile(Path oldFile, Path newFile) throws IOException {
-    if ((oldFile != null) && Files.exists(oldFile) && (! oldFile.equals(newFile))) {
+    if ((oldFile != null) && Files.exists(oldFile) && ! oldFile.equals(newFile)) {
       deleteFile(newFile);
 
       try {
