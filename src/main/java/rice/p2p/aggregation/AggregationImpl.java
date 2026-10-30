@@ -52,7 +52,6 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.p2p.aggregation.messaging.AggregationMessage;
 import rice.p2p.aggregation.messaging.AggregationTimeoutMessage;
 import rice.p2p.aggregation.messaging.NonAggregate;
@@ -113,51 +112,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final Vector<Id> monitorIDs;
   private AggregationStatistics stats;
 
-  private static final long SECONDS = 1000;
-  private static final long MINUTES = 60 * SECONDS;
-  private static final long HOURS = 60 * MINUTES;
-  private static final long DAYS = 24 * HOURS;
-  private static final long WEEKS = 7 * DAYS;
-
-  private final boolean logStatistics;
-
-  private final long flushDelayAfterJoin;
-  private final long flushStressInterval;
-  private long flushInterval;
-
-  private int maxAggregateSize;
-  private int maxObjectsInAggregate;
-  private int maxAggregatesPerRun;
-
-  private final boolean addMissingAfterRefresh;
-  private final int maxReaggregationPerRefresh;
-  private final int nominalReferenceCount;
-  private final int maxPointersPerAggregate;
-  private final long pointerArrayLifetime;
-  private final long aggregateGracePeriod;
-
-  private final long aggrRefreshInterval;
-  private final long aggrRefreshDelayAfterJoin;
-  private long expirationRenewThreshold;
-
-  private final boolean monitorEnabled;
-  private final long monitorRefreshInterval;
-
-  private final long consolidationDelayAfterJoin;
-  private long consolidationInterval;
-  private long consolidationThreshold;
-  private int consolidationMinObjectsInAggregate;
-  private double consolidationMinComponentsAlive;
-
-  private int reconstructionMaxConcurrentLookups;
-
-  private final boolean aggregateLogEnabled;
-
-  private final long statsGranularity;
-  private final long statsRange;
-  private final long statsInterval;
-
-  private final double jitterRange;
+  private final AggregationConfig config;
 
   private Environment environment;
   private final Logger logger;
@@ -175,47 +130,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.environment = node.getEnvironment();
     logger = environment.getLogManager().getLogger(AggregationImpl.class, instance);
 
-    Parameters p = environment.getParameters();
-
-    logStatistics = p.getBoolean("p2p_aggregation_logStatistics");
-
-    flushDelayAfterJoin = p.getLong("p2p_aggregation_flushDelayAfterJoin");
-    flushStressInterval = p.getLong("p2p_aggregation_flushStressInterval");
-    flushInterval = p.getLong("p2p_aggregation_flushInterval");
-
-    maxAggregateSize = p.getInt("p2p_aggregation_maxAggregateSize");
-    maxObjectsInAggregate = p.getInt("p2p_aggregation_maxObjectsInAggregate");
-    maxAggregatesPerRun = p.getInt("p2p_aggregation_maxAggregatesPerRun");
-
-    addMissingAfterRefresh = p.getBoolean("p2p_aggregation_addMissingAfterRefresh");
-    maxReaggregationPerRefresh = p.getInt("p2p_aggregation_maxReaggregationPerRefresh");
-    nominalReferenceCount = p.getInt("p2p_aggregation_nominalReferenceCount");
-    maxPointersPerAggregate = p.getInt("p2p_aggregation_maxPointersPerAggregate");
-    pointerArrayLifetime = p.getLong("p2p_aggregation_pointerArrayLifetime");
-    aggregateGracePeriod = p.getLong("p2p_aggregation_aggregateGracePeriod");
-
-    aggrRefreshInterval = p.getLong("p2p_aggregation_aggrRefreshInterval");
-    aggrRefreshDelayAfterJoin = p.getLong("p2p_aggregation_aggrRefreshDelayAfterJoin");
-    expirationRenewThreshold = p.getLong("p2p_aggregation_expirationRenewThreshold");
-
-    monitorEnabled = p.getBoolean("p2p_aggregation_monitorEnabled");
-    monitorRefreshInterval = p.getLong("p2p_aggregation_monitorRefreshInterval");
-
-    consolidationDelayAfterJoin = p.getLong("p2p_aggregation_consolidationDelayAfterJoin");
-    consolidationInterval = p.getLong("p2p_aggregation_consolidationInterval");
-    consolidationThreshold = p.getLong("p2p_aggregation_consolidationThreshold");
-    consolidationMinObjectsInAggregate = p.getInt("p2p_aggregation_consolidationMinObjectsInAggregate");
-    consolidationMinComponentsAlive = p.getDouble("p2p_aggregation_consolidationMinComponentsAlive");
-
-    reconstructionMaxConcurrentLookups = p.getInt("p2p_aggregation_reconstructionMaxConcurrentLookups");
-
-    aggregateLogEnabled = p.getBoolean("p2p_aggregation_aggregateLogEnabled");
-
-    statsGranularity = p.getLong("p2p_aggregation_statsGranularity");
-    statsRange = p.getLong("p2p_aggregation_statsRange");
-    statsInterval = p.getLong("p2p_aggregation_statsInterval");
-
-    jitterRange = p.getDouble("p2p_aggregation_jitterRange");
+    config = new AggregationConfig(environment.getParameters());
 
     this.aggregateFactory = aggregateFactory;
     if (this.aggregateFactory == null) {
@@ -257,8 +172,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.objectStore = objectStore;
     this.node = node;
     this.timers = new Hashtable<Integer, CancellableTask>();
-    this.aggregateList = new AggregateList(configFileName, getLocalNodeHandle().getId().toString(), factory, aggregateLogEnabled, instance, environment);
-    this.stats = aggregateList.getStatistics(statsGranularity, statsRange, nominalReferenceCount);
+    this.aggregateList = new AggregateList(configFileName, getLocalNodeHandle().getId().toString(), factory, config.isAggregateLogEnabled(), instance, environment);
+    this.stats = aggregateList.getStatistics(config.getStatsGranularity(), config.getStatsRange(), config.getNominalReferenceCount());
     if (policy == null) {
       this.policy = getDefaultPolicy();
     } else {
@@ -278,12 +193,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
     removeDeadAggregates();
 
-    addTimer(jitterTerm(flushDelayAfterJoin), tiFlush);
-    addTimer(jitterTerm(aggrRefreshDelayAfterJoin), tiExpire);
-    addTimer(jitterTerm(consolidationDelayAfterJoin), tiConsolidate);
-    addTimer(statsInterval, tiStatistics);
-    if (monitorEnabled)
-      addTimer(monitorRefreshInterval, tiMonitor);
+    addTimer(jitterTerm(config.getFlushDelayAfterJoin()), tiFlush);
+    addTimer(jitterTerm(config.getAggrRefreshDelayAfterJoin()), tiExpire);
+    addTimer(jitterTerm(config.getConsolidationDelayAfterJoin()), tiConsolidate);
+    addTimer(config.getStatsInterval(), tiStatistics);
+    if (config.isMonitorEnabled())
+      addTimer(config.getMonitorRefreshInterval(), tiMonitor);
     endpoint.register();
   }
 
@@ -296,7 +211,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   private long jitterTerm(long basis) {
-    return (long)((1-jitterRange)*basis) + environment.getRandomSource().nextInt((int)(2*jitterRange*basis));
+    return (long)((1-config.getJitterRange())*basis) + environment.getRandomSource().nextInt((int)(2*config.getJitterRange()*basis));
   }
 
   /**
@@ -379,7 +294,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         result = result + randomID.toStringFull() + "\n";
         insert(
           new DebugContent(randomID, false, 0, new byte[] {}),
-          environment.getTimeSource().currentTimeMillis() + 120*SECONDS,
+          environment.getTimeSource().currentTimeMillis() + 120*AggregationConfig.SECONDS,
           new Continuation<Boolean[], Exception>() {
             public void receiveResult(Boolean[] o) {
             }
@@ -393,24 +308,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     if (cmd.startsWith("show config")) {
-      return
-        "flushDelayAfterJoin = " + (int)(flushDelayAfterJoin / SECONDS) + " sec\n" +
-        "flushInterval = " + (int)(flushInterval / SECONDS) + " sec\n" +
-        "maxAggregateSize = " + maxAggregateSize + " bytes\n" +
-        "maxObjectsInAggregate = " + maxObjectsInAggregate + " objects\n" +
-        "maxAggregatesPerRun = " + maxAggregatesPerRun + " aggregates\n" +
-        "addMissingAfterRefresh = " + addMissingAfterRefresh + "\n" +
-        "nominalReferenceCount = " + nominalReferenceCount + "\n" +
-        "maxPointersPerAggregate = " + maxPointersPerAggregate + "\n" +
-        "pointerArrayLifetime = " + (int)(pointerArrayLifetime / DAYS) + " days\n" +
-        "aggrRefreshInterval = " + (int)(aggrRefreshInterval / SECONDS) + " sec\n" +
-        "aggrRefreshDelayAfterJoin = " + (int)(aggrRefreshDelayAfterJoin / SECONDS) + " sec\n" +
-        "expirationRenewThreshold = " + (int)(expirationRenewThreshold / HOURS) + " hrs\n" +
-        "consolidationDelayAfterJoin = " + (int)(consolidationDelayAfterJoin / SECONDS) + " sec\n" +
-        "consolidationInterval = " + (int)(consolidationInterval / SECONDS) + " sec\n" +
-        "consolidationThreshold = " + (int)(consolidationThreshold / HOURS) + " hrs\n" +
-        "consolidationMinObjectsInAggregate = " + consolidationMinObjectsInAggregate + "\n" +
-        "consolidationMinComponentsAlive = " + consolidationMinComponentsAlive + "\n";
+      return config.describe();
     }
 
     if (cmd.startsWith("ls")) {
@@ -604,7 +502,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       return "refresh("+id+", "+expiration+")="+awaitDebugResult(ret);
     }
 
-    if (cmd.startsWith("monitor remove") && monitorEnabled) {
+    if (cmd.startsWith("monitor remove") && config.isMonitorEnabled()) {
       String[] args = cmd.substring(15).split(" ");
       if (args.length == 1) {
         int howMany = Integer.parseInt(args[0]);
@@ -619,11 +517,11 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       } else return "Syntax: monitor remove <howMany>";
     }
 
-    if (cmd.startsWith("monitor status") && monitorEnabled) {
-      return "Monitor is "+(monitorEnabled ? ("enabled, monitoring "+monitorIDs.size()+" objects") : "disabled");
+    if (cmd.startsWith("monitor status") && config.isMonitorEnabled()) {
+      return "Monitor is "+(config.isMonitorEnabled() ? ("enabled, monitoring "+monitorIDs.size()+" objects") : "disabled");
     }
 
-    if (cmd.startsWith("monitor ls") && monitorEnabled) {
+    if (cmd.startsWith("monitor ls") && config.isMonitorEnabled()) {
       StringBuilder result = new StringBuilder();
       Enumeration<Id> enumeration = monitorIDs.elements();
 
@@ -634,7 +532,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       return result.toString();
     }
 
-    if (cmd.startsWith("monitor check") && monitorEnabled) {
+    if (cmd.startsWith("monitor check") && config.isMonitorEnabled()) {
       final StringBuffer result = new StringBuffer();
       final CompletableFuture<String> ret = new CompletableFuture<String>();
 
@@ -707,7 +605,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       return outcome.equals("done") ? result.toString() : result.toString() + outcome;
     }
 
-    if (cmd.startsWith("monitor add") && monitorEnabled) {
+    if (cmd.startsWith("monitor add") && config.isMonitorEnabled()) {
       String[] args = cmd.substring(12).split(" ");
       if (args.length == 6) {
         final int numFiles = Integer.parseInt(args[0]);
@@ -831,7 +729,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
     while (enumeration.hasMoreElements()) {
       AggregateDescriptor adc = (AggregateDescriptor) enumeration.nextElement();
-      if (adc.getCurrentLifetime() < (now - aggregateGracePeriod)) {
+      if (adc.getCurrentLifetime() < (now - config.getAggregateGracePeriod())) {
         if (!toRemove.contains(adc))
           toRemove.add(adc);
         logger.atWarn().log(() -> "Scheduling dead aggregate for removal: "+adc.getKey().toStringFull()+"(expired "+adc.getCurrentLifetime()+")");
@@ -952,7 +850,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       ObjectDescriptor thisObject = null;
       boolean mustAddObject = false;
 
-      if (aggregates.size() >= maxAggregatesPerRun)
+      if (aggregates.size() >= config.getMaxAggregatesPerRun())
         break;
 
       while (iter.hasNext()) {
@@ -963,7 +861,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             thisObject.getKey(), thisObject.getVersion(), thisObject.getCurrentLifetime(),
             thisObject.getRefreshedLifetime(), thisObject.getSize()
           );
-          if ((((currentAggregateSize + thisObject.getSize()) <= maxAggregateSize) || currentAggregate.isEmpty()) && (currentObjectsInAggregate < maxObjectsInAggregate)) {
+          if ((((currentAggregateSize + thisObject.getSize()) <= config.getMaxAggregateSize()) || currentAggregate.isEmpty()) && (currentObjectsInAggregate < config.getMaxObjectsInAggregate())) {
             currentAggregateSize += thisObject.getSize();
             currentObjectsInAggregate ++;
             currentAggregate.add(thisObject);
@@ -1042,7 +940,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
               logger.debug("Retrieving #{}.{}: {}", iF, currentQuery, desc[currentQuery].getKey());
               waitingList.getObject(new VersionKey(desc[currentQuery].getKey(), desc[currentQuery].getVersion()), this);
             } else {
-              Id[] pointers = aggregateList.getSomePointers(nominalReferenceCount, maxPointersPerAggregate, null);
+              Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), null);
               storeAggregate(aggregateFactory.buildAggregate(obj, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
                 public void receiveResult(Boolean o) {
                   final Continuation.MultiContinuation<Object[]> c2 = new Continuation.MultiContinuation<Object[]>(thisContinuation, desc.length);
@@ -1105,7 +1003,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
         aggr.setMarker(true);
 
         boolean isBeingRefreshed = false;
-        if (aggr.getCurrentLifetime() < (now + expirationRenewThreshold)) {
+        if (aggr.getCurrentLifetime() < (now + config.getExpirationRenewThreshold())) {
           long newLifetime = chooseAggregateLifetime(aggr.getObjects(), now, aggr.getCurrentLifetime());
           if (newLifetime > aggr.getCurrentLifetime()) {
             logger.atInfo().log(() -> "Refreshing aggregate "+aggr.getKey().toStringFull()+", new expiration is "+newLifetime);
@@ -1203,12 +1101,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
            Pointer arrays are never consolidated; they expire after some time.
         */
 
-        if ((aggr.getCurrentLifetime() > (now + expirationRenewThreshold)) &&
-            (aggr.getCurrentLifetime() < (now + consolidationThreshold)) &&
+        if ((aggr.getCurrentLifetime() > (now + config.getExpirationRenewThreshold())) &&
+            (aggr.getCurrentLifetime() < (now + config.getConsolidationThreshold())) &&
             (aggr.objectsAliveAt(now) > 0)) {
           float fractionAlive = ((float)aggr.objectsAliveAt(now)) / aggr.getObjects().length;
-          if ((aggr.getObjects().length < consolidationMinObjectsInAggregate) ||
-              (fractionAlive < consolidationMinComponentsAlive)) {
+          if ((aggr.getObjects().length < config.getConsolidationMinObjectsInAggregate()) ||
+              (fractionAlive < config.getConsolidationMinComponentsAlive())) {
             logger.atDebug().log(() -> "Can consolidate: "+aggr.getKey().toStringFull()+", "+aggr.objectsAliveAt(now)+"/"+aggr.getObjects().length+" alive");
             candidateList.add(aggr);
           }
@@ -1237,16 +1135,16 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       int p = 0;
       while (p < candidateList.size()) {
         AggregateDescriptor adx = candidateList.get(p);
-        if (((adx.objectsAliveAt(now) + objectsSoFar) > maxObjectsInAggregate) ||
-            ((adx.bytesAliveAt(now) + bytesSoFar) > maxAggregateSize))
+        if (((adx.objectsAliveAt(now) + objectsSoFar) > config.getMaxObjectsInAggregate()) ||
+            ((adx.bytesAliveAt(now) + bytesSoFar) > config.getMaxAggregateSize()))
           candidateList.remove(p);
         else
           p++;
       }
     }
 
-    if (componentList.isEmpty() || (objectsSoFar < consolidationMinObjectsInAggregate)) {
-      logger.info("Not enough objects ({} found, {} required), postponing...", objectsSoFar, consolidationMinObjectsInAggregate);
+    if (componentList.isEmpty() || (objectsSoFar < config.getConsolidationMinObjectsInAggregate())) {
+      logger.info("Not enough objects ({} found, {} required), postponing...", objectsSoFar, config.getConsolidationMinObjectsInAggregate());
       return;
     }
 
@@ -1291,7 +1189,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
             for (int i=0; i<adc.length; i++)
               obsoleteAggregates[i] = adc[i].getKey();
 
-            Id[] pointers = aggregateList.getSomePointers(nominalReferenceCount, maxPointersPerAggregate, obsoleteAggregates);
+            Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), obsoleteAggregates);
             final long aggrExpirationF = chooseAggregateLifetime(desc, environment.getTimeSource().currentTimeMillis(), 0);
 
             storeAggregate(aggregateFactory.buildAggregate(components, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
@@ -1330,7 +1228,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
     logger.info("Checking for disconnections");
 
-    Id[] disconnected = aggregateList.getSomePointers(1, maxPointersPerAggregate, null);
+    Id[] disconnected = aggregateList.getSomePointers(1, config.getMaxPointersPerAggregate(), null);
     if (disconnected.length < 2) {
       Id newRoot = (disconnected.length == 1) ? disconnected[0] : null;
       Id currentRoot = aggregateList.getRoot();
@@ -1345,7 +1243,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     logger.info("Found {} disconnected aggregates; inserting pointer array", disconnected.length);
     storeAggregate(
       aggregateFactory.buildAggregate(new GCPastContent[] {}, disconnected),
-      environment.getTimeSource().currentTimeMillis() + pointerArrayLifetime,
+      environment.getTimeSource().currentTimeMillis() + config.getPointerArrayLifetime(),
       new ObjectDescriptor[] {},
       disconnected,
       new Continuation<Boolean, Exception>() {
@@ -1376,14 +1274,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           }
         });
 
-        logger.atInfo().log(() -> "Waiting list: "+waitingList.getSize()+" Scan: "+getNumObjectsWaiting()+" Max: "+(maxObjectsInAggregate * maxAggregatesPerRun));
+        logger.atInfo().log(() -> "Waiting list: "+waitingList.getSize()+" Scan: "+getNumObjectsWaiting()+" Max: "+(config.getMaxObjectsInAggregate() * config.getMaxAggregatesPerRun()));
 
-        if (getNumObjectsWaiting() >= (maxObjectsInAggregate * maxAggregatesPerRun)) {
+        if (getNumObjectsWaiting() >= (config.getMaxObjectsInAggregate() * config.getMaxAggregatesPerRun())) {
           logger.info("Retrying later");
-          addTimer(jitterTerm(flushStressInterval), tiFlush);
+          addTimer(jitterTerm(config.getFlushStressInterval()), tiFlush);
         } else {
           logger.info("OK, waiting for next deadline");
-          addTimer(jitterTerm(flushInterval), tiFlush);
+          addTimer(jitterTerm(config.getFlushInterval()), tiFlush);
         }
 
         break;
@@ -1392,20 +1290,20 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       {
         refreshAggregates();
         reconnectTree();
-        addTimer(jitterTerm(aggrRefreshInterval), tiExpire);
+        addTimer(jitterTerm(config.getAggrRefreshInterval()), tiExpire);
         break;
       }
       case tiConsolidate :
       {
         consolidateAggregates();
-        addTimer(jitterTerm(consolidationInterval), tiConsolidate);
+        addTimer(jitterTerm(config.getConsolidationInterval()), tiConsolidate);
         break;
       }
       case tiMonitor :
       {
         Id[] ids = (Id[]) monitorIDs.toArray(new Id[] {});
         logger.info("Monitor: Refreshing {} objects", ids.length);
-        refresh(ids, environment.getTimeSource().currentTimeMillis() + 3 * monitorRefreshInterval, new Continuation<Object[], Exception>() {
+        refresh(ids, environment.getTimeSource().currentTimeMillis() + 3 * config.getMonitorRefreshInterval(), new Continuation<Object[], Exception>() {
           public void receiveResult(Object[] o) {
             logger.debug("Monitor: Refresh completed, result={}", o);
           }
@@ -1414,14 +1312,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           }
         });
 
-        addTimer(monitorRefreshInterval, tiMonitor);
+        addTimer(config.getMonitorRefreshInterval(), tiMonitor);
         break;
       }
       case tiStatistics :
       {
-        stats = aggregateList.getStatistics(statsGranularity, statsRange, nominalReferenceCount);
+        stats = aggregateList.getStatistics(config.getStatsGranularity(), config.getStatsRange(), config.getNominalReferenceCount());
         stats.dump(environment.getLogManager().getLogger(AggregationStatistics.class, instance));
-        addTimer(statsInterval, tiStatistics);
+        addTimer(config.getStatsInterval(), tiStatistics);
         break;
       }
       default:
@@ -1562,7 +1460,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           currentIndex ++;
           if (currentIndex >= ids.length) {
             if (objectsMissing > 0)
-              logger.warn("refresh: {}/{} objects not in aggregate list, fetched {} (max {})", objectsMissing, ids.length, objectsFetched, maxReaggregationPerRefresh);
+              logger.warn("refresh: {}/{} objects not in aggregate list, fetched {} (max {})", objectsMissing, ids.length, objectsFetched, config.getMaxReaggregationPerRefresh());
 
             int nOK = 0;
             for (int i=0; i<ids.length; i++)
@@ -1660,8 +1558,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                been a failure, and we need to reaggregate this object. */
 
             objectsMissing ++;
-            if (addMissingAfterRefresh) {
-              if (objectsFetched < maxReaggregationPerRefresh) {
+            if (config.isAddMissingAfterRefresh()) {
+              if (objectsFetched < config.getMaxReaggregationPerRefresh()) {
                 objectsFetched ++;
                 final Continuation<Object, Exception> myParent = this;
                 objectStore.lookup(id, false, new Continuation<PastContent, Exception>() {
@@ -1727,7 +1625,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                 });
                 return;
               } else {
-                logger.atDebug().log(() -> "Refresh: Limit of "+maxReaggregationPerRefresh+" reaggregations exceeded; postponing id="+id.toStringFull());
+                logger.atDebug().log(() -> "Refresh: Limit of "+config.getMaxReaggregationPerRefresh()+" reaggregations exceeded; postponing id="+id.toStringFull());
                 lastResult = Boolean.valueOf(true);
                 continue;
               }
@@ -1881,7 +1779,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                       if (pointer instanceof Id) {
                         Id thisPointer = pointer;
                         if (!keysDone.contains(thisPointer) && !keysPostponed.contains(thisPointer) && !keysInProgress.contains(thisPointer)) {
-                          if (keysInProgress.size() >= reconstructionMaxConcurrentLookups)
+                          if (keysInProgress.size() >= config.getReconstructionMaxConcurrentLookups())
                             keysPostponed.add(thisPointer);
                           else
                             rebuildRecursive(thisPointer, keysInProgress, keysPostponed, keysDone, command);
@@ -1897,7 +1795,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
                   if (!keysInProgress.isEmpty() || !keysPostponed.isEmpty()) {
                     logger.info("Rebuild: {} keys in progress, {} postponed, {} done", keysInProgress.size(), keysPostponed.size(), keysDone.size());
 
-                    while ((keysInProgress.size() < reconstructionMaxConcurrentLookups) && (keysPostponed.size() > 0)) {
+                    while ((keysInProgress.size() < config.getReconstructionMaxConcurrentLookups()) && (keysPostponed.size() > 0)) {
                       Id nextKey = keysPostponed.get(0);
                       logger.atDebug().log(() -> "Rebuild: Resuming lookup for postponed key "+nextKey.toStringFull());
                       keysPostponed.remove(nextKey);
@@ -1939,7 +1837,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
           }
         }
 
-        while ((keysInProgress.size() < reconstructionMaxConcurrentLookups) && (keysPostponed.size() > 0)) {
+        while ((keysInProgress.size() < config.getReconstructionMaxConcurrentLookups()) && (keysPostponed.size() > 0)) {
           Id nextKey = keysPostponed.get(0);
           logger.atDebug().log(() -> "Rebuild: Resuming lookup for postponed key "+nextKey.toStringFull());
           keysPostponed.remove(nextKey);
@@ -2372,35 +2270,35 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   public void setFlushInterval(int flushIntervalSec) {
-    flushInterval = flushIntervalSec * SECONDS;
+    config.setFlushInterval(flushIntervalSec * AggregationConfig.SECONDS);
   }
 
   public void setMaxAggregateSize(int maxAggregateSize) {
-    this.maxAggregateSize = maxAggregateSize;
+    config.setMaxAggregateSize(maxAggregateSize);
   }
 
   public void setMaxObjectsInAggregate(int maxObjectsInAggregate) {
-    this.maxObjectsInAggregate = maxObjectsInAggregate;
+    config.setMaxObjectsInAggregate(maxObjectsInAggregate);
   }
 
   public void setRenewThreshold(int expirationRenewThresholdHrs) {
-    this.expirationRenewThreshold = expirationRenewThresholdHrs * HOURS;
+    config.setExpirationRenewThreshold(expirationRenewThresholdHrs * AggregationConfig.HOURS);
   }
 
   public void setConsolidationInterval(long consolidationIntervalSec) {
-    this.consolidationInterval = consolidationIntervalSec * SECONDS;
+    config.setConsolidationInterval(consolidationIntervalSec * AggregationConfig.SECONDS);
   }
 
   public void setConsolidationThreshold(long consolidationThresholdSec) {
-    this.consolidationThreshold = consolidationThresholdSec * SECONDS;
+    config.setConsolidationThreshold(consolidationThresholdSec * AggregationConfig.SECONDS);
   }
 
   public void setConsolidationMinObjectsPerAggregate(int minObjectsInAggregateArg) {
-    this.consolidationMinObjectsInAggregate = minObjectsInAggregateArg;
+    config.setConsolidationMinObjectsInAggregate(minObjectsInAggregateArg);
   }
 
   public void setConsolidationMinUtilization(double minUtilization) {
-    this.consolidationMinComponentsAlive = minUtilization;
+    config.setConsolidationMinComponentsAlive(minUtilization);
   }
 
   public Past getAggregateStore() {
