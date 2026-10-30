@@ -51,7 +51,6 @@ import rice.pastry.NodeSetEventSource;
 import rice.pastry.NodeSetListener;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.SimilarSet;
-import rice.pastry.messaging.Message;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 /**
@@ -350,14 +349,6 @@ public class LeafSetTest {
       return LIVENESS_ALIVE;
     }
 
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public int proximity() {
-      return 1;
-    }
-
     public boolean ping() {
       return true;
     }
@@ -373,13 +364,6 @@ public class LeafSetTest {
     public int hashCode() {
       return id.hashCode();
     }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public void receiveMessage(Message m) {
-    };
 
     public int compareTo(TestNodeHandle o) {
       return id.compareTo(((TestNodeHandle) o).id);
