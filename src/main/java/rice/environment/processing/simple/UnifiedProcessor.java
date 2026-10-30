@@ -67,7 +67,7 @@ public class UnifiedProcessor extends SimpleProcessor {
 
     };
     // kill the blocking io thread
-    bioThread.destroy();
+    bioThread.shutdown();
   }
 
   @Override

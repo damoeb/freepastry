@@ -63,8 +63,11 @@ public class BlockingIOThread extends Thread {
     }
   }
 
-  @SuppressWarnings("deprecation")
-  public void destroy() {
+  /**
+   * Stops the thread after its current request. Unlike the removed
+   * {@code Thread.destroy()}, this is a cooperative shutdown.
+   */
+  public void shutdown() {
     running = false;
     workQ.destroy();
   }

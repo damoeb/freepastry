@@ -64,13 +64,16 @@ public class ProcessingThread extends Thread {
         if (e != null)
           e.run();
       } catch (java.lang.InterruptedException ignored) {
-        // do nothing: destroy() interrupts the thread to stop it
+        // do nothing: shutdown() interrupts the thread to stop it
       }
     }
   }
 
-  @SuppressWarnings("deprecation")
-  public void destroy() {
+  /**
+   * Stops the thread after its current request. Unlike the removed
+   * {@code Thread.destroy()}, this is a cooperative shutdown.
+   */
+  public void shutdown() {
     running = false;
     interrupt();
   }

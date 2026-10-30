@@ -113,9 +113,9 @@ public class SimpleProcessor implements Processor {
   }
 
   public void destroy() {
-    THREAD.destroy();
+    THREAD.shutdown();
     QUEUE.clear();
-    bioThread.destroy();
+    bioThread.shutdown();
     workQueue.destroy();
   }
 
