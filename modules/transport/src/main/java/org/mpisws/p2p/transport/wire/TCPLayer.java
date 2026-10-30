@@ -135,6 +135,7 @@ public class TCPLayer extends SelectionKeyHandler {
   }
 
   public void acceptSockets(final boolean b) {
+    if (key == null) return; // no TCP server, nothing to accept from
     Runnable r = () -> {
       if (b) {
         key.interestOps(key.interestOps() | SelectionKey.OP_ACCEPT);
