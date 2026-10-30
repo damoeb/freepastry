@@ -100,6 +100,8 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
   private final int maxGoneAge;
   // map from Id's -> NodeHandle's to keep things unique per NodeId
   private final Map<rice.p2p.commonapi.Id,GoneSetEntry> gone;
+  // guards gone; private, so that code holding a reference to this listener can't contend for it
+  private final Object goneLock = new Object();
 
   private final Environment env;
 
@@ -129,32 +131,34 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
     pastryNode.getRoutingTable().addNodeSetListener(this);
   }
 
-  private synchronized void doGoneMaintainence() {
-    Iterator<GoneSetEntry> it = gone.values().iterator();
-    long now = env.getTimeSource().currentTimeMillis();
+  private void doGoneMaintainence() {
+    synchronized (goneLock) {
+      Iterator<GoneSetEntry> it = gone.values().iterator();
+      long now = env.getTimeSource().currentTimeMillis();
 
-    logger.debug("Doing maintenance in PartitionHandler {}", now);
+      logger.debug("Doing maintenance in PartitionHandler {}", now);
 
-    logger.trace("gone size 1 is {} of {}", gone.size(), maxGoneSize);
+      logger.trace("gone size 1 is {} of {}", gone.size(), maxGoneSize);
 
-    while (it.hasNext()) {
-      GoneSetEntry g = (GoneSetEntry)it.next();
-      if (now - g.timestamp > maxGoneAge) { // toss if too old
-        logger.atTrace().log(() -> "Removing "+g+" from gone due to expiry");
-        it.remove();
-      } else if (g.nh.getLiveness() > NodeHandle.LIVENESS_DEAD) { // toss if epoch changed
-        logger.atTrace().log(() -> "Removing "+g+" from gone due to death");
-        it.remove();
+      while (it.hasNext()) {
+        GoneSetEntry g = (GoneSetEntry)it.next();
+        if (now - g.timestamp > maxGoneAge) { // toss if too old
+          logger.atTrace().log(() -> "Removing "+g+" from gone due to expiry");
+          it.remove();
+        } else if (g.nh.getLiveness() > NodeHandle.LIVENESS_DEAD) { // toss if epoch changed
+          logger.atTrace().log(() -> "Removing "+g+" from gone due to death");
+          it.remove();
+        }
       }
-    }
 
-    logger.trace("gone size 2 is {} of {}", gone.size(), maxGoneSize);
+      logger.trace("gone size 2 is {} of {}", gone.size(), maxGoneSize);
 
-    while (gone.size() > maxGoneSize) {
-      Object key = gone.keySet().iterator().next();
-      gone.remove(key);
+      while (gone.size() > maxGoneSize) {
+        Object key = gone.keySet().iterator().next();
+        gone.remove(key);
+      }
+      logger.trace("gone size 3 is {} of {}", gone.size(), maxGoneSize);
     }
-    logger.trace("gone size 3 is {} of {}", gone.size(), maxGoneSize);
   }
 
   private List<NodeHandle> getRoutingTableAsList() {
@@ -192,7 +196,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
    * have left the routing table or LeafSet, and the routing table is empty.
    */
   public NodeHandle getCandidateNode() {
-    synchronized (this) {
+    synchronized (goneLock) {
       int which = env.getRandomSource().nextInt(maxGoneSize);
       logger.trace("getGone choosing node {} from gone or routing table", which);
 
@@ -264,13 +268,13 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
   public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
     if (nodeSetEventSource.equals(pastryNode.getLeafSet())) {
       if (added) {
-        synchronized(this) {
+        synchronized (goneLock) {
           gone.remove(handle.getId());
         }
       }
     }
     if (!added) {
-      synchronized (this) {
+      synchronized (goneLock) {
         if (handle.getLiveness() == NodeHandle.LIVENESS_DEAD) {
           if (gone.containsKey(handle.getId())) {
             logger.trace("PartitionHandler updating node {}", handle);

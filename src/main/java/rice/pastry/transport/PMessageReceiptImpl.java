@@ -49,6 +49,9 @@ public class PMessageReceiptImpl implements PMessageReceipt {
   Map<String, Object> options;
   boolean cancelled = false;
 
+  // a private lock, so that code holding a reference to this object can't contend for it
+  private final Object lock = new Object();
+
   public PMessageReceiptImpl(Message msg, Map<String, Object> options) {
     this.message = msg;
     this.options = options;
@@ -80,7 +83,7 @@ public class PMessageReceiptImpl implements PMessageReceipt {
    */
   public boolean cancel() {
     boolean callCancel = false;
-    synchronized(this) {
+    synchronized(lock) {
       if (cancelled) return false;
       cancelled = true;
       if (internal != null) callCancel = true;
@@ -96,7 +99,7 @@ public class PMessageReceiptImpl implements PMessageReceipt {
    */
   public void setInternal(MessageRequestHandle<NodeHandle, RawMessage> name) {
     boolean callCancel = false;
-    synchronized(this) {
+    synchronized(lock) {
       if (internal != null && internal != name) {
         throw new RuntimeException("Internal already set old:"+internal+" new:"+name);
       }

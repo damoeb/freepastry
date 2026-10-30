@@ -55,6 +55,9 @@ public class AttachableCancellable implements Cancellable {
    */
   Collection<Cancellable> subCancellable = new ArrayList<Cancellable>();
 
+  // a private lock, so that code holding a reference to this object can't contend for it
+  private final Object lock = new Object();
+
   public boolean isCancelled() {
     return subCancellable == null;
   }
@@ -64,7 +67,7 @@ public class AttachableCancellable implements Cancellable {
    */
   public boolean cancel() {
     Collection<Cancellable> delme;
-    synchronized(this) {
+    synchronized(lock) {
       if (subCancellable == null) return true;
       delme = subCancellable;
       subCancellable = null;
@@ -79,7 +82,7 @@ public class AttachableCancellable implements Cancellable {
   public void attach(Cancellable c) {
     if (c == null) return;
     boolean cancel = false;
-    synchronized(this) {
+    synchronized(lock) {
       if (subCancellable == null) {
         cancel = true;
       } else {
@@ -93,7 +96,7 @@ public class AttachableCancellable implements Cancellable {
 
   public void detach(Cancellable c) {
     if (c == null) return;
-    synchronized(this) {
+    synchronized(lock) {
       if (subCancellable == null) return;
       subCancellable.remove(c);
     }
