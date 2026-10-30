@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.SocketCountListener;
@@ -99,6 +100,7 @@ import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.FutureContinuation;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.logging.Slf4jLogManager;
@@ -1108,42 +1110,24 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
      * to deadlock.  By putting this on the selector thread, we make sure the selector is not
      * selecting.
      */
-    final ArrayList<PastryNode> pn = new ArrayList<PastryNode>(1);
-    final ArrayList<IOException> re = new ArrayList<IOException>(1);
-    Runnable r = () -> {
-      synchronized(pn) {
-        newNodeSelector(nodeId, pAddress, new Continuation<PastryNode, IOException>() {
-
-          public void receiveResult(PastryNode node) {
-            synchronized(pn) {
-              pn.add(node);
-              pn.notify();
-            }
-          }
-
-          public void receiveException(IOException exception) {
-            synchronized(pn) {
-              re.add(exception);
-              pn.notify();
-            }
-          }
-        }, null);
-      }
-    };
+    final FutureContinuation<PastryNode, IOException> result = new FutureContinuation<PastryNode, IOException>();
+    Runnable r = () -> newNodeSelector(nodeId, pAddress, result, null);
     if (environment.getSelectorManager().isSelectorThread()) {
       r.run();
     } else {
       environment.getSelectorManager().invoke(r);
     }
-    synchronized(pn) {
-      if (pn.isEmpty() && re.isEmpty()) {
-        try { pn.wait(); } catch (InterruptedException ie) { throw new RuntimeException(ie); }
-      }
+    try {
+      return result.future().get();
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(ie);
+    } catch (ExecutionException ee) {
+      Exception e = FutureContinuation.toException(ee);
+      if (e instanceof IOException) throw (IOException)e;
+      if (e instanceof RuntimeException) throw (RuntimeException)e;
+      throw new RuntimeException(e);
     }
-    if (pn.isEmpty()) {
-      throw re.get(0);
-    }
-    return pn.get(0);
   }
 
   /**

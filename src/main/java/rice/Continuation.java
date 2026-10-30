@@ -37,6 +37,8 @@ advised of the possibility of such damage.
 
 package rice;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.selector.SelectorManager;
@@ -217,14 +219,13 @@ public interface Continuation<R, E extends Exception> {
    */
   public static class ExternalContinuation<R, E extends Exception> implements Continuation<R, E> {
 
-    private Exception exception;
-    private R result;
-    private boolean done = false;
+    private volatile Exception exception;
+    private volatile R result;
+    private final CountDownLatch done = new CountDownLatch(1);
 
-    public synchronized void receiveResult(R o) {
+    public void receiveResult(R o) {
       result = o;
-      done = true;
-      notify();
+      done.countDown();
     }
 
     public void receiveException(E e) {
@@ -232,10 +233,9 @@ public interface Continuation<R, E extends Exception> {
     }
 
     // also used by ExternalContinuationRunnable for exceptions of any type
-    private synchronized void fail(Exception e) {
+    private void fail(Exception e) {
       exception = e;
-      done = true;
-      notify();
+      done.countDown();
     }
 
     public R getResult() {
@@ -250,11 +250,9 @@ public interface Continuation<R, E extends Exception> {
       return exception;
     }
 
-    public synchronized void sleep() {
+    public void sleep() {
       try {
-        while (! done) {
-          wait();
-        }
+        done.await();
       } catch (InterruptedException e) {
         exception = e;
         // keep the interrupt visible to the caller
