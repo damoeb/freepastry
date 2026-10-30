@@ -230,9 +230,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       public Message deserialize(InputBuffer buf, short type, int priority,
           NodeHandle sender) throws IOException {
         // the only message type, AggregationTimeoutMessage, is scheduled locally and never deserialized
-        switch(type) {
-        }
-        return null;
+        throw new IOException("Unknown type: " + type + " in " + AggregationImpl.this);
       }
     });
 
