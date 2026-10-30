@@ -42,7 +42,7 @@ import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 
 /**
  * The type ids of PeerReview's messages, written as one byte after
- * {@link org.mpisws.p2p.transport.peerreview.PeerReviewConstants#PEER_REVIEW_COMMIT} and read by
+ * {@link org.mpisws.p2p.transport.peerreview.PeerReview#PEER_REVIEW_COMMIT} and read by
  * {@link org.mpisws.p2p.transport.peerreview.PeerReviewImpl}. They replace the former
  * {@code PeerReviewConstants.MSG_*} constants and keep their values.
  */

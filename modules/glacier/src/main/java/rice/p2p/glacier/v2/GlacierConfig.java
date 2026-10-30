@@ -45,9 +45,6 @@ import rice.environment.random.RandomSource;
 /**
  * The tuning parameters of a {@link GlacierImpl}, read once from the {@code p2p_glacier_*} parameters:
  * each component comes from the key {@code p2p_glacier_<component name>}. Times are in milliseconds.
- * Parameters that can be changed at runtime ({@code syncInterval}, through
- * {@link GlacierImpl#setSyncInterval(int)}) hold only the initial value here; the collaborator that uses
- * such a parameter keeps the current value.
  */
 public record GlacierConfig(
     boolean logStatistics,
