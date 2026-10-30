@@ -53,6 +53,6 @@ public class EuclideanNetwork<Identifier, MessageType> extends NetworkSimulatorI
    * Constructor.
    */
   public EuclideanNetwork(Environment env) {
-    super(env, new EuclideanProximityGenerator(env.getParameters().getInt("pastry_direct_max_diameter")));
+    super(env, new EuclideanProximityGenerator(NetworkSimulatorConfig.fromParameters(env.getParameters()).maxDiameter()));
   }
 }

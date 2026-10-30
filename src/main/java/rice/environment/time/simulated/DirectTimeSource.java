@@ -42,6 +42,7 @@ package rice.environment.time.simulated;
 import java.util.HashSet;
 
 import org.slf4j.Logger;
+import rice.environment.EnvironmentConfig;
 import rice.environment.logging.LogManager;
 import rice.environment.params.Parameters;
 import rice.environment.time.TimeSource;
@@ -74,7 +75,7 @@ public class DirectTimeSource implements TimeSource {
   }
 
   public DirectTimeSource(Parameters p) {
-    this(p.getLong("direct_simulator_start_time"));
+    this(EnvironmentConfig.fromParameters(p).directSimulatorStartTime());
   }
 
   public void setLogManager(LogManager manager) {

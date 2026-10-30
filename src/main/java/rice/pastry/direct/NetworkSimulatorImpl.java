@@ -43,7 +43,6 @@ import org.mpisws.p2p.transport.direct.DirectTransportLayer;
 import org.mpisws.p2p.transport.direct.GenericNetworkSimulator;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.commonapi.CancellableTask;
@@ -57,15 +56,10 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
 
   // TODO: add a listener to the top-level transport layer to notify simulator listeners
   public NetworkSimulatorImpl(Environment env, ProximityGenerator generator) {
-    Parameters params = env.getParameters();
-    if (params.contains("pastry_direct_use_own_random")
-        && params.getBoolean("pastry_direct_use_own_random")) {
-
-      if (params.contains("pastry_direct_random_seed")
-          && !params.getString("pastry_direct_random_seed").equalsIgnoreCase(
-              "clock")) {
-        this.random = new SimpleRandomSource(params
-            .getLong("pastry_direct_random_seed"), env.getLogManager(),
+    NetworkSimulatorConfig config = NetworkSimulatorConfig.fromParameters(env.getParameters());
+    if (config.useOwnRandom()) {
+      if (config.randomSeed().isPresent()) {
+        this.random = new SimpleRandomSource(config.randomSeed().getAsLong(), env.getLogManager(),
             "direct");
       } else {
         this.random = new SimpleRandomSource(env.getLogManager(), "direct");
@@ -75,7 +69,7 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
     }
     generator.setRandom(random);
     this.generator = generator;
-    simulator = new BasicNetworkSimulator<Identifier, MessageType>(env, random, this);
+    simulator = new BasicNetworkSimulator<Identifier, MessageType>(env, random, this, config);
     livenessProvider = simulator;
   }
 

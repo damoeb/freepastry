@@ -52,7 +52,6 @@ import org.mpisws.p2p.transport.direct.GenericNetworkSimulator;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.CancellableTask;
@@ -89,12 +88,16 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   private final int minDelay;
 
   public BasicNetworkSimulator(Environment env, RandomSource random, NetworkSimulator<Identifier, MessageType> sim) {
+    this(env, random, sim, NetworkSimulatorConfig.fromParameters(env.getParameters()));
+  }
+
+  public BasicNetworkSimulator(Environment env, RandomSource random, NetworkSimulator<Identifier, MessageType> sim,
+      NetworkSimulatorConfig config) {
     super(env, random, env.getLogManager().getLogger(BasicNetworkSimulator.class, null));
     this.sim = sim;
     manager.useLoopListeners(false);
-    Parameters params = env.getParameters();
-    maxDiameter = params.getInt("pastry_direct_max_diameter");
-    minDelay = params.getInt("pastry_direct_min_delay");
+    maxDiameter = config.maxDiameter();
+    minDelay = config.minDelay();
     start();
   }
 

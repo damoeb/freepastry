@@ -42,6 +42,7 @@ package rice.environment;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.OptionalLong;
 
 import org.slf4j.Logger;
 import rice.Destructable;
@@ -183,8 +184,7 @@ public class Environment implements Destructable {
       selectorManager = generateDefaultSelectorManager(time, logManager, randomSource);
     }
     if (processor == null) {
-      if (params.contains("environment_use_sim_processor") &&
-          params.getBoolean("environment_use_sim_processor")) {
+      if (EnvironmentConfig.fromParameters(params).useSimProcessor()) {
         processor = new SimProcessor(selectorManager);
       } else {
         processor = generateDefaultProcessor();
@@ -201,14 +201,11 @@ public class Environment implements Destructable {
   }
 
   public static RandomSource generateDefaultRandomSource(Parameters params, LogManager logging) {
-    RandomSource randomSource;
-    if (params.getString("random_seed").equalsIgnoreCase("clock")) {
-      randomSource = new SimpleRandomSource(logging);
-    } else {
-      randomSource = new SimpleRandomSource(params.getLong("random_seed"), logging);
+    OptionalLong seed = EnvironmentConfig.fromParameters(params).randomSeed();
+    if (seed.isEmpty()) {
+      return new SimpleRandomSource(logging);
     }
-
-    return randomSource;
+    return new SimpleRandomSource(seed.getAsLong(), logging);
   }
 
   public static TimeSource generateDefaultTimeSource() {

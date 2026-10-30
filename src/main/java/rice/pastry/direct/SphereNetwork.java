@@ -53,6 +53,6 @@ public class SphereNetwork<Identifier, MessageType> extends NetworkSimulatorImpl
    * Constructor.
    */
   public SphereNetwork(Environment env) {
-    super(env, new SphereNetworkProximityGenerator(env.getParameters().getInt("pastry_direct_max_diameter")));
+    super(env, new SphereNetworkProximityGenerator(NetworkSimulatorConfig.fromParameters(env.getParameters()).maxDiameter()));
   }
 }

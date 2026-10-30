@@ -89,6 +89,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   private final Collection<NodeHandleFactoryListener<? super NodeHandle>> listeners =
     new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>();
 
+  private final NetworkSimulatorConfig simulatorConfig;
 
   /**
    * Main constructor.
@@ -102,12 +103,13 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     env.getParameters().setInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled",120000);
     nidFactory = nf;
     simulator = sim;
+    simulatorConfig = NetworkSimulatorConfig.fromParameters(env.getParameters());
   }
 
   @Override
   protected LeafSetProtocol getLeafSetProtocol(PastryNode pn, LeafSet leafSet,
       RoutingTable routeTable) {
-    if (pn.getEnvironment().getParameters().getBoolean("pastry_direct_guarantee_consistency")) { // true
+    if (simulatorConfig.guaranteeConsistency()) {
       return super.getLeafSetProtocol(pn, leafSet, routeTable);
     } else {
       StandardLeafSetProtocol ret = new StandardLeafSetProtocol(pn,pn.getLocalHandle(),leafSet, routeTable);

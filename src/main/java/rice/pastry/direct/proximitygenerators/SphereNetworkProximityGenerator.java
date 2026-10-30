@@ -38,6 +38,7 @@ package rice.pastry.direct.proximitygenerators;
 
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
+import rice.pastry.direct.NetworkSimulatorConfig;
 import rice.pastry.direct.NodeRecord;
 import rice.pastry.direct.ProximityGenerator;
 
@@ -115,7 +116,7 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
 
   public static void main(String[] argz) {
     System.out.println("hello world");
-    new SphereNetworkProximityGenerator(Environment.directEnvironment().getParameters().getInt("pastry_direct_max_diameter")).test();
+    new SphereNetworkProximityGenerator(NetworkSimulatorConfig.fromParameters(Environment.directEnvironment().getParameters()).maxDiameter()).test();
   }
 
   public void setRandom(RandomSource random) {

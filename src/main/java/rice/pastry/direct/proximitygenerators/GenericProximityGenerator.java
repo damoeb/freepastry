@@ -72,16 +72,17 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
   public GenericProximityGenerator(Environment env, File inFile) throws IOException {
     logger = env.getLogManager().getLogger(GenericProximityGenerator.class, null);
-    maxOverlaySize = env.getParameters().getInt("pastry_direct_gtitm_max_overlay_size");
-    MIN_DIST = env.getParameters().getFloat("pastry_direct_min_delay");
-    float delayFactor = env.getParameters().getFloat("pastry_direct_gtitm_delay_factor");// 1.0
+    GenericProximityConfig config = GenericProximityConfig.fromParameters(env.getParameters());
+    maxOverlaySize = config.maxOverlaySize();
+    MIN_DIST = config.minDelay();
+    float delayFactor = config.delayFactor();
 
     inFile_Matrix = inFile;
     if (inFile_Matrix == null) {
-      inFile_Matrix = new File(env.getParameters().getString("pastry_direct_gtitm_matrix_file"));
+      inFile_Matrix = new File(config.matrixFile());
     }
 
-    setNodesPerStub(env.getParameters().getInt("pastry_direct_gtitm_nodes_per_stub"));// 1
+    setNodesPerStub(config.nodesPerStub());
 
     readOverlayMatrix(delayFactor);
   }
