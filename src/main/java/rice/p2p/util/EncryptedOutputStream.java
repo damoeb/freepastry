@@ -43,7 +43,7 @@ import java.io.OutputStream;
 import java.security.PublicKey;
 
 /**
- * @(#) EncryptedOutputStream.java
+ *
  *
  * Hybrid encryption: a fresh 256-bit AES key k, wrapped with RSA-OAEP (SHA-256, MGF1-SHA-256) under the
  * public key, then the data in AES-256-GCM chunks under k.  The stream therefore looks like

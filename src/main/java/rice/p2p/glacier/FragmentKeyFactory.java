@@ -185,7 +185,7 @@ public class FragmentKeyFactory implements IdFactory {
   /**
    * Creates an empty IdSet.
    *
-   * @Param map The map which to take the keys from to create the IdSet's elements
+   * @param map The map which to take the keys from to create the IdSet's elements
    * @return an empty IdSet
    */
   public IdSet buildIdSet(SortedMap<rice.p2p.commonapi.Id, ?> map) {

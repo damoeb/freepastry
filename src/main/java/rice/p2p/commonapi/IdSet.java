@@ -40,7 +40,7 @@ package rice.p2p.commonapi;
 import java.util.Iterator;
 
 /**
- * @(#) IdSet.java
+ *
  *
  * Represents a set of ids.
  *

@@ -159,8 +159,7 @@ public class Recorder implements MyEvents {
     // loop to construct the nodes/apps
     for (int curNode = 0; curNode < numNodes; curNode++) {
 
-      // construct a node, passing the null boothandle on the first loop will
-      // cause the node to start its own ring
+      // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
       final ArrayList<PastryNode> nodeContainer = new ArrayList<PastryNode>(1);
       env.getSelectorManager().invoke(() -> {
         PastryNode node = (PastryNode)factory.newNode();
@@ -342,9 +341,9 @@ public class Recorder implements MyEvents {
   }
 
   /**
-   * Usage: java [-cp FreePastry- <version>.jar]
-   * rice.tutorial.lesson6.ScribeTutorial localbindport bootIP bootPort numNodes
-   * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001
+   * Usage: java -cp target/freepastry-<version>-jar-with-dependencies.jar
+   * org.mpisws.p2p.testing.transportlayer.replay.Recorder localbindport bootIP bootPort numNodes
+   * example java org.mpisws.p2p.testing.transportlayer.replay.Recorder 9001 pokey.cs.almamater.edu 9001
    */
   public static void main(String[] args) throws Exception {
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);

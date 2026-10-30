@@ -702,7 +702,7 @@ public class RoutingTable implements NodeSetEventSource {
   }
 
   /**
-   * Unregisters as an observer on all nodehandles.
+   * Unregisters as a NodeHandleListener on all node handles.
    */
   public void destroy() {
     for (RouteSet[] routeSet : routingTable) {

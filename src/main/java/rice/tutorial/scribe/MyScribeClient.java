@@ -221,8 +221,8 @@ public class MyScribeClient implements ScribeMultiClient, Application {
   }
 
   public NodeHandle getParent() {
-    // NOTE: getParent() is part of the Scribe interface now; the cast to
-    // ScribeImpl is only needed with 1.4.1_01 or older.
+    // NOTE: getParent() is part of the Scribe interface, so the cast to
+    // ScribeImpl is not needed.
     return ((ScribeImpl)myScribe).getParent(myTopic);
   }
 

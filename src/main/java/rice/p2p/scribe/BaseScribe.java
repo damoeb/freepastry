@@ -44,7 +44,8 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.NodeHandle;
 
 /**
- * Scribe functions not specific to serialization type.
+ * The Scribe functions whose signatures do not involve {@link ScribeContent}. {@link Scribe} adds the
+ * subscribe, publish and anycast methods that carry content.
  *
  * @author Jeff Hoye
  *

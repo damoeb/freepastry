@@ -367,8 +367,8 @@ public abstract class PastryAppl
    * Called by a layered Pastry application to obtain a copy of the
    * routing table. The routing table contains the nodeId to IP
    * address bindings of R nodes that share the local node's id in
-   * the first n digits, and differ in the n+1th digit, for 0 <= n
-   * <= ceiling(log_2^b N), where N is the total number of currently
+   * the first n digits, and differ in the n+1th digit, for 0 &lt;= n
+   * &lt;= ceiling(log_2^b N), where N is the total number of currently
    * live nodes in the Pastry network. The routing table may be
    * incomplete, may contain nodes that cannot be reached from the
    * local node or have failed, and the table may change at any

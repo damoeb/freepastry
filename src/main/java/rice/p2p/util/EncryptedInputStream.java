@@ -43,7 +43,7 @@ import java.io.InputStream;
 import java.security.PrivateKey;
 
 /**
-* @(#) EncryptedInputStream.java
+*
  *
  * Reads what {@link EncryptedOutputStream} writes, decrypting the AES key with the private key, and decrypting
  * and authenticating each chunk.  A chunk that was changed, dropped, repeated or moved makes the read throw a

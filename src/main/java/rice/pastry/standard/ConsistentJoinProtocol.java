@@ -308,7 +308,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    * to call you faulty.
    *
    * This method will call PastryNode.setReady(false) which will
-   * stop delivering messages, and then via the observer pattern
+   * stop delivering messages, and then via notifyReadyObservers()
    * will call this.update(PN, FALSE) which will call setReady()
    * which will begin the join process again.
    *

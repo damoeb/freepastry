@@ -43,7 +43,7 @@ import java.util.SortedMap;
 import rice.environment.random.RandomSource;
 
 /**
- * @(#) IdFactory.java This interface provides applications with a way of generating Ids in a
+ * This interface provides applications with a way of generating Ids in a
  * protocol-specific manner.
  *
  * @version $Id: IdFactory.java 3613 2007-02-15 14:45:14Z jstewart $
@@ -149,7 +149,7 @@ public interface IdFactory {
   /**
    * Creates an empty IdSet.
    *
-   * @Param map The map which to take the keys from to create the IdSet's elements
+   * @param map The map which to take the keys from to create the IdSet's elements
    * @return an empty IdSet
    */
   public IdSet buildIdSet(SortedMap<Id, ?> map);

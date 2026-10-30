@@ -95,7 +95,7 @@ public class DistTutorial {
       // This will return null if we there is no node at that location
       NodeHandle bootHandle = ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
 
-      // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
+      // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
       PastryNode node = factory.newNode();
 
       // construct a new MyApp
@@ -169,7 +169,7 @@ public class DistTutorial {
 
   /**
    * Usage:
-   * java [-cp FreePastry-<version>.jar] rice.tutorial.transportlayer.DistTutorial localbindport bootIP bootPort numNodes bandwidth;
+   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.transportlayer.DistTutorial localbindport bootIP bootPort numNodes bandwidth;}
    * example java rice.tutorial.transportlayer.DistTutorial 9001 pokey.cs.almamater.edu 9001 10 1000
    */
   public static void main(String[] args) throws Exception {

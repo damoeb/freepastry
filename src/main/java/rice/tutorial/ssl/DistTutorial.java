@@ -212,8 +212,8 @@ public class DistTutorial {
 
   /**
    * Usage:
-   * java [-cp FreePastry-<version>.jar] rice.tutorial.lesson3.DistTutorial localbindport bootIP bootPort
-   * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001
+   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.ssl.DistTutorial localbindport bootIP bootPort}
+   * example java rice.tutorial.ssl.DistTutorial 9001 pokey.cs.almamater.edu 9001
    */
   public static void main(String[] args) throws Exception {
     // Loads pastry settings

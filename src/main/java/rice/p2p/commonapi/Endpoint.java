@@ -51,7 +51,7 @@ import rice.p2p.commonapi.rawserialization.NodeHandleReader;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
- * @(#) Endpoint.java
+ *
  *
  * Interface which represents a node in a peer-to-peer system, regardless of
  * the underlying protocol.  This represents the *local* node, upon which applications

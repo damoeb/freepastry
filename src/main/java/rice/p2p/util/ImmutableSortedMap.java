@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.SortedMap;
 
 /**
- * @(#) ImmutableSortedMap.java
+ *
  *
  * Class which is an implementation of a sorted map which wraps and protects an
  * internal sorted map.  Any attempts to modify the underlying map will result in
@@ -72,10 +72,10 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
 
   /**
     * Returns the comparator associated with this sorted map, or
-   * <tt>null</tt> if it uses its keys' natural ordering.
+   * <code>null</code> if it uses its keys' natural ordering.
    *
    * @return the comparator associated with this sorted map, or
-   *          <tt>null</tt> if it uses its keys' natural ordering.
+   *          <code>null</code> if it uses its keys' natural ordering.
    */
   public Comparator<? super K> comparator() {
     return map.comparator();
@@ -83,7 +83,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
 
   /**
    * Returns a view of the portion of this sorted map whose keys range from
-   * <tt>fromKey</tt>, inclusive, to <tt>toKey</tt>, exclusive.
+   * <code>fromKey</code>, inclusive, to <code>toKey</code>, exclusive.
    *
    * @param fromKey low endpoint (inclusive) of the subMap.
    * @param toKey high endpoint (exclusive) of the subMap.
@@ -106,7 +106,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
 
   /**
    * Returns a view of the portion of this sorted map whose keys are greater
-   * than or equal to <tt>fromKey</tt>.
+   * than or equal to <code>fromKey</code>.
    *
    * @param fromKey low endpoint (inclusive) of the tailMap.
    * @return a view of the specified final range of this sorted map.
@@ -137,8 +137,8 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
 
   /**
    * Returns the number of key-value mappings in this map.  If the
-   * map contains more than <tt>Integer.MAX_VALUE</tt> elements, returns
-   * <tt>Integer.MAX_VALUE</tt>.
+   * map contains more than <code>Integer.MAX_VALUE</code> elements, returns
+   * <code>Integer.MAX_VALUE</code>.
    *
    * @return the number of key-value mappings in this map.
    */
@@ -147,31 +147,31 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
   }
 
   /**
-   * Returns <tt>true</tt> if this map contains no key-value mappings.
+   * Returns <code>true</code> if this map contains no key-value mappings.
    *
-   * @return <tt>true</tt> if this map contains no key-value mappings.
+   * @return <code>true</code> if this map contains no key-value mappings.
    */
   public boolean isEmpty() {
     return map.isEmpty();
   }
 
   /**
-   * Returns <tt>true</tt> if this map contains a mapping for the specified
+   * Returns <code>true</code> if this map contains a mapping for the specified
    * key.
    *
    * @param key key whose presence in this map is to be tested.
-   * @return <tt>true</tt> if this map contains a mapping for the specified
+   * @return <code>true</code> if this map contains a mapping for the specified
    */
   public boolean containsKey(Object key) {
     return map.containsKey(key);
   }
 
   /**
-   * Returns <tt>true</tt> if this map maps one or more keys to the
+   * Returns <code>true</code> if this map maps one or more keys to the
    * specified value.
    *
    * @param value value whose presence in this map is to be tested.
-   * @return <tt>true</tt> if this map maps one or more keys to the
+   * @return <code>true</code> if this map maps one or more keys to the
    *         specified value.
   */
   public boolean containsValue(Object value) {
@@ -180,11 +180,11 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
 
   /**
    * Returns the value to which this map maps the specified key.  Returns
-   * <tt>null</tt> if the map contains no mapping for this key.
+   * <code>null</code> if the map contains no mapping for this key.
    *
    * @param key key whose associated value is to be returned.
    * @return the value to which this map maps the specified key, or
-   *         <tt>null</tt> if the map contains no mapping for this key.
+   *         <code>null</code> if the map contains no mapping for this key.
    */
   public V get(Object key) {
     return map.get(key);
@@ -199,13 +199,13 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    *
    * @param key key with which the specified value is to be associated.
    * @param value value to be associated with the specified key.
-   * @return previous value associated with specified key, or <tt>null</tt>
-   *         if there was no mapping for key.  A <tt>null</tt> return can
-   *         also indicate that the map previously associated <tt>null</tt>
+   * @return previous value associated with specified key, or <code>null</code>
+   *         if there was no mapping for key.  A <code>null</code> return can
+   *         also indicate that the map previously associated <code>null</code>
    *         with the specified key, if the implementation supports
-   *         <tt>null</tt> values.
+   *         <code>null</code> values.
    *
-   * @throws UnsupportedOperationException if the <tt>put</tt> operation is
+   * @throws UnsupportedOperationException if the <code>put</code> operation is
    *            not supported by this map.
    */
   public V put(K key, V value) {
@@ -215,12 +215,12 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
   /**
    * Removes the mapping for this key from this map if it is present
    * (optional operation).   More formally, if this map contains a mapping
-   * from key <tt>k</tt> to value <tt>v</tt> such that
+   * from key <code>k</code> to value <code>v</code> such that
    * <code>(key==null ?  k==null : key.equals(k))</code>, that mapping
    * is removed.
    *
    * @param key key whose mapping is to be removed from the map.
-   * @return previous value associated with specified key, or <tt>null</tt>
+   * @return previous value associated with specified key, or <code>null</code>
    *         if there was no mapping for key.
    */
   public V remove(Object key) {
@@ -253,9 +253,9 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * vice-versa.  If the map is modified while an iteration over the set is
    * in progress, the results of the iteration are undefined.  The set
    * supports element removal, which removes the corresponding mapping from
-   * the map, via the <tt>Iterator.remove</tt>, <tt>Set.remove</tt>,
-   * <tt>removeAll</tt> <tt>retainAll</tt>, and <tt>clear</tt> operations.
-   * It does not support the add or <tt>addAll</tt> operations.
+   * the map, via the <code>Iterator.remove</code>, <code>Set.remove</code>,
+   * <code>removeAll</code> <code>retainAll</code>, and <code>clear</code> operations.
+   * It does not support the add or <code>addAll</code> operations.
    *
    * @return a set view of the keys contained in this map.
    */
@@ -270,9 +270,9 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * iteration over the collection is in progress, the results of the
    * iteration are undefined.  The collection supports element removal,
    * which removes the corresponding mapping from the map, via the
-   * <tt>Iterator.remove</tt>, <tt>Collection.remove</tt>,
-   * <tt>removeAll</tt>, <tt>retainAll</tt> and <tt>clear</tt> operations.
-   * It does not support the add or <tt>addAll</tt> operations.
+   * <code>Iterator.remove</code>, <code>Collection.remove</code>,
+   * <code>removeAll</code>, <code>retainAll</code> and <code>clear</code> operations.
+   * It does not support the add or <code>addAll</code> operations.
    *
    * @return a collection view of the values contained in this map.
    */
@@ -287,9 +287,9 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    * If the map is modified while an iteration over the set is in progress,
    * the results of the iteration are undefined.  The set supports element
    * removal, which removes the corresponding mapping from the map, via the
-   * <tt>Iterator.remove</tt>, <tt>Set.remove</tt>, <tt>removeAll</tt>,
-   * <tt>retainAll</tt> and <tt>clear</tt> operations.  It does not support
-   * the <tt>add</tt> or <tt>addAll</tt> operations.
+   * <code>Iterator.remove</code>, <code>Set.remove</code>, <code>removeAll</code>,
+   * <code>retainAll</code> and <code>clear</code> operations.  It does not support
+   * the <code>add</code> or <code>addAll</code> operations.
    *
    * @return a set view of the mappings contained in this map.
    */

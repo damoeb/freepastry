@@ -40,7 +40,7 @@ advised of the possibility of such damage.
  * {@link rice.p2p.commonapi.rawserialization.OutputBuffer} and is identified on the wire by a
  * {@code short} type; each application registers a
  * {@link rice.p2p.commonapi.rawserialization.MessageDeserializer} that rebuilds messages from an
- * {@link rice.p2p.commonapi.rawserialization.InputBuffer}. Type 0 is reserved for messages that fall
- * back to Java serialization.
+ * {@link rice.p2p.commonapi.rawserialization.InputBuffer}. Type 0 is reserved: routing a message of
+ * type 0 throws {@link java.lang.IllegalArgumentException}.
  */
 package rice.p2p.commonapi.rawserialization;

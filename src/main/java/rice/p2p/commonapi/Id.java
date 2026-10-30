@@ -41,7 +41,7 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
- * @(#) Id.java This interface is an abstraction of an Id (or key) from the CommonAPI paper.
+ * This interface is an abstraction of an Id (or key) from the CommonAPI paper.
  *
  * @version $Id: Id.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Alan Mislove

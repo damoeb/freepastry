@@ -41,7 +41,7 @@ import java.util.Set;
 import java.util.SortedMap;
 
 /**
- * @(#) ReverseTreeMap.java
+ *
  *
  * Class which is an implementation of a reverse tree map, maintaining tree
  * maps for both the keys and values
@@ -185,7 +185,7 @@ public class ReverseTreeMap<K,V> {
   /**
    * Method which returns the key map
    *
-   * @retun The key Map
+   * @return The key Map
    */
   public SortedMap<K,V> keyMap() {
     return normal;

@@ -98,8 +98,7 @@ public class PastTutorial {
 
     // loop to construct the nodes/apps
     for (int curNode = 0; curNode < numNodes; curNode++) {
-      // construct a node, passing the null boothandle on the first loop will
-      // cause the node to start its own ring
+      // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
       PastryNode node = factory.newNode();
 
       // used for generating PastContent object Ids.
@@ -110,7 +109,8 @@ public class PastTutorial {
       String storageDirectory = "./storage"+node.getId().hashCode();
 
       // create the persistent part; to keep it on disk, use
-      // new PersistentStorage(idf, storageDirectory, 4 * 1024 * 1024, node.getEnvironment())
+      // new PersistentStorage(idf, new PastStorageSerializer(() -> past), storageDirectory,
+      //     4 * 1024 * 1024, node.getEnvironment())
       Storage stor = new MemoryStorage(idf);
       Past app = new PastImpl(node, new StorageManagerImpl(idf, stor, new LRUCache(
           new MemoryStorage(idf), 512 * 1024, node.getEnvironment())), 0, "");
@@ -237,7 +237,7 @@ public class PastTutorial {
   }
 
   /**
-   * Usage: java [-cp FreePastry- <version>.jar]
+   * Usage: {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar}
    * rice.tutorial.past.PastTutorial localbindport bootIP bootPort numNodes
    * example java rice.tutorial.past.PastTutorial 9001 pokey.cs.almamater.edu 9001 10
    */

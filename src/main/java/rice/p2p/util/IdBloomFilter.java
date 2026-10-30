@@ -46,7 +46,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
- * @(#) IdBloomFilter.java
+ *
  *
  * Class which is an implementation of a bloom filter which takes Ids as elements.
  * This class simply wraps a normal BloomFilter, but provides convenient methods

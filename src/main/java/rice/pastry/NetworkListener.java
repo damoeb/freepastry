@@ -43,12 +43,12 @@ import java.net.InetSocketAddress;
  * Represents a listener to pastry network activity.  This interface will notify
  * you of opening/closing sockets, and all network traffic.
  *
- * <p/>You hear about opening/closing sockets via <code>channelOpened()</code>/<code>channelClosed()</code> methods.
+ * <p>You hear about opening/closing sockets via <code>channelOpened()</code>/<code>channelClosed()</code> methods.
  *
- * <p/>You hear about network input via <code>dataReceived()</code> and network output via
+ * <p>You hear about network input via <code>dataReceived()</code> and network output via
  * <code>dataSent()</code>.
  *
- * <p/>channelOpened() has a reason for opening the channel.  The reason falls under
+ * <p>channelOpened() has a reason for opening the channel.  The reason falls under
  * matrix of reasons:
  * <ul>
  *  <li>It may have been initiated locally, or be accepting of the socket from a
@@ -59,7 +59,7 @@ import java.net.InetSocketAddress;
  * just requests internal state from FreePastry) or for an application level socket.</li>
  * </ul>
  *
- * <p/>There are currently the following limitations for NetworkListener regarding
+ * <p>There are currently the following limitations for NetworkListener regarding
  * Application Sockets which may be fixed later:
  * <ol>
  *   <li>when accepting an application socket the reason is REASON_ACC_NORMAL</li>
@@ -67,7 +67,7 @@ import java.net.InetSocketAddress;
  *   have been opened.</li>
  * </ol>
  *
- * <p/>the <code>dataSent()</code>/<code>dataReceived()</code> methods include a wireType.  These tell you if the
+ * <p>the <code>dataSent()</code>/<code>dataReceived()</code> methods include a wireType.  These tell you if the
  * data was TCP/UDP and whether it was part of the SourceRoute
  *
  * @version $Id: NetworkListener.java 3613 2007-02-15 14:45:14Z jstewart $

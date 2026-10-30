@@ -179,8 +179,8 @@ public abstract class CommonAPIAppl extends PastryAppl {
    * @param n nodeHandle of the node whose range is being queried
    * @param r the rank
    * @param key the key
-   * @param cumulative if true, returns ranges for which n is an i-root for 0 <i
-   *          <=r
+   * @param cumulative if true, returns ranges for which n is an i-root for 0 &lt;i
+   *          &lt;=r
    * @return the range of keys, or null if range could not be determined for the
    *         given node and rank
    */

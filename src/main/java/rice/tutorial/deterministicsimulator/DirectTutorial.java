@@ -224,8 +224,8 @@ public class DirectTutorial {
 
   /**
    * Usage:
-   * java [-cp FreePastry-<version>.jar] rice.tutorial.direct.DirectTutorial numNodes randSeed
-   * example java rice.tutorial.direct.DirectTutorial 100 5
+   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.deterministicsimulator.DirectTutorial numNodes randSeed}
+   * example java rice.tutorial.deterministicsimulator.DirectTutorial 100 5
    */
   public static void main(String[] args) throws Exception {
     // Loads pastry settings, and sets up the Environment for simulation

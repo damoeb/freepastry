@@ -188,8 +188,8 @@ public class LookupService implements Application {
 
   /**
    * Requests a replicaSet from a node across the ring. This method will return
-   * via its continuation the set of <tt>num</tt> NodeHandles that are in
-   * <tt>id</tt>'s replicaSet. Calling requestNodeHandles with a <tt>num</tt>
+   * via its continuation the set of <code>num</code> NodeHandles that are in
+   * <code>id</code>'s replicaSet. Calling requestNodeHandles with a <code>num</code>
    * of 1 will return the node currently responsible for Id id.
    *
    * If there is a network problem or the Id of interest is not currently owned
@@ -267,7 +267,7 @@ public class LookupService implements Application {
   /**
    * Find the primary replica of a key. This is the node with the Id closest to
    * the key in pastry. This method will return via its continuation the
-   * NodeHandle that is closest to <tt>id</tt>.
+   * NodeHandle that is closest to <code>id</code>.
    *
    * If there is a network problem or the Id of interest is not currently owned
    * by any node (for example due to churn in the overlay), the continuation

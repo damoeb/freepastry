@@ -378,9 +378,9 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * with an offset given by this Id. The set is useful for constructing, for instance, Scribe trees
    * with disjoint sets of interior nodes.
    *
-   * @param num the number of Ids in the set (must be <= 2^b)
+   * @param num the number of Ids in the set (must be &lt;= 2^b)
    * @param b the routing base (as a power of 2)
-   * @param i the index of the requested member of the set (0<=i<num; the 0-th member is this)
+   * @param i the index of the requested member of the set (0&lt;=i&lt;num; the 0-th member is this)
    * @return the resulting set member, or null in case of illegal arguments
    */
   public Id getAlternateId(int num, int b, int i) {
@@ -501,7 +501,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * Comparison operator for Ids. The comparison that occurs is a numerical comparison.
    *
    * @param obj the Id to compare with.
-   * @return negative if this < obj, 0 if they are equal and positive if this > obj.
+   * @return negative if this &lt; obj, 0 if they are equal and positive if this &gt; obj.
    */
   public int compareTo(rice.p2p.commonapi.Id obj) {
     Id oth = (Id) obj;
@@ -804,7 +804,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   }
 
   /**
-   * Similar to toString(), but not wrapped by <0x ..>
+   * Similar to toString(), but not wrapped by &lt;0x ..&gt;
    * @return
    */
   public String toStringBare() {
@@ -1019,7 +1019,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
      * Comparison operator. The comparison that occurs is an absolute magnitude comparison.
      *
      * @param obj the Distance to compare with.
-     * @return negative if this < obj, 0 if they are equal and positive if this > obj.
+     * @return negative if this &lt; obj, 0 if they are equal and positive if this &gt; obj.
      */
     public int compareTo(rice.p2p.commonapi.Id.Distance obj) {
       Distance oth = (Distance) obj;

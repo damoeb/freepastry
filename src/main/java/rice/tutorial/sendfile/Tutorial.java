@@ -102,7 +102,7 @@ public class Tutorial {
     for (int curNode = 0; curNode < numNodes; curNode++) {
       // This will return null if we there is no node at that location
 
-      // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
+      // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
       PastryNode node = factory.newNode();
 
       // construct a new MyApp
@@ -161,12 +161,12 @@ public class Tutorial {
 
   /**
    * Usage:
-   * java [-cp FreePastry-<version>.jar] rice.tutorial.appsocket.Tutorial localbindport bootIP bootPort numNodes
+   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.sendfile.Tutorial localbindport bootIP bootPort numNodes}
    *   or
-   * java [-cp FreePastry-<version>.jar] rice.tutorial.appsocket.Tutorial -direct numNodes
+   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.sendfile.Tutorial -direct numNodes}
    *
-   * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10
-   * example java rice.tutorial.DistTutorial -direct 10
+   * example java rice.tutorial.sendfile.Tutorial 9001 pokey.cs.almamater.edu 9001 10
+   * example java rice.tutorial.sendfile.Tutorial -direct 10
    */
   public static void main(String[] args) throws Exception {
     try {

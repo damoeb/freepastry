@@ -38,7 +38,7 @@ advised of the possibility of such damage.
 package rice.p2p.commonapi;
 
 /**
- * @(#) Application.java
+ *
  *
  * Interface which an application must implement in order to run on top of
  * the Node interface.

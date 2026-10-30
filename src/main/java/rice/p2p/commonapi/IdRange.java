@@ -42,7 +42,7 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
- * @(#) IdRange.java
+ *
  *
  * Represents a contiguous range of Ids.
  *

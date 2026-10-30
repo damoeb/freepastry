@@ -43,7 +43,7 @@ import java.util.NoSuchElementException;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
- * @(#) NodeHandleSet.java
+ *
  *
  * An interface to a generic set of node handles.
  *

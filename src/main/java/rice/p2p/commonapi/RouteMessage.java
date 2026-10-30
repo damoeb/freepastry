@@ -43,7 +43,7 @@ import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
- * @(#) RouteMessage.java
+ *
  *
  * This interface is a container which represents a message, as it is
  * about to be forwarded to another node.

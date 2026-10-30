@@ -74,7 +74,7 @@ import rice.p2p.util.ConcurrentRingMap;
  * not toString() can be a substring of another toString() - this
  * will cause undefined behavior.  <b>Additionally, the toString() method on the key Ids
  * *CANNOT* have the period ('.') or exclamation point ('!')
- * characters in them - these are used for internal purposes.<b>
+ * characters in them - these are used for internal purposes.</b>
  *
  * The objects and their metadata are written by the {@link StorageSerializer} the storage is built with,
  * normally with the raw serialization the wire uses, and stored gzipped; the format of the file is

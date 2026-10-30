@@ -45,7 +45,7 @@ import java.util.List;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
- * @(#) NodeHandle.java
+ *
  *
  * This class is an abstraction of a node handle from the CommonAPI paper. A
  * node handle is a handle to a known node, which conceptually includes the

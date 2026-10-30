@@ -500,9 +500,9 @@ public class LeafSet implements Iterable<NodeHandle> {
 
   /**
    * range
-   * computes the range of keys for which node n is a i-root, 0<=i<=r
+   * computes the range of keys for which node n is a i-root, 0&lt;=i&lt;=r
    * a node is the r-root for a key of the node becomes the numerically closest node to the key when
-   * i-roots for the key fail, O<=i<r, where a key's 0-root is the numerically closest node to the key.
+   * i-roots for the key fail, O&lt;=i&lt;r, where a key's 0-root is the numerically closest node to the key.
    *
    * @param n the nodehandle
    * @param r
@@ -564,7 +564,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    * range
    * computes the ranges of keys for which node n is a r-root
    * a node is the r-root for a key of the node becomes the numerically closest node to the key when
-   * i-roots for the key fail, O<=i<r, where a key's 0-root is the numerically closest node to the key.
+   * i-roots for the key fail, O&lt;=i&lt;r, where a key's 0-root is the numerically closest node to the key.
    * there can be two contiguous ranges of keys; the cw parameter selects which one is returned.
    *
    * @param n the nodehandle

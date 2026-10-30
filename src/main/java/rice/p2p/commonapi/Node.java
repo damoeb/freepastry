@@ -40,7 +40,7 @@ package rice.p2p.commonapi;
 import rice.environment.Environment;
 
 /**
- * @(#) Node.java
+ *
  *
  * Interface which represents a node in a peer-to-peer system, regardless of
  * the underlying protocol.  This represents a factory, in a sense, that will

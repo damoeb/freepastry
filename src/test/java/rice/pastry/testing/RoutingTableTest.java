@@ -284,7 +284,7 @@ public class RoutingTableTest {
         bootHandle = bootNode.getLocalHandle();
       }
     }
-    // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
+    // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
     final PastryNode node = factory.newNode();
 
     node.addPastryNodeListener(new PastryNodeListener() {

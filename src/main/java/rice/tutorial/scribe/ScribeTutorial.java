@@ -183,9 +183,9 @@ public class ScribeTutorial {
   }
 
   /**
-   * Usage: java [-cp FreePastry- <version>.jar]
-   * rice.tutorial.lesson6.ScribeTutorial localbindport bootIP bootPort numNodes
-   * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001
+   * Usage: {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar}
+   * rice.tutorial.scribe.ScribeTutorial localbindport bootIP bootPort numNodes
+   * example java rice.tutorial.scribe.ScribeTutorial 9001 pokey.cs.almamater.edu 9001
    */
   public static void main(String[] args) throws Exception {
     // Loads pastry configurations

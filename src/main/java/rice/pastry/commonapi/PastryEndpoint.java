@@ -418,7 +418,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * @param n nodeHandle of the node whose range is being queried
    * @param r the rank
    * @param key the key
-   * @param cumulative if true, returns ranges for which n is an i-root for 0<i<=r
+   * @param cumulative if true, returns ranges for which n is an i-root for 0&lt;i&lt;=r
    * @return the range of keys, or null if range could not be determined for the given node and rank
    */
   public IdRange range(NodeHandle n, int r, Id key, boolean cumulative) {

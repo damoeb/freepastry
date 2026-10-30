@@ -81,11 +81,11 @@ public class MyApp implements Application {
    * anyone but the localnode.
    *
    * The reason:
-   * This is an inner class of MyApp, and therefore
-   * has an automatic reference to
-   * MyApp which is not serializable!  Do not
-   * attempt to send over the wire, you will get a
-   * NotSerializableException!
+   * It is a plain Message, not a RawMessage: it has
+   * no serialize(OutputBuffer) and no type, so it
+   * cannot go over the wire.  Endpoint.route() only
+   * accepts RawMessages; scheduleMessage() delivers
+   * it locally without serializing it.
    */
   static class MessageToSelf implements Message {
     public int getPriority() {

@@ -114,12 +114,12 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   private RandomSource random;
 
   /**
-   * maps to a RendezvousStrategy<RendezvousSocketNodeHandle>
+   * maps to a RendezvousStrategy&lt;RendezvousSocketNodeHandle&gt;
    */
   public static final String RENDEZVOUS_STRATEGY = "RendezvousSocketPastryNodeFactory.RENDEZVOUS_STRATEGY";
 
   /**
-   * maps to a RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle>
+   * maps to a RendezvousTransportLayerImpl&lt;InetSocketAddress, RendezvousSocketNodeHandle&gt;
    */
   public static final String RENDEZVOUS_TL = "RendezvousSocketPastryNodeFactory.RENDEZVOUS_TL";
 
@@ -129,7 +129,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   public static final String SIMULATE_FIREWALL = "rendezvous_simulate_firewall";
 
   /**
-   * getVars() maps to a ContactDirectStrategy<RendezvousSocketNodeHandle>
+   * getVars() maps to a ContactDirectStrategy&lt;RendezvousSocketNodeHandle&gt;
    */
   public static final String RENDEZVOUS_CONTACT_DIRECT_STRATEGY = "RendezvousSocketPastryNodeFactory.ContactDirectStrategy";
 

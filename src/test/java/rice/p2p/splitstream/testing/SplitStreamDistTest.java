@@ -194,7 +194,7 @@ public class SplitStreamDistTest {
       }
     }
 
-    // construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
+    // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
     final PastryNode node = factory.newNode();
     node.boot(bootHandle == null ? null : ((BogusNodeHandle) bootHandle).getAddress());
     System.out.println("Node "+node+" created.");

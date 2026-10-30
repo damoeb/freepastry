@@ -101,7 +101,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
    * Read in the Authenticators from a file.
    *
    *  Each instance of this class has just a single file in which to store authenticators.
-   *  The file format is (<id> <auth>)*; authenticators from different peers can be
+   *  The file format is (&lt;id&gt; &lt;auth&gt;)*; authenticators from different peers can be
    *  mixed. This method sets the name of the file and reads its current contents
    *  into memory.
    */

@@ -38,8 +38,8 @@ package rice.pastry.socket;
 
 
 /**
- * Parallel interface to the CommonAPI NodeHandle, because it is an abstract object to gain the
- * observer pattern.
+ * Parallel interface to the CommonAPI NodeHandle, because it is an abstract class, which gives
+ * it the NodeHandleListener support.
  *
  * @author Jeff Hoye
  *

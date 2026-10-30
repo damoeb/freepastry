@@ -115,10 +115,10 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   private final ArrayList<PrimarySocketListener<Identifier>> primarySocketListeners = new ArrayList<PrimarySocketListener<Identifier>>();
 
   /**
-   * The maximum message size;
+   * Builds the layer with the maximum message size and queue length from {@code config}.
    *
-   * @param env
-   * @param maxMsgSize
+   * @param env the environment
+   * @param config the priority parameters
    */
   public PriorityTransportLayerImpl(TransportLayer<Identifier, ByteBuffer> tl,
       LivenessProvider<Identifier> livenessProvider,

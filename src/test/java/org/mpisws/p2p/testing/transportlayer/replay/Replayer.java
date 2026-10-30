@@ -129,8 +129,7 @@ public class Replayer implements MyEvents, EventCallback {
 
     };
 
-    // construct a node, passing the null boothandle on the first loop will
-    // cause the node to start its own ring
+    // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
     node = (PastryNode)factory.newNode();
     app = new MyScribeClient(node);
 

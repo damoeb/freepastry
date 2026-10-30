@@ -68,7 +68,7 @@ public interface ScribePolicy {
    * Here is some example code:
    *
    * <pre>
-   * Iterator<Topic> i = topics.iterator();
+   * Iterator&lt;Topic&gt; i = topics.iterator();
    * while (i.hasNext()) {
    *   Topic topic = i.next();
    *   if (!accept(topic)) { // your decision on what to do for the topic

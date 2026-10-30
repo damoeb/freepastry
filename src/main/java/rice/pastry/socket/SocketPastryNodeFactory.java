@@ -163,7 +163,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   public static final String MULTI_INET_TL = "SocketPastryNodeFactory.milti-inet-tl";
 
   /**
-   * maps to a PriorityTransportLayer<MultiInetSocketAddress>
+   * maps to a PriorityTransportLayer&lt;MultiInetSocketAddress&gt;
    */
   public static final String PRIORITY_TL = "PriorityTransportLayer.PRIORITY_TL";
 

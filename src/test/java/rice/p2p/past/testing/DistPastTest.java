@@ -137,8 +137,8 @@ public class DistPastTest {
 
     /**
      * Usage:
-     * java [-cp FreePastry-<version>.jar] rice.tutorial.lesson4.DistTutorial localbindport bootIP bootPort numNodes
-     * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10
+     * java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.p2p.past.testing.DistPastTest localbindport bootIP bootPort numNodes
+     * example java rice.p2p.past.testing.DistPastTest 9001 pokey.cs.almamater.edu 9001 10
      */
     public static void main(String[] args) throws Exception {
       // Loads pastry settings
