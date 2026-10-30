@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.past.gc;
 
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.SortedMap;
 
@@ -60,20 +59,20 @@ public class GCIdSet implements IdSet {
   private final IdSet ids;
 
   // interal list of the timeouts
-  private final SortedMap<Id, Serializable> timeouts;
+  private final SortedMap<Id, Object> timeouts;
 
   /**
    * Constructor
    */
   protected GCIdSet(IdFactory factory) {
     this.ids = factory.buildIdSet();
-    this.timeouts = new ConcurrentRingMap<Id, Serializable>();
+    this.timeouts = new ConcurrentRingMap<Id, Object>();
   }
 
   /**
    * Constructor
    */
-  protected GCIdSet(IdSet set, SortedMap<Id, Serializable> timeouts) {
+  protected GCIdSet(IdSet set, SortedMap<Id, Object> timeouts) {
     this.ids = set;
     this.timeouts = timeouts;
   }
@@ -225,6 +224,6 @@ public class GCIdSet implements IdSet {
    * @return A new IdSet
    */
   public IdSet build() {
-    return new GCIdSet(ids.build(), new ConcurrentRingMap<Id, Serializable>());
+    return new GCIdSet(ids.build(), new ConcurrentRingMap<Id, Object>());
   }
 }

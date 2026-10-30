@@ -60,6 +60,7 @@ import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.PastException;
 import rice.p2p.past.PastImpl;
+import rice.p2p.past.PastStorageSerializer;
 import rice.p2p.past.messaging.LookupMessage;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.persistence.LRUCache;
@@ -129,8 +130,9 @@ public class RawPastRegrTest extends CommonAPITest {
    */
   protected void processNode(int num, Node node) {
     try {
+      final int n = num;
       storages[num] = new StorageManagerImpl(FACTORY,
-                                             new PersistentStorage(FACTORY, "root-" + num, storageRoot, 1000000, environment),
+                                             new PersistentStorage(FACTORY, new PastStorageSerializer(() -> pasts[n]), "root-" + num, storageRoot, 1000000, environment),
                                              new LRUCache(new MemoryStorage(FACTORY), 100000, environment));
       pasts[num] = new PastImpl(node, storages[num], REPLICATION_FACTOR, INSTANCE);
       pasts[num].setContentDeserializer(new PastContentDeserializer() {

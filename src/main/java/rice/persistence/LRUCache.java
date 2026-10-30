@@ -45,15 +45,9 @@ package rice.persistence;
  *
  * @version $Id: LRUCache.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.SortedMap;
-import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -62,7 +56,6 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.XMLObjectOutputStream;
 
 /**
  * This class is an encapsulation of a least-recently-used (LRU)
@@ -151,7 +144,7 @@ public class LRUCache implements Cache {
    * @param obj The object to cache.
    * @param c The command to run once the operation is complete
    */
-  public void cache(final Id id, final Serializable metadata, final Serializable obj, final Continuation<? super Boolean, Exception> c) {
+  public void cache(final Id id, final Object metadata, final Object obj, final Continuation<? super Boolean, Exception> c) {
     final int size = getSize(obj);
 
     if (exists(id)) {
@@ -227,7 +220,7 @@ public class LRUCache implements Cache {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
-  public void getObject(Id id, Continuation<? super Serializable, Exception> c) {
+  public void getObject(Id id, Continuation<? super Object, Exception> c) {
     if (! exists(id)) {
       c.receiveResult(null);
       return;
@@ -249,7 +242,7 @@ public class LRUCache implements Cache {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
-  public Serializable getMetadata(Id id) {
+  public Object getMetadata(Id id) {
     return storage.getMetadata(id);
   }
 
@@ -262,7 +255,7 @@ public class LRUCache implements Cache {
    * @param metadata The metadata to store
    * @param command The command to run once the operation is complete
    */
-  public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> command) {
+  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> command) {
     storage.setMetadata(id, metadata, command);
   }
 
@@ -302,7 +295,7 @@ public class LRUCache implements Cache {
    * @param range The range to query
    * @return The map containg the keys
    */
-  public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
+  public SortedMap<Id, Object> scanMetadata(IdRange range) {
     return storage.scanMetadata(range);
   }
 
@@ -312,7 +305,7 @@ public class LRUCache implements Cache {
    *
    * @return The treemap mapping ids to metadata
    */
-  public SortedMap<Id, Serializable> scanMetadata() {
+  public SortedMap<Id, Object> scanMetadata() {
     return storage.scanMetadata();
   }
 
@@ -323,7 +316,7 @@ public class LRUCache implements Cache {
    * @param value The maximal metadata value
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
+  public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
     return storage.scanMetadataValuesHead(value);
   }
 
@@ -332,7 +325,7 @@ public class LRUCache implements Cache {
    *
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesNull() {
+  public SortedMap<Id, Object> scanMetadataValuesNull() {
     return storage.scanMetadataValuesNull();
   }
 
@@ -422,14 +415,8 @@ public class LRUCache implements Cache {
    */
   private int getSize(Object obj) {
     try {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(baos)));
-
-      oos.writeObject(obj);
-      oos.close();
-
-      return baos.toByteArray().length;
-    } catch (IOException e) {
+      return ObjectSizes.sizeOf(obj);
+    } catch (RuntimeException e) {
       Logger logger = environment.getLogManager().getLogger(LRUCache.class, null);
       logger.warn("", e);
       // returns maximum value here, so it won't be cached

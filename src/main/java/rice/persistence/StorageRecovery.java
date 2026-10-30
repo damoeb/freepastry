@@ -53,12 +53,14 @@ import rice.p2p.commonapi.Id;
 final class StorageRecovery {
 
   private final StorageLayout layout;
+  private final ObjectFileFormat format;
   private final MetadataIndex metadataIndex; // null without indexing
   private final StorageQuota quota;
   private final Logger logger;
 
-  StorageRecovery(StorageLayout layout, MetadataIndex metadataIndex, StorageQuota quota, Logger logger) {
+  StorageRecovery(StorageLayout layout, ObjectFileFormat format, MetadataIndex metadataIndex, StorageQuota quota, Logger logger) {
     this.layout = layout;
+    this.format = format;
     this.metadataIndex = metadataIndex;
     this.quota = quota;
     this.logger = logger;
@@ -188,7 +190,7 @@ final class StorageRecovery {
           if we don't have the metadata for this file, update it */
           if ((metadataIndex != null) && ((! metadataIndex.containsUnlocked(id)) || (files[i].lastModified() > modified))) {
             if (logger.isTraceEnabled()) logger.trace("Reading newer metadata out of file " + files[i] + " id " + id.toStringFull() + " " + files[i].lastModified() + " " + modified + " " + metadataIndex.containsUnlocked(id));
-            metadataIndex.putUnlocked(id, ObjectFileFormat.readMetadata(files[i], logger));
+            metadataIndex.putUnlocked(id, format.readMetadata(files[i]));
             metadataIndex.markDirtyUnlocked(dir);
           }
         } else {
@@ -231,7 +233,7 @@ final class StorageRecovery {
     } else {
       logger.debug("resolving conflict between {} and {}", file1, file2);
 
-      if (ObjectFileFormat.readVersion(file1) < ObjectFileFormat.readVersion(file2)) {
+      if (format.readVersion(file1) < format.readVersion(file2)) {
         layout.moveToLost(file1);
         StorageFiles.renameFile(file2, output);
       } else {
@@ -251,7 +253,7 @@ final class StorageRecovery {
    */
   private void moveFileToCorrectDirectory(File parent, String name) throws IOException {
     File file = new File(parent, name);
-    Id id = ObjectFileFormat.readKeyFromFile(file);
+    Id id = format.readKeyFromFile(file);
     File dest = layout.getDirectoryForId(id);
 
     /* if it's in the wrong directory, then move it and resolve the conflict if necessary */

@@ -42,6 +42,7 @@ import java.io.Serializable;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 
 /**
@@ -59,7 +60,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public interface PastContent extends Serializable {
+public interface PastContent extends Serializable, RawSerializable {
 
   /**
    * Checks if a insert operation should be allowed.  Invoked when a

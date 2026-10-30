@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -797,8 +796,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   public void lookup(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
     logger.atTrace().log(() -> " Performing lookup on " + id.toStringFull());
 
-    storage.getObject(id, new StandardContinuation<Serializable, PastContent, Exception>(command) {
-      public void receiveResult(Serializable o) {
+    storage.getObject(id, new StandardContinuation<Object, PastContent, Exception>(command) {
+      public void receiveResult(Object o) {
         if (o != null) {
           command.receiveResult((PastContent) o);
         } else {
@@ -1045,8 +1044,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           lockManager.lock(msgid, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
 
             public void receiveResult(Object result) {
-              storage.getObject(msgid, new StandardContinuation<Serializable, Object, Exception>(parent) {
-                public void receiveResult(Serializable o) {
+              storage.getObject(msgid, new StandardContinuation<Object, Object, Exception>(parent) {
+                public void receiveResult(Object o) {
                   try {
                     // allow the object to check the insert, and then insert the data
                     PastContent content = imsg.getContent().checkInsert(msgid, (PastContent) o);
@@ -1071,8 +1070,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         lookups++;
 
         // if the data is here, we send the reply; the requester caches it (see lookup())
-        storage.getObject(lmsg.getId(), new StandardContinuation<Serializable, Object, Exception>(getResponseContinuation(lmsg)) {
-          public void receiveResult(Serializable o) {
+        storage.getObject(lmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
+          public void receiveResult(Object o) {
             logger.debug("Received object {} for id {}", o, lmsg.getId());
 
             // send result back
@@ -1096,8 +1095,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         final FetchHandleMessage fmsg = (FetchHandleMessage) msg;
         fetchHandles++;
 
-        storage.getObject(fmsg.getId(), new StandardContinuation<Serializable, Object, Exception>(getResponseContinuation(msg)) {
-          public void receiveResult(Serializable o) {
+        storage.getObject(fmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
+          public void receiveResult(Object o) {
             PastContent content = (PastContent) o;
 
             if (content != null) {
@@ -1141,8 +1140,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   public void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
     logger.trace("Sending out replication fetch request for the id {}", id);
 
-    policy.fetch(id, hint, backup, this, new StandardContinuation<Serializable, Boolean, Exception>(command) {
-      public void receiveResult(Serializable o) {
+    policy.fetch(id, hint, backup, this, new StandardContinuation<Object, Boolean, Exception>(command) {
+      public void receiveResult(Object o) {
         if (o == null) {
           logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, instance);
           parent.receiveResult(Boolean.valueOf(false));
@@ -1166,8 +1165,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   public void remove(final Id id, Continuation<? super Boolean, Exception> command) {
     if (backup != null) {
-      storage.getObject(id, new StandardContinuation<Serializable, Boolean, Exception>(command) {
-        public void receiveResult(Serializable o) {
+      storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+        public void receiveResult(Object o) {
           backup.cache(id, storage.getMetadata(id), o, new StandardContinuation<Boolean, Boolean, Exception>(parent) {
             public void receiveResult(Boolean o) {
               storage.unstore(id, parent);
@@ -1227,8 +1226,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   }
 
   public void reInsert(Id id, Continuation<? super Boolean, Exception> command) {
-    storage.getObject(id, new StandardContinuation<Serializable, Boolean, Exception>(command) {
-      public void receiveResult(final Serializable o) {
+    storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+      public void receiveResult(final Object o) {
         insert((PastContent)o, new StandardContinuation<Boolean[], Boolean, Exception>(parent) {
           public void receiveResult(Boolean[] result) {
             Boolean results[] = result;
@@ -1280,6 +1279,10 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
   public void setContentDeserializer(PastContentDeserializer deserializer) {
     contentDeserializer = deserializer;
+  }
+
+  public PastContentDeserializer getContentDeserializer() {
+    return contentDeserializer;
   }
 
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {

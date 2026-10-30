@@ -36,7 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
+import java.io.IOException;
 import java.io.Serializable;
+
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class FragmentMetadata implements Serializable, Comparable<FragmentMetadata> {
 
@@ -50,6 +54,21 @@ public class FragmentMetadata implements Serializable, Comparable<FragmentMetada
     this.currentExpirationDate = currentExpirationDate;
     this.previousExpirationDate = previousExpirationDate;
     this.storedSince = storedSince;
+  }
+
+  /**
+   * Reading constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public FragmentMetadata(InputBuffer buf) throws IOException {
+    currentExpirationDate = buf.readLong();
+    previousExpirationDate = buf.readLong();
+    storedSince = buf.readLong();
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeLong(currentExpirationDate);
+    buf.writeLong(previousExpirationDate);
+    buf.writeLong(storedSince);
   }
 
   long getCurrentExpiration() {

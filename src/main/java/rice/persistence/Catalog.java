@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
-import java.io.Serializable;
 import java.util.SortedMap;
 
 import rice.Continuation;
@@ -77,7 +76,7 @@ public interface Catalog {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete
    */
-  public void getObject(Id id, Continuation<? super Serializable, Exception> c);
+  public void getObject(Id id, Continuation<? super Object, Exception> c);
 
   /**
    * Returns the metadata associated with the provided object, or null if
@@ -93,7 +92,7 @@ public interface Catalog {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null if none exists
    */
-  public Serializable getMetadata(Id id);
+  public Object getMetadata(Id id);
 
   /**
    * Updates the metadata stored under the given key to be the provided
@@ -104,7 +103,7 @@ public interface Catalog {
    * @param metadata The metadata to store
    * @param command The command to run once the operation is complete
    */
-  public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> command);
+  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> command);
 
   /**
    * Renames the given object to the new id.  This method is potentially faster
@@ -147,7 +146,7 @@ public interface Catalog {
    * @param range The range to query
    * @return The map containing the keys
    */
-  public SortedMap<Id, Serializable> scanMetadata(IdRange range);
+  public SortedMap<Id, Object> scanMetadata(IdRange range);
 
   /**
    * Returns a map which contains keys mapping ids to the associated
@@ -155,7 +154,7 @@ public interface Catalog {
    *
    * @return The treemap mapping ids to metadata
    */
-  public SortedMap<Id, Serializable> scanMetadata();
+  public SortedMap<Id, Object> scanMetadata();
 
   /**
    * Returns the submapping of ids which have metadata less than the provided
@@ -164,14 +163,14 @@ public interface Catalog {
    * @param value The maximal metadata value
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value);
+  public SortedMap<Id, Object> scanMetadataValuesHead(Object value);
 
   /**
    * Returns the submapping of ids which have metadata null
    *
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesNull();
+  public SortedMap<Id, Object> scanMetadataValuesNull();
 
   /**
    * Returns the number of Ids currently stored in the catalog

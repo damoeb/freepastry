@@ -45,14 +45,8 @@ package rice.persistence;
  *
  * @version $Id: MemoryStorage.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.SortedMap;
-import java.util.zip.GZIPOutputStream;
 
 import rice.Continuation;
 import rice.p2p.commonapi.Id;
@@ -62,7 +56,6 @@ import rice.p2p.commonapi.IdSet;
 import rice.p2p.util.ConcurrentRingMap;
 import rice.p2p.util.ImmutableSortedMap;
 import rice.p2p.util.ReverseTreeMap;
-import rice.p2p.util.XMLObjectOutputStream;
 
 /**
  * This class is an implementation of Storage which provides
@@ -74,10 +67,10 @@ import rice.p2p.util.XMLObjectOutputStream;
 public class MemoryStorage implements Storage {
 
   // the map used to store the data
-  private HashMap<Id, Serializable> storage;
+  private HashMap<Id, Object> storage;
 
   // the map used to store the metadata
-  private ReverseTreeMap<Id, Serializable> metadata;
+  private ReverseTreeMap<Id, Object> metadata;
 
   // the current list of Ids
   private IdSet idSet;
@@ -96,8 +89,8 @@ public class MemoryStorage implements Storage {
   public MemoryStorage(IdFactory factory) {
     this.factory = factory;
     idSet = factory.buildIdSet();
-    storage = new HashMap<Id, Serializable>();
-    metadata = new ReverseTreeMap<Id, Serializable>();
+    storage = new HashMap<Id, Object>();
+    metadata = new ReverseTreeMap<Id, Object>();
     currentSize = 0;
   }
 
@@ -108,8 +101,8 @@ public class MemoryStorage implements Storage {
    * @param c The command to run once done
    */
   public void flush(Continuation<? super Boolean, Exception> c) {
-    storage = new HashMap<Id, Serializable>();
-    metadata = new ReverseTreeMap<Id, Serializable>();
+    storage = new HashMap<Id, Object>();
+    metadata = new ReverseTreeMap<Id, Object>();
     idSet = factory.buildIdSet();
     currentSize = 0;
 
@@ -154,7 +147,7 @@ public class MemoryStorage implements Storage {
    * @param metadata The object's metadata
    * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
-  public void store(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
+  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
     if (id == null || obj == null) {
       c.receiveResult(Boolean.valueOf(false));
       return;
@@ -210,8 +203,8 @@ public class MemoryStorage implements Storage {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
-  public Serializable getMetadata(Id id) {
-    return (Serializable) metadata.get(id);
+  public Object getMetadata(Id id) {
+    return metadata.get(id);
   }
 
   /**
@@ -223,7 +216,7 @@ public class MemoryStorage implements Storage {
    * @param metadata The metadata to store
    * @param command The command to run once the operation is complete
    */
-  public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> command) {
+  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> command) {
     if (exists(id))
       this.metadata.put(id, metadata);
 
@@ -237,7 +230,7 @@ public class MemoryStorage implements Storage {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete
    */
-  public void getObject(Id id, Continuation<? super Serializable, Exception> c) {
+  public void getObject(Id id, Continuation<? super Object, Exception> c) {
     c.receiveResult(storage.get(id));
   }
 
@@ -277,13 +270,13 @@ public class MemoryStorage implements Storage {
    * @param range The range to query
    * @return The map containg the keys
    */
-  public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
+  public SortedMap<Id, Object> scanMetadata(IdRange range) {
     if (range.isEmpty())
-      return new ConcurrentRingMap<Id, Serializable>();
+      return new ConcurrentRingMap<Id, Object>();
     else if (range.getCCWId().equals(range.getCWId()))
       return scanMetadata();
     else
-      return new ImmutableSortedMap<Id, Serializable>(metadata.keySubMap(range.getCCWId(), range.getCWId()));
+      return new ImmutableSortedMap<Id, Object>(metadata.keySubMap(range.getCCWId(), range.getCWId()));
   }
 
   /**
@@ -292,8 +285,8 @@ public class MemoryStorage implements Storage {
    *
    * @return The treemap mapping ids to metadata
    */
-  public SortedMap<Id, Serializable> scanMetadata() {
-    return new ImmutableSortedMap<Id, Serializable>(metadata.keyMap());
+  public SortedMap<Id, Object> scanMetadata() {
+    return new ImmutableSortedMap<Id, Object>(metadata.keyMap());
   }
 
   /**
@@ -303,8 +296,8 @@ public class MemoryStorage implements Storage {
    * @param value The maximal metadata value
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
-    return new ImmutableSortedMap<Id, Serializable>(metadata.valueHeadMap((Serializable)value));
+  public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
+    return new ImmutableSortedMap<Id, Object>(metadata.valueHeadMap(value));
   }
 
   /**
@@ -312,8 +305,8 @@ public class MemoryStorage implements Storage {
    *
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesNull() {
-    return new ImmutableSortedMap<Id, Serializable>(metadata.valueNullMap());
+  public SortedMap<Id, Object> scanMetadataValuesNull() {
+    return new ImmutableSortedMap<Id, Object>(metadata.valueNullMap());
   }
 
   /**
@@ -341,16 +334,6 @@ public class MemoryStorage implements Storage {
    * @return The size, in bytes
    */
   private int getSize(Object obj) {
-    try {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(baos)));
-
-      oos.writeObject(obj);
-      oos.close();
-
-      return baos.toByteArray().length;
-    } catch (IOException e) {
-      throw new RuntimeException("Object " + obj + " was not serialized correctly! "+e.toString(),e);
-    }
+    return ObjectSizes.sizeOf(obj);
   }
 }

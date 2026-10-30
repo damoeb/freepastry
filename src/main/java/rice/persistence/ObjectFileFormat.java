@@ -34,200 +34,138 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-
 package rice.persistence;
 
-import static rice.persistence.PersistentStorage.PERSISTENCE_MAGIC_NUMBER;
-import static rice.persistence.PersistentStorage.PERSISTENCE_REVISION_2_1;
-import static rice.persistence.PersistentStorage.PERSISTENCE_VERSION_2;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
-import java.io.Serializable;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.Id;
-import rice.p2p.util.XMLObjectInputStream;
-import rice.p2p.util.XMLObjectOutputStream;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.SimpleInputBuffer;
+import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
- * The format of the object files of {@link PersistentStorage}:
+ * The format of the object files of {@link PersistentStorage}, version 3:
  *
  * <pre>
- * [Key, Object, Version, Gzipped XML]
- * [Metadata, Gzipped XML]
- * [persistence magic number, long]
- * [persistence version, long]
- * [persistence revision, long]
- * [metadata length, long]
+ * object section, gzipped:
+ *   [key, UTF of Id.toStringFull()]
+ *   [version (the time it was stored), long]
+ *   [has object, boolean] [object, written by the StorageSerializer]
+ * metadata section, gzipped (rewritten in place by setMetadata):
+ *   [has metadata, boolean] [metadata, written by the StorageSerializer]
+ * trailer:
+ *   [persistence magic number, long]
+ *   [persistence version, long]
+ *   [persistence revision, long]
+ *   [metadata section length, long]
  * </pre>
+ *
+ * Files of other versions (version 2 held Java-serialized XML) are not read; a file without a valid trailer
+ * is reported as broken.
  */
 final class ObjectFileFormat {
 
-  private ObjectFileFormat() {
+  /** The length of the trailer in bytes. */
+  static final int TRAILER_LENGTH = 32;
+
+  private final IdFactory factory;
+  private final StorageSerializer serializer;
+  private final Logger logger;
+
+  ObjectFileFormat(IdFactory factory, StorageSerializer serializer, Logger logger) {
+    this.factory = factory;
+    this.serializer = serializer;
+    this.logger = logger;
   }
 
   /**
-   * Basic function to read an object from the persisted file.
+   * Reads the object stored in the file.
    *
-   * @param file the file to read from
-   * @param offset the offset to read from
-   * @return Serializable the data stored at the offset in the file
-   *
+   * @param file The file to read the object from.
+   * @return The object that was read in, which may be null
    */
-  private static Serializable readObject(File file, int offset) throws IOException {
-    FileInputStream fin = null;
-
-    try {
-      try {
-        fin = new FileInputStream(file);
-        ObjectInputStream objin = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(fin)));
-
-        /* skip objects */
-        for (int i=0; i<offset; i++)
-          objin.readObject();
-
-        return (Serializable) objin.readObject();
-      } catch (ClassNotFoundException e) {
-        throw new IOException(e.getMessage());
-      }
-    } finally {
-      fin.close();
-    }
+  Object readData(File file) throws IOException {
+    InputBuffer buf = readObjectSection(file);
+    buf.readUTF(); // key
+    buf.readLong(); // version
+    return buf.readBoolean() ? serializer.readObject(buf) : null;
   }
 
   /**
-   * Abstract over reading a single object to a file using Java
-   * serialization.
+   * Reads the key from the file.
    *
-   * @param file The file to create the object from.
-   * @return The object that was read in
+   * @param file The file to read the key from.
+   * @return The key that was read in
    */
-  static Serializable readData(File file) throws IOException {
-     return readObject(file, 1);
+  Id readKeyFromFile(File file) throws IOException {
+    return factory.buildIdFromToString(readObjectSection(file).readUTF());
   }
 
   /**
-   * Reads in the metadata from the provided file, or returns null if
-   * no metadata was found
+   * Reads the version (the time the object was stored) from the file.
+   *
+   * @param file The file to read the version from.
+   * @return The version that was read in
+   */
+  long readVersion(File file) throws IOException {
+    InputBuffer buf = readObjectSection(file);
+    buf.readUTF(); // key
+    return buf.readLong();
+  }
+
+  /**
+   * Reads the metadata from the provided file, or returns null if no metadata was found.
    *
    * @param file The file which should be read for the metadata
-   * @param logger where to report a version mismatch
    */
-  static Serializable readMetadata(File file, Logger logger) throws IOException {
-    if (file.length() < 32)
-      return null;
-
-    RandomAccessFile ras = null;
-
-    try {
-      ras = new RandomAccessFile(file, "r");
-      ras.seek(file.length() - 32);
-
-      if (ras.readLong() != PERSISTENCE_MAGIC_NUMBER) {
-        return null;
-      } else if (ras.readLong() != PERSISTENCE_VERSION_2) {
-        logger.warn("Persistence version did not match - exiting!");
-        return null;
-      } else if (ras.readLong() > PERSISTENCE_REVISION_2_1) {
-        logger.warn("Persistence revision did not match - exiting!");
+  Object readMetadata(File file) throws IOException {
+    try (RandomAccessFile ras = new RandomAccessFile(file, "r")) {
+      long length = metadataLength(ras, file);
+      if (length < 0) {
         return null;
       }
 
-      long length = ras.readLong();
-      ras.seek(file.length() - 32 - length);
-
-      FileInputStream fis = null;
-
-      try {
-        fis = new FileInputStream(ras.getFD());
-        ObjectInputStream objin = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(fis)));
-
-        try {
-          return (Serializable) objin.readObject();
-        } catch (ClassNotFoundException e) {
-          throw new IOException(e.getMessage());
-        }
-      } finally {
-        fis.close();
-      }
-    } finally {
-      ras.close();
+      byte[] section = new byte[(int) length];
+      ras.seek(file.length() - TRAILER_LENGTH - length);
+      ras.readFully(section);
+      InputBuffer buf = gunzip(section);
+      return buf.readBoolean() ? serializer.readMetadata(buf) : null;
     }
   }
 
   /**
-   * Abstract over reading a single key from a file using Java
-   * serialization.
-   *
-   * @param file The file to create the key from.
-   * @return The key that was read in
-   */
-  static Id readKeyFromFile(File file) throws IOException {
-    return (Id) readObject(file, 0);
-  }
-
-  /**
-   * Abstract over reading a version from a file using Java
-   * serialization.
-   *
-   * @param file The file to create the version from.
-   * @return The key that was read in
-   */
-  static long readVersion(File file) throws IOException {
-    Long temp = (Long) readObject(file, 2);
-
-    return (temp == null ? 0 : temp.longValue());
-  }
-
-  /**
-   * Abstract over writing a single object to a file using Java
-   * serialization.
+   * Writes an object, its key, version and metadata to a new file.
    *
    * @param obj The object to be written
-   * @param file The file to serialize the object to.
-   * @return The object's disk space usage
+   * @param metadata The object's metadata
+   * @param key The object's key
+   * @param version The version (the time it is stored)
+   * @param file The file to write to
+   * @return The file's disk space usage
    */
-  static long writeObject(Serializable obj, Serializable metadata, Id key, long version, File file) throws IOException {
-    FileOutputStream fout = null;
-
-    try {
-      fout = new FileOutputStream(file);
-      ObjectOutputStream objout = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(fout)));
-      objout.writeObject(key);
-      objout.writeObject(obj);
-      objout.writeObject(Long.valueOf(version));
-      objout.close();
-    } finally {
-      if (fout != null)
-        fout.close();
+  long writeObject(Object obj, Object metadata, Id key, long version, File file) throws IOException {
+    SimpleOutputBuffer buf = new SimpleOutputBuffer();
+    buf.writeUTF(key.toStringFull());
+    buf.writeLong(version);
+    buf.writeBoolean(obj != null);
+    if (obj != null) {
+      serializer.writeObject(obj, buf);
     }
 
-    long len1 = file.length();
-
-    try {
-      fout = new FileOutputStream(file, true);
-      ObjectOutputStream objout = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(fout)));
-      objout.writeObject(metadata);
-      objout.close();
-    } finally {
-      fout.close();
+    try (FileOutputStream fout = new FileOutputStream(file)) {
+      fout.write(gzip(buf));
     }
 
-    long len2 = file.length();
-
-    writeTrailer(file, len2-len1);
-
+    appendMetadata(file, metadata);
     return file.length();
   }
 
@@ -237,60 +175,100 @@ final class ObjectFileFormat {
    * @param file The file to which the metadata should be written
    * @param metadata The metadata to write
    */
-  static void writeMetadata(File file, Serializable metadata) throws IOException {
-    RandomAccessFile ras = null;
-    FileOutputStream fout = null;
-
-    if (file.length() > 32) {
-      try {
-        ras = new RandomAccessFile(file, "rw");
-        ras.seek(file.length() - 32);
-
-        if ((ras.readLong() == PERSISTENCE_MAGIC_NUMBER) &&
-            (ras.readLong() == PERSISTENCE_VERSION_2) &&
-            (ras.readLong() <= PERSISTENCE_REVISION_2_1)) {
-          long length = ras.readLong();
-          ras.setLength(file.length() - 32 - length);
-        }
-      } finally {
-        ras.close();
+  void writeMetadata(File file, Object metadata) throws IOException {
+    try (RandomAccessFile ras = new RandomAccessFile(file, "rw")) {
+      long length = metadataLength(ras, file);
+      if (length < 0) {
+        throw new IOException("Not a version " + PersistentStorage.PERSISTENCE_VERSION_3 + " object file: " + file);
       }
+      ras.setLength(file.length() - TRAILER_LENGTH - length);
     }
 
-    long len1 = file.length();
-
-    try {
-      fout = new FileOutputStream(file, true);
-      ObjectOutputStream objout = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(fout)));
-      objout.writeObject(metadata);
-      objout.close();
-    } finally {
-      fout.close();
-    }
-
-    long len2 = file.length();
-
-    writeTrailer(file, len2-len1);
+    appendMetadata(file, metadata);
   }
 
   /**
-   * Appends the trailer: magic number, version, revision and the length of the metadata.
+   * Appends the metadata section and the trailer.
    */
-  private static void writeTrailer(File file, long metadataLength) throws IOException {
-    FileOutputStream fout = null;
+  private void appendMetadata(File file, Object metadata) throws IOException {
+    SimpleOutputBuffer buf = new SimpleOutputBuffer();
+    buf.writeBoolean(metadata != null);
+    if (metadata != null) {
+      serializer.writeMetadata(metadata, buf);
+    }
+    byte[] section = gzip(buf);
 
-    try {
-      fout = new FileOutputStream(file, true);
-      DataOutputStream dos = new DataOutputStream(fout);
-      dos.writeLong(PERSISTENCE_MAGIC_NUMBER);
-      dos.writeLong(PERSISTENCE_VERSION_2);
-      dos.writeLong(PERSISTENCE_REVISION_2_1);
-      dos.writeLong(metadataLength);
-      dos.close();
-    } finally {
-      // the callers' streams are closed already, so a failure to open this one propagates as before
-      if (fout != null)
-        fout.close();
+    SimpleOutputBuffer trailer = new SimpleOutputBuffer(TRAILER_LENGTH);
+    trailer.writeLong(PersistentStorage.PERSISTENCE_MAGIC_NUMBER);
+    trailer.writeLong(PersistentStorage.PERSISTENCE_VERSION_3);
+    trailer.writeLong(PersistentStorage.PERSISTENCE_REVISION_3_0);
+    trailer.writeLong(section.length);
+
+    try (FileOutputStream fout = new FileOutputStream(file, true)) {
+      fout.write(section);
+      fout.write(trailer.getBytes(), 0, trailer.getWritten());
+    }
+  }
+
+  /**
+   * @return the object section of the file, unzipped
+   */
+  private InputBuffer readObjectSection(File file) throws IOException {
+    try (RandomAccessFile ras = new RandomAccessFile(file, "r")) {
+      long length = metadataLength(ras, file);
+      if (length < 0) {
+        throw new IOException("Not a version " + PersistentStorage.PERSISTENCE_VERSION_3 + " object file: " + file);
+      }
+
+      byte[] section = new byte[(int) (file.length() - TRAILER_LENGTH - length)];
+      ras.seek(0);
+      ras.readFully(section);
+      return gunzip(section);
+    }
+  }
+
+  /**
+   * Checks the trailer.
+   *
+   * @return the length of the metadata section, or -1 if the file has no valid version 3 trailer
+   */
+  private long metadataLength(RandomAccessFile ras, File file) throws IOException {
+    long fileLength = file.length();
+    if (fileLength < TRAILER_LENGTH) {
+      return -1;
+    }
+
+    ras.seek(fileLength - TRAILER_LENGTH);
+    if (ras.readLong() != PersistentStorage.PERSISTENCE_MAGIC_NUMBER) {
+      return -1;
+    }
+    if (ras.readLong() != PersistentStorage.PERSISTENCE_VERSION_3) {
+      logger.warn("Persistence version of {} did not match - ignoring it", file);
+      return -1;
+    }
+    if (ras.readLong() > PersistentStorage.PERSISTENCE_REVISION_3_0) {
+      logger.warn("Persistence revision of {} did not match - ignoring it", file);
+      return -1;
+    }
+
+    long length = ras.readLong();
+    if ((length < 0) || (length > fileLength - TRAILER_LENGTH)) {
+      return -1;
+    }
+    return length;
+  }
+
+  private static byte[] gzip(SimpleOutputBuffer buf) throws IOException {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    try (GZIPOutputStream out = new GZIPOutputStream(bytes)) {
+      out.write(buf.getBytes(), 0, buf.getWritten());
+    }
+    return bytes.toByteArray();
+  }
+
+  private static InputBuffer gunzip(byte[] section) throws IOException {
+    try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(section))) {
+      return new SimpleInputBuffer(in.readAllBytes());
     }
   }
 }

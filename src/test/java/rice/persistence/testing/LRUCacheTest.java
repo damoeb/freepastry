@@ -45,25 +45,19 @@ package rice.persistence.testing;
  *
  * @version $Id: LRUCacheTest.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.io.UncheckedIOException;
 import java.util.Random;
-import java.util.zip.GZIPOutputStream;
 
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.XMLObjectOutputStream;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.Cache;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
+import rice.persistence.ObjectSizes;
 
 /**
  * This class is a class which tests the Cache class
@@ -76,8 +70,8 @@ public class LRUCacheTest extends Test {
    * The objects of the setup: the cache holds the second and third, so the third evicts the first, and the fourth
    * (random bytes, incompressible) never fits.
    */
-  private static final Serializable FIRST = new byte[3], SECOND = new byte[13], THIRD = new byte[38];
-  private static final Serializable FOURTH = randomBytes(1000);
+  private static final Object FIRST = new byte[3], SECOND = new byte[13], THIRD = new byte[38];
+  private static final Object FOURTH = randomBytes(1000);
 
   /**
    * The stress test inserts byte[num*num*num] for num = START_NUM..END_NUM, and expects only those from
@@ -86,8 +80,7 @@ public class LRUCacheTest extends Test {
   private static final int START_NUM = 10, END_NUM = 98, SKIP = 2, LAST_NUM_REMAINING = 66;
 
   /**
-   * The cache counts the gzipped XML-serialized size (about 160 bytes even for a byte[3]), so the limits are derived
-   * from it instead of being hard-coded.
+   * The limits are derived from the size the cache counts (ObjectSizes.sizeOf) instead of being hard-coded.
    */
   protected final int CACHE_SIZE = serializedSize(SECOND) + serializedSize(THIRD);
   private final int STRESS_CACHE_SIZE;
@@ -137,15 +130,7 @@ public class LRUCacheTest extends Test {
    * The size the cache accounts for an object, as computed by LRUCache.getSize()
    */
   private static int serializedSize(Object obj) {
-    try {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(baos)));
-      oos.writeObject(obj);
-      oos.close();
-      return baos.toByteArray().length;
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    return ObjectSizes.sizeOf(obj);
   }
 
   public void setUp(final Continuation<Object, Exception> c) {

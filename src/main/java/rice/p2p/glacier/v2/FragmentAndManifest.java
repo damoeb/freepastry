@@ -36,17 +36,34 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
+import java.io.IOException;
 import java.io.Serializable;
 
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.glacier.Fragment;
 
-public class FragmentAndManifest implements Serializable {
+public class FragmentAndManifest implements Serializable, RawSerializable {
   private final Fragment fragment;
   private Manifest manifest;
 
   public FragmentAndManifest(Fragment fragment, Manifest manifest) {
     this.fragment = fragment;
     this.manifest = manifest;
+  }
+
+  /**
+   * Reading constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public FragmentAndManifest(InputBuffer buf) throws IOException {
+    fragment = new Fragment(buf);
+    manifest = new Manifest(buf);
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    fragment.serialize(buf);
+    manifest.serialize(buf);
   }
 
   public Fragment getFragment() {

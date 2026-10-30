@@ -45,6 +45,7 @@ import rice.environment.Environment;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastImpl;
+import rice.p2p.past.PastStorageSerializer;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
@@ -92,8 +93,9 @@ public class DistPastTest {
         System.out.println("Finished creating new node "+node);
 
 
-        stor = new PersistentStorage(idf,".",4*1024*1024,node.getEnvironment());
-          p = new PastImpl(node, new StorageManagerImpl(idf,stor,new LRUCache(new MemoryStorage(idf),512*1024,node.getEnvironment())), 3, "");
+        final PastImpl[] past = new PastImpl[1];
+        stor = new PersistentStorage(idf, new PastStorageSerializer(() -> past[0]), ".",4*1024*1024,node.getEnvironment());
+          p = past[0] = new PastImpl(node, new StorageManagerImpl(idf,stor,new LRUCache(new MemoryStorage(idf),512*1024,node.getEnvironment())), 3, "");
           p.setContentDeserializer((buf, endpoint, contentType) -> {
             if (contentType == DistPastTestContent.TYPE) {
               return new DistPastTestContent(buf, endpoint);

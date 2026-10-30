@@ -45,7 +45,6 @@ package rice.persistence;
  *
  * @version $Id: EmptyCache.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.Serializable;
 import java.util.SortedMap;
 
 import rice.Continuation;
@@ -101,7 +100,7 @@ public class EmptyCache implements Cache {
    * @param obj The object to cache.
    * @param c The command to run once the operation is complete
    */
-  public void cache(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
+  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.valueOf(true));
   }
 
@@ -136,7 +135,7 @@ public class EmptyCache implements Cache {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
-  public void getObject(Id id, Continuation<? super Serializable, Exception> c) {
+  public void getObject(Id id, Continuation<? super Object, Exception> c) {
     c.receiveResult(null);
   }
 
@@ -148,7 +147,7 @@ public class EmptyCache implements Cache {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
-  public Serializable getMetadata(Id id) {
+  public Object getMetadata(Id id) {
     return null;
   }
 
@@ -161,7 +160,7 @@ public class EmptyCache implements Cache {
    * @param metadata The metadata to store
    * @param c The command to run once the operation is complete
    */
-  public void setMetadata(Id id, Serializable metadata, Continuation<? super Boolean, Exception> c) {
+  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> c) {
     c.receiveResult(Boolean.valueOf(true));
   }
 
@@ -201,8 +200,8 @@ public class EmptyCache implements Cache {
    * @param range The range to query
    * @return The map containg the keys
    */
-  public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
-    return new ConcurrentRingMap<Id, Serializable>();
+  public SortedMap<Id, Object> scanMetadata(IdRange range) {
+    return new ConcurrentRingMap<Id, Object>();
   }
 
   /**
@@ -211,8 +210,8 @@ public class EmptyCache implements Cache {
    *
    * @return The treemap mapping ids to metadata
    */
-  public SortedMap<Id, Serializable> scanMetadata() {
-    return new ConcurrentRingMap<Id, Serializable>();
+  public SortedMap<Id, Object> scanMetadata() {
+    return new ConcurrentRingMap<Id, Object>();
   }
 
   /**
@@ -222,8 +221,8 @@ public class EmptyCache implements Cache {
    * @param value The maximal metadata value
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
-    return new ConcurrentRingMap<Id, Serializable>();
+  public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
+    return new ConcurrentRingMap<Id, Object>();
   }
 
   /**
@@ -231,8 +230,8 @@ public class EmptyCache implements Cache {
    *
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesNull() {
-    return new ConcurrentRingMap<Id, Serializable>();
+  public SortedMap<Id, Object> scanMetadataValuesNull() {
+    return new ConcurrentRingMap<Id, Object>();
   }
 
   /**

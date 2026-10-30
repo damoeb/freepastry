@@ -39,7 +39,6 @@ package rice.persistence;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 
 import org.slf4j.Logger;
 import rice.environment.time.TimeSource;
@@ -53,6 +52,7 @@ import rice.p2p.commonapi.Id;
 final class ObjectFiles {
 
   private final StorageLayout layout;
+  private final ObjectFileFormat format;
   private final MetadataIndex metadataIndex; // null without indexing
   private final StorageQuota quota;
   private final StorageStatistics stats;
@@ -60,8 +60,9 @@ final class ObjectFiles {
   private final TimeSource timeSource;
   private final Logger logger;
 
-  ObjectFiles(StorageLayout layout, MetadataIndex metadataIndex, StorageQuota quota, StorageStatistics stats, String name, TimeSource timeSource, Logger logger) {
+  ObjectFiles(StorageLayout layout, ObjectFileFormat format, MetadataIndex metadataIndex, StorageQuota quota, StorageStatistics stats, String name, TimeSource timeSource, Logger logger) {
     this.layout = layout;
+    this.format = format;
     this.metadataIndex = metadataIndex;
     this.quota = quota;
     this.stats = stats;
@@ -91,7 +92,7 @@ final class ObjectFiles {
     }
   }
 
-  Boolean store(final Id id, final Serializable metadata, final Serializable obj) throws Exception {
+  Boolean store(final Id id, final Object metadata, final Object obj) throws Exception {
     stats.countWrite();
 
     logger.atTrace().log(() -> "Storing object " + obj + " under id " + id.toStringFull() + " in root " + layout.getAppDirectory());
@@ -104,7 +105,7 @@ final class ObjectFiles {
 
     /* next, write out the data to a new copy of the original file */
     try {
-      ObjectFileFormat.writeObject(obj, metadata, id, timeSource.currentTimeMillis(), transcFile);
+      format.writeObject(obj, metadata, id, timeSource.currentTimeMillis(), transcFile);
       logger.atTrace().log(() -> "Done writing object " + obj + " under id " + id.toStringFull() + " in root " + layout.getAppDirectory());
 
       /* abort if this will put us over quota */
@@ -161,14 +162,14 @@ final class ObjectFiles {
     return Boolean.TRUE;
   }
 
-  Boolean setMetadata(final Id id, final Serializable metadata) throws Exception {
+  Boolean setMetadata(final Id id, final Object metadata) throws Exception {
     stats.countMetadataWrite();
 
     logger.atTrace().log(() -> "COUNT: Updating metadata for " + id.toStringFull() + " in " + name);
 
     /* write the metadata to the file */
     File objFile = layout.getFile(id);
-    ObjectFileFormat.writeMetadata(objFile, metadata);
+    format.writeMetadata(objFile, metadata);
 
     /* then update our cache */
     if (metadataIndex != null) {
@@ -178,7 +179,7 @@ final class ObjectFiles {
     return Boolean.TRUE;
   }
 
-  Serializable getObject(final Id id) throws Exception {
+  Object getObject(final Id id) throws Exception {
     stats.countRead();
 
     /* get the file */
@@ -190,7 +191,7 @@ final class ObjectFiles {
         return null;
 
       logger.atTrace().log(() -> "COUNT: Fetching data under " + id.toStringFull() + " of size " + objFile.length() + " in " + name);
-      return ObjectFileFormat.readData(objFile);
+      return format.readData(objFile);
     } catch (Exception e) {
       /* remove our index for this file */
       if (metadataIndex != null) {

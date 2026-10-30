@@ -39,30 +39,27 @@ package rice.persistence;
 
 import static rice.persistence.PersistentStorage.METADATA_FILENAME;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
-import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.ImmutableSortedMap;
-import rice.p2p.util.JavaSerializationFilter;
 import rice.p2p.util.ReverseTreeMap;
-import rice.p2p.util.rawserialization.JavaSerializationException;
+import rice.p2p.util.rawserialization.SimpleInputBuffer;
+import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
  * The in-memory index of {@link PersistentStorage}: the metadata of every stored object, and the per-directory
@@ -75,16 +72,23 @@ import rice.p2p.util.rawserialization.JavaSerializationException;
  */
 final class MetadataIndex {
 
-  private final ReverseTreeMap<Id, Serializable> metadata;  // the in-memory cache of object metadata
+  private final ReverseTreeMap<Id, Object> metadata;  // the in-memory cache of object metadata
   private final HashSet<File> dirty;            // the list of directories which have dirty metadata
-  private final Environment environment;
+  private final IdFactory factory;
+  private final StorageSerializer serializer;
   private final Logger logger;
 
-  MetadataIndex(Environment environment, Logger logger) {
-    this.environment = environment;
+  /** The first long of a metadata cache file. */
+  static final long METADATA_CACHE_MAGIC = 0x46504D4443616368L; // "FPMDCach"
+  /** The metadata cache format version. */
+  static final int METADATA_CACHE_VERSION = 1;
+
+  MetadataIndex(IdFactory factory, StorageSerializer serializer, Logger logger) {
+    this.factory = factory;
+    this.serializer = serializer;
     this.logger = logger;
     this.dirty = new HashSet<File>();
-    this.metadata = new ReverseTreeMap<Id, Serializable>();
+    this.metadata = new ReverseTreeMap<Id, Object>();
   }
 
   boolean exists(Id id) {
@@ -93,16 +97,16 @@ final class MetadataIndex {
     }
   }
 
-  Serializable get(Id id) {
+  Object get(Id id) {
     synchronized (metadata) {
-      return (Serializable) metadata.get(id);
+      return metadata.get(id);
     }
   }
 
   /**
    * Records the metadata of an object stored in {@code dir}, and marks that directory dirty.
    */
-  void put(Id id, Serializable value, File dir) {
+  void put(Id id, Object value, File dir) {
     synchronized (metadata) {
       metadata.put(id, value);
       dirty.add(dir);
@@ -138,31 +142,31 @@ final class MetadataIndex {
   /**
    * @return a snapshot of all keys and their metadata
    */
-  SortedMap<Id, Serializable> keyMap() {
+  SortedMap<Id, Object> keyMap() {
     synchronized (metadata) {
-      return new ImmutableSortedMap<Id, Serializable>(metadata.keyMap());
+      return new ImmutableSortedMap<Id, Object>(metadata.keyMap());
     }
   }
 
   /**
    * @return a snapshot of the keys from {@code ccw} (inclusive) to {@code cw} (exclusive) and their metadata
    */
-  SortedMap<Id, Serializable> keySubMap(Id ccw, Id cw) {
+  SortedMap<Id, Object> keySubMap(Id ccw, Id cw) {
     synchronized (metadata) {
-      return new ImmutableSortedMap<Id, Serializable>(metadata.keySubMap(ccw, cw));
+      return new ImmutableSortedMap<Id, Object>(metadata.keySubMap(ccw, cw));
     }
   }
 
-  SortedMap<Id, Serializable> keyMapUnlocked() {
-    return new ImmutableSortedMap<Id, Serializable>(metadata.keyMap());
+  SortedMap<Id, Object> keyMapUnlocked() {
+    return new ImmutableSortedMap<Id, Object>(metadata.keyMap());
   }
 
-  SortedMap<Id, Serializable> valueHeadMapUnlocked(Serializable value) {
-    return new ImmutableSortedMap<Id, Serializable>(metadata.valueHeadMap(value));
+  SortedMap<Id, Object> valueHeadMapUnlocked(Object value) {
+    return new ImmutableSortedMap<Id, Object>(metadata.valueHeadMap(value));
   }
 
-  SortedMap<Id, Serializable> valueNullMapUnlocked() {
-    return new ImmutableSortedMap<Id, Serializable>(metadata.valueNullMap());
+  SortedMap<Id, Object> valueNullMapUnlocked() {
+    return new ImmutableSortedMap<Id, Object>(metadata.valueNullMap());
   }
 
   int sizeUnlocked() {
@@ -177,7 +181,7 @@ final class MetadataIndex {
     return metadata.containsKey(id);
   }
 
-  void putUnlocked(Id id, Serializable value) {
+  void putUnlocked(Id id, Object value) {
     metadata.put(id, value);
   }
 
@@ -199,7 +203,7 @@ final class MetadataIndex {
     File[] files = (File[]) dirty.toArray(new File[0]);
 
     for (int i=0; i<files.length; i++) {
-      HashMap<Id, Serializable> map = new HashMap<Id, Serializable>();
+      HashMap<Id, Object> map = new HashMap<Id, Object>();
       IdRange range = rangeForDirectory.apply(files[i]);
       Iterator<Id> keys = null;
 
@@ -210,7 +214,7 @@ final class MetadataIndex {
 
       while (keys.hasNext()) {
         Id next = keys.next();
-        map.put(next, (Serializable) metadata.get(next));
+        map.put(next, metadata.get(next));
       }
 
       try {
@@ -254,63 +258,60 @@ final class MetadataIndex {
     if (! metadata.exists())
       return -1L;
 
-    FileInputStream fin = null;
+    IdRange range = rangeForDirectory.apply(file);
 
     try {
-      fin = new FileInputStream(metadata);
-      ObjectInputStream objin = new ObjectInputStream(new BufferedInputStream(fin));
-      // defense in depth against a planted metadata file: only admit allowlisted classes
-      JavaSerializationFilter.install(objin, environment);
-
-      IdRange range = rangeForDirectory.apply(file);
-
-      try {
-        HashMap<?, ?> map = (HashMap<?, ?>) objin.readObject();
-        Iterator<?> keys = map.keySet().iterator();
-
-        while (keys.hasNext()) {
-          Id id = (Id) keys.next();
-
-          if ((range.containsId(id)) && (new File(file, id.toStringFull().substring(prefixOf.apply(file).length())).exists()))
-            this.metadata.put(id, (Serializable)map.get(id));
-          else
-            dirty.add(file);
-        }
-
-        return metadata.lastModified();
-      } catch (ClassNotFoundException e) {
-        logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
-        StorageFiles.deleteFile(metadata);
-        return 0L;
-      } catch (IOException e) {
-        logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
-        StorageFiles.deleteFile(metadata);
-        return 0L;
+      InputBuffer buf = new SimpleInputBuffer(Files.readAllBytes(metadata.toPath()));
+      if (buf.readLong() != METADATA_CACHE_MAGIC) {
+        throw new IOException("Not a metadata cache");
       }
-    } finally {
-      fin.close();
+      int version = buf.readInt();
+      if (version != METADATA_CACHE_VERSION) {
+        throw new IOException("Unknown metadata cache version " + version);
+      }
+
+      int count = buf.readInt();
+      for (int i = 0; i < count; i++) {
+        Id id = factory.buildIdFromToString(buf.readUTF());
+        Object value = buf.readBoolean() ? serializer.readMetadata(buf) : null;
+
+        if ((range.containsId(id)) && (new File(file, id.toStringFull().substring(prefixOf.apply(file).length())).exists()))
+          this.metadata.put(id, value);
+        else
+          dirty.add(file);
+      }
+
+      return metadata.lastModified();
+    } catch (IOException | RuntimeException e) {
+      logger.warn("ERROR: Got exception {} while reading metadata file {} - rebuilding file", e, metadata, e);
+      StorageFiles.deleteFile(metadata);
+      return 0L;
     }
   }
 
   /**
-   * Utility function which writes the metadata file out to disk.
+   * Utility function which writes the metadata file out to disk: a magic number, the format version, the
+   * number of entries, and per entry the key (UTF of {@link Id#toStringFull()}), whether there is metadata
+   * and the metadata itself, written by the {@link StorageSerializer}.
    *
    * @param file The directory to write the file to
    * @param map The data to write
    */
-  private static void writeMetadataFile(File file, HashMap<Id, Serializable> map) throws IOException {
-    FileOutputStream fout = null;
+  private void writeMetadataFile(File file, HashMap<Id, Object> map) throws IOException {
+    SimpleOutputBuffer buf = new SimpleOutputBuffer();
+    buf.writeLong(METADATA_CACHE_MAGIC);
+    buf.writeInt(METADATA_CACHE_VERSION);
+    buf.writeInt(map.size());
+    for (Map.Entry<Id, Object> entry : map.entrySet()) {
+      buf.writeUTF(entry.getKey().toStringFull());
+      buf.writeBoolean(entry.getValue() != null);
+      if (entry.getValue() != null) {
+        serializer.writeMetadata(entry.getValue(), buf);
+      }
+    }
 
-    try {
-      fout = new FileOutputStream(new File(file, METADATA_FILENAME));
-      ObjectOutputStream objout = new ObjectOutputStream(new BufferedOutputStream(fout));
-      objout.writeObject(map);
-      objout.close();
-    } catch (IOException ioe) {
-      throw new JavaSerializationException(map, ioe);
-    } finally {
-      if (fout != null)
-        fout.close();
+    try (FileOutputStream fout = new FileOutputStream(new File(file, METADATA_FILENAME))) {
+      fout.write(buf.getBytes(), 0, buf.getWritten());
     }
   }
 }

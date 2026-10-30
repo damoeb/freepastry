@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.past.gc;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -401,8 +400,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
           if (theId == null) {
             logger.error("Error: null Id from {} from {} in {}", imsg.getContent(), imsg, this);
           }
-          storage.getObject(theId, new StandardContinuation<Serializable, Object, Exception>(getResponseContinuation(msg)) {
-            public void receiveResult(Serializable o) {
+          storage.getObject(theId, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
+            public void receiveResult(Object o) {
               try {
                 // allow the object to check the insert, and then insert the data
                 GCPastContent content = (GCPastContent) imsg.getContent().checkInsert(imsg.getContent().getId(), (PastContent) o);
@@ -442,8 +441,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
                     receiveResult(Boolean.FALSE);
                   }
                 } else {
-                  storage.getObject(id.getId(), new StandardContinuation<Serializable, Object, Exception>(this) {
-                    public void receiveResult(Serializable o) {
+                  storage.getObject(id.getId(), new StandardContinuation<Object, Object, Exception>(this) {
+                    public void receiveResult(Object o) {
                       storage.setMetadata(id.getId(), ((GCPastContent) o).getMetadata(id.getExpiration()), parent);
                     }
                   });
@@ -451,8 +450,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
               } else {
                 /* but first check and see if it's in the trash, so we can uncollect it */
                 if (trash != null) {
-                  trash.getObject(id.getId(), new StandardContinuation<Serializable, Object, Exception>(this) {
-                    public void receiveResult(Serializable o) {
+                  trash.getObject(id.getId(), new StandardContinuation<Object, Object, Exception>(this) {
+                    public void receiveResult(Object o) {
                       if ((o != null) && (o instanceof GCPastContent)) {
                         logger.debug("GCREFRESH: Restoring object {} from trash!", id);
                         GCPastContent content = (GCPastContent) o;
@@ -498,8 +497,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
         final FetchHandleMessage fmsg = (FetchHandleMessage) msg;
         fetchHandles++;
 
-        storage.getObject(fmsg.getId(), new StandardContinuation<Serializable, Object, Exception>(getResponseContinuation(msg)) {
-          public void receiveResult(Serializable o) {
+        storage.getObject(fmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
+          public void receiveResult(Object o) {
             GCPastContent content = (GCPastContent) o;
 
             if (content != null) {
@@ -541,7 +540,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
             storage.getObject(gid, new StandardContinuation<Object, Object, Exception>(this) {
               public void receiveResult(Object o) {
                 if (o != null) {
-                  trash.store(gid, storage.getMetadata(gid), (Serializable) o, new StandardContinuation<Boolean, Object, Exception>(parent) {
+                  trash.store(gid, storage.getMetadata(gid), o, new StandardContinuation<Boolean, Object, Exception>(parent) {
                     public void receiveResult(Boolean o) {
                       storage.unstore(gid, parent);
                     }
@@ -584,8 +583,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
       GCPastMetadata metadata = (GCPastMetadata) storage.getMetadata(gcid.getId());
 
       if (metadata == null) {
-        storage.getObject(gcid.getId(), new StandardContinuation<Serializable, Boolean, Exception>(command) {
-          public void receiveResult(Serializable o) {
+        storage.getObject(gcid.getId(), new StandardContinuation<Object, Boolean, Exception>(command) {
+          public void receiveResult(Object o) {
             GCPastContent content = (GCPastContent) o;
             storage.setMetadata(content.getId(), content.getMetadata(gcid.getExpiration()), parent);
           }
@@ -596,8 +595,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
         command.receiveResult(Boolean.TRUE);
       }
     } else {
-      policy.fetch(gcid.getId(), hint, backup, this, new StandardContinuation<Serializable, Boolean, Exception>(command) {
-        public void receiveResult(Serializable o) {
+      policy.fetch(gcid.getId(), hint, backup, this, new StandardContinuation<Object, Boolean, Exception>(command) {
+        public void receiveResult(Object o) {
           if (o == null) {
             logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, getInstance());
             parent.receiveResult(Boolean.valueOf(false));
@@ -669,8 +668,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
   public void reInsert(final Id id, Continuation<? super Boolean, Exception> command) {
     if (id instanceof GCId) {
       // what if the GCId's expiration is different than the metadata's?
-      storage.getObject(((GCId)id).getId(), new StandardContinuation<Serializable, Boolean, Exception>(command) {
-        public void receiveResult(final Serializable o) {
+      storage.getObject(((GCId)id).getId(), new StandardContinuation<Object, Boolean, Exception>(command) {
+        public void receiveResult(final Object o) {
           insert((PastContent)o, ((GCId)id).getExpiration(), new StandardContinuation<Boolean[], Boolean, Exception>(parent) {
             public void receiveResult(Boolean[] result) {
               Boolean results[] = result;

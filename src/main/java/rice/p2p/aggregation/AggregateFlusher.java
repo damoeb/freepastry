@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.aggregation;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -248,7 +247,7 @@ final class AggregateFlusher {
    * Builds one aggregate: fetches its components from the waiting list one after the other, stores the
    * aggregate, and then removes the components from the waiting list.
    */
-  private final class AggregateBuilder implements Continuation<Serializable, Exception> {
+  private final class AggregateBuilder implements Continuation<Object, Exception> {
     private final int index;
     private final ObjectDescriptor[] desc;
     private final GCPastContent[] obj;
@@ -269,7 +268,7 @@ final class AggregateFlusher {
       waitingList.getObject(new VersionKey(desc[0].getKey(), desc[0].getVersion()), this);
     }
 
-    public void receiveResult(Serializable o) {
+    public void receiveResult(Object o) {
       if ((o!=null) && (o instanceof GCPastContent)) {
         obj[currentQuery++] = (GCPastContent) o;
         if (currentQuery < desc.length) {

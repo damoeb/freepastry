@@ -45,7 +45,6 @@ package rice.persistence;
  *
  * @version $Id: StorageManagerImpl.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.Serializable;
 import java.util.SortedMap;
 
 import rice.Continuation;
@@ -143,9 +142,9 @@ public class StorageManagerImpl implements StorageManager {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete
    */
-  public void getObject(final Id id, Continuation<? super Serializable, Exception> c) {
-    cache.getObject(id, new StandardContinuation<Serializable, Serializable, Exception>(c) {
-      public void receiveResult(Serializable o) {
+  public void getObject(final Id id, Continuation<? super Object, Exception> c) {
+    cache.getObject(id, new StandardContinuation<Object, Object, Exception>(c) {
+      public void receiveResult(Object o) {
         if (o != null) {
           parent.receiveResult(o);
         } else {
@@ -164,7 +163,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
-  public Serializable getMetadata(Id id) {
+  public Object getMetadata(Id id) {
     return storage.getMetadata(id);
   }
 
@@ -177,7 +176,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param metadata The metadata to store
    * @param command The command to run once the operation is complete
    */
-  public void setMetadata(final Id id, final Serializable metadata, Continuation<? super Boolean, Exception> command) {
+  public void setMetadata(final Id id, final Object metadata, Continuation<? super Boolean, Exception> command) {
     cache.setMetadata(id, metadata, new StandardContinuation<Boolean, Boolean, Exception>(command) {
       public void receiveResult(Boolean o) {
         storage.setMetadata(id, metadata, parent);
@@ -221,7 +220,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param range The range to query
    * @return The map containg the keys
    */
-  public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
+  public SortedMap<Id, Object> scanMetadata(IdRange range) {
     return storage.scanMetadata(range);
   }
 
@@ -231,7 +230,7 @@ public class StorageManagerImpl implements StorageManager {
    *
    * @return The treemap mapping ids to metadata
    */
-  public SortedMap<Id, Serializable> scanMetadata() {
+  public SortedMap<Id, Object> scanMetadata() {
     return storage.scanMetadata();
   }
 
@@ -242,7 +241,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param value The maximal metadata value
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
+  public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
     return storage.scanMetadataValuesHead(value);
   }
 
@@ -251,7 +250,7 @@ public class StorageManagerImpl implements StorageManager {
    *
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesNull() {
+  public SortedMap<Id, Object> scanMetadataValuesNull() {
     return storage.scanMetadataValuesNull();
   }
 
@@ -289,7 +288,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param obj The object to store.
    * @param c The command to run once the operation is complete
    */
-  public void store(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
+  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
     storage.store(id, metadata, obj, c);
   }
 
@@ -325,7 +324,7 @@ public class StorageManagerImpl implements StorageManager {
    * @param obj The object to cache.
    * @param c The command to run once the operation is complete
    */
-  public void cache(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c) {
+  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
     cache.cache(id, metadata, obj, c);
   }
 

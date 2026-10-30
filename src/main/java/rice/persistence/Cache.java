@@ -43,7 +43,6 @@ package rice.persistence;
  * @author Alan Mislove
  * @version $Id: Cache.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.Serializable;
 
 import rice.Continuation;
 import rice.p2p.commonapi.Id;
@@ -77,7 +76,7 @@ public interface Cache extends Catalog {
    * @param obj The object to cache.
    * @param c The command to run once the operation is complete
    */
-  public void cache(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c);
+  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c);
 
   /**
    * Removes the object from the list of cached objects. This method is

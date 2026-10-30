@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /**
  * This interface represents data published in a Scribe system.
@@ -48,7 +49,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @version $Id: ScribeContent.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Alan Mislove
  */
-public interface ScribeContent extends Serializable {
+public interface ScribeContent extends Serializable, RawSerializable {
   /**
    * The type id of this content's raw serialization, which the matching deserializer switches on.
    * Zero is reserved and must not be used.

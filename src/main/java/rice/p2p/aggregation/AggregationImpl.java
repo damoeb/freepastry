@@ -558,6 +558,14 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     objectStore.setContentDeserializer(contentDeserializer);
   }
 
+  public PastContentDeserializer getContentDeserializer() {
+    return contentDeserializer;
+  }
+
+  public Endpoint getEndpoint() {
+    return endpoint;
+  }
+
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {
     contentHandleDeserializer = deserializer;
     objectStore.setContentHandleDeserializer(deserializer);

@@ -72,7 +72,7 @@ public class PersistentStorageTest extends MemoryStorageTest {
   public PersistentStorageTest(boolean store, Environment environment, String rootDir) throws IOException {
     super(store, environment);
     FACTORY = new PastryIdFactory(this.environment);
-    storage = new PersistentStorage(FACTORY, "PersistentStorageTest" , rootDir, 20000000, environment);
+    storage = new PersistentStorage(FACTORY, new TestStorageSerializer(), "PersistentStorageTest" , rootDir, 20000000, environment);
   }
 
   public static void main(String[] args) throws IOException {

@@ -43,6 +43,7 @@ import java.io.Serializable;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /**
  * This interface must be implemented by all content object handles.  This interface
@@ -55,7 +56,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Ansley Post
  * @author Peter Druschel
  */
-public interface PastContentHandle extends Serializable {
+public interface PastContentHandle extends Serializable, RawSerializable {
 
   /**
    * get the id of the PastContent object associated with this handle

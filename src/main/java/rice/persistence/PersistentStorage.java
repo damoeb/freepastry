@@ -47,7 +47,6 @@ package rice.persistence;
  */
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.SortedMap;
 
 import org.slf4j.Logger;
@@ -77,21 +76,10 @@ import rice.p2p.util.ConcurrentRingMap;
  * *CANNOT* have the period ('.') or exclamation point ('!')
  * characters in them - these are used for internal purposes.<b>
  *
- * The serialized objects are stored on-disk in a GZIPed XML format,
- * which provides extensibility with reasonable storage and processing
- * costs.  Additionally, any metadata, if provided, is also stored
- * in the on-disk file.  The format of the file is
- *
- * [Key, Object, Version, Gzipped XML]
- * [Metadata, Gzipped XML]
- * [persistence magic number, long]
- * [persistence version, long]
- * [persistence revision, long]
- * [metadata length, long]
- *
- * The persistence package is set up to automatically upgrade older
- * versions of the on-disk format as new data is written under the
- * key.
+ * The objects and their metadata are written by the {@link StorageSerializer} the storage is built with,
+ * normally with the raw serialization the wire uses, and stored gzipped; the format of the file is
+ * described in {@link ObjectFileFormat}, that of the per-directory metadata cache in {@link MetadataIndex}.
+ * Files in another format (version 2 held Java-serialized XML) are not read.
  *
  * Persistence also supports the metadata interface specified in the
  * Catalog interface.  All metadata is guaranteed to be stored
@@ -105,9 +93,9 @@ public class PersistentStorage implements Storage {
    * Static variables defining the layout of the on-disk storage
    */
   public static final long PERSISTENCE_MAGIC_NUMBER = 8038844221L;
-  public static final long PERSISTENCE_VERSION_2 = 2L;
-  public static final long PERSISTENCE_REVISION_2_0 = 0L;
-  public static final long PERSISTENCE_REVISION_2_1 = 1L;
+  /** Version 3: raw serialization through a {@link StorageSerializer} (version 2 was Java-serialized XML). */
+  public static final long PERSISTENCE_VERSION_3 = 3L;
+  public static final long PERSISTENCE_REVISION_3_0 = 0L;
 
   /**
    * Static variables which define the location of the storage root
@@ -160,11 +148,12 @@ public class PersistentStorage implements Storage {
   * persist the data. Uses a default instance name.
   *
   * @param factory The factory to use for creating Ids.
+  * @param serializer writes the objects and metadata to disk and reads them back
   * @param rootDir The root directory of the persisted disk.
   * @param size the size of the storage in bytes, or -1 for unlimited
   */
-  public PersistentStorage(IdFactory factory, String rootDir, long size, Environment env) throws IOException {
-    this(factory, "default", rootDir, size, env);
+  public PersistentStorage(IdFactory factory, StorageSerializer serializer, String rootDir, long size, Environment env) throws IOException {
+    this(factory, serializer, "default", rootDir, size, env);
   }
 
  /**
@@ -172,12 +161,13 @@ public class PersistentStorage implements Storage {
   *  and a root directory in which to persist the data.
   *
   * @param factory The factory to use for creating Ids.
+  * @param serializer writes the objects and metadata to disk and reads them back
   * @param name the name of this instance
   * @param rootDir The root directory of the persisted disk.
   * @param size the size of the storage in bytes, or -1 for unlimited
   */
-  public PersistentStorage(IdFactory factory, String name, String rootDir, long size, Environment env) throws IOException {
-    this(factory, name, rootDir, size, true, env);
+  public PersistentStorage(IdFactory factory, StorageSerializer serializer, String name, String rootDir, long size, Environment env) throws IOException {
+    this(factory, serializer, name, rootDir, size, true, env);
   }
 
   /**
@@ -185,12 +175,13 @@ public class PersistentStorage implements Storage {
    *  and a root directory in which to persist the data.
    *
    * @param factory The factory to use for creating Ids.
+   * @param serializer writes the objects and metadata to disk and reads them back
    * @param name the name of this instance
    * @param rootDir The root directory of the persisted disk.
    * @param size the size of the storage in bytes, or -1 for unlimited
    * @param index Whether or not to index the objects
    */
-  public PersistentStorage(IdFactory factory, String name, String rootDir, long size, boolean index, Environment env) throws IOException {
+  public PersistentStorage(IdFactory factory, StorageSerializer serializer, String name, String rootDir, long size, boolean index, Environment env) throws IOException {
     this.environment = env;
     logger = environment.getLogManager().getLogger(PersistentStorage.class, null);
     this.factory = factory;
@@ -200,7 +191,7 @@ public class PersistentStorage implements Storage {
     this.index = index;
     this.stats = new StorageStatistics(name, environment.getTimeSource(), logger);
     if (index) {
-      this.metadataIndex = new MetadataIndex(environment, logger);
+      this.metadataIndex = new MetadataIndex(factory, serializer, logger);
     }
 
     this.layout = new StorageLayout(rootDir, name, factory, environment.getRandomSource(), metadataIndex, logger);
@@ -208,9 +199,10 @@ public class PersistentStorage implements Storage {
     logger.info("Launching persistent storage in {} with name {} spliting factor {}", rootDir, name, MAX_FILES);
 
     this.blockingIO = new BlockingIO(environment);
-    this.objectFiles = new ObjectFiles(layout, metadataIndex, quota, stats, name, environment.getTimeSource(), logger);
+    ObjectFileFormat format = new ObjectFileFormat(factory, serializer, logger);
+    this.objectFiles = new ObjectFiles(layout, format, metadataIndex, quota, stats, name, environment.getTimeSource(), logger);
 
-    new StorageRecovery(layout, metadataIndex, quota, logger).init();
+    new StorageRecovery(layout, format, metadataIndex, quota, logger).init();
   }
 
   private void printStats() {
@@ -270,7 +262,7 @@ public class PersistentStorage implements Storage {
    * @param metadata The object's metadata
    * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
-  public void store(final Id id, final Serializable metadata, final Serializable obj, Continuation<? super Boolean, Exception> c) {
+  public void store(final Id id, final Object metadata, final Object obj, Continuation<? super Boolean, Exception> c) {
     if (id == null || obj == null) {
       c.receiveResult(Boolean.valueOf(false));
       return;
@@ -324,7 +316,7 @@ public class PersistentStorage implements Storage {
    * @param id The id for which the metadata is needed
    * @return The metadata, or null of non exists
    */
-  public Serializable getMetadata(Id id) {
+  public Object getMetadata(Id id) {
     if (index) {
       return metadataIndex.get(id);
     } else {
@@ -341,7 +333,7 @@ public class PersistentStorage implements Storage {
    * @param metadata The metadata to store
    * @param c The command to run once the operation is complete
    */
-  public void setMetadata(final Id id, final Serializable metadata, Continuation<? super Boolean, Exception> c) {
+  public void setMetadata(final Id id, final Object metadata, Continuation<? super Boolean, Exception> c) {
     printStats();
 
     if (! exists(id)) {
@@ -357,7 +349,7 @@ public class PersistentStorage implements Storage {
    * @param id The id of the object in question.
    * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
-  public void getObject(final Id id, Continuation<? super Serializable, Exception> c) {
+  public void getObject(final Id id, Continuation<? super Object, Exception> c) {
     printStats();
 
     if (index && (! exists(id))) {
@@ -419,10 +411,10 @@ public class PersistentStorage implements Storage {
    * @param range The range to query
    * @return The map containing the keys
    */
-  public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
+  public SortedMap<Id, Object> scanMetadata(IdRange range) {
     if (index) {
       if (range.isEmpty())
-        return new ConcurrentRingMap<Id, Serializable>();
+        return new ConcurrentRingMap<Id, Object>();
       else if (range.getCCWId().equals(range.getCWId()))
         return scanMetadata();
       else
@@ -438,7 +430,7 @@ public class PersistentStorage implements Storage {
    *
    * @return The treemap mapping ids to metadata
    */
-  public SortedMap<Id, Serializable> scanMetadata() {
+  public SortedMap<Id, Object> scanMetadata() {
     if (index) {
       return metadataIndex.keyMapUnlocked();
     } else {
@@ -453,9 +445,9 @@ public class PersistentStorage implements Storage {
    * @param value The maximal metadata value
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
+  public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
     if (index) {
-      return metadataIndex.valueHeadMapUnlocked((Serializable)value);
+      return metadataIndex.valueHeadMapUnlocked(value);
     } else {
       throw new UnsupportedOperationException("scanMetadataValuesHead() not supported without indexing");
     }
@@ -466,7 +458,7 @@ public class PersistentStorage implements Storage {
    *
    * @return The submapping
    */
-  public SortedMap<Id, Serializable> scanMetadataValuesNull() {
+  public SortedMap<Id, Object> scanMetadataValuesNull() {
     if (index) {
       return metadataIndex.valueNullMapUnlocked();
     } else {

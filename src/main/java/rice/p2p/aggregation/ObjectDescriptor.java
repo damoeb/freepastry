@@ -36,9 +36,13 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.aggregation;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class ObjectDescriptor implements Serializable, Comparable<ObjectDescriptor> {
 
@@ -56,6 +60,28 @@ public class ObjectDescriptor implements Serializable, Comparable<ObjectDescript
     this.refreshedLifetime = refreshedLifetime;
     this.size = size;
     this.version = version;
+  }
+
+  /**
+   * Reading constructor, the counterpart of {@link #serialize(OutputBuffer)}. The key is read back as text
+   * because the descriptor is read while a storage starts up, before any endpoint exists.
+   *
+   * @param factory builds the key
+   */
+  public ObjectDescriptor(InputBuffer buf, IdFactory factory) throws IOException {
+    key = factory.buildIdFromToString(buf.readUTF());
+    version = buf.readLong();
+    currentLifetime = buf.readLong();
+    refreshedLifetime = buf.readLong();
+    size = buf.readInt();
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeUTF(key.toStringFull());
+    buf.writeLong(version);
+    buf.writeLong(currentLifetime);
+    buf.writeLong(refreshedLifetime);
+    buf.writeInt(size);
   }
 
   public String toString() {

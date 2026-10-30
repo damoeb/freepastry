@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.past;
 
-import java.io.Serializable;
 
 import rice.Continuation;
 import rice.Continuation.StandardContinuation;
@@ -69,7 +68,7 @@ public interface PastPolicy {
    * @param backup The backup cache, where the object *might* be located
    * @param command The command to call with the replica to store
    */
-  public void fetch(Id id, NodeHandle hint, Cache backup, Past past, Continuation<? super Serializable, Exception> command);
+  public void fetch(Id id, NodeHandle hint, Cache backup, Past past, Continuation<? super Object, Exception> command);
 
   /**
    * This method is call before an insert() is processed on the local node.  This allows applications
@@ -98,16 +97,16 @@ public interface PastPolicy {
      * @param past The local past instance
      * @param command The command to call with the replica to store
      */
-    public void fetch(final Id id, final NodeHandle hint, final Cache backup, final Past past, Continuation<? super Serializable, Exception> command) {
+    public void fetch(final Id id, final NodeHandle hint, final Cache backup, final Past past, Continuation<? super Object, Exception> command) {
       if ((backup != null) && backup.exists(id)) {
         backup.getObject(id, command);
       } else {
-        past.lookup(id, false, new StandardContinuation<PastContent, Serializable, Exception>(command) {
+        past.lookup(id, false, new StandardContinuation<PastContent, Object, Exception>(command) {
           public void receiveResult(PastContent o) {
             if (o != null)
               parent.receiveResult(o);
             else
-              past.lookupHandle(id, hint, new StandardContinuation<PastContentHandle, Serializable, Exception>(parent) {
+              past.lookupHandle(id, hint, new StandardContinuation<PastContentHandle, Object, Exception>(parent) {
                 public void receiveResult(PastContentHandle o) {
                   if (o != null)
                     past.fetch(o, parent);

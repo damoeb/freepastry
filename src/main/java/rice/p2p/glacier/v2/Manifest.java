@@ -191,6 +191,7 @@ public class Manifest implements Serializable {
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeLong(expirationDate);
     buf.writeInt(objectHash.length);
     buf.writeInt(fragmentHash.length);
     buf.writeInt(fragmentHash[0].length);
@@ -207,6 +208,7 @@ public class Manifest implements Serializable {
   }
 
   public Manifest(InputBuffer buf) throws IOException {
+    expirationDate = buf.readLong();
     int objectHashLength = buf.readInt();
     int fragmentHashLength = buf.readInt();
     int fragmentHashSubLength = buf.readInt();

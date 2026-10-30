@@ -645,8 +645,7 @@ final class StorageLayout {
   }
 
   /**
-   * Abstract over reading a single key from a file using Java
-   * serialization.
+   * Reads the key of a file from its name and the names of its directories.
    *
    * @param file The file to create the key from.
    * @return The key that was read in

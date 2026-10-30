@@ -45,7 +45,6 @@ package rice.persistence;
  *
  * @version $Id: Storage.java 4654 2009-01-08 16:33:07Z jeffh $
  */
-import java.io.Serializable;
 
 import rice.Continuation;
 import rice.p2p.commonapi.Id;
@@ -75,7 +74,7 @@ public interface Storage extends Catalog {
    * @param obj The object to store.
    * @param c The command to run once the operation is complete
    */
-  public void store(Id id, Serializable metadata, Serializable obj, Continuation<? super Boolean, Exception> c);
+  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c);
 
   /**
    * Removes the object from the list of stored objects. This method is

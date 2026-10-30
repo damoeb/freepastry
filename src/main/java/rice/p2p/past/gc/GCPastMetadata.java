@@ -38,8 +38,10 @@ advised of the possibility of such damage.
 package rice.p2p.past.gc;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
+
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * Class which is used as the metadata storage for the GC past implementation.
@@ -113,10 +115,14 @@ public class GCPastMetadata implements Serializable, Comparable<GCPastMetadata> 
     return "GCPMetadata " + expiration;
   }
 
-  private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-    ois.defaultReadObject();
+  /**
+   * Reading constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public GCPastMetadata(InputBuffer buf) throws IOException {
+    expiration = buf.readLong();
+  }
 
-    if (expiration == 1096560000000L)
-      expiration = GCPastImpl.DEFAULT_EXPIRATION;
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeLong(expiration);
   }
 }
