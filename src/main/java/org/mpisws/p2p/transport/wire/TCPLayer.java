@@ -51,7 +51,6 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
-import rice.environment.params.Parameters;
 import rice.selector.SelectionKeyHandler;
 
 public class TCPLayer extends SelectionKeyHandler {
@@ -67,7 +66,7 @@ public class TCPLayer extends SelectionKeyHandler {
 
   // the size of the buffers for the socket
   public final int SOCKET_BUFFER_SIZE;
-  private boolean TCP_NO_DELAY = false;
+  private final boolean TCP_NO_DELAY;
 
   WireTransportLayerImpl wire;
 
@@ -83,12 +82,10 @@ public class TCPLayer extends SelectionKeyHandler {
     this.wire = wire;
     this.logger = wire.getEnvironment().getLogManager().getLogger(TCPLayer.class, null);
 
-    Parameters p = wire.getEnvironment().getParameters();
-    MAX_OPEN_SOCKETS = p.getInt("pastry_socket_scm_max_open_sockets");
-    SOCKET_BUFFER_SIZE = p.getInt("pastry_socket_scm_socket_buffer_size"); // 32768
-    if (p.contains("transport_tcp_no_delay")) {
-      TCP_NO_DELAY = p.getBoolean("transport_tcp_no_delay");
-    }
+    WireConfig config = wire.getConfig();
+    MAX_OPEN_SOCKETS = config.maxOpenSockets();
+    SOCKET_BUFFER_SIZE = config.socketBufferSize();
+    TCP_NO_DELAY = config.tcpNoDelay();
     ServerSocketChannel temp = null; // just to clean up after the exception
 
     // bind to port

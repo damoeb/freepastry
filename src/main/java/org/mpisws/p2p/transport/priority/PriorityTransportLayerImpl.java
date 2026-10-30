@@ -124,6 +124,15 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       Environment env,
+      PriorityConfig config,
+      ErrorHandler<Identifier> handler) {
+    this(tl, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), handler);
+  }
+
+  public PriorityTransportLayerImpl(TransportLayer<Identifier, ByteBuffer> tl,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
       int maxMsgSize,
       int maxQueueSize,
       ErrorHandler<Identifier> handler) {

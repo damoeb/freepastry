@@ -61,7 +61,6 @@ import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
 import rice.p2p.util.TimerWeakHashMap;
@@ -141,6 +140,10 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   private ErrorHandler<Identifier> errorHandler;
 
   public LivenessTransportLayerImpl(TransportLayer<Identifier, ByteBuffer> tl, Environment env, ErrorHandler<Identifier> errorHandler, int checkDeadThrottle) {
+    this(tl, env, errorHandler, LivenessConfig.fromParameters(env.getParameters()).withCheckDeadThrottle(checkDeadThrottle));
+  }
+
+  public LivenessTransportLayerImpl(TransportLayer<Identifier, ByteBuffer> tl, Environment env, ErrorHandler<Identifier> errorHandler, LivenessConfig config) {
     this.tl = tl;
     this.environment = env;
     this.logger = env.getLogManager().getLogger(LivenessTransportLayerImpl.class, null);
@@ -150,18 +153,17 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     this.livenessListeners = new ArrayList<LivenessListener<Identifier>>();
     this.pingListeners = new ArrayList<PingListener<Identifier>>();
       this.managers = new TimerWeakHashMap<Identifier, EntityManager>(env.getSelectorManager(), 300000);
-    Parameters p = env.getParameters();
-    PING_DELAY = p.getInt("pastry_socket_scm_ping_delay");
-    PING_JITTER = p.getFloat("pastry_socket_scm_ping_jitter");
-    NUM_PING_TRIES = p.getInt("pastry_socket_scm_num_ping_tries");
-    BACKOFF_INITIAL = p.getInt("pastry_socket_scm_backoff_initial");
-    BACKOFF_LIMIT = p.getInt("pastry_socket_scm_backoff_limit");
-    CHECK_DEAD_THROTTLE = checkDeadThrottle; //p.getLong("pastry_socket_srm_check_dead_throttle"); // 300000
-    DEFAULT_RTO = p.getInt("pastry_socket_srm_default_rto"); // 3000 // 3 seconds
-    RTO_UBOUND = p.getInt("pastry_socket_srm_rto_ubound");//240000; // 240 seconds
-    RTO_LBOUND = p.getInt("pastry_socket_srm_rto_lbound");
-    gainH = p.getDouble("pastry_socket_srm_gain_h");
-    gainG = p.getDouble("pastry_socket_srm_gain_g");
+    PING_DELAY = config.pingDelay();
+    PING_JITTER = config.pingJitter();
+    NUM_PING_TRIES = config.numPingTries();
+    BACKOFF_INITIAL = config.backoffInitial();
+    BACKOFF_LIMIT = config.backoffLimit();
+    CHECK_DEAD_THROTTLE = config.checkDeadThrottle();
+    DEFAULT_RTO = config.defaultRto();
+    RTO_UBOUND = config.rtoUpperBound();
+    RTO_LBOUND = config.rtoLowerBound();
+    gainH = config.gainH();
+    gainG = config.gainG();
 
     tl.setCallback(this);
     this.errorHandler = errorHandler;

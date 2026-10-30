@@ -68,7 +68,6 @@ import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Cancellable;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
@@ -137,9 +136,9 @@ public class SourceRouteManagerImpl<Identifier> implements
     livenessProvider.addLivenessListener(this);
 
     addressManagers = new HashMap<Identifier, AddressManager>();
-    Parameters p = environment.getParameters();
-    PING_THROTTLE = p.getLong("pastry_socket_srm_ping_throttle");
-    NUM_SOURCE_ROUTE_ATTEMPTS = p.getInt("pastry_socket_srm_num_source_route_attempts");
+    SourceRouteManagerConfig config = SourceRouteManagerConfig.fromParameters(environment.getParameters());
+    PING_THROTTLE = config.pingThrottle();
+    NUM_SOURCE_ROUTE_ATTEMPTS = config.numSourceRouteAttempts();
     hardLinks = new HashSet<AddressManager>();
     livenessListeners = new ArrayList<LivenessListener<Identifier>>();
     pingListeners = new ArrayList<PingListener<Identifier>>();

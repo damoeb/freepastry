@@ -69,6 +69,7 @@ import org.mpisws.p2p.transport.identity.NodeChangeStrategy;
 import org.mpisws.p2p.transport.identity.SanityChecker;
 import org.mpisws.p2p.transport.identity.UpperIdentity;
 import org.mpisws.p2p.transport.limitsockets.LimitSocketsTransportLayer;
+import org.mpisws.p2p.transport.liveness.LivenessConfig;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
@@ -81,6 +82,7 @@ import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.multiaddress.SimpleAddressStrategy;
 import org.mpisws.p2p.transport.networkinfo.NetworkInfoTransportLayer;
 import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
+import org.mpisws.p2p.transport.priority.PriorityConfig;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
@@ -588,10 +590,9 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl,
       PastryNode pn) {
     Environment environment = pn.getEnvironment();
-    int checkDeadThrottle = environment.getParameters().getInt("pastry_socket_srm_check_dead_throttle"); // 300000
-
     final LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>> ltl =
-      new LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>>(tl,environment, null, checkDeadThrottle);
+      new LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>>(tl,environment, null,
+          LivenessConfig.fromParameters(environment.getParameters()));
 
     return new TransLiveness<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(){
         public TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getTransportLayer() {
@@ -667,8 +668,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           liveness,
           prox,
           environment,
-          environment.getParameters().getInt("pastry_socket_writer_max_msg_size"),
-          environment.getParameters().getInt("pastry_socket_writer_max_queue_length"),
+          PriorityConfig.fromParameters(environment.getParameters()),
           null);
     pn.getVars().put(PRIORITY_TL, priorityTL);
 

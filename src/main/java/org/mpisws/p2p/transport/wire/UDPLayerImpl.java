@@ -52,7 +52,6 @@ import java.util.Map;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.slf4j.Logger;
-import rice.environment.params.Parameters;
 import rice.selector.SelectionKeyHandler;
 
 public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
@@ -118,9 +117,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   }
 
   protected void openServerSocket() throws IOException {
-    Parameters p = wire.getEnvironment().getParameters();
-    DATAGRAM_RECEIVE_BUFFER_SIZE = p.getInt("transport_wire_datagram_receive_buffer_size");
-    DATAGRAM_SEND_BUFFER_SIZE = p.getInt("transport_wire_datagram_send_buffer_size");
+    WireConfig config = wire.getConfig();
+    DATAGRAM_RECEIVE_BUFFER_SIZE = config.datagramReceiveBufferSize();
+    DATAGRAM_SEND_BUFFER_SIZE = config.datagramSendBufferSize();
 
     // allocate enough bytes to read data
     this.readBuffer = ByteBuffer.allocateDirect(DATAGRAM_SEND_BUFFER_SIZE);

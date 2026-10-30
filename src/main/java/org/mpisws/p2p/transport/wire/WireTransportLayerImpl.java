@@ -56,7 +56,6 @@ import org.mpisws.p2p.transport.util.DefaultCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 
 public class WireTransportLayerImpl implements WireTransportLayer, SocketOpeningTransportLayer<InetSocketAddress> {
   // state
@@ -77,7 +76,9 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
   /**
    * true for modelnet, who needs to set the bind address even on outgoing sockets
    */
-  private boolean forceBindAddress = false;
+  private final boolean forceBindAddress;
+
+  private final WireConfig config;
 
 
   /**
@@ -104,14 +105,20 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
       InetSocketAddress bindAddress,
       Environment env,
       ErrorHandler<InetSocketAddress> errorHandler, boolean enableTCPServer, boolean enableUDPServer) throws IOException {
+    this(bindAddress, env, errorHandler, enableTCPServer, enableUDPServer, WireConfig.fromParameters(env.getParameters()));
+  }
+
+  public WireTransportLayerImpl(
+      InetSocketAddress bindAddress,
+      Environment env,
+      ErrorHandler<InetSocketAddress> errorHandler, boolean enableTCPServer, boolean enableUDPServer,
+      WireConfig config) throws IOException {
     this.logger = env.getLogManager().getLogger(WireTransportLayer.class, null);
     this.bindAddress = bindAddress;
     this.environment = env;
 
-    Parameters p = this.environment.getParameters();
-    if (p.contains("wire_forceBindAddress")) {
-      forceBindAddress = p.getBoolean("wire_forceBindAddress");
-    }
+    this.config = config;
+    this.forceBindAddress = config.forceBindAddress();
 
     this.callback = new DefaultCallback<InetSocketAddress, ByteBuffer>(logger);
     this.errorHandler = errorHandler;
@@ -131,6 +138,10 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
       udp.destroy();
       throw ioe;
     }
+  }
+
+  WireConfig getConfig() {
+    return config;
   }
 
   public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> callback) {

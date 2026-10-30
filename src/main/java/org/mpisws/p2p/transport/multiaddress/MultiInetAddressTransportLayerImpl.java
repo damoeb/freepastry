@@ -101,7 +101,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
     this.errorHandler = handler;
     this.localAddress = localAddress;
     this.strategy = strategy;
-    MAX_NUM_ADDRESSES = env.getParameters().getInt("transport_epoch_max_num_addresses");
+    MAX_NUM_ADDRESSES = MultiAddressConfig.fromParameters(env.getParameters()).maxNumAddresses();
     if (wire == null) throw new IllegalArgumentException("TransportLayer<InetSocketAddress, ByteBuffer> wire must be non-null");
     if (localAddress == null) throw new IllegalArgumentException("EpochInetSocketAddress localAddress must be non-null");
 

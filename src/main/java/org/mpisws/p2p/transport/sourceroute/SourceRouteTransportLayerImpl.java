@@ -103,7 +103,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     this.errorHandler = errorHandler;
     localIdentifier = this.srFactory.getSourceRoute(etl.getLocalIdentifier());
     taps = new ArrayList<SourceRouteTap<Identifier>>();
-    MAX_NUM_HOPS = env.getParameters().getInt("transport_sr_max_num_hops");
+    MAX_NUM_HOPS = SourceRouteConfig.fromParameters(env.getParameters()).maxNumHops();
 
     this.forwardSourceRouteStrategy = fSRs;
 
