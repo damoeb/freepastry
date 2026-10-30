@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -104,13 +103,13 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final char tiStatistics = 4;
   private final char tiExpire = 5;
   private final Hashtable<Integer, CancellableTask> timers;
-  private boolean rebuildInProgress;
   private final Vector<Id> monitorIDs;
   private AggregationStatistics stats;
 
   private final AggregationConfig config;
   private final AggregateStorer storer;
   private final AggregateFlusher flusher;
+  private final AggregateTree tree;
 
   private Environment environment;
   private final Logger logger;
@@ -180,8 +179,8 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     this.factory = factory;
+    this.tree = new AggregateTree(aggregateStore, objectStore, aggregateList, storer, this.aggregateFactory, config, environment.getTimeSource(), logger);
     this.flusher = new AggregateFlusher(waitingList, aggregateList, this.aggregateFactory, storer, config, logger);
-    this.rebuildInProgress = false;
     this.monitorIDs = new Vector<Id>();
 
     if (!aggregateList.readOK()) {
@@ -976,44 +975,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     });
   }
 
-  private void reconnectTree() {
-
-    if (rebuildInProgress) {
-      logger.info("Skipping connectivity check (rebuild in progress)");
-      return;
-    }
-
-    logger.info("Checking for disconnections");
-
-    Id[] disconnected = aggregateList.getSomePointers(1, config.getMaxPointersPerAggregate(), null);
-    if (disconnected.length < 2) {
-      Id newRoot = (disconnected.length == 1) ? disconnected[0] : null;
-      Id currentRoot = aggregateList.getRoot();
-      if (((newRoot == null) && (currentRoot != null)) || ((newRoot != null) && (currentRoot == null)) ||
-          ((newRoot != null) && (currentRoot != null) && !newRoot.equals(currentRoot)))
-        aggregateList.setRoot(newRoot);
-      logger.info("No aggregates disconnected (n={})", disconnected.length);
-      logger.atDebug().log(() -> "root="+((aggregateList.getRoot() == null) ? "null" : aggregateList.getRoot().toStringFull()));
-      return;
-    }
-
-    logger.info("Found {} disconnected aggregates; inserting pointer array", disconnected.length);
-    storer.storeAggregate(
-      aggregateFactory.buildAggregate(new GCPastContent[] {}, disconnected),
-      environment.getTimeSource().currentTimeMillis() + config.getPointerArrayLifetime(),
-      new ObjectDescriptor[] {},
-      disconnected,
-      new Continuation<Boolean, Exception>() {
-        public void receiveResult(Boolean o) {
-          logger.debug("Successfully inserted pointer array");
-        }
-        public void receiveException(Exception e) {
-          logger.warn("Error while inserting pointer array: ", e);
-        }
-      }
-    );
-  }
-
   private void timerExpired(char timerID) {
     logger.atDebug().log(() -> "TIMER EXPIRED: #" + (int) timerID);
 
@@ -1046,7 +1007,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       case tiExpire :
       {
         refreshAggregates();
-        reconnectTree();
+        tree.reconnectTree();
         addTimer(jitterTerm(config.getAggrRefreshInterval()), tiExpire);
         break;
       }
@@ -1410,197 +1371,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   public void setHandle(Serializable handle, Continuation<? super Boolean, Exception> command) {
-    logger.info("setHandle({})", handle);
-
-    if (!(handle instanceof Id)) {
-      command.receiveException(new AggregationException("Illegal handle"));
-      return;
-    }
-
-    if (aggregateList.getADC((Id) handle) != null) {
-      logger.info("Rebuild: Handle {} is already covered by current root", handle);
-      command.receiveResult(Boolean.valueOf(true));
-      return;
-    }
-
-    aggregateList.setRoot((Id) handle);
-    rebuildAggregateList(command);
-  }
-
-  private void rebuildRecursive(final Id fromKey, final List<Id> keysInProgress, final List<Id> keysPostponed, final List<Id> keysDone, final Continuation<? super Boolean, Exception> command) {
-    keysInProgress.add(fromKey);
-
-    logger.atInfo().log(() -> "Rebuild: Fetching handles for aggregate " + fromKey.toStringFull());
-    aggregateStore.lookupHandles(fromKey, 999, new Continuation<PastContentHandle[], Exception>() {
-      public void receiveResult(PastContentHandle[] o) {
-        logger.debug("Got handles for {}", fromKey);
-
-        if (o instanceof PastContentHandle[]) {
-          PastContentHandle[] pch = (PastContentHandle[]) o;
-          PastContentHandle bestHandle = null;
-
-          for (PastContentHandle pastContentHandle : pch) {
-            if ((pastContentHandle == null) || ((pastContentHandle instanceof GCPastContentHandle) && (((GCPastContentHandle)pastContentHandle).getVersion() != 0)))
-              continue;
-
-            if (bestHandle == null)
-              bestHandle = pastContentHandle;
-          }
-
-          if (bestHandle != null) {
-            final PastContentHandle thisHandle = bestHandle;
-            final Continuation<PastContentHandle[], Exception> outerContinuation = this;
-
-            logger.debug("Fetching {}", thisHandle);
-            aggregateStore.fetch(thisHandle, new Continuation<PastContent, Exception>() {
-              public void receiveResult(PastContent o) {
-                if (o instanceof Aggregate) {
-                  keysInProgress.remove(fromKey);
-                  keysDone.add(fromKey);
-
-                  logger.atInfo().log(() -> "Rebuild: Got aggregate " + fromKey.toStringFull());
-
-                  Aggregate aggr = (Aggregate) o;
-                  ObjectDescriptor[] objects = new ObjectDescriptor[aggr.numComponents()];
-                  long aggregateExpiration = (thisHandle instanceof GCPastContentHandle) ? ((GCPastContentHandle)thisHandle).getExpiration() : GCPast.INFINITY_EXPIRATION;
-
-                  for (int i=0; i<aggr.numComponents(); i++) {
-                    objects[i] = new ObjectDescriptor(
-                      aggr.getComponent(i).getId(),
-                      aggr.getComponent(i).getVersion(),
-                      aggregateExpiration,
-                      aggregateExpiration,
-                      AggregateStorer.getSize(aggr.getComponent(i), logger)
-                    );
-
-                    final GCPastContent objData = aggr.getComponent(i);
-                    logger.debug("Checking whether {}v{} is in object store...", objData.getId(), objData.getVersion());
-                    objectStore.lookupHandles(objData.getId(), 1, new Continuation<PastContentHandle[], Exception>() {
-                      public void receiveResult(PastContentHandle[] o) {
-                        PastContentHandle[] result = (o instanceof PastContentHandle[]) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
-                        logger.atDebug().log(() -> "Handles for "+objData.getId()+"v"+objData.getVersion()+": "+result+" ("+result.length+", PCH="+(o instanceof PastContentHandle[])+")");
-                        boolean gotOne = false;
-                        for (int i=0; i<result.length; i++) {
-                          if (result[i] != null) {
-                            if (logger.isDebugEnabled()) logger.debug("Have v"+((GCPastContentHandle)result[i]).getVersion());
-                            if (((GCPastContentHandle)result[i]).getVersion() >= objData.getVersion())
-                              gotOne = true;
-                          }
-                        }
-
-                        if (gotOne) {
-                          logger.debug("Got it");
-                        } else {
-                          logger.debug("Ain't got it... reinserting");
-                          objectStore.insert(objData, new Continuation<Boolean[], Exception>() {
-                            public void receiveResult(Boolean[] o) {
-                              logger.debug("Reinsert {}v{} ok, result={}", objData.getId(), objData.getVersion(), o);
-                            }
-                            public void receiveException(Exception e) {
-                              logger.debug("Reinsert {}v{} failed, exception=", objData.getId(), objData.getVersion(), e);
-                            }
-                          });
-                        }
-                      }
-                      public void receiveException(Exception e) {
-                        logger.debug("Cannot retrieve handles for object {}v{} to be restored; e=", objData.getId(), objData.getVersion(), e);
-                      }
-                    });
-                  }
-
-                  aggregateList.addAggregateDescriptor(new AggregateDescriptor(fromKey, aggregateExpiration, objects, aggr.getPointers()));
-
-                  Id[] pointers = aggr.getPointers();
-                  int numAdded = 0;
-                  if (pointers != null) {
-                    for (Id pointer : pointers) {
-                      if (pointer instanceof Id) {
-                        Id thisPointer = pointer;
-                        if (!keysDone.contains(thisPointer) && !keysPostponed.contains(thisPointer) && !keysInProgress.contains(thisPointer)) {
-                          if (keysInProgress.size() >= config.getReconstructionMaxConcurrentLookups())
-                            keysPostponed.add(thisPointer);
-                          else
-                            rebuildRecursive(thisPointer, keysInProgress, keysPostponed, keysDone, command);
-
-                          numAdded ++;
-                        }
-                      }
-                    }
-                  }
-
-                  logger.debug("Rebuild: Added {} keys, now {} in progress, {} postponed and {} done", numAdded, keysInProgress.size(), keysPostponed.size(), keysDone.size());
-
-                  if (!keysInProgress.isEmpty() || !keysPostponed.isEmpty()) {
-                    logger.info("Rebuild: {} keys in progress, {} postponed, {} done", keysInProgress.size(), keysPostponed.size(), keysDone.size());
-
-                    while ((keysInProgress.size() < config.getReconstructionMaxConcurrentLookups()) && (keysPostponed.size() > 0)) {
-                      Id nextKey = keysPostponed.get(0);
-                      logger.atDebug().log(() -> "Rebuild: Resuming lookup for postponed key "+nextKey.toStringFull());
-                      keysPostponed.remove(nextKey);
-                      rebuildRecursive(nextKey, keysInProgress, keysPostponed, keysDone, command);
-                    }
-                  } else {
-                    aggregateList.writeToDisk();
-                    rebuildInProgress = false;
-                    logger.info("Rebuild: Completed; {} aggregates checked", keysDone.size());
-                    command.receiveResult(Boolean.valueOf(true));
-                  }
-                } else {
-                  receiveException(new AggregationException("Fetch failed: "+fromKey+", returned "+o));
-                }
-              }
-              public void receiveException(Exception e) {
-                outerContinuation.receiveException(e);
-              }
-            });
-          } else {
-            receiveException(new AggregationException("LookupHandles did not return any valid handles for "+fromKey));
-          }
-        } else {
-          receiveException(new AggregationException("LookupHandles for "+fromKey+" failed, returned o="+o));
-        }
-      }
-      public void receiveException(Exception e) {
-        logger.warn("Rebuild: Exception ", e);
-        keysInProgress.remove(fromKey);
-        keysDone.add(fromKey);
-
-        if (keysInProgress.isEmpty() && keysPostponed.isEmpty()) {
-          rebuildInProgress = false;
-          if (aggregateList.isEmpty()) {
-            command.receiveException(new AggregationException("Cannot read root aggregate! -- retry later"));
-          } else {
-            aggregateList.writeToDisk();
-            command.receiveResult(Boolean.valueOf(true));
-          }
-        }
-
-        while ((keysInProgress.size() < config.getReconstructionMaxConcurrentLookups()) && (keysPostponed.size() > 0)) {
-          Id nextKey = keysPostponed.get(0);
-          logger.atDebug().log(() -> "Rebuild: Resuming lookup for postponed key "+nextKey.toStringFull());
-          keysPostponed.remove(nextKey);
-          rebuildRecursive(nextKey, keysInProgress, keysPostponed, keysDone, command);
-        }
-      }
-    });
-  }
-
-  private void rebuildAggregateList(final Continuation<? super Boolean, Exception> command) {
-    // the lookups' continuations may run on different threads (a store can complete on the calling thread, others
-    // on the selector), so keep the synchronization these had as Vectors
-    List<Id> keysInProgress = Collections.synchronizedList(new ArrayList<Id>());
-    List<Id> keysPostponed = Collections.synchronizedList(new ArrayList<Id>());
-    List<Id> keysDone = Collections.synchronizedList(new ArrayList<Id>());
-
-    logger.info("rebuildAggregateList({})", aggregateList.getRoot());
-    if (aggregateList.getRoot() == null) {
-      logger.warn("rebuildAggregateList invoked while rootKey is null");
-      command.receiveException(new AggregationException("Set handle first!"));
-      return;
-    }
-
-    rebuildInProgress = true;
-    rebuildRecursive(aggregateList.getRoot(), keysInProgress, keysPostponed, keysDone, command);
+    tree.setHandle(handle, command);
   }
 
   public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
