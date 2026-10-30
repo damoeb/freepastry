@@ -48,24 +48,10 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 /**
  * This class represents a specific topic in the Scribe system.
  *
- * @version $Id: Topic.java 3653 2007-03-27 18:39:52Z jeffh $
+ * @param id The Id to which this topic is mapped
  * @author Alan Mislove
  */
-public class Topic implements Comparable<Topic> {
-
-  /**
-   * The Id to which this topic is mapped
-   */
-  private final Id id;
-
-  /**
-   * Constructor which takes an Id for this topic
-   *
-   * @param id The Id for this topic
-   */
-  public Topic(Id id) {
-    this.id = id;
-  }
+public record Topic(Id id) implements Comparable<Topic> {
 
   /**
    * Constructor which takes a name for this topic
@@ -74,16 +60,14 @@ public class Topic implements Comparable<Topic> {
    * @param name The name for this topic
    */
   public Topic(IdFactory factory, String name) {
-    this.id = getId(factory, name);
+    this(getId(factory, name));
   }
 
   /**
-   * Returns the Id to which this topic is mapped
-   *
-   * @return The id to which this topic is mapped
+   * Reads a topic written by {@link #serialize(OutputBuffer)}.
    */
-  public Id getId() {
-    return id;
+  public Topic(InputBuffer buf, Endpoint endpoint) throws IOException {
+    this(endpoint.readId(buf, buf.readShort()));
   }
 
   /**
@@ -98,39 +82,12 @@ public class Topic implements Comparable<Topic> {
   }
 
   /**
-   * Returns whether this is equal to o or not
-   *
-   * @param o The object to compare to
-   * @return Whether or not they are equal
-   */
-  public boolean equals(Object o) {
-    if (o instanceof Topic) {
-      return ((Topic) o).id.equals(id);
-    }
-
-    return false;
-  }
-
-  /**
-   * Returns the hashCode for this topic
-   *
-   * @return The hashcode for this topic
-   */
-  public int hashCode() {
-    return id.hashCode();
-  }
-
-  /**
    * Returns a String representation of this topic
    *
    * @return A String representation of this topic
    */
   public String toString() {
     return "[TOPIC " + id + "]";
-  }
-
-  public Topic(InputBuffer buf, Endpoint endpoint) throws IOException {
-    id = endpoint.readId(buf, buf.readShort());
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

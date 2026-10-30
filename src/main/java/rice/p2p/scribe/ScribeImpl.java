@@ -61,6 +61,7 @@ import rice.p2p.scribe.messaging.DropMessage;
 import rice.p2p.scribe.messaging.MaintenanceMessage;
 import rice.p2p.scribe.messaging.PublishMessage;
 import rice.p2p.scribe.messaging.PublishRequestMessage;
+import rice.p2p.scribe.messaging.ScribeProtocolMessage;
 import rice.p2p.scribe.messaging.ScribeMessage;
 import rice.p2p.scribe.messaging.SubscribeAckMessage;
 import rice.p2p.scribe.messaging.SubscribeFailedMessage;
@@ -280,7 +281,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   public NodeHandle getRoot(Topic topic) {
-    NodeHandleSet set = endpoint.replicaSet(topic.getId(), 1);
+    NodeHandleSet set = endpoint.replicaSet(topic.id(), 1);
 
     if (set.size() == 0)
       return null;
@@ -536,58 +537,54 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   public void deliver(Id id, Message message) {
     logger.trace("Deliver called with {} {}", id, message);
 
-    if (message instanceof AnycastMessage) {
-      AnycastMessage aMessage = (AnycastMessage) message;
-
-      // if we are the recipient to someone else's subscribe, then we should have processed
-      // this message in the forward() method.
-      // Otherwise, we received our own subscribe message, which means that we are
-      // the root
-      if (aMessage.getSource().equals(localHandle)) {
-        if (aMessage instanceof SubscribeMessage) {
-          subscriptions.ownSubscribeDelivered((SubscribeMessage) message);
-        } else {
-          anycasts.failedAtRoot(aMessage, true);
-        }
-      } else {
-        // here, we have had a subscribe message delivered, which means that we are the root, but
-        // our policy says that we cannot take on this child
-        if (aMessage instanceof SubscribeMessage) {
-          children.subscribeDeliveredAtRoot((SubscribeMessage) aMessage);
-        } else {
-          anycasts.failedAtRoot(aMessage, false);
-        }
-      }
-    } else if (message instanceof SubscribeAckMessage) {
-      subscriptions.subscribeAckReceived((SubscribeAckMessage) message);
-    } else if (message instanceof SubscribeLostMessage) {
-      SubscribeLostMessage slMessage = (SubscribeLostMessage) message;
-
-      subscriptions.lostMessageReceived(slMessage);
-    } else if (message instanceof SubscribeFailedMessage) {
-      SubscribeFailedMessage sfMessage = (SubscribeFailedMessage) message;
-
-      subscriptions.failedMessageReceived(sfMessage);
-    } else if (message instanceof PublishRequestMessage) {
-      PublishMessage pMessage = publisher.publishRequestReceived((PublishRequestMessage) message);
-      if (pMessage != null) {
-        deliver(pMessage.getTopic().getId(), pMessage);
-      }
-    } else if (message instanceof PublishMessage) {
-      publisher.publishReceived((PublishMessage) message);
-    } else if (message instanceof UnsubscribeMessage) {
-      children.unsubscribeReceived((UnsubscribeMessage) message);
-    } else if (message instanceof DropMessage) {
-      repair.dropReceived((DropMessage) message);
-    } else if (message instanceof MaintenanceMessage) {
-      logger.debug("Received maintenance message");
-      maintenancePolicy.doMaintenance(this);
-    } else if (message instanceof AnycastFailureMessage) {
-      AnycastFailureMessage aFailMsg = (AnycastFailureMessage) message;
-      logger.debug("Received anycast failure message from {} for topic {}", aFailMsg.getSource(), aFailMsg.getTopic());
-      recvAnycastFail(aFailMsg.getTopic(), aFailMsg.getSource(), aFailMsg.getContent());
-    } else {
+    if (!(message instanceof ScribeProtocolMessage scribeMessage)) {
       logger.warn("Received unknown message {} - dropping on floor.", message);
+      return;
+    }
+    switch (scribeMessage) {
+      case AnycastMessage aMessage -> deliverAnycast(aMessage);
+      case SubscribeAckMessage saMessage -> subscriptions.subscribeAckReceived(saMessage);
+      case SubscribeLostMessage slMessage -> subscriptions.lostMessageReceived(slMessage);
+      case SubscribeFailedMessage sfMessage -> subscriptions.failedMessageReceived(sfMessage);
+      case PublishRequestMessage prMessage -> {
+        PublishMessage pMessage = publisher.publishRequestReceived(prMessage);
+        if (pMessage != null) {
+          deliver(pMessage.getTopic().id(), pMessage);
+        }
+      }
+      case PublishMessage pMessage -> publisher.publishReceived(pMessage);
+      case UnsubscribeMessage uMessage -> children.unsubscribeReceived(uMessage);
+      case DropMessage dMessage -> repair.dropReceived(dMessage);
+      case MaintenanceMessage mMessage -> {
+        logger.debug("Received maintenance message");
+        maintenancePolicy.doMaintenance(this);
+      }
+      case AnycastFailureMessage aFailMsg -> {
+        logger.debug("Received anycast failure message from {} for topic {}", aFailMsg.getSource(), aFailMsg.getTopic());
+        recvAnycastFail(aFailMsg.getTopic(), aFailMsg.getSource(), aFailMsg.getContent());
+      }
+    }
+  }
+
+  private void deliverAnycast(AnycastMessage aMessage) {
+    // if we are the recipient to someone else's subscribe, then we should have processed
+    // this message in the forward() method.
+    // Otherwise, we received our own subscribe message, which means that we are
+    // the root
+    if (aMessage.getSource().equals(localHandle)) {
+      if (aMessage instanceof SubscribeMessage sMessage) {
+        subscriptions.ownSubscribeDelivered(sMessage);
+      } else {
+        anycasts.failedAtRoot(aMessage, true);
+      }
+    } else {
+      // here, we have had a subscribe message delivered, which means that we are the root, but
+      // our policy says that we cannot take on this child
+      if (aMessage instanceof SubscribeMessage sMessage) {
+        children.subscribeDeliveredAtRoot(sMessage);
+      } else {
+        anycasts.failedAtRoot(aMessage, false);
+      }
     }
   }
 

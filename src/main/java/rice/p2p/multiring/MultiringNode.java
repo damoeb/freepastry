@@ -393,7 +393,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    */
   private void retrySubscribe(Topic topic) {
     logger.warn("{}: Received error joining ringId topic {} - trying again.", getId(), topic);
-    nodeAdded(((RingId) topic.getId()).getId());
+    nodeAdded(((RingId) topic.id()).getId());
   }
 
   /**

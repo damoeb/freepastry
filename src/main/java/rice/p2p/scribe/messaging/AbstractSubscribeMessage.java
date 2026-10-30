@@ -54,7 +54,8 @@ import rice.p2p.scribe.Topic;
  *
  * @author Alan Mislove
  */
-public abstract class AbstractSubscribeMessage implements RawMessage /*extends ScribeMessage*/ {
+public sealed abstract class AbstractSubscribeMessage implements RawMessage, ScribeProtocolMessage
+    permits SubscribeAckMessage, SubscribeFailedMessage {
 
   /**
   * The id of this subscribe message

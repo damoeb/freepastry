@@ -175,7 +175,7 @@ final class TopicRegistry {
    * @return Whether or not we are currently the root
    */
   boolean isRoot(Topic topic) {
-    NodeHandleSet set = endpoint.replicaSet(topic.getId(), 1);
+    NodeHandleSet set = endpoint.replicaSet(topic.id(), 1);
 
     if (set.size() == 0)
       return false;

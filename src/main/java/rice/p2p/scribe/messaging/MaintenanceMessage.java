@@ -37,21 +37,10 @@ advised of the possibility of such damage.
 
 package rice.p2p.scribe.messaging;
 
-import rice.p2p.commonapi.Message;
-
 /**
- * The maintenance message.
- *
- * @version $Id: MaintenanceMessage.java 3648 2007-03-13 13:50:48Z jeffh $
- *
- * @author Alan Mislove
+ * The local timer message that makes Scribe run its maintenance policy. It never goes on the wire.
  */
-public class MaintenanceMessage implements Message {
-  /**
-   * Constructor
-   */
-  public MaintenanceMessage() {
-  }
+public record MaintenanceMessage() implements ScribeProtocolMessage {
 
   public int getPriority() {
     return DEFAULT_PRIORITY;

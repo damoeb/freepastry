@@ -216,24 +216,24 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       return true;
     } else {
       /* check if non-primary stripe */
-      if ((! topic.getId().equals(channel.getPrimaryStripe().getStripeId().getId())) &&
+      if ((! topic.id().equals(channel.getPrimaryStripe().getStripeId().getId())) &&
           (! scribe.isRoot(topic))) {
         return false;
       } else {
         /* find a victim child */
         if (!children.isEmpty()) {
-          NodeHandle victimChild = freeBandwidth(channel, newChild, topic.getId());
+          NodeHandle victimChild = freeBandwidth(channel, newChild, topic.id());
 
           /* make sure victim is not subscriber */
           if (victimChild.getId().equals(newChild.getId())) {
             return false;
           } else {
-            scribe.removeChild(new Topic(topic.getId()), victimChild);
+            scribe.removeChild(new Topic(topic.id()), victimChild);
             return true;
           }
         } else {
           /* we must accept, because this is primary stripe */
-          Vector<Object> res = freeBandwidthUltimate(topic.getId());
+          Vector<Object> res = freeBandwidthUltimate(topic.id());
           if (res != null) {
             scribe.removeChild(new Topic((Id)res.elementAt(1)), (NodeHandle)res.elementAt(0));
             return true;
@@ -256,7 +256,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
   public void directAnycast(AnycastMessage message, NodeHandle parent, Collection<NodeHandle> children) {
     /* we add parent first if it shares prefix match */
     if (parent != null) {
-      if (SplitStreamScribePolicy.getPrefixMatch(message.getTopic().getId(), parent.getId(), splitStream.getStripeBaseBitLength()) > 0)
+      if (SplitStreamScribePolicy.getPrefixMatch(message.getTopic().id(), parent.getId(), splitStream.getStripeBaseBitLength()) > 0)
         message.addFirst(parent);
       else
         message.addLast(parent);
@@ -271,7 +271,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       List<NodeHandle> bad = new ArrayList<NodeHandle>();
 
       for (NodeHandle child : children) {
-        if (SplitStreamScribePolicy.getPrefixMatch(message.getTopic().getId(), child.getId(), splitStream.getStripeBaseBitLength()) > 0)
+        if (SplitStreamScribePolicy.getPrefixMatch(message.getTopic().id(), child.getId(), splitStream.getStripeBaseBitLength()) > 0)
           good.add(child);
         else
           bad.add(child);
@@ -305,7 +305,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
            b. local node is root for non-prefix match topic,
               drop a child from non-primary, non-root stripe and accept the new subscriber */
         if (this.scribe.isRoot(message.getTopic())) {
-          Vector<Object> res = freeBandwidthUltimate(message.getTopic().getId());
+          Vector<Object> res = freeBandwidthUltimate(message.getTopic().id());
 
           if (res != null) {
             scribe.removeChild(new Topic((Id)res.elementAt(1)), (NodeHandle)res.elementAt(0));
@@ -348,7 +348,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       for (int j=0; j<stripes.length; j++) {
         Stripe stripe = stripes[j];
 
-        if (stripe.getStripeId().getId().equals(topic.getId())) {
+        if (stripe.getStripeId().getId().equals(topic.id())) {
           return channel;
         }
       }

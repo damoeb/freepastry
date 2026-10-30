@@ -443,7 +443,7 @@ final class ChildManager {
 
         } else {
           logger.trace("handleForwardSubscribeMessage() routing {} to {}", aMessage, handle);
-          endpoint.route(aMessage.getTopic().getId(), aMessage, handle);
+          endpoint.route(aMessage.getTopic().id(), aMessage, handle);
         }
       }
     }
@@ -473,7 +473,7 @@ final class ChildManager {
       List<Topic> theTopics = manifest.get(nextHop);
       if (theTopics != null) { // this should probably never happen
         AnycastMessage aMessage = sMessage.copy(theTopics, policy.get().divideContent(theTopics, sMessage.getContent())); // use the copy constructor again
-        endpoint.route(aMessage.getTopic().getId(), aMessage, nextHop);
+        endpoint.route(aMessage.getTopic().id(), aMessage, nextHop);
       }
     }
 
@@ -496,8 +496,8 @@ final class ChildManager {
    * A child left some of our topics.
    */
   void unsubscribeReceived(UnsubscribeMessage uMessage) {
-    List<Topic> topics = uMessage.getTopics();
-    NodeHandle source = uMessage.getSource();
+    List<Topic> topics = uMessage.topics();
+    NodeHandle source = uMessage.source();
 
     logger.atDebug().log(() -> {
       String s;

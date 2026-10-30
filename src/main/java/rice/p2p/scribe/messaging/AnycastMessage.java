@@ -55,9 +55,7 @@ import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
  * @version $Id: AnycastMessage.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Alan Mislove
  */
-public class AnycastMessage extends ScribeMessage {
-
-  public static final short TYPE = 1;
+public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessage {
 
   /**
    * the content of this message
@@ -242,7 +240,7 @@ public class AnycastMessage extends ScribeMessage {
 
   /** *************** Raw Serialization ************************************** */
   public short getType() {
-    return TYPE;
+    return ScribeMessageType.ANYCAST.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

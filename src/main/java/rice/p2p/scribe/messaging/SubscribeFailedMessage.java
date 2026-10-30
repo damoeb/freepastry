@@ -54,9 +54,7 @@ import rice.p2p.scribe.Topic;
  *
  * @author Alan Mislove
  */
-public class SubscribeFailedMessage extends AbstractSubscribeMessage {
-  public static final short TYPE = 4;
-
+public final class SubscribeFailedMessage extends AbstractSubscribeMessage {
   /**
    * Constructor
    *
@@ -70,7 +68,7 @@ public class SubscribeFailedMessage extends AbstractSubscribeMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return ScribeMessageType.SUBSCRIBE_FAILED.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

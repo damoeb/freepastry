@@ -83,10 +83,10 @@ final class AnycastHandler {
       // equal to itself then even if the node is not the destimation for the id
       // field, the deliver() method will be called
 
-      endpoint.route(topic.getId(), aMessage, null);
+      endpoint.route(topic.id(), aMessage, null);
     } else {
 
-      endpoint.route(topic.getId(), aMessage, hint);
+      endpoint.route(topic.id(), aMessage, hint);
     }
   }
 

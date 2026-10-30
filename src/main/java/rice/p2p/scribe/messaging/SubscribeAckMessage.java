@@ -60,9 +60,7 @@ import rice.p2p.scribe.Topic;
  *
  * @author Alan Mislove
  */
-public class SubscribeAckMessage extends AbstractSubscribeMessage {
-
-  public static final short TYPE = 3;
+public final class SubscribeAckMessage extends AbstractSubscribeMessage {
 
   /**
    * The contained path to the root
@@ -111,7 +109,7 @@ public class SubscribeAckMessage extends AbstractSubscribeMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return ScribeMessageType.SUBSCRIBE_ACK.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

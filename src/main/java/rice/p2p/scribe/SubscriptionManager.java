@@ -253,11 +253,11 @@ final class SubscriptionManager {
         // then the RM actually gets forwarded (in the first hop: NodeHandle is the target; in the second hop: nodeId is the next hop)
 
         // NOTE: this may have to be further thought through and subdivided
-        NodeHandleSet set = endpoint.replicaSet(msg.getTopic().getId(), 2);
+        NodeHandleSet set = endpoint.replicaSet(msg.getTopic().id(), 2);
         if (set.size() > 1 && set.getHandle(1) == localHandle) {
           endpoint.route(null, msg, nextHop);
         } else {
-          endpoint.route(msg.getTopic().getId(), msg, nextHop);
+          endpoint.route(msg.getTopic().id(), msg, nextHop);
         }
       }
     } else {
@@ -266,11 +266,11 @@ final class SubscriptionManager {
 
       // see if hint is my direct neighbor, if so, route only directly, so that he will accept the connection even
       // though he may still be joining
-      NodeHandleSet set = endpoint.replicaSet(msg.getTopic().getId(), 2);
+      NodeHandleSet set = endpoint.replicaSet(msg.getTopic().id(), 2);
       if (set.size() > 1 && set.getHandle(1) == localHandle) {
         endpoint.route(null, msg, hint);
       } else {
-        endpoint.route(msg.getTopic().getId(), msg, hint);
+        endpoint.route(msg.getTopic().id(), msg, hint);
       }
     }
   }
@@ -289,9 +289,9 @@ final class SubscriptionManager {
     HashMap<NodeHandle, List<Topic>> manifest = new HashMap<NodeHandle, List<Topic>>();
 
     for (Topic topic : topics) {
-      NodeHandleSet handleSet = endpoint.replicaSet(topic.getId(), 1);
+      NodeHandleSet handleSet = endpoint.replicaSet(topic.id(), 1);
       if (handleSet.size() == 0) {
-        handleSet = endpoint.localLookup(topic.getId(), 1, false);
+        handleSet = endpoint.localLookup(topic.id(), 1, false);
       }
 
       // no next hop = we are the next hop

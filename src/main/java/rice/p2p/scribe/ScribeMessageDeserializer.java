@@ -51,6 +51,7 @@ import rice.p2p.scribe.messaging.AnycastMessage;
 import rice.p2p.scribe.messaging.DropMessage;
 import rice.p2p.scribe.messaging.PublishMessage;
 import rice.p2p.scribe.messaging.PublishRequestMessage;
+import rice.p2p.scribe.messaging.ScribeMessageType;
 import rice.p2p.scribe.messaging.SubscribeAckMessage;
 import rice.p2p.scribe.messaging.SubscribeFailedMessage;
 import rice.p2p.scribe.messaging.SubscribeMessage;
@@ -78,31 +79,20 @@ final class ScribeMessageDeserializer implements MessageDeserializer {
   public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
     ScribeContentDeserializer cd = contentDeserializer.get();
     try {
-      switch(type) {
-        case AnycastMessage.TYPE:
-          return AnycastMessage.build(buf, endpoint, cd);
-        case SubscribeMessage.TYPE:
-          return SubscribeMessage.buildSM(buf, endpoint, cd);
-        case SubscribeAckMessage.TYPE:
-          return SubscribeAckMessage.build(buf, endpoint);
-        case SubscribeFailedMessage.TYPE:
-          return SubscribeFailedMessage.build(buf, endpoint);
-        case DropMessage.TYPE:
-          return DropMessage.build(buf, endpoint);
-        case PublishMessage.TYPE:
-          return PublishMessage.build(buf, endpoint, cd);
-        case PublishRequestMessage.TYPE:
-          return PublishRequestMessage.build(buf, endpoint, cd);
-        case UnsubscribeMessage.TYPE:
-          return UnsubscribeMessage.build(buf, endpoint);
-          // new in FP 2.1:
-        case AnycastFailureMessage.TYPE:
-          return AnycastFailureMessage.build(buf, endpoint, cd);
-      }
+      return switch (ScribeMessageType.of(type)) {
+        case ANYCAST -> AnycastMessage.build(buf, endpoint, cd);
+        case SUBSCRIBE -> SubscribeMessage.buildSM(buf, endpoint, cd);
+        case SUBSCRIBE_ACK -> SubscribeAckMessage.build(buf, endpoint);
+        case SUBSCRIBE_FAILED -> SubscribeFailedMessage.build(buf, endpoint);
+        case DROP -> DropMessage.build(buf, endpoint);
+        case PUBLISH -> PublishMessage.build(buf, endpoint, cd);
+        case PUBLISH_REQUEST -> PublishRequestMessage.build(buf, endpoint, cd);
+        case UNSUBSCRIBE -> UnsubscribeMessage.build(buf, endpoint);
+        case ANYCAST_FAILURE -> AnycastFailureMessage.build(buf, endpoint, cd);
+      };
     } catch (IOException e) {
       logger.atError().log(() -> "Exception in deserializer in "+endpoint.toString()+":"+instance+" "+cd+" "+e);
       throw e;
     }
-    throw new IllegalArgumentException("Unknown type:"+type);
   }
 }

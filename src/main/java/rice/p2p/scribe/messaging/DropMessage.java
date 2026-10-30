@@ -54,9 +54,7 @@ import rice.p2p.scribe.Topic;
  *
  * @author Alan Mislove
  */
-public class DropMessage extends ScribeMessage {
-  public static final short TYPE = 6;
-
+public final class DropMessage extends ScribeMessage {
   /**
    * Constructor
    *
@@ -69,7 +67,7 @@ public class DropMessage extends ScribeMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return ScribeMessageType.DROP.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

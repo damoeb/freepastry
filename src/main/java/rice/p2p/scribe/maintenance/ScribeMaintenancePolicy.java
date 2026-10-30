@@ -149,7 +149,7 @@ public interface ScribeMaintenancePolicy {
 
       for (NodeHandle parent : manifest.keySet()) {
         List<Topic> topics = manifest.get(parent);
-        scribe.getEndpoint().route(topics.get(0).getId(),
+        scribe.getEndpoint().route(topics.get(0).id(),
             new SubscribeMessage(
               scribe.getEndpoint().getLocalNodeHandle(),
               topics, MaintainableScribe.MAINTENANCE_ID,

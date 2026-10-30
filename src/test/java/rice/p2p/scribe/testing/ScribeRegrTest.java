@@ -167,7 +167,7 @@ public class ScribeRegrTest extends CommonAPITest {
   protected void testAddNode() {
     String name = "TestAddNode";
     Topic topic = new Topic(generateId());
-    Id id = topic.getId();
+    Id id = topic.id();
     TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
 
     sectionStart("Test Add Node");
@@ -730,7 +730,7 @@ public class ScribeRegrTest extends CommonAPITest {
       Topic topic = new Topic(generateId());
       TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
 
-      stepStart(name + " TopicId=" + topic.getId());
+      stepStart(name + " TopicId=" + topic.id());
       for (int i = 0; i < NUM_NODES; i++) {
         clients[i] = new TestScribeClient(scribes[i], topic, i);
         scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);

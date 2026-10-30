@@ -53,7 +53,8 @@ import rice.p2p.scribe.Topic;
  *
  * @author Alan Mislove
  */
-public abstract class ScribeMessage implements RawMessage {
+public sealed abstract class ScribeMessage implements RawMessage, ScribeProtocolMessage
+    permits AnycastMessage, DropMessage, PublishMessage, PublishRequestMessage, AnycastFailureMessage {
 
   // the source of this message
   private NodeHandle source;

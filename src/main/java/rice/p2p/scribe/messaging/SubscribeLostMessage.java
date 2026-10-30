@@ -42,7 +42,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import rice.p2p.commonapi.CancellableTask;
-import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
@@ -54,7 +53,7 @@ import rice.p2p.scribe.Topic;
  *
  * @author Alan Mislove
  */
-public class SubscribeLostMessage implements Message {
+public final class SubscribeLostMessage implements ScribeProtocolMessage {
 
   private final Set<Topic> topics;
   private final int id;

@@ -54,9 +54,7 @@ import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
  *
  * @author Alan Mislove
  */
-public class PublishMessage extends ScribeMessage {
-  public static final short TYPE = 8;
-
+public final class PublishMessage extends ScribeMessage {
   // the content of this message
   private final ScribeContent content;
 
@@ -93,7 +91,7 @@ public class PublishMessage extends ScribeMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return ScribeMessageType.PUBLISH.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

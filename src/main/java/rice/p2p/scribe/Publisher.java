@@ -76,7 +76,7 @@ final class Publisher {
   void publish(Topic topic, ScribeContent content) {
     logger.trace("Publishing content {} to topic {}", content, topic);
 
-    endpoint.route(topic.getId(), new PublishRequestMessage(localHandle, topic, content), null);
+    endpoint.route(topic.id(), new PublishRequestMessage(localHandle, topic, content), null);
   }
 
   /**
