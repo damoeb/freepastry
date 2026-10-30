@@ -91,13 +91,13 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
   public static void setUpBeforeClass() throws Exception {
     srFactory = new WireSourceRouteFactory();
     TLTest.setUpBeforeClass();
-    int startPort = START_PORT;
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(addr, 3);
 
-    alice = buildTL("alice", addr, startPort, env);
-    bob = buildTL("bob", addr, startPort+1, env);
-    carol_tap = buildTL("carol", addr, startPort+2, env);
+    alice = buildTL("alice", addr, ports[0], env);
+    bob = buildTL("bob", addr, ports[1], env);
+    carol_tap = buildTL("carol", addr, ports[2], env);
     carol = carol_tap;
     otherTLs.add(carol);
   }
@@ -252,7 +252,7 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
   @Override
   public SourceRoute<InetSocketAddress> getBogusIdentifier(SourceRoute<InetSocketAddress> local) throws IOException {
     return srFactory.getSourceRoute(local.getFirstHop(),
-        new InetSocketAddress(InetAddress.getLocalHost(), START_PORT-2));
+        new InetSocketAddress(InetAddress.getLocalHost(), BOGUS_PORT));
   }
 
 }

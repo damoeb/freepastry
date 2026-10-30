@@ -103,9 +103,9 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
   public static void setUpBeforeClass() throws Exception {
     srFactory = new MultiAddressSourceRouteFactory();
     TLTest.setUpBeforeClass();
-    int startPort = START_PORT;
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(addr, 4);
     Parameters p = env.getParameters();
     timer = env.getSelectorManager().getTimer();
 
@@ -114,10 +114,10 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
       p.setInt("pastry_socket_srm_default_rto", 400); // 3000 // 3 seconds
       p.setInt("pastry_socket_srm_rto_ubound", 500);//240000; // 240 seconds
 
-    alice = buildTL("alice", addr, startPort, env);
-    bob = buildTL("bob", addr, startPort+1, env);
-    carol = buildTL("carol", addr, startPort+2, env);
-    dave = buildTL("dave", addr, startPort+3, env);
+    alice = buildTL("alice", addr, ports[0], env);
+    bob = buildTL("bob", addr, ports[1], env);
+    carol = buildTL("carol", addr, ports[2], env);
+    dave = buildTL("dave", addr, ports[3], env);
     otherTLs.add(carol);
     otherTLs.add(dave);
 
@@ -392,7 +392,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
 
   @Override
   public MultiInetSocketAddress getBogusIdentifier(MultiInetSocketAddress local) throws IOException {
-    return new MultiInetSocketAddress(new InetSocketAddress(InetAddress.getLocalHost(), START_PORT-2));
+    return new MultiInetSocketAddress(new InetSocketAddress(InetAddress.getLocalHost(), BOGUS_PORT));
   }
 
 }

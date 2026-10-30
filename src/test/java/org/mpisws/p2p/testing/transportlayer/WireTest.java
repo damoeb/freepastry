@@ -56,10 +56,10 @@ public class WireTest extends TLTest<InetSocketAddress> {
     TLTest.setUpBeforeClass();
     logger = env.getLogManager().getLogger(WireTest.class, null);
 
-    int startPort = START_PORT;
     InetAddress addr = InetAddress.getLocalHost();
-    alice = buildTL("alice", addr, startPort, env);
-    bob = buildTL("bob", addr, startPort+1, env);
+    int[] ports = FreePorts.freePorts(addr, 2);
+    alice = buildTL("alice", addr, ports[0], env);
+    bob = buildTL("bob", addr, ports[1], env);
   }
 
   private static TransportLayer<InetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
@@ -81,7 +81,7 @@ public class WireTest extends TLTest<InetSocketAddress> {
 
   @Override
   public InetSocketAddress getBogusIdentifier(InetSocketAddress local) throws IOException {
-    return new InetSocketAddress(InetAddress.getLocalHost(), START_PORT-2);
+    return new InetSocketAddress(InetAddress.getLocalHost(), BOGUS_PORT);
   }
 
 }

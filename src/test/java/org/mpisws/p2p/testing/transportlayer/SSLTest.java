@@ -81,8 +81,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Replaces the former main() programs SSLTest and SSLTestNoClientAuth (and the empty SSLTest2).
  */
 public class SSLTest {
-  static final int ALICE_PORT = 9641;
-  static final int BOB_PORT = 9642;
   static final long TIMEOUT_SECONDS = 30;
   static final String PAYLOAD = "foo";
   static final char[] NO_PASSWORD = "".toCharArray();
@@ -94,6 +92,8 @@ public class SSLTest {
   List<SSLTransportLayerImpl<InetSocketAddress, ByteBuffer>> layers = new ArrayList<SSLTransportLayerImpl<InetSocketAddress, ByteBuffer>>();
   Map<Object, Environment> environments = new IdentityHashMap<Object, Environment>();
   InetAddress addr;
+  int alicePort;
+  int bobPort;
 
   /** what the accepting side read, and the certificate subject it saw */
   CompletableFuture<String> aliceRead = new CompletableFuture<String>();
@@ -132,6 +132,9 @@ public class SSLTest {
   @BeforeEach
   void setUp() throws Exception {
     addr = InetAddress.getLoopbackAddress();
+    int[] ports = FreePorts.freePorts(addr, 2);
+    alicePort = ports[0];
+    bobPort = ports[1];
     rootEnv = new Environment();
   }
 
@@ -224,11 +227,11 @@ public class SSLTest {
 
   @Test
   void mutuallyAuthenticatedSocketDeliversDataAndPeerNames() throws Exception {
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", ALICE_PORT, store("alice", ca(false), ca(false)), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", BOB_PORT, store("bob", ca(false), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), ca(false)), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store("bob", ca(false), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
     acceptOn(alice);
 
-    P2PSocket<InetSocketAddress> bobSocket = sendPayload(bob, new InetSocketAddress(addr, ALICE_PORT)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    P2PSocket<InetSocketAddress> bobSocket = sendPayload(bob, new InetSocketAddress(addr, alicePort)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
     assertEquals(PAYLOAD, aliceRead.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
     assertEquals("bob", aliceSawSubject.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
@@ -238,11 +241,11 @@ public class SSLTest {
   @Test
   void serverOnlyAuthenticationDeliversData() throws Exception {
     // alice authenticates to bob, but does not ask for a client certificate (formerly SSLTestNoClientAuth)
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", ALICE_PORT, store("alice", ca(false), null), null, SSLTransportLayer.CLIENT_AUTH_NONE);
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", BOB_PORT, null, store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), null), null, SSLTransportLayer.CLIENT_AUTH_NONE);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, null, store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
     acceptOn(alice);
 
-    P2PSocket<InetSocketAddress> bobSocket = sendPayload(bob, new InetSocketAddress(addr, ALICE_PORT)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    P2PSocket<InetSocketAddress> bobSocket = sendPayload(bob, new InetSocketAddress(addr, alicePort)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
     assertEquals(PAYLOAD, aliceRead.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
     assertEquals("alice", bobSocket.getOptions().get(SSLTransportLayer.OPTION_CERT_SUBJECT));
@@ -250,11 +253,11 @@ public class SSLTest {
 
   @Test
   void clientRejectsServerCertificateFromUntrustedCa() throws Exception {
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", ALICE_PORT, store("alice", ca(true), ca(false)), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", BOB_PORT, store("bob", ca(false), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(true), ca(false)), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store("bob", ca(false), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
     acceptOn(alice);
 
-    Exception e = assertThrows(Exception.class, () -> sendPayload(bob, new InetSocketAddress(addr, ALICE_PORT)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    Exception e = assertThrows(Exception.class, () -> sendPayload(bob, new InetSocketAddress(addr, alicePort)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
     assertFalse(e instanceof java.util.concurrent.TimeoutException, "handshake should fail, not hang: " + e);
     assertFalse(aliceRead.isDone() && !aliceRead.isCompletedExceptionally(), "alice must not receive data");
@@ -262,11 +265,11 @@ public class SSLTest {
 
   @Test
   void serverRejectsClientCertificateFromUntrustedCa() throws Exception {
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", ALICE_PORT, store("alice", ca(false), null), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", BOB_PORT, store("bob", ca(true), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), null), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store("bob", ca(true), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
     acceptOn(alice);
 
-    sendPayload(bob, new InetSocketAddress(addr, ALICE_PORT));
+    sendPayload(bob, new InetSocketAddress(addr, alicePort));
 
     assertNotNull(aliceError.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
     assertFalse(aliceRead.isDone() && !aliceRead.isCompletedExceptionally(), "alice must not receive data");

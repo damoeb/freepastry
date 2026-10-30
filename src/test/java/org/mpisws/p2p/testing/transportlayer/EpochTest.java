@@ -60,12 +60,12 @@ public class EpochTest extends TLTest<MultiInetSocketAddress>{
   @BeforeAll
   public static void setUpBeforeClass() throws Exception {
     TLTest.setUpBeforeClass();
-    int startPort = START_PORT;
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(addr, 2);
 
-    alice = buildTL("alice", addr, startPort, env);
-    bob = buildTL("bob", addr, startPort+1, env);
+    alice = buildTL("alice", addr, ports[0], env);
+    bob = buildTL("bob", addr, ports[1], env);
   }
 
   private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
@@ -109,6 +109,6 @@ public class EpochTest extends TLTest<MultiInetSocketAddress>{
 
   @Override
   public MultiInetSocketAddress getBogusIdentifier(MultiInetSocketAddress local) throws IOException {
-    return new MultiInetSocketAddress(new InetSocketAddress(InetAddress.getLocalHost(), START_PORT-2));
+    return new MultiInetSocketAddress(new InetSocketAddress(InetAddress.getLocalHost(), BOGUS_PORT));
   }
 }

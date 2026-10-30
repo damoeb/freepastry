@@ -39,7 +39,6 @@ package org.mpisws.p2p.testing.transportlayer;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -99,8 +98,9 @@ public class PriorityMissingCallbackTest {
       }
     });
     InetAddress addr = InetAddress.getLoopbackAddress();
-    alice = buildTL(new InetSocketAddress(addr, freePort()));
-    bobAddr = new MultiInetSocketAddress(new InetSocketAddress(addr, freePort()));
+    int[] ports = FreePorts.freePorts(addr, 2);
+    alice = buildTL(new InetSocketAddress(addr, ports[0]));
+    bobAddr = new MultiInetSocketAddress(new InetSocketAddress(addr, ports[1]));
     bob = buildTL(bobAddr.getInnermostAddress());
     alice.setCallback(new Recorder());
     // bob's callback is deliberately not set
@@ -112,12 +112,6 @@ public class PriorityMissingCallbackTest {
     bob.destroy();
     env.destroy();
     env.getSelectorManager().join(WAIT_MILLIS);
-  }
-
-  static int freePort() throws IOException {
-    try (ServerSocket s = new ServerSocket(0)) {
-      return s.getLocalPort();
-    }
   }
 
   private PriorityTransportLayerImpl<MultiInetSocketAddress> buildTL(InetSocketAddress addr) throws IOException {

@@ -70,7 +70,8 @@ public abstract class TLTest<Identifier> {
   static Map<String, Object> options = new HashMap<String, Object>();
   static TransportLayer<?, ByteBuffer> alice, bob;
   static final byte[] sentBytes = {0,1,2,3,4,5,6,7};
-  static final int START_PORT = 5009;
+  /** A port that no test binds, for getBogusIdentifier(). */
+  static final int BOGUS_PORT = 5007;
   /**
    * Additional transport layers built by a subclass (besides alice and bob), destroyed in tearDownAfterClass().
    */

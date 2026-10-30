@@ -86,21 +86,21 @@ public class MagicNumberTest extends WireTest {
 
   @BeforeAll
   public static void setUpBeforeClass() throws Exception {
-    int startPort = 5009;
     env = new Environment();
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
     InetAddress addr = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(addr, 4);
     alice = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayerImpl(new InetSocketAddress(addr,startPort),env, null)
+        new WireTransportLayerImpl(new InetSocketAddress(addr,ports[0]),env, null)
         ,env, null,GOOD_HDR, 2000);
     bob = new MagicNumberTransportLayer<InetSocketAddress>(
-      new WireTransportLayerImpl(new InetSocketAddress(addr,startPort+1),env, null)
+      new WireTransportLayerImpl(new InetSocketAddress(addr,ports[1]),env, null)
       ,env, null, GOOD_HDR, 2000);
     carol = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayerImpl(new InetSocketAddress(addr,startPort+2),env, null)
+        new WireTransportLayerImpl(new InetSocketAddress(addr,ports[2]),env, null)
         ,env, null,BAD_HDR, 2000);
     dave = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayerImpl(new InetSocketAddress(addr,startPort+3),env, null)
+        new WireTransportLayerImpl(new InetSocketAddress(addr,ports[3]),env, null)
         ,env, null,NO_HDR, 2000);
     otherTLs.add(carol);
     otherTLs.add(dave);
