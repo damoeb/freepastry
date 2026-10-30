@@ -45,7 +45,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
+import rice.p2p.past.PastContent;
 
 /**
  * This class is the representation of a lookup request (by Id) in Past.
@@ -144,9 +144,9 @@ public class LookupMessage extends ContinuationMessage {
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
-    if (response != null && response instanceof RawPastContent) {
+    if (response != null && response instanceof PastContent) {
       super.serialize(buf, false);
-      RawPastContent rpc = (RawPastContent)response;
+      PastContent rpc = (PastContent)response;
       buf.writeShort(rpc.getType());
       rpc.serialize(buf);
     } else {

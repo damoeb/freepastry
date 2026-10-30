@@ -48,7 +48,6 @@ import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.selector.TimerTask;
 
 /**
@@ -172,7 +171,7 @@ public class Stripe implements ScribeMultiClient {
   public void subscribe(SplitStreamClient client) {
     if (! clients.contains(client)) {
       if (clients.size() == 0) {
-        scribe.subscribe(topic, this, (RawScribeContent) null, null);
+        scribe.subscribe(topic, this, (ScribeContent) null, null);
       }
 
       clients.add(client);
@@ -298,7 +297,7 @@ public class Stripe implements ScribeMultiClient {
       count = Integer.valueOf(count.intValue() + 1);
 
       logger.warn("DEBUG :: Subscription failed at {} for topic {} - retrying.", channel.getLocalId(), topic);
-      scribe.subscribe(topic, this, (RawScribeContent) null, null);
+      scribe.subscribe(topic, this, (ScribeContent) null, null);
 
       failed.put(topic, count);
     } else {
@@ -306,7 +305,7 @@ public class Stripe implements ScribeMultiClient {
       TimerTask resubscribeTask = new TimerTask() {
         public void run() {
           if (getParent() == null) {
-            scribe.subscribe(topic, Stripe.this, (RawScribeContent) null, null);
+            scribe.subscribe(topic, Stripe.this, (ScribeContent) null, null);
           }
         }
       };

@@ -36,11 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.aggregation;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
@@ -49,19 +50,48 @@ import rice.p2p.past.gc.GCPast;
 import rice.p2p.past.gc.GCPastContent;
 import rice.p2p.past.gc.GCPastContentHandle;
 import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.util.HashUtils;
+import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
+/**
+ * An aggregate: a group of small objects stored in Past as one, plus the pointers to the aggregates it
+ * refers to.
+ */
 public class Aggregate implements GCPastContent {
+
+  public static final short TYPE = 1;
+
   protected GCPastContent[] components;
   protected Id[] pointers;
   protected Id myId;
-
-  private static final long serialVersionUID = -4891386773008082L;
 
   public Aggregate(GCPastContent[] components, Id[] pointers) {
     this.components = components;
     this.myId = null;
     this.pointers = pointers;
+  }
+
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public Aggregate(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
+    byte version = buf.readByte();
+    switch(version) {
+      case 0:
+        myId = endpoint.readId(buf, buf.readShort());
+        pointers = new Id[buf.readShort()];
+        for (int i = 0; i < pointers.length; i++) {
+          pointers[i] = endpoint.readId(buf, buf.readShort());
+        }
+        components = new GCPastContent[buf.readShort()];
+        for (int i = 0; i < components.length; i++) {
+          components[i] = (GCPastContent) contentDeserializer.deserializePastContent(buf, endpoint, buf.readShort());
+        }
+        break;
+      default:
+        throw new IOException("Unknown Version: "+version);
+    }
   }
 
   public void setId(Id myId) {
@@ -100,24 +130,18 @@ public class Aggregate implements GCPastContent {
     }
   }
 
+  /**
+   * @return the hash of the pointers and components, or null if they cannot be serialized
+   */
   public byte[] getContentHash() {
-    byte[] bytes = null;
-
+    SimpleOutputBuffer buf = new SimpleOutputBuffer();
     try {
-      ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-      ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
-
-      objectStream.writeObject(components);
-      objectStream.writeObject(pointers);
-      objectStream.flush();
-
-      bytes = byteStream.toByteArray();
+      serializeHelper(buf);
     } catch (IOException ioe) {
-      // too bad we don't have a good way to throw a serialziation exception
       return null;
     }
 
-    return HashUtils.hash(bytes);
+    return HashUtils.hash(buf.getBytes(), 0, buf.getWritten());
   }
 
   public PastContentHandle getHandle(Past local) {
@@ -131,4 +155,29 @@ public class Aggregate implements GCPastContent {
   public GCPastMetadata getMetadata(long expiration) {
     return new GCPastMetadata(expiration);
   }
-};
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeByte((byte)0); // version
+    buf.writeShort(myId.getType());
+    myId.serialize(buf);
+    serializeHelper(buf);
+  }
+
+  private void serializeHelper(OutputBuffer buf) throws IOException {
+    buf.writeShort((short)pointers.length);
+    for (Id pointer : pointers) {
+      buf.writeShort(pointer.getType());
+      pointer.serialize(buf);
+    }
+
+    buf.writeShort((short)components.length);
+    for (GCPastContent component : components) {
+      buf.writeShort(component.getType());
+      component.serialize(buf);
+    }
+  }
+}

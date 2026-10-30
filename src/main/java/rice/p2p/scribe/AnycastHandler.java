@@ -46,7 +46,6 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.scribe.messaging.AnycastFailureMessage;
 import rice.p2p.scribe.messaging.AnycastMessage;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 
 /**
  * Anycast: walks an anycast message through a topic's tree, in the order the policy chooses, until one
@@ -72,7 +71,7 @@ final class AnycastHandler {
     this.logger = logger;
   }
 
-  void anycast(Topic topic, RawScribeContent content, NodeHandle hint) {
+  void anycast(Topic topic, ScribeContent content, NodeHandle hint) {
     logger.trace("Anycasting content {} to topic {} with hint {}", content, topic, hint);
 
     AnycastMessage aMessage = new AnycastMessage(localHandle, topic, content);

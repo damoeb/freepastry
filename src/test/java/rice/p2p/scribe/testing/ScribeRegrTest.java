@@ -49,8 +49,11 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.commonapi.testing.CommonAPITest;
 import rice.p2p.scribe.Scribe;
@@ -59,7 +62,6 @@ import rice.p2p.scribe.ScribeImpl;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.ScribePolicy;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.pastry.PastryNode;
 import rice.pastry.transport.BogusNodeHandle;
 
@@ -127,6 +129,12 @@ public class ScribeRegrTest extends CommonAPITest {
     scribes[num] = new ScribeImpl(node, INSTANCE);
     policies[num] = new TestScribePolicy(scribes[num]);
     scribes[num].setPolicy(policies[num]);
+    scribes[num].setContentDeserializer((buf, endpoint, contentType) -> {
+      if (contentType == TestScribeContent.TYPE) {
+        return new TestScribeContent(buf, endpoint);
+      }
+      throw new IOException("Unknown content type: " + contentType);
+    });
   }
 
   /**
@@ -166,7 +174,7 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart("Tree Construction id "+id);
     for (int i = 0; i < NUM_NODES; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
-      scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
+      scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
       simulate();
     }
     stepDone(SUCCESS);
@@ -215,7 +223,7 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart(name + " Tree Construction");
     for (int i = 0; i < NUM_NODES/SKIP; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
-      scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
+      scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
       simulate();
     }
     simulate(NUM_NODES/SKIP);
@@ -398,7 +406,7 @@ public class ScribeRegrTest extends CommonAPITest {
       stepStart(name + " Tree Construction (Parent Independence)");
       for (int i = 0; i < NUM_NODES; i++) {
         clients[i] = new TestScribeClient(scribes[i], topics, i);
-        scribes[i].subscribe(topics, clients[i], (RawScribeContent) null, null);
+        scribes[i].subscribe(topics, clients[i], (ScribeContent) null, null);
         simulate();
       }
 
@@ -581,7 +589,7 @@ public class ScribeRegrTest extends CommonAPITest {
 
     for (int i = 0; i < NUM_NODES/2; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
-      scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
+      scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
       simulate();
     }
     simulate(NUM_NODES);
@@ -691,7 +699,7 @@ public class ScribeRegrTest extends CommonAPITest {
       i = environment.getRandomSource().nextInt(NUM_NODES-1);
 
     client = new TestScribeClient(scribes[i], topic, i);
-    scribes[i].subscribe(topic, client, (RawScribeContent) null, null);
+    scribes[i].subscribe(topic, client, (ScribeContent) null, null);
     simulate();
 
     stepDone(SUCCESS);
@@ -725,7 +733,7 @@ public class ScribeRegrTest extends CommonAPITest {
       stepStart(name + " TopicId=" + topic.getId());
       for (int i = 0; i < NUM_NODES; i++) {
         clients[i] = new TestScribeClient(scribes[i], topic, i);
-        scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
+        scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
         simulate();
       }
 
@@ -762,7 +770,7 @@ public class ScribeRegrTest extends CommonAPITest {
     stepStart("Tree Construction");
     for (int i = 0; i < NUM_NODES; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
-      scribes[i].subscribe(topic, clients[i], (RawScribeContent) null, null);
+      scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
       simulate();
     }
     simulate(NUM_NODES);
@@ -849,6 +857,24 @@ public class ScribeRegrTest extends CommonAPITest {
     public TestScribeContent(Topic topic, int num) {
       this.topic = topic;
       this.num = num;
+    }
+
+    public static final short TYPE = 1;
+
+    /**
+     * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+     */
+    public TestScribeContent(InputBuffer buf, Endpoint endpoint) throws IOException {
+      this(new Topic(buf, endpoint), buf.readInt());
+    }
+
+    public short getType() {
+      return TYPE;
+    }
+
+    public void serialize(OutputBuffer buf) throws IOException {
+      topic.serialize(buf);
+      buf.writeInt(num);
     }
 
     public boolean equals(Object o) {
@@ -1033,7 +1059,7 @@ public class ScribeRegrTest extends CommonAPITest {
     public void subscribeFailed(Collection<Topic> topics) {
       for (Topic topic : topics) {
         subscribeFailed = true;
-        scribe.subscribe(topic, this, (RawScribeContent) null, null);
+        scribe.subscribe(topic, this, (ScribeContent) null, null);
       }
     }
 

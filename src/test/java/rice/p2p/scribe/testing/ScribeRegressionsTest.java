@@ -14,9 +14,4 @@ public class ScribeRegressionsTest {
   public void scribe() throws Exception {
     RegressionRun.run(ScribeRegrTest::new);
   }
-
-  @Test
-  public void rawScribe() throws Exception {
-    RegressionRun.run(RawScribeRegrTest::new);
-  }
 }

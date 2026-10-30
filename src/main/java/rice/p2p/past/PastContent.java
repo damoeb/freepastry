@@ -37,9 +37,11 @@ advised of the possibility of such damage.
 
 package rice.p2p.past;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 
 /**
@@ -97,4 +99,18 @@ public interface PastContent extends Serializable {
    */
   public boolean isMutable();
 
+  /**
+   * The type id of this content's raw serialization, which the matching deserializer switches on.
+   * Zero is reserved and must not be used.
+   *
+   * @return the type id
+   */
+  public short getType();
+
+  /**
+   * Writes this content, without its type id; the deserializer reads it back.
+   *
+   * @param buf where to write the content
+   */
+  public void serialize(OutputBuffer buf) throws IOException;
 }

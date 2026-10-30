@@ -62,8 +62,6 @@ import rice.p2p.past.PastException;
 import rice.p2p.past.PastImpl;
 import rice.p2p.past.messaging.LookupMessage;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
-import rice.p2p.past.rawserialization.RawPastContentHandle;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
 import rice.persistence.PersistentStorage;
@@ -846,19 +844,19 @@ public class RawPastRegrTest extends CommonAPITest {
   /**
    * Utility class for past content objects
    */
-  protected static class TestPastContent implements RawPastContent {
+  protected static class TestPastContent implements PastContent {
     public static final short TYPE = 1;
 
     protected Id id;
 
-    protected RawPastContent existing;
+    protected PastContent existing;
 
     public TestPastContent(Id id) {
       this.id = id;
     }
 
     public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
-      existing = (RawPastContent)existingContent;
+      existing = (PastContent)existingContent;
       return this;
     }
 
@@ -897,7 +895,7 @@ public class RawPastRegrTest extends CommonAPITest {
       id = endpoint.readId(buf, buf.readShort());
       if (buf.readBoolean()) {
         short contentType = buf.readShort();
-        existing = (RawPastContent)pcd.deserializePastContent(buf, endpoint, contentType);
+        existing = (PastContent)pcd.deserializePastContent(buf, endpoint, contentType);
       }
     }
 
@@ -1002,7 +1000,7 @@ public class RawPastRegrTest extends CommonAPITest {
   /**
     * Utility class for past content object handles
    */
-  protected static class TestPastContentHandle implements RawPastContentHandle {
+  protected static class TestPastContentHandle implements PastContentHandle {
     public static final short TYPE = 1;
 
     protected NodeHandle handle;

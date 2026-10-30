@@ -56,7 +56,6 @@ import rice.p2p.glacier.VersioningPast;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.rawserialization.JavaPastContentHandleDeserializer;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
@@ -98,7 +97,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.endpoint = node.buildEndpoint(this, instance);
     this.scheduler = new GlacierScheduler(endpoint, environment, logger);
     this.endpoint.setDeserializer(GlacierMessageDispatcher.deserializer(endpoint));
-    this.contentHandleDeserializer = new JavaPastContentHandleDeserializer();
+    this.contentHandleDeserializer = PastContentHandleDeserializer.CONTENT_HASH;
 
     FragmentLocator locator = new FragmentLocator(factory, numFragments);
     this.neighborhood = new GlacierNeighborhood(neighborStorage, factory, endpoint.getLocalNodeHandle().getId(), config.neighborTimeout(), environment, logger);

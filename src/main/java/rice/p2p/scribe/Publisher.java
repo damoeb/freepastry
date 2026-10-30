@@ -48,7 +48,6 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.messaging.PublishMessage;
 import rice.p2p.scribe.messaging.PublishRequestMessage;
 import rice.p2p.scribe.messaging.UnsubscribeMessage;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 
 /**
  * Publish/multicast: sends a publish request to a topic's root, which pushes the content down the tree
@@ -74,7 +73,7 @@ final class Publisher {
     this.logger = logger;
   }
 
-  void publish(Topic topic, RawScribeContent content) {
+  void publish(Topic topic, ScribeContent content) {
     logger.trace("Publishing content {} to topic {}", content, topic);
 
     endpoint.route(topic.getId(), new PublishRequestMessage(localHandle, topic, content), null);

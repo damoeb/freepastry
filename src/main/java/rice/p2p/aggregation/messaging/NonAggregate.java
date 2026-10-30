@@ -49,30 +49,24 @@ import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.PastException;
-import rice.p2p.past.rawserialization.JavaSerializedPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
 
 /**
  * Just wraps a header in Past to know that it is something other than an Aggregate
  *
  * @author Jeff Hoye
  */
-public class NonAggregate implements RawPastContent {
+public class NonAggregate implements PastContent {
   public static final short TYPE = 2;
 
-  private RawPastContent content;
+  private PastContent content;
 
-  public NonAggregate(PastContent content) {
-    this(content instanceof RawPastContent ? (RawPastContent)content : new JavaSerializedPastContent(content));
-  }
-
-  public NonAggregate(RawPastContent subContent) {
+  public NonAggregate(PastContent subContent) {
     this.content = subContent;
   }
 
   public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
-    content = (RawPastContent)content.checkInsert(id, ((NonAggregate)existingContent).content);
+    content = content.checkInsert(id, ((NonAggregate)existingContent).content);
     return this;
   }
 
@@ -99,17 +93,12 @@ public class NonAggregate implements RawPastContent {
     content.serialize(buf);
   }
 
-  public NonAggregate(InputBuffer buf, Endpoint endpoint, RawPastContent subContent, PastContentDeserializer pcd) throws IOException {
+  public NonAggregate(InputBuffer buf, Endpoint endpoint, PastContent subContent, PastContentDeserializer pcd) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
         short subType = buf.readShort();
-        PastContent temp = pcd.deserializePastContent(buf, endpoint, subType);
-        if (subType == 0) {
-          this.content = new JavaSerializedPastContent(temp);
-        } else {
-          this.content = (RawPastContent)temp;
-        }
+        this.content = pcd.deserializePastContent(buf, endpoint, subType);
         break;
       default:
         throw new IOException("Unknown Version: "+version);

@@ -36,11 +36,17 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
+import java.io.IOException;
+
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.gc.GCPastContentHandle;
 
 public class GlacierContentHandle implements GCPastContentHandle {
+  public static final short TYPE = 4;
 
   private final Id id;
   private final NodeHandle nodeHandle;
@@ -72,6 +78,28 @@ public class GlacierContentHandle implements GCPastContentHandle {
 
   public Manifest getManifest() {
     return manifest;
+  }
+
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public GlacierContentHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
+    id = endpoint.readId(buf, buf.readShort());
+    version = buf.readLong();
+    nodeHandle = endpoint.readNodeHandle(buf);
+    manifest = new Manifest(buf);
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeShort(id.getType());
+    id.serialize(buf);
+    buf.writeLong(version);
+    nodeHandle.serialize(buf);
+    manifest.serialize(buf);
   }
 
 

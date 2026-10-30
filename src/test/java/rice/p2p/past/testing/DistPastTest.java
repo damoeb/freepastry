@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.past.testing;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
@@ -93,6 +94,12 @@ public class DistPastTest {
 
         stor = new PersistentStorage(idf,".",4*1024*1024,node.getEnvironment());
           p = new PastImpl(node, new StorageManagerImpl(idf,stor,new LRUCache(new MemoryStorage(idf),512*1024,node.getEnvironment())), 3, "");
+          p.setContentDeserializer((buf, endpoint, contentType) -> {
+            if (contentType == DistPastTestContent.TYPE) {
+              return new DistPastTestContent(buf, endpoint);
+            }
+            throw new IOException("Unknown content type: " + contentType);
+          });
       }
       Thread.sleep(5000);
 

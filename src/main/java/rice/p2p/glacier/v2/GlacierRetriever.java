@@ -51,7 +51,6 @@ import rice.p2p.glacier.v2.messaging.GlacierDataMessage;
 import rice.p2p.glacier.v2.messaging.GlacierFetchMessage;
 import rice.p2p.glacier.v2.messaging.GlacierResponseMessage;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.rawserialization.JavaPastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 
 /**
@@ -91,7 +90,7 @@ final class GlacierRetriever {
     this.environment = environment;
     this.logger = logger;
     this.currentFragmentRequestTimeout = config.fragmentRequestTimeoutDefault();
-    this.contentDeserializer = new JavaPastContentDeserializer();
+    this.contentDeserializer = PastContentDeserializer.NONE;
   }
 
   void setContentDeserializer(PastContentDeserializer deserializer) {

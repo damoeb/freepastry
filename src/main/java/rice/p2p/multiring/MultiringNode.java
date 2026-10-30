@@ -59,7 +59,6 @@ import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 
 /**
  * This class wraps a Node, enabling it to support multiple hierarchical
@@ -230,7 +229,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * @param otherRingId The Id of the newly added ring
    */
   protected void nodeAdded(Id otherRingId) {
-    scribe.subscribe(new Topic(RingId.build(ringId, otherRingId)), this, (RawScribeContent) null, null);
+    scribe.subscribe(new Topic(RingId.build(ringId, otherRingId)), this, (ScribeContent) null, null);
   }
 
   /**

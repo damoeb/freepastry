@@ -472,7 +472,7 @@ final class ChildManager {
     for (NodeHandle nextHop : manifest.keySet()) {
       List<Topic> theTopics = manifest.get(nextHop);
       if (theTopics != null) { // this should probably never happen
-        AnycastMessage aMessage = sMessage.copy(theTopics, SubscriptionManager.convert(policy.get().divideContent(theTopics, sMessage.getContent()))); // use the copy constructor again
+        AnycastMessage aMessage = sMessage.copy(theTopics, policy.get().divideContent(theTopics, sMessage.getContent())); // use the copy constructor again
         endpoint.route(aMessage.getTopic().getId(), aMessage, nextHop);
       }
     }

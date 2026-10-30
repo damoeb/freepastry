@@ -47,9 +47,7 @@ import rice.p2p.glacier.ErasureCodec;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.rawserialization.JavaSerializedPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.HashUtils;
 
@@ -87,7 +85,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
     return codec.decode(fragments, endpoint, pcd);
   }
 
-  public Manifest[] createManifests(VersionKey key, RawPastContent obj, Fragment[] fragments, long expiration) {
+  public Manifest[] createManifests(VersionKey key, PastContent obj, Fragment[] fragments, long expiration) {
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       sob.writeShort(obj.getType());
@@ -97,10 +95,6 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
       logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
       return null;
     }
-  }
-
-  public Manifest[] createManifests(VersionKey key, PastContent obj, Fragment[] fragments, long expiration) {
-    return createManifests(key, obj instanceof RawPastContent ? (RawPastContent)obj : new JavaSerializedPastContent(obj), fragments, expiration);
   }
 
   private Manifest[] createManifestsHelper(VersionKey key, byte[] bytes, int length, Fragment[] fragments, long expiration) {
@@ -125,7 +119,7 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
     return manifests;
   }
 
-  public Fragment[] encodeObject(RawPastContent obj, boolean[] generateFragment) {
+  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
     logger.trace("Serialize object: {}", obj);
 
     try {
@@ -137,10 +131,6 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
       logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
       return null;
     }
-  }
-
-  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
-    return encodeObject(obj instanceof RawPastContent ? (RawPastContent)obj : new JavaSerializedPastContent(obj), generateFragment);
   }
 
 

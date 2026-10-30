@@ -47,8 +47,6 @@ import rice.p2p.commonapi.IdFactory;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.rawserialization.JavaSerializedPastContent;
-import rice.p2p.past.rawserialization.RawPastContent;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
@@ -90,15 +88,9 @@ final class AggregateStorer {
    */
   static int getSize(PastContent obj, Logger logger) {
     try {
-      RawPastContent rpc;
-      if (obj instanceof RawPastContent) {
-        rpc = (RawPastContent)obj;
-      } else {
-        rpc = new JavaSerializedPastContent(obj);
-      }
       SimpleOutputBuffer buf = new SimpleOutputBuffer();
-      buf.writeShort(rpc.getType());
-      rpc.serialize(buf);
+      buf.writeShort(obj.getType());
+      obj.serialize(buf);
       return buf.getWritten();
     } catch (IOException ioe) {
       logger.atWarn().log(() -> "Cannot serialize object, size unknown: "+ioe);

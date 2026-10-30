@@ -41,7 +41,7 @@ import java.io.PrintStream;
 
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.scribe.testing.RawScribeRegrTest;
+import rice.p2p.scribe.testing.ScribeRegrTest;
 
 /**
  * @(#) DistScribeRegrTest.java Provides regression testing for the Scribe service using distributed
@@ -66,7 +66,7 @@ public class RendezvousScribeTest {
       }
     }
 
-    Environment env = RawScribeRegrTest.parseArgs(args);
+    Environment env = ScribeRegrTest.parseArgs(args);
 
     Parameters p = env.getParameters();
 
@@ -74,7 +74,7 @@ public class RendezvousScribeTest {
     p.setBoolean("rendezvous_test_makes_bootstrap", true);
     p.setFloat("rendezvous_test_num_firewalled", 0.5f);
 
-    RawScribeRegrTest scribeTest = new RawScribeRegrTest(env);
+    ScribeRegrTest scribeTest = new ScribeRegrTest(env);
 
     scribeTest.start();
     env.destroy();

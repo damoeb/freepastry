@@ -54,6 +54,8 @@ import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.scribe.Scribe;
 import rice.p2p.scribe.ScribeContent;
@@ -236,6 +238,24 @@ public class RoutingTableTest {
       this.num = num;
     }
 
+    public static final short TYPE = 1;
+
+    /**
+     * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+     */
+    public TestScribeContent(InputBuffer buf, Endpoint endpoint) throws IOException {
+      this(new Topic(buf, endpoint), buf.readInt());
+    }
+
+    public short getType() {
+      return TYPE;
+    }
+
+    public void serialize(OutputBuffer buf) throws IOException {
+      topic.serialize(buf);
+      buf.writeInt(num);
+    }
+
     public boolean equals(Object o) {
       if (!(o instanceof TestScribeContent)) {
         return false;
@@ -342,8 +362,14 @@ public class RoutingTableTest {
     if (msgSendRate > 0) {
       if (useScribe) {
         Scribe app = new ScribeImpl(node,"test");
+        app.setContentDeserializer((buf, endpoint, contentType) -> {
+          if (contentType == TestScribeContent.TYPE) {
+            return new TestScribeContent(buf, endpoint);
+          }
+          throw new IOException("Unknown content type: " + contentType);
+        });
         ScribeMultiClient client = new TestScribeClient(app, topic);
-        app.subscribe(topic, client, (rice.p2p.scribe.rawserialization.RawScribeContent) null, null);
+        app.subscribe(topic, client, (ScribeContent) null, null);
         apps.put(node,app);
       } else {
         // construct a new MyApp

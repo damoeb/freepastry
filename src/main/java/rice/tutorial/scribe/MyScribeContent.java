@@ -39,13 +39,20 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.scribe;
 
+import java.io.IOException;
+
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.ScribeContent;
 
 /**
  * @author Jeff Hoye
  */
 public class MyScribeContent implements ScribeContent {
+  public static final short TYPE = 1;
+
   /**
    * The source of this content.
    */
@@ -66,6 +73,23 @@ public class MyScribeContent implements ScribeContent {
   public MyScribeContent(NodeHandle from, int seq) {
     this.from = from;
     this.seq = seq;
+  }
+
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public MyScribeContent(InputBuffer buf, Endpoint endpoint) throws IOException {
+    from = endpoint.readNodeHandle(buf);
+    seq = buf.readInt();
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    from.serialize(buf);
+    buf.writeInt(seq);
   }
 
   /**

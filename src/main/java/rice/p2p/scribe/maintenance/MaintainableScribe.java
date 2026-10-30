@@ -46,7 +46,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.BaseScribe;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
+import rice.p2p.scribe.ScribeContent;
 
 /**
  * This is an interface to scribe so that the MaintenacePolicy
@@ -75,7 +75,7 @@ public interface MaintainableScribe extends BaseScribe {
    */
   public Collection<Topic> getTopicsByChild(NodeHandle child);
 
-  public void subscribe(Collection<Topic> nodeWasParent, ScribeMultiClient client, RawScribeContent content, NodeHandle hint);
+  public void subscribe(Collection<Topic> nodeWasParent, ScribeMultiClient client, ScribeContent content, NodeHandle hint);
 
   public void setParent(Topic topic, NodeHandle parent, List<Id> pathToRoot);
 

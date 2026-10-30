@@ -37,10 +37,11 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
@@ -51,11 +52,13 @@ import rice.p2p.past.gc.GCPastContentHandle;
 import rice.p2p.past.gc.GCPastMetadata;
 
 public class DebugContent implements GCPastContent {
+  /** Content type id; whoever reads DebugContent registers it with its PastContentDeserializer. */
+  public static final short TYPE = 3;
 
   private final Id myId;
   private final boolean isMutable;
   private final long version;
-  private transient byte[] payload;
+  private final byte[] payload;
 
   public DebugContent(Id id, boolean isMutable, long version, byte[] payload) {
     myId = id;
@@ -96,16 +99,28 @@ public class DebugContent implements GCPastContent {
     return payload;
   }
 
-  private void writeObject(ObjectOutputStream oos) throws IOException {
-    oos.defaultWriteObject();
-    oos.writeInt(payload.length);
-    oos.write(payload);
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public DebugContent(InputBuffer buf, Endpoint endpoint) throws IOException {
+    myId = endpoint.readId(buf, buf.readShort());
+    isMutable = buf.readBoolean();
+    version = buf.readLong();
+    payload = new byte[buf.readInt()];
+    buf.read(payload, 0, payload.length);
   }
 
-  private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-    ois.defaultReadObject();
-    payload = new byte[ois.readInt()];
-    ois.readFully(payload, 0, payload.length);
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeShort(myId.getType());
+    myId.serialize(buf);
+    buf.writeBoolean(isMutable);
+    buf.writeLong(version);
+    buf.writeInt(payload.length);
+    buf.write(payload, 0, payload.length);
   }
 
   public GCPastMetadata getMetadata(long expiration) {

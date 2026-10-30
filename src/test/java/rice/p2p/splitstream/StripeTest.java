@@ -12,7 +12,7 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.scribe.ScribeImpl;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
+import rice.p2p.scribe.ScribeContent;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -40,7 +40,7 @@ class StripeTest {
     }
 
     @Override
-    public void subscribe(Topic topic, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
+    public void subscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
       subscribes++;
     }
   }

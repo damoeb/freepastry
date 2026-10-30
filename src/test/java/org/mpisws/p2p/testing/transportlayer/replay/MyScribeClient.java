@@ -39,6 +39,7 @@ advised of the possibility of such damage.
  */
 package org.mpisws.p2p.testing.transportlayer.replay;
 
+import java.io.IOException;
 import java.util.Collection;
 
 import org.slf4j.Logger;
@@ -55,7 +56,6 @@ import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.pastry.commonapi.PastryIdFactory;
 
 /**
@@ -112,6 +112,12 @@ public class MyScribeClient implements ScribeMultiClient, Application {
 
     // construct Scribe
     myScribe = new ScribeImpl(node,"myScribeInstance");
+    myScribe.setContentDeserializer((buf, ep, contentType) -> {
+      if (contentType == MyScribeContent.TYPE) {
+        return new MyScribeContent(buf, ep);
+      }
+      throw new IOException("Unknown content type: " + contentType);
+    });
 
     // construct the topic
     myTopic = new Topic(new PastryIdFactory(node.getEnvironment()), "example topic");
@@ -125,7 +131,7 @@ public class MyScribeClient implements ScribeMultiClient, Application {
    */
   public void subscribe() {
     // no subscribe content, no hint
-    myScribe.subscribe(myTopic, this, (RawScribeContent)null, null);
+    myScribe.subscribe(myTopic, this, (ScribeContent)null, null);
   }
 
   /**

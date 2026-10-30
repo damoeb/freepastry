@@ -45,9 +45,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.rawserialization.JavaSerializedPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
 
 /**
  * This class represents a message which is an insert request in past.
@@ -65,7 +63,7 @@ public class InsertMessage extends ContinuationMessage {
   static final long serialVersionUID = -7027957470028259605L;
 
   // the data to insert
-  protected RawPastContent content;
+  protected PastContent content;
 
   /**
    * Constructor which takes a unique integer Id, as well as the
@@ -77,10 +75,6 @@ public class InsertMessage extends ContinuationMessage {
    * @param dest The destination address
    */
   public InsertMessage(int uid, PastContent content, NodeHandle source, Id dest) {
-    this(uid, content instanceof RawPastContent ? (RawPastContent)content : new JavaSerializedPastContent(content), source, dest);
-  }
-
-  public InsertMessage(int uid, RawPastContent content, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
     this.content = content;
@@ -93,7 +87,6 @@ public class InsertMessage extends ContinuationMessage {
    */
   public PastContent getContent() {
 //  if (content == null)
-    if (content.getType() == 0) return ((JavaSerializedPastContent)content).getContent();
     return content;
   }
 
@@ -178,11 +171,7 @@ public class InsertMessage extends ContinuationMessage {
     // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer
     if (buf.readBoolean()) {
       short contentType = buf.readShort();
-      if (contentType == 0) {
-        content = new JavaSerializedPastContent(pcd.deserializePastContent(buf, endpoint, contentType));
-      } else {
-        content = (RawPastContent)pcd.deserializePastContent(buf, endpoint, contentType);
-      }
+      content = pcd.deserializePastContent(buf, endpoint, contentType);
     }
   }
 }

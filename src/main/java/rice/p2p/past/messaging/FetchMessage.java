@@ -45,11 +45,9 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.PastContentHandle;
-import rice.p2p.past.rawserialization.JavaSerializedPastContentHandle;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
-import rice.p2p.past.rawserialization.RawPastContentHandle;
+import rice.p2p.past.PastContent;
 
 /**
  * This class represents a message which is a fetch request in past, based
@@ -67,7 +65,7 @@ public class FetchMessage extends ContinuationMessage {
   public static final short TYPE = 3;
 
   // the id to fetch
-  private RawPastContentHandle handle;
+  private PastContentHandle handle;
 
   // whether or not this message has been cached
   private boolean cached = false;
@@ -81,9 +79,6 @@ public class FetchMessage extends ContinuationMessage {
    * @param dest The destination address
    */
   public FetchMessage(int uid, PastContentHandle handle, NodeHandle source, Id dest) {
-    this(uid, handle instanceof RawPastContentHandle ? (RawPastContentHandle)handle : new JavaSerializedPastContentHandle(handle), source, dest);
-  }
-  public FetchMessage(int uid, RawPastContentHandle handle, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
     this.handle = handle;
@@ -96,7 +91,6 @@ public class FetchMessage extends ContinuationMessage {
    */
   public PastContentHandle getHandle() {
 //  if (content == null)
-    if (handle.getType() == 0) return ((JavaSerializedPastContentHandle)handle).getPCH();
     return handle;
   }
 
@@ -132,9 +126,9 @@ public class FetchMessage extends ContinuationMessage {
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
-    if (response != null && response instanceof RawPastContent) {
+    if (response != null && response instanceof PastContent) {
       super.serialize(buf, false);
-      RawPastContent rpc = (RawPastContent)response;
+      PastContent rpc = (PastContent)response;
       buf.writeShort(rpc.getType());
       rpc.serialize(buf);
     } else {
@@ -168,10 +162,6 @@ public class FetchMessage extends ContinuationMessage {
     cached = buf.readBoolean();
 
     short type = buf.readShort();
-    if (type == 0) {
-      handle = new JavaSerializedPastContentHandle(pchd.deserializePastContentHandle(buf, endpoint, type));
-    } else {
-      handle = (RawPastContentHandle)pchd.deserializePastContentHandle(buf, endpoint, type);
-    }
+    handle = pchd.deserializePastContentHandle(buf, endpoint, type);
   }
 }

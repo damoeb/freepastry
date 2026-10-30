@@ -53,7 +53,6 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.scribe.javaserialized.JavaScribeContentDeserializer;
 import rice.p2p.scribe.maintenance.MaintainableScribe;
 import rice.p2p.scribe.maintenance.ScribeMaintenancePolicy;
 import rice.p2p.scribe.messaging.AnycastFailureMessage;
@@ -68,8 +67,6 @@ import rice.p2p.scribe.messaging.SubscribeFailedMessage;
 import rice.p2p.scribe.messaging.SubscribeLostMessage;
 import rice.p2p.scribe.messaging.SubscribeMessage;
 import rice.p2p.scribe.messaging.UnsubscribeMessage;
-import rice.p2p.scribe.rawserialization.JavaSerializedScribeContent;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
@@ -187,7 +184,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     MESSAGE_TIMEOUT = config.messageTimeout();
     this.instance = instance;
     this.endpoint = node.buildEndpoint(this, instance);
-    this.contentDeserializer = new JavaScribeContentDeserializer();
+    // until the application sets its own, content cannot be read
+    this.contentDeserializer = (buf, ep, contentType) -> {
+      throw new IOException("No ScribeContentDeserializer set to read content of type " + contentType);
+    };
     this.endpoint.setDeserializer(new ScribeMessageDeserializer(endpoint, () -> contentDeserializer, instance, logger));
     this.policy = policy;
     this.maintenancePolicy = maintenancePolicy;
@@ -318,27 +318,17 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param hint The first hop of the message, or null
    */
   public void subscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
-    doSubscribe(Collections.singletonList(topic), client, toRawScribeContent(content), hint);
-  }
-  public void subscribe(Topic topic, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
     doSubscribe(Collections.singletonList(topic), client, content, hint);
   }
   public void subscribe(Collection<Topic> theTopics, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
-    doSubscribe(theTopics, client, toRawScribeContent(content), hint);
-  }
-  public void subscribe(Collection<Topic> theTopics, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
     doSubscribe(theTopics, client, content, hint);
-  }
-
-  protected RawScribeContent toRawScribeContent(ScribeContent content) {
-    return content instanceof RawScribeContent ? (RawScribeContent)content : new JavaSerializedScribeContent(content);
   }
 
   /**
    * This method prevents re-subscription to topics you are already a part of.
    * However it allows subscription if you were the root, but there is now a root.
    */
-  protected void doSubscribe(Collection<Topic> theTopics, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
+  protected void doSubscribe(Collection<Topic> theTopics, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
     subscriptions.doSubscribe(theTopics, client, content, hint);
   }
 
@@ -357,10 +347,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param content The content to publish
    */
   public void publish(Topic topic, ScribeContent content) {
-    publish(topic, content instanceof RawScribeContent ? (RawScribeContent)content : new JavaSerializedScribeContent(content));
-  }
-
-  public void publish(Topic topic, RawScribeContent content) {
     publisher.publish(topic, content);
   }
 
@@ -375,18 +361,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   public void anycast(Topic topic, ScribeContent content, NodeHandle hint) {
-    if (content instanceof RawScribeContent) {
-      anycast(topic, (RawScribeContent)content, hint);
-    } else {
-      anycast(topic, new JavaSerializedScribeContent(content), hint);
-    }
-  }
-
-  public void anycast(Topic topic, RawScribeContent content) {
-    anycast(topic, content, null);
-  }
-
-  public void anycast(Topic topic, RawScribeContent content, NodeHandle hint) {
     anycasts.anycast(topic, content, hint);
   }
 
@@ -615,10 +589,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     } else {
       logger.warn("Received unknown message {} - dropping on floor.", message);
     }
-  }
-
-  protected RawScribeContent convert(ScribeContent content) {
-    return SubscriptionManager.convert(content);
   }
 
   /**

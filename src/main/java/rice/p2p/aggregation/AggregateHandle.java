@@ -43,9 +43,9 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.gc.rawserialization.RawGCPastContentHandle;
+import rice.p2p.past.gc.GCPastContentHandle;
 
-public class AggregateHandle implements RawGCPastContentHandle {
+public class AggregateHandle implements GCPastContentHandle {
 
   public static final short TYPE = 1;
 

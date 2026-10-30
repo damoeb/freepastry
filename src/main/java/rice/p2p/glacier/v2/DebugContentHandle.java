@@ -36,11 +36,18 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
+import java.io.IOException;
+
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.gc.GCPastContentHandle;
 
 public class DebugContentHandle implements GCPastContentHandle {
+  public static final short TYPE = 3;
+
   private final Id myId;
   private final rice.p2p.commonapi.NodeHandle myNodeHandle;
   private final long myExpiration;
@@ -67,5 +74,27 @@ public class DebugContentHandle implements GCPastContentHandle {
 
   public long getExpiration() {
     return myExpiration;
+  }
+
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public DebugContentHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
+    myId = endpoint.readId(buf, buf.readShort());
+    myVersion = buf.readLong();
+    myExpiration = buf.readLong();
+    myNodeHandle = endpoint.readNodeHandle(buf);
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeShort(myId.getType());
+    myId.serialize(buf);
+    buf.writeLong(myVersion);
+    buf.writeLong(myExpiration);
+    myNodeHandle.serialize(buf);
   }
 }

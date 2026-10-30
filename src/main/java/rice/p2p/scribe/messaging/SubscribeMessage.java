@@ -49,7 +49,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
+import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
@@ -87,7 +87,7 @@ public class SubscribeMessage extends AnycastMessage {
    * @param id The UID for this message
    * @param content The content
    */
-  public SubscribeMessage(NodeHandle source, List<Topic> topics, int id, RawScribeContent content) {
+  public SubscribeMessage(NodeHandle source, List<Topic> topics, int id, ScribeContent content) {
     super(source, topics.iterator().next(), content);
     this.id = id;
     this.subscriber = source;
@@ -101,7 +101,7 @@ public class SubscribeMessage extends AnycastMessage {
    * @param id
    * @param content
    */
-  public SubscribeMessage(NodeHandle source, Topic topic, int id, RawScribeContent content) {
+  public SubscribeMessage(NodeHandle source, Topic topic, int id, ScribeContent content) {
     this(source, Collections.singletonList(topic), id, content);
   }
 
@@ -224,7 +224,7 @@ public class SubscribeMessage extends AnycastMessage {
    * @param newTopics
    * @return
    */
-  public SubscribeMessage copy(List<Topic> newTopics, RawScribeContent content) {
+  public SubscribeMessage copy(List<Topic> newTopics, ScribeContent content) {
     SubscribeMessage ret = new SubscribeMessage(getSource(), newTopics, getId(), content);
     ret.visited = visited;
     ret.toVisit = toVisit;

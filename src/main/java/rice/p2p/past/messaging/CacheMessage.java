@@ -47,9 +47,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.rawserialization.JavaSerializedPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
 
 /**
  * This class represents message which pushes an object forward one hop in order
@@ -67,7 +65,7 @@ public class CacheMessage extends PastMessage {
   public static final short TYPE = 1;
 
   // the content to be cached
-  private final RawPastContent content;
+  private final PastContent content;
 
   /**
    * Constructor which takes a unique integer Id and the local id
@@ -75,10 +73,6 @@ public class CacheMessage extends PastMessage {
    * @param uid The unique id
    */
   public CacheMessage(int uid, PastContent content, NodeHandle source, Id dest) {
-    this(uid, content instanceof RawPastContent ? (RawPastContent)content : new JavaSerializedPastContent(content), source, dest);
-  }
-
-  public CacheMessage(int uid, RawPastContent content, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
     this.content = content;
@@ -91,7 +85,6 @@ public class CacheMessage extends PastMessage {
    */
   public PastContent getContent() {
 //  if (content == null)
-    if (content.getType() == 0) return ((JavaSerializedPastContent)content).getContent();
     return content;
   }
 
@@ -139,11 +132,7 @@ public class CacheMessage extends PastMessage {
     super(buf, endpoint);
     // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer
     short contentType = buf.readShort();
-    if (contentType == 0) {
-      content = new JavaSerializedPastContent(pcd.deserializePastContent(buf, endpoint, contentType));
-    } else {
-      content = (RawPastContent)pcd.deserializePastContent(buf, endpoint, contentType);
-    }
+    content = pcd.deserializePastContent(buf, endpoint, contentType);
   }
 
 }

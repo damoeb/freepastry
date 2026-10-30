@@ -47,7 +47,7 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.messaging.SubscribeMessage;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
+import rice.p2p.scribe.ScribeContent;
 
 public interface ScribeMaintenancePolicy {
   /**
@@ -104,12 +104,10 @@ public interface ScribeMaintenancePolicy {
    *
    * This gives the MaintenancePolicy a chance to set the ScribeContent in these messages.
    *
-   * To convert a ScribeContent (java serialized) to a RawScribeContent use new JavaSerializedScribeContent(content)
-   *
    * @param topics the topics we are implicitly subscribing to
    * @return the ScribeContent to put into the SubscribeMessage (null is ok)
    */
-  public RawScribeContent implicitSubscribe(List<Topic> topics);
+  public ScribeContent implicitSubscribe(List<Topic> topics);
 
   public class DefaultScribeMaintenancePolicy implements
       ScribeMaintenancePolicy {
@@ -182,7 +180,7 @@ public interface ScribeMaintenancePolicy {
      * @param topics the topics we are implicitly subscribing to
      * @return the ScribeContent to put into the SubscribeMessage (null is ok)
      */
-    public RawScribeContent implicitSubscribe(List<Topic> topics) {
+    public ScribeContent implicitSubscribe(List<Topic> topics) {
       return null;
     }
   }

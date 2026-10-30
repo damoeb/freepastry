@@ -37,7 +37,10 @@ advised of the possibility of such damage.
 
 package rice.p2p.scribe;
 
+import java.io.IOException;
 import java.io.Serializable;
+
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
  * This interface represents data published in a Scribe system.
@@ -46,5 +49,18 @@ import java.io.Serializable;
  * @author Alan Mislove
  */
 public interface ScribeContent extends Serializable {
+  /**
+   * The type id of this content's raw serialization, which the matching deserializer switches on.
+   * Zero is reserved and must not be used.
+   *
+   * @return the type id
+   */
+  public short getType();
 
+  /**
+   * Writes this content, without its type id; the deserializer reads it back.
+   *
+   * @param buf where to write the content
+   */
+  public void serialize(OutputBuffer buf) throws IOException;
 }

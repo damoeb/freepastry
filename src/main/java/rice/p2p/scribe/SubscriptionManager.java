@@ -59,8 +59,6 @@ import rice.p2p.scribe.messaging.SubscribeFailedMessage;
 import rice.p2p.scribe.messaging.SubscribeLostMessage;
 import rice.p2p.scribe.messaging.SubscribeMessage;
 import rice.p2p.scribe.messaging.UnsubscribeMessage;
-import rice.p2p.scribe.rawserialization.JavaSerializedScribeContent;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 
 /**
  * The subscriber side of Scribe: joins and leaves topic trees, tracks each outstanding subscribe until it
@@ -125,7 +123,7 @@ final class SubscriptionManager {
    * @param content
    * @param hint
    */
-  void doSubscribe(Collection<Topic> theTopics, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
+  void doSubscribe(Collection<Topic> theTopics, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
     logger.trace("Subscribing client {} to {}.", client, theTopics);
 
     List<Topic> toSubscribe = new ArrayList<Topic>();
@@ -213,12 +211,12 @@ final class SubscriptionManager {
   /**
    * Internal methods for sending a subscribe message
    */
-  void sendSubscribe(Topic topic, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
+  void sendSubscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
     sendSubscribe(Collections.singletonList(topic), client, content, hint);
   }
 
 
-  void sendSubscribe(List<Topic> topics, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
+  void sendSubscribe(List<Topic> topics, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
     // remember that we're subscribing
     registry.markPending(topics);
 
@@ -248,7 +246,7 @@ final class SubscriptionManager {
 
       for (NodeHandle nextHop : manifest.keySet()) {
         List<Topic> theTopics = manifest.get(nextHop);
-        SubscribeMessage msg = new SubscribeMessage(localHandle, theTopics, theId, convert(policy.get().divideContent(theTopics, content)));
+        SubscribeMessage msg = new SubscribeMessage(localHandle, theTopics, theId, policy.get().divideContent(theTopics, content));
 
         // if I'm the 1st Replica, then route direct (to prevent problem with consistency)  IE, I know he
         // is the root for this message, even if he doesn't.  Make sure that if it is re-routed,
@@ -506,9 +504,4 @@ final class SubscriptionManager {
     }
   }
 
-  static RawScribeContent convert(ScribeContent content) {
-    if (content == null) return null;
-    if (content instanceof RawScribeContent) return (RawScribeContent)content;
-    return new JavaSerializedScribeContent(content);
-  }
 }

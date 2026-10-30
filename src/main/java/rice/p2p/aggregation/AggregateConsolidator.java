@@ -48,7 +48,6 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.gc.rawserialization.RawGCPastContent;
 
 /**
  * Consolidates aggregates that hold too few objects, or too many dead ones: fetches a random selection of
@@ -198,7 +197,7 @@ final class AggregateConsolidator {
     }
 
     private void storeConsolidated() {
-      RawGCPastContent[] components = new RawGCPastContent[objectsTotal];
+      GCPastContent[] components = new GCPastContent[objectsTotal];
       ObjectDescriptor[] desc = new ObjectDescriptor[objectsTotal];
       int componentIndex = 0;
 
@@ -210,7 +209,7 @@ final class AggregateConsolidator {
 
             GCPastContent temp = aggr[i].getComponent(j);
 
-            components[componentIndex] = (RawGCPastContent)temp;
+            components[componentIndex] = (GCPastContent)temp;
             desc[componentIndex] = adc[i].getObjects()[j];
             if (logger.isDebugEnabled()) logger.debug("  #"+componentIndex+": "+adc[i].getObjects()[j].getKey().toStringFull());
             componentIndex ++;

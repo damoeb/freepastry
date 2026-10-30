@@ -47,6 +47,13 @@ import rice.p2p.past.PastContent;
 
 public interface PastContentDeserializer {
 
+  /**
+   * The deserializer in place until the application sets its own: it knows no content type.
+   */
+  PastContentDeserializer NONE = (buf, endpoint, contentType) -> {
+    throw new IOException("No PastContentDeserializer set to read content of type " + contentType);
+  };
+
   PastContent deserializePastContent(InputBuffer buf, Endpoint endpoint, short contentType) throws IOException;
 
 }

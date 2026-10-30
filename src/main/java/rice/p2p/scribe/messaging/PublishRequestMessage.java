@@ -45,8 +45,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.JavaSerializedScribeContent;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
@@ -60,7 +58,7 @@ public class PublishRequestMessage extends ScribeMessage {
   public static final short TYPE = 9;
 
   // the content of this message
-  private final RawScribeContent content;
+  private final ScribeContent content;
 
   /**
    * Constructor
@@ -70,10 +68,6 @@ public class PublishRequestMessage extends ScribeMessage {
    * @param content The content to publish
    */
   public PublishRequestMessage(NodeHandle source, Topic topic, ScribeContent content) {
-    this(source, topic, content instanceof RawScribeContent ? (RawScribeContent)content : new JavaSerializedScribeContent(content));
-  }
-
-  public PublishRequestMessage(NodeHandle source, Topic topic, RawScribeContent content) {
     super(source, topic);
 
     this.content = content;
@@ -85,8 +79,6 @@ public class PublishRequestMessage extends ScribeMessage {
    * @return The content
    */
   public ScribeContent getContent() {
-//  if (content == null)
-    if (content.getType() == 0) return ((JavaSerializedScribeContent)content).getContent();
     return content;
   }
 
@@ -132,11 +124,7 @@ public class PublishRequestMessage extends ScribeMessage {
 
     // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer
     short contentType = buf.readShort();
-    if (contentType == 0) {
-      content = new JavaSerializedScribeContent(cd.deserializeScribeContent(buf, endpoint, contentType));
-    } else {
-      content = (RawScribeContent)cd.deserializeScribeContent(buf, endpoint, contentType);
-    }
+    content = cd.deserializeScribeContent(buf, endpoint, contentType);
 
   }
 }

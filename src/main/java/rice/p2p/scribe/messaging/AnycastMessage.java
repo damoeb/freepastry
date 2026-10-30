@@ -47,8 +47,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.Topic;
-import rice.p2p.scribe.rawserialization.JavaSerializedScribeContent;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
@@ -64,7 +62,7 @@ public class AnycastMessage extends ScribeMessage {
   /**
    * the content of this message
    */
-  private RawScribeContent content;
+  private ScribeContent content;
 
   /**
    * the list of nodes which we have visited
@@ -86,10 +84,6 @@ public class AnycastMessage extends ScribeMessage {
    * @param content The content
    */
   public AnycastMessage(NodeHandle source, Topic topic, ScribeContent content) {
-    this(source, topic, content instanceof RawScribeContent ? (RawScribeContent)content : new JavaSerializedScribeContent(content));
-  }
-
-  public AnycastMessage(NodeHandle source, Topic topic, RawScribeContent content) {
     super(source, topic);
     this.initialRequestor = source;
     this.content = content;
@@ -106,11 +100,10 @@ public class AnycastMessage extends ScribeMessage {
    */
   public ScribeContent getContent() {
     if (content == null) return null;
-    if (content.getType() == 0) return ((JavaSerializedScribeContent)content).getContent();
     return content;
   }
 
-  public RawScribeContent getRawContent() {
+  public ScribeContent getRawContent() {
     return content;
   }
 
@@ -119,16 +112,8 @@ public class AnycastMessage extends ScribeMessage {
    *
    * @param content The content
    */
-  public void setContent(RawScribeContent content) {
-    this.content = content;
-  }
-
   public void setContent(ScribeContent content) {
-    if (content instanceof RawScribeContent) {
-      setContent(content);
-    } else {
-      setContent(new JavaSerializedScribeContent(content));
-    }
+    this.content = content;
   }
 
   /**
@@ -330,11 +315,7 @@ public class AnycastMessage extends ScribeMessage {
     // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer
     if (buf.readBoolean()) {
       short contentType = buf.readShort();
-      if (contentType == 0) {
-        content = new JavaSerializedScribeContent(cd.deserializeScribeContent(buf, endpoint, contentType));
-      } else {
-        content = (RawScribeContent)cd.deserializeScribeContent(buf, endpoint, contentType);
-      }
+      content = cd.deserializeScribeContent(buf, endpoint, contentType);
     }
   }
 

@@ -44,7 +44,6 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.rawserialization.RawPastContentHandle;
 
 /**
  * A handle class for content-hash objects stored in Past.
@@ -52,7 +51,7 @@ import rice.p2p.past.rawserialization.RawPastContentHandle;
  * @version $Id: ContentHashPastContentHandle.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Peter Druschel
  */
-public class ContentHashPastContentHandle implements RawPastContentHandle {
+public class ContentHashPastContentHandle implements PastContentHandle {
   public static final short TYPE = -12;
 
 

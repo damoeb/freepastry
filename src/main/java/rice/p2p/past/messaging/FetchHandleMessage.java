@@ -45,7 +45,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
-import rice.p2p.past.rawserialization.RawPastContentHandle;
+import rice.p2p.past.PastContentHandle;
 
 /**
  * This class represents a handle request in Past.
@@ -105,9 +105,9 @@ public class FetchHandleMessage extends ContinuationMessage {
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
-    if (response != null && response instanceof RawPastContentHandle) {
+    if (response != null && response instanceof PastContentHandle) {
       super.serialize(buf, false);
-      RawPastContentHandle rpch = (RawPastContentHandle)response;
+      PastContentHandle rpch = (PastContentHandle)response;
       buf.writeShort(rpch.getType());
       rpch.serialize(buf);
     } else {

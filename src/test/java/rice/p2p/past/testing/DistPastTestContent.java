@@ -36,14 +36,21 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.past.testing;
 
+import java.io.IOException;
+
 import rice.environment.Environment;
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.ContentHashPastContent;
 
 /**
  * @author jstewart
  */
 public class DistPastTestContent extends ContentHashPastContent {
+  public static final short TYPE = 1;
+
   String content;
   long timestamp;
 
@@ -51,6 +58,26 @@ public class DistPastTestContent extends ContentHashPastContent {
     super(idf.buildId(content));
     this.content = content;
     this.timestamp = env.getTimeSource().currentTimeMillis();
+  }
+
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public DistPastTestContent(InputBuffer buf, Endpoint endpoint) throws IOException {
+    super(endpoint.readId(buf, buf.readShort()));
+    content = buf.readUTF();
+    timestamp = buf.readLong();
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeShort(getId().getType());
+    getId().serialize(buf);
+    buf.writeUTF(content);
+    buf.writeLong(timestamp);
   }
 
   public String getContent() { return content; }

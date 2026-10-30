@@ -37,9 +37,10 @@ advised of the possibility of such damage.
 
 package rice.p2p.scribe;
 
+import java.util.Collection;
 
-import rice.p2p.scribe.javaserialized.JavaScribe;
-import rice.p2p.scribe.rawserialization.RawScribe;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
  * This interface is exported by all instances of Scribe.
@@ -47,5 +48,21 @@ import rice.p2p.scribe.rawserialization.RawScribe;
  * @version $Id: Scribe.java 3911 2007-10-18 03:15:55Z jeffh $
  * @author Alan Mislove
  */
-public interface Scribe extends RawScribe, JavaScribe {
+public interface Scribe extends BaseScribe {
+  // ***************** Membership functions messages **************
+  public void subscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint);
+
+  public void subscribe(Collection<Topic> topics, ScribeMultiClient client, ScribeContent content, NodeHandle hint);
+
+  // ***************** Messaging functions ****************
+  public void publish(Topic topic, ScribeContent content);
+
+  public void anycast(Topic topic, ScribeContent content);
+
+  public void anycast(Topic topic, ScribeContent content, NodeHandle hint);
+
+  // ********************* Application management functions **************
+  public void setContentDeserializer(ScribeContentDeserializer deserializer);
+
+  public ScribeContentDeserializer getContentDeserializer();
 }

@@ -39,7 +39,7 @@ package rice.p2p.splitstream;
 import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.scribe.rawserialization.RawScribeContent;
+import rice.p2p.scribe.ScribeContent;
 
 /**
  * This represents data sent through scribe for splitstream
@@ -47,7 +47,7 @@ import rice.p2p.scribe.rawserialization.RawScribeContent;
  * @version $Id: SplitStreamContent.java 3810 2007-07-30 12:59:55Z jeffh $
  * @author Alan Mislove
  */
-public class SplitStreamContent implements RawScribeContent {
+public class SplitStreamContent implements ScribeContent {
   public static final short TYPE = 1;
 
   /**

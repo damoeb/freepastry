@@ -48,8 +48,6 @@ import rice.environment.Environment;
 import rice.p2p.aggregation.messaging.AggregationMessage;
 import rice.p2p.aggregation.messaging.AggregationTimeoutMessage;
 import rice.p2p.aggregation.messaging.NonAggregate;
-import rice.p2p.aggregation.raw.RawAggregate;
-import rice.p2p.aggregation.raw.RawAggregateFactory;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Endpoint;
@@ -67,8 +65,6 @@ import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.gc.GCPast;
 import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.rawserialization.JavaPastContentDeserializer;
-import rice.p2p.past.rawserialization.JavaPastContentHandleDeserializer;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
@@ -137,17 +133,19 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.waitingList = waitingList;
     this.instance = instance;
 
-    this.contentDeserializer = new JavaPastContentDeserializer();
-    this.contentHandleDeserializer = new JavaPastContentHandleDeserializer();
+    this.contentDeserializer = PastContentDeserializer.NONE;
+    this.contentHandleDeserializer = PastContentHandleDeserializer.CONTENT_HASH;
 
     this.aggregateStore = aggregateStore;
     this.aggregateStore.setContentDeserializer((buf, endpoint, contentType) -> {
       switch(contentType) {
-        case RawAggregate.TYPE:
-          return new RawAggregate(buf, endpoint, contentDeserializer);
+        case Aggregate.TYPE:
+          return new Aggregate(buf, endpoint, contentDeserializer);
         case NonAggregate.TYPE:
-          short subType = buf.readShort();
-          return contentDeserializer.deserializePastContent(buf, endpoint, subType);
+          // unwrap: skip the NonAggregate's version byte, then read the wrapped content
+          byte version = buf.readByte();
+          if (version != 0) throw new IOException("Unknown NonAggregate version: "+version);
+          return contentDeserializer.deserializePastContent(buf, endpoint, buf.readShort());
       }
       throw new IllegalArgumentException("Unknown Type:"+contentType);
     });
@@ -204,7 +202,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   private static AggregateFactory getDefaultAggregateFactory() {
-    return new RawAggregateFactory();
+    return Aggregate::new;
   }
 
   private long jitterTerm(long basis) {

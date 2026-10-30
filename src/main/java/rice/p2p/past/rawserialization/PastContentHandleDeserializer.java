@@ -43,8 +43,21 @@ import java.io.IOException;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.past.ContentHashPastContentHandle;
 import rice.p2p.past.PastContentHandle;
 
 public interface PastContentHandleDeserializer {
+
+  /**
+   * The deserializer in place until the application sets its own: it reads the {@link ContentHashPastContentHandle}s
+   * of {@link rice.p2p.past.ContentHashPastContent}.
+   */
+  PastContentHandleDeserializer CONTENT_HASH = (buf, endpoint, contentType) -> {
+    if (contentType == ContentHashPastContentHandle.TYPE) {
+      return new ContentHashPastContentHandle(buf, endpoint);
+    }
+    throw new IOException("No PastContentHandleDeserializer set to read handles of type " + contentType);
+  };
+
   public PastContentHandle deserializePastContentHandle(InputBuffer buf, Endpoint endpoint, short contentType) throws IOException;
 }

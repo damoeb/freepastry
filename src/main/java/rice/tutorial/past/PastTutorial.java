@@ -115,6 +115,14 @@ public class PastTutorial {
       Past app = new PastImpl(node, new StorageManagerImpl(idf, stor, new LRUCache(
           new MemoryStorage(idf), 512 * 1024, node.getEnvironment())), 0, "");
 
+      // tell Past how to read our content back from the wire
+      app.setContentDeserializer((buf, endpoint, contentType) -> {
+        if (contentType == MyPastContent.TYPE) {
+          return new MyPastContent(buf, endpoint);
+        }
+        throw new IOException("Unknown content type: " + contentType);
+      });
+
       apps.add(app);
 
       node.boot(bootaddress);

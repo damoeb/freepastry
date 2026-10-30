@@ -43,9 +43,7 @@ import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.rawserialization.JavaSerializedPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.rawserialization.RawPastContent;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
@@ -104,10 +102,6 @@ public class ErasureCodec {
     }
     logger.info(s);
   }
-  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
-    return encodeObject(obj instanceof RawPastContent ? (RawPastContent)obj : new JavaSerializedPastContent(obj), generateFragment);
-  }
-
   /**
    * Serializes the object.
    *
@@ -115,7 +109,7 @@ public class ErasureCodec {
    * @param generateFragment
    * @return
    */
-  public Fragment[] encodeObject(RawPastContent obj, boolean[] generateFragment) {
+  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
     logger.trace("Serialize object: {}", obj);
 
     try {

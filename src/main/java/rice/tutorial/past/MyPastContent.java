@@ -39,19 +39,24 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.past;
 
+import java.io.IOException;
+
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.ContentHashPastContent;
 
 /**
  * @author Jeff Hoye
  */
 public class MyPastContent extends ContentHashPastContent {
+  public static final short TYPE = 1;
 
   /**
    * Store the content.
    *
-   * Note that this class is Serializable, so any non-transient field will
-   * automatically be stored to to disk.
+   * serialize() writes it to the wire and to disk, the deserializing constructor reads it back.
    */
   String content;
 
@@ -64,6 +69,24 @@ public class MyPastContent extends ContentHashPastContent {
   public MyPastContent(Id id, String content) {
     super(id);
     this.content = content;
+  }
+
+  /**
+   * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+   */
+  public MyPastContent(InputBuffer buf, Endpoint endpoint) throws IOException {
+    super(endpoint.readId(buf, buf.readShort()));
+    content = buf.readUTF();
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeShort(getId().getType());
+    getId().serialize(buf);
+    buf.writeUTF(content);
   }
 
   /**
