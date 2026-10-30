@@ -53,22 +53,6 @@ import rice.p2p.glacier.Glacier;
 import rice.p2p.glacier.GlacierException;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.glacier.VersioningPast;
-import rice.p2p.glacier.v2.messaging.GlacierDataMessage;
-import rice.p2p.glacier.v2.messaging.GlacierFetchMessage;
-import rice.p2p.glacier.v2.messaging.GlacierMessage;
-import rice.p2p.glacier.v2.messaging.GlacierNeighborRequestMessage;
-import rice.p2p.glacier.v2.messaging.GlacierNeighborResponseMessage;
-import rice.p2p.glacier.v2.messaging.GlacierQueryMessage;
-import rice.p2p.glacier.v2.messaging.GlacierRangeForwardMessage;
-import rice.p2p.glacier.v2.messaging.GlacierRangeQueryMessage;
-import rice.p2p.glacier.v2.messaging.GlacierRangeResponseMessage;
-import rice.p2p.glacier.v2.messaging.GlacierRefreshCompleteMessage;
-import rice.p2p.glacier.v2.messaging.GlacierRefreshPatchMessage;
-import rice.p2p.glacier.v2.messaging.GlacierRefreshProbeMessage;
-import rice.p2p.glacier.v2.messaging.GlacierRefreshResponseMessage;
-import rice.p2p.glacier.v2.messaging.GlacierResponseMessage;
-import rice.p2p.glacier.v2.messaging.GlacierSyncMessage;
-import rice.p2p.glacier.v2.messaging.GlacierTimeoutMessage;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.gc.GCPast;
@@ -78,159 +62,74 @@ import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
 import rice.persistence.StorageManager;
 
-@SuppressWarnings("unchecked")
+/**
+ * The Glacier application: implements the PAST interfaces on top of erasure-coded fragments, and wires
+ * together the collaborators that do the work.
+ */
 public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application, DebugCommandHandler {
-  private final StorageManager fragmentStorage;
-  private final StorageManager neighborStorage;
-  private final GlacierConfig config;
-  private final GlacierPolicy policy;
-  private final Node node;
-  private final int numFragments;
+  private final Environment environment;
+  private final Logger logger;
   private final String instance;
-  private final int numSurvivors;
   private final Endpoint endpoint;
-  private final IdFactory factory;
-  private final GlacierDebugCommands debugCommands;
-  private final GlacierRequestHandler requestHandler;
-  private final GlacierMaintenance maintenance;
-  private final GlacierNeighborProtocol neighborProtocol;
+  private final GlacierScheduler scheduler;
+  private final GlacierTrash trash;
+  private final GlacierTrafficShaper trafficShaper;
+  private final GlacierNeighborhood neighborhood;
+  private final GlacierStatisticsCollector statisticsCollector;
+  private final GlacierRetriever retriever;
+  private final GlacierInserter inserter;
   private final GlacierSyncProtocol syncProtocol;
   private final GlacierHandoffProtocol handoffProtocol;
-  private final GlacierBulkRefresh bulkRefresh;
-  private final GlacierInserter inserter;
-  private final GlacierRetriever retriever;
-  private final GlacierStatisticsCollector statisticsCollector;
-  private final GlacierRouter router;
-  private final GlacierTrafficShaper trafficShaper;
-  private final GlacierTrash trash;
-  private final GlacierNeighborhood neighborhood;
-  private final GlacierScheduler scheduler;
-  private final FragmentLocator locator;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  private Environment environment;
-  private final Logger logger;
-
+  private final GlacierNeighborProtocol neighborProtocol;
+  private final GlacierMaintenance maintenance;
+  private final GlacierMessageDispatcher dispatcher;
+  private final GlacierDebugCommands debugCommands;
   private PastContentHandleDeserializer contentHandleDeserializer;
 
-  public GlacierImpl(Node nodeArg, StorageManager fragmentStorageArg, StorageManager neighborStorageArg, int numFragmentsArg, int numSurvivorsArg, IdFactory factoryArg, String instanceArg, GlacierPolicy policyArg) {
-    this.environment = nodeArg.getEnvironment();
-    this.logger = environment.getLogManager().getLogger(GlacierImpl.class, instanceArg);
+  public GlacierImpl(Node node, StorageManager fragmentStorage, StorageManager neighborStorage, int numFragments, int numSurvivors, IdFactory factory, String instance, GlacierPolicy policy) {
+    this.environment = node.getEnvironment();
+    this.logger = environment.getLogManager().getLogger(GlacierImpl.class, instance);
+    this.instance = instance;
 
-    this.config = GlacierConfig.from(environment.getParameters());
+    GlacierConfig config = GlacierConfig.from(environment.getParameters());
 
-
-
-    this.fragmentStorage = fragmentStorageArg;
-    this.neighborStorage = neighborStorageArg;
-    this.trash = new GlacierTrash(fragmentStorageArg, logger);
-    this.policy = policyArg;
-    this.trafficShaper = new GlacierTrafficShaper(config, numFragmentsArg, environment, logger);
-    this.node = nodeArg;
-    this.instance = instanceArg;
+    this.trash = new GlacierTrash(fragmentStorage, logger);
+    this.trafficShaper = new GlacierTrafficShaper(config, numFragments, environment, logger);
     this.endpoint = node.buildEndpoint(this, instance);
     this.scheduler = new GlacierScheduler(endpoint, environment, logger);
-    this.endpoint.setDeserializer((buf, type, priority, sender) -> {
-      switch(type) {
-        case GlacierDataMessage.TYPE:
-          return GlacierDataMessage.build(buf, endpoint);
-        case GlacierFetchMessage.TYPE:
-          return GlacierFetchMessage.build(buf, endpoint);
-        case GlacierNeighborRequestMessage.TYPE:
-          return GlacierNeighborRequestMessage.build(buf, endpoint);
-        case GlacierNeighborResponseMessage.TYPE:
-          return GlacierNeighborResponseMessage.build(buf, endpoint);
-        case GlacierQueryMessage.TYPE:
-          return GlacierQueryMessage.build(buf, endpoint);
-        case GlacierRangeForwardMessage.TYPE:
-          return GlacierRangeForwardMessage.build(buf, endpoint);
-        case GlacierRangeQueryMessage.TYPE:
-          return GlacierRangeQueryMessage.build(buf, endpoint);
-        case GlacierRangeResponseMessage.TYPE:
-          return GlacierRangeResponseMessage.build(buf, endpoint);
-        case GlacierRefreshCompleteMessage.TYPE:
-          return GlacierRefreshCompleteMessage.build(buf, endpoint);
-        case GlacierRefreshPatchMessage.TYPE:
-          return GlacierRefreshPatchMessage.build(buf, endpoint);
-        case GlacierRefreshProbeMessage.TYPE:
-          return GlacierRefreshProbeMessage.build(buf, endpoint);
-        case GlacierRefreshResponseMessage.TYPE:
-          return GlacierRefreshResponseMessage.build(buf, endpoint);
-        case GlacierResponseMessage.TYPE:
-          return GlacierResponseMessage.build(buf, endpoint);
-        case GlacierSyncMessage.TYPE:
-          return GlacierSyncMessage.build(buf, endpoint);
-      }
-      throw new IllegalArgumentException("Unknown type:"+type);
-    });
+    this.endpoint.setDeserializer(GlacierMessageDispatcher.deserializer(endpoint));
     this.contentHandleDeserializer = new JavaPastContentHandleDeserializer();
-    this.numFragments = numFragmentsArg;
-    this.numSurvivors = numSurvivorsArg;
-    this.factory = factoryArg;
-    this.locator = new FragmentLocator(factoryArg, numFragmentsArg);
+
+    FragmentLocator locator = new FragmentLocator(factory, numFragments);
     this.neighborhood = new GlacierNeighborhood(neighborStorage, factory, endpoint.getLocalNodeHandle().getId(), config.neighborTimeout(), environment, logger);
     this.statisticsCollector = new GlacierStatisticsCollector(config, scheduler, trafficShaper, neighborhood, trash, fragmentStorage, neighborStorage, instance, environment, logger);
-    this.router = new GlacierRouter(endpoint, statisticsCollector, logger);
+    GlacierRouter router = new GlacierRouter(endpoint, statisticsCollector, logger);
     this.retriever = new GlacierRetriever(config, numFragments, numSurvivors, instance, policy, endpoint, scheduler, router, locator, trafficShaper, trash, environment, logger);
-    this.bulkRefresh = new GlacierBulkRefresh(config, numFragments, numSurvivors, policy, scheduler, router, locator, neighborhood, fragmentStorage, factory, environment, logger);
+    GlacierBulkRefresh bulkRefresh = new GlacierBulkRefresh(config, numFragments, numSurvivors, policy, scheduler, router, locator, neighborhood, fragmentStorage, factory, environment, logger);
     this.inserter = new GlacierInserter(config, numFragments, numSurvivors, policy, endpoint, scheduler, router, locator, trafficShaper, retriever, bulkRefresh, environment, logger);
     this.syncProtocol = new GlacierSyncProtocol(config, numFragments, policy, endpoint, scheduler, router, locator, neighborhood, trafficShaper, fragmentStorage, factory, environment, logger);
     this.handoffProtocol = new GlacierHandoffProtocol(config, instance, policy, router, locator, neighborhood, trash, fragmentStorage, environment, logger);
     this.neighborProtocol = new GlacierNeighborProtocol(config, endpoint, router, neighborhood, neighborStorage, factory, environment, logger);
     this.maintenance = new GlacierMaintenance(config, numFragments, locator, neighborhood, trash, retriever, fragmentStorage, environment, logger);
-    this.requestHandler = new GlacierRequestHandler(config, numFragments, numSurvivors, instance, policy, router, locator, neighborhood, retriever, fragmentStorage, environment, logger);
+    GlacierRequestHandler requestHandler = new GlacierRequestHandler(config, numFragments, numSurvivors, instance, policy, router, locator, neighborhood, retriever, fragmentStorage, environment, logger);
+    this.dispatcher = new GlacierMessageDispatcher(scheduler, trafficShaper, requestHandler, neighborProtocol, syncProtocol, bulkRefresh, logger);
     this.debugCommands = new GlacierDebugCommands(config, numFragments, numSurvivors, instance, factory, scheduler, router, locator, neighborhood, trafficShaper, syncProtocol, retriever, inserter, fragmentStorage, neighborStorage, environment, logger);
+
     neighborhood.determineResponsibleRange();
     endpoint.register();
   }
 
+  /**
+   * Starts the periodic tasks: neighbor exchange, sync, handoff, garbage collection, local scan, traffic
+   * shaping and statistics.
+   */
   public void startup() {
-
-    /* Neighbor requests */
-
     scheduler.addContinuation(neighborProtocol.newNeighborTask());
-
-    /* Sync */
-
     scheduler.addContinuation(syncProtocol.newSyncTask());
-
-    /* Handoff */
-
     scheduler.addContinuation(handoffProtocol.newHandoffTask());
-
-    /* Garbage collection */
-
     scheduler.addContinuation(maintenance.newGarbageCollectionTask());
-
-    /* Local scan */
-
     scheduler.addContinuation(maintenance.newLocalScanTask());
-
-    /* Traffic shaper */
-
     scheduler.addContinuation(trafficShaper.newShaperTask());
-
-    /* Statistics */
-
     scheduler.addContinuation(statisticsCollector.newReportingTask());
   }
 
@@ -238,31 +137,16 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     trash.setTrashcan(trashStorage);
   }
 
-  /**
-   * This method is called when Glacier encounters a fatal error
-   *
-   * @param s Message describing the error, which is logged
-   * @exception Error always
-   */
-  private void panic(String s) throws Error {
-    logger.error("PANIC: {}", s);
-    throw new Error("Panic");
-  }
-
   public String handleDebugCommand(String command) {
     return debugCommands.handleDebugCommand(command);
   }
 
-  public void insert(final PastContent obj, final long expiration, final Continuation<? super Boolean[], Exception> command) {
-    inserter.insert(obj, expiration, command);
-  }
-
-  public void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
-    inserter.refresh(ids, versions, expirations, command);
-  }
-
   public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
     insert(obj, GCPast.INFINITY_EXPIRATION, command);
+  }
+
+  public void insert(final PastContent obj, final long expiration, final Continuation<? super Boolean[], Exception> command) {
+    inserter.insert(obj, expiration, command);
   }
 
   public void refresh(Id[] ids, long[] expirations, Continuation<? super Object[], Exception> command) {
@@ -277,6 +161,10 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     refresh(ids, expirations, command);
   }
 
+  public void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
+    inserter.refresh(ids, versions, expirations, command);
+  }
+
   public boolean forward(final RouteMessage message) {
     return true;
   }
@@ -288,6 +176,10 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       return;
 
     neighborhood.neighborSeen(handle.getId(), environment.getTimeSource().currentTimeMillis());
+  }
+
+  public void deliver(Id id, Message message) {
+    dispatcher.deliver(id, message);
   }
 
   public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command) {
@@ -356,62 +248,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     retriever.retrieveObject(new VersionKey(gch.getId(), gch.getVersion()), gch.getManifest(), true, GlacierTags.FETCH, command);
   }
 
-  public void deliver(Id id, Message message) {
-
-    final GlacierMessage msg = (GlacierMessage) message;
-    logger.debug("Received message {} with destination {} from {}", msg, id, msg.getSource().getId());
-
-    if (msg instanceof GlacierDataMessage)
-      trafficShaper.charge((GlacierDataMessage) msg);
-
-    if (msg.isResponse()) {
-      GlacierContinuation gc = scheduler.get(msg.getUID());
-
-      if (gc != null) {
-        if (!gc.hasTerminated()) {
-          logger.debug("Resuming [{}]", gc);
-          gc.syncReceiveResult(msg);
-          logger.debug("---");
-        } else {
-          logger.debug("Message UID#{} is response, but continuation has already terminated", msg.getUID());
-        }
-      } else {
-        logger.debug("Unusual: Message UID#{} is response, but continuation not found", msg.getUID());
-      }
-
-      return;
-    }
-
-    if (msg instanceof GlacierQueryMessage) {
-      requestHandler.handleQuery((GlacierQueryMessage) msg);
-    } else if (msg instanceof GlacierNeighborRequestMessage) {
-      neighborProtocol.handleNeighborRequest((GlacierNeighborRequestMessage) msg);
-    } else if (msg instanceof GlacierSyncMessage) {
-      syncProtocol.handleSyncRequest((GlacierSyncMessage) msg);
-    } else if (msg instanceof GlacierRefreshProbeMessage) {
-      bulkRefresh.handleProbe((GlacierRefreshProbeMessage) msg);
-    } else if (msg instanceof GlacierRefreshPatchMessage) {
-      bulkRefresh.handlePatch((GlacierRefreshPatchMessage) msg);
-    } else if (msg instanceof GlacierRangeQueryMessage) {
-      syncProtocol.handleRangeQuery((GlacierRangeQueryMessage) msg);
-    } else if (msg instanceof GlacierRangeForwardMessage) {
-      syncProtocol.handleRangeForward((GlacierRangeForwardMessage) msg);
-    } else if (msg instanceof GlacierFetchMessage) {
-      requestHandler.handleFetch((GlacierFetchMessage) msg);
-    } else if (msg instanceof GlacierDataMessage) {
-      requestHandler.handleData((GlacierDataMessage) msg);
-    } else if (msg instanceof GlacierTimeoutMessage) {
-
-      /* TimeoutMessages are generated by the local node when a
-         timeout expires. */
-
-      scheduler.timerExpired();
-      return;
-    } else {
-      panic("GLACIER ERROR - Received message " + msg + " of unknown type.");
-    }
-  }
-
   public int getReplicationFactor() {
     return 1;
   }
@@ -471,6 +307,4 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {
     contentHandleDeserializer = deserializer;
   }
-
-
 }
