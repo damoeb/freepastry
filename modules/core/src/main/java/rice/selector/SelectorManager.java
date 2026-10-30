@@ -575,7 +575,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       logger.warn("CCE: cause:", cce.getCause());
       throw cce;
     } catch (IOException e) {
-      if (e.getMessage().indexOf("Interrupted system call") >= 0) {
+      String message = e.getMessage();
+      if (message != null && message.contains("Interrupted system call")) {
         logger.warn("Got interrupted system call, continuing anyway...");
         return 1;
       } else {
