@@ -36,6 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.util;
 
+import java.util.HexFormat;
+
 import rice.environment.random.RandomSource;
 
 /**
@@ -46,11 +48,6 @@ import rice.environment.random.RandomSource;
  * @author amislove
  */
 public class MathUtils {
-
-  /**
-  * The array used for conversion to hexadecimal
-   */
-  public final static char[] HEX_ARRAY = new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
   /**
    * Make the constructor private so no MathUtils is ever created.
@@ -115,49 +112,17 @@ public class MathUtils {
    * @return A string representation
    */
   public static String toHex(byte[] text) {
-    StringBuilder buffer = new StringBuilder();
-
-    for (int i=0; i<text.length; i++) {
-      buffer.append(HEX_ARRAY[0x0f & (text[i] >> 4)]);
-      buffer.append(HEX_ARRAY[0x0f & text[i]]);
-    }
-
-    return buffer.toString();
+    return HexFormat.of().formatHex(text);
   }
 
   /**
-   * Utility method which converts a hex string to a byte[]
-   *
-   * @param text The text to convert
-   * @return The bytes
-   */
-  public static byte[] fromHex(String text) {
-    byte[] result = new byte[text.length() / 2];
-
-    for (int i=0; i<result.length; i++)
-      result[i] = (byte) ((byte) ((byte) 0xf0 & ((getByte(text.charAt(2*i))) << 4)) | getByte(text.charAt(2*i + 1)));
-
-    return result;
-  }
-
-  /**
-   * Utility method which converts a byte[] to a base64 string of characters, in lower case
+   * Utility method which converts a byte[] to a base64 string of characters, on one line
    *
    * @param text The array to convert
    * @return A string representation
    */
   public static String toBase64(byte[] text) {
-    return Base64.encodeBytes(text);
-  }
-
-  /**
-   * Utility method which converts a base64 string to a byte[]
-   *
-   * @param text The text to convert
-   * @return The bytes
-   */
-  public static byte[] fromBase64(String text) {
-    return Base64.decode(text);
+    return java.util.Base64.getEncoder().encodeToString(text);
   }
 
   /**
@@ -182,23 +147,6 @@ public class MathUtils {
     hash ^= (hash >> 11);
     hash += (hash << 15);
     return hash;
-  }
-
-  /**
-   * Utility method for converting a char to a byte
-   *
-   * @param c The char
-   * @return The byte
-   */
-  protected static byte getByte(char c) {
-    if ((c >= '0') && (c <= '9'))
-      return (byte) (c - '0');
-    else if ((c >= 'A') && (c <= 'F'))
-      return (byte) (10 + (byte) (c - 'A'));
-    else if ((c >= 'a') && (c <= 'f'))
-      return (byte) (10 + (byte) (c - 'a'));
-    else
-      throw new RuntimeException("Could not decode hex character '" + c + "'");
   }
 
   /**
