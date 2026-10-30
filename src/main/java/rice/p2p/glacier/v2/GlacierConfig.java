@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import rice.environment.params.Parameters;
+import rice.environment.random.RandomSource;
 
 /**
  * The tuning parameters of a {@link GlacierImpl}, read once from the {@code p2p_glacier_*} parameters.
@@ -153,5 +154,13 @@ record GlacierConfig(
       p.getDouble("p2p_glacier_jitterRange"),
       p.getLong("p2p_glacier_statisticsReportInterval"),
       p.getInt("p2p_glacier_maxActiveRestores"));
+  }
+
+  /**
+   * @return a random interval within jitterRange of basis, so that periodic tasks of different nodes
+   *         do not run in lockstep
+   */
+  long jitterTerm(long basis, RandomSource random) {
+    return (long)((1-jitterRange)*basis) + random.nextInt((int)(2*jitterRange*basis));
   }
 }

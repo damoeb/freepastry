@@ -38,11 +38,9 @@ package rice.p2p.glacier.v2;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -103,6 +101,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierSyncProtocol syncProtocol;
+  private final GlacierHandoffProtocol handoffProtocol;
   private final GlacierBulkRefresh bulkRefresh;
   private final GlacierInserter inserter;
   private final GlacierRetriever retriever;
@@ -119,8 +119,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
 
 
-  private long syncInterval;
-  private int syncMaxFragments;
 
 
 
@@ -146,8 +144,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.logger = environment.getLogManager().getLogger(GlacierImpl.class, instanceArg);
 
     this.config = GlacierConfig.from(environment.getParameters());
-    this.syncInterval = config.syncInterval();
-    this.syncMaxFragments = config.syncMaxFragments();
 
 
 
@@ -204,6 +200,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.retriever = new GlacierRetriever(config, numFragments, numSurvivors, instance, policy, endpoint, scheduler, router, locator, trafficShaper, trash, environment, logger);
     this.bulkRefresh = new GlacierBulkRefresh(config, numFragments, numSurvivors, policy, scheduler, router, locator, neighborhood, fragmentStorage, factory, environment, logger);
     this.inserter = new GlacierInserter(config, numFragments, numSurvivors, policy, endpoint, scheduler, router, locator, trafficShaper, retriever, bulkRefresh, environment, logger);
+    this.syncProtocol = new GlacierSyncProtocol(config, numFragments, policy, endpoint, scheduler, router, locator, neighborhood, trafficShaper, fragmentStorage, factory, environment, logger);
+    this.handoffProtocol = new GlacierHandoffProtocol(config, instance, policy, router, locator, neighborhood, trash, fragmentStorage, environment, logger);
     neighborhood.determineResponsibleRange();
     endpoint.register();
   }
@@ -277,277 +275,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Sync */
 
-    scheduler.addContinuation(new GlacierContinuation() {
-      long nextTimeout;
-      int offset;
-
-      public String toString() {
-        return "Sync continuation";
-      }
-      public void init() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.syncDelayAfterJoin();
-      }
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierRangeResponseMessage) {
-          final GlacierRangeResponseMessage grrm = (GlacierRangeResponseMessage) o;
-
-          Id ccwId = locator.getFragmentLocation(grrm.getCommonRange().getCCWId(), numFragments-offset, 0);
-          Id cwId = locator.getFragmentLocation(grrm.getCommonRange().getCWId(), numFragments-offset, 0);
-          final IdRange originalRange = factory.buildIdRange(ccwId, cwId);
-
-          logger.info("Range response (offset: {}): {}, original={}", offset, grrm.getCommonRange(), originalRange);
-
-          final IdSet keySet = fragmentStorage.scan();
-          endpoint.process(() -> {
-            BloomFilter bv = new BloomFilter((2*keySet.numElements()+5)*config.syncBloomFilterBitsPerKey(), config.syncBloomFilterNumHashes(), environment.getRandomSource());
-            Iterator<Id> iter = keySet.getIterator();
-
-            while (iter.hasNext()) {
-              FragmentKey fkey = (FragmentKey)iter.next();
-              Id thisPos = locator.getFragmentLocation(fkey);
-              if (originalRange.containsId(thisPos)) {
-                FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fkey);
-                if (metadata != null) {
-                  long currentExp = metadata.getCurrentExpiration();
-                  long prevExp = metadata.getPreviousExpiration();
-                  logger.trace(" - Adding {} as {}, ecur={}, eprev={}", fkey, fkey.getVersionKey().getId(), currentExp, prevExp);
-                  bv.add(getHashInput(fkey.getVersionKey(), currentExp));
-                  bv.add(getHashInput(fkey.getVersionKey(), prevExp));
-                } else {
-                  logger.atWarn().log(() -> "SYNC Cannot read metadata of object "+fkey.toStringFull()+", storage returned null");
-                }
-              }
-            }
-
-            return bv;
-          }, new Continuation<BloomFilter, Exception>() {
-            public void receiveResult(BloomFilter o) {
-              if (o instanceof BloomFilter) {
-                BloomFilter bv = (BloomFilter) o;
-                logger.debug("Got {}", bv);
-                logger.atInfo().log(() -> keySet.numElements()+" keys added, sending sync request...");
-
-                router.sendMessage(
-                  null,
-                  new GlacierSyncMessage(scheduler.getUID(), grrm.getCommonRange(), offset, bv, getLocalNodeHandle(), grrm.getSource().getId(), GlacierTags.SYNC),
-                  grrm.getSource()
-                );
-              } else {
-                logger.warn("While processing range response: Result is of unknown type: {} -- discarding request", o);
-              }
-            }
-            public void receiveException(Exception e) {
-              logger.warn("Exception while processing range response: {} -- discarding request", e, e);
-            }
-          });
-        } else {
-          logger.warn("Unknown result in sync continuation: {} -- discarded", o);
-        }
-      }
-      public void receiveException(Exception e) {
-        logger.warn("Exception in sync continuation: ", e);
-        terminate();
-      }
-      public void timeoutExpired() {
-        if (trafficShaper.getActiveRestores() > 0) {
-          logger.info("Sync postponed; {} fetches pending", trafficShaper.getActiveRestores());
-          nextTimeout = environment.getTimeSource().currentTimeMillis() + jitterTerm(config.syncRetryInterval());
-        } else {
-          nextTimeout = environment.getTimeSource().currentTimeMillis() + jitterTerm(syncInterval);
-          offset = 1+environment.getRandomSource().nextInt(numFragments-1);
-
-          Id dest = locator.getFragmentLocation(getLocalNodeHandle().getId(), offset, 0);
-          Id ccwId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getCCWId(), offset, 0);
-          Id cwId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getCWId(), offset, 0);
-          IdRange requestedRange = factory.buildIdRange(ccwId, cwId);
-
-          logger.info("Sending range query for ({}) to {}", requestedRange, dest);
-          router.sendMessage(
-            dest,
-            new GlacierRangeQueryMessage(getMyUID(), requestedRange, getLocalNodeHandle(), dest, GlacierTags.SYNC),
-            null
-          );
-        }
-      }
-      public long getTimeout() {
-        return nextTimeout;
-      }
-    });
+    scheduler.addContinuation(syncProtocol.newSyncTask());
 
     /* Handoff */
 
-    scheduler.addContinuation(new GlacierContinuation() {
-      long nextTimeout;
-
-      public String toString() {
-        return "Handoff continuation";
-      }
-      public void init() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.handoffDelayAfterJoin();
-      }
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierResponseMessage) {
-          final GlacierResponseMessage grm = (GlacierResponseMessage) o;
-          logger.atDebug().log(() -> "Received handoff response from "+grm.getSource().getId()+" with "+grm.numKeys()+" keys");
-          for (int i=0; i<grm.numKeys(); i++) {
-            final FragmentKey thisKey = grm.getKey(i);
-            if (grm.getAuthoritative(i)) {
-              if (grm.getHaveIt(i)) {
-                Id thisPos = locator.getFragmentLocation(thisKey);
-                if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
-                  logger.debug("Deleting fragment {}", thisKey);
-                  trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
-                    public void receiveResult(Object o) {
-                      logger.debug("Handed off fragment deleted: {} (o={})", thisKey, o);
-                    }
-                    public void receiveException(Exception e) {
-                      logger.warn("Delete failed during handoff: {}, returned ", thisKey, e);
-                    }
-                  });
-                } else {
-                  logger.warn("Handoff response for {}, for which I am still responsible (attack?) -- ignored", thisKey);
-                }
-              } else {
-                fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
-                  public void receiveResult(Object o) {
-                    if (o != null) {
-                      logger.info("Fragment {} found ({}), handing off...", thisKey, o);
-                      FragmentAndManifest fam = (FragmentAndManifest) o;
-                      router.sendMessage(
-                        null,
-                        new GlacierDataMessage(grm.getUID(), thisKey, fam.getFragment(), fam.getManifest(), getLocalNodeHandle(), grm.getSource().getId(), true, GlacierTags.HANDOFF),
-                        grm.getSource()
-                      );
-                    } else {
-                      logger.warn("Handoff failed; fragment {} not found in fragment store", thisKey);
-                    }
-                  }
-                  public void receiveException(Exception e) {
-                    logger.warn("Handoff failed; exception while fetching {}, e=", thisKey, e);
-                  }
-                });
-              }
-            } else {
-              if (logger.isDebugEnabled()) logger.debug("Ignoring fragment "+thisKey+" (haveIt="+grm.getHaveIt(i)+", authoritative="+grm.getAuthoritative(i)+")");
-            }
-          }
-        } else if (o instanceof GlacierDataMessage) {
-          final GlacierDataMessage gdm = (GlacierDataMessage) o;
-          for (int i=0; i<gdm.numKeys(); i++) {
-            final FragmentKey thisKey = gdm.getKey(i);
-            final Fragment thisFragment = gdm.getFragment(i);
-            final Manifest thisManifest = gdm.getManifest(i);
-
-            if ((thisFragment != null) && (thisManifest != null)) {
-              logger.info("Handoff: Received Fragment+Manifest for {}", thisKey);
-
-              if (!neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
-                logger.atWarn().log(() -> "Handoff: Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
-                continue;
-              }
-
-              if (!policy.checkSignature(thisManifest, thisKey.getVersionKey())) {
-                logger.warn("Handoff: Manifest is not signed properly");
-                continue;
-              }
-
-              if (!thisManifest.validatesFragment(thisFragment, thisKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
-                logger.warn("Handoff: Manifest does not validate this fragment");
-                continue;
-              }
-
-              if (!fragmentStorage.exists(thisKey)) {
-                logger.debug("Handoff: Verified ok. Storing locally.");
-
-                FragmentAndManifest fam = new FragmentAndManifest(thisFragment, thisManifest);
-
-                fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
-                  new Continuation<Object, Exception>() {
-                    public void receiveResult(Object o) {
-                      logger.info("Handoff: Stored OK, sending receipt: {}", thisKey);
-
-                      router.sendMessage(
-                        null,
-                        new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
-                        gdm.getSource()
-                      );
-                    }
-
-                    public void receiveException(Exception e) {
-                      logger.warn("Handoff: receiveException({}) while storing a fragment -- unexpected, ignored (key={})", e, thisKey);
-                    }
-                  }
-                );
-              } else {
-                logger.warn("Handoff: We already have a fragment with this key! -- sending response");
-                router.sendMessage(
-                  null,
-                  new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), true, getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
-                  gdm.getSource()
-                );
-
-                continue;
-              }
-
-              continue;
-            } else {
-              logger.warn("Handoff: Either fragment or manifest are missing!");
-              continue;
-            }
-          }
-        } else {
-          logger.warn("Unexpected response in handoff continuation: {} -- ignored", o);
-        }
-      }
-      public void receiveException(Exception e) {
-        logger.warn("Exception in handoff continuation: ", e);
-      }
-      public void timeoutExpired() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + jitterTerm(config.handoffInterval());
-        logger.info("Checking fragment storage for fragments to hand off...");
-        logger.debug("Currently responsible for: {}", neighborhood.getResponsibleRange());
-        Iterator<Id> iter = fragmentStorage.scan().getIterator();
-        List<Id> handoffs = new ArrayList<Id>();
-        Id destination = null;
-
-        while (iter.hasNext()) {
-          FragmentKey fkey = (FragmentKey) iter.next();
-          Id thisPos = locator.getFragmentLocation(fkey);
-          if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
-            logger.debug("Must hand off {} @{}", fkey, thisPos);
-            handoffs.add(fkey);
-
-            if (handoffs.size() >= config.handoffMaxFragments()) {
-              logger.debug("Limit of {} reached for handoff", config.handoffMaxFragments());
-              break;
-            }
-
-            if (destination == null)
-              destination = thisPos;
-          }
-        }
-
-        if (destination == null) {
-          logger.debug("Nothing to hand off -- returning");
-          return;
-        }
-
-        int numHandoffs = Math.min(handoffs.size(), config.handoffMaxFragments());
-        logger.info("Handing off {} fragments (out of {})", numHandoffs, handoffs.size());
-        FragmentKey[] keys = new FragmentKey[numHandoffs];
-        for (int i=0; i<numHandoffs; i++)
-          keys[i] = (FragmentKey) handoffs.get(i);
-
-        router.sendMessage(
-          destination,
-          new GlacierQueryMessage(getMyUID(), keys, getLocalNodeHandle(), destination, GlacierTags.HANDOFF),
-          null
-        );
-      }
-      public long getTimeout() {
-        return nextTimeout;
-      }
-    });
+    scheduler.addContinuation(handoffProtocol.newHandoffTask());
 
     /* Garbage collection */
 
@@ -627,7 +359,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         return nextTimeout;
       }
       public void timeoutExpired() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + jitterTerm(config.localScanInterval());
+        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.jitterTerm(config.localScanInterval(), environment.getRandomSource());
 
         final IdSet fragments = fragmentStorage.scan();
         final long now = environment.getTimeSource().currentTimeMillis();
@@ -762,30 +494,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     scheduler.addContinuation(statisticsCollector.newReportingTask());
   }
 
-  private long jitterTerm(long basis) {
-    return (long)((1-config.jitterRange())*basis) + environment.getRandomSource().nextInt((int)(2*config.jitterRange()*basis));
-  }
-
   public void setTrashcan(StorageManager trashStorage) {
     trash.setTrashcan(trashStorage);
-  }
-
-  private byte[] getHashInput(VersionKey vkey, long expiration) {
-    byte[] a = vkey.toByteArray();
-    byte[] b = new byte[a.length + 8];
-    for (int i=0; i<a.length; i++)
-      b[i] = a[i];
-
-    b[a.length + 0] = (byte)(0xFF & (expiration>>56));
-    b[a.length + 1] = (byte)(0xFF & (expiration>>48));
-    b[a.length + 2] = (byte)(0xFF & (expiration>>40));
-    b[a.length + 3] = (byte)(0xFF & (expiration>>32));
-    b[a.length + 4] = (byte)(0xFF & (expiration>>24));
-    b[a.length + 5] = (byte)(0xFF & (expiration>>16));
-    b[a.length + 6] = (byte)(0xFF & (expiration>>8));
-    b[a.length + 7] = (byte)(0xFF & (expiration));
-
-    return b;
   }
 
   private static String dump(byte[] data, boolean linebreak) {
@@ -882,8 +592,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         "config.syncMinQuietTime() = " + (int)(config.syncMinQuietTime() / GlacierConfig.SECONDS) + " sec\n" +
         "syncBloomFilter = " + config.syncBloomFilterNumHashes() + " hashes, " + config.syncBloomFilterBitsPerKey() + " bpk\n" +
         "config.syncPartnersPerTrial() = " + config.syncPartnersPerTrial() + "\n" +
-        "syncInterval = " + (int)(syncInterval / GlacierConfig.MINUTES) + " min\n" +
-        "syncMaxFragments = " + syncMaxFragments + "\n" +
+        "syncInterval = " + (int)(syncProtocol.getSyncInterval() / GlacierConfig.MINUTES) + " min\n" +
+        "syncMaxFragments = " + syncProtocol.getSyncMaxFragments() + "\n" +
         "config.fragmentRequestMaxAttempts() = " + config.fragmentRequestMaxAttempts() + "\n" +
         "config.fragmentRequestTimeoutDefault() = " + (int)(config.fragmentRequestTimeoutDefault() / GlacierConfig.SECONDS) + " sec\n" +
         "config.manifestRequestTimeout() = " + (int)(config.manifestRequestTimeout() / GlacierConfig.SECONDS) + " sec\n" +
@@ -1482,168 +1192,15 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       return;
 
     } else if (msg instanceof GlacierSyncMessage) {
-
-      final GlacierSyncMessage gsm = (GlacierSyncMessage) msg;
-
-      logger.info("SyncRequest from {} for {} offset {}", gsm.getSource().getId(), gsm.getRange(), gsm.getOffsetFID());
-      logger.atDebug().log(() -> "Contains "+gsm.getBloomFilter());
-
-      Iterator<Id> iter = fragmentStorage.scan().getIterator();
-      final IdRange range = gsm.getRange();
-      final int offset = gsm.getOffsetFID();
-      final BloomFilter bv = gsm.getBloomFilter();
-      final long earliestAcceptableExpiration = environment.getTimeSource().currentTimeMillis() + config.syncMinRemainingLifetime();
-      final long latestAcceptableStoredSince = environment.getTimeSource().currentTimeMillis() - config.syncMinQuietTime();
-
-      final List<Id> missing = new ArrayList<Id>();
-
-      while (iter.hasNext()) {
-        FragmentKey fkey = (FragmentKey)iter.next();
-        Id thisPos = locator.getFragmentLocation(fkey);
-        if (range.containsId(thisPos)) {
-          FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fkey);
-          if (metadata != null) {
-            if (!bv.contains(getHashInput(fkey.getVersionKey(), metadata.getCurrentExpiration()))) {
-              if (metadata.getCurrentExpiration() >= earliestAcceptableExpiration) {
-                if (metadata.getStoredSince() <= latestAcceptableStoredSince) {
-                  logger.trace("{} @{} - MISSING", fkey, thisPos);
-                  missing.add(fkey);
-                  if (missing.size() >= syncMaxFragments) {
-                    logger.info("Limit of {} missing fragments reached", syncMaxFragments);
-                    break;
-                  }
-                } else {
-                  logger.atDebug().log(() -> fkey+" @"+thisPos+" - TOO FRESH (stored "+(environment.getTimeSource().currentTimeMillis()-metadata.getStoredSince())+"ms)");
-                }
-              } else {
-                logger.atDebug().log(() -> fkey+" @"+thisPos+" - EXPIRES SOON (in "+(metadata.getCurrentExpiration()-environment.getTimeSource().currentTimeMillis())+"ms)");
-              }
-            } else {
-              logger.trace("{} @{} - OK", fkey, thisPos);
-            }
-          } else {
-            logger.atWarn().log(() -> "SYNC RESPONSE cannot read metadata in object "+fkey.toStringFull()+", storage returned null");
-          }
-        } else logger.trace("{} @{} - OUT OF RANGE", fkey, thisPos);
-      }
-
-      if (missing.isEmpty()) {
-        logger.info("No fragments missing. OK. ");
-        return;
-      }
-
-      logger.info("Sending {} fragments to {}", missing.size(), gsm.getSource().getId());
-
-      fragmentStorage.getObject(missing.get(0), new Continuation<Object, Exception>() {
-        int currentLookup = 0;
-        int manifestIndex = 0;
-        final int numLookups = missing.size();
-        Manifest[] manifests = new Manifest[Math.min(numLookups, config.manifestAggregationFactor())];
-        Fragment[] fragments = new Fragment[Math.min(numLookups, config.manifestAggregationFactor())];
-        FragmentKey[] keys = new FragmentKey[Math.min(numLookups, config.manifestAggregationFactor())];
-
-        public void receiveResult(Object o) {
-          final FragmentKey thisKey = (FragmentKey) missing.get(currentLookup);
-
-          if (o == null) {
-            logger.warn("SYN2: Fragment {} not found -- canceled SYN", thisKey);
-            return;
-          }
-
-          logger.debug("Retrieved manifest {} (dest={}, offset={})", thisKey, gsm.getSource().getId(), offset);
-
-          FragmentAndManifest fam = (FragmentAndManifest) o;
-
-          if (!policy.checkSignature(fam.getManifest(), thisKey.getVersionKey()))
-            panic("Signature mismatch!!");
-
-          fragments[manifestIndex] = null;
-          manifests[manifestIndex] = fam.getManifest();
-          int hisFID = thisKey.getFragmentID() - offset;
-          if (hisFID < 0)
-            hisFID += numFragments;
-          if (hisFID >= numFragments)
-            panic("Assertion failed: L938");
-          keys[manifestIndex] = new FragmentKey(thisKey.getVersionKey(), hisFID);
-          logger.atDebug().log(() -> "He should have key "+keys[manifestIndex]+" @"+locator.getFragmentLocation(keys[manifestIndex]));
-          manifestIndex ++;
-          currentLookup ++;
-          if ((manifestIndex == config.manifestAggregationFactor()) || (currentLookup == numLookups)) {
-            logger.debug("Sending a packet with {} manifests to {}", keys.length, gsm.getSource().getId());
-
-            router.sendMessage(
-              null,
-              new GlacierDataMessage(scheduler.getUID(), keys, fragments, manifests, getLocalNodeHandle(), gsm.getSource().getId(), false, GlacierTags.SYNC_MANIFESTS),
-              gsm.getSource()
-            );
-
-            manifestIndex = 0;
-            manifests = new Manifest[Math.min(numLookups - currentLookup, config.manifestAggregationFactor())];
-            keys = new FragmentKey[Math.min(numLookups - currentLookup, config.manifestAggregationFactor())];
-            fragments = new Fragment[Math.min(numLookups - currentLookup, config.manifestAggregationFactor())];
-          }
-
-          if (currentLookup < numLookups)
-            fragmentStorage.getObject(missing.get(currentLookup), this);
-        }
-        public void receiveException(Exception e) {
-          logger.atWarn().log(() -> "SYN2: Exception while retrieving fragment "+missing.get(currentLookup)+", e="+e+" -- canceled SYN");
-        }
-      });
-
-      return;
-
+      syncProtocol.handleSyncRequest((GlacierSyncMessage) msg);
     } else if (msg instanceof GlacierRefreshProbeMessage) {
       bulkRefresh.handleProbe((GlacierRefreshProbeMessage) msg);
     } else if (msg instanceof GlacierRefreshPatchMessage) {
       bulkRefresh.handlePatch((GlacierRefreshPatchMessage) msg);
     } else if (msg instanceof GlacierRangeQueryMessage) {
-      final GlacierRangeQueryMessage grqm = (GlacierRangeQueryMessage) msg;
-      IdRange requestedRange = grqm.getRequestedRange();
-
-      logger.info("Range query for {}", requestedRange);
-
-      Id[][] ranges = neighborhood.getNeighborRanges();
-
-      for (int i=0; i<ranges.length; i++) {
-        IdRange thisRange = factory.buildIdRange(ranges[i][0], ranges[i][2]);
-        IdRange intersectRange = requestedRange.intersectRange(thisRange);
-        if (!intersectRange.isEmpty()) {
-          logger.debug("     - Intersects: {}, sending RangeForward", intersectRange);
-          router.sendMessage(
-            ranges[i][1],
-            new GlacierRangeForwardMessage(grqm.getUID(), requestedRange, grqm.getSource(), getLocalNodeHandle(), ranges[i][1], grqm.getTag()),
-            null
-          );
-        }
-      }
-
-      logger.debug("Finished processing range query");
-
-      return;
-
+      syncProtocol.handleRangeQuery((GlacierRangeQueryMessage) msg);
     } else if (msg instanceof GlacierRangeForwardMessage) {
-      GlacierRangeForwardMessage grfm = (GlacierRangeForwardMessage) msg;
-
-      if (!grfm.getDestination().equals(getLocalNodeHandle().getId())) {
-        logger.warn("Not for us (dest={}, we={})", grfm.getDestination(), getLocalNodeHandle().getId());
-        return;
-      }
-
-      IdRange commonRange = neighborhood.getResponsibleRange().intersectRange(grfm.getRequestedRange());
-      if (!commonRange.isEmpty()) {
-        logger.info("Range forward: Returning common range {} to requestor {}", commonRange, grfm.getRequestor());
-        router.sendMessage(
-          null,
-          new GlacierRangeResponseMessage(grfm.getUID(), commonRange, getLocalNodeHandle(), grfm.getRequestor().getId(), grfm.getTag()),
-          grfm.getRequestor()
-        );
-      } else {
-        logger.warn("Received GRFM by {}, but no common range??!? -- ignored", grfm.getRequestor());
-      }
-
-      return;
-
+      syncProtocol.handleRangeForward((GlacierRangeForwardMessage) msg);
     } else if (msg instanceof GlacierFetchMessage) {
       final GlacierFetchMessage gfm = (GlacierFetchMessage) msg;
       logger.atInfo().log(() -> "Fetch request for " + gfm.getKey(0) + ((gfm.getNumKeys()>1) ? (" and " + (gfm.getNumKeys() - 1) + " other keys") : "") + ", request="+gfm.getRequest());
@@ -1902,11 +1459,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public void setSyncInterval(int syncIntervalSec) {
-    this.syncInterval = syncIntervalSec * GlacierConfig.SECONDS;
+    syncProtocol.setSyncInterval(syncIntervalSec * GlacierConfig.SECONDS);
   }
 
   public void setSyncMaxFragments(int syncMaxFragments) {
-    this.syncMaxFragments = syncMaxFragments;
+    syncProtocol.setSyncMaxFragments(syncMaxFragments);
   }
 
   public void setRateLimit(int rps) {
