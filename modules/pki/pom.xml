@@ -17,6 +17,11 @@
     <name>FreePastry PKI</name>
     <description>X.509 certificate tooling (org.mpisws.p2p.pki)</description>
 
+    <properties>
+        <!-- TODO phase 2 (D7): fix this module's Error Prone warnings, then drop this override -->
+        <errorprone.module.flags>-XepDisableAllWarnings</errorprone.module.flags>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.bouncycastle</groupId>

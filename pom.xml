@@ -51,6 +51,36 @@
         <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
         <bouncycastle.version>1.86</bouncycastle.version>
         <slf4j.version>2.0.20</slf4j.version>
+        <errorprone.version>2.50.0</errorprone.version>
+        <nullaway.version>0.14.2</nullaway.version>
+        <jspecify.version>1.0.1</jspecify.version>
+        <!--
+          Error Prone runs on main and test code of every module; with -Werror its warnings fail the build too.
+          NullAway checks only @NullMarked code (OnlyNullMarked) with full JSpecify semantics, and is switched off for test code (see default-testCompile below).
+        -->
+        <errorprone.flags>
+            -Xep:NullAway:ERROR
+            -XepOpt:NullAway:OnlyNullMarked=true
+            -XepOpt:NullAway:JSpecifyMode=true
+        </errorprone.flags>
+        <!--
+          Per-module Error Prone flags. TODO phase 2 (D7): the modules that still set this to -XepDisableAllWarnings
+          (all but freepastry-core and freepastry-transport) get their warning-level findings fixed, then drop the override.
+          ERROR-level checks stay on everywhere.
+        -->
+        <errorprone.module.flags></errorprone.module.flags>
+        <!-- TODO D7: the ERROR-level checks that still fire; the following commits fix them and remove them from this list one by one -->
+        <errorprone.pending.flags>
+            -Xep:ArrayToString:OFF
+            -Xep:BoxedPrimitiveEquality:OFF
+            -Xep:ChainingConstructorIgnoresParameter:OFF
+            -Xep:CollectionIncompatibleType:OFF
+            -Xep:CompareToZero:OFF
+            -Xep:ComparisonOutOfRange:OFF
+            -Xep:InfiniteRecursion:OFF
+            -Xep:SelfAssignment:OFF
+            -Xep:SelfEquals:OFF
+        </errorprone.pending.flags>
     </properties>
 
     <dependencyManagement>
@@ -77,6 +107,12 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+            <!-- Nullness annotations (@NullMarked, @Nullable), checked by NullAway -->
+            <dependency>
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>${jspecify.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
@@ -176,8 +212,12 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- Every module tests with JUnit and logs through slf4j-simple, configured by its src/test/resources/simplelogger.properties -->
+    <!-- Every module uses the JSpecify nullness annotations, tests with JUnit and logs through slf4j-simple, configured by its src/test/resources/simplelogger.properties -->
     <dependencies>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
@@ -205,15 +245,51 @@
                     <version>3.16.0</version>
                     <configuration>
                         <release>${maven.compiler.release}</release>
-                        <compilerArgs>
-                            <!-- No raw (untyped) generics and no deprecated API usage: either fails the build -->
-                            <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
-                            <arg>-Werror</arg>
-                        </compilerArgs>
                         <showDeprecation>true</showDeprecation>
                         <debuglevel>lines,vars,source</debuglevel>
                         <debug>true</debug>
+                        <!-- Error Prone and NullAway run as javac plugins; the jdk.compiler exports they need are in .mvn/jvm.config -->
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>com.google.errorprone</groupId>
+                                <artifactId>error_prone_core</artifactId>
+                                <version>${errorprone.version}</version>
+                            </path>
+                            <path>
+                                <groupId>com.uber.nullaway</groupId>
+                                <artifactId>nullaway</artifactId>
+                                <version>${nullaway.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
+                    <!-- No raw (untyped) generics, no deprecated API usage and no Error Prone finding: any of them fails the build -->
+                    <executions>
+                        <execution>
+                            <id>default-compile</id>
+                            <configuration>
+                                <compilerArgs>
+                                    <arg>-XDcompilePolicy=simple</arg>
+                                    <arg>--should-stop=ifError=FLOW</arg>
+                                    <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
+                                    <arg>-Werror</arg>
+                                    <arg>-Xplugin:ErrorProne ${errorprone.flags} ${errorprone.pending.flags} ${errorprone.module.flags}</arg>
+                                </compilerArgs>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>default-testCompile</id>
+                            <configuration>
+                                <compilerArgs>
+                                    <arg>-XDcompilePolicy=simple</arg>
+                                    <arg>--should-stop=ifError=FLOW</arg>
+                                    <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
+                                    <arg>-Werror</arg>
+                                    <!-- Tests share packages with the @NullMarked main code; they pass nulls on purpose, so NullAway stays out of them -->
+                                    <arg>-Xplugin:ErrorProne ${errorprone.flags} ${errorprone.pending.flags} ${errorprone.module.flags} -Xep:NullAway:OFF</arg>
+                                </compilerArgs>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
 
                 <!-- Maven JAR Plugin -->
