@@ -99,7 +99,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   // TODO: think about the behavior of this when it wraps around...
   int seq = Integer.MIN_VALUE;
-  SortedLinkedList<MessageWrapper> queue; // messages we want to send
+  SortedLinkedList<MessageWrapper<Identifier>> queue; // messages we want to send
   Collection<P2PSocket<Identifier>> sockets;
 
   WeakReference<Identifier> identifier;
@@ -107,7 +107,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   SocketRequestHandle<Identifier> pendingSocket; // the receipt that we are opening a socket
   P2PSocket<Identifier> writingSocket; // don't try to write to multiple sockets, it will confuse things
   P2PSocket<Identifier> closeWritingSocket; // could be a boolean, but we store the writingSocket here just for debugging, == writingSocket if should close it after the current write
-  MessageWrapper messageThatIsBeingWritten; // the current message we are sending, if this is null, we aren't in the middle of sending a message
+  MessageWrapper<Identifier> messageThatIsBeingWritten; // the current message we are sending, if this is null, we aren't in the middle of sending a message
   boolean registered = false;  // true if registered for writing
   // Invariant: if (messageThatIsBeingWritten != null) then (writingSocket != null)
 
@@ -123,12 +123,20 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     this.MAX_BIG_MSG_SIZE = ctx.maxBigMsgSize;
     this.primarySocketListeners = ctx.primarySocketListeners;
     this.identifier = new WeakReference<Identifier>(identifier);
-    queue = new SortedLinkedList<MessageWrapper>();
+    queue = new SortedLinkedList<MessageWrapper<Identifier>>();
     sockets = new HashSet<P2PSocket<Identifier>>();
   }
 
   public String toString() {
     return "EM{"+identifier.get()+"}";
+  }
+
+  TransportListeners<Identifier> listeners() {
+    return ctx.listeners;
+  }
+
+  Logger logger() {
+    return logger;
   }
 
   public void clearState() {
@@ -252,7 +260,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
       } else {
         // we need to get a writingSocket
         if (pendingSocket == null) {
-          MessageWrapper peek = peek();
+          MessageWrapper<Identifier> peek = peek();
           if (peek != null) {
             openPrimarySocketHelper(temp, peek.options);
           }
@@ -377,7 +385,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    * Returns the messageThatIsBeingWritten, or the first in the queue, w/o setting messageThatIsBeingWritten
    * @return
    */
-  MessageWrapper peek() {
+  MessageWrapper<Identifier> peek() {
     synchronized(queue) {
       if (messageThatIsBeingWritten == null) {
         return queue.peek();
@@ -390,7 +398,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    * Returns the messageThatIsBeingWritten, polls the queue if it is null
    * @return
    */
-  private MessageWrapper poll() {
+  private MessageWrapper<Identifier> poll() {
     synchronized(queue) {
       if (messageThatIsBeingWritten == null) {
         messageThatIsBeingWritten = queue.poll();
@@ -444,7 +452,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     }
 
     logger.trace("receivedSelectResult({},{},{}", socket, canRead, canWrite);
-    MessageWrapper current = poll();
+    MessageWrapper<Identifier> current = poll();
     while (current != null && current.receiveSelectResult(writingSocket)) {
       current = poll();
     }
@@ -475,13 +483,13 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    * Enqueue the message.
    * @param ret
    */
-  private void enqueue(MessageWrapper ret) {
+  private void enqueue(MessageWrapper<Identifier> ret) {
     synchronized(queue) {
       queue.add(ret);
 
       // drop the lowest priority message if the queue is overflowing
       while (queue.size() > MAX_QUEUE_SIZE) {
-        MessageWrapper w = queue.removeLast();
+        MessageWrapper<Identifier> w = queue.removeLast();
         logger.info("Dropping {} because queue is full. MAX_QUEUE_SIZE:{}", w, MAX_QUEUE_SIZE);
         w.drop();
       }
@@ -498,26 +506,26 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   public void purge(IOException ioe) {
     logger.debug("{}purge({}):{}", this, ioe, messageThatIsBeingWritten);
-    ArrayList<Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper>> callSendFailed =
-      new ArrayList<Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper>>();
+    ArrayList<Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper<Identifier>>> callSendFailed =
+      new ArrayList<Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper<Identifier>>>();
     synchronized(queue) {
       // return NodeIsFaultyException to all of the message(s) deliverAckToMe(s)
       if (messageThatIsBeingWritten != null) {
         messageThatIsBeingWritten.reset();
         if (messageThatIsBeingWritten.deliverAckToMe != null) {
-          callSendFailed.add(new Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper>(messageThatIsBeingWritten.deliverAckToMe, messageThatIsBeingWritten));
+          callSendFailed.add(new Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper<Identifier>>(messageThatIsBeingWritten.deliverAckToMe, messageThatIsBeingWritten));
         }
         messageThatIsBeingWritten = null;
       }
-      for (MessageWrapper msg : queue) {
+      for (MessageWrapper<Identifier> msg : queue) {
         if (msg.deliverAckToMe != null) {
-          callSendFailed.add(new Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper>(msg.deliverAckToMe, msg));
+          callSendFailed.add(new Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper<Identifier>>(msg.deliverAckToMe, msg));
         }
       }
       queue.clear();
     }
 
-    for (Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper> t : callSendFailed) {
+    for (Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper<Identifier>> t : callSendFailed) {
       t.a().sendFailed(t.b(), ioe);
     }
 
@@ -816,14 +824,14 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
       }
     }
 
-    MessageWrapper ret;
+    MessageWrapper<Identifier> ret;
 
     // throw an error if it's too large
     int remaining = message.remaining();
     if (remaining > MAX_MSG_SIZE) {
       // open a special socket for big messages (the new policy, Dec-2008)
       if (remaining > MAX_BIG_MSG_SIZE) {
-        ret = new MessageWrapper(temp, message, deliverAckToMe, options, priority, 0);
+        ret = new MessageWrapper<Identifier>(this, temp, message, deliverAckToMe, options, priority, 0);
         if (deliverAckToMe != null)
           deliverAckToMe.sendFailed(ret,
             new SocketException("Message too large. msg:"+message+" size:"+remaining+" max:"+Math.max(MAX_MSG_SIZE, MAX_BIG_MSG_SIZE)));
@@ -848,14 +856,14 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
     // make sure it's alive
     if (livenessProvider.getLiveness(temp, options) >= LIVENESS_DEAD) {
-      ret = new MessageWrapper(temp, message, deliverAckToMe, options, priority, 0);
+      ret = new MessageWrapper<Identifier>(this, temp, message, deliverAckToMe, options, priority, 0);
       if (deliverAckToMe != null)
         deliverAckToMe.sendFailed(ret, new NodeIsFaultyException(temp, message));
       return ret;
     }
 
     // enqueue the message
-    ret = new MessageWrapper(temp, message, deliverAckToMe, options, priority, seq++);
+    ret = new MessageWrapper<Identifier>(this, temp, message, deliverAckToMe, options, priority, seq++);
     ctx.listeners.notifyEnqueued(ret.originalSize, temp, options);
     enqueue(ret);
     if (selectorManager.isSelectorThread()) {
@@ -867,7 +875,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     return ret;
   }
 
-  protected boolean complete(MessageWrapper wrapper) {
+  protected boolean complete(MessageWrapper<Identifier> wrapper) {
     logger.debug("{}.complete({})", this, wrapper);
     if (wrapper != messageThatIsBeingWritten) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+messageThatIsBeingWritten);
 
@@ -888,7 +896,28 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     return true;
   }
 
-  public void clearAndEnqueue(MessageWrapper wrapper) {
+  /**
+   * Takes a cancelled message out of the queue, or stops it if it is being written but nothing of it has
+   * gone out yet.
+   *
+   * @return true if the message won't be sent
+   */
+  boolean cancel(MessageWrapper<Identifier> wrapper) {
+    synchronized(queue) {
+      if (wrapper.equals(messageThatIsBeingWritten)) {
+        if (wrapper.message.position() == 0) {
+          // TODO: can still cancel the message, but have to have special behavior when the socket calls us back
+          messageThatIsBeingWritten = null;
+          return true;
+        } else {
+          return false;
+        }
+      }
+      return queue.remove(wrapper);
+    }
+  }
+
+  public void clearAndEnqueue(MessageWrapper<Identifier> wrapper) {
     if (wrapper != messageThatIsBeingWritten) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+messageThatIsBeingWritten);
     synchronized(queue) {
       if (messageThatIsBeingWritten != null) messageThatIsBeingWritten.reset();
@@ -902,161 +931,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
         enqueue(wrapper);
       }
     }
-  }
-
-  class MessageWrapper implements
-      Comparable<MessageWrapper>,
-      MessageRequestHandle<Identifier, ByteBuffer> {
-    int priority;
-    int seq;
-    Identifier myIdentifier;
-
-    P2PSocket<Identifier> socket; // null if we aren't registered, aka, we aren't pending/writing
-
-    ByteBuffer originalMessage;
-    ByteBuffer message;
-    MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
-    Map<String, Object> options;
-    int originalSize;
-    boolean cancelled = false; // true when cancel is called
-    boolean completed = false; // true when completed is called
-
-    MessageWrapper(
-        Identifier temp,
-        ByteBuffer message,
-        MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
-        Map<String, Object> options, int priority, int seq) {
-      this.originalSize = message.remaining();
-
-      this.myIdentifier = temp;
-      this.originalMessage = message;
-
-      // head the message with the size
-      int size = message.remaining();
-      this.message = ByteBuffer.allocate(message.remaining()+4);
-      this.message.put((byte)((size >>> 24) & 0xFF));
-      this.message.put((byte)((size >>> 16) & 0xFF));
-      this.message.put((byte)((size >>>  8) & 0xFF));
-      this.message.put((byte)((size >>>  0) & 0xFF));
-      this.message.put(message);
-      this.message.clear();
-
-      this.deliverAckToMe = deliverAckToMe;
-      this.options = options;
-      this.priority = priority;
-      this.seq = seq;
-    }
-
-    public MessageInfo getMessageInfo() {
-      return new MessageInfoImpl(originalMessage,options,priority);
-    }
-
-    public void complete() {
-      completed = true;
-      if (deliverAckToMe != null) deliverAckToMe.ack(this);
-      ctx.listeners.notifyWrote(originalSize, myIdentifier, options);
-    }
-
-    /**
-     * When is this registered?  May be registered too often.
-     *
-     * @return true if should keep writing
-     */
-    public boolean receiveSelectResult(P2PSocket<Identifier> socket) throws IOException {
-      logger.trace("{}.receiveSelectResult({})", this, socket);
-      try {
-      if (this.socket != null && this.socket != socket) {
-        // this shouldn't happen
-        logger.atWarn().log(() -> this+" Socket changed!!! can:"+cancelled+" comp:"+completed+" socket:"+socket+" writingSocket:"+writingSocket+" this.socket:"+this.socket);
-        socket.shutdownOutput();
-
-        // do we need to reset?
-        return false;
-      }
-
-      // in case we don't complete the write, remember where we are writing
-      this.socket = socket;
-
-      if (cancelled && message.position() == 0) {
-        logger.trace("{}.rsr({}) cancelled", this, socket);
-        // cancel
-        return true;
-      } else {
-        long bytesWritten;
-        if ((bytesWritten = socket.write(message)) == -1) {
-          // socket was closed, need to register new socket
-          logger.trace("{}.rsr({}) socket was closed", this, socket);
-          clearAndEnqueue(this);
-          return false;
-        }
-        logger.trace("{} wrote {} bytes of {} remaining:{}", this, bytesWritten, message.capacity(), message.remaining());
-
-        if (message.hasRemaining()) {
-          logger.trace("{}.rsr({}) has remaining", this, socket);
-          return false;
-        }
-      }
-
-      return EntityManager.this.complete(this);
-      } catch (IOException ioe) {
-        // note, clearAndEnqueue() gets called later by the writer when the stack unravels again
-        logger.trace("{}.rsr({})", this, socket, ioe);
-        throw ioe;
-      }
-    }
-
-    public void drop() {
-      // TODO: make sure we've done everything necessary here to clean this up
-      if (deliverAckToMe != null) deliverAckToMe.sendFailed(this, new QueueOverflowException(identifier.get(), originalMessage));
-      ctx.listeners.notifyDropped(originalSize, myIdentifier, options);
-    }
-
-    /**
-     * Compares first on priority, second on seq.
-     */
-    public int compareTo(MessageWrapper that) {
-      if (this.priority == that.priority) {
-        return this.seq-that.seq;
-      }
-      return this.priority-that.priority;
-    }
-
-    public Identifier getIdentifier() {
-      return myIdentifier;
-    }
-
-    public ByteBuffer getMessage() {
-      return originalMessage;
-    }
-
-    public Map<String, Object> getOptions() {
-      return options;
-    }
-
-    public void reset() {
-      message.clear();
-      socket = null;
-    }
-
-    public boolean cancel() {
-      cancelled = true;
-      synchronized(queue) {
-        if (this.equals(messageThatIsBeingWritten)) {
-          if (message.position() == 0) {
-            // TODO: can still cancel the message, but have to have special behavior when the socket calls us back
-            messageThatIsBeingWritten = null;
-            return true;
-          } else {
-            return false;
-          }
-        }
-        return queue.remove(this);
-      }
-    }
-    public String toString() {
-      return "MessagWrapper{"+message+"}@"+System.identityHashCode(this)+"->"+identifier.get()+" pri:"+priority+" seq:"+seq+" s:"+this.socket;
-    }
-
   }
 
   // *********************** Reader ************************
@@ -1173,7 +1047,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
       if (messageThatIsBeingWritten != null) {
         ret+=messageThatIsBeingWritten.message.remaining();
       }
-      for (MessageWrapper foo : queue) {
+      for (MessageWrapper<Identifier> foo : queue) {
         ret+=foo.message.remaining();
       }
     }
@@ -1183,7 +1057,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   public List<MessageInfo> getPendingMessages() {
     synchronized(queue) {
       ArrayList<MessageInfo> ret = new ArrayList<MessageInfo>(queue.size());
-      for (MessageWrapper foo : queue) {
+      for (MessageWrapper<Identifier> foo : queue) {
         ret.add(foo.getMessageInfo());
       }
       return ret;

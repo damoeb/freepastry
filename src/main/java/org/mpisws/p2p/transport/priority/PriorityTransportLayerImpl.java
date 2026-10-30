@@ -373,7 +373,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
             String s = "";
             Map<String, Object> options = null;
             if (temp != null) {
-              EntityManager<Identifier>.MessageWrapper peek = em.peek();
+              MessageWrapper<Identifier> peek = em.peek();
               if (peek != null) {
                 options = peek.options;
               }
