@@ -39,11 +39,12 @@ package org.mpisws.p2p.transport.rc4;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.AuthenticationException;
 
@@ -61,13 +62,19 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
+import rice.p2p.util.SecurityUtils;
 
 /**
  * Only encrypts socket traffic!!!
  *
- * Encrypts channels based on a password.
+ * Encrypts channels based on a password, with AES-256 in CTR mode (it used to be RC4; the class keeps its name).
  *
- * Builds a session password for each socket which is a hash of the user-defined password and a clear-text seed.
+ * Builds a session key for each direction of each socket: HMAC-SHA256 of a clear-text seed under the user-defined
+ * password.  Each key is used for one direction of one socket only, so the CTR keystream starts at a zero IV.
+ *
+ * Note that CTR, like RC4, gives no integrity: an active attacker can flip bits of the plaintext undetected.  And
+ * the seed of each direction is chosen by the receiving end, so a peer that replays a seed makes this end reuse
+ * a keystream.
  *
  * Note that the seed length isn't sent in the protocol, so it must be the same on all peers.
  *
@@ -105,9 +112,15 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
 
   private ErrorHandler<Identifier> errorHandler;
 
-  private final MessageDigest md;
-
+  /**
+   * The default length of the seeds, in bytes.
+   */
   public static final int KEY_LENGTH = 16;
+
+  /**
+   * The length of the CTR initial counter block, in bytes.
+   */
+  static final int IV_LENGTH = 16;
 
   byte[] password;
   int PW_SEED_LENGTH;
@@ -122,13 +135,21 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
     this.tl = tl;
     this.tl.setCallback(this);
     this.env=env;
-    this.password = password.getBytes();
+    if (password.isEmpty()) {
+      throw new IllegalArgumentException("The password must not be empty");
+    }
+    this.password = password.getBytes(StandardCharsets.UTF_8);
     this.PW_SEED_LENGTH = pwSeedLength;
     this.logger=env.getLogManager().getLogger(RC4TransportLayer.class, null);
     this.random = random;
     this.errorHandler = errorHandler;
-      md = MessageDigest.getInstance("SHA");
+  }
 
+  /**
+   * @return The AES-256 key for the direction whose seed is given: HMAC-SHA256(password, seed)
+   */
+  static SecretKey sessionKey(byte[] password, byte[] seed) {
+    return new SecretKeySpec(SecurityUtils.hmac(password, seed), KEY_ALGORITHM);
   }
 
   public void acceptMessages(boolean b) {
@@ -183,16 +204,10 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
             }
 
             // build the key
-            byte[] decryptKeyBytes = new byte[KEY_LENGTH];
-            synchronized(md) {
-              md.update(password);
-              md.update(decryptSeed);
-              System.arraycopy(md.digest(), 0, decryptKeyBytes, 0, KEY_LENGTH);
-            }
-            SecretKey decryptKey = new SecretKeySpec(decryptKeyBytes, ALGORITHM);
+            SecretKey decryptKey = sessionKey(password, decryptSeed);
             try {
-              final Cipher decryptCipher = Cipher.getInstance(ALGORITHM);
-              decryptCipher.init(Cipher.DECRYPT_MODE, decryptKey);
+              final Cipher decryptCipher = Cipher.getInstance(ALGORITHM, PROVIDER);
+              decryptCipher.init(Cipher.DECRYPT_MODE, decryptKey, new IvParameterSpec(new byte[IV_LENGTH]));
               // decrypt/read the response
               P2PSocketReceiver<Identifier> readEncryptSeedReceiver = new P2PSocketReceiver<Identifier>() {
                 ByteBuffer encryptedSeeds = ByteBuffer.allocate(PW_SEED_LENGTH*2); // Because we have to verify that SeedB is properly encrypted
@@ -232,16 +247,10 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
                   System.arraycopy(decryptedSeeds, 0, encryptSeed, 0, PW_SEED_LENGTH);
 
                   // build the encrypt key
-                  byte[] encryptKeyBytes = new byte[KEY_LENGTH];
-                  synchronized(md) {
-                    md.update(password);
-                    md.update(encryptSeed);
-                    System.arraycopy(md.digest(), 0, encryptKeyBytes, 0, KEY_LENGTH);
-                  }
-                  SecretKey encryptKey = new SecretKeySpec(encryptKeyBytes, ALGORITHM);
+                  SecretKey encryptKey = sessionKey(password, encryptSeed);
                   try {
-                    Cipher encryptCipher = Cipher.getInstance(ALGORITHM);
-                    encryptCipher.init(Cipher.ENCRYPT_MODE, encryptKey);
+                    Cipher encryptCipher = Cipher.getInstance(ALGORITHM, PROVIDER);
+                    encryptCipher.init(Cipher.ENCRYPT_MODE, encryptKey, new IvParameterSpec(new byte[IV_LENGTH]));
                     deliverSocketToMe.receiveResult(ret, new EncryptedSocket<Identifier>(i,socket,logger,errorHandler,options,encryptCipher,decryptCipher,WRITE_BUFFER_SIZE));
                   } catch (GeneralSecurityException gse) {
                     socket.close();
@@ -303,31 +312,19 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
         }
 
         // build the encrypt key
-        byte[] encryptKeyBytes = new byte[KEY_LENGTH];
-        synchronized(md) {
-          md.update(password);
-          md.update(encryptSeed);
-          System.arraycopy(md.digest(), 0, encryptKeyBytes, 0, KEY_LENGTH);
-        }
-        SecretKey encryptKey = new SecretKeySpec(encryptKeyBytes, ALGORITHM);
+        SecretKey encryptKey = sessionKey(password, encryptSeed);
         try {
-          final Cipher encryptCipher = Cipher.getInstance(ALGORITHM);
-          encryptCipher.init(Cipher.ENCRYPT_MODE, encryptKey);
+          final Cipher encryptCipher = Cipher.getInstance(ALGORITHM, PROVIDER);
+          encryptCipher.init(Cipher.ENCRYPT_MODE, encryptKey, new IvParameterSpec(new byte[IV_LENGTH]));
 
           // write the decrypt seed to A
           final byte[] decryptSeed = new byte[PW_SEED_LENGTH];
           random.nextBytes(decryptSeed);
 
           // build the key
-          byte[] decryptKeyBytes = new byte[KEY_LENGTH];
-          synchronized(md) {
-            md.update(password);
-            md.update(decryptSeed);
-            System.arraycopy(md.digest(), 0, decryptKeyBytes, 0, KEY_LENGTH);
-          }
-          SecretKey decryptKey = new SecretKeySpec(decryptKeyBytes, ALGORITHM);
-          final Cipher decryptCipher = Cipher.getInstance(ALGORITHM);
-          decryptCipher.init(Cipher.DECRYPT_MODE, decryptKey);
+          SecretKey decryptKey = sessionKey(password, decryptSeed);
+          final Cipher decryptCipher = Cipher.getInstance(ALGORITHM, PROVIDER);
+          decryptCipher.init(Cipher.DECRYPT_MODE, decryptKey, new IvParameterSpec(new byte[IV_LENGTH]));
 
           // encrypt the seeds
           byte[] encryptedSeeds = new byte[PW_SEED_LENGTH*2];
@@ -399,5 +396,12 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
     callback.messageReceived(i, m, options);
   }
 
-  private static final String ALGORITHM = "RC4";
+  private static final String KEY_ALGORITHM = "AES";
+  static final String ALGORITHM = KEY_ALGORITHM + "/CTR/NoPadding";
+
+  /**
+   * The JDK's CTR returns every byte from update() at once, as {@link EncryptedSocket} needs.  BouncyCastle's,
+   * which SecurityUtils puts ahead of it in the provider list, holds back a partial block.
+   */
+  static final String PROVIDER = "SunJCE";
 }
