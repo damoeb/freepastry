@@ -64,7 +64,7 @@ public class EmptyCache implements Cache {
   /**
    * The facotry for building id sets
    */
-  protected IdFactory factory;
+  private final IdFactory factory;
 
   /**
    * Builds an emtpy cache

@@ -55,17 +55,17 @@ public class XMLReader {
   /**
    * The actual reader which the parser uses
    */
-  protected Reader in;
+  private final Reader in;
 
   /**
    * The actual XML parser which we use
    */
-  protected XMLParser xpp;
+  private final XMLParser xpp;
 
   /**
    * The cached type of the last event the parser saw
    */
-  protected int eventType;
+  private int eventType;
 
   /**
    * Constructor which takes the provided reader and

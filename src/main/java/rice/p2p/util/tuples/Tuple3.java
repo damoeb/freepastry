@@ -37,9 +37,9 @@ advised of the possibility of such damage.
 package rice.p2p.util.tuples;
 
 public class Tuple3<A,B,C> {
-  protected A a;
-  protected B b;
-  protected C c;
+  private final A a;
+  private final B b;
+  private final C c;
 
   public Tuple3(A a, B b, C c) {
     this.a = a;

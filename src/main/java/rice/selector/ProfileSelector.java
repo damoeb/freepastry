@@ -68,10 +68,10 @@ public class ProfileSelector extends SelectorManager {
 
   public static final boolean recordStats = true;
 
-  public String lastTaskType = null;
-  public String lastTaskClass = null;
-  public String lastTaskToString = null;
-  public long lastTaskHash = 0;
+  private String lastTaskType = null;
+  private String lastTaskClass = null;
+  private String lastTaskToString = null;
+  private long lastTaskHash = 0;
 
   int numInvocationsScheduled = 0;
   int numInvocationsExecuted = 0;

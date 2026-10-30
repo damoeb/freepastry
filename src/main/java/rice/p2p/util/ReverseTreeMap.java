@@ -57,17 +57,17 @@ public class ReverseTreeMap<K,V> implements Serializable {
   /**
    * The internal normal map
    */
-  protected SortedMap<K,V> normal = new RedBlackMap<K,V>();
+  private SortedMap<K,V> normal = new RedBlackMap<K,V>();
 
   /**
    * The internal value -> list of keys map
    */
-  protected SortedMap<V,RedBlackMap<K,V>> reverse = new RedBlackMap<V,RedBlackMap<K,V>>();
+  private SortedMap<V,RedBlackMap<K,V>> reverse = new RedBlackMap<V,RedBlackMap<K,V>>();
 
   /**
    * The internal list of keys with null as a mapping
    */
-  protected SortedMap<K,V> nulls = new RedBlackMap<K,V>();
+  private SortedMap<K,V> nulls = new RedBlackMap<K,V>();
 
   /**
    * Constructor

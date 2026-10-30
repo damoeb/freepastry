@@ -82,7 +82,7 @@ public class LRUCache implements Cache {
   // the list of keys, in MRU -> LRU order
   private LinkedList<Id> order;
 
-  protected Environment environment;
+  private final Environment environment;
 
   /**
    * Builds a LRU cache given a storage object to store the cached

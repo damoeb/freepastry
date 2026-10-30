@@ -51,7 +51,7 @@ public class LockManagerImpl implements LockManager {
   // map: Id -> List<Continuation>
   private HashMap<Id, List<Continuation<?, ?>>> locks;
 
-  protected Logger logger;
+  private final Logger logger;
 
   public LockManagerImpl(Environment env) {
     this.locks = new HashMap<Id, List<Continuation<?, ?>>>();

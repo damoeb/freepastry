@@ -98,61 +98,61 @@ public class XMLParser {
   /**
    * The internal reader used to read data
    */
-  protected Reader reader;
+  private Reader reader;
 
   /**
    * The internal buffer used to process data
    */
-  protected char[] buffer;
+  private final char[] buffer;
 
   /**
    * Internal pointers into the buffer
    */
-  protected int bufferPosition;
-  protected int bufferLimit;
+  private int bufferPosition;
+  private int bufferLimit;
 
   /**
    * The StringCache used to reduce the memory requirements
    */
-  protected StringCache cache;
+  private final StringCache cache;
 
   /**
    * The internal stack of tags which have been read
    */
-  protected Stack<String> tags;
+  private final Stack<String> tags;
 
   /**
    * If the tag parsed was a start/end, the name of the tag
    */
-  protected String name;
+  private String name;
 
   /**
    * If the tag parsed was text, the text
    */
-  protected String text;
+  private String text;
 
   /**
    * If the tag parsed was a start tag, the list of attribute-> value pairs
    */
-  protected String[] attributeKeys = new String[MAX_ATTRIBUTES];
-  protected String[] attributeValues = new String[MAX_ATTRIBUTES];
-  protected int numAttributes;
+  private final String[] attributeKeys = new String[MAX_ATTRIBUTES];
+  private final String[] attributeValues = new String[MAX_ATTRIBUTES];
+  private int numAttributes;
 
   /**
    * Whether or not we are currently in a tag...
    */
-  protected boolean inTag;
+  private boolean inTag;
 
   /**
    * The type of the last event returned by next()
    */
-  protected int eventType = START_DOCUMENT;
+  private int eventType = START_DOCUMENT;
 
   /**
    * Internal variable which keeps track of the current mark
    */
-  protected int mark;
-  protected CharArrayBuffer marked;
+  private int mark;
+  private CharArrayBuffer marked;
 
   /**
    * Constructor
@@ -715,12 +715,12 @@ public class XMLParser {
     /**
     * The internal buffer
      */
-    protected char[] buffer;
+    private char[] buffer;
 
     /**
       * The markers
      */
-    protected int length;
+    private int length;
 
     /**
       * Constructor

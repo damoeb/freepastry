@@ -93,38 +93,38 @@ public class XMLObjectInputStream extends ObjectInputStream {
   /**
    * The hashmap of readResolve methods, mapping Class->Method
    */
-  protected static final SoftHashMap<Class<?>, Method> READ_RESOLVES = new SoftHashMap<Class<?>, Method>();
+  private static final SoftHashMap<Class<?>, Method> READ_RESOLVES = new SoftHashMap<Class<?>, Method>();
 
   /**
    * The hashmap of readObject methods, mapping Class->Method
    */
-  protected static final SoftHashMap<Class<?>, Method> READ_OBJECTS = new SoftHashMap<Class<?>, Method>();
+  private static final SoftHashMap<Class<?>, Method> READ_OBJECTS = new SoftHashMap<Class<?>, Method>();
 
   /**
    * A cache of constructors, mapping classes to serialization constructors
    */
-  protected static final SoftHashMap<Class<?>, Constructor<?>> CONSTRUCTORS = new SoftHashMap<Class<?>, Constructor<?>>();
+  private static final SoftHashMap<Class<?>, Constructor<?>> CONSTRUCTORS = new SoftHashMap<Class<?>, Constructor<?>>();
 
   /**
    * The underlying reader, which parses the XML
    */
-  protected XMLReader reader;
+  private final XMLReader reader;
 
   /**
    * The hashtable of references, which is updated each time a new object is
    * read off of the stream.
    */
-  protected Hashtable<String, Object> references;
+  private Hashtable<String, Object> references;
 
   /**
    * The stack of objects which are currently being read off of the stream
    */
-  protected Stack<Object> currentObjects;
+  private final Stack<Object> currentObjects;
 
   /**
    * The stack of class types which are being read off of the stream
    */
-  protected Stack<Class<?>> currentClasses;
+  private final Stack<Class<?>> currentClasses;
 
   /**
    * The ReflectionFactory (jdk.unsupported), which allows for privileged construction of
@@ -151,12 +151,12 @@ public class XMLObjectInputStream extends ObjectInputStream {
   /**
    * The list of validation objects waiting for the entire object graph to be read in
    */
-  protected ValidationList vlist;
+  private final ValidationList vlist;
 
   /**
    * The depth at which we are currently at in the object tree
    */
-  protected int depth;
+  private int depth;
 
   /**
    * Constructor which reads data from the given input stream in order
@@ -1467,9 +1467,9 @@ public class XMLObjectInputStream extends ObjectInputStream {
    */
   public static class GetField extends ObjectInputStream.GetField {
 
-    protected HashMap<String, Object> primitives = new HashMap<String, Object>();
+    private final HashMap<String, Object> primitives = new HashMap<String, Object>();
 
-    protected HashMap<String, Object> objects = new HashMap<String, Object>();
+    private final HashMap<String, Object> objects = new HashMap<String, Object>();
 
     public boolean defaulted(String name) {
       return (! (primitives.containsKey(name) || objects.containsKey(name)));

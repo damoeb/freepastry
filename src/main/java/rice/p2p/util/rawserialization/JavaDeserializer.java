@@ -57,7 +57,7 @@ import rice.p2p.util.JavaSerializationFilter;
  */
 public class JavaDeserializer extends ObjectInputStream {
 
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
 
   /**
    * @param stream the stream to read the serialized objects from

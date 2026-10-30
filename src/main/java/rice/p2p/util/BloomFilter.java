@@ -84,17 +84,17 @@ public class BloomFilter implements Serializable {
   /**
    * The parameters to the hash functions for this bloom filter
    */
-  protected int[] parameters;
+  private final int[] parameters;
 
   /**
    * The length of the set to use
    */
-  protected int length;
+  private final int length;
 
   /**
    * The underlying bitset representation for this bloom filter
    */
-  protected BitSet set;
+  private final BitSet set;
 
   /**
    * Constructor which takes the number of hash functions to use

@@ -57,11 +57,11 @@ import rice.selector.SelectorManager;
  */
 public class SimpleProcessor implements Processor {
   // the queue used for processing requests
-  protected PriorityBlockingQueue<ProcessingRequest<?, ?>> QUEUE;
-  protected ProcessingThread THREAD;
+  private final PriorityBlockingQueue<ProcessingRequest<?, ?>> QUEUE;
+  private final ProcessingThread THREAD;
 
   // for blocking IO WorkRequests
-  protected WorkQueue workQueue;
+  private final WorkQueue workQueue;
   protected BlockingIOThread bioThread;
 
   long seq = Long.MIN_VALUE;

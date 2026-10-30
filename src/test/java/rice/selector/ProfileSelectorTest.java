@@ -80,7 +80,7 @@ public class ProfileSelectorTest {
   public void keepsTheGivenRandomSource() {
     RandomSource rand = new SimpleRandomSource(1, logManager);
     selector = new ProfileSelector("test", new SimpleTimeSource(), logManager, rand);
-    assertSame(rand, selector.random);
+    assertSame(rand, selector.getRandom());
   }
 
   @Test

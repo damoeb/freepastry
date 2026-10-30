@@ -73,32 +73,32 @@ public class XMLWriter {
   /**
    * The maximum indentation, in characters, as in MXSerializer
    */
-  protected static final int MAX_INDENT = 65;
+  private static final int MAX_INDENT = 65;
 
   /**
    * A newline followed by MAX_INDENT spaces, prefixes of which are written as indentation
    */
-  protected static final char[] INDENTATION = ("\n" + " ".repeat(MAX_INDENT)).toCharArray();
+  private static final char[] INDENTATION = ("\n" + " ".repeat(MAX_INDENT)).toCharArray();
 
   /**
    * The underlying writer which the XML is written to
    */
-  protected Writer writer;
+  private final Writer writer;
 
   /**
    * The names of the currently open elements
    */
-  protected ArrayList<String> open;
+  private final ArrayList<String> open;
 
   /**
    * Whether the last start tag still lacks its closing '&gt;' (attributes can be added)
    */
-  protected boolean startTagIncomplete;
+  private boolean startTagIncomplete;
 
   /**
    * Whether the last thing written was a tag (and not text), so the next tag is indented
    */
-  protected boolean seenTag;
+  private boolean seenTag;
 
   /**
    * Constructor which takes the provided writer and

@@ -84,13 +84,13 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   protected HashSet<SelectionKey> modifyKeys;
 
   // the list of keys waiting to be cancelled
-  protected HashSet<SelectionKey> cancelledKeys;
+  private final HashSet<SelectionKey> cancelledKeys;
 
   // the set used to store the timer events
   protected Queue<TimerTask> timerQueue = new PriorityQueue<TimerTask>();
 
   // the next time the selector is scheduled to wake up
-  protected long wakeupTime = 0;
+  private long wakeupTime = 0;
 
   protected TimeSource timeSource;
 
@@ -98,7 +98,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   protected Logger logger;
 
-  protected String instance;
+  private final String instance;
 
   // written by destroy() on any thread, read by the selector thread
   protected volatile boolean running = true;
@@ -107,15 +107,15 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * Maximum number of rounds of invocations that are run after destroy(): invocations scheduled while draining
    * run in the next round. (An invocation that reschedules itself, such as a simulator loop, runs only once.)
    */
-  protected static final int MAX_SHUTDOWN_ROUNDS = 64;
+  private static final int MAX_SHUTDOWN_ROUNDS = 64;
 
   /**
    * Can be disabled for the simulator to improve performance, only do this
    * if you know you don't need to select on anything
    */
-  protected boolean select = true;
+  private boolean select = true;
 
-  protected RandomSource random;
+  private RandomSource random;
 
   /**
    * Constructor.
@@ -423,7 +423,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
    * such as on an overloaded planetlab node, or if you hibernate your laptop, this is not needed
    * for the simulator
    */
-  protected boolean useLoopListeners = true;
+  private boolean useLoopListeners = true;
 
   /**
    * Set this to false when using the simulator, because you don't need to notify loop observers.
@@ -697,8 +697,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     return task;
   }
 
-  protected Object seqLock = new Object();
-  protected int seqCtr = Integer.MIN_VALUE;
+  private final Object seqLock = new Object();
+  private int seqCtr = Integer.MIN_VALUE;
 
   /**
    * Internal method which adds a task to the task queue, waking up the selector
@@ -858,5 +858,9 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   public static void main(String[] args) {
     new Environment();
     new Environment();
+  }
+
+  public RandomSource getRandom() {
+    return random;
   }
 }

@@ -63,19 +63,19 @@ import java.security.PrivateKey;
 public class EncryptedInputStream extends InputStream {
 
   // the private key
-  protected PrivateKey privateKey;
+  private final PrivateKey privateKey;
 
   // the decrypted symmetric key
-  protected byte[] key;
+  private byte[] key;
 
   // the actual underlying stream
-  protected DataInputStream stream;
+  private final DataInputStream stream;
 
   // any buffered data from the stream
-  protected byte[] buffer;
+  private byte[] buffer;
 
   // the amount of buffered data which has been returned
-  protected int bufferLength;
+  private int bufferLength;
 
   /**
    * Builds an encrypted inputstream given a private key to

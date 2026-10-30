@@ -58,7 +58,7 @@ import rice.p2p.commonapi.rawserialization.MessageDeserializer;
  */
 public class JavaSerializedDeserializer implements MessageDeserializer {
 
-  protected Endpoint endpoint;
+  private final Endpoint endpoint;
   private boolean deserializeOnlyTypeZero = true;
 
   public JavaSerializedDeserializer(Endpoint endpoint) {

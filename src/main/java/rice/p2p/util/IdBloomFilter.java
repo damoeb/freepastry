@@ -81,12 +81,12 @@ public class IdBloomFilter implements Serializable {
    * will construct a new array if there isn't one yet, then it will encode the
    * id into the array.
    */
-  protected transient byte[] array;
+  private transient byte[] array;
 
   /**
    * The parameters to the hash functions for this bloom filter
    */
-  protected BloomFilter filter;
+  private final BloomFilter filter;
 
   /**
    * Constructor which builds a bloom filter containing the ids of the given set,

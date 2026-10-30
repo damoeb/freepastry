@@ -49,7 +49,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
   private long nextExecutionTime;
   protected boolean cancelled = false;
   protected int seq;
-  protected SelectorManager selector;
+  private SelectorManager selector;
 
   /**
    * If period is positive, task will be rescheduled.

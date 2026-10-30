@@ -91,17 +91,17 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   /**
    * A cache of the writeReplace() methods, mapping class->writeReplace()
    */
-  protected static final SoftHashMap<Class<?>, Method> WRITE_REPLACES = new SoftHashMap<Class<?>, Method>();
+  private static final SoftHashMap<Class<?>, Method> WRITE_REPLACES = new SoftHashMap<Class<?>, Method>();
 
   /**
    * A cache of the writeObject() methods, mapping class->writeObject()
    */
-  protected static final SoftHashMap<Class<?>, Method> WRITE_OBJECTS = new SoftHashMap<Class<?>, Method>();
+  private static final SoftHashMap<Class<?>, Method> WRITE_OBJECTS = new SoftHashMap<Class<?>, Method>();
 
   /**
    * A cache of the persistentFields, mapping class->Field[]
    */
-  protected static final SoftHashMap<Class<?>, Field[]> PERSISTENT_FIELDS = new SoftHashMap<Class<?>, Field[]>();
+  private static final SoftHashMap<Class<?>, Field[]> PERSISTENT_FIELDS = new SoftHashMap<Class<?>, Field[]>();
 
   /**
    * The boxed primitive classes, which are written in default field format (a single
@@ -115,33 +115,33 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
   /**
    * The underlying XML writing engine
    */
-  protected XMLWriter writer;
+  private final XMLWriter writer;
 
   /**
    * The collection of references stored in the stream so far,
    * maps Integer(hash) -> reference name.
    */
-  protected Hashtable<Reference, String> references;
+  private Hashtable<Reference, String> references;
 
   /**
    * A counter used to generate unique references
    */
-  protected int next = 0;
+  private int next = 0;
 
   /**
    * The stack of objects which are currently being written to the stream
    */
-  protected Stack<Object> currentObjects;
+  private final Stack<Object> currentObjects;
 
   /**
     * The stack of classes which are currently being written to the stream
    */
-  protected Stack<Class<?>> currentClasses;
+  private final Stack<Class<?>> currentClasses;
 
   /**
    * The stack of putFields which are currently being written to the stream
    */
-  protected Stack<PutField> currentPutFields;
+  private final Stack<PutField> currentPutFields;
 
   private String debugstr;
 
@@ -1422,9 +1422,9 @@ public class XMLObjectOutputStream extends ObjectOutputStream {
    */
   public static class PutField extends ObjectOutputStream.PutField {
 
-    protected Hashtable<String, Object> primitives = new Hashtable<String, Object>();
+    private final Hashtable<String, Object> primitives = new Hashtable<String, Object>();
 
-    protected Hashtable<String, Object> objects = new Hashtable<String, Object>();
+    private final Hashtable<String, Object> objects = new Hashtable<String, Object>();
 
     protected String[] getPrimitives() {
       return (String[]) primitives.keySet().toArray(new String[0]);

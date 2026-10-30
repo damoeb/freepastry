@@ -50,15 +50,15 @@ import rice.selector.TimerTask;
 
 public class DirectTimeSource implements TimeSource {
 
-  protected long time = 0;
-  protected Logger logger = null;
-  protected String instance;
-  protected SelectorManager selectorManager;
+  private long time = 0;
+  private Logger logger = null;
+  private final String instance;
+  private SelectorManager selectorManager;
 
   /**
    * When destroy is called, throw an interrupted exception on all of these.
    */
-  protected HashSet<BlockingTimerTask> pendingTimers = new HashSet<BlockingTimerTask>();
+  private final HashSet<BlockingTimerTask> pendingTimers = new HashSet<BlockingTimerTask>();
 
   public DirectTimeSource(long time) {
     this(time, null);

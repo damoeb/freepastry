@@ -60,7 +60,7 @@ import java.util.SortedMap;
 public class ImmutableSortedMap<K, V> implements SortedMap<K, V>, Serializable {
 
   // the internal map
-  protected SortedMap<K, V> map;
+  private final SortedMap<K, V> map;
 
   /**
    * Constructor which takes an existing map

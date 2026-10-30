@@ -66,19 +66,19 @@ public class EncryptedOutputStream extends OutputStream {
   public final int BUFFER_SIZE;
 
   // the public key
-  protected PublicKey publicKey;
+  private final PublicKey publicKey;
 
   // the symmetric key
-  protected byte[] key;
+  private final byte[] key;
 
   // the actual underlying stream
-  protected DataOutputStream stream;
+  private final DataOutputStream stream;
 
   // the temporary array of bytes waiting to be sent out
-  protected byte[] buffer;
+  private final byte[] buffer;
 
   // the amount of the buffer which is currently used
-  protected int bufferLength;
+  private int bufferLength;
 
   /**
    * Builds an encrypted outputstream given a public key to

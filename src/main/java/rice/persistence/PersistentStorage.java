@@ -2069,7 +2069,7 @@ public class PersistentStorage implements Storage {
    * Class for a hashtable of primitive characters
    */
   private static class CharacterHashSet {
-    protected boolean[] bitMap = new boolean[256];
+    private final boolean[] bitMap = new boolean[256];
 
     public void put(char a) {
       bitMap[(int) a] = true;

@@ -122,7 +122,7 @@ public interface Continuation<R, E extends Exception> {
     /**
     * The parent continuation
      */
-    protected Continuation<? super R, E> parent;
+    private final Continuation<? super R, E> parent;
 
     /**
      * Constructor which takes in the parent continuation
@@ -156,7 +156,7 @@ public interface Continuation<R, E extends Exception> {
     /**
      * The name of this continuation
      */
-    protected String name;
+    private final String name;
 
     protected Logger logger;
 
@@ -217,9 +217,9 @@ public interface Continuation<R, E extends Exception> {
    */
   public static class ExternalContinuation<R, E extends Exception> implements Continuation<R, E> {
 
-    protected Exception exception;
-    protected R result;
-    protected boolean done = false;
+    private Exception exception;
+    private R result;
+    private boolean done = false;
 
     public synchronized void receiveResult(R o) {
       result = o;
@@ -345,8 +345,8 @@ public interface Continuation<R, E extends Exception> {
 
     protected Object result[];
     protected boolean haveResult[];
-    protected Continuation<? super R, Exception> parent;
-    protected boolean done;
+    private final Continuation<? super R, Exception> parent;
+    private boolean done;
 
     /**
      * Constructor which takes a parent continuation as well
@@ -444,7 +444,7 @@ public interface Continuation<R, E extends Exception> {
     protected Continuation<? super R, E> parent;
 
     // the name of this continuation
-    protected String name;
+    private final String name;
 
     /**
      * Builds a new NamedContinuation given the name and the wrapped
