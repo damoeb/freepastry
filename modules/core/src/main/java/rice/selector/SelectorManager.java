@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package rice.selector;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
@@ -133,11 +134,10 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     this.cancelledKeys = new HashSet<SelectionKey>();
     this.timeSource = timeSource;
 
-    // attempt to create selector
     try {
       selector = Selector.open();
     } catch (IOException e) {
-      logger.error("Error creating selector", e);
+      throw new UncheckedIOException("Error creating selector", e);
     }
     lastTime = timeSource.currentTimeMillis();
   }
