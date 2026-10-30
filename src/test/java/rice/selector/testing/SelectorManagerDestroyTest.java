@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import rice.Destructable;
 import rice.environment.Environment;
 import rice.environment.logging.Slf4jLogManager;
 import rice.environment.time.simple.SimpleTimeSource;
@@ -101,15 +100,11 @@ public class SelectorManagerDestroyTest {
     final AtomicBoolean ran = new AtomicBoolean();
     final AtomicBoolean onSelector = new AtomicBoolean();
     // like a transport layer that closes its sockets in an invocation when destroyed
-    env.addDestructable(new Destructable() {
-      public void destroy() {
-        sm.invoke(new Runnable() {
-          public void run() {
-            onSelector.set(sm.isSelectorThread());
-            ran.set(true);
-          }
-        });
-      }
+    env.addDestructable(() -> {
+      sm.invoke(() -> {
+        onSelector.set(sm.isSelectorThread());
+        ran.set(true);
+      });
     });
     destroyAndJoin();
     assertTrue(ran.get(), "invocation scheduled during destroy was dropped");
@@ -148,27 +143,19 @@ public class SelectorManagerDestroyTest {
     final CountDownLatch inInvocation = new CountDownLatch(1);
     final CountDownLatch proceed = new CountDownLatch(1);
     // hold the selector thread, so that the next two are still pending when it is destroyed
-    sm.invoke(new Runnable() {
-      public void run() {
-        inInvocation.countDown();
-        try {
-          proceed.await(JOIN_MILLIS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-        }
+    sm.invoke(() -> {
+      inInvocation.countDown();
+      try {
+        proceed.await(JOIN_MILLIS, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
       }
     });
     assertTrue(inInvocation.await(JOIN_MILLIS, TimeUnit.MILLISECONDS));
-    sm.invoke(new Runnable() {
-      public void run() {
-        throw new IllegalStateException("expected by the test");
-      }
+    sm.invoke(() -> {
+      throw new IllegalStateException("expected by the test");
     });
-    sm.invoke(new Runnable() {
-      public void run() {
-        ran.set(true);
-      }
-    });
+    sm.invoke(() -> ran.set(true));
     sm.destroy();
     proceed.countDown();
     sm.join(JOIN_MILLIS);
@@ -187,11 +174,9 @@ public class SelectorManagerDestroyTest {
       }
       void chain(final int remaining) {
         if (remaining == 0) return;
-        sm.invoke(new Runnable() {
-          public void run() {
-            runs.incrementAndGet();
-            chain(remaining - 1);
-          }
+        sm.invoke(() -> {
+          runs.incrementAndGet();
+          chain(remaining - 1);
         });
       }
     });
@@ -223,15 +208,13 @@ public class SelectorManagerDestroyTest {
     final int port = server.socket().getLocalPort();
     final AtomicReference<SelectionKey> key = new AtomicReference<SelectionKey>();
     final CountDownLatch registered = new CountDownLatch(1);
-    sm.invoke(new Runnable() {
-      public void run() {
-        try {
-          key.set(sm.register(server, new SelectionKeyHandler(), SelectionKey.OP_ACCEPT));
-        } catch (IOException ioe) {
-          throw new RuntimeException(ioe);
-        } finally {
-          registered.countDown();
-        }
+    sm.invoke(() -> {
+      try {
+        key.set(sm.register(server, new SelectionKeyHandler(), SelectionKey.OP_ACCEPT));
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      } finally {
+        registered.countDown();
       }
     });
     assertTrue(registered.await(JOIN_MILLIS, TimeUnit.MILLISECONDS));
@@ -261,11 +244,7 @@ public class SelectorManagerDestroyTest {
   public void useAfterDestroyIsHarmless() throws Exception {
     destroyAndJoin();
     final AtomicBoolean ran = new AtomicBoolean();
-    sm.invoke(new Runnable() {
-      public void run() {
-        ran.set(true);
-      }
-    });
+    sm.invoke(() -> ran.set(true));
     assertEquals(0, sm.getNumInvocations());
     sm.schedule(new TimerTask() {
       public void run() {

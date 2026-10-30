@@ -37,12 +37,9 @@ advised of the possibility of such damage.
 package rice.pastry.transport;
 
 import java.io.IOException;
-import java.util.Collection;
 
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.commonapi.Cancellable;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
@@ -178,11 +175,9 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     }
 
     // do nothing
-    return new ProximityNeighborSelector(){
-      public Cancellable getNearHandles(Collection<NodeHandle> bootHandles, Continuation<Collection<NodeHandle>, Exception> deliverResultToMe) {
-        deliverResultToMe.receiveResult(bootHandles);
-        return null;
-      }
+    return (bootHandles, deliverResultToMe) -> {
+      deliverResultToMe.receiveResult(bootHandles);
+      return null;
     };
   }
 

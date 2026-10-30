@@ -103,13 +103,11 @@ public class SelectorTest {
       }
     },t1Delay);
     final long i1Start = environment.getTimeSource().currentTimeMillis();
-    sman.invoke(new Runnable() {
-      public void run() {
-        long curTime = environment.getTimeSource().currentTimeMillis();
-        curTime-=i1Start;
-        if ((logAll) || (logIssues && (curTime > 100)))
-          System.out.println("invoked after "+curTime+" millis.");
-      }
+    sman.invoke(() -> {
+      long curTime = environment.getTimeSource().currentTimeMillis();
+      curTime-=i1Start;
+      if ((logAll) || (logIssues && (curTime > 100)))
+        System.out.println("invoked after "+curTime+" millis.");
     });
   }
 }

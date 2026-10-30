@@ -52,7 +52,6 @@ import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
 import org.mpisws.p2p.transport.rc4.RC4TransportLayer;
@@ -88,12 +87,7 @@ public class EncryptedFileTest {
     WireTransportLayer wtl1 = new WireTransportLayerImpl(addr1,env,errorHandler);
     SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> idtl1 = new SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer>(wtl1,new InetSocketAddressSerializer(), null ,env,errorHandler);
     LivenessTransportLayer<InetSocketAddress, ByteBuffer> ltl1 = new LivenessTransportLayerImpl<InetSocketAddress>(idtl1,env,errorHandler,300000);
-    ltl1.addLivenessListener(new LivenessListener<InetSocketAddress>() {
-      public void livenessChanged(InetSocketAddress i, int val,
-          Map<String, Object> options) {
-        logger.info("Node1: livenessChanged({},{},{})", i, val, options);
-      }
-    });
+    ltl1.addLivenessListener((i, val, options) -> logger.info("Node1: livenessChanged({},{},{})", i, val, options));
 
     RC4TransportLayer<InetSocketAddress, ByteBuffer> etl1 = new RC4TransportLayer<InetSocketAddress, ByteBuffer>(ltl1,env,"badpassword", errorHandler);
 
@@ -151,12 +145,7 @@ public class EncryptedFileTest {
     LivenessTransportLayer<InetSocketAddress, ByteBuffer> ltl2 = new LivenessTransportLayerImpl<InetSocketAddress>(idtl2,env,errorHandler,300000);
 
     // check liveness on addr1
-    ltl2.addLivenessListener(new LivenessListener<InetSocketAddress>() {
-      public void livenessChanged(InetSocketAddress i, int val,
-          Map<String, Object> options) {
-        logger.info("Node2: livenessChanged({},{},{})", i, val, options);
-      }
-    });
+    ltl2.addLivenessListener((i, val, options) -> logger.info("Node2: livenessChanged({},{},{})", i, val, options));
     ltl2.checkLiveness(addr1, null);
 
     RC4TransportLayer<InetSocketAddress, ByteBuffer> etl2 = new RC4TransportLayer<InetSocketAddress, ByteBuffer>(ltl2,env,"badpassword", errorHandler);

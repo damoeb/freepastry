@@ -37,19 +37,13 @@ advised of the possibility of such damage.
 
 package rice.p2p.splitstream;
 
-import java.io.IOException;
 import java.util.Hashtable;
 
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
-import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Node;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.scribe.Scribe;
-import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
-import rice.p2p.scribe.ScribePolicy;
-import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
  * This is the implementing class of the SplitStream interface. It provides the functionality of
@@ -88,12 +82,7 @@ public class SplitStreamImpl implements SplitStream {
    * @param instance
    */
   public SplitStreamImpl(Node node, String instance) {
-    this(node, instance, new SplitStreamScribePolicyFactory() {
-      public ScribePolicy getSplitStreamScribePolicy(Scribe scribe,
-          SplitStream splitstream) {
-        return new SplitStreamScribePolicy(scribe, splitstream);
-      }
-    });
+    this(node, instance, (scribe, splitstream) -> new SplitStreamScribePolicy(scribe, splitstream));
   }
 
   /**
@@ -111,17 +100,14 @@ public class SplitStreamImpl implements SplitStream {
     maxFailedSubscriptions = p.getInt("p2p_splitStream_stripe_max_failed_subscription");
     stripeBaseBitLength = p.getInt("p2p_splitStream_stripeBaseBitLength");
     this.scribe = new ScribeImpl(node, instance);
-    scribe.setContentDeserializer(new ScribeContentDeserializer() {
-      public ScribeContent deserializeScribeContent(InputBuffer buf,
-          Endpoint endpoint, short contentType) throws IOException {
-        switch(contentType) {
-          case SplitStreamContent.TYPE:
-            return new SplitStreamContent(buf);
-          case SplitStreamSubscribeContent.TYPE:
-            return new SplitStreamSubscribeContent(buf);
-        }
-        throw new IllegalArgumentException("Invalid type:"+contentType);
+    scribe.setContentDeserializer((buf, endpoint, contentType) -> {
+      switch(contentType) {
+        case SplitStreamContent.TYPE:
+          return new SplitStreamContent(buf);
+        case SplitStreamSubscribeContent.TYPE:
+          return new SplitStreamSubscribeContent(buf);
       }
+      throw new IllegalArgumentException("Invalid type:"+contentType);
     });
 
     this.node = node;

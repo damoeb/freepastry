@@ -224,7 +224,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     if (selectorManager.isSelectorThread()) {
       scheduleToWriteIfNeeded();
     } else {
-      selectorManager.invoke(new Runnable() { public void run() {scheduleToWriteIfNeeded();}});
+      selectorManager.invoke(() -> scheduleToWriteIfNeeded());
     }
   }
 

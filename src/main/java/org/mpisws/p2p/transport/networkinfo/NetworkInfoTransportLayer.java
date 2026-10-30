@@ -301,11 +301,9 @@ public class NetworkInfoTransportLayer implements
       public void receiveResult(SocketRequestHandle<InetSocketAddress> c, final P2PSocket<InetSocketAddress> result) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
 
-        cancellable.setSubCancellable(new Cancellable() {
-          public boolean cancel() {
-            result.close();
-            return true;
-          }
+        cancellable.setSubCancellable(() -> {
+          result.close();
+          return true;
         });
 
         result.register(false, true, new P2PSocketReceiver<InetSocketAddress>(){
@@ -705,13 +703,11 @@ public class NetworkInfoTransportLayer implements
     }
 
     // if they cancel, pull it from the table
-    ret.attach(new Cancellable() {
-      public boolean cancel() {
-        synchronized(verifyConnectionRequests) {
-          verifyConnectionRequests.remove(uid);
-        }
-        return true;
+    ret.attach(() -> {
+      synchronized(verifyConnectionRequests) {
+        verifyConnectionRequests.remove(uid);
       }
+      return true;
     });
 
     ret.attach(openSocket(probeAddress, sob.getBytes(), new SocketCallback<InetSocketAddress>() {

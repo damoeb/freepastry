@@ -43,10 +43,8 @@ import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.rawserialization.RawScribeContent;
-import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
  * Provides regression testing for the Scribe service using distributed
@@ -68,17 +66,12 @@ public class RawScribeRegrTest extends ScribeRegrTest {
 
   protected void processNode(int num, Node node) {
     super.processNode(num, node);
-    scribes[num].setContentDeserializer(new ScribeContentDeserializer() {
-
-      public ScribeContent deserializeScribeContent(InputBuffer buf, Endpoint endpoint,
-          short contentType) throws IOException {
-        switch(contentType) {
-          case RawTestScribeContent.TYPE:
-            return new RawTestScribeContent(buf,endpoint);
-        }
-        throw new IllegalArgumentException("Unknown type: "+contentType);
+    scribes[num].setContentDeserializer((buf, endpoint, contentType) -> {
+      switch(contentType) {
+        case RawTestScribeContent.TYPE:
+          return new RawTestScribeContent(buf,endpoint);
       }
-
+      throw new IllegalArgumentException("Unknown type: "+contentType);
     });
   }
 

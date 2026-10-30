@@ -188,11 +188,7 @@ public class LookupService implements Application {
    *                the continuation to return the result to
    */
   public void requestNodeHandles(final Id id, final int num, final Continuation<NodeHandleSet, Exception> cont) {
-    endpoint.getEnvironment().getSelectorManager().invoke(new Runnable() {
-      public void run() {
-        sendMessageWithRetries(id, num, cont);
-      }
-    });
+    endpoint.getEnvironment().getSelectorManager().invoke(() -> sendMessageWithRetries(id, num, cont));
   }
 
   protected void sendMessageWithRetries(final Id id, final int num, final Continuation<NodeHandleSet, Exception> cont) {
@@ -267,23 +263,21 @@ public class LookupService implements Application {
    *                the continuation to return the result to
    */
   public void requestNodeHandle(final Id id, final Continuation<NodeHandle, Exception> cont) {
-    endpoint.getEnvironment().getSelectorManager().invoke(new Runnable() {
-      public void run() {
-        sendMessageWithRetries(id, 1, new Continuation<NodeHandleSet, Exception>() {
-          public void receiveException(Exception exception) {
-            cont.receiveException(exception);
-          }
+    endpoint.getEnvironment().getSelectorManager().invoke(() -> {
+      sendMessageWithRetries(id, 1, new Continuation<NodeHandleSet, Exception>() {
+        public void receiveException(Exception exception) {
+          cont.receiveException(exception);
+        }
 
-          public void receiveResult(NodeHandleSet result) {
-            if (result.size() != 1) {
-              // this really shouldn't happen
-              receiveException(new IndexOutOfBoundsException("Expected 1 result, got " + result.size()));
-            } else {
-              cont.receiveResult(result.getHandle(0));
-            }
+        public void receiveResult(NodeHandleSet result) {
+          if (result.size() != 1) {
+            // this really shouldn't happen
+            receiveException(new IndexOutOfBoundsException("Expected 1 result, got " + result.size()));
+          } else {
+            cont.receiveResult(result.getHandle(0));
           }
-        });
-      }
+        }
+      });
     });
   }
 

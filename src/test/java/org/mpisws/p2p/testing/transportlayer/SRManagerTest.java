@@ -136,11 +136,9 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     final MultiInetSocketAddress aliceId = (MultiInetSocketAddress)alice.getLocalIdentifier();
     final MultiInetSocketAddress bobId = (MultiInetSocketAddress)bob.getLocalIdentifier();
     final Object lock = new Object();
-    LivenessListener<MultiInetSocketAddress> ll = new LivenessListener<MultiInetSocketAddress>() {
-      public void livenessChanged(MultiInetSocketAddress i, int val, Map<String, Object> options) {
-        synchronized(lock) {
-          lock.notify();
-        }
+    LivenessListener<MultiInetSocketAddress> ll = (i, val, options) -> {
+      synchronized(lock) {
+        lock.notify();
       }
     };
     aliceLP.addLivenessListener(ll);
@@ -345,12 +343,10 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     final List<Tupel> tupels = new ArrayList<Tupel>(3);
     final Object lock = new Object();
 
-    alice.addLivenessListener(new LivenessListener<MultiInetSocketAddress>() {
-      public void livenessChanged(MultiInetSocketAddress i, int val, Map<String, Object> options) {
-        synchronized(lock) {
-          tupels.add(new Tupel(i,val));
-          lock.notify();
-        }
+    alice.addLivenessListener((i, val, options) -> {
+      synchronized(lock) {
+        tupels.add(new Tupel(i,val));
+        lock.notify();
       }
     });
 

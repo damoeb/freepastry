@@ -96,13 +96,11 @@ public class PRInconsistent1 extends PRRegressionTest {
                     acks++;
                     if (acks == 3) {
                       final long idx = findLastEntry(new short[] {EVT_RECV}, Long.MAX_VALUE-10);
-                      env.getSelectorManager().invoke(new Runnable() {
-                        public void run() {
-                          try {
-                            fork(idx);
-                          } catch (IOException ioe) {
-                            logger.warn("Error forking the history at index {}", idx, ioe);
-                          }
+                      env.getSelectorManager().invoke(() -> {
+                        try {
+                          fork(idx);
+                        } catch (IOException ioe) {
+                          logger.warn("Error forking the history at index {}", idx, ioe);
                         }
                       });
                     }

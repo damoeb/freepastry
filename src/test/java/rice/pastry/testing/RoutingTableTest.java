@@ -40,13 +40,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Vector;
 
-import rice.Destructable;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.Application;
@@ -281,16 +279,14 @@ public class RoutingTableTest {
     });
 
     // this will add "magic" to the node such that if it is destroyed, then it will automatically create its replacement
-    node.addDestructable(new Destructable() {
-      public void destroy() {
-        nodes.remove(node);
-        apps.remove(node);
-        try {
-          createNode(); // create a new node every time we
-                                // destroy one
-        } catch (Exception ie) {
-          ie.printStackTrace();
-        }
+    node.addDestructable(() -> {
+      nodes.remove(node);
+      apps.remove(node);
+      try {
+        createNode(); // create a new node every time we
+                              // destroy one
+      } catch (Exception ie) {
+        ie.printStackTrace();
       }
     });
 
@@ -329,11 +325,7 @@ public class RoutingTableTest {
     if ((meanSessionTime > 0)) {
       env.getSelectorManager().getTimer().schedule(new TimerTask() {
         {
-          node.addDestructable(new Destructable() {
-            public void destroy() {
-              cancel();
-            }
-          });
+          node.addDestructable(() -> cancel());
         }
 
         @Override
@@ -381,14 +373,10 @@ public class RoutingTableTest {
 
   private void testLeafSets() {
     ArrayList<PastryNode> nds = new ArrayList<PastryNode>(nodes);
-    Collections.sort(nds,new Comparator<PastryNode>() {
-
-      public int compare(PastryNode one, PastryNode two) {
-        PastryNode n1 = (PastryNode)one;
-        PastryNode n2 = (PastryNode)two;
-        return n1.getId().compareTo(n2.getId());
-      }
-
+    Collections.sort(nds,(one, two) -> {
+      PastryNode n1 = (PastryNode)one;
+      PastryNode n2 = (PastryNode)two;
+      return n1.getId().compareTo(n2.getId());
     });
 
     Iterator<PastryNode> i = nds.iterator();
@@ -838,11 +826,9 @@ public class RoutingTableTest {
             final Object lock = new Object();
             // Loads pastry settings, and sets up the Environment for simulation
             Environment env = Environment.directEnvironment();
-            env.addDestructable(new Destructable() {
-              public void destroy() {
-                synchronized(lock) {
-                  lock.notify();
-                }
+            env.addDestructable(() -> {
+              synchronized(lock) {
+                lock.notify();
               }
             });
 

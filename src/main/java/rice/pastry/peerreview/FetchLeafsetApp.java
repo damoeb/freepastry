@@ -43,8 +43,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import rice.Continuation;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
@@ -67,17 +65,15 @@ public class FetchLeafsetApp extends PastryAppl {
   protected byte routeMsgVersion;
 
   public FetchLeafsetApp(final PastryNode pn, int numNeighbors) {
-    super(pn, null, APP_ID, new MessageDeserializer() {
-      public Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
-        switch(type) {
-        case FetchLeafsetRequest.TYPE:
-          if (sender == null) throw new IOException("Sender is null for FetchLeafsetRequest");
-          return new FetchLeafsetRequest((rice.pastry.NodeHandle)sender,Id.build(buf));
-        case FetchLeafsetResponse.TYPE:
-          return new FetchLeafsetResponse(buf,pn,(rice.pastry.NodeHandle)sender);
-        }
-        throw new IOException("Unknown type:"+type);
+    super(pn, null, APP_ID, (buf, type, priority, sender) -> {
+      switch(type) {
+      case FetchLeafsetRequest.TYPE:
+        if (sender == null) throw new IOException("Sender is null for FetchLeafsetRequest");
+        return new FetchLeafsetRequest((rice.pastry.NodeHandle)sender,Id.build(buf));
+      case FetchLeafsetResponse.TYPE:
+        return new FetchLeafsetResponse(buf,pn,(rice.pastry.NodeHandle)sender);
       }
+      throw new IOException("Unknown type:"+type);
     });
     routeMsgVersion = (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion");
     this.numNeighbors = numNeighbors;

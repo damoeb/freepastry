@@ -158,13 +158,11 @@ public class TCPLayer extends SelectionKeyHandler {
   }
 
   public void acceptSockets(final boolean b) {
-    Runnable r = new Runnable(){
-      public void run() {
-        if (b) {
-          key.interestOps(key.interestOps() | SelectionKey.OP_ACCEPT);
-        } else {
-          key.interestOps(key.interestOps() & ~SelectionKey.OP_ACCEPT);
-        }
+    Runnable r = () -> {
+      if (b) {
+        key.interestOps(key.interestOps() | SelectionKey.OP_ACCEPT);
+      } else {
+        key.interestOps(key.interestOps() & ~SelectionKey.OP_ACCEPT);
       }
     };
 

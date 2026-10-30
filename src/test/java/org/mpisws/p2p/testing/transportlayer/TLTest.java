@@ -104,15 +104,13 @@ public abstract class TLTest<Identifier> {
     alice = null;
     bob = null;
     SelectorManager selector = env.getSelectorManager();
-    Runnable destroyTLs = new Runnable() {
-      public void run() {
-        for (Destructable d : tls) {
-          try {
-            d.destroy();
-          } catch (RuntimeException re) {
-            // may already have been destroyed by a test
-            if (logger != null && logger.isDebugEnabled()) logger.debug("destroying "+d, re);
-          }
+    Runnable destroyTLs = () -> {
+      for (Destructable d : tls) {
+        try {
+          d.destroy();
+        } catch (RuntimeException re) {
+          // may already have been destroyed by a test
+          if (logger != null && logger.isDebugEnabled()) logger.debug("destroying "+d, re);
         }
       }
     };

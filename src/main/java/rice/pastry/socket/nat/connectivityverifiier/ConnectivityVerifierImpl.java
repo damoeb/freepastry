@@ -74,17 +74,15 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
   protected Cancellable getInetSocketAddressLookup(final InetSocketAddress bindAddress, final Continuation<InetSocketAddressLookup, IOException> deliverResultToMe) {
     final AttachableCancellable ret = new AttachableCancellable();
 
-    Runnable r = new Runnable() {
-      public void run() {
-        if (ret.isCancelled()) return;
-        PastryNode pn = new PastryNode(Id.build(), spnf.getEnvironment());
+    Runnable r = () -> {
+      if (ret.isCancelled()) return;
+      PastryNode pn = new PastryNode(Id.build(), spnf.getEnvironment());
 
-        try {
-          InetSocketAddressLookup lookup = (InetSocketAddressLookup)spnf.getBottomLayers(pn, new MultiInetSocketAddress(bindAddress));
-          deliverResultToMe.receiveResult(lookup);
-        } catch (IOException ioe) {
-          deliverResultToMe.receiveException(ioe);
-        }
+      try {
+        InetSocketAddressLookup lookup = (InetSocketAddressLookup)spnf.getBottomLayers(pn, new MultiInetSocketAddress(bindAddress));
+        deliverResultToMe.receiveResult(lookup);
+      } catch (IOException ioe) {
+        deliverResultToMe.receiveException(ioe);
       }
     };
     // only do this on the selector thread, b/c binding on the non-selector makes java cranky on some versions of linux
@@ -153,11 +151,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
         lookup.destroy();
 
         // lookup.destroy() uses an invoke
-        environment.getSelectorManager().invoke(new Runnable() {
-          public void run() {
-            deliverResultToMe.receiveResult(result);
-          }
-        });
+        environment.getSelectorManager().invoke(() -> deliverResultToMe.receiveResult(result));
       }
 
       public void receiveException(final IOException exception) {
@@ -168,11 +162,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
           lookup.destroy();
 
           // lookup.destroy() uses an invoke
-          environment.getSelectorManager().invoke(new Runnable() {
-            public void run() {
-              deliverResultToMe.receiveException(exception);
-            }
-          });
+          environment.getSelectorManager().invoke(() -> deliverResultToMe.receiveException(exception));
           return;
         }
 
@@ -239,11 +229,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
         lookup.destroy();
 
         // lookup.destroy() uses an invoke
-        environment.getSelectorManager().invoke(new Runnable() {
-          public void run() {
-            deliverResultToMe.receiveResult(result.getAddress());
-          }
-        });
+        environment.getSelectorManager().invoke(() -> deliverResultToMe.receiveResult(result.getAddress()));
       }
 
       public void receiveException(final IOException exception) {
@@ -254,11 +240,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
           lookup.destroy();
 
           // lookup.destroy() uses an invoke
-          environment.getSelectorManager().invoke(new Runnable() {
-            public void run() {
-              deliverResultToMe.receiveException(exception);
-            }
-          });
+          environment.getSelectorManager().invoke(() -> deliverResultToMe.receiveException(exception));
           return;
         }
 
@@ -296,13 +278,9 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
 
       public void receiveResult(final InetSocketAddressLookup lookup) {
         // we're on the selector now, and we have our TL
-        ret.attach(new Cancellable() {
-
-          public boolean cancel() {
-            lookup.destroy();
-            return true;
-          }
-
+        ret.attach(() -> {
+          lookup.destroy();
+          return true;
         });
 
 
@@ -319,11 +297,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
             logger.info("verifyConnectivity({},{}). udpSuccess({})", local, probeAddresses, from);
 
             // lookup.destroy() uses an invoke
-            environment.getSelectorManager().invoke(new Runnable() {
-              public void run() {
-                deliverResultToMe.udpSuccess(from, options);
-              }
-            });
+            environment.getSelectorManager().invoke(() -> deliverResultToMe.udpSuccess(from, options));
           }
 
           public void tcpSuccess(final InetSocketAddress from, final Map<String, Object> options) {
@@ -335,11 +309,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
             logger.info("verifyConnectivity({},{}). tcpSuccess({})", local, probeAddresses, from);
 
             // lookup.destroy() uses an invoke
-            environment.getSelectorManager().invoke(new Runnable() {
-              public void run() {
-                deliverResultToMe.tcpSuccess(from, options);
-              }
-            });
+            environment.getSelectorManager().invoke(() -> deliverResultToMe.tcpSuccess(from, options));
 
           }
 
@@ -350,11 +320,7 @@ public class ConnectivityVerifierImpl implements ConnectivityVerifier {
               logger.atInfo().log(() -> "verifyConnectivity("+local+","+probeAddresses+"). failure no more addresses "+exception);
 
               // lookup.destroy() uses an invoke
-              environment.getSelectorManager().invoke(new Runnable() {
-                public void run() {
-                  deliverResultToMe.receiveException(exception);
-                }
-              });
+              environment.getSelectorManager().invoke(() -> deliverResultToMe.receiveException(exception));
 
               return;
             }

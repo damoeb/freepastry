@@ -51,7 +51,6 @@ import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Executable;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
 import rice.p2p.aggregation.messaging.AggregationMessage;
@@ -69,8 +68,6 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.glacier.VersioningPast;
 import rice.p2p.glacier.v2.DebugContent;
@@ -226,12 +223,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     this.endpoint = node.buildEndpoint(this, instance);
-    this.endpoint.setDeserializer(new MessageDeserializer() {
-      public Message deserialize(InputBuffer buf, short type, int priority,
-          NodeHandle sender) throws IOException {
-        // the only message type, AggregationTimeoutMessage, is scheduled locally and never deserialized
-        throw new IOException("Unknown type: " + type + " in " + AggregationImpl.this);
-      }
+    this.endpoint.setDeserializer((buf, type, priority, sender) -> {
+      // the only message type, AggregationTimeoutMessage, is scheduled locally and never deserialized
+      throw new IOException("Unknown type: " + type + " in " + AggregationImpl.this);
     });
 
     this.waitingList = waitingList;
@@ -241,29 +235,23 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.contentHandleDeserializer = new JavaPastContentHandleDeserializer();
 
     this.aggregateStore = aggregateStore;
-    this.aggregateStore.setContentDeserializer(new PastContentDeserializer() {
-      public PastContent deserializePastContent(InputBuffer buf, Endpoint endpoint,
-          short contentType) throws IOException {
-        switch(contentType) {
-          case RawAggregate.TYPE:
-            return new RawAggregate(buf, endpoint, contentDeserializer);
-          case NonAggregate.TYPE:
-            short subType = buf.readShort();
-            return contentDeserializer.deserializePastContent(buf, endpoint, subType);
-        }
-        throw new IllegalArgumentException("Unknown Type:"+contentType);
+    this.aggregateStore.setContentDeserializer((buf, endpoint, contentType) -> {
+      switch(contentType) {
+        case RawAggregate.TYPE:
+          return new RawAggregate(buf, endpoint, contentDeserializer);
+        case NonAggregate.TYPE:
+          short subType = buf.readShort();
+          return contentDeserializer.deserializePastContent(buf, endpoint, subType);
       }
+      throw new IllegalArgumentException("Unknown Type:"+contentType);
     });
 
-    this.aggregateStore.setContentHandleDeserializer(new PastContentHandleDeserializer() {
-      public PastContentHandle deserializePastContentHandle(InputBuffer buf, Endpoint endpoint,
-          short contentType) throws IOException {
-        switch(contentType) {
-          case AggregateHandle.TYPE:
-            return new AggregateHandle(buf, endpoint);
-        }
-        throw new IllegalArgumentException("Unknown Type:"+contentType);
+    this.aggregateStore.setContentHandleDeserializer((buf, endpoint, contentType) -> {
+      switch(contentType) {
+        case AggregateHandle.TYPE:
+          return new AggregateHandle(buf, endpoint);
       }
+      throw new IllegalArgumentException("Unknown Type:"+contentType);
     });
 
     this.objectStore = objectStore;
@@ -860,11 +848,9 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
   private void storeAggregate(final Aggregate aggr, final long expiration, final ObjectDescriptor[] desc, final Id[] pointers, final Continuation<? super Boolean, Exception> command) {
     logger.debug("storeAggregate() schedules content hash computation...");
-    endpoint.process(new Executable<Id, Exception>() {
-      public Id execute() {
-        logger.debug("storeAggregate() starts working on content hash...");
-        return factory.buildId(aggr.getContentHash());
-      }
+    endpoint.process(() -> {
+      logger.debug("storeAggregate() starts working on content hash...");
+      return factory.buildId(aggr.getContentHash());
     }, new Continuation<Id, Exception>() {
       public void receiveResult(Id o) {
         if (o instanceof Id) {
@@ -2056,11 +2042,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       public void receiveResult(PastContent o) {
         if (o instanceof Aggregate) {
           final Aggregate aggr = (Aggregate) o;
-          endpoint.process(new Executable<Id, Exception>() {
-            public Id execute() {
-              return factory.buildId(aggr.getContentHash());
-            }
-          }, new Continuation<Id, Exception>() {
+          endpoint.process(() -> factory.buildId(aggr.getContentHash()), new Continuation<Id, Exception>() {
             public void receiveResult(Id o) {
               if (o instanceof Id) {
                 Id aggrNominalKey = (Id) o;

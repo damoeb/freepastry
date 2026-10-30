@@ -146,18 +146,14 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
     this.bindings = new HashMap<MiddleIdentifier, UpperIdentifier>();
 
-    serializer.addSerializerListener(new SerializerListener<UpperIdentifier>() {
-      public void nodeHandleFound(final UpperIdentifier handle) {
-        Runnable r = new Runnable() {
-          public void run() {
-            addBinding(handle, null, null); // I hope setting the options to null is ok...
-          }
-        };
-        if (IdentityImpl.this.environment.getSelectorManager().isSelectorThread()) {
-          r.run();
-        } else {
-          IdentityImpl.this.environment.getSelectorManager().invoke(r);
-        }
+    serializer.addSerializerListener(handle -> {
+      Runnable r = () -> {
+        addBinding(handle, null, null); // I hope setting the options to null is ok...
+      };
+      if (IdentityImpl.this.environment.getSelectorManager().isSelectorThread()) {
+        r.run();
+      } else {
+        IdentityImpl.this.environment.getSelectorManager().invoke(r);
       }
     });
   }
@@ -416,11 +412,9 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           new SocketCallback<LowerIdentifier>(){
 
             public void receiveResult(SocketRequestHandle<LowerIdentifier> cancellable, final P2PSocket<LowerIdentifier> sock) {
-              ret.setSubCancellable(new Cancellable() {
-                public boolean cancel() {
-                  sock.close();
-                  return true;
-                }
+              ret.setSubCancellable(() -> {
+                sock.close();
+                return true;
               });
               try {
                 new P2PSocketReceiver<LowerIdentifier>() {
@@ -473,10 +467,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                               // done in addBinding now
                               deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
                             } else {
-                              ret.setSubCancellable(new Cancellable() {
-                                public boolean cancel() {
-                                  throw new IllegalStateException("Can't cancel, already delivered. ret:"+ret+" sock:"+socket);
-                                }
+                              ret.setSubCancellable(() -> {
+                                throw new IllegalStateException("Can't cancel, already delivered. ret:"+ret+" sock:"+socket);
                               }); // can't cancel any more
                               deliverSocketToMe.receiveResult(ret, socket);
                             }

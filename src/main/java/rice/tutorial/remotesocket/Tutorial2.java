@@ -130,26 +130,22 @@ public class Tutorial2 {
       public void receiveResult(final SocketChannel socket) {
         System.out.println("Opened SocketChannel "+socket);
         // we're going to write in a blocking mode, so make sure to do this on another thread
-        new Thread(new Runnable() {
+        new Thread(() -> {
+          // create the message
+          final ByteBuffer out = ByteBuffer.wrap(rice.pastry.Id.build().toByteArray());
 
-          public void run() {
-            // create the message
-            final ByteBuffer out = ByteBuffer.wrap(rice.pastry.Id.build().toByteArray());
+          try {
+            // set blocking mode
+            socket.configureBlocking(true);
 
-            try {
-              // set blocking mode
-              socket.configureBlocking(true);
+            System.out.println("Writing");
 
-              System.out.println("Writing");
-
-              // write the message
-              socket.write(out);
-              System.out.println("Done writing");
-            } catch (IOException ioe) {
-              ioe.printStackTrace();
-            }
+            // write the message
+            socket.write(out);
+            System.out.println("Done writing");
+          } catch (IOException ioe) {
+            ioe.printStackTrace();
           }
-
         }).start();
       }
 

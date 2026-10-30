@@ -41,7 +41,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -74,7 +73,6 @@ import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
-import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -332,11 +330,9 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     }
 
     // do nothing
-    return new ProximityNeighborSelector(){
-      public Cancellable getNearHandles(Collection<NodeHandle> bootHandles, Continuation<Collection<NodeHandle>, Exception> deliverResultToMe) {
-        deliverResultToMe.receiveResult(bootHandles);
-        return null;
-      }
+    return (bootHandles, deliverResultToMe) -> {
+      deliverResultToMe.receiveResult(bootHandles);
+      return null;
     };
   }
 

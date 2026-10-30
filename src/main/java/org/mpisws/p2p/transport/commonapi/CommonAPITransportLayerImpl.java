@@ -94,13 +94,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
     this.deserializer = deserializer;
     this.optionsAdder = optionsAdder;
     if (this.optionsAdder == null) {
-      this.optionsAdder = new OptionsAdder() {
-
-        public Map<String, Object> addOptions(Map<String, Object> options,
-            RawMessage m) {
-          return OptionsFactory.addOption(options, MSG_STRING, m.toString(), MSG_TYPE, m.getType(), MSG_CLASS, m.getClass().getName());
-        }
-      };
+      this.optionsAdder = (options, m) -> OptionsFactory.addOption(options, MSG_STRING, m.toString(), MSG_TYPE, m.getType(), MSG_CLASS, m.getClass().getName());
     }
 
     if (tl == null) throw new IllegalArgumentException("tl must be non-null");

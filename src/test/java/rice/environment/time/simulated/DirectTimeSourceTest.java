@@ -69,13 +69,11 @@ public class DirectTimeSourceTest {
     try {
       final DirectTimeSource ts = (DirectTimeSource)env.getTimeSource();
       final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
-      Thread sleeper = new Thread(new Runnable() {
-        public void run() {
-          try {
-            ts.sleep(1000000); // simulated time doesn't advance in this test
-          } catch (Throwable t) {
-            thrown.set(t);
-          }
+      Thread sleeper = new Thread(() -> {
+        try {
+          ts.sleep(1000000); // simulated time doesn't advance in this test
+        } catch (Throwable t) {
+          thrown.set(t);
         }
       }, "DirectTimeSourceTest sleeper");
       sleeper.setDaemon(true);

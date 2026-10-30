@@ -737,10 +737,8 @@ public class PastryNode extends LegacyObservable implements
     if (getEnvironment().getSelectorManager().isSelectorThread()) {
       if (tl != null) tl.destroy();
     } else {
-      getEnvironment().getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          if (tl != null) tl.destroy();
-        }
+      getEnvironment().getSelectorManager().invoke(() -> {
+        if (tl != null) tl.destroy();
       });
     }
   }
@@ -1171,11 +1169,7 @@ public class PastryNode extends LegacyObservable implements
     if (getEnvironment().getSelectorManager().isSelectorThread()) {
       ret.setInternal(tl.sendMessage(handle, rm, callback, options));
     } else {
-      getEnvironment().getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          ret.setInternal(tl.sendMessage(handle, rm, callback, options));
-        }
-      });
+      getEnvironment().getSelectorManager().invoke(() -> ret.setInternal(tl.sendMessage(handle, rm, callback, options)));
     }
     return ret;
   }

@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -52,7 +51,6 @@ import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Executable;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Application;
@@ -67,8 +65,6 @@ import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.FragmentKeySet;
@@ -312,43 +308,38 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.node = nodeArg;
     this.instance = instanceArg;
     this.endpoint = node.buildEndpoint(this, instance);
-    this.endpoint.setDeserializer(new MessageDeserializer() {
-
-      public Message deserialize(InputBuffer buf, short type, int priority,
-          NodeHandle sender) throws IOException {
-        switch(type) {
-          case GlacierDataMessage.TYPE:
-            return GlacierDataMessage.build(buf, endpoint);
-          case GlacierFetchMessage.TYPE:
-            return GlacierFetchMessage.build(buf, endpoint);
-          case GlacierNeighborRequestMessage.TYPE:
-            return GlacierNeighborRequestMessage.build(buf, endpoint);
-          case GlacierNeighborResponseMessage.TYPE:
-            return GlacierNeighborResponseMessage.build(buf, endpoint);
-          case GlacierQueryMessage.TYPE:
-            return GlacierQueryMessage.build(buf, endpoint);
-          case GlacierRangeForwardMessage.TYPE:
-            return GlacierRangeForwardMessage.build(buf, endpoint);
-          case GlacierRangeQueryMessage.TYPE:
-            return GlacierRangeQueryMessage.build(buf, endpoint);
-          case GlacierRangeResponseMessage.TYPE:
-            return GlacierRangeResponseMessage.build(buf, endpoint);
-          case GlacierRefreshCompleteMessage.TYPE:
-            return GlacierRefreshCompleteMessage.build(buf, endpoint);
-          case GlacierRefreshPatchMessage.TYPE:
-            return GlacierRefreshPatchMessage.build(buf, endpoint);
-          case GlacierRefreshProbeMessage.TYPE:
-            return GlacierRefreshProbeMessage.build(buf, endpoint);
-          case GlacierRefreshResponseMessage.TYPE:
-            return GlacierRefreshResponseMessage.build(buf, endpoint);
-          case GlacierResponseMessage.TYPE:
-            return GlacierResponseMessage.build(buf, endpoint);
-          case GlacierSyncMessage.TYPE:
-            return GlacierSyncMessage.build(buf, endpoint);
-        }
-        throw new IllegalArgumentException("Unknown type:"+type);
+    this.endpoint.setDeserializer((buf, type, priority, sender) -> {
+      switch(type) {
+        case GlacierDataMessage.TYPE:
+          return GlacierDataMessage.build(buf, endpoint);
+        case GlacierFetchMessage.TYPE:
+          return GlacierFetchMessage.build(buf, endpoint);
+        case GlacierNeighborRequestMessage.TYPE:
+          return GlacierNeighborRequestMessage.build(buf, endpoint);
+        case GlacierNeighborResponseMessage.TYPE:
+          return GlacierNeighborResponseMessage.build(buf, endpoint);
+        case GlacierQueryMessage.TYPE:
+          return GlacierQueryMessage.build(buf, endpoint);
+        case GlacierRangeForwardMessage.TYPE:
+          return GlacierRangeForwardMessage.build(buf, endpoint);
+        case GlacierRangeQueryMessage.TYPE:
+          return GlacierRangeQueryMessage.build(buf, endpoint);
+        case GlacierRangeResponseMessage.TYPE:
+          return GlacierRangeResponseMessage.build(buf, endpoint);
+        case GlacierRefreshCompleteMessage.TYPE:
+          return GlacierRefreshCompleteMessage.build(buf, endpoint);
+        case GlacierRefreshPatchMessage.TYPE:
+          return GlacierRefreshPatchMessage.build(buf, endpoint);
+        case GlacierRefreshProbeMessage.TYPE:
+          return GlacierRefreshProbeMessage.build(buf, endpoint);
+        case GlacierRefreshResponseMessage.TYPE:
+          return GlacierRefreshResponseMessage.build(buf, endpoint);
+        case GlacierResponseMessage.TYPE:
+          return GlacierResponseMessage.build(buf, endpoint);
+        case GlacierSyncMessage.TYPE:
+          return GlacierSyncMessage.build(buf, endpoint);
       }
-
+      throw new IllegalArgumentException("Unknown type:"+type);
     });
     this.contentDeserializer = new JavaPastContentDeserializer();
     this.contentHandleDeserializer = new JavaPastContentHandleDeserializer();
@@ -505,30 +496,28 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           logger.info("Range response (offset: {}): {}, original={}", offset, grrm.getCommonRange(), originalRange);
 
           final IdSet keySet = fragmentStorage.scan();
-          endpoint.process(new Executable<BloomFilter, Exception>() {
-            public BloomFilter execute() {
-              BloomFilter bv = new BloomFilter((2*keySet.numElements()+5)*syncBloomFilterBitsPerKey, syncBloomFilterNumHashes, environment.getRandomSource());
-              Iterator<Id> iter = keySet.getIterator();
+          endpoint.process(() -> {
+            BloomFilter bv = new BloomFilter((2*keySet.numElements()+5)*syncBloomFilterBitsPerKey, syncBloomFilterNumHashes, environment.getRandomSource());
+            Iterator<Id> iter = keySet.getIterator();
 
-              while (iter.hasNext()) {
-                FragmentKey fkey = (FragmentKey)iter.next();
-                Id thisPos = getFragmentLocation(fkey);
-                if (originalRange.containsId(thisPos)) {
-                  FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fkey);
-                  if (metadata != null) {
-                    long currentExp = metadata.getCurrentExpiration();
-                    long prevExp = metadata.getPreviousExpiration();
-                    logger.trace(" - Adding {} as {}, ecur={}, eprev={}", fkey, fkey.getVersionKey().getId(), currentExp, prevExp);
-                    bv.add(getHashInput(fkey.getVersionKey(), currentExp));
-                    bv.add(getHashInput(fkey.getVersionKey(), prevExp));
-                  } else {
-                    logger.atWarn().log(() -> "SYNC Cannot read metadata of object "+fkey.toStringFull()+", storage returned null");
-                  }
+            while (iter.hasNext()) {
+              FragmentKey fkey = (FragmentKey)iter.next();
+              Id thisPos = getFragmentLocation(fkey);
+              if (originalRange.containsId(thisPos)) {
+                FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fkey);
+                if (metadata != null) {
+                  long currentExp = metadata.getCurrentExpiration();
+                  long prevExp = metadata.getPreviousExpiration();
+                  logger.trace(" - Adding {} as {}, ecur={}, eprev={}", fkey, fkey.getVersionKey().getId(), currentExp, prevExp);
+                  bv.add(getHashInput(fkey.getVersionKey(), currentExp));
+                  bv.add(getHashInput(fkey.getVersionKey(), prevExp));
+                } else {
+                  logger.atWarn().log(() -> "SYNC Cannot read metadata of object "+fkey.toStringFull()+", storage returned null");
                 }
               }
-
-              return bv;
             }
+
+            return bv;
           }, new Continuation<BloomFilter, Exception>() {
             public void receiveResult(BloomFilter o) {
               if (o instanceof BloomFilter) {
@@ -2397,12 +2386,10 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     logger.atInfo().log(() -> "insert(" + obj + " (id=" + vkey.toStringFull() + ", mutable=" + obj.isMutable() + ")");
 
-    endpoint.process(new Executable<Fragment[], Exception>() {
-      public Fragment[] execute() {
-        boolean[] generateFragment = new boolean[numFragments];
-        Arrays.fill(generateFragment, true);
-        return policy.encodeObject(obj, generateFragment);
-      }
+    endpoint.process(() -> {
+      boolean[] generateFragment = new boolean[numFragments];
+      Arrays.fill(generateFragment, true);
+      return policy.encodeObject(obj, generateFragment);
     }, new Continuation<Fragment[], Exception>() {
       public void receiveResult(Fragment[] o) {
         final Fragment[] fragments = (Fragment[]) o;
@@ -2413,11 +2400,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         logger.atDebug().log(() -> "insert(" + vkey.toStringFull() + ") encoded fragments OK, creating manifests...");
 
-        endpoint.process(new Executable<Manifest[], Exception>() {
-          public Manifest[] execute() {
-            return policy.createManifests(vkey, obj, fragments, expiration);
-          }
-        }, new Continuation<Manifest[], Exception>() {
+        endpoint.process(() -> policy.createManifests(vkey, obj, fragments, expiration), new Continuation<Manifest[], Exception>() {
           public void receiveResult(Manifest[] o) {
             if (o instanceof Manifest[]) {
               final Manifest[] manifests = (Manifest[]) o;
@@ -3004,16 +2987,14 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                   }
 
                   final PastContent retrievedObject = (PastContent) o;
-                  endpoint.process(new Executable<Fragment[], Exception>() {
-                    public Fragment[] execute() {
-                      logger.debug("Reencode object: {}", key.getVersionKey());
-                      boolean generateFragment[] = new boolean[numFragments];
-                      Arrays.fill(generateFragment, false);
-                      generateFragment[key.getFragmentID()] = true;
-                      Fragment[] result = policy.encodeObject(retrievedObject, generateFragment);
-                      logger.debug("Reencode complete: {}", key.getVersionKey());
-                      return result;
-                    }
+                  endpoint.process(() -> {
+                    logger.debug("Reencode object: {}", key.getVersionKey());
+                    boolean generateFragment[] = new boolean[numFragments];
+                    Arrays.fill(generateFragment, false);
+                    generateFragment[key.getFragmentID()] = true;
+                    Fragment[] result = policy.encodeObject(retrievedObject, generateFragment);
+                    logger.debug("Reencode complete: {}", key.getVersionKey());
+                    return result;
                   }, new Continuation<Fragment[], Exception>() {
                     public void receiveResult(Fragment[] o) {
                       Fragment[] frag = (Fragment[]) o;

@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.slf4j.Logger;
@@ -60,8 +59,6 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.RangeCannotBeDeterminedException;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.replication.ReplicationPolicy.DefaultReplicationPolicy;
 import rice.p2p.replication.messaging.ReminderMessage;
 import rice.p2p.replication.messaging.RequestMessage;
@@ -164,19 +161,14 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     this.instance = instance;
     this.endpoint = node.buildEndpoint(this, instance);
 
-    endpoint.setDeserializer(new MessageDeserializer() {
-
-      public Message deserialize(InputBuffer buf, short type, int priority,
-          NodeHandle sender) throws IOException {
-        switch(type) {
-          case RequestMessage.TYPE:
-            return RequestMessage.build(buf, endpoint);
-          case ResponseMessage.TYPE:
-            return ResponseMessage.build(buf, endpoint);
-        }
-        throw new IllegalArgumentException("Unknown type:"+type);
+    endpoint.setDeserializer((buf, type, priority, sender) -> {
+      switch(type) {
+        case RequestMessage.TYPE:
+          return RequestMessage.build(buf, endpoint);
+        case ResponseMessage.TYPE:
+          return ResponseMessage.build(buf, endpoint);
       }
-
+      throw new IllegalArgumentException("Unknown type:"+type);
     });
 
 

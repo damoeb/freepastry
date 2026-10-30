@@ -54,7 +54,6 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Executable;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
@@ -343,20 +342,17 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   private void runDelegatedTasks() {
     if (status == HandshakeStatus.NEED_TASK) {
       runningTaskLock = true;
-      sslTL.environment.getProcessor().process(new Executable<Object, Exception>() {
-
-        public Object execute() throws Exception {
-          Runnable runnable;
-          while ((runnable = engine.getDelegatedTask()) != null) {
-            runnable.run();
-          }
-          status = engine.getHandshakeStatus();
-          if (status == HandshakeStatus.NEED_TASK) {
-            fail(new IOException("handshake shouldn't need additional tasks"));
-            return null;
-          }
+      sslTL.environment.getProcessor().process(() -> {
+        Runnable runnable;
+        while ((runnable = engine.getDelegatedTask()) != null) {
+          runnable.run();
+        }
+        status = engine.getHandshakeStatus();
+        if (status == HandshakeStatus.NEED_TASK) {
+          fail(new IOException("handshake shouldn't need additional tasks"));
           return null;
         }
+        return null;
       },new Continuation<Object, Exception>() {
         public void receiveException(Exception exception) {
           logger.warn("SSL handshake task failed", exception);

@@ -241,14 +241,12 @@ public class PRRegressionTest {
     TransportLayerCallback<HandleImpl, ByteBuffer> callback;
 
     private void receiveMessage(final HandleImpl i, final ByteBuffer m) {
-      env.getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          try {
-            callback.messageReceived(i, m, null);
-          } catch (IOException ioe) {
-            logger.warn("Error delivering a message to {}", localIdentifier, ioe);
-            fail("Error delivering a message to "+localIdentifier+": "+ioe);
-          }
+      env.getSelectorManager().invoke(() -> {
+        try {
+          callback.messageReceived(i, m, null);
+        } catch (IOException ioe) {
+          logger.warn("Error delivering a message to {}", localIdentifier, ioe);
+          fail("Error delivering a message to "+localIdentifier+": "+ioe);
         }
       });
     }
@@ -504,14 +502,12 @@ public class PRRegressionTest {
       pr = getPeerReview(this, transport, env);
       app = getApp();
       pr.setApp(app);
-      env.getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          try {
-            pr.init(f.getPath());
-          } catch (IOException ioe) {
-            logger.warn("Error initializing PeerReview of {}", Player.this.localHandle, ioe);
-            fail("Error initializing PeerReview of "+Player.this.localHandle+": "+ioe);
-          }
+      env.getSelectorManager().invoke(() -> {
+        try {
+          pr.init(f.getPath());
+        } catch (IOException ioe) {
+          logger.warn("Error initializing PeerReview of {}", Player.this.localHandle, ioe);
+          fail("Error initializing PeerReview of "+Player.this.localHandle+": "+ioe);
         }
       });
     }
@@ -746,17 +742,14 @@ public class PRRegressionTest {
 
     buildCryptoMaterial(env);
 
-    env.getSelectorManager().invoke(new Runnable() {
+    env.getSelectorManager().invoke(() -> {
+      try {
+        buildPlayers(env);
 
-      public void run() {
-        try {
-          buildPlayers(env);
-
-          setupWitnesses();
-        } catch (Exception ioe) {
-          logger.warn("Error building the players", ioe);
-          fail("Error building the players: "+ioe);
-        }
+        setupWitnesses();
+      } catch (Exception ioe) {
+        logger.warn("Error building the players", ioe);
+        fail("Error building the players: "+ioe);
       }
     });
   }

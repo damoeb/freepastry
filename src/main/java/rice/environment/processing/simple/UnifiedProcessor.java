@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.environment.processing.simple;
 
 import rice.Continuation;
-import rice.Executable;
 import rice.environment.logging.LogManager;
 import rice.environment.processing.WorkRequest;
 import rice.environment.time.TimeSource;
@@ -73,11 +72,9 @@ public class UnifiedProcessor extends SimpleProcessor {
 
   @Override
   public Cancellable processBlockingIO(final WorkRequest<?> workRequest) {
-    return process(new Executable<Object, Exception>() {
-      public Object execute() throws Exception {
-        workRequest.run();
-        return null;
-      }
+    return process(() -> {
+      workRequest.run();
+      return null;
     }, bogusContinuation, sman, ts, log);
   }
 }

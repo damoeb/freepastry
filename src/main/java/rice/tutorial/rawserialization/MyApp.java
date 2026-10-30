@@ -39,7 +39,6 @@ advised of the possibility of such damage.
  */
 package rice.tutorial.rawserialization;
 
-import java.io.IOException;
 
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
@@ -48,8 +47,6 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 
 /**
  * A very simple application.
@@ -73,18 +70,14 @@ public class MyApp implements Application {
     // We are only going to use one instance of this application on each PastryNode
     this.endpoint = node.buildEndpoint(this, "myinstance");
 
-    endpoint.setDeserializer(new MessageDeserializer() {
-
-      public Message deserialize(InputBuffer buf, short type, int priority,
-          NodeHandle sender) throws IOException {
-        switch (type) {
-        case MyMsg.TYPE:
-          // just call the special deserialization constructor.
-          return new MyMsg(buf, endpoint);
-        }
-        // maybe throw an IOException if you want
-        return null;
+    endpoint.setDeserializer((buf, type, priority, sender) -> {
+      switch (type) {
+      case MyMsg.TYPE:
+        // just call the special deserialization constructor.
+        return new MyMsg(buf, endpoint);
       }
+      // maybe throw an IOException if you want
+      return null;
     });
     this.node = node;
 

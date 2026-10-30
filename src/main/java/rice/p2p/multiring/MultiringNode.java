@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 
 package rice.p2p.multiring;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Map;
@@ -53,7 +52,6 @@ import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.MessageReceipt;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.multiring.messaging.RingMessage;
 import rice.p2p.scribe.Scribe;
@@ -62,7 +60,6 @@ import rice.p2p.scribe.ScribeImpl;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.rawserialization.RawScribeContent;
-import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 
 /**
  * This class wraps a Node, enabling it to support multiple hierarchical
@@ -134,16 +131,12 @@ public class MultiringNode implements Node, ScribeMultiClient {
     this.ringId = ringId;
     this.endpoints = new Hashtable<String, Endpoint>();
     this.scribe = new ScribeImpl(this, "Multiring");
-    scribe.setContentDeserializer(new ScribeContentDeserializer() {
-
-      public ScribeContent deserializeScribeContent(InputBuffer buf, Endpoint endpoint, short type) throws IOException {
-        switch (type) {
-          case RingMessage.TYPE:
-            return new RingMessage(buf, endpoint, endpoints);
-        }
-        throw new IllegalArgumentException("Invalid type:"+type);
+    scribe.setContentDeserializer((buf, endpoint, type) -> {
+      switch (type) {
+        case RingMessage.TYPE:
+          return new RingMessage(buf, endpoint, endpoints);
       }
-
+      throw new IllegalArgumentException("Invalid type:"+type);
     });
 
     this.collection = new MultiringNodeCollection(this, environment.getParameters().getInt("p2p_multiring_base"));

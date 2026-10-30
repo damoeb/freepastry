@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -551,12 +550,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
 
   public List<NodeHandle> sortedProximityCache() {
     ArrayList<NodeHandle> handles = new ArrayList<NodeHandle>(pingCache.keySet());
-    Collections.sort(handles,new Comparator<NodeHandle>() {
-
-      public int compare(NodeHandle a, NodeHandle b) {
-        return pingCache.get(a).intValue()-pingCache.get(b).intValue();
-      }
-    });
+    Collections.sort(handles,(a, b) -> pingCache.get(a).intValue()-pingCache.get(b).intValue());
 
     return handles;
   }
@@ -577,11 +571,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       // if the seed is null, we can't do anything
     if (seed == null) {
       logger.warn("getNearest({})", seed, new Exception("Stack Trace"));
-      environment.getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          retToMe.receiveResult(null);
-        }
-      });
+      environment.getSelectorManager().invoke(() -> retToMe.receiveResult(null));
       return null;
     }
 

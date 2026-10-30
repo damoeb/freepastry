@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,15 +90,13 @@ public class ProfileSelector extends SelectorManager {
    */
   public ProfileSelector(String instance, TimeSource timeSource, LogManager log, RandomSource rand, final int lastTaskTime) {
     super(instance, timeSource, log, (rand == null)?new SimpleRandomSource(log):rand);
-    new Thread(new Runnable() {
-      public void run() {
-        while(true) {
-          System.out.println("LastTask: type:"+lastTaskType+" class:"+lastTaskClass+" toString():"+lastTaskToString+" hash:"+lastTaskHash);
-          try {
-            Thread.sleep(lastTaskTime);
-          } catch (InterruptedException ignored) {
-            // this watchdog runs until the JVM exits, so just keep printing
-          }
+    new Thread(() -> {
+      while(true) {
+        System.out.println("LastTask: type:"+lastTaskType+" class:"+lastTaskClass+" toString():"+lastTaskToString+" hash:"+lastTaskHash);
+        try {
+          Thread.sleep(lastTaskTime);
+        } catch (InterruptedException ignored) {
+          // this watchdog runs until the JVM exits, so just keep printing
         }
       }
     }, "ProfileSelectorWatchdog").start();
@@ -146,13 +143,11 @@ public class ProfileSelector extends SelectorManager {
     // a weakly consistent snapshot, no lock needed
     ArrayList<Stat> list = new ArrayList<Stat>(stats.values());
 
-    Collections.sort(list,new Comparator<Stat>() {
-      public int compare(Stat arg0, Stat arg1) {
-        Stat stat1 = (Stat)arg0;
-        Stat stat2 = (Stat)arg1;
+    Collections.sort(list,(arg0, arg1) -> {
+      Stat stat1 = (Stat)arg0;
+      Stat stat2 = (Stat)arg1;
 
-        return Long.compare(stat2.totalTime, stat1.totalTime);
-      }
+      return Long.compare(stat2.totalTime, stat1.totalTime);
     });
     Iterator<Stat> i = list.iterator();
     while(i.hasNext()) {

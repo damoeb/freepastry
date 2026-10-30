@@ -232,12 +232,10 @@ public class LivenessTest extends SRTest {
     final List<Tupel> tupels = new ArrayList<Tupel>(3);
     final Object lock = new Object();
 
-    alice.addLivenessListener(new LivenessListener<SourceRoute<MultiInetSocketAddress>>() {
-      public void livenessChanged(SourceRoute<MultiInetSocketAddress> i, int val, Map<String, Object> options) {
-        synchronized(lock) {
-          tupels.add(new Tupel(i,val));
-          lock.notify();
-        }
+    alice.addLivenessListener((i, val, options) -> {
+      synchronized(lock) {
+        tupels.add(new Tupel(i,val));
+        lock.notify();
       }
     });
 

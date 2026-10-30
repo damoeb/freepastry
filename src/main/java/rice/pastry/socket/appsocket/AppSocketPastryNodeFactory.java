@@ -295,11 +295,9 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
           public void receiveResult(
               SocketRequestHandle<TransportLayerNodeHandle<MultiInetSocketAddress>> cancellable,
               final P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>> sock) {
-            ret.setSubCancellable(new Cancellable() {
-              public boolean cancel() {
-                sock.close();
-                return true;
-              }
+            ret.setSubCancellable(() -> {
+              sock.close();
+              return true;
             });
 
             try {

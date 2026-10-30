@@ -753,32 +753,28 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected OptionsAdder getOptionsAdder(PastryNode pn) {
     byte[] foo = pn.getId().toByteArray();
 
-    return new OptionsAdder() {
-
-      public Map<String, Object> addOptions(Map<String, Object> options,
-          RawMessage m1) {
-        Message m = m1;
-        if (m instanceof RouteMessage) {
-          RouteMessage rm = (RouteMessage)m;
-          m = rm.internalMsg;
-          if (m == null) m = rm;
-        }
-        if (m instanceof PastryEndpointMessage) {
-          PastryEndpointMessage pem = (PastryEndpointMessage)m;
-          m = pem.getMessage();
-          options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_ADDR, pem.getDestination());
-        }
-        if (m instanceof rice.pastry.messaging.Message) {
-          rice.pastry.messaging.Message pm = (rice.pastry.messaging.Message)m;
-          options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_ADDR, pm.getDestination());
-        }
-        if (m instanceof RawMessage) {
-          RawMessage rm = (RawMessage)m;
-          options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_TYPE, rm.getType());
-        }
-
-        return OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_STRING, m.toString(), CommonAPITransportLayerImpl.MSG_CLASS, m.getClass().getName());
+    return (options, m1) -> {
+      Message m = m1;
+      if (m instanceof RouteMessage) {
+        RouteMessage rm = (RouteMessage)m;
+        m = rm.internalMsg;
+        if (m == null) m = rm;
       }
+      if (m instanceof PastryEndpointMessage) {
+        PastryEndpointMessage pem = (PastryEndpointMessage)m;
+        m = pem.getMessage();
+        options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_ADDR, pem.getDestination());
+      }
+      if (m instanceof rice.pastry.messaging.Message) {
+        rice.pastry.messaging.Message pm = (rice.pastry.messaging.Message)m;
+        options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_ADDR, pm.getDestination());
+      }
+      if (m instanceof RawMessage) {
+        RawMessage rm = (RawMessage)m;
+        options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_TYPE, rm.getType());
+      }
+
+      return OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_STRING, m.toString(), CommonAPITransportLayerImpl.MSG_CLASS, m.getClass().getName());
     };
   }
 
@@ -967,11 +963,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       // the root node (no boot addresses)
       if (tempBootHandles.isEmpty()) {
         logger.debug("invoking receiveResult (this is probably the first node in the ring)");
-        environment.getSelectorManager().invoke(new Runnable(){
-          public void run() {
-            beginPns.receiveResult(bootHandles);
-          }
-        });
+        environment.getSelectorManager().invoke(() -> beginPns.receiveResult(bootHandles));
       }
 
       logger.debug("boot() returning");
@@ -1177,27 +1169,24 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
      */
     final ArrayList<PastryNode> pn = new ArrayList<PastryNode>(1);
     final ArrayList<IOException> re = new ArrayList<IOException>(1);
-    Runnable r = new Runnable() {
+    Runnable r = () -> {
+      synchronized(pn) {
+        newNodeSelector(nodeId, pAddress, new Continuation<PastryNode, IOException>() {
 
-      public void run() {
-        synchronized(pn) {
-          newNodeSelector(nodeId, pAddress, new Continuation<PastryNode, IOException>() {
-
-            public void receiveResult(PastryNode node) {
-              synchronized(pn) {
-                pn.add(node);
-                pn.notify();
-              }
+          public void receiveResult(PastryNode node) {
+            synchronized(pn) {
+              pn.add(node);
+              pn.notify();
             }
+          }
 
-            public void receiveException(IOException exception) {
-              synchronized(pn) {
-                re.add(exception);
-                pn.notify();
-              }
+          public void receiveException(IOException exception) {
+            synchronized(pn) {
+              re.add(exception);
+              pn.notify();
             }
-          }, null);
-        }
+          }
+        }, null);
       }
     };
     if (environment.getSelectorManager().isSelectorThread()) {

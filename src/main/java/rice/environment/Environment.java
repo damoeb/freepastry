@@ -264,11 +264,7 @@ public class Environment implements Destructable {
     if (getSelectorManager().isSelectorThread()) {
       callDestroyOnDestructables();
     } else {
-      getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          callDestroyOnDestructables();
-        }
-      });
+      getSelectorManager().invoke(() -> callDestroyOnDestructables());
     }
   }
 

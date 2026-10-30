@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.socket.nat.probe;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,8 +47,6 @@ import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.networkinfo.Prober;
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
@@ -68,15 +65,12 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
     this.prober = prober;
     this.addressStrategy = addressStrategy;
 
-    setDeserializer(new MessageDeserializer() {
-      public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type,
-          int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
-        switch(type) {
-        case ProbeRequestMessage.TYPE:
-          return ProbeRequestMessage.build(buf, getAddress());
-        default:
-          throw new IllegalArgumentException("Unknown type: "+type);
-        }
+    setDeserializer((buf, type, priority, sender) -> {
+      switch(type) {
+      case ProbeRequestMessage.TYPE:
+        return ProbeRequestMessage.build(buf, getAddress());
+      default:
+        throw new IllegalArgumentException("Unknown type: "+type);
       }
     });
   }

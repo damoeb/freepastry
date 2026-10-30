@@ -180,11 +180,7 @@ public class EventSimulator {
   }
 
   public void stop() {
-    manager.invoke(new Runnable() {
-      public void run() {
-        running = false;
-      }
-    });
+    manager.invoke(() -> running = false);
   }
 
 

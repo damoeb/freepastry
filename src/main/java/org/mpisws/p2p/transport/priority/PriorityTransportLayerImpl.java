@@ -70,7 +70,6 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.SortedLinkedList;
 import rice.p2p.util.tuples.Tuple;
@@ -218,11 +217,9 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     handle.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sock) {
 
-        handle.setSubCancellable(new Cancellable() {
-          public boolean cancel() {
-            sock.close();
-            return true;
-          }
+        handle.setSubCancellable(() -> {
+          sock.close();
+          return true;
         });
 
         sock.register(false, true, new P2PSocketReceiver<Identifier>() {
@@ -327,11 +324,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       destroyed = true;
       tl.destroy();
     } else {
-      environment.getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          destroy();
-        }
-      });
+      environment.getSelectorManager().invoke(() -> destroy());
     }
   }
 
@@ -437,11 +430,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
 
     public void clearState() {
       if (!selectorManager.isSelectorThread()) {
-        selectorManager.invoke(new Runnable() {
-          public void run() {
-            clearState();
-          }
-        });
+        selectorManager.invoke(() -> clearState());
         return;
       }
 
@@ -597,11 +586,9 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
 
         handle.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
           public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sock) {
-            handle.setSubCancellable(new Cancellable(){
-              public boolean cancel() {
-                sock.close();
-                return true;
-              }
+            handle.setSubCancellable(() -> {
+              sock.close();
+              return true;
             });
             sock.register(false, true, new P2PSocketReceiver<Identifier>() {
               ByteBuffer writeMe = ByteBuffer.wrap(PRIMARY_SOCKET);
@@ -1171,7 +1158,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       if (selectorManager.isSelectorThread()) {
         scheduleToWriteIfNeeded();
       } else {
-        selectorManager.invoke(new Runnable() { public void run() {scheduleToWriteIfNeeded();}});
+        selectorManager.invoke(() -> scheduleToWriteIfNeeded());
       }
 
       return ret;

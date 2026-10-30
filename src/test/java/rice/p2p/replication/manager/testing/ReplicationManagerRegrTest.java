@@ -352,11 +352,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
   public void runMaintenance() {
     for ( int i=0; i<NUM_NODES; i++) {
       final int j = i;
-      environment.getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          replications[j].getReplication().replicate();
-        }
-      });
+      environment.getSelectorManager().invoke(() -> replications[j].getReplication().replicate());
     }
 
     simulate();

@@ -62,7 +62,6 @@ import rice.p2p.past.PastException;
 import rice.p2p.past.PastImpl;
 import rice.p2p.past.messaging.LookupMessage;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
-import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.past.rawserialization.RawPastContent;
 import rice.p2p.past.rawserialization.RawPastContentHandle;
 import rice.persistence.LRUCache;
@@ -154,15 +153,12 @@ public class RawPastRegrTest extends CommonAPITest {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    pasts[num].setContentHandleDeserializer(new PastContentHandleDeserializer() {
-      public PastContentHandle deserializePastContentHandle(InputBuffer buf, Endpoint endpoint,
-          short contentType) throws IOException {
-        switch(contentType) {
-          case TestPastContentHandle.TYPE:
-            return new TestPastContentHandle(buf, endpoint);
-        }
-        throw new IllegalArgumentException("Unknown type:"+contentType);
+    pasts[num].setContentHandleDeserializer((buf, endpoint, contentType) -> {
+      switch(contentType) {
+        case TestPastContentHandle.TYPE:
+          return new TestPastContentHandle(buf, endpoint);
       }
+      throw new IllegalArgumentException("Unknown type:"+contentType);
     });
   }
 

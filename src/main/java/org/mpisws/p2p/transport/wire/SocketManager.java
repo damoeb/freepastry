@@ -212,28 +212,26 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       tcp.socketClosed(this);
 
 
-      tcp.wire.environment.getSelectorManager().invoke(new Runnable() {
-        public void run() {
-      // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
-      if (writer != null) {
-        if (writer == reader) {
-          P2PSocketReceiver<InetSocketAddress> temp = writer;
-          writer = null;
-          reader = null;
-          temp.receiveException(SocketManager.this, new ClosedChannelException("Channel closed. "+SocketManager.this));
-        } else {
-          P2PSocketReceiver<InetSocketAddress> temp = writer;
-          writer = null;
-          temp.receiveException(SocketManager.this, new ClosedChannelException("Channel closed. "+SocketManager.this));
+      tcp.wire.environment.getSelectorManager().invoke(() -> {
+        // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
+        if (writer != null) {
+          if (writer == reader) {
+            P2PSocketReceiver<InetSocketAddress> temp = writer;
+            writer = null;
+            reader = null;
+            temp.receiveException(SocketManager.this, new ClosedChannelException("Channel closed. "+SocketManager.this));
+          } else {
+            P2PSocketReceiver<InetSocketAddress> temp = writer;
+            writer = null;
+            temp.receiveException(SocketManager.this, new ClosedChannelException("Channel closed. "+SocketManager.this));
+          }
         }
-      }
 
-      if (reader != null) {
-        if (tcp.isDestroyed()) return;
-        P2PSocketReceiver<InetSocketAddress> temp = reader;
-        reader = null;
-        temp.receiveException(SocketManager.this, new ClosedChannelException("Channel closed."));
-      }
+        if (reader != null) {
+          if (tcp.isDestroyed()) return;
+          P2PSocketReceiver<InetSocketAddress> temp = reader;
+          reader = null;
+          temp.receiveException(SocketManager.this, new ClosedChannelException("Channel closed."));
         }
       });
     } catch (IOException e) {
@@ -363,13 +361,11 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
 
             channel.socket().shutdownOutput();
 
-            tcp.wire.environment.getSelectorManager().invoke(new Runnable() {
-              public void run() {
-                // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
-                if (writer != null) {
-                    writer.receiveException(SocketManager.this, new ClosedChannelException("Channel shut down."));
-                  writer = null;
-                }
+            tcp.wire.environment.getSelectorManager().invoke(() -> {
+              // notify the writer/reader because an intermediate layer may have closed the socket, and they need to know
+              if (writer != null) {
+                  writer.receiveException(SocketManager.this, new ClosedChannelException("Channel shut down."));
+                writer = null;
               }
             });
 

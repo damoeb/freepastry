@@ -130,12 +130,9 @@ public class SimpleProcessor implements Processor {
     Environment env = new Environment();
     Processor p = env.getProcessor();
     // block the processor for 1 second while we schedule some more stuff
-    p.process(new Executable<Object, Exception>() {
-      public Object execute() {
-        try { Thread.sleep(1000); } catch (InterruptedException ignored) {} // only delays the demo
-        return null;
-      }
-
+    p.process(() -> {
+      try { Thread.sleep(1000); } catch (InterruptedException ignored) {} // only delays the demo
+      return null;
     }, new Continuation<Object, Exception>() {
 
       public void receiveResult(Object result) {
@@ -150,12 +147,9 @@ public class SimpleProcessor implements Processor {
 
     for (int seq = 0; seq < 10; seq++) {
       final int mySeq = seq;
-      p.process(new Executable<Object, Exception>() {
-        public Object execute() {
-          System.out.println("Executed Seq: "+mySeq);
-          return null;
-        }
-
+      p.process(() -> {
+        System.out.println("Executed Seq: "+mySeq);
+        return null;
       }, new Continuation<Object, Exception>() {
         public void receiveResult(Object result) {
           System.out.println("Received Seq: "+mySeq);

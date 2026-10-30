@@ -354,18 +354,15 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   @Override
   protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector pns) {
-    return new Bootstrapper<NodeHandle>() {
-
-      public void boot(Collection<NodeHandle> bootaddresses) {
-        pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {
-          public void receiveResult(Collection<NodeHandle> result) {
-            logger.info("boot() calling pn.doneNode({})", result);
-            pn.doneNode(result);
-          }
-          public void receiveException(Exception exception) {
-          }
-        });
-      }
+    return bootaddresses -> {
+      pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {
+        public void receiveResult(Collection<NodeHandle> result) {
+          logger.info("boot() calling pn.doneNode({})", result);
+          pn.doneNode(result);
+        }
+        public void receiveException(Exception exception) {
+        }
+      });
     };
   }
 }

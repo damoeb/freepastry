@@ -125,14 +125,12 @@ public class SplitStreamDistTest {
     System.out.println("isBootNode:"+isBootNode);
 
     if (IM_ALIVE_PERIOD > 0) {
-      new Thread(new Runnable() {
-        public void run() {
-          while(true) {
-            System.out.println("ImALIVE:"+env.getTimeSource().currentTimeMillis());
-            try {
-              Thread.sleep(IM_ALIVE_PERIOD);
-            } catch (Exception e) {}
-          }
+      new Thread(() -> {
+        while(true) {
+          System.out.println("ImALIVE:"+env.getTimeSource().currentTimeMillis());
+          try {
+            Thread.sleep(IM_ALIVE_PERIOD);
+          } catch (Exception e) {}
         }
       },"ImALIVE").start();
     }

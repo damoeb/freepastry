@@ -48,7 +48,6 @@ import java.util.SortedMap;
 
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Executable;
 import rice.Continuation.ListenerContinuation;
 import rice.Continuation.NamedContinuation;
 import rice.Continuation.StandardContinuation;
@@ -204,11 +203,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   public void insert(final PastContent obj, final long expiration, Continuation<? super Boolean[], Exception> command) {
     logger.atDebug().log(() -> "Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
 
-    doInsert(obj.getId(), new MessageBuilder() {
-      public PastMessage buildMessage() {
-        return new GCInsertMessage(getUID(), obj, expiration, getLocalNodeHandle(), obj.getId());
-      }
-    }, command,
+    doInsert(obj.getId(), () -> new GCInsertMessage(getUID(), obj, expiration, getLocalNodeHandle(), obj.getId()), command,
     socketStrategy.sendAlongSocket(SocketStrategy.TYPE_INSERT, obj));
   }
 
@@ -303,29 +298,27 @@ public class GCPastImpl extends PastImpl implements GCPast {
 
         logger.debug("REFRESH: GOT {} SET OF HANDLES!", set);
 
-        endpoint.process(new Executable<Object, Exception>() {
-          public Object execute() {
-            logger.debug("REFRESH: ON PROCESSING THREAD!");
+        endpoint.process(() -> {
+          logger.debug("REFRESH: ON PROCESSING THREAD!");
 
-            for (int i=0; i<array.length; i++) {
-              GCId id = (GCId) array[i];
+          for (int i=0; i<array.length; i++) {
+            GCId id = (GCId) array[i];
 
-              NodeHandleSet replicas = endpoint.replicaSet(id.getId(), replicationFactor+1, set.getHandle(set.size()-1), set);
+            NodeHandleSet replicas = endpoint.replicaSet(id.getId(), replicationFactor+1, set.getHandle(set.size()-1), set);
 
-              // if we have all of the replicas, go ahead and refresh this item
-              if ((replicas != null) && ((replicas.size() == set.size()) || (replicas.size() == replicationFactor+1))) {
-                for (int j=0; j<replicas.size(); j++)
-                  map.addReplica(replicas.getHandle(j), id);
+            // if we have all of the replicas, go ahead and refresh this item
+            if ((replicas != null) && ((replicas.size() == set.size()) || (replicas.size() == replicationFactor+1))) {
+              for (int j=0; j<replicas.size(); j++)
+                map.addReplica(replicas.getHandle(j), id);
 
-                refreshed++;
-                ids.removeId(id);
-              }
+              refreshed++;
+              ids.removeId(id);
             }
-
-            logger.debug("REFRESH: DONE WITH PROCESSING THREAD - MOVING TO NORMAL THREAD!");
-
-            return null;
           }
+
+          logger.debug("REFRESH: DONE WITH PROCESSING THREAD - MOVING TO NORMAL THREAD!");
+
+          return null;
         }, new StandardContinuation<Object, Object, Exception>(parent) {
           public void receiveResult(Object o) {
             logger.debug("REFRESH: BACK ON NORMAL THREAD!");

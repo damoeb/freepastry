@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
-import java.io.IOException;
 import java.net.NoRouteToHostException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,8 +46,6 @@ import java.util.NoSuchElementException;
 
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 import rice.p2p.commonapi.exception.AppNotRegisteredException;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
@@ -122,15 +119,11 @@ public class StandardRouter extends PastryAppl implements Router {
   }
 
   public StandardRouter(final PastryNode thePastryNode, MessageDispatch dispatch, RouterStrategy strategy) {
-    super(thePastryNode, null, RouterAddress.getCode(), new MessageDeserializer() {
-
-      public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority,
-          rice.p2p.commonapi.NodeHandle sender) throws IOException {
-        RouteMessage rm;
-        rm = RouteMessage.build(buf, (byte)priority, thePastryNode, (NodeHandle)sender,
-            (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
-        return rm;
-      }
+    super(thePastryNode, null, RouterAddress.getCode(), (buf, type, priority, sender) -> {
+      RouteMessage rm;
+      rm = RouteMessage.build(buf, (byte)priority, thePastryNode, (NodeHandle)sender,
+          (byte)thePastryNode.getEnvironment().getParameters().getInt("pastry_protocol_router_routeMsgVersion"));
+      return rm;
     });
     this.dispatch = dispatch;
     this.routerStrategy = strategy;
@@ -161,11 +154,7 @@ public class StandardRouter extends PastryAppl implements Router {
 
   public void route(final RouteMessage rm) {
     if (!thePastryNode.getEnvironment().getSelectorManager().isSelectorThread()) {
-      thePastryNode.getEnvironment().getSelectorManager().invoke(new Runnable() {
-        public void run() {
-          route(rm);
-        }
-      });
+      thePastryNode.getEnvironment().getSelectorManager().invoke(() -> route(rm));
       return;
     }
     logger.debug("route({})", rm);

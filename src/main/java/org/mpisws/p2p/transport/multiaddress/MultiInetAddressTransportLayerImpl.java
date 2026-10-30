@@ -61,7 +61,6 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
@@ -150,11 +149,9 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
       public void receiveResult(SocketRequestHandle<InetSocketAddress> c, final P2PSocket<InetSocketAddress> result) {
         if (handle.getSubCancellable() != null && c != handle.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
 
-        handle.setSubCancellable(new Cancellable() {
-          public boolean cancel() {
-            result.close();
-            return true;
-          }
+        handle.setSubCancellable(() -> {
+          result.close();
+          return true;
         });
 
         logger.trace("openSocket({}):receiveResult({})", i, result);

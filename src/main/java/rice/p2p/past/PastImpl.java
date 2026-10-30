@@ -751,11 +751,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
     logger.atTrace().log(() -> " Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
 
-    doInsert(obj.getId(), new MessageBuilder() {
-      public PastMessage buildMessage() {
-        return new InsertMessage(getUID(), obj, getLocalNodeHandle(), obj.getId());
-      }
-    }, new StandardContinuation<Boolean[], Boolean[], Exception>(command) {
+    doInsert(obj.getId(), () -> new InsertMessage(getUID(), obj, getLocalNodeHandle(), obj.getId()), new StandardContinuation<Boolean[], Boolean[], Exception>(command) {
       public void receiveResult(final Boolean[] array) {
         cache(obj, new SimpleContinuation()  {
           public void receiveResult(Object o) {

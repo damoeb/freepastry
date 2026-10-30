@@ -82,30 +82,27 @@ public class VerifyConnectivity {
         System.out.println("My external address is "+result);
 
         // for some reason, can't do this immediately... don't know why yet
-        Runnable r = new Runnable() {
-          public void run() {
-            InetSocketAddress[] addrs = new InetSocketAddress[2];
-            addrs[0] = new InetSocketAddress(result, externalPort);
-            addrs[1] = factory.getNextInetSocketAddress();
+        Runnable r = () -> {
+          InetSocketAddress[] addrs = new InetSocketAddress[2];
+          addrs[0] = new InetSocketAddress(result, externalPort);
+          addrs[1] = factory.getNextInetSocketAddress();
 
-            MultiInetSocketAddress local = new MultiInetSocketAddress(addrs);
+          MultiInetSocketAddress local = new MultiInetSocketAddress(addrs);
 
-            verifier.verifyConnectivity(local, Collections.singleton(bootaddress), new ConnectivityResult() {
+          verifier.verifyConnectivity(local, Collections.singleton(bootaddress), new ConnectivityResult() {
 
-              public void udpSuccess(InetSocketAddress from, Map<String, Object> options) {
-                System.out.println("UDP works. "+from);
-              }
+            public void udpSuccess(InetSocketAddress from, Map<String, Object> options) {
+              System.out.println("UDP works. "+from);
+            }
 
-              public void tcpSuccess(InetSocketAddress from, Map<String, Object> options) {
-                System.out.println("TCP works. "+from);
-              }
+            public void tcpSuccess(InetSocketAddress from, Map<String, Object> options) {
+              System.out.println("TCP works. "+from);
+            }
 
-              public void receiveException(Exception exception) {
-                exception.printStackTrace();
-              }
-            });
-          }
-
+            public void receiveException(Exception exception) {
+              exception.printStackTrace();
+            }
+          });
         };
         env.getSelectorManager().invoke(r);
       }

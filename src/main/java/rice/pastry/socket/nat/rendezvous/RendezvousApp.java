@@ -193,11 +193,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     // we don't want state changing, so this can only be called on the selector
     if (!selectorManager.isSelectorThread()) {
       final AttachableCancellable ret = new AttachableCancellable();
-      selectorManager.invoke(new Runnable() {
-        public void run() {
-          ret.attach(openChannel(target, rendezvous, source, uid, deliverAckToMe, options));
-        }
-      });
+      selectorManager.invoke(() -> ret.attach(openChannel(target, rendezvous, source, uid, deliverAckToMe, options)));
       return ret;
     }
 
@@ -213,12 +209,9 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+") sending via "+rm);
 
     // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
-    final Cancellable ret = new Cancellable() {
-
-      public boolean cancel() {
-        logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").cancel()");
-        return rm.cancel();
-      }
+    final Cancellable ret = () -> {
+      logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").cancel()");
+      return rm.cancel();
     };
 
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging

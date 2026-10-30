@@ -41,7 +41,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Observer;
@@ -448,13 +447,10 @@ public class SimilarSet extends LegacyObservable implements NodeSetEventSource, 
         break;
       default:
         // more than 1 node, and both are live, need to sort by direction
-        Collections.sort(toUse,new Comparator<NodeHandle>() {
-
-          public int compare(NodeHandle a, NodeHandle b) {
-            // smallest to biggest (TODO: verify the order; minor)
-            if (clockwise) return a.getId().compareTo(b.getId());
-            return b.getId().compareTo(a.getId());
-          }
+        Collections.sort(toUse,(a, b) -> {
+          // smallest to biggest (TODO: verify the order; minor)
+          if (clockwise) return a.getId().compareTo(b.getId());
+          return b.getId().compareTo(a.getId());
         });
         Iterator<NodeHandle> i = toUse.iterator();
         while(i.hasNext()) {

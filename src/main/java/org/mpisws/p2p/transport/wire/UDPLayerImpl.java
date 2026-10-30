@@ -333,19 +333,17 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   }
 
   public void destroy() {
-    Runnable r = new Runnable(){
-      public void run() {
-        try {
-          logger.info("destroy(): {}", channel);
-          if (key != null) {
-            if (key.channel() != null)
-              key.channel().close();
-            key.cancel();
-            key.attach(null);
-          }
-        } catch (IOException ioe) {
-          logger.warn("Error destroying UDPLayer", ioe);
+    Runnable r = () -> {
+      try {
+        logger.info("destroy(): {}", channel);
+        if (key != null) {
+          if (key.channel() != null)
+            key.channel().close();
+          key.cancel();
+          key.attach(null);
         }
+      } catch (IOException ioe) {
+        logger.warn("Error destroying UDPLayer", ioe);
       }
     };
 
@@ -358,13 +356,11 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   }
 
   public void acceptMessages(final boolean b) {
-    Runnable r = new Runnable(){
-      public void run() {
-        if (b) {
-          key.interestOps(key.interestOps() | SelectionKey.OP_READ);
-        } else {
-          key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
-        }
+    Runnable r = () -> {
+      if (b) {
+        key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+      } else {
+        key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
       }
     };
 

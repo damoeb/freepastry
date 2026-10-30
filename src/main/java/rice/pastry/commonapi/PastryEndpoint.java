@@ -39,7 +39,6 @@ package rice.pastry.commonapi;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -656,11 +655,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
     NodeHandle[] array = handles.toArray(new NodeHandle[0]);
 
-    Arrays.sort(array,new Comparator<NodeHandle>() {
-      public int compare(NodeHandle a, NodeHandle b) {
-        return thePastryNode.proximity((rice.pastry.NodeHandle)a)-thePastryNode.proximity((rice.pastry.NodeHandle)b);
-      }
-    });
+    Arrays.sort(array,(a, b) -> thePastryNode.proximity((rice.pastry.NodeHandle)a)-thePastryNode.proximity((rice.pastry.NodeHandle)b));
 
 
     if (array.length <= num) return Arrays.asList(array);

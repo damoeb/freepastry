@@ -119,12 +119,10 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     }
 
     // give the selector a chance to do some IO before trying to schedule again
-    thePastryNode.getEnvironment().getSelectorManager().invoke(new Runnable() {
-      public void run() {
-        // this is going to make forward() be called again, can prevent this with a check in getPrevNode().equals(localNode)
-        rm.getOptions().setRerouteIfSuspected(SendOptions.defaultRerouteIfSuspected);
-        route(rm);
-      }
+    thePastryNode.getEnvironment().getSelectorManager().invoke(() -> {
+      // this is going to make forward() be called again, can prevent this with a check in getPrevNode().equals(localNode)
+      rm.getOptions().setRerouteIfSuspected(SendOptions.defaultRerouteIfSuspected);
+      route(rm);
     });
   }
 

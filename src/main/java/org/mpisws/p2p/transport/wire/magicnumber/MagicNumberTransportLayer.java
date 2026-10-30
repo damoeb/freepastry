@@ -60,7 +60,6 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.wire.exception.StalledSocketException;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Cancellable;
 import rice.selector.TimerTask;
 
 /**
@@ -152,11 +151,9 @@ public class MagicNumberTransportLayer<Identifier> implements
       public void receiveResult(SocketRequestHandle<Identifier> c, final P2PSocket<Identifier> result) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
 
-        cancellable.setSubCancellable(new Cancellable() {
-          public boolean cancel() {
-            result.close();
-            return true;
-          }
+        cancellable.setSubCancellable(() -> {
+          result.close();
+          return true;
         });
 
         result.register(false, true, new P2PSocketReceiver<Identifier>(){

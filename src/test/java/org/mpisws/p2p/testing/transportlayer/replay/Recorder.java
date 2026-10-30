@@ -42,7 +42,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -144,15 +143,13 @@ public class Recorder implements MyEvents {
       @SuppressWarnings("unchecked")
       protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, ProximityNeighborSelector pns) {
         final Bootstrapper<InetSocketAddress> internal = super.getBootstrapper(pn, tl, handleFactory, pns);
-        Bootstrapper<InetSocketAddress> ret = new Bootstrapper<InetSocketAddress>() {
-          public void boot(Collection<InetSocketAddress> bootaddresses) {
-            try {
-              recorders.get(pn).logEvent(EVT_BOOT);
-            } catch (IOException ioe) {
-              pn.getEnvironment().getLogManager().getLogger(Bootstrapper.class, null).warn("Error recording EVT_BOOT", ioe);
-            }
-            internal.boot(bootaddresses);
+        Bootstrapper<InetSocketAddress> ret = bootaddresses -> {
+          try {
+            recorders.get(pn).logEvent(EVT_BOOT);
+          } catch (IOException ioe) {
+            pn.getEnvironment().getLogManager().getLogger(Bootstrapper.class, null).warn("Error recording EVT_BOOT", ioe);
           }
+          internal.boot(bootaddresses);
         };
 
         return ret;
@@ -165,17 +162,14 @@ public class Recorder implements MyEvents {
       // construct a node, passing the null boothandle on the first loop will
       // cause the node to start its own ring
       final ArrayList<PastryNode> nodeContainer = new ArrayList<PastryNode>(1);
-      env.getSelectorManager().invoke(new Runnable() {
+      env.getSelectorManager().invoke(() -> {
+        PastryNode node = (PastryNode)factory.newNode();
+        nodeContainer.add(node);
+        // construct a new scribe application
+        MyScribeClient app = new MyScribeClient(node);
+        apps.add(app);
 
-        public void run() {
-          PastryNode node = (PastryNode)factory.newNode();
-          nodeContainer.add(node);
-          // construct a new scribe application
-          MyScribeClient app = new MyScribeClient(node);
-          apps.add(app);
-
-          node.getBootstrapper().boot(Collections.singleton(bootaddress));
-        }
+        node.getBootstrapper().boot(Collections.singleton(bootaddress));
       });
 
       // the node may require sending several messages to fully boot into the ring
