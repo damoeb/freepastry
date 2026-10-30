@@ -161,25 +161,6 @@ public class MultiringNode implements Node, ScribeMultiClient {
     return new MultiringNodeHandle(getRingId(), node.getLocalNodeHandle());
   }
 
-  /**
-   * This returns a VirtualizedNode specific to the given application and
-   * instance name to the application, which the application can then use
-   * in order to send an receive messages.
-   *
-   * @deprecated use buildEndpoint() endpoint.register()
-   * @param application The Application
-   * @param instance An identifier for a given instance
-   * @return The endpoint specific to this applicationk, which can be used
-   * for message sending/receiving.
-   */
-  @Deprecated
-  public Endpoint registerApplication(Application application, String instance) {
-    Endpoint endpoint = new MultiringEndpoint(this, node.buildEndpoint(new MultiringApplication(getRingId(), application), application.getClass() + "-" + instance), application);
-    endpoints.put(endpoint.getInstance(), endpoint);
-    endpoint.register();
-    return endpoint;
-  }
-
   public Endpoint buildEndpoint(Application application, String instance) {
     Endpoint endpoint = new MultiringEndpoint(this, node.buildEndpoint(new MultiringApplication(getRingId(), application), application.getClass() + "-" + instance), application);
     endpoints.put(endpoint.getInstance(), endpoint);

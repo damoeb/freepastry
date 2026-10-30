@@ -911,17 +911,6 @@ public class ScribeRegrTest extends CommonAPITest {
       return nextHop;
     }
 
-    /**
-     * Gets the Message attribute of the TestRouteMessage object
-     *
-     * @deprecated
-     * @return The Message value
-     */
-    @Deprecated
-    public Message getMessage() {
-      return message;
-    }
-
     public Message getMessage(MessageDeserializer md) {
       return message;
     }

@@ -61,15 +61,6 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
     internal.close();
   }
 
-  @Deprecated
-  public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
-    long ret = 0;
-    for (int i = offset; i < offset+length; i++) {
-      ret += internal.read(dsts[i]);
-    }
-    return ret;
-  }
-
   AppSocketReceiver reader = null;
   AppSocketReceiver writer = null;
   public void register(boolean wantToRead, boolean wantToWrite, int timeout, AppSocketReceiver receiver) {
@@ -139,15 +130,6 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
 
   public void shutdownOutput() {
     internal.shutdownOutput();
-  }
-
-  @Deprecated
-  public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
-    long ret = 0;
-    for (int i = offset; i < offset+length; i++) {
-      ret += internal.write(srcs[i]);
-    }
-    return ret;
   }
 
   public long read(ByteBuffer dst) throws IOException {

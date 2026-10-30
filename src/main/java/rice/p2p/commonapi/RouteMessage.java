@@ -70,15 +70,6 @@ public interface RouteMessage extends Serializable {
    */
   public NodeHandle getNextHopHandle();
 
-  /**
-   * Returns the enclosed message inside of this message
-   *
-   * @return The enclosed message
-   * @deprecated use getMesage(MessageDeserializer)
-   */
-  @Deprecated
-  public Message getMessage();
-
   public Message getMessage(MessageDeserializer md) throws IOException;
 
   /**

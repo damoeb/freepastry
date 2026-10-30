@@ -68,47 +68,9 @@ public class GCNode implements Node {
     this.node = node;
   }
 
-  /**
-   * This returns a VirtualizedNode specific to the given application and
-   * instance name to the application, which the application can then use
-   * in order to send an receive messages.
-   *
-   * @deprecated use buildEndpoint() endpoint.register()
-   * @param application The Application
-   * @param instance An identifier for a given instance
-   * @return The endpoint specific to this applicationk, which can be used
-   * for message sending/receiving.
-   */
-  @Deprecated
-  public Endpoint registerApplication(Application application, String instance) {
-
-    GCEndpoint gce = new GCEndpoint(node.buildEndpoint(application, instance));
-    gce.register();
-    return gce;
-  }
-
   public Endpoint buildEndpoint(Application application, String instance) {
     return new GCEndpoint(node.buildEndpoint(application, instance));
   }
-
-  /**
-   * This returns a Endpoint specific to the given application and
-   * instance name to the application, which the application can then use in
-   * order to send an receive messages.  This method allows advanced
-   * developers to specify which "port" on the node they wish their
-   * application to register as.  This "port" determines which of the
-   * applications on top of the node should receive an incoming
-   * message.
-   *
-   * NOTE: Use of this method of registering applications is recommended only
-   * for advanced users - 99% of all applications should just use the
-   * other registerApplication
-   *
-   * @param application The Application
-   * @param port The port to use
-   * @return The endpoint specific to this applicationk, which can be used for
-   *         message sending/receiving.
-   */
 
   /**
    * Method which returns the node handle to the local node

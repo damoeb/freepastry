@@ -97,21 +97,21 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
 
   /**
-   * Constructor.
+   * Constructor.  Call register() once the application is ready to receive messages.
    *
    * @param pn the pastry node that the application attaches to.
    */
-  public PastryEndpoint(PastryNode pn, Application application, String instance, boolean register) {
-    this(pn, application, instance, 0, register);
+  public PastryEndpoint(PastryNode pn, Application application, String instance) {
+    this(pn, application, instance, 0);
   }
 
   /**
-   * Constructor.
+   * Constructor.  Call register() once the application is ready to receive messages.
    *
    * @param pn the pastry node that the application attaches to.
    */
 
-  public PastryEndpoint(PastryNode pn, Application application, String instance, int address, boolean register) {
+  public PastryEndpoint(PastryNode pn, Application application, String instance, int address) {
     super(pn,
         instance,
         address == 0 ? StandardAddress.getAddress(application.getClass(),instance,pn.getEnvironment()): address,
@@ -121,8 +121,6 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     appDeserializer = deserializer; // use this as the apps default deserializer
     deserializer = new PEDeserializer();
     this.application = application;
-    if (register)
-      register();
   }
 
 

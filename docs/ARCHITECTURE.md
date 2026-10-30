@@ -236,7 +236,7 @@ The two concrete factories differ like this:
 
 Applications are written against `rice.p2p.commonapi`:
 
-- **`Node`**: `buildEndpoint(Application, String instance)` returns an unregistered `Endpoint`; call `endpoint.register()` once the application is ready to receive messages. `registerApplication()` is deprecated. `getId()`, `getIdFactory()`, `getLocalNodeHandle()` and `getEnvironment()` complete the interface.
+- **`Node`**: `buildEndpoint(Application, String instance)` returns an unregistered `Endpoint`; call `endpoint.register()` once the application is ready to receive messages. `getId()`, `getIdFactory()`, `getLocalNodeHandle()` and `getEnvironment()` complete the interface.
 - **`Endpoint`** (implemented by `rice.pastry.commonapi.PastryEndpoint`):
   - `route(Id key, Message | RawMessage, NodeHandle hint, ...)` routes towards the root of `key`. With `key == null` it sends directly to `hint`.
   - `localLookup`, `neighborSet`, `replicaSet` and `range` query the node's state.

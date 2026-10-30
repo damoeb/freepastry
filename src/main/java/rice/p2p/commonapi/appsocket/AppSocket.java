@@ -48,26 +48,13 @@ import java.nio.ByteBuffer;
  * easier to implement in any Java-based p2p overlay.
  */
 public interface AppSocket {
-  /**
-   * Reads a sequence of bytes from this channel into a subsequence of the given buffers.
-   * @deprecated use read(ByteBuffer)
-   */
-  @Deprecated
-  long read(ByteBuffer[] dsts, int offset, int length) throws IOException;
-  /**
-   * Writes a sequence of bytes to this channel from a subsequence of the given buffers.
-   * @throws IOException
-   * @deprecated use write(ByteBuffer)
-   */
-  @Deprecated
-  long write(ByteBuffer[] srcs, int offset, int length) throws IOException;
 
   /**
-   * Reads a sequence of bytes from this channel into a subsequence of the given buffers.
+   * Reads a sequence of bytes from this channel into the given buffer.
    */
   long read(ByteBuffer dst) throws IOException;
   /**
-   * Writes a sequence of bytes to this channel from a subsequence of the given buffers.
+   * Writes a sequence of bytes to this channel from the given buffer.
    * @throws IOException
    */
   long write(ByteBuffer src) throws IOException;

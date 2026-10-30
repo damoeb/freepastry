@@ -229,25 +229,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
   }
 
   /**
-   * The wrapped message.
-   *
-   * @return the wrapped message.
-   * @deprecated use unwrap(MessageDeserializer)
-   */
-  @Deprecated
-  public Message unwrap() {
-    if (internalMsg != null) {
-      return internalMsg;
-    }
-    try {
-      endpointDeserializer.setSubDeserializer(new JavaSerializedDeserializer(pn));
-      return unwrap(endpointDeserializer);
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
-    }
-  }
-
-  /**
    * Get transmission options.
    *
    * @return the options.
@@ -279,15 +260,6 @@ public class RouteMessage extends PRawMessage implements Serializable,
     return nextHop;
   }
 
-  /**
-   * @deprecated use getMessage(MessageDeserializer)
-   */
-  @SuppressWarnings("deprecation")
-  @Deprecated
-  public rice.p2p.commonapi.Message getMessage() {
-    return ((PastryEndpointMessage) unwrap()).getMessage();
-  }
-
   public rice.p2p.commonapi.Message getMessage(MessageDeserializer md) throws IOException {
     endpointDeserializer.setSubDeserializer(md);
     return ((PastryEndpointMessage) unwrap(endpointDeserializer)).getMessage();
@@ -302,11 +274,28 @@ public class RouteMessage extends PRawMessage implements Serializable,
   }
 
   public void setMessage(rice.p2p.commonapi.Message message) {
-    ((PastryEndpointMessage) unwrap()).setMessage(message);
+    ((PastryEndpointMessage) unwrapJavaSerialized()).setMessage(message);
   }
 
   public void setMessage(RawMessage message) {
-    ((PastryEndpointMessage) unwrap()).setMessage(message);
+    ((PastryEndpointMessage) unwrapJavaSerialized()).setMessage(message);
+  }
+
+  /**
+   * The wrapped message, deserializing it with a JavaSerializedDeserializer if necessary.
+   *
+   * @return the wrapped message.
+   */
+  private Message unwrapJavaSerialized() {
+    if (internalMsg != null) {
+      return internalMsg;
+    }
+    try {
+      endpointDeserializer.setSubDeserializer(new JavaSerializedDeserializer(pn));
+      return unwrap(endpointDeserializer);
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
   }
 
   /**

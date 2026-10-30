@@ -702,10 +702,14 @@ public class RoutingTableTest {
      * Called a message travels along your path.
      * Don't worry about this method for now.
      */
-    @SuppressWarnings("deprecation")
     public boolean forward(RouteMessage message) {
-      if (logHeavy)
-        System.out.println(this+"forwarding "+message.getMessage());
+      if (logHeavy) {
+        try {
+          System.out.println(this+"forwarding "+message.getMessage(endpoint.getDeserializer()));
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
       return true;
     }
 

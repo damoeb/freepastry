@@ -55,24 +55,6 @@ import rice.environment.Environment;
 public interface Node {
 
   /**
-   * This returns a Endpoint specific to the given application and
-   * instance name to the application, which the application can then use in
-   * order to send and receive messages.  This method abstracts away the
-   * port number for this application, generating a port by hashing together
-   * the class name with the instance name to generate a unique port.
-   *
-   * @param application The Application
-   * @param instance An identifier for a given instance
-   * @return The endpoint specific to this application, which can be used for
-   *         message sending/receiving.  Endpoint is already registered.
-   *
-   * @deprecated use buildEndpoint(), then call Endpoint.register(), fixes
-   * synchronization problems, related to implicit behavior
-   */
-  @Deprecated
-  public Endpoint registerApplication(Application application, String instance);
-
-  /**
    * Returns the Id of this node
    *
    * @return This node's Id

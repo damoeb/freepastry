@@ -513,29 +513,9 @@ public class PastryNode implements
 
   // Common API Support
 
-  /**
-   * This returns a VirtualizedNode specific to the given application and
-   * instance name to the application, which the application can then use in
-   * order to send an receive messages.
-   *
-   * @deprecated use buildEndpoint() endpoint.register()
-   *
-   * @param application
-   *          The Application
-   * @param instance
-   *          An identifier for a given instance
-   * @return The endpoint specific to this application, which can be used for
-   *         message sending/receiving.
-   */
-  @Deprecated
-  public rice.p2p.commonapi.Endpoint registerApplication(
-      rice.p2p.commonapi.Application application, String instance) {
-    return new rice.pastry.commonapi.PastryEndpoint(this, application, instance, true);
-  }
-
   public rice.p2p.commonapi.Endpoint buildEndpoint(
       rice.p2p.commonapi.Application application, String instance) {
-    return new rice.pastry.commonapi.PastryEndpoint(this, application, instance, false);
+    return new rice.pastry.commonapi.PastryEndpoint(this, application, instance);
   }
 
   /**

@@ -1063,14 +1063,6 @@ public class RawPastRegrTest extends CommonAPITest {
       return nextHop;
     }
 
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public Message getMessage() {
-      return message;
-    }
-
     public Message getMessage(MessageDeserializer md) {
       return message;
     }

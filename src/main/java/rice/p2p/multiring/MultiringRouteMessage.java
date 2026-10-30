@@ -104,17 +104,6 @@ public class MultiringRouteMessage implements RouteMessage {
     return new MultiringNodeHandle(ringId, message.getNextHopHandle());
   }
 
-  /**
-   * Returns the enclosed message inside of this message
-   *
-   * @return The enclosed message
-   * @deprecated Use getMessages(MessageDeserializer)
-   */
-  @Deprecated
-  public Message getMessage() {
-    return message.getMessage();
-  }
-
   public Message getMessage(MessageDeserializer md) throws IOException {
     return message.getMessage(md);
   }
