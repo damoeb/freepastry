@@ -168,8 +168,6 @@ public class SnippetEntry {
       buf.writeShort((short)content.length);
       return;
     }
-    // technically, it could be twice this big, but I don't think java arrays can be so large, if we fix this, also do so in decodeSize
-    if (content.length > Integer.MAX_VALUE) throw new RuntimeException("content is too long:"+content.length);
     buf.writeByte(SIZE_CODE_INT);
     buf.writeInt(content.length);
   }

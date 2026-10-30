@@ -69,14 +69,6 @@
           ERROR-level checks stay on everywhere.
         -->
         <errorprone.module.flags></errorprone.module.flags>
-        <!-- TODO D7: the ERROR-level checks that still fire; the following commits fix them and remove them from this list one by one -->
-        <errorprone.pending.flags>
-            -Xep:BoxedPrimitiveEquality:OFF
-            -Xep:CompareToZero:OFF
-            -Xep:ComparisonOutOfRange:OFF
-            -Xep:SelfAssignment:OFF
-            -Xep:SelfEquals:OFF
-        </errorprone.pending.flags>
     </properties>
 
     <dependencyManagement>
@@ -268,7 +260,7 @@
                                     <arg>--should-stop=ifError=FLOW</arg>
                                     <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
                                     <arg>-Werror</arg>
-                                    <arg>-Xplugin:ErrorProne ${errorprone.flags} ${errorprone.pending.flags} ${errorprone.module.flags}</arg>
+                                    <arg>-Xplugin:ErrorProne ${errorprone.flags} ${errorprone.module.flags}</arg>
                                 </compilerArgs>
                             </configuration>
                         </execution>
@@ -281,7 +273,7 @@
                                     <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
                                     <arg>-Werror</arg>
                                     <!-- Tests share packages with the @NullMarked main code; they pass nulls on purpose, so NullAway stays out of them -->
-                                    <arg>-Xplugin:ErrorProne ${errorprone.flags} ${errorprone.pending.flags} ${errorprone.module.flags} -Xep:NullAway:OFF</arg>
+                                    <arg>-Xplugin:ErrorProne ${errorprone.flags} ${errorprone.module.flags} -Xep:NullAway:OFF</arg>
                                 </compilerArgs>
                             </configuration>
                         </execution>

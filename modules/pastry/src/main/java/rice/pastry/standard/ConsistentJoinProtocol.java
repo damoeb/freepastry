@@ -583,7 +583,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
         // assume it's a NodeHandle, cause we
         // want to throw the exception if it is something we don't recognize
       NodeHandle nh = (NodeHandle)arg0;
-      if (((Integer) arg) == NodeHandle.DECLARED_DEAD) {
+      if (NodeHandle.DECLARED_DEAD.equals(arg)) {
         logger.debug("CJP:{} declared dead", arg0);
         if (!failed.containsKey(nh)) {
           failed.put(nh, new FailedTime(nh, thePastryNode.getEnvironment().getTimeSource().currentTimeMillis()));
@@ -593,7 +593,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
         doneProbing();
       }
 
-      if (((Integer) arg) == NodeHandle.DECLARED_LIVE) {
+      if (NodeHandle.DECLARED_LIVE.equals(arg)) {
         failed.remove(nh);
         if (!thePastryNode.isReady()) {
           if (leafSet.test(nh)) {

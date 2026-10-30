@@ -137,7 +137,7 @@ public class NodeIdUnit {
 
       Id.Distance abs = a.distance(b);
       Id.Distance abl = a.longDistance(b);
-      if (abs.compareTo(abl) != -1)
+      if (abs.compareTo(abl) >= 0)
         System.out.println("ERROR: abs.compareTo(abl)=" + abs.compareTo(abl));
 
       System.out.println("abs=" + abs);

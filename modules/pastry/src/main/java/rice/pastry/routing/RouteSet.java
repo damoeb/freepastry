@@ -200,9 +200,9 @@ public class RouteSet implements NodeSetI,
    */
   public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle o, Object arg) {
     // if the proximity is initialized for the time, insert the handle
-    if (((Integer) arg) == NodeHandle.PROXIMITY_CHANGED) {
+    if (NodeHandle.PROXIMITY_CHANGED.equals(arg)) {
       put((NodeHandle) o);
-    } else if (((Integer) arg) == NodeHandle.DECLARED_DEAD) {
+    } else if (NodeHandle.DECLARED_DEAD.equals(arg)) {
       // changed to remove dead handles - AM
       remove((NodeHandle) o);
     }

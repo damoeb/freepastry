@@ -405,8 +405,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   }
 
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
-    errorHandler = handler;
-    this.errorHandler = errorHandler;
+    this.errorHandler = handler;
     if (this.errorHandler == null) {
       this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
     }

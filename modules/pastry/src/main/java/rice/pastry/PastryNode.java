@@ -778,7 +778,6 @@ public class PastryNode implements
       LivenessProvider<NodeHandle> livenessProvider,
       ProximityProvider<NodeHandle> proxProvider,
       NodeHandleFactory<? extends NodeHandle> handleFactory) {
-    this.localhandle = localhandle;
     this.leafSetMaintFreq = lsmf;
     this.routeSetMaintFreq = rsmf;
     this.handleFactory = handleFactory;

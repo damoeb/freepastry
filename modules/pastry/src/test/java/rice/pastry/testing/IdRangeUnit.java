@@ -104,6 +104,7 @@ public class IdRangeUnit {
     }
   }
 
+  @SuppressWarnings("SelfEquals") // r1.equals(r1) checks that equals is reflexive
   public void equalityTest(IdRange r1, IdRange r2) {
 
     if (r1.equals(r2) && !r1.isEmpty() && !r1.isFull())

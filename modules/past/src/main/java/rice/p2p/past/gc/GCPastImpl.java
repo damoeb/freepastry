@@ -445,12 +445,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
         }
         case GCCollectMessage cmsg -> {
           // get all ids which expiration before now
-          collect(storage.scanMetadataValuesHead(new GCPastMetadata(getEnvironment().getTimeSource().currentTimeMillis())), new ListenerContinuation<Object, Exception>("Removal of expired ids", getEnvironment()) {
-            public void receiveResult(Object o) {
-              if (getEnvironment().getTimeSource().currentTimeMillis() > DEFAULT_EXPIRATION)
-                collect(storage.scanMetadataValuesNull(), new ListenerContinuation<Object, Exception>("Removal of default expired ids", getEnvironment()));
-            }
-          });
+          // ids stored without metadata have DEFAULT_EXPIRATION, which is never reached, so only the expired ones are collected
+          collect(storage.scanMetadataValuesHead(new GCPastMetadata(getEnvironment().getTimeSource().currentTimeMillis())), new ListenerContinuation<Object, Exception>("Removal of expired ids", getEnvironment()));
         }
         case FetchHandleMessage fmsg -> {
           fetchHandles++;
