@@ -375,18 +375,18 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
    * necessary certificates (because of the statement protocol).
    */
   public void processAuditResponse(Identifier subject, long timestamp, AuditResponse<Handle> response) throws IOException {
-    LogSnippet snippet = response.getLogSnippet();
+    LogSnippet snippet = response.logSnippet();
     ActiveAuditInfo<Handle, Identifier> aai = findOngoingAudit(subject, timestamp);
 
     /* Read the header of the log snippet */
 
     ChallengeAudit challengeAudit = (ChallengeAudit)aai.getRequest().challenge();
-    long fromSeq = challengeAudit.getFrom().getSeq();
-    Authenticator toAuthenticator = challengeAudit.getTo();
+    long fromSeq = challengeAudit.from().getSeq();
+    Authenticator toAuthenticator = challengeAudit.to();
     long toSeq = toAuthenticator.getSeq();
     byte[] currentNodeHash = snippet.baseHash;
     byte[] initialNodeHash = snippet.baseHash;
-    Handle subjectHandle = response.getLogOwner();
+    Handle subjectHandle = response.logOwner();
     long currentSeq = snippet.getFirstSeq();
     long initialCurrentSeq = currentSeq;
 
@@ -593,7 +593,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
     /* Terminate the audit, and remember the last authenticator for further reference */
 
     logger.debug("Audit completed; terminating");
-    infoStore.setLastCheckedAuth(peerreview.getIdentifierExtractor().extractIdentifier(aai.getTarget()), ((ChallengeAudit)aai.getRequest().challenge()).getTo());
+    infoStore.setLastCheckedAuth(peerreview.getIdentifierExtractor().extractIdentifier(aai.getTarget()), ((ChallengeAudit)aai.getRequest().challenge()).to());
     terminateAudit(aai.getTarget());
   }
 

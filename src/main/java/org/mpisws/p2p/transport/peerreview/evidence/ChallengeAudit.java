@@ -57,27 +57,18 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLU
  * @author Jeff Hoye
  *
  */
-public class ChallengeAudit implements Evidence {
+public record ChallengeAudit(byte flags, Authenticator from, Authenticator to) implements Evidence {
   public static final short TYPE = CHAL_AUDIT;
-
-  private final byte flags;
-  private final Authenticator from;
-  private final Authenticator to;
-
-  public ChallengeAudit(byte flags, Authenticator from, Authenticator to) {
-    this.flags = flags;
-    this.from = from;
-    this.to = to;
-  }
 
   public short getEvidenceType() {
     return TYPE;
   }
 
   public ChallengeAudit(InputBuffer buf, int hashSize, int signatureSize) throws IOException {
-    flags = buf.readByte();
-    from = new Authenticator(buf,hashSize,signatureSize);
-    to = new Authenticator(buf,hashSize,signatureSize);
+    byte flags = buf.readByte();
+    Authenticator from = new Authenticator(buf,hashSize,signatureSize);
+    Authenticator to = new Authenticator(buf,hashSize,signatureSize);
+    this(flags, from, to);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
@@ -88,17 +79,5 @@ public class ChallengeAudit implements Evidence {
 
   public boolean isIncludePrevCheckpoint() {
     return (flags & FLAG_INCLUDE_CHECKPOINT) == FLAG_INCLUDE_CHECKPOINT;
-  }
-
-  public byte getFlags() {
-    return flags;
-  }
-
-  public Authenticator getFrom() {
-    return from;
-  }
-
-  public Authenticator getTo() {
-    return to;
   }
 }

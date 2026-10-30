@@ -161,11 +161,11 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       case CHAL_AUDIT: {
         ChallengeAudit audit = (ChallengeAudit)challenge.challenge();
 
-        byte flags = audit.getFlags();
-        long seqFrom = audit.getFrom().getSeq();
-        long seqTo = audit.getTo().getSeq();
+        byte flags = audit.flags();
+        long seqFrom = audit.from().getSeq();
+        long seqTo = audit.to().getSeq();
         logger.atTrace().log(() -> "Received an AUDIT challenge for ["+seqFrom+","+seqTo+"] from "+source+
-            " (eseq="+challenge.evidenceSeq()+", flags="+audit.getFlags()+")");
+            " (eseq="+challenge.evidenceSeq()+", flags="+audit.flags()+")");
 
         if (seqTo < seqFrom) {
           logger.warn("Received an AUDIT challenge with seqTo<seqFrom:{}<{}", seqTo, seqFrom);
@@ -378,8 +378,8 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
     case CHAL_AUDIT: {
       ChallengeAudit evidenceAudit = (ChallengeAudit)evidence;
       AuditResponse<Handle> responseAudit = (AuditResponse<Handle>)response;
-      long requestedBeginSeq = evidenceAudit.getFrom().getSeq();
-      long finalSeq = evidenceAudit.getTo().getSeq();
+      long requestedBeginSeq = evidenceAudit.from().getSeq();
+      long finalSeq = evidenceAudit.to().getSeq();
       boolean includePrevCheckpoint = evidenceAudit.isIncludePrevCheckpoint();
 
       long firstSeq = responseAudit.getFirstSeq();
@@ -395,8 +395,8 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       }
 
       boolean snippetOK = peerreview.getEvidenceTool().checkSnippetSignatures(
-          responseAudit.getLogSnippet(), responseAudit.getLogOwner(), extractAuthsFromResponse ? authOutStore : null,
-              evidenceAudit.getFlags(),commitmentProtocol,evidenceAudit.getFrom().getHash(),fromNodeMaxSeq);
+          responseAudit.logSnippet(), responseAudit.logOwner(), extractAuthsFromResponse ? authOutStore : null,
+              evidenceAudit.flags(),commitmentProtocol,evidenceAudit.from().getHash(),fromNodeMaxSeq);
 
       if (!snippetOK)
         return false;

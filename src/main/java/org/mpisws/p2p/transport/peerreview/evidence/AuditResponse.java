@@ -57,35 +57,21 @@ RESP_AUDIT
  * @author Jeff Hoye
  *
  */
-public class AuditResponse<Handle extends RawSerializable> implements Evidence {
-  Handle logOwner;
-  LogSnippet logSnippet;
-
-  public AuditResponse(Handle logOwner, LogSnippet logSnippet) {
-    this.logOwner = logOwner;
-    this.logSnippet = logSnippet;
-  }
+public record AuditResponse<Handle extends RawSerializable>(Handle logOwner, LogSnippet logSnippet) implements Evidence {
 
   public short getEvidenceType() {
     return RESP_AUDIT;
   }
 
   public AuditResponse(InputBuffer buf, Serializer<Handle> serializer, int hashSize) throws IOException {
-    logOwner = serializer.deserialize(buf);
-    logSnippet = new LogSnippet(buf, hashSize);
+    Handle logOwner = serializer.deserialize(buf);
+    LogSnippet logSnippet = new LogSnippet(buf, hashSize);
+    this(logOwner, logSnippet);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
     logOwner.serialize(buf);
     logSnippet.serialize(buf);
-  }
-
-  public LogSnippet getLogSnippet() {
-    return logSnippet;
-  }
-
-  public Handle getLogOwner() {
-    return logOwner;
   }
 
   public long getFirstSeq() {

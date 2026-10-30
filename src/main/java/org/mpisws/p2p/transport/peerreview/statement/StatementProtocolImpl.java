@@ -236,13 +236,13 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
        case CHAL_AUDIT: {
          ChallengeAudit auditEvidence = (ChallengeAudit)payload;
 
-         if (!peerreview.verify(subject, auditEvidence.getFrom())) {
+         if (!peerreview.verify(subject, auditEvidence.from())) {
            logger.warn("AUDIT challenge's first authenticator has an invalid signature");
            idx.finish();
            return;
          }
 
-         if (!peerreview.verify(subject, auditEvidence.getTo())) {
+         if (!peerreview.verify(subject, auditEvidence.to())) {
            logger.warn("AUDIT challenge's second authenticator has an invalid signature");
            idx.finish();
            return;
@@ -410,7 +410,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
 
          AuditResponse<Handle> auditResponse = (AuditResponse<Handle>)payload;
 
-         switch (checkSnippetAndRequestCertificates(auditResponse.getLogSnippet(), idx)) {
+         switch (checkSnippetAndRequestCertificates(auditResponse.logSnippet(), idx)) {
            case INVALID:
              logger.warn("AUDIT RESPONSE is not well-formed; discarding");
              idx.finish();
