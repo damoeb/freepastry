@@ -230,9 +230,9 @@ public class PartitionChecker {
      */
     HashSet<InetSocketAddress> myBootstraps;
     /**
-     * of NodeHandle
+     * of SocketNodeHandle
      */
-    HashSet<NodeHandle> nodes;
+    HashSet<SocketNodeHandle> nodes;
 
     String name;
 
@@ -240,7 +240,7 @@ public class PartitionChecker {
       name = bootAddr.toString();
       myBootstraps = new HashSet<InetSocketAddress>();
       myBootstraps.add(bootAddr);
-      nodes = new HashSet<NodeHandle>();
+      nodes = new HashSet<SocketNodeHandle>();
     }
 
     /**
@@ -291,8 +291,8 @@ public class PartitionChecker {
       }
       s+=" non-boots:";
       synchronized(nodes) {
-        for (NodeHandle nxt : nodes) {
-          if (!bootstraps.contains(nxt))
+        for (SocketNodeHandle nxt : nodes) {
+          if (!bootstraps.contains(nxt.getInetSocketAddress()))
             s+=","+nxt;
         }
       }
