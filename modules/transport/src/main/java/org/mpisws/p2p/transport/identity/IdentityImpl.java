@@ -689,7 +689,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         if (addBinding(dest, i, options)) {
           // no problem, sending message
         } else {
-          deliverAckToMe.sendFailed(ret, new NodeIsFaultyException(i, m));
+          if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new NodeIsFaultyException(i, m));
           return ret;
         }
 
@@ -699,7 +699,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           serializer.serialize(sob, dest);
           destBytes = sob.getBytes();
         } catch (IOException ioe) {
-          deliverAckToMe.sendFailed(ret, ioe);
+          if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, ioe);
           return ret;
         }
 
@@ -948,7 +948,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       if (deadForever.contains(i)) {
         MessageRequestHandle<UpperIdentifier, UpperMsgType> mrh =
           new MessageRequestHandleImpl<UpperIdentifier, UpperMsgType>(i, m, options);
-        deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(i, m));
+        if (deliverAckToMe != null) deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(i, m));
         return mrh;
       }
 
@@ -960,7 +960,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       } else {
         MessageRequestHandle<UpperIdentifier, UpperMsgType> mrh =
           new MessageRequestHandleImpl<UpperIdentifier, UpperMsgType>(i, m, options);
-        deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(i, m));
+        if (deliverAckToMe != null) deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(i, m));
         return mrh;
       }
 
