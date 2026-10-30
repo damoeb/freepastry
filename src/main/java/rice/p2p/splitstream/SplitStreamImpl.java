@@ -40,7 +40,6 @@ package rice.p2p.splitstream;
 import java.util.Hashtable;
 
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Node;
 import rice.p2p.scribe.Scribe;
 import rice.p2p.scribe.ScribeImpl;
@@ -95,10 +94,10 @@ public class SplitStreamImpl implements SplitStream {
   public SplitStreamImpl(Node node, String instance, SplitStreamScribePolicyFactory factory) {
     this.instance = instance;
     Environment environment = node.getEnvironment();
-    Parameters p = environment.getParameters();
-    defaultMaxChildren = p.getInt("p2p_splitStream_policy_default_maximum_children");
-    maxFailedSubscriptions = p.getInt("p2p_splitStream_stripe_max_failed_subscription");
-    stripeBaseBitLength = p.getInt("p2p_splitStream_stripeBaseBitLength");
+    SplitStreamConfig config = SplitStreamConfig.fromParameters(environment.getParameters());
+    defaultMaxChildren = config.defaultMaximumChildren();
+    maxFailedSubscriptions = config.maxFailedSubscription();
+    stripeBaseBitLength = config.stripeBaseBitLength();
     this.scribe = new ScribeImpl(node, instance);
     scribe.setContentDeserializer((buf, endpoint, contentType) -> {
       switch(contentType) {

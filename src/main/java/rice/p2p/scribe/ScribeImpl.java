@@ -44,7 +44,6 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -183,9 +182,9 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.node = node;
     logger = environment.getLogManager().getLogger(ScribeImpl.class, instance);
 
-    Parameters p = environment.getParameters();
-    MAINTENANCE_INTERVAL = p.getInt("p2p_scribe_maintenance_interval");
-    MESSAGE_TIMEOUT = p.getInt("p2p_scribe_message_timeout");
+    ScribeConfig config = ScribeConfig.fromParameters(environment.getParameters());
+    MAINTENANCE_INTERVAL = config.maintenanceInterval();
+    MESSAGE_TIMEOUT = config.messageTimeout();
     this.instance = instance;
     this.endpoint = node.buildEndpoint(this, instance);
     this.contentDeserializer = new JavaScribeContentDeserializer();

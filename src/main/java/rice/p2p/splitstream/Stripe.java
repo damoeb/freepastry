@@ -110,6 +110,11 @@ public class Stripe implements ScribeMultiClient {
   Logger logger;
 
   /**
+   * how long to wait before resubscribing after too many failed subscriptions, in milliseconds
+   */
+  private final int retryDelay;
+
+  /**
    * The constructor used when creating a stripe from scratch.
    *
    * @param stripeId the stripeId that this stripe will be rooted at
@@ -118,6 +123,7 @@ public class Stripe implements ScribeMultiClient {
   public Stripe(StripeId stripeId, Scribe scribe, String instance, Channel channel, int maxFailedSubscriptions) {
     this.instance = instance;
     this.MAX_FAILED_SUBSCRIPTION = maxFailedSubscriptions;
+    this.retryDelay = SplitStreamConfig.fromParameters(scribe.getEnvironment().getParameters()).maxFailedSubscriptionRetryDelay();
     this.stripeId = stripeId;
     this.scribe = scribe;
     logger = scribe.getEnvironment().getLogManager().getLogger(Stripe.class, instance);
@@ -305,7 +311,7 @@ public class Stripe implements ScribeMultiClient {
         }
       };
       scribe.getEnvironment().getSelectorManager().getTimer().schedule(resubscribeTask,
-          scribe.getEnvironment().getParameters().getInt("p2p_splitStream_stripe_max_failed_subscription_retry_delay"));
+          retryDelay);
     }
   }
 

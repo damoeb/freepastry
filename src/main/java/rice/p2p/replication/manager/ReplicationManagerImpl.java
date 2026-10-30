@@ -44,7 +44,6 @@ import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Continuation.StandardContinuation;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Endpoint;
@@ -149,11 +148,10 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
   public ReplicationManagerImpl(Node node, ReplicationManagerClient client, int replicationFactor, String instance, ReplicationPolicy policy) {
     this.environment = node.getEnvironment();
     logger = environment.getLogManager().getLogger(ReplicationManagerImpl.class, instance);
-    Parameters p = environment.getParameters();
-
-    FETCH_DELAY = p.getInt("p2p_replication_manager_fetch_delay");
-    TIMEOUT_DELAY = p.getInt("p2p_replication_manager_timeout_delay");
-    NUM_DELETE_AT_ONCE = p.getInt("p2p_replication_manager_num_delete_at_once");
+    ReplicationManagerConfig config = ReplicationManagerConfig.fromParameters(environment.getParameters());
+    FETCH_DELAY = config.fetchDelay();
+    TIMEOUT_DELAY = config.timeoutDelay();
+    NUM_DELETE_AT_ONCE = config.numDeleteAtOnce();
 
     this.client = client;
     this.factory = node.getIdFactory();

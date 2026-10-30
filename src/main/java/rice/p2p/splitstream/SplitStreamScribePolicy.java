@@ -93,7 +93,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    */
   public SplitStreamScribePolicy(Scribe scribe, SplitStream splitStream) {
     super(splitStream.getEnvironment());
-    DEFAULT_MAXIMUM_CHILDREN = scribe.getEnvironment().getParameters().getInt("p2p_splitStream_policy_default_maximum_children");
+    DEFAULT_MAXIMUM_CHILDREN = SplitStreamConfig.fromParameters(scribe.getEnvironment().getParameters()).defaultMaximumChildren();
     this.scribe = scribe;
     this.splitStream = splitStream;
     this.policy = new Hashtable<ChannelId, Integer>();

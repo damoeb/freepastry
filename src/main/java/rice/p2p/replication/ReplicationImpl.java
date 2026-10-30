@@ -46,7 +46,6 @@ import rice.Continuation.ListenerContinuation;
 import rice.Continuation.MultiContinuation;
 import rice.Continuation.StandardContinuation;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -148,10 +147,9 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     environment.addDestructable(this);
     logger = environment.getLogManager().getLogger(ReplicationImpl.class, instance);
 
-    Parameters p = environment.getParameters();
-
-    MAINTENANCE_INTERVAL = p.getInt("p2p_replication_maintenance_interval");
-    MAX_KEYS_IN_MESSAGE = p.getInt("p2p_replication_max_keys_in_message");
+    ReplicationConfig config = ReplicationConfig.fromParameters(environment.getParameters());
+    MAINTENANCE_INTERVAL = config.maintenanceInterval();
+    MAX_KEYS_IN_MESSAGE = config.maxKeysInMessage();
 
 
     this.client = client;

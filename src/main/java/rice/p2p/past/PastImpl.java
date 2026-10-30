@@ -52,7 +52,6 @@ import rice.Continuation.NamedContinuation;
 import rice.Continuation.SimpleContinuation;
 import rice.Continuation.StandardContinuation;
 import rice.environment.Environment;
-import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Endpoint;
@@ -252,9 +251,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   public PastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, StorageManager trash, SocketStrategy strategy) {
     this.environment = node.getEnvironment();
     logger = environment.getLogManager().getLogger(getClass(), instance);
-    Parameters p = environment.getParameters();
-    MESSAGE_TIMEOUT = p.getInt("p2p_past_messageTimeout");// = 30000;
-    SUCCESSFUL_INSERT_THRESHOLD = p.getDouble("p2p_past_successfulInsertThreshold");// = 0.5;
+    PastConfig config = PastConfig.fromParameters(environment.getParameters());
+    MESSAGE_TIMEOUT = config.messageTimeout();
+    SUCCESSFUL_INSERT_THRESHOLD = config.successfulInsertThreshold();
     this.socketStrategy = strategy;
     this.storage = manager;
     this.backup = backup;

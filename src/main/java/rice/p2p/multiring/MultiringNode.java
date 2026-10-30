@@ -139,7 +139,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
       throw new IllegalArgumentException("Invalid type:"+type);
     });
 
-    this.collection = new MultiringNodeCollection(this, environment.getParameters().getInt("p2p_multiring_base"));
+    this.collection = new MultiringNodeCollection(this, MultiringConfig.fromParameters(environment.getParameters()).base());
     this.factory = (MultiringIdFactory) getIdFactory();
   }
 
