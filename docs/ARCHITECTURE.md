@@ -273,14 +273,13 @@ Continuations are normally called back on the selector thread, but not always as
 
 ## Serialization
 
-There are two ways to put a message on the wire. Both use the same envelope, written by `rice.pastry.transport.TLDeserializer`: `int` application address, `byte` priority, `short` type, then the payload.
+Everything on the wire is raw-serialized; there is no Java serialization. The envelope is written by `rice.pastry.transport.TLDeserializer`: `int` application address, `byte` priority, `short` type, then the payload.
 
-- **Raw serialization** (preferred): the message implements `rice.p2p.commonapi.rawserialization.RawMessage`, with `getType()` (non-zero) and `serialize(OutputBuffer)`. The application registers a `MessageDeserializer` with `endpoint.setDeserializer()`; it switches on the type and rebuilds the message from an `InputBuffer`. Most applications ship both forms; the raw ones live in `rice.p2p.past.rawserialization`, `rice.p2p.scribe.rawserialization` and similar packages. Pastry's own protocol messages extend `rice.pastry.messaging.PRawMessage`.
-- **Java serialization** (fallback and convenience): a plain `Message` is wrapped as type 0. `PastryNode.send()` wraps Pastry messages in a `PJavaSerializedMessage`; on the application level `rice.p2p.util.rawserialization.JavaSerializedMessage` does the same. It is read back by `JavaSerializedDeserializer` and `rice.p2p.util.rawserialization.JavaDeserializer`, an `ObjectInputStream` that coalesces `NodeHandle`s as they are deserialized.
+- A message implements `rice.p2p.commonapi.rawserialization.RawMessage`, with `getType()` (non-zero; zero is reserved) and `serialize(OutputBuffer)`. `Endpoint.route()` accepts only `RawMessage`s. The application registers a `MessageDeserializer` with `endpoint.setDeserializer()`; it switches on the type and rebuilds the message from an `InputBuffer`. Until it does, the endpoint has `MessageDeserializer.NONE`, which rejects every message. Pastry's own protocol messages extend `rice.pastry.messaging.PRawMessage` and are read by subclasses of `PMessageDeserializer`. Messages that only go to the local node, such as the ones scheduled with `scheduleMessage()`, may be plain `Message`s.
+- Content is raw in the same way: `PastContent`, `PastContentHandle` and `ScribeContent` declare `getType()` and `serialize(OutputBuffer)` and are read back by the application's `PastContentDeserializer`, `PastContentHandleDeserializer` and `ScribeContentDeserializer`. PAST starts with `PastContentDeserializer.NONE` and `PastContentHandleDeserializer.CONTENT_HASH`.
+- A PAST response that a `ContinuationMessage` subclass cannot write raw is an error. An exception travels as its class name and message and arrives as a `rice.p2p.past.PastRemoteException`.
 
-Every `ObjectInputStream` that reads Java-serialized network or disk data installs `rice.p2p.util.JavaSerializationFilter`, an allowlist `ObjectInputFilter`. The streams that do so are `JavaDeserializer`, `PastryObjectInputStream`, `PersistentStorage` and `Base64`. Application classes outside the default allowlist must be allowed through the filter's parameter or `allowGlobally()`; see its Javadoc. **Unclear:** this filter is new and being worked on in this branch, so check its Javadoc for the exact parameter name and defaults.
-
-`rice.p2p.util.XMLObjectOutputStream` and `XMLObjectInputStream` are drop-in `ObjectOutputStream`/`ObjectInputStream` replacements that write and read object graphs as XML (JSX schema). Their main user is on-disk persistence: `PersistentStorage` stores objects as gzipped XML. They are also used for size estimation in `MemoryStorage`/`LRUCache` and in `CertifiedNodeIdFactory`, `SecurityUtils` and `RingCertificate`. The XML is written by `rice.p2p.util.XMLWriter` and parsed by `rice.p2p.util.XMLParser`/`XMLReader`. These are self-contained replacements for the former xmlpull/xpp3 dependency: they keep the old output byte-for-byte and accept only the subset of XML that the writer produces, with no DTDs or external entities. The jars that older docs mention are not needed any more.
+The files outside `rice.persistence` are raw too: `RingCertificate` writes certificates and key pairs, and `CertifiedNodeIdFactory` node id certificates, in small versioned binary formats; key pairs are encoded with `SecurityUtils.encodeKeyPair()`.
 
 ## Persistence (`rice.persistence`)
 
@@ -293,7 +292,7 @@ The interfaces are asynchronous and use `Continuation`s:
 
 The implementations:
 
-- `PersistentStorage` stores data on disk under a root directory, with a size limit. It writes one gzipped-XML file per object, keeps a metadata index, and recovers after crashes. It does all disk IO through `Processor.processBlockingIO()` and delivers results on the selector thread. Its Javadoc lists restrictions on key `toString()`s, for example no `.` or `!`.
+- `PersistentStorage` stores data on disk under a root directory, with a size limit. It writes one file per object in a versioned binary format (`ObjectFileFormat`), keeps a metadata index persisted in per-directory `metadata.cache` files (`MetadataIndex`), and recovers after crashes. The values are written by the `StorageSerializer` it is built with: `PastStorageSerializer`, `GlacierStorageSerializer` or `AggregationStorageSerializer`, which use the raw serialization of the wire. Files of the old Java-serialized XML format are not read. It does all disk IO through `Processor.processBlockingIO()` and delivers results on the selector thread. Its Javadoc lists restrictions on key `toString()`s, for example no `.` or `!`.
 - `MemoryStorage` is a hash table, not durable. It calls continuations synchronously.
 - `LRUCache` (backed by a `Storage`) and `EmptyCache`.
 - `LockManager`/`LockManagerImpl` serialize operations per id.
@@ -337,7 +336,7 @@ The implementations:
 - `anycast()` routes an `AnycastMessage` towards the topic id and then visits tree members from its `toVisit` list until a client's `anycast()` returns true (`AnycastFailureMessage` otherwise). The order is set by the `ScribePolicy`, which can add nodes at the front or the back of the list.
 - Tree repair runs every `p2p_scribe_maintenance_interval`, through `ScribeMaintenancePolicy`.
 - `ScribePolicy` decides which children a node accepts.
-- Clients implement `ScribeMultiClient`. Content can be raw (`RawScribeContent` with a `ScribeContentDeserializer`) or Java-serialized.
+- Clients implement `ScribeMultiClient`. Content is a `ScribeContent`, read back by the `ScribeContentDeserializer` the application sets.
 
 **SplitStream** (`rice.p2p.splitstream`, `SplitStreamImpl`): high-bandwidth multicast. A `Channel` has `2^p2p_splitStream_stripeBaseBitLength` (16) `Stripe`s. Each stripe id is the channel id with its first `stripeBaseBitLength` bits replaced by the stripe number (`Channel.generateStripeIds`), and each stripe is a Scribe topic. Because the stripe ids differ in the first digit, each node tends to be an interior node in only one stripe tree. `SplitStreamScribePolicy` caps a node's children (`p2p_splitStream_policy_default_maximum_children`, 24).
 

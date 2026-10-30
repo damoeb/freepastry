@@ -41,16 +41,19 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.security.KeyPair;
@@ -65,8 +68,6 @@ import org.slf4j.LoggerFactory;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.util.SecurityUtils;
-import rice.p2p.util.XMLObjectInputStream;
-import rice.p2p.util.XMLObjectOutputStream;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.dist.DistPastryNodeFactory;
 
@@ -78,12 +79,12 @@ import rice.pastry.dist.DistPastryNodeFactory;
  *
  * @author Alan Mislove
  */
-public class RingCertificate implements Serializable {
+public class RingCertificate {
   private static final Logger LOG = LoggerFactory.getLogger(RingCertificate.class);
 
 
-  // serialver
-  private static final long serialVersionUID = 5915358246762577456L;
+  // the format version of certificate files
+  private static final int CERTIFICATE_FORMAT_VERSION = 1;
 
   // the static map of all RingCertificates available (id -> cert)
   private static final HashMap<Id, RingCertificate> CERTIFICATES = new HashMap<Id, RingCertificate>();
@@ -93,12 +94,10 @@ public class RingCertificate implements Serializable {
     try {
       // first load the CA public key
       URL a = ClassLoader.getSystemResource("ca.publickey");
-      InputStream b = a.openStream();
-      GZIPInputStream c = new GZIPInputStream(b);
-      BufferedInputStream d = new BufferedInputStream(c);
-      ObjectInputStream ois = new XMLObjectInputStream(d);
-      PublicKey caPublic = (PublicKey) ois.readObject();
-      ois.close();
+      PublicKey caPublic;
+      try (InputStream b = a.openStream()) {
+        caPublic = SecurityUtils.decodePublicKey(readGzippedBytes(b));
+      }
 
       // and finally load and verify the certs
       URL a1 = ClassLoader.getSystemResource("ringcert.list");
@@ -168,13 +167,13 @@ public class RingCertificate implements Serializable {
   private final Id id;
 
   // the protocol of this ring
-  private final Integer protocol;
+  private final int protocol;
 
   // the list of bootstrap nodes for this ring
   private final InetSocketAddress[] bootstraps;
 
   // the preferred port for this ring
-  private final Integer port;
+  private final int port;
 
   // the logserver for this ring
   private InetSocketAddress logServer;
@@ -183,7 +182,7 @@ public class RingCertificate implements Serializable {
   private final PublicKey key;
 
   // the version number of this certificate
-  private final Long version;
+  private final long version;
 
   // the signature of the above info
   private byte[] signature;
@@ -196,11 +195,11 @@ public class RingCertificate implements Serializable {
     this.name = name;
     this.id = id;
     this.bootstraps = bootstraps;
-    this.port = Integer.valueOf(port);
+    this.port = port;
     this.key = key;
     this.logServer = logServer;
-    this.version = Long.valueOf(System.currentTimeMillis());
-    this.protocol = Integer.valueOf(protocol);
+    this.version = System.currentTimeMillis();
+    this.protocol = protocol;
   }
 
   /**
@@ -227,7 +226,7 @@ public class RingCertificate implements Serializable {
    * @return The protocol
    */
   public int getProtocol() {
-    return protocol.intValue();
+    return protocol;
   }
 
   /**
@@ -236,7 +235,7 @@ public class RingCertificate implements Serializable {
    * @return The version
    */
   public long getVersion() {
-    return version.longValue();
+    return version;
   }
 
   /**
@@ -254,7 +253,7 @@ public class RingCertificate implements Serializable {
    * @return The preferred port
    */
   public int getPort() {
-    return port.intValue();
+    return port;
   }
 
   /**
@@ -281,12 +280,12 @@ public class RingCertificate implements Serializable {
    *
    * @priv The private key to sign with
    */
-  private void sign(PrivateKey priv) {
+  void sign(PrivateKey priv) {
     if (signature != null)
       throw new IllegalArgumentException("Attempt to sign an already-signed RingCertificate!");
 
     try {
-      signature = SecurityUtils.sign(SecurityUtils.serialize(getIdentifier()), priv);
+      signature = SecurityUtils.sign(getIdentifier(), priv);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -298,12 +297,12 @@ public class RingCertificate implements Serializable {
    *
    * @pub The public key to verify with
    */
-  private boolean verify(PublicKey pub) {
+  boolean verify(PublicKey pub) {
     if (signature == null)
       throw new IllegalArgumentException("Attempt to verify an unsigned RingCertificate!");
 
     try {
-      return SecurityUtils.verify(SecurityUtils.serialize(getIdentifier()), signature, pub);
+      return SecurityUtils.verify(getIdentifier(), signature, pub);
     } catch (SecurityException e) {
       return false;
     } catch (IOException e) {
@@ -326,22 +325,112 @@ public class RingCertificate implements Serializable {
    * @param file The file to write to
    */
   private void writeToFile(File file) throws IOException {
-    try (ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file))))) {
-      oos.writeObject(this);
+    try (FileOutputStream out = new FileOutputStream(file)) {
+      writeToStream(out);
     }
+  }
+
+  /**
+   * Writes this certificate, gzipped: the format version, the signed fields (see {@link #getIdentifier()})
+   * and the signature.
+   *
+   * @param stream The stream to write to
+   */
+  void writeToStream(OutputStream stream) throws IOException {
+    DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(stream)));
+    out.writeInt(CERTIFICATE_FORMAT_VERSION);
+    writeFields(out);
+    out.writeInt(signature.length);
+    out.write(signature);
+    out.close();
   }
 
   /**
    * Reads a certificate from the given stream
    *
-   * @param stream The file to write to
+   * @param stream The stream to read from
    */
-  private static RingCertificate readFromStream(InputStream stream) throws IOException {
-    try (ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(stream)))) {
-      return (RingCertificate) ois.readObject();
-    } catch (ClassNotFoundException e) {
-      throw new IOException(e.getMessage());
+  static RingCertificate readFromStream(InputStream stream) throws IOException {
+    try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(stream)))) {
+      int version = in.readInt();
+      if (version != CERTIFICATE_FORMAT_VERSION) {
+        throw new IOException("Unknown ring certificate format " + version);
+      }
+      return new RingCertificate(in);
     }
+  }
+
+  /**
+   * Reading constructor, the counterpart of {@link #writeFields(DataOutput)} followed by the signature.
+   */
+  private RingCertificate(DataInput in) throws IOException {
+    name = in.readUTF();
+    id = rice.pastry.Id.build(readBytes(in));
+    protocol = in.readInt();
+    port = in.readInt();
+    version = in.readLong();
+    bootstraps = new InetSocketAddress[in.readInt()];
+    for (int i = 0; i < bootstraps.length; i++) {
+      bootstraps[i] = readAddress(in);
+    }
+    logServer = in.readBoolean() ? readAddress(in) : null;
+    key = SecurityUtils.decodePublicKey(readBytes(in));
+    signature = readBytes(in);
+  }
+
+  private void writeFields(DataOutput out) throws IOException {
+    out.writeUTF(name);
+    writeBytes(out, id.toByteArray());
+    out.writeInt(protocol);
+    out.writeInt(port);
+    out.writeLong(version);
+    out.writeInt(bootstraps.length);
+    for (InetSocketAddress bootstrap : bootstraps) {
+      writeAddress(out, bootstrap);
+    }
+    out.writeBoolean(logServer != null);
+    if (logServer != null) {
+      writeAddress(out, logServer);
+    }
+    writeBytes(out, SecurityUtils.encodePublicKey(key));
+  }
+
+  private static void writeAddress(DataOutput out, InetSocketAddress address) throws IOException {
+    out.writeUTF(address.getHostString());
+    out.writeInt(address.getPort());
+  }
+
+  private static InetSocketAddress readAddress(DataInput in) throws IOException {
+    String host = in.readUTF();
+    return new InetSocketAddress(host, in.readInt());
+  }
+
+  private static void writeBytes(DataOutput out, byte[] bytes) throws IOException {
+    out.writeInt(bytes.length);
+    out.write(bytes);
+  }
+
+  private static byte[] readBytes(DataInput in) throws IOException {
+    byte[] bytes = new byte[in.readInt()];
+    in.readFully(bytes);
+    return bytes;
+  }
+
+  /**
+   * Writes a byte array to a file, gzipped and preceded by its length.
+   */
+  private static void writeGzippedBytes(File file, byte[] bytes) throws IOException {
+    try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(file))))) {
+      writeBytes(out, bytes);
+    }
+  }
+
+  /**
+   * Reads a byte array written by {@link #writeGzippedBytes(File, byte[])}.
+   */
+  static byte[] readGzippedBytes(InputStream stream) throws IOException {
+    DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(stream)));
+    return readBytes(in);
   }
 
   /**
@@ -352,10 +441,8 @@ public class RingCertificate implements Serializable {
    * @param ring The ring name
    */
   private static void writeKeyPair(KeyPair pair, String pass, String ring) throws IOException {
-    byte[] cipher = SecurityUtils.encryptWithPassword(SecurityUtils.serialize(pair), pass.toCharArray());
-    ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(ring.toLowerCase() + ".ringkeypair.enc"))));
-    oos.writeObject(cipher);
-    oos.close();
+    byte[] cipher = SecurityUtils.encryptWithPassword(SecurityUtils.encodeKeyPair(pair), pass.toCharArray());
+    writeGzippedBytes(new File(ring.toLowerCase() + ".ringkeypair.enc"), cipher);
   }
 
   /**
@@ -364,12 +451,13 @@ public class RingCertificate implements Serializable {
    * @param pass THe password
    * @param ring The ring name
    */
-  public static KeyPair readKeyPair(String ring, String pass) throws IOException, ClassNotFoundException {
-    ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(ring.toLowerCase() + ".ringkeypair.enc"))));
-    byte[] cipher = (byte[]) ois.readObject();
-    ois.close();
+  public static KeyPair readKeyPair(String ring, String pass) throws IOException {
+    byte[] cipher;
+    try (InputStream in = new FileInputStream(ring.toLowerCase() + ".ringkeypair.enc")) {
+      cipher = readGzippedBytes(in);
+    }
 
-    return (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptWithPassword(cipher, pass.toCharArray()));
+    return SecurityUtils.decodeKeyPair(SecurityUtils.decryptWithPassword(cipher, pass.toCharArray()));
   }
 
   /**
@@ -377,8 +465,12 @@ public class RingCertificate implements Serializable {
    *
    * @return The data
    */
-  private Object getIdentifier() {
-    return new Object[] {name, id, bootstraps, port, key, logServer, version, protocol};
+  private byte[] getIdentifier() throws IOException {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    try (DataOutputStream out = new DataOutputStream(bytes)) {
+      writeFields(out);
+    }
+    return bytes.toByteArray();
   }
 
   /**
@@ -393,9 +485,11 @@ public class RingCertificate implements Serializable {
 
     // first, load the CA keypair
     File f = new File("ca.keypair.enc");
-    ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(f))));
-    KeyPair caPair = (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptWithPassword((byte[]) ois.readObject(), prompt(r, w, "Please enter the CA password: ").trim().toCharArray()));
-    ois.close();
+    byte[] caCipher;
+    try (InputStream in = new FileInputStream(f)) {
+      caCipher = readGzippedBytes(in);
+    }
+    KeyPair caPair = SecurityUtils.decodeKeyPair(SecurityUtils.decryptWithPassword(caCipher, prompt(r, w, "Please enter the CA password: ").trim().toCharArray()));
 
     // get the ring info
     String ring = prompt(r, w, "Please enter the name of the ring (rice, berkeley): ");

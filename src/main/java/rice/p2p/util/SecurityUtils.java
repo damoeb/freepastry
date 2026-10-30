@@ -36,13 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.util;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
@@ -61,8 +54,6 @@ import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -217,36 +208,47 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method for serializing an object to a byte[].
+   * Encodes an asymmetric key pair: the length of the encoded public key, the public key as
+   * {@link #encodePublicKey(PublicKey)} writes it, and the private key as {@link #encodePrivateKey(PrivateKey)}
+   * writes it.
    *
-   * @param o The object to serialize
-   * @return The byte[] of the object
-   * @exception IOException If serialization does not happen properly
+   * @param pair The key pair
+   * @return The encoded key pair
    */
-  public static byte[] serialize(Object o) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ObjectOutputStream oos = new XMLObjectOutputStream(new BufferedOutputStream(new GZIPOutputStream(baos)));
+  public static byte[] encodeKeyPair(KeyPair pair) {
+    byte[] pub = encodePublicKey(pair.getPublic());
+    byte[] priv = encodePrivateKey(pair.getPrivate());
+    byte[] length = MathUtils.intToByteArray(pub.length);
 
-    oos.writeObject(o);
-    oos.flush();
-    oos.close();
+    byte[] result = new byte[length.length + pub.length + priv.length];
+    System.arraycopy(length, 0, result, 0, length.length);
+    System.arraycopy(pub, 0, result, length.length, pub.length);
+    System.arraycopy(priv, 0, result, length.length + pub.length, priv.length);
 
-    return baos.toByteArray();
+    return result;
   }
 
   /**
-   * Utility method for deserializing an object from a byte[]
+   * Decodes a key pair written by {@link #encodeKeyPair(KeyPair)}.
    *
-   * @param data The data to deserialize
-   * @return The object
-   * @exception IOException If deserialization does not happen properly
-   * @exception ClassNotFoundException If the deserialized class is not found
+   * @param data The encoded key pair
+   * @return The key pair
+   * @exception SecurityException If the data is not an encoded key pair
    */
-  public static Object deserialize(byte[] data) throws IOException, ClassNotFoundException {
-    ByteArrayInputStream bais = new ByteArrayInputStream(data);
-    ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(bais)));
+  public static KeyPair decodeKeyPair(byte[] data) throws SecurityException {
+    byte[] len = new byte[4];
+    System.arraycopy(data, 0, len, 0, len.length);
+    int length = MathUtils.byteArrayToInt(len);
+    if ((length < 0) || (length > data.length - len.length)) {
+      throw new SecurityException("Not an encoded key pair");
+    }
 
-    return ois.readObject();
+    byte[] pub = new byte[length];
+    System.arraycopy(data, len.length, pub, 0, length);
+    byte[] priv = new byte[data.length - len.length - length];
+    System.arraycopy(data, len.length + length, priv, 0, priv.length);
+
+    return new KeyPair(decodePublicKey(pub), decodePrivateKey(priv));
   }
 
   /**

@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.util.testing;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -74,18 +75,8 @@ public class SecurityUtilsUnit {
     System.out.println("-------------------------------------------------------------");
     System.out.println("  Running Tests");
 
-    System.out.print("    Testing serialization\t\t\t\t");
     String testString = "test";
-    byte[] testStringByte = SecurityUtils.serialize(testString);
-    String testStringOutput = (String) SecurityUtils.deserialize(testStringByte);
-
-    if (testStringOutput.equals(testString)) {
-      System.out.println("[ PASSED ]");
-    } else {
-      System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + testString);
-      System.out.println("    Output:\t" + testStringOutput);
-    }
+    byte[] testStringByte = testString.getBytes(StandardCharsets.UTF_8);
 
     System.out.print("    Testing hashing\t\t\t\t\t");
     byte[] testStringHash = SecurityUtils.hash(testStringByte);

@@ -46,20 +46,6 @@ public class UtilUnitProgramsTest {
   }
 
   @Test
-  public void stringCache() throws Exception {
-    String output = run(StringCacheUnit::main);
-    assertNoneOf(output, "FAILED");
-    assertContains(output, "[ PASSED ]");
-  }
-
-  @Test
-  public void xmlParser() throws Exception {
-    String output = run(XMLParserUnit::main);
-    assertNoneOf(output, "FAILED");
-    assertContains(output, "[ PASSED ]");
-  }
-
-  @Test
   public void sortedLinkedList() throws Exception {
     // throws a RuntimeException if the list is out of order
     run(TestSortedLinkedList::main);

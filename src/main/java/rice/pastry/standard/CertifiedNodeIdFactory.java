@@ -38,12 +38,13 @@ advised of the possibility of such damage.
 package rice.pastry.standard;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.security.KeyPair;
@@ -53,8 +54,6 @@ import java.util.zip.GZIPInputStream;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.util.SecurityUtils;
-import rice.p2p.util.XMLObjectInputStream;
-import rice.p2p.util.XMLObjectOutputStream;
 import rice.pastry.Id;
 import rice.pastry.NodeIdFactory;
 
@@ -70,6 +69,9 @@ import rice.pastry.NodeIdFactory;
 public class CertifiedNodeIdFactory implements NodeIdFactory {
 
   public static final String NODE_ID_FILENAME = "nodeId";
+
+  // the format version of node id certificates
+  private static final int CERTIFICATE_FORMAT_VERSION = 1;
 
   private final int port;
   private final IPNodeIdFactory realFactory;
@@ -94,42 +96,49 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
    * @return the new nodeId
    */
   public Id generateNodeId() {
-    XMLObjectInputStream xois = null;
-    try {
-      File f = new File(NODE_ID_FILENAME);
+    File f = new File(NODE_ID_FILENAME);
 
-      if (! f.exists()) {
-        File g = new File("." + NODE_ID_FILENAME + "-" + port);
+    if (! f.exists()) {
+      File g = new File("." + NODE_ID_FILENAME + "-" + port);
 
-        if (g.exists())
-          g.renameTo(f);
-      }
+      if (g.exists())
+        g.renameTo(f);
+    }
 
-      if (f.exists()) {
-        xois = new XMLObjectInputStream(new FileInputStream(f));
-        return (Id) xois.readObject();
-      } else {
-        logger.warn("Unable to find NodeID certificate - exiting.");
-        throw new RuntimeException("Unable to find NodeID certificate - make sure that the NodeID certificate file '" + NODE_ID_FILENAME + "' exists in your ePOST directory.");
-      }
+    if (! f.exists()) {
+      logger.warn("Unable to find NodeID certificate - exiting.");
+      throw new RuntimeException("Unable to find NodeID certificate - make sure that the NodeID certificate file '" + NODE_ID_FILENAME + "' exists in your ePOST directory.");
+    }
+
+    try (InputStream in = new FileInputStream(f)) {
+      return readCertificate(in);
     } catch (IOException e) {
       logger.warn("", e);
       throw new RuntimeException(e);
-    } catch (ClassNotFoundException e) {
-      logger.warn("", e);
-      throw new RuntimeException(e);
-    } finally {
-      try {
-        if (xois != null)
-          xois.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 
   /**
-   * Method which generates a certificate given the nodeid, location, and private key
+   * Reads the node id from a certificate written by {@link #generateCertificate(Id, OutputStream, PrivateKey)}.
+   * The signature is not checked.
+   *
+   * @param in the certificate
+   * @return the node id
+   */
+  static Id readCertificate(InputStream in) throws IOException {
+    DataInputStream data = new DataInputStream(in);
+    int version = data.readInt();
+    if (version != CERTIFICATE_FORMAT_VERSION) {
+      throw new IOException("Unknown node id certificate format " + version);
+    }
+    byte[] id = new byte[data.readInt()];
+    data.readFully(id);
+    return Id.build(id);
+  }
+
+  /**
+   * Method which generates a certificate given the nodeid, location, and private key: the format version,
+   * the id's bytes and the signature over them, each preceded by its length.
    *
    * @param id The id of the certificate to generate
    * @param os The stream to write the certificate to
@@ -137,15 +146,16 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
    */
   public static void generateCertificate(Id id, OutputStream os, PrivateKey key) {
     try {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      XMLObjectOutputStream xoos = new XMLObjectOutputStream(baos);
-      xoos.writeObject(id);
-      xoos.close();
+      byte[] bytes = id.toByteArray();
+      byte[] signature = SecurityUtils.sign(bytes, key);
 
-      XMLObjectOutputStream xoos2 = new XMLObjectOutputStream(os);
-      xoos2.writeObject(id);
-      xoos2.write(SecurityUtils.sign(baos.toByteArray(), key));
-      xoos2.close();
+      DataOutputStream out = new DataOutputStream(os);
+      out.writeInt(CERTIFICATE_FORMAT_VERSION);
+      out.writeInt(bytes.length);
+      out.write(bytes);
+      out.writeInt(signature.length);
+      out.write(signature);
+      out.close();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -158,15 +168,16 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
   public static void main(String[] args) throws Exception {
     String pw = getArg(args, "-pw");
     String caDirectory = getArg(args, "-ca");
-    String out = getArg(args, "-out");
 
+    // the CA key pair, encrypted with the password: gzipped, preceded by its length
     File f = new File(caDirectory,"ca.keypair.enc");
-    FileInputStream fis = new FileInputStream(f);
-    ObjectInputStream ois = new XMLObjectInputStream(new BufferedInputStream(new GZIPInputStream(fis)));
+    byte[] cipher;
+    try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(f))))) {
+      cipher = new byte[in.readInt()];
+      in.readFully(cipher);
+    }
 
-    byte[] cipher = (byte[]) ois.readObject();
-
-    KeyPair caPair = (KeyPair) SecurityUtils.deserialize(SecurityUtils.decryptWithPassword(cipher, pw.toCharArray()));
+    KeyPair caPair = SecurityUtils.decodeKeyPair(SecurityUtils.decryptWithPassword(cipher, pw.toCharArray()));
 
     Environment env = new Environment();
     generateCertificate(new RandomNodeIdFactory(env).generateNodeId(), new FileOutputStream(new File(NODE_ID_FILENAME)), caPair.getPrivate());
