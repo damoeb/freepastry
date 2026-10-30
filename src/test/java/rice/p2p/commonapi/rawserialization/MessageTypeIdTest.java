@@ -65,7 +65,9 @@ class MessageTypeIdTest {
   private static final List<String> KNOWN_REGISTRIES = List.of(
       "rice.p2p.scribe.messaging.ScribeMessageType",
       "rice.p2p.past.messaging.PastMessageType",
-      "rice.p2p.glacier.v2.messaging.GlacierMessageType");
+      "rice.p2p.glacier.v2.messaging.GlacierMessageType",
+      "rice.p2p.aggregation.AggregationContentType",
+      "rice.p2p.aggregation.AggregationHandleType");
 
   private enum Clean implements MessageTypeId {
     ONE(1), TWO(2);

@@ -40,7 +40,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 
-public abstract class AggregationMessage implements Message {
+public sealed abstract class AggregationMessage implements Message permits AggregationTimeoutMessage {
 
   // the unique id for this message
   private final int id;

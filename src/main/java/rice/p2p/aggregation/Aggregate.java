@@ -60,8 +60,6 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  */
 public class Aggregate implements GCPastContent {
 
-  public static final short TYPE = 1;
-
   protected GCPastContent[] components;
   protected Id[] pointers;
   protected Id myId;
@@ -157,7 +155,7 @@ public class Aggregate implements GCPastContent {
   }
 
   public short getType() {
-    return TYPE;
+    return AggregationContentType.AGGREGATE.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

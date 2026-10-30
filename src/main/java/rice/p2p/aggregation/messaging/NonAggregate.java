@@ -41,6 +41,7 @@ package rice.p2p.aggregation.messaging;
 
 import java.io.IOException;
 
+import rice.p2p.aggregation.AggregationContentType;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -57,8 +58,6 @@ import rice.p2p.past.rawserialization.PastContentDeserializer;
  * @author Jeff Hoye
  */
 public class NonAggregate implements PastContent {
-  public static final short TYPE = 2;
-
   private PastContent content;
 
   public NonAggregate(PastContent subContent) {
@@ -84,7 +83,7 @@ public class NonAggregate implements PastContent {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return AggregationContentType.NON_AGGREGATE.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

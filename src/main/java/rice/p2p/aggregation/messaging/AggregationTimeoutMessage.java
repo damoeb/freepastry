@@ -38,9 +38,7 @@ package rice.p2p.aggregation.messaging;
 
 import rice.p2p.commonapi.NodeHandle;
 
-public class AggregationTimeoutMessage extends AggregationMessage {
-  public static final short TYPE = 1;
-
+public final class AggregationTimeoutMessage extends AggregationMessage {
   public AggregationTimeoutMessage(int uid, NodeHandle local) {
     super(uid, local, local.getId());
   }

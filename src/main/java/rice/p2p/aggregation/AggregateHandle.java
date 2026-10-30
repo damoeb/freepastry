@@ -45,28 +45,14 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.gc.GCPastContentHandle;
 
-public class AggregateHandle implements GCPastContentHandle {
-
-  public static final short TYPE = 1;
-
-  private final Id id;
-  private final NodeHandle handle;
-  private final long version;
-  private final long expiration;
-
-  public AggregateHandle(NodeHandle handle, Id id, long version, long expiration) {
-    this.id = id;
-    this.handle = handle;
-    this.version = version;
-    this.expiration = expiration;
-  }
+public record AggregateHandle(NodeHandle nodeHandle, Id id, long version, long expiration) implements GCPastContentHandle {
 
   public Id getId() {
     return id;
   }
 
   public NodeHandle getNodeHandle() {
-    return handle;
+    return nodeHandle;
   }
 
   public long getVersion() {
@@ -78,14 +64,15 @@ public class AggregateHandle implements GCPastContentHandle {
   }
 
   public short getType() {
-    return TYPE;
+    return AggregationHandleType.AGGREGATE_HANDLE.id();
   }
 
   public AggregateHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
-    version = buf.readLong();
-    expiration = buf.readLong();
-    id = endpoint.readId(buf, buf.readShort());
-    handle = endpoint.readNodeHandle(buf);
+    long version = buf.readLong();
+    long expiration = buf.readLong();
+    Id id = endpoint.readId(buf, buf.readShort());
+    NodeHandle nodeHandle = endpoint.readNodeHandle(buf);
+    this(nodeHandle, id, version, expiration);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
@@ -93,6 +80,6 @@ public class AggregateHandle implements GCPastContentHandle {
     buf.writeLong(expiration);
     buf.writeShort(id.getType());
     id.serialize(buf);
-    handle.serialize(buf);
+    nodeHandle.serialize(buf);
   }
 }
