@@ -101,6 +101,10 @@ public class NetworkInfoTransportLayer implements
   private static final byte HEADER_IP_ADDRESS_REQUEST_BYTE = (byte)1;
   private static final byte HEADER_PROBE_REQUEST_BYTE = (byte)2;
   private static final byte HEADER_PROBE_RESPONSE_BYTE = (byte)3;
+  /** A probe response is the header byte and the 8-byte uid. */
+  private static final int PROBE_RESPONSE_LENGTH = 1 + Long.BYTES;
+  /** Most external addresses sent in one answer. */
+  private static final int MAX_EXTERNAL_ADDRESSES = 20;
   private static final byte HEADER_NODES_REQUEST_BYTE = (byte)4;
   private static final byte HEADER_ID_REQUEST_BYTE = (byte)5;
   private static final byte[] HEADER_PASSTHROUGH = {HEADER_PASSTHROUGH_BYTE};
@@ -426,14 +430,14 @@ public class NetworkInfoTransportLayer implements
     Collection<InetSocketAddress> ret = probeStrategy.getExternalAddresses();
     logger.info("serializing {} external addresses for {}", ret.size(), socket.getIdentifier());
 
-    // only take the first 20
-    if (ret.size() > 20) {
-      ArrayList<InetSocketAddress> temp = new ArrayList<InetSocketAddress>(20);
+    // only take the first MAX_EXTERNAL_ADDRESSES
+    if (ret.size() > MAX_EXTERNAL_ADDRESSES) {
+      ArrayList<InetSocketAddress> temp = new ArrayList<InetSocketAddress>(MAX_EXTERNAL_ADDRESSES);
       int ctr = 0;
       for (InetSocketAddress foo : ret) {
         temp.add(foo);
         ctr++;
-        if (ctr > 20) break;
+        if (ctr > MAX_EXTERNAL_ADDRESSES) break;
       }
       ret = temp;
     }
@@ -764,7 +768,7 @@ public class NetworkInfoTransportLayer implements
     logger.debug("probe({},{},{},{})", addr, uid, deliverResponseToMe, options);
     // udp
     final AttachableCancellable ret = new AttachableCancellable();
-    ByteBuffer msg = ByteBuffer.allocate(9); // header+uid
+    ByteBuffer msg = ByteBuffer.allocate(PROBE_RESPONSE_LENGTH); // header+uid
     msg.put(HEADER_PROBE_RESPONSE_BYTE);
     msg.putLong(uid);
     msg.flip();
@@ -801,7 +805,7 @@ public class NetworkInfoTransportLayer implements
 
 
     // tcp
-    final ByteBuffer writeMe = ByteBuffer.allocate(9);
+    final ByteBuffer writeMe = ByteBuffer.allocate(PROBE_RESPONSE_LENGTH);
     writeMe.put(HEADER_PROBE_RESPONSE_BYTE);
     writeMe.putLong(uid);
     writeMe.flip();

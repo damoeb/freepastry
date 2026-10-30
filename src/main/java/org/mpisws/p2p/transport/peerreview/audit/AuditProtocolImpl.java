@@ -79,8 +79,12 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_FULL_
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.INVESTIGATION_INTERVAL_MILLIS;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROGRESS_INTERVAL_MILLIS;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements AuditProtocol<Handle, Identifier> {
+  /** The next audit starts after 500 to 1500 per mille of the audit interval. */
+  private static final int AUDIT_JITTER_MIN_PERMILLE = 500;
+  private static final int AUDIT_JITTER_RANGE_PERMILLE = 1000;
 
   PeerReview<Handle, Identifier> peerreview;
   PeerInfoStore<Handle, Identifier> infoStore;
@@ -319,7 +323,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
   protected void startAuditTimer() {
     long now = peerreview.getTime();
-    long nextTimeout = lastAuditStarted + (long)((500+(peerreview.getRandomSource().nextInt(1000)))*0.001*auditIntervalMillis);
+    long nextTimeout = lastAuditStarted + (long)((AUDIT_JITTER_MIN_PERMILLE+(peerreview.getRandomSource().nextInt(AUDIT_JITTER_RANGE_PERMILLE)))*0.001*auditIntervalMillis);
     if (nextTimeout <= now) {
       nextTimeout = now + 1;
     }
@@ -510,7 +514,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         throw new RuntimeException("Cannot create subject history: '"+namebuf+"'");
     }
 
-    long firstNewSeq = currentSeq - (currentSeq%1000000) + 1000000;
+    long firstNewSeq = currentSeq - (currentSeq%SEQS_PER_MILLI) + SEQS_PER_MILLI;
     subjectHistory.appendSnippetToHistory(snippet);
     // TODO: verify older authenticators against the appended history
 
@@ -532,7 +536,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
       /* Create a Verifier instance and get a Replay instance from the application */
 
-      Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, subjectHandle, lastCheckpointIdx, fromSeq/1000000, snippet.getExtInfo());
+      Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, subjectHandle, lastCheckpointIdx, fromSeq/SEQS_PER_MILLI, snippet.getExtInfo());
       PeerReviewCallback<Handle, Identifier> replayApp = peerreview.getApp().getReplayInstance(verifier);
       if (replayApp == null) throw new RuntimeException("Application returned NULL when getReplayInstance() was called");
 
@@ -684,15 +688,15 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
         target);
     ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(id);
     if (investigation != null) {
-      if (since * 1000000 > investigation.getSince()) {
+      if (since * SEQS_PER_MILLI > investigation.getSince()) {
         logger.debug("Skipping investigation request for {} at {}, since an investigation at {} is already ongoing", target, since, investigation.getSince());
         return;
       }
 
-      if (logger.isDebugEnabled()) logger.debug("Extending existing investigation from "+ investigation.getSince() + " to " + since * 1000000);
-      investigation.extendSince(since * 1000000); /* log granularity */
+      if (logger.isDebugEnabled()) logger.debug("Extending existing investigation from "+ investigation.getSince() + " to " + since * SEQS_PER_MILLI);
+      investigation.extendSince(since * SEQS_PER_MILLI); /* log granularity */
     } else {
-      investigation = new ActiveInvestigationInfo<Handle>(target, since * 1000000,
+      investigation = new ActiveInvestigationInfo<Handle>(target, since * SEQS_PER_MILLI,
           peerreview.getTime() + INVESTIGATION_INTERVAL_MILLIS, null, null);
       activeInvestigation.put(id, investigation);
     }

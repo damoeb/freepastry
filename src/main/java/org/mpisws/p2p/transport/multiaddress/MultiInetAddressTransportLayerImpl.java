@@ -186,7 +186,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
     logger.debug("incomingSocket({})", s);
 
-    final SocketInputBuffer sib = new SocketInputBuffer(s,1024);
+    final SocketInputBuffer sib = new SocketInputBuffer(s);
     s.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
 
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,

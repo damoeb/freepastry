@@ -118,6 +118,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 /**
  *
@@ -129,6 +130,8 @@ import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED
 public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements
     TransportLayerCallback<Handle, ByteBuffer>,
     PeerReview<Handle, Identifier>, StatusChangeListener<Identifier> {
+  /** Delay before the application hears about a status change, so PeerReview's own protocols handle it first. */
+  private static final int STATUS_CHANGE_CALLBACK_DELAY_MILLIS = 3;
 
   // above/below layers
   private PeerReviewCallback<Handle, Identifier> callback;
@@ -230,8 +233,8 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     long now = env.getTimeSource().currentTimeMillis();
 
     if (now > lastLogEntry) {
-      if (!history.setNextSeq(now * 1000000))
-        throw new RuntimeException("PeerReview: Cannot roll back history sequence number from "+history.getLastSeq()+" to "+now*1000000+"; did you change the local time?");
+      if (!history.setNextSeq(now * SEQS_PER_MILLI))
+        throw new RuntimeException("PeerReview: Cannot roll back history sequence number from "+history.getLastSeq()+" to "+now*SEQS_PER_MILLI+"; did you change the local time?");
 
       lastLogEntry = now;
     }
@@ -516,7 +519,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       public String toString() {
         return "NotifyStatusChangeTask: "+id+"=>"+newStatus;
       }
-    }, 3);
+    }, STATUS_CHANGE_CALLBACK_DELAY_MILLIS);
 
   }
 

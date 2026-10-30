@@ -79,6 +79,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_ClosedChannel;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_IO;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_Unknown;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteBuffer>,
   TransportLayerCallback<Identifier, ByteBuffer> {
@@ -135,8 +136,8 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     long now = environment.getTimeSource().currentTimeMillis();
 
     if (now > lastLogEntry) {
-      if (!history.setNextSeq(now * 1000000))
-        throw new RuntimeException("PeerReview: Cannot roll back history sequence number from "+history.getLastSeq()+" to "+now*1000000+"; did you change the local time?");
+      if (!history.setNextSeq(now * SEQS_PER_MILLI))
+        throw new RuntimeException("PeerReview: Cannot roll back history sequence number from "+history.getLastSeq()+" to "+now*SEQS_PER_MILLI+"; did you change the local time?");
 
       lastLogEntry = now;
     }

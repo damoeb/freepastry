@@ -44,6 +44,9 @@ import rice.environment.Environment;
 import rice.environment.time.TimeSource;
 
 public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<Identifier, HighIdentifier> {
+  /** Default time after which an unused ephemeral port is forgotten: 2 hours. */
+  public static final long DEFAULT_STALE_PORT_MILLIS = 2*60*60*1000;
+
   /**
    * Time where a NAT will have reset the port to a new forwarding
    *
@@ -51,7 +54,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
    *
    * Default 2 hours
    */
-  private long STALE_PORT_TIME = 2*60*60*1000;
+  private long STALE_PORT_TIME = DEFAULT_STALE_PORT_MILLIS;
 
   TimeSource time;
   Logger logger;

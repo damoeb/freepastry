@@ -91,6 +91,9 @@ public final class PeerReviewConstants {
   public static final long MAINTENANCE_INTERVAL_MILLIS = 10000;
   public static final long DEFAULT_TIME_TOLERANCE_MILLIS = 60000;
 
+  /** History sequence numbers are the local time in milliseconds times this, so up to this many entries fit in one millisecond. */
+  public static final int SEQS_PER_MILLI = 1000000;
+
   /* Flags for AUDIT challenges */
 
   public static final byte FLAG_INCLUDE_CHECKPOINT = 1;                /* Include a full checkpoint */

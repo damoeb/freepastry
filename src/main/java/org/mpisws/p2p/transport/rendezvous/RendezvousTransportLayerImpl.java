@@ -187,7 +187,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     this.rendezvousStrategy = rendezvousStrategy;
     this.responseStrategy = responseStrategy;
     this.contactDirectStrategy = contactDirectStrategy;
-    this.ephemeralDB = new EphemeralDBImpl<Identifier, HighIdentifier>(env,2*60*60*1000); // TODO: make this a configurable parameter
+    this.ephemeralDB = new EphemeralDBImpl<Identifier, HighIdentifier>(env,EphemeralDBImpl.DEFAULT_STALE_PORT_MILLIS); // TODO: make this a configurable parameter
     this.logger = env.getLogManager().getLogger(RendezvousTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
 
@@ -470,7 +470,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
   protected void readConnectHeader(P2PSocket<Identifier> socket) throws IOException {
     logger.trace("readConnectHeader({})", socket);
-    final SocketInputBuffer sib = new SocketInputBuffer(socket,1024);
+    final SocketInputBuffer sib = new SocketInputBuffer(socket);
     P2PSocketReceiver<Identifier> receiver = new P2PSocketReceiver<Identifier>() {
 
       public void receiveSelectResult(P2PSocket<Identifier> socket,
@@ -510,7 +510,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
   protected void readAcceptHeader(P2PSocket<Identifier> acceptorSocket) throws IOException {
     logger.trace("readAcceptHeader({})", acceptorSocket);
-    final SocketInputBuffer sib = new SocketInputBuffer(acceptorSocket,1024);
+    final SocketInputBuffer sib = new SocketInputBuffer(acceptorSocket);
     P2PSocketReceiver<Identifier> receiver = new P2PSocketReceiver<Identifier>() {
 
       public void receiveSelectResult(final P2PSocket<Identifier> acceptorSocket,
@@ -1186,7 +1186,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       try {
         enqueue(ByteBuffer.wrap(PILOT_SOCKET_BYTES));
         enqueue(serializer.serialize(localNodeHandle));
-        sib = new SocketInputBuffer(socket,1024);
+        sib = new SocketInputBuffer(socket);
         receiveSelectResult(socket, true, true);
       } catch (IOException ioe) {
         cancel();
@@ -1314,7 +1314,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
      */
     public IncomingPilot(P2PSocket<Identifier> socket) throws IOException {
       this.socket = socket;
-      sib = new SocketInputBuffer(socket,1024);
+      sib = new SocketInputBuffer(socket);
       receiveSelectResult(socket, true, true);
     }
 

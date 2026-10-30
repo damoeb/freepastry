@@ -74,6 +74,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements CommitmentProtocol<Handle, Identifier> {
   private final int INITIAL_TIMEOUT_MILLIS = 1000;
@@ -81,7 +82,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
   private final int RECEIVE_CACHE_SIZE = 100;
   private final int MAX_RETRANSMISSIONS = 2;
   private final int PROGRESS_INTERVAL_MILLIS = 1000;
-  private final int MAX_ENTRIES_PER_MS = 1000000;      /* Max number of entries per millisecond */
+  private final int MAX_ENTRIES_PER_MS = SEQS_PER_MILLI;      /* Max number of entries per millisecond */
 
   /**
    * We need to keep some state for each peer, including separate transmit and
@@ -497,7 +498,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
 
     /* Construct a USERDATA message... */
 
-    assert((relevantlen == message.remaining()) || (relevantlen < 255));
+    assert((relevantlen == message.remaining()) || (relevantlen < MathUtils.uByteToInt(UserDataMessage.RELEVANT_LEN_ALL)));
 
     PeerInfo<Handle> pi = lookupPeer(target);
 

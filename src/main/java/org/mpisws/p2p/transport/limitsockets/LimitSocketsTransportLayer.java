@@ -71,6 +71,9 @@ import rice.selector.TimerTask;
  *
  */
 public class LimitSocketsTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType> {
+  /** A socket whose output was shut down is closed after this delay. */
+  private static final int CLOSE_AFTER_SHUTDOWN_MILLIS = 3000;
+
   int MAX_SOCKETS;
   private final TransportLayer<Identifier, MessageType> tl;
   private final LinkedHashMap<LSSocket, LSSocket> cache;
@@ -177,7 +180,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
             // do nothing, it's probably already closed anyway
           }
         }
-      }, 3000);
+      }, CLOSE_AFTER_SHUTDOWN_MILLIS);
     }
 
     /**

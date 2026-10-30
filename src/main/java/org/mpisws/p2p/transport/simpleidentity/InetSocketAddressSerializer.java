@@ -85,7 +85,7 @@ public class InetSocketAddressSerializer implements Serializer<InetSocketAddress
     }
     b.read(addr);
     short port = b.readShort();
-    return new InetSocketAddress(InetAddress.getByAddress(addr),0xFFFF & port);
+    return new InetSocketAddress(InetAddress.getByAddress(addr),Short.toUnsignedInt(port));
   }
 
   public static void serializeAddress(InetSocketAddress i, OutputBuffer b) throws IOException {

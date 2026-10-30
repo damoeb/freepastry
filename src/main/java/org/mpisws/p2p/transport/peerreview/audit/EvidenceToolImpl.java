@@ -81,6 +81,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.INVALID;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_BAD;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_OK;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.VALID;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements EvidenceTool<Handle, Identifier> {
 
@@ -211,7 +212,7 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
         for (long i=history.getNumEntries()-1; i>=1; i--) {
           IndexEntry entry = history.statEntry(i);
           short type = entry.getType();
-          if (entry.getSeq() < (snippet.getFirstSeq() - peerreview.getTimeToleranceMillis()*1000000))
+          if (entry.getSeq() < (snippet.getFirstSeq() - peerreview.getTimeToleranceMillis()*SEQS_PER_MILLI))
             break;
           if (type == EVT_RECV) {
 

@@ -76,6 +76,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLU
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.INVALID;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_INCONSISTENT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONCONFORMANT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 public class StatementProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements StatementProtocol<Handle, Identifier> {
 
@@ -354,7 +355,7 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
            subjectHistory.appendSnippetToHistory(pn.getSnippet());
 
            // TODO: pass the extInfo of the proof to the verifier (null for now; inherited from the C++ PeerReview port)
-           Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, pn.getMyHandle(), 1, pn.getSnippet().getFirstSeq()/1000000, null);
+           Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, pn.getMyHandle(), 1, pn.getSnippet().getFirstSeq()/SEQS_PER_MILLI, null);
            PeerReviewCallback<Handle, Identifier> replayApp = peerreview.getApp().getReplayInstance(verifier);
            verifier.setApplication(replayApp);
 

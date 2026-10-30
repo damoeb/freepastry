@@ -49,7 +49,7 @@ import rice.p2p.util.MathUtils;
  */
 final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier> {
   private final EntityManagerContext<Identifier> ctx;
-  byte[] sizeBytes = new byte[4];
+  byte[] sizeBytes = new byte[Integer.BYTES];
   ByteBuffer sizeBuf = ByteBuffer.wrap(sizeBytes);
   ByteBuffer msgBuf = null;
 

@@ -48,6 +48,9 @@ import org.slf4j.Logger;
 
 
 public class Forwarder<Identifier> {
+  /** Bytes copied per read while forwarding a socket. */
+  private static final int PIPE_BUFFER_SIZE = 1024;
+
   SourceRoute<Identifier> sr;
   P2PSocket<Identifier> socka;
   P2PSocket<Identifier> sockb;
@@ -112,7 +115,7 @@ public class Forwarder<Identifier> {
     public HalfPipe(P2PSocket<Identifier> from, P2PSocket<Identifier> to) {
       this.from = from;
       this.to = to;
-      buf = ByteBuffer.allocate(1024);
+      buf = ByteBuffer.allocate(PIPE_BUFFER_SIZE);
       from.register(true, false, this);
     }
 

@@ -48,7 +48,7 @@ import org.mpisws.p2p.transport.P2PSocket;
 final class SizeReader<Identifier> extends BufferReader<Identifier> {
 
   public SizeReader(EntityManager<Identifier> owner, P2PSocket<Identifier> socket) {
-    super(owner, 4, socket);
+    super(owner, Integer.BYTES, socket);
   }
 
   @Override

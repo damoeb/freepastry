@@ -76,6 +76,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLU
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable>
     implements ChallengeResponseProtocol<Handle, Identifier> {
@@ -195,8 +196,8 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
              this properly, we need to start at the first such event, which we locate by rounding
              down to the closest multiple of 1000. */
 
-          if (((beginSeq % 1000000) > 0) && !((flags & FLAG_INCLUDE_CHECKPOINT) == FLAG_INCLUDE_CHECKPOINT)) {
-            beginSeq -= (beginSeq % 1000000);
+          if (((beginSeq % SEQS_PER_MILLI) > 0) && !((flags & FLAG_INCLUDE_CHECKPOINT) == FLAG_INCLUDE_CHECKPOINT)) {
+            beginSeq -= (beginSeq % SEQS_PER_MILLI);
             idxFrom = history.findSeq(beginSeq);
             logger.trace("Moving beginSeq to {} (idx={})", beginSeq, idxFrom);
             assert(idxFrom >= 0);
@@ -209,7 +210,7 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
           IndexEntry toEntry;
           while ((toEntry = history.statEntry(idxTo+1)) != null) {
             followingSeq = toEntry.getSeq();
-            if ((followingSeq % 1000000) == 0)
+            if ((followingSeq % SEQS_PER_MILLI) == 0)
               break;
 
             idxTo++;
@@ -383,11 +384,11 @@ public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Ident
       boolean includePrevCheckpoint = evidenceAudit.isIncludePrevCheckpoint();
 
       long firstSeq = responseAudit.getFirstSeq();
-      if ((requestedBeginSeq % 1000000) > 0) {
-        requestedBeginSeq -= requestedBeginSeq % 1000000;
+      if ((requestedBeginSeq % SEQS_PER_MILLI) > 0) {
+        requestedBeginSeq -= requestedBeginSeq % SEQS_PER_MILLI;
       }
 
-      long fromNodeMaxSeq = requestedBeginSeq + 999999;
+      long fromNodeMaxSeq = requestedBeginSeq + (SEQS_PER_MILLI - 1);
 //
       if ((firstSeq > requestedBeginSeq) || (!includePrevCheckpoint && (firstSeq < requestedBeginSeq))) {
         if (logger.isWarnEnabled()) logger.warn("Log snippet starts at "+firstSeq+", but we asked for "+requestedBeginSeq+" (ilc="+(includePrevCheckpoint ? "yes" : "no")+"); flagging invalid");

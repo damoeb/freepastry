@@ -83,6 +83,11 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
  * @author Jeff Hoye
  */
 final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
+  /** A stalled write is checked after this many proximities, kept between the bounds below. */
+  private static final int LIVENESS_CHECK_PROXIMITY_MULTIPLIER = 4;
+  private static final int MIN_LIVENESS_CHECK_DELAY_MILLIS = 5000;
+  private static final int MAX_LIVENESS_CHECK_DELAY_MILLIS = 40000;
+
   private final EntityManagerContext<Identifier> ctx;
   private final SelectorManager selectorManager;
   private final Logger logger;
@@ -303,9 +308,9 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
         }
       };
 
-      int delay = proximityProvider.proximity(temp, options)*4;
-      if (delay < 5000) delay = 5000; // 1 second
-      if (delay > 40000) delay = 40000; // 20 seconds
+      int delay = proximityProvider.proximity(temp, options)*LIVENESS_CHECK_PROXIMITY_MULTIPLIER;
+      if (delay < MIN_LIVENESS_CHECK_DELAY_MILLIS) delay = MIN_LIVENESS_CHECK_DELAY_MILLIS;
+      if (delay > MAX_LIVENESS_CHECK_DELAY_MILLIS) delay = MAX_LIVENESS_CHECK_DELAY_MILLIS;
 
       selectorManager.schedule(livenessChecker, delay);
     }

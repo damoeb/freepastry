@@ -58,12 +58,12 @@ public class WireSourceRouteFactory implements SourceRouteFactory<InetSocketAddr
     byte numInPath = buf.readByte();
     ArrayList<InetSocketAddress> path = new ArrayList<InetSocketAddress>(numInPath);
     for (int i = 0; i < numInPath; i++) {
-      byte[] addrBytes = new byte[4];
+      byte[] addrBytes = new byte[WireSourceRoute.IPV4_BYTES];
       buf.read(addrBytes);
       InetAddress addr = InetAddress.getByAddress(addrBytes);
       short port = buf.readShort();
 
-      path.add(new InetSocketAddress(addr, 0xFFFF & port));
+      path.add(new InetSocketAddress(addr, Short.toUnsignedInt(port)));
     }
     return new WireSourceRoute(path);
   }

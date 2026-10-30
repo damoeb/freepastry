@@ -77,8 +77,11 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_ClosedChannel;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_IO;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_Unknown;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier> {
+  /** Event types are one unsigned byte. */
+  private static final int NUM_EVENT_TYPES = 256;
 
   protected Identifier localHandle;
   private final SecureHistory history;
@@ -93,7 +96,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   boolean initialized;
   short signatureSizeBytes;
   short hashSizeBytes;
-  int[] eventToCallback = new int[256];
+  int[] eventToCallback = new int[NUM_EVENT_TYPES];
   protected Logger logger;
   private final Serializer<Identifier> serializer; // was transport in c++ impl
   private final HashProvider hashProv;
@@ -122,7 +125,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     this.signatureSizeBytes = signatureSizeBytes;
     this.hashSizeBytes = hashSizeBytes;
 
-    for (int i=0; i<256; i++)
+    for (int i=0; i<NUM_EVENT_TYPES; i++)
       eventToCallback[i] = -1;
 
     fetchNextEvent();
@@ -741,7 +744,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   }
 
   public long getNextEventTime() {
-    return next.getSeq()/1000000;
+    return next.getSeq()/SEQS_PER_MILLI;
   }
 
   public boolean isSuccess() {

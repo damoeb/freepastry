@@ -72,7 +72,7 @@ public class BufferWriter<Identifier> implements P2PSocketReceiver<Identifier> {
     this.writeMe = writeMe;
     this.continuation = continuation;
     if (includeSizeHeader) {
-      sizeBuf = ByteBuffer.allocate(4);
+      sizeBuf = ByteBuffer.allocate(Integer.BYTES);
       sizeBuf.asIntBuffer().put(writeMe.remaining());
       sizeBuf.clear();
     }

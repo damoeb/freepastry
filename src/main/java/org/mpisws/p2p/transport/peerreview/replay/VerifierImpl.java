@@ -85,8 +85,11 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_VRF;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_ClosedChannel;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_IO;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_Unknown;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 public class VerifierImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements Verifier<Handle> {
+  /** Event types are one unsigned byte. */
+  private static final int NUM_EVENT_TYPES = 256;
 
   /**
    * Maps EVT_XXX -> EventCallback
@@ -108,7 +111,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   InputBuffer nextEvent;
 
   boolean initialized;
-  int[] eventToCallback = new int[256];
+  int[] eventToCallback = new int[NUM_EVENT_TYPES];
   private final Logger logger;
   private final IdentityTransport<Handle, Identifier> transport;
 
@@ -138,7 +141,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     this.nextEventIndex = firstEntryToReplay-1;
     this.initialized = false;
 
-    for (int i=0; i<256; i++)
+    for (int i=0; i<NUM_EVENT_TYPES; i++)
       eventToCallback[i] = -1;
 
     fetchNextEvent();
@@ -612,7 +615,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
   public long getNextEventTime() {
     if (next == null) return -1;
-    return next.getSeq()/1000000;
+    return next.getSeq()/SEQS_PER_MILLI;
   }
 
   public boolean isSuccess() {

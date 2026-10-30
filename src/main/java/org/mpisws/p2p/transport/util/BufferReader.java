@@ -77,7 +77,7 @@ public class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
     this.continuation = continuation;
     this.size = size;
     if (size < 0) {
-      buf = ByteBuffer.allocate(4);
+      buf = ByteBuffer.allocate(Integer.BYTES);
     } else {
       buf = ByteBuffer.allocate(size);
     }

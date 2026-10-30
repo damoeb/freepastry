@@ -209,7 +209,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     // read the header
     logger.debug("incomingSocket({})", socka);
 
-    final SocketInputBuffer sib = new SocketInputBuffer(socka,1024);
+    final SocketInputBuffer sib = new SocketInputBuffer(socka);
     socka.register(true, false, new P2PSocketReceiver<Identifier>() {
 
       public void receiveSelectResult(P2PSocket<Identifier> socket,

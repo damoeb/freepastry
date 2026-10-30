@@ -68,6 +68,9 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
  */
 public sealed class UserDataMessage<Handle extends RawSerializable> implements PeerReviewMessage, Evidence
     permits OutgoingUserDataMessage {
+  /** Relevant-length code meaning the whole payload is relevant; shorter lengths are sent as the length itself. */
+  public static final byte RELEVANT_LEN_ALL = (byte)0xFF;
+
   long topSeq;
   Handle senderHandle;
   byte[] hTopMinusOne;
@@ -83,7 +86,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     this.signature = sig;
     this.relevantLen = relevantlen;
 
-    assert((relevantlen == message.remaining()) || (relevantlen < 255));
+    assert((relevantlen == message.remaining()) || (relevantlen < MathUtils.uByteToInt(RELEVANT_LEN_ALL)));
     if (message.remaining() == message.array().length) {
       this.payload = message.array();
     } else {
@@ -101,7 +104,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
   }
 
   public byte getRelevantCode() {
-    byte relevantCode = (relevantLen == payload.length) ? (byte)0xFF : (byte)relevantLen;
+    byte relevantCode = (relevantLen == payload.length) ? RELEVANT_LEN_ALL : (byte)relevantLen;
     return relevantCode;
   }
 
@@ -129,7 +132,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     byte[] msg = new byte[buf.bytesRemaining()];
     buf.read(msg);
 
-    if (len == 0xFF) {
+    if (len == MathUtils.uByteToInt(RELEVANT_LEN_ALL)) {
       len = msg.length;
     }
 

@@ -51,6 +51,8 @@ import rice.p2p.util.TimerWeakHashMap;
  * @param <Identifier>
  */
 public class TimeoutResponseStrategy<Identifier> implements ResponseStrategy<Identifier> {
+  /** Receive times are kept this much longer than the timeout. */
+  private static final int HARD_LINK_SLACK_MILLIS = 60000;
 
   Map<Identifier, Long> lastTimeReceived;
 
@@ -60,7 +62,7 @@ public class TimeoutResponseStrategy<Identifier> implements ResponseStrategy<Ide
 
   public TimeoutResponseStrategy(int timeout, Environment env) {
     this.timeout = timeout;
-    this.lastTimeReceived = new TimerWeakHashMap<Identifier, Long>(env.getSelectorManager(), 60000+timeout);
+    this.lastTimeReceived = new TimerWeakHashMap<Identifier, Long>(env.getSelectorManager(), HARD_LINK_SLACK_MILLIS+timeout);
     this.time = env.getTimeSource();
   }
 

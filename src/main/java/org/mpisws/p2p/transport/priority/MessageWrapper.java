@@ -86,7 +86,7 @@ final class MessageWrapper<Identifier> implements
 
     // head the message with the size
     int size = message.remaining();
-    this.message = ByteBuffer.allocate(message.remaining()+4);
+    this.message = ByteBuffer.allocate(message.remaining()+Integer.BYTES);
     this.message.put((byte)((size >>> 24) & 0xFF));
     this.message.put((byte)((size >>> 16) & 0xFF));
     this.message.put((byte)((size >>>  8) & 0xFF));

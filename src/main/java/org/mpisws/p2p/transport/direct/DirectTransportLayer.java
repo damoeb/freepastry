@@ -62,6 +62,9 @@ import rice.pastry.direct.NodeRecord;
 
 
 public class DirectTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType> {
+  /** Simulated time until a socket to a dead node fails. */
+  private static final int CONNECT_TIMEOUT_MILLIS = 5000;
+
   private boolean acceptSockets = true;
 
   private final Identifier localIdentifier;
@@ -123,7 +126,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
           delay));
       handle.setSubCancellable(cancelAndClose);
     } else {
-      int delay = 5000;  // TODO: Make this configurable
+      int delay = CONNECT_TIMEOUT_MILLIS;  // TODO: Make this configurable
       handle.setSubCancellable(
           simulator.enqueueDelivery(
               new ConnectorExceptionDelivery<Identifier>(deliverSocketToMe, handle, new SocketTimeoutException()),delay));

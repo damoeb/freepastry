@@ -44,6 +44,9 @@ import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
+  static final int IPV4_BYTES = 4;
+  /** Bytes per hop: IPv4 address and port. */
+  static final int HOP_BYTES = IPV4_BYTES + Short.BYTES;
 
   WireSourceRoute(InetSocketAddress local, InetSocketAddress remote) {
     super(local, remote);
@@ -60,7 +63,7 @@ public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte) path.size());
     for (InetSocketAddress i : path) {
-      buf.write(i.getAddress().getAddress(),0,4);
+      buf.write(i.getAddress().getAddress(),0,IPV4_BYTES);
       buf.writeShort((short)i.getPort());
     }
   }
@@ -69,7 +72,7 @@ public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
     int ret = 5; // version+numhops
 
     // IPV4+port
-    ret += path.size() * 6;
+    ret += path.size() * HOP_BYTES;
 
     return ret;
   }

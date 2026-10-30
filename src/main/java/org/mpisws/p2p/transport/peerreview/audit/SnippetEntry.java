@@ -43,6 +43,7 @@ import java.util.Objects;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.MathUtils;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 /**
  *
@@ -59,13 +60,19 @@ import rice.p2p.util.MathUtils;
  *
  */
 public class SnippetEntry {
+  /** Sequence code: an absolute 8-byte sequence number follows (other codes are a millisecond delta). */
+  private static final byte SEQ_CODE_ABSOLUTE = (byte)0xFF;
+  /** Size code: an unsigned 2-byte length follows. */
+  private static final byte SIZE_CODE_SHORT = (byte)0xFF;
+  /** Size code: a 4-byte length follows (smaller codes are the length itself). */
+  private static final byte SIZE_CODE_INT = (byte)0xFE;
 
   private final byte type;
   private final long seq;
   private boolean isHash = false;
   private final byte[] content; // may be a hash
 
-  public static final int NUM_INDEXES = 1000000;
+  public static final int NUM_INDEXES = SEQS_PER_MILLI;
 
   public SnippetEntry(byte type, long seq, boolean isHash, byte[] content) {
     if (content.length == 0) throw new IllegalArgumentException("Content can't be zero-length");
@@ -121,7 +128,7 @@ public class SnippetEntry {
   protected static long decodeSeq(InputBuffer buf, long prevSeq) throws IOException {
     byte b = buf.readByte();
     if (b == (byte)0) return prevSeq+1;
-    if (b == (byte)0xFF) return buf.readLong();
+    if (b == SEQ_CODE_ABSOLUTE) return buf.readLong();
     long howMuchBigger = MathUtils.uByteToInt(b)*NUM_INDEXES;
     long prevSeqMS = ((prevSeq/NUM_INDEXES)*NUM_INDEXES);
     return prevSeqMS+howMuchBigger;
@@ -133,17 +140,17 @@ public class SnippetEntry {
       return;
     }
 
-    // If I end with 1000000
+    // If I end with SEQS_PER_MILLI
     if ((seq%NUM_INDEXES == 0)) {
       long foo = ((seq/NUM_INDEXES) - (prevSeq/NUM_INDEXES));
-      if (foo < 0xFF) {
+      if (foo < MathUtils.uByteToInt(SEQ_CODE_ABSOLUTE)) {
         if (foo < 0) throw new IOException("bug in encodeSeq.  foo:"+foo+" seq:"+seq+" prevSeq:"+prevSeq);
         buf.writeByte((byte)foo);
         return;
       }
     }
 
-    buf.writeByte((byte)0xFF);
+    buf.writeByte(SEQ_CODE_ABSOLUTE);
     buf.writeLong(seq);
   }
 
@@ -152,27 +159,27 @@ public class SnippetEntry {
       buf.writeByte((byte)0);
       return;
     }
-    if (content.length < 254) {
+    if (content.length < MathUtils.uByteToInt(SIZE_CODE_INT)) {
       buf.writeByte((byte)content.length);
       return;
     }
     if (content.length < 65535) {
-      buf.writeByte((byte)0xFF);
+      buf.writeByte(SIZE_CODE_SHORT);
       buf.writeShort((short)content.length);
       return;
     }
     // technically, it could be twice this big, but I don't think java arrays can be so large, if we fix this, also do so in decodeSize
     if (content.length > Integer.MAX_VALUE) throw new RuntimeException("content is too long:"+content.length);
-    buf.writeByte((byte)0xFE);
+    buf.writeByte(SIZE_CODE_INT);
     buf.writeInt(content.length);
   }
 
   public int decodeSize(InputBuffer buf) throws IOException {
     byte b = buf.readByte();
-    if (b == (byte)0xFF) {
+    if (b == SIZE_CODE_SHORT) {
       return MathUtils.uShortToInt(buf.readShort());
     }
-    if (b == (byte)0xFE) {
+    if (b == SIZE_CODE_INT) {
       return buf.readInt();
     }
     return MathUtils.uByteToInt(b);

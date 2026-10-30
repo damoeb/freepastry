@@ -76,6 +76,14 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
 public class LivenessTransportLayerImpl<Identifier> implements LivenessTransportLayer<Identifier, ByteBuffer>,
     TransportLayerCallback<Identifier, ByteBuffer>,
     OverrideLiveness<Identifier> {
+  /** Initial size of the buffer a ping or pong is serialized into. */
+  private static final int PING_BUFFER_SIZE = 1024;
+  /** How long an identifier's liveness state is kept after its last use. */
+  private static final int MANAGER_HARD_LINK_MILLIS = 300000;
+  /** An idle socket's liveness is first checked after this many RTOs, then every IDLE_CHECK_PERIOD_MILLIS. */
+  private static final int IDLE_CHECK_RTO_MULTIPLIER = 4;
+  private static final int IDLE_CHECK_PERIOD_MILLIS = 30000;
+
   // how long to wait for a ping response to come back before declaring lost
   public final int PING_DELAY;
 
@@ -146,7 +154,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     random = env.getRandomSource();
     this.livenessListeners = new ArrayList<LivenessListener<Identifier>>();
     this.pingListeners = new ArrayList<PingListener<Identifier>>();
-      this.managers = new TimerWeakHashMap<Identifier, EntityManager>(env.getSelectorManager(), 300000);
+      this.managers = new TimerWeakHashMap<Identifier, EntityManager>(env.getSelectorManager(), MANAGER_HARD_LINK_MILLIS);
     PING_DELAY = config.pingDelay();
     PING_JITTER = config.pingJitter();
     NUM_PING_TRIES = config.numPingTries();
@@ -340,7 +348,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     logger.trace("ping({})", i);
     if (i.equals(tl.getLocalIdentifier())) return false;
     try {
-      SimpleOutputBuffer sob = new SimpleOutputBuffer(1024);
+      SimpleOutputBuffer sob = new SimpleOutputBuffer(PING_BUFFER_SIZE);
       sob.writeByte(HDR_PING);
       final long now = time.currentTimeMillis();
       new PingMessage(now).serialize(sob);
@@ -372,7 +380,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   public void pong(final Identifier i, final long senderTime, final Map<String, Object> options) {
     logger.trace("pong({},{})", i, senderTime);
     try {
-      SimpleOutputBuffer sob = new SimpleOutputBuffer(1024);
+      SimpleOutputBuffer sob = new SimpleOutputBuffer(PING_BUFFER_SIZE);
       sob.writeByte(HDR_PONG);
       new PongMessage(senderTime).serialize(sob);
       tl.sendMessage(i, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
@@ -925,7 +933,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
         };
       } // sync
       logger.atTrace().log(() -> "Checking liveness on "+manager.identifier.get()+" in "+manager.rto()+" millis if we don't write.");
-      timer.schedule(livenessCheckerTimer, manager.rto()*4, 30000);
+      timer.schedule(livenessCheckerTimer, manager.rto()*IDLE_CHECK_RTO_MULTIPLIER, IDLE_CHECK_PERIOD_MILLIS);
     }
 
     public void stopLivenessCheckerTimer() {
