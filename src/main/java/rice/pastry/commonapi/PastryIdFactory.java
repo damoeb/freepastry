@@ -37,12 +37,10 @@ advised of the possibility of such damage.
 
 package rice.pastry.commonapi;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.SortedMap;
 
-import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.Id;
@@ -50,6 +48,7 @@ import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.util.HashUtils;
 
 /**
  * This class provides applications with a way of generating
@@ -62,18 +61,10 @@ import rice.p2p.commonapi.NodeHandleSet;
  */
 public class PastryIdFactory implements IdFactory {
 
-  private MessageDigest md;
-
   /**
    * Constructor
    */
   public PastryIdFactory(Environment env) {
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch ( NoSuchAlgorithmException e ) {
-      Logger logger = env.getLogManager().getLogger(getClass(), null);
-      logger.error("No SHA support!");
-    }
   }
 
   /**
@@ -97,16 +88,14 @@ public class PastryIdFactory implements IdFactory {
   }
 
   /**
-   * Builds a protocol-specific Id by using the hash of the given string as source data.
+   * Builds a protocol-specific Id by using the hash of the given string as source data: SHA-256 of its UTF-8
+   * bytes, truncated to the 160 bits of an Id (see {@link HashUtils#hashToIdMaterial(byte[]...)}).
    *
    * @param string The string to use as source data
    * @return The built Id.
    */
   public Id buildId(String string) {
-    synchronized (md) {
-      md.update(string.getBytes());
-      return buildId(md.digest());
-    }
+    return buildId(HashUtils.hashToIdMaterial(string.getBytes(StandardCharsets.UTF_8)));
   }
 
   /**

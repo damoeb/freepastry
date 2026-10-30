@@ -38,11 +38,11 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
 import java.util.SortedMap;
 
 import rice.p2p.util.ConcurrentRingMap;
+import rice.p2p.util.HashUtils;
 
 /**
  * Represents a set of Pastry ids.
@@ -167,18 +167,13 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
   /**
    * compute a fingerprint of the members in this IdSet
    *
-   * @return an Id containing the secure hash of this set
+   * @return the 32-byte SHA-256 content hash of the members, in order
    */
   public byte[] getHash() {
     if (validHash) return cachedHash;
 
     // recompute the hash
-    MessageDigest md = null;
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch ( NoSuchAlgorithmException e ) {
-      throw new RuntimeException("No SHA support!",e);
-    }
+    MessageDigest md = HashUtils.newDigest();
 
     Iterator<rice.p2p.commonapi.Id> it = getIterator();
 

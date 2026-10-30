@@ -155,7 +155,7 @@ public class SecurityUtils {
   /**
    * The name of the hash function.
    */
-  public final static String HASH_ALGORITHM = "SHA1";
+  public final static String HASH_ALGORITHM = HashUtils.ALGORITHM;
 
   /**
    * The name of the hmac function.
@@ -201,11 +201,6 @@ public class SecurityUtils {
   }
 
   // ----- STATIC CIPHER OBJECTS -----
-
-  /**
-   * The message digest used for doing hashing
-   */
-  private static final MessageDigest hash;
 
   /**
    * The message digest used for doing apop
@@ -266,7 +261,6 @@ public class SecurityUtils {
       generatorAsymmetric = KeyPairGenerator.getInstance(ASYMMETRIC_GENERATOR);
       factoryAsymmetric = KeyFactory.getInstance(ASYMMETRIC_GENERATOR);
       signature = Signature.getInstance(SIGNATURE_ALGORITHM);
-      hash = MessageDigest.getInstance(HASH_ALGORITHM);
       apop = MessageDigest.getInstance(APOP_ALGORITHM);
       hmac1 = MessageDigest.getInstance(HMAC_ALGORITHM);
       hmac2 = MessageDigest.getInstance(HMAC_ALGORITHM);
@@ -321,17 +315,13 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method for determining the hash of a byte[] using a secure hashing
-   * algorithm.
+   * Utility method for determining the content hash of a byte[], see {@link HashUtils#hash(byte[]...)}.
    *
    * @param input The input
-   * @return The hash value
-   * @exception SecurityException If the hashing does not happen properly
+   * @return The 32-byte SHA-256 hash value
    */
-  public static byte[] hash(byte[] input) throws SecurityException {
-    synchronized (hash) {
-      return hash.digest(input);
-    }
+  public static byte[] hash(byte[] input) {
+    return HashUtils.hash(input);
   }
 
   /**

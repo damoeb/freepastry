@@ -37,11 +37,10 @@ advised of the possibility of such damage.
 
 package rice.pastry.standard;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
 
-import org.slf4j.Logger;
 import rice.environment.Environment;
+import rice.p2p.util.HashUtils;
 
 /**
  * Constructs an address for a specific class and instance name.
@@ -55,30 +54,30 @@ public class StandardAddress {
   //serial ver for backward compatibility
   private static final long serialVersionUID = 1564239935633411277L;
 
+  /**
+   * Returns the address of an application: the first two bytes of the SHA-256 hash of its class, followed by the
+   * first two bytes of the SHA-256 hash of its instance name (or two zero bytes if there is none).
+   *
+   * @param c The application class
+   * @param instance The instance name, or null
+   * @param env The environment (unused)
+   * @return The address
+   */
   public static int getAddress(Class<?> c, String instance, Environment env) {
-    MessageDigest md = null;
-
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch ( NoSuchAlgorithmException e ) {
-      Logger logger = env.getLogManager().getLogger(StandardAddress.class, null);
-      logger.error("No SHA support!");
-    }
-
     byte[] digest = new byte[4];
-    md.update(c.toString().getBytes());
 
-    digest[0] = md.digest()[0];
-    digest[1] = md.digest()[1];
+    // each half is two bytes of ONE digest; this used to call MessageDigest.digest() once per byte, and as
+    // digest() resets, the second byte was always that of the hash of nothing
+    byte[] classHash = HashUtils.hash(c.toString().getBytes(StandardCharsets.UTF_8));
+    digest[0] = classHash[0];
+    digest[1] = classHash[1];
 
     if ((instance == null) || (instance.equals(""))) {
       // digest 2,3 == 0
     } else {
-      md.reset();
-      md.update(instance.getBytes());
-
-      digest[2] = md.digest()[0];
-      digest[3] = md.digest()[1];
+      byte[] instanceHash = HashUtils.hash(instance.getBytes(StandardCharsets.UTF_8));
+      digest[2] = instanceHash[0];
+      digest[3] = instanceHash[1];
     }
 
     int myCode = shift(digest[0],24) | shift(digest[1],16) |

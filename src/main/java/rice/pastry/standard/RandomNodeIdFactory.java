@@ -36,16 +36,14 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
 import org.slf4j.Logger;
 import rice.environment.Environment;
+import rice.p2p.util.HashUtils;
 import rice.pastry.Id;
 import rice.pastry.NodeIdFactory;
 
 /**
- * Constructs random node ids by SHA'ing consecutive numbers, with random
+ * Constructs random node ids by hashing consecutive numbers with SHA-256, with random
  * starting value.
  *
  * @version $Id: RandomNodeIdFactory.java 3613 2007-02-15 14:45:14Z jstewart $
@@ -85,18 +83,7 @@ public class RandomNodeIdFactory implements NodeIdFactory {
       tmp >>= 8;
     }
 
-    MessageDigest md = null;
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch (NoSuchAlgorithmException e) {
-      logger.error("No SHA support!");
-      throw new RuntimeException("No SHA support!",e);
-    }
-
-    md.update(raw);
-    byte[] digest = md.digest();
-
-    Id nodeId = Id.build(digest);
+    Id nodeId = Id.build(HashUtils.hashToIdMaterial(raw));
 
     return nodeId;
   }

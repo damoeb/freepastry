@@ -37,12 +37,11 @@ advised of the possibility of such damage.
 package rice.pastry.standard;
 
 import java.net.InetAddress;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
+import rice.p2p.util.HashUtils;
 import rice.pastry.Id;
 import rice.pastry.NodeIdFactory;
 
@@ -113,20 +112,7 @@ public class IPNodeIdFactory implements NodeIdFactory {
       tmp >>= 8;
     }
 
-    MessageDigest md = null;
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch (NoSuchAlgorithmException e) {
-      logger.error("No SHA support!");
-      throw new RuntimeException("No SHA support!",e);
-    }
-
-    md.update(rawIP);
-    md.update(rawPort);
-    md.update(raw);
-    byte[] digest = md.digest();
-
-    Id nodeId = Id.build(digest);
+    Id nodeId = Id.build(HashUtils.hashToIdMaterial(rawIP, rawPort, raw));
 
     return nodeId;
   }

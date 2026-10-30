@@ -90,7 +90,7 @@ public class SecurityUtilsUnit {
     System.out.print("    Testing hashing\t\t\t\t\t");
     byte[] testStringHash = SecurityUtils.hash(testStringByte);
 
-    if ((testStringHash != null) && (testStringHash.length == 20)) {
+    if ((testStringHash != null) && (testStringHash.length == 32)) {
       System.out.println("[ PASSED ]");
     } else {
       System.out.println("[ FAILED ]");
