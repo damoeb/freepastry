@@ -612,7 +612,7 @@ public class RoutingTable implements NodeSetEventSource {
           nh = rs.get(0);
         }
         if (nh != null) {
-          s += ("" + ((rice.pastry.Id)(nh.getId())).toStringBare());
+          s += ("" + nh.getNodeId().toStringBare());
           if (nh.equals(myNodeHandle)) {
             s += "*";
           }

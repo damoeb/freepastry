@@ -331,7 +331,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
         boolean hasDestHandle = buf.readBoolean();
         if (hasDestHandle) { // destHandle exists
           destHandle = pn.readNodeHandle(buf);
-          target = (rice.pastry.Id)destHandle.getId();
+          target = destHandle.getNodeId();
         } else {
           target = Id.build(buf);
         }

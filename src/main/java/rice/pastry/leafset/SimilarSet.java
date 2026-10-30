@@ -334,7 +334,7 @@ public class SimilarSet implements NodeSetEventSource {
       if (table == null) return; // don't have this feature installed
 
       int numRows = table.numRows();
-      Id lnId = (rice.pastry.Id)ln.getId();
+      Id lnId = ln.getNodeId();
       int numCols = table.numColumns();
       int baseBitLength = table.baseBitLength();
 

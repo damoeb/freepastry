@@ -305,7 +305,7 @@ public class StandardRouter extends PastryAppl implements Router {
       {
         best = thePastryNode.getRoutingTable().getBestEntry(target);
         if (best == null || best.isEmpty()) {
-          rtIterator = thePastryNode.getRoutingTable().alternateRoutesIterator((rice.pastry.Id)target);
+          rtIterator = thePastryNode.getRoutingTable().alternateRoutesIterator(target);
           lsCollection = getLSCollection(lsPos);
           iterator = rtIterator;
         }
@@ -325,7 +325,7 @@ public class StandardRouter extends PastryAppl implements Router {
           k++;
           if (k >= best.size()) {
             // done with best, now use the rtIterator
-            rtIterator = thePastryNode.getRoutingTable().alternateRoutesIterator((rice.pastry.Id)target);
+            rtIterator = thePastryNode.getRoutingTable().alternateRoutesIterator(target);
             lsCollection = getLSCollection(lsPos);
             iterator = rtIterator;
           }
