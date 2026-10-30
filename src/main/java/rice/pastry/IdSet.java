@@ -41,8 +41,8 @@ import java.security.MessageDigest;
 import java.util.Iterator;
 import java.util.SortedMap;
 
-import rice.p2p.util.ConcurrentRingMap;
 import rice.p2p.util.HashUtils;
+import rice.p2p.util.ids.SortedMapIdSet;
 
 /**
  * Represents a set of Pastry ids.
@@ -51,115 +51,33 @@ import rice.p2p.util.HashUtils;
  *
  * @author Peter Druschel
  */
-@SuppressWarnings("unchecked")
-public final class IdSet implements rice.p2p.commonapi.IdSet {
+public final class IdSet extends SortedMapIdSet<IdSet> {
 
-
-  private SortedMap<rice.p2p.commonapi.Id, ?> idSet;
-
-  // a cache of the fingerprint hash
+  // a cache of the fingerprint hash, or null if it must be recomputed
   private byte[] cachedHash;
-  private boolean validHash;
 
   /**
    * Constructor.
    */
   public IdSet() {
-    idSet = new ConcurrentRingMap<rice.p2p.commonapi.Id, Object>();
-    validHash = false;
+    super();
   }
 
   /**
-   * Constructor.
-   * constructs
-   * @param s the TreeSet based on which we construct a new IdSet
+   * Creates a set whose members are the keys of the given map; the set is a view of the map.
+   *
+   * @param s the map whose keys are the members
    */
   public IdSet(SortedMap<rice.p2p.commonapi.Id, ?> s) {
-    idSet = s;
-    validHash = false;
+    super(s);
   }
 
-  /**
-   * return the number of elements
-   */
-  public int numElements() {
-    return idSet.size();
+  protected IdSet newSet(SortedMap<rice.p2p.commonapi.Id, ?> members) {
+    return new IdSet(members);
   }
 
-  /**
-   * add a member
-   * @param id the id to add
-   */
-  public void addMember(Id id) {
-    idSet.put(id, null);
-    validHash = false;
-  }
-
-  /**
-   * remove a member
-   * @param id the id to remove
-   */
-  public void removeMember(Id id) {
-    idSet.remove(id);
-    validHash = false;
-  }
-
-  /**
-   * test membership
-   * @param id the id to test
-   * @return true of id is a member, false otherwise
-   */
-  public boolean isMember(Id id) {
-    return idSet.containsKey(id);
-  }
-
-  /**
-   * return the smallest member id
-   * @return the smallest id in the set
-   */
-  public Id minMember() {
-    return (Id) idSet.firstKey();
-  }
-
-  /**
-   * return the largest member id
-   * @return the largest id in the set
-   */
-  public Id maxMember() {
-    return (Id) idSet.lastKey();
-  }
-
-  /**
-   * return a subset of this set, consisting of the member ids in a given range
-   * @param from the counterclockwise end of the range (inclusive)
-   * @param to the clockwise end of the range (exclusive)
-   * @return the subset
-   */
-  public IdSet subSet(Id from, Id to) {
-    return new IdSet(idSet.subMap(from, to));
-  }
-
-  /**
-   * return a subset of this set, consisting of the member ids in a given range
-   * @param range the range
-   * @return the subset
-   */
-  public IdSet subSet(IdRange range) {
-    if (range.isEmpty()) {
-      return new IdSet();
-    } else if (range.getCCW().equals(range.getCW())) {
-      return this;
-    } else {
-      return subSet(range.getCCW(), range.getCW());
-    }
-  }
-
-  /**
-   * return an iterator over the elements of this set
-   * @return the iterator
-   */
-  public Iterator<rice.p2p.commonapi.Id> getIterator() {
-    return idSet.keySet().iterator();
+  protected void membersChanged() {
+    cachedHash = null;
   }
 
   /**
@@ -167,8 +85,8 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
    *
    * @return the 32-byte SHA-256 content hash of the members, in order
    */
-  public byte[] getHash() {
-    if (validHash) return cachedHash;
+  public byte[] hash() {
+    if (cachedHash != null) return cachedHash;
 
     // recompute the hash
     MessageDigest md = HashUtils.newDigest();
@@ -176,118 +94,14 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
     Iterator<rice.p2p.commonapi.Id> it = getIterator();
 
     byte[] raw = new byte[Id.IdBitLength / 8];
-    Id id;
 
     while (it.hasNext()) {
-      id = (Id) it.next();
-      id.blit(raw);
+      ((Id) it.next()).blit(raw);
       md.update(raw);
     }
 
     cachedHash = md.digest();
-    validHash = true;
 
     return cachedHash;
   }
-
-  /**
-   * Returns a string representation of the IdSet.
-   */
-  public String toString() {
-    Iterator<rice.p2p.commonapi.Id> it = getIterator();
-
-    Id key;
-    String s = "[ IdSet: ";
-    while(it.hasNext()) {
-      key = (Id)it.next();
-      s = s + key + ",";
-
-    }
-    s = s + " ]";
-    return s;
-  }
-
-  // Common API Support
-
-  /**
-   * add a member
-   * @param id the id to add
-   */
-  public void addId(rice.p2p.commonapi.Id id) {
-    addMember((Id) id);
-  }
-
-  /**
-   * remove a member
-   * @param id the id to remove
-   */
-  public void removeId(rice.p2p.commonapi.Id id) {
-    removeMember((Id) id);
-  }
-
-  /**
-   * test membership
-   * @param id the id to test
-   * @return true of id is a member, false otherwise
-   */
-  public boolean isMemberId(rice.p2p.commonapi.Id id) {
-    return isMember((Id) id);
-  }
-
-  /**
-   * Returns a new, empty IdSet of this type
-   *
-   * @return A new IdSet
-   */
-  public rice.p2p.commonapi.IdSet build() {
-    return new IdSet();
-  }
-
-  /**
-   * return a subset of this set, consisting of the member ids in a given range
-   * @param range the range (a rice.pastry.IdRange)
-   * @return the subset
-   */
-  public rice.p2p.commonapi.IdSet subSet(rice.p2p.commonapi.IdRange range) {
-    return subSet((IdRange) range);
-  }
-
-  /**
-   * return a hash of this set
-   *
-   * @return the hash of this set
-   */
-  public byte[] hash() {
-    return getHash();
-  }
-
-  /**
-   * return this set as an array
-   * @return the array
-   */
-  public rice.p2p.commonapi.Id[] asArray() {
-    return (rice.p2p.commonapi.Id[]) idSet.keySet().toArray(new rice.p2p.commonapi.Id[0]);
-  }
-
-  /**
-   * Returns an independent copy of this set, with the same members in the same order.
-   *
-   * @return the copy
-   */
-  public IdSet copy() {
-    return new IdSet(copyOf(idSet));
-  }
-
-  /**
-   * Copies a backing map, keeping its iteration order: a ConcurrentRingMap keeps its ring range, any other map is copied
-   * in natural order.
-   */
-  static SortedMap<rice.p2p.commonapi.Id, ?> copyOf(SortedMap<rice.p2p.commonapi.Id, ?> map) {
-    if (map instanceof ConcurrentRingMap<rice.p2p.commonapi.Id, ?> ring) {
-      return ring.copy();
-    }
-    return new ConcurrentRingMap<rice.p2p.commonapi.Id, Object>(map);
-  }
-
-
 }

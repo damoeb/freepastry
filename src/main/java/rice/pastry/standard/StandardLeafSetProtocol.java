@@ -253,9 +253,9 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       if (nh == null || nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
         continue;
 
-      if (!sent.isMember(nh.getNodeId())) {
+      if (!sent.isMemberId(nh.getNodeId())) {
         thePastryNode.send(nh,bls,null, options);
-        sent.addMember(nh.getNodeId());
+        sent.addId(nh.getNodeId());
       }
     }
   }

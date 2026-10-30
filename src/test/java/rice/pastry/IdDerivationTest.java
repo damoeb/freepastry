@@ -69,8 +69,8 @@ public class IdDerivationTest {
     set.addId(Id.build(sha256("x")));
     byte[] raw = new byte[Id.IdBitLength / 8];
     Id.build(sha256("x")).blit(raw);
-    assertEquals(32, set.getHash().length);
-    assertEquals(Arrays.toString(HashUtils.hash(raw)), Arrays.toString(set.getHash()));
+    assertEquals(32, set.hash().length);
+    assertEquals(Arrays.toString(HashUtils.hash(raw)), Arrays.toString(set.hash()));
   }
 
   @Test

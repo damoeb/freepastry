@@ -35,12 +35,11 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 package rice.p2p.glacier;
-import java.util.Iterator;
+
 import java.util.SortedMap;
 
 import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.ConcurrentRingMap;
+import rice.p2p.util.ids.SortedMapIdSet;
 
 /**
  * A sorted set of FragmentKeys.
@@ -48,61 +47,26 @@ import rice.p2p.util.ConcurrentRingMap;
  * @version $Id: FragmentKeySet.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author ahae
  */
-@SuppressWarnings("unchecked")
-public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
-
-  private SortedMap<Id, ?> idSet;
-
-  // a cache of the fingerprint hash
-  private FragmentKey cachedHash;
-  private boolean validHash;
+public class FragmentKeySet extends SortedMapIdSet<FragmentKeySet> {
 
   /**
    * Constructor.
    */
   public FragmentKeySet() {
-    idSet = new ConcurrentRingMap<Id, Object>();
-    validHash = false;
+    super();
   }
 
   /**
-   * Copy constructor. constructs a shallow copy of the given IdSet o.
+   * Creates a set whose members are the keys of the given map; the set is a view of the map.
    *
-   * @param o the IdSet to copy
-   */
-  public FragmentKeySet(FragmentKeySet o) {
-    idSet = new ConcurrentRingMap<Id, Object>(o.idSet);
-    cachedHash = o.cachedHash;
-    validHash = o.validHash;
-  }
-
-  /**
-   * Constructor. constructs a shallow copy of the given TreeSet s.
-   *
-   * @param s the TreeSet based on which we construct a new IdSet
+   * @param s the map whose keys are the members
    */
   protected FragmentKeySet(SortedMap<Id, ?> s) {
-    idSet = s;
-    validHash = false;
+    super(s);
   }
 
-  /**
-   * test membership
-   *
-   * @param id the id to test
-   * @return true of id is a member, false otherwise
-   */
-  public boolean isMember(rice.p2p.commonapi.Id id) {
-    return idSet.containsKey(id);
-  }
-
-  /**
-   * return an iterator over the elements of this set
-   *
-   * @return the iterator
-   */
-  public Iterator<Id> getIterator() {
-    return idSet.keySet().iterator();
+  protected FragmentKeySet newSet(SortedMap<Id, ?> members) {
+    return new FragmentKeySet(members);
   }
 
   /**
@@ -111,176 +75,7 @@ public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
    * @return never returns
    * @throws RuntimeException always
    */
-  public byte[] getHash() {
+  public byte[] hash() {
     throw new RuntimeException("FragmentKeySet.getHash() is not supported!");
   }
-
-  /**
-   * test membership
-   *
-   * @param id the id to test
-   * @return true of id is a member, false otherwise
-   */
-  public boolean isMemberId(rice.p2p.commonapi.Id id) {
-    return isMember(id);
-  }
-
-  /**
-   * return the number of elements
-   *
-   * @return the number of elements
-   */
-  public int numElements() {
-    return idSet.size();
-  }
-
-  /**
-   * add a member
-   *
-   * @param id the id to add
-   */
-  public void addMember(rice.p2p.commonapi.Id id) {
-    idSet.put(id, null);
-    validHash = false;
-  }
-
-  /**
-   * remove a member
-   *
-   * @param id the id to remove
-   */
-  public void removeMember(Id id) {
-    idSet.remove(id);
-    validHash = false;
-  }
-
-  /**
-   * return the smallest member id
-   *
-   * @return the smallest id in the set
-   */
-  public FragmentKey minMember() {
-    return (FragmentKey) idSet.firstKey();
-  }
-
-  /**
-   * return the largest member id
-   *
-   * @return the largest id in the set
-   */
-  public FragmentKey maxMember() {
-    return (FragmentKey) idSet.lastKey();
-  }
-
-  /**
-   * return a subset of this set, consisting of the member ids in a given range
-   *
-   * @param from the counterclockwise end of the range (inclusive)
-   * @param to the clockwise end of the range (exclusive)
-   * @return the subset
-   */
-  public FragmentKeySet subSet(Id from, Id to) {
-    return new FragmentKeySet(idSet.subMap(from, to));
-  }
-
-  /**
-   * return a subset of this set, consisting of the member ids in a given range
-   *
-   * @param range the range
-   * @return the subset
-   */
-  public FragmentKeySet subSet(FragmentKeyRange range) {
-    if(range.isEmpty())
-      return new FragmentKeySet();
-    if(range.getCCWId().equals(range.getCWId()))
-      return this;
-    else
-      return subSet(range.getCCWId(), range.getCWId());
-  }
-
-
-  /**
-   * Returns a string representation of the IdSet.
-   *
-   * @return the short string form
-   */
-
-  public String toString() {
-    Iterator<Id> it = getIterator();
-    Id key;
-    String s = "[ IdSet: ";
-    while (it.hasNext()) {
-      key = it.next();
-      s = s + key + ",";
-
-    }
-    s = s + " ]";
-    return s;
-  }
-
-  // Common API Support
-
-  /**
-   * add a member
-   *
-   * @param id the id to add
-   */
-  public void addId(rice.p2p.commonapi.Id id) {
-    addMember(id);
-  }
-
-  /**
-   * remove a member
-   *
-   * @param id the id to remove
-   */
-  public void removeId(rice.p2p.commonapi.Id id) {
-    removeMember((FragmentKey) id);
-  }
-
-  /**
-   * return a subset of this set, consisting of the member ids in a given range
-   *
-   * @param range the range (a FragmentKeyRange)
-   * @return the subset
-   */
-  public rice.p2p.commonapi.IdSet subSet(rice.p2p.commonapi.IdRange range) {
-    return subSet((FragmentKeyRange) range);
-  }
-
-  /**
-   * return a hash of this set
-   *
-   * @return the hash of this set
-   */
-  public byte[] hash() {
-    return getHash();
-  }
-
-  /**
-   * Returns a copy of this set
-   *
-   * @return the copy
-   */
-  public FragmentKeySet copy() {
-    return new FragmentKeySet(this);
-  }
-
-  /**
-   * Returns a new, empty IdSet of this type
-   *
-   * @return A new IdSet
-   */
-  public IdSet build() {
-    return new FragmentKeySet();
-  }
-
-  /**
-   * return this set as an array
-   * @return the array
-   */
-  public rice.p2p.commonapi.Id[] asArray() {
-    return (rice.p2p.commonapi.Id[]) idSet.keySet().toArray(new rice.p2p.commonapi.Id[0]);
-  }
-
 }
