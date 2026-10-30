@@ -60,13 +60,6 @@ public class UtilUnitProgramsTest {
   }
 
   @Test
-  public void redBlackMap() throws Exception {
-    // throws a RuntimeException on the first wrong (sub-)map; 8 entries, 8 random sub-maps per level, 3 levels
-    String output = run(RedBlackMapUnit::main, "8");
-    assertContains(output, "REMOVING");
-  }
-
-  @Test
   public void sortedLinkedList() throws Exception {
     // throws a RuntimeException if the list is out of order
     run(TestSortedLinkedList::main);

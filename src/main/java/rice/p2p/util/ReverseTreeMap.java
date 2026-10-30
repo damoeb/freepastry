@@ -57,17 +57,17 @@ public class ReverseTreeMap<K,V> implements Serializable {
   /**
    * The internal normal map
    */
-  private SortedMap<K,V> normal = new RedBlackMap<K,V>();
+  private SortedMap<K,V> normal = new ConcurrentRingMap<K,V>();
 
   /**
    * The internal value -> list of keys map
    */
-  private SortedMap<V,RedBlackMap<K,V>> reverse = new RedBlackMap<V,RedBlackMap<K,V>>();
+  private SortedMap<V,ConcurrentRingMap<K,V>> reverse = new ConcurrentRingMap<V,ConcurrentRingMap<K,V>>();
 
   /**
    * The internal list of keys with null as a mapping
    */
-  private SortedMap<K,V> nulls = new RedBlackMap<K,V>();
+  private SortedMap<K,V> nulls = new ConcurrentRingMap<K,V>();
 
   /**
    * Constructor
@@ -80,7 +80,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
    * Constructor
    *
    */
-  protected ReverseTreeMap(SortedMap<K,V> normal, SortedMap<V,RedBlackMap<K,V>> reverse, SortedMap<K,V> nulls) {
+  protected ReverseTreeMap(SortedMap<K,V> normal, SortedMap<V,ConcurrentRingMap<K,V>> reverse, SortedMap<K,V> nulls) {
     this.normal = normal;
     this.reverse = reverse;
     this.nulls = nulls;
@@ -133,7 +133,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
     V value = normal.remove(key);
 
     if (value != null) {
-      RedBlackMap<K,V> o = reverse.get(value);
+      ConcurrentRingMap<K,V> o = reverse.get(value);
       o.remove(key);
 
       if (o.size() == 0) {
@@ -157,7 +157,7 @@ public class ReverseTreeMap<K,V> implements Serializable {
 
     // remove any old reverse mapping
     if (old != null) {
-      RedBlackMap<K,V> o = reverse.get(old);
+      ConcurrentRingMap<K,V> o = reverse.get(old);
       o.remove(key);
 
       if (o.size() == 0) {
@@ -169,11 +169,11 @@ public class ReverseTreeMap<K,V> implements Serializable {
 
     // and add the new reverse mapping
     if (value != null) {
-      RedBlackMap<K,V> v = reverse.get(value);
+      ConcurrentRingMap<K,V> v = reverse.get(value);
 
       // creating a treeset if necessary
       if (v == null) {
-        v = new RedBlackMap<K,V>();
+        v = new ConcurrentRingMap<K,V>();
         reverse.put(value, v);
       }
 
@@ -272,8 +272,8 @@ public class ReverseTreeMap<K,V> implements Serializable {
    * @param map The map to convert
    * @return The converted map
    */
-  protected SortedMap<K,V> convert(SortedMap<V,RedBlackMap<K,V>> map) {
-    SortedMap<K,V> result = new RedBlackMap<K,V>();
+  protected SortedMap<K,V> convert(SortedMap<V,ConcurrentRingMap<K,V>> map) {
+    SortedMap<K,V> result = new ConcurrentRingMap<K,V>();
     for (V v : map.keySet())
       result.putAll(map.get(v));
 

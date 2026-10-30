@@ -40,7 +40,7 @@ import java.util.SortedMap;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.RedBlackMap;
+import rice.p2p.util.ConcurrentRingMap;
 
 /**
  * A sorted set of FragmentKeys.
@@ -61,7 +61,7 @@ public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
    * Constructor.
    */
   public FragmentKeySet() {
-    idSet = new RedBlackMap<Id, Object>();
+    idSet = new ConcurrentRingMap<Id, Object>();
     validHash = false;
   }
 
@@ -71,7 +71,7 @@ public class FragmentKeySet implements rice.p2p.commonapi.IdSet {
    * @param o the IdSet to copy
    */
   public FragmentKeySet(FragmentKeySet o) {
-    idSet = new RedBlackMap<Id, Object>(o.idSet);
+    idSet = new ConcurrentRingMap<Id, Object>(o.idSet);
     cachedHash = o.cachedHash;
     validHash = o.validHash;
   }

@@ -59,8 +59,8 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
+import rice.p2p.util.ConcurrentRingMap;
 import rice.p2p.util.ImmutableSortedMap;
-import rice.p2p.util.RedBlackMap;
 import rice.p2p.util.ReverseTreeMap;
 import rice.p2p.util.XMLObjectOutputStream;
 
@@ -279,7 +279,7 @@ public class MemoryStorage implements Storage {
    */
   public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
     if (range.isEmpty())
-      return new RedBlackMap<Id, Serializable>();
+      return new ConcurrentRingMap<Id, Serializable>();
     else if (range.getCCWId().equals(range.getCWId()))
       return scanMetadata();
     else

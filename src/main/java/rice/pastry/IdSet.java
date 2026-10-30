@@ -42,7 +42,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
 import java.util.SortedMap;
 
-import rice.p2p.util.RedBlackMap;
+import rice.p2p.util.ConcurrentRingMap;
 
 /**
  * Represents a set of Pastry ids.
@@ -67,7 +67,7 @@ public final class IdSet implements rice.p2p.commonapi.IdSet {
    * Constructor.
    */
   public IdSet() {
-    idSet = new RedBlackMap<rice.p2p.commonapi.Id, Object>();
+    idSet = new ConcurrentRingMap<rice.p2p.commonapi.Id, Object>();
     validHash = false;
   }
 

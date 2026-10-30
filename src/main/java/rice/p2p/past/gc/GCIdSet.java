@@ -44,7 +44,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.RedBlackMap;
+import rice.p2p.util.ConcurrentRingMap;
 
 /**
  * Internal representation of a set of GCIds
@@ -67,7 +67,7 @@ public class GCIdSet implements IdSet {
    */
   protected GCIdSet(IdFactory factory) {
     this.ids = factory.buildIdSet();
-    this.timeouts = new RedBlackMap<Id, Serializable>();
+    this.timeouts = new ConcurrentRingMap<Id, Serializable>();
   }
 
   /**
@@ -225,6 +225,6 @@ public class GCIdSet implements IdSet {
    * @return A new IdSet
    */
   public IdSet build() {
-    return new GCIdSet(ids.build(), new RedBlackMap<Id, Serializable>());
+    return new GCIdSet(ids.build(), new ConcurrentRingMap<Id, Serializable>());
   }
 }

@@ -53,7 +53,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.RedBlackMap;
+import rice.p2p.util.ConcurrentRingMap;
 
 /**
  * This class is a cahcce which doesn't store anything.
@@ -202,7 +202,7 @@ public class EmptyCache implements Cache {
    * @return The map containg the keys
    */
   public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
-    return new RedBlackMap<Id, Serializable>();
+    return new ConcurrentRingMap<Id, Serializable>();
   }
 
   /**
@@ -212,7 +212,7 @@ public class EmptyCache implements Cache {
    * @return The treemap mapping ids to metadata
    */
   public SortedMap<Id, Serializable> scanMetadata() {
-    return new RedBlackMap<Id, Serializable>();
+    return new ConcurrentRingMap<Id, Serializable>();
   }
 
   /**
@@ -223,7 +223,7 @@ public class EmptyCache implements Cache {
    * @return The submapping
    */
   public SortedMap<Id, Serializable> scanMetadataValuesHead(Object value) {
-    return new RedBlackMap<Id, Serializable>();
+    return new ConcurrentRingMap<Id, Serializable>();
   }
 
   /**
@@ -232,7 +232,7 @@ public class EmptyCache implements Cache {
    * @return The submapping
    */
   public SortedMap<Id, Serializable> scanMetadataValuesNull() {
-    return new RedBlackMap<Id, Serializable>();
+    return new ConcurrentRingMap<Id, Serializable>();
   }
 
   /**

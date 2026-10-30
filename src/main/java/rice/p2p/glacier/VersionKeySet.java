@@ -40,7 +40,7 @@ import java.util.SortedMap;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.RedBlackMap;
+import rice.p2p.util.ConcurrentRingMap;
 
 /**
  * A sorted set of VersionKeys.
@@ -60,7 +60,7 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
    * Constructor.
    */
   public VersionKeySet() {
-    idSet = new RedBlackMap<Id, Object>();
+    idSet = new ConcurrentRingMap<Id, Object>();
     validHash = false;
   }
 
@@ -70,7 +70,7 @@ public class VersionKeySet implements rice.p2p.commonapi.IdSet {
    * @param o the IdSet to copy
    */
   public VersionKeySet(VersionKeySet o) {
-    idSet = new RedBlackMap<Id, Object>(o.idSet);
+    idSet = new ConcurrentRingMap<Id, Object>(o.idSet);
     cachedHash = o.cachedHash;
     validHash = o.validHash;
   }

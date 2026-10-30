@@ -58,7 +58,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
-import rice.p2p.util.RedBlackMap;
+import rice.p2p.util.ConcurrentRingMap;
 
 /**
  * This class is an implementation of Storage which provides
@@ -422,7 +422,7 @@ public class PersistentStorage implements Storage {
   public SortedMap<Id, Serializable> scanMetadata(IdRange range) {
     if (index) {
       if (range.isEmpty())
-        return new RedBlackMap<Id, Serializable>();
+        return new ConcurrentRingMap<Id, Serializable>();
       else if (range.getCCWId().equals(range.getCWId()))
         return scanMetadata();
       else
