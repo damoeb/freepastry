@@ -375,14 +375,6 @@ public class MultiringRegrTest {
   }
 
   /**
-   * Does nothing: killing nodes is not implemented, and no test calls this.
-   *
-   * @param n The node to kill
-   */
-  protected void kill(int n) {
-  }
-
-  /**
     * Private method which generates a random Id
    *
    * @return A new random Id
