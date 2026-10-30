@@ -43,7 +43,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -92,8 +91,6 @@ import rice.p2p.past.rawserialization.JavaPastContentHandleDeserializer;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
-import rice.persistence.PersistentStorage;
-import rice.persistence.Storage;
 import rice.persistence.StorageManager;
 
 @SuppressWarnings("unchecked")
@@ -108,13 +105,13 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierStatisticsCollector statisticsCollector;
+  private final GlacierRouter router;
   private final GlacierTrafficShaper trafficShaper;
   private final GlacierTrash trash;
   private final GlacierNeighborhood neighborhood;
   private final GlacierScheduler scheduler;
   private final FragmentLocator locator;
-  private GlacierStatistics statistics;
-  private final Vector<GlacierStatisticsListener> listeners;
   private long currentFragmentRequestTimeout;
 
 
@@ -203,10 +200,10 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.numSurvivors = numSurvivorsArg;
     this.factory = factoryArg;
     this.locator = new FragmentLocator(factoryArg, numFragmentsArg);
-    this.statistics = new GlacierStatistics(GlacierTags.MAX, environment);
-    this.listeners = new Vector<GlacierStatisticsListener>();
     this.currentFragmentRequestTimeout = config.fragmentRequestTimeoutDefault();
     this.neighborhood = new GlacierNeighborhood(neighborStorage, factory, endpoint.getLocalNodeHandle().getId(), config.neighborTimeout(), environment, logger);
+    this.statisticsCollector = new GlacierStatisticsCollector(config, scheduler, trafficShaper, neighborhood, trash, fragmentStorage, neighborStorage, instance, environment, logger);
+    this.router = new GlacierRouter(endpoint, statisticsCollector, logger);
     neighborhood.determineResponsibleRange();
     endpoint.register();
   }
@@ -246,7 +243,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           if (!leafSet.getHandle(k).getId().equals(getLocalNodeHandle().getId())) {
             neighborhood.neighborSeen(leafSet.getHandle(k).getId(), environment.getTimeSource().currentTimeMillis());
             if (logger.isInfoEnabled()) logger.info("Asking "+leafSet.getHandle(k).getId()+" about neighbors in "+leafRange);
-            sendMessage(
+            router.sendMessage(
               null,
               new GlacierNeighborRequestMessage(getMyUID(), leafRange, getLocalNodeHandle(), leafSet.getHandle(k).getId(), GlacierTags.NEIGHBOR),
               leafSet.getHandle(k)
@@ -330,7 +327,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                 logger.debug("Got {}", bv);
                 logger.atInfo().log(() -> keySet.numElements()+" keys added, sending sync request...");
 
-                sendMessage(
+                router.sendMessage(
                   null,
                   new GlacierSyncMessage(scheduler.getUID(), grrm.getCommonRange(), offset, bv, getLocalNodeHandle(), grrm.getSource().getId(), GlacierTags.SYNC),
                   grrm.getSource()
@@ -365,7 +362,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           IdRange requestedRange = factory.buildIdRange(ccwId, cwId);
 
           logger.info("Sending range query for ({}) to {}", requestedRange, dest);
-          sendMessage(
+          router.sendMessage(
             dest,
             new GlacierRangeQueryMessage(getMyUID(), requestedRange, getLocalNodeHandle(), dest, GlacierTags.SYNC),
             null
@@ -416,7 +413,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                     if (o != null) {
                       logger.info("Fragment {} found ({}), handing off...", thisKey, o);
                       FragmentAndManifest fam = (FragmentAndManifest) o;
-                      sendMessage(
+                      router.sendMessage(
                         null,
                         new GlacierDataMessage(grm.getUID(), thisKey, fam.getFragment(), fam.getManifest(), getLocalNodeHandle(), grm.getSource().getId(), true, GlacierTags.HANDOFF),
                         grm.getSource()
@@ -469,7 +466,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                     public void receiveResult(Object o) {
                       logger.info("Handoff: Stored OK, sending receipt: {}", thisKey);
 
-                      sendMessage(
+                      router.sendMessage(
                         null,
                         new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
                         gdm.getSource()
@@ -483,7 +480,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                 );
               } else {
                 logger.warn("Handoff: We already have a fragment with this key! -- sending response");
-                sendMessage(
+                router.sendMessage(
                   null,
                   new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), true, getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
                   gdm.getSource()
@@ -541,7 +538,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         for (int i=0; i<numHandoffs; i++)
           keys[i] = (FragmentKey) handoffs.get(i);
 
-        sendMessage(
+        router.sendMessage(
           destination,
           new GlacierQueryMessage(getMyUID(), keys, getLocalNodeHandle(), destination, GlacierTags.HANDOFF),
           null
@@ -762,63 +759,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Statistics */
 
-    scheduler.addContinuation(new GlacierContinuation() {
-      long nextTimeout;
-
-      public String toString() {
-        return "Statistics";
-      }
-      public void init() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.statisticsReportInterval();
-      }
-      public void receiveResult(Object o) {
-        logger.warn("STAT received object: {}", o);
-      }
-      public void receiveException(Exception e) {
-        logger.warn("STAT received exception: ", e);
-      }
-      public long getTimeout() {
-        return nextTimeout;
-      }
-      public void timeoutExpired() {
-        nextTimeout += config.statisticsReportInterval();
-
-        if (!listeners.isEmpty()) {
-          statistics.setNumNeighbors(neighborStorage.scan().numElements());
-          statistics.setNumFragments(fragmentStorage.scan().numElements());
-          statistics.setNumContinuations(scheduler.size());
-          statistics.setResponsibleRange(neighborhood.getResponsibleRange());
-          trafficShaper.addStatistics(statistics);
-
-          Storage storageF = fragmentStorage.getStorage();
-          if (storageF instanceof PersistentStorage)
-            statistics.setFragmentStorageSize(((PersistentStorage)storageF).getTotalSize());
-
-          trash.addStatistics(statistics);
-
-          if (config.logStatistics())
-            statistics.dump(environment.getLogManager().getLogger(GlacierStatistics.class, instance));
-
-          // listeners are added and removed by other threads; copying the Vector is atomic, enumerating it is not
-          for (GlacierStatisticsListener gsl : new ArrayList<GlacierStatisticsListener>(listeners)) {
-            gsl.receiveStatistics(statistics);
-          }
-        }
-
-        statistics = new GlacierStatistics(GlacierTags.MAX, environment);
-      }
-    });
+    scheduler.addContinuation(statisticsCollector.newReportingTask());
   }
 
   private long jitterTerm(long basis) {
     return (long)((1-config.jitterRange())*basis) + environment.getRandomSource().nextInt((int)(2*config.jitterRange()*basis));
-  }
-
-  public void sendMessage(Id id, GlacierMessage message, NodeHandle hint) {
-    String className = message.getClass().getName();
-    logger.atInfo().log(() -> "Send " + ((hint == null) ? "OVR" : "DIR") + " T" + ((int)message.getTag()) + " " + className.substring(className.lastIndexOf('.') + 8));
-    statistics.countMessageSent(message.getTag());
-    endpoint.route(id, message, hint);
   }
 
   public void setTrashcan(StorageManager trashStorage) {
@@ -1108,7 +1053,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         }
         public void init() {
           for (int i=0; i<total; i++) {
-            sendMessage(
+            router.sendMessage(
               fragmentLoc,
               new GlacierQueryMessage(getMyUID(), new FragmentKey[] { id }, getLocalNodeHandle(), fragmentLoc, GlacierTags.DEBUG),
               null
@@ -1256,7 +1201,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           return "DebugFetch continuation";
         }
         public void init() {
-          sendMessage(
+          router.sendMessage(
             fragmentLoc,
             new GlacierFetchMessage(getMyUID(), id, GlacierFetchMessage.FETCH_FRAGMENT_AND_MANIFEST, getLocalNodeHandle(), fragmentLoc, GlacierTags.DEBUG),
             null
@@ -1569,7 +1514,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
               logger.debug("AR Sending a probe to {} at {} ({} probes left)", fragmentKey[nextProbe][nextFID], fragmentLocation[nextProbe][nextFID], retriesRemaining);
               fragmentChecked[nextProbe][nextFID] = true;
               retriesRemaining --;
-              sendMessage(
+              router.sendMessage(
                 fragmentLocation[nextProbe][nextFID],
                 new GlacierRefreshProbeMessage(getMyUID(), fragmentLocation[nextProbe][nextFID], getLocalNodeHandle(), fragmentLocation[nextProbe][nextFID], GlacierTags.REFRESH),
                 null
@@ -1628,7 +1573,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                       keys[j] = (FragmentKey) idsToQuery.get(i+j);
 
                     logger.debug("AR Sending a manifest fetch with {} IDs, starting at {}", idsHere, keys[0]);
-                    sendMessage(
+                    router.sendMessage(
                       null,
                       new GlacierFetchMessage(getMyUID(), keys, GlacierFetchMessage.FETCH_MANIFEST, getLocalNodeHandle(), thisHolder.getId(), GlacierTags.REFRESH),
                       thisHolder
@@ -1709,7 +1654,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                   logger.debug("AR Sending a patch with {} IDs, starting at {}, to {}", patchesHere, keys[0], thisHolder.getId());
                   totalPatchesSent += patchesHere;
 
-                  sendMessage(
+                  router.sendMessage(
                     null,
                     new GlacierRefreshPatchMessage(getMyUID(), keys, lifetimes, signatures, getLocalNodeHandle(), thisHolder.getId(), GlacierTags.REFRESH),
                     thisHolder
@@ -1789,7 +1734,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           keys[0] = new FragmentKey(key, i);
 
           logger.debug("Query #{} to {}", i, fragmentLoc);
-          sendMessage(
+          router.sendMessage(
             fragmentLoc,
             new GlacierQueryMessage(getMyUID(), keys, getLocalNodeHandle(), fragmentLoc, tag),
             null
@@ -1821,7 +1766,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                   holder[fragmentID] = grm.getSource();
                   if (!inhibitInsertions) {
                     logger.atDebug().log(() -> "Got insert response, sending fragment "+grm.getKey(0));
-                    sendMessage(
+                    router.sendMessage(
                       null,
                       new GlacierDataMessage(getMyUID(), grm.getKey(0), fragments[fragmentID], manifests[fragmentID], getLocalNodeHandle(), grm.getSource().getId(), false, tag),
                       grm.getSource()
@@ -1833,7 +1778,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                       for (int i=0; i<holder.length; i++) {
                         if (holder[i] != null) {
                           logger.debug("Sending fragment #{}", i);
-                          sendMessage(
+                          router.sendMessage(
                             null,
                             new GlacierDataMessage(getMyUID(), new FragmentKey(key, i), fragments[i], manifests[i], getLocalNodeHandle(), holder[i].getId(), false, tag),
                             holder[i]
@@ -1857,7 +1802,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                 if (holder[fragmentID] == null) {
                   holder[fragmentID] = grm.getSource();
                   logger.atDebug().log(() -> "Got refresh response (exp="+grm.getExpiration(0)+"<"+expiration+"), sending manifest "+grm.getKey(0));
-                  sendMessage(
+                  router.sendMessage(
                     null,
                     new GlacierDataMessage(getMyUID(), grm.getKey(0), null, manifests[fragmentID], getLocalNodeHandle(), grm.getSource().getId(), false, tag),
                     grm.getSource()
@@ -2104,7 +2049,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         FragmentKey nextKey = new FragmentKey(key, nextID);
         Id nextLocation = locator.getFragmentLocation(nextKey);
         logger.debug("retrieveManifest: Asking {} for {}", nextLocation, nextKey);
-        sendMessage(
+        router.sendMessage(
           nextLocation,
           new GlacierFetchMessage(getMyUID(), nextKey, GlacierFetchMessage.FETCH_MANIFEST, getLocalNodeHandle(), nextLocation, tag),
           null
@@ -2296,7 +2241,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         FragmentKey nextKey = new FragmentKey(key, nextID);
         Id nextLocation = locator.getFragmentLocation(nextKey);
         logger.debug("retrieveObject: Asking {} for {}", nextLocation, nextKey);
-        sendMessage(
+        router.sendMessage(
           nextLocation,
           new GlacierFetchMessage(getMyUID(), nextKey, GlacierFetchMessage.FETCH_FRAGMENT, getLocalNodeHandle(), nextLocation, tag),
           null
@@ -2421,7 +2366,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
               logger.debug("retrieveFragment: Retrying ({} attempts left)", attemptsLeft);
               timeout = timeout + currentFragmentRequestTimeout;
               attemptsLeft --;
-              sendMessage(
+              router.sendMessage(
                 key.getVersionKey().getId(),
                 new GlacierFetchMessage(getMyUID(), key, GlacierFetchMessage.FETCH_FRAGMENT, getLocalNodeHandle(), key.getVersionKey().getId(), tag),
                 null
@@ -2568,7 +2513,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         logger.debug("Result: haveIt={} amAuthority={} expiration={}", haveItA[i], authoritativeA[i], expirationA[i]);
       }
 
-      sendMessage(
+      router.sendMessage(
         null,
         new GlacierResponseMessage(gqm.getUID(), keyA, haveItA, expirationA, authoritativeA, getLocalNodeHandle(), gqm.getSource().getId(), true, gqm.getTag()),
         gqm.getSource()
@@ -2612,7 +2557,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
               neighborStorage.getObject(neighbors[currentLookup], this);
             } else {
               logger.debug("Sending neighbor response...");
-              sendMessage(
+              router.sendMessage(
                 null,
                 new GlacierNeighborResponseMessage(gnrm.getUID(), neighbors, lastSeen, getLocalNodeHandle(), gnrm.getSource().getId(), gnrm.getTag()),
                 gnrm.getSource()
@@ -2718,7 +2663,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           if ((manifestIndex == config.manifestAggregationFactor()) || (currentLookup == numLookups)) {
             logger.debug("Sending a packet with {} manifests to {}", keys.length, gsm.getSource().getId());
 
-            sendMessage(
+            router.sendMessage(
               null,
               new GlacierDataMessage(scheduler.getUID(), keys, fragments, manifests, getLocalNodeHandle(), gsm.getSource().getId(), false, GlacierTags.SYNC_MANIFESTS),
               gsm.getSource()
@@ -2763,7 +2708,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         }
       }
 
-      sendMessage(
+      router.sendMessage(
         null,
         new GlacierRefreshResponseMessage(grpm.getUID(), returnedRange, online, getLocalNodeHandle(), grpm.getSource().getId(), grpm.getTag()),
         grpm.getSource()
@@ -2851,7 +2796,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
           logger.debug("AR Patch: Sending response ({} updates total)", totalSuccesses);
 
-          sendMessage(
+          router.sendMessage(
             null,
             new GlacierRefreshCompleteMessage(grpm.getUID(), grpm.getAllKeys(), successes, getLocalNodeHandle(), grpm.getSource().getId(), grpm.getTag()),
             grpm.getSource()
@@ -2879,7 +2824,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         IdRange intersectRange = requestedRange.intersectRange(thisRange);
         if (!intersectRange.isEmpty()) {
           logger.debug("     - Intersects: {}, sending RangeForward", intersectRange);
-          sendMessage(
+          router.sendMessage(
             ranges[i][1],
             new GlacierRangeForwardMessage(grqm.getUID(), requestedRange, grqm.getSource(), getLocalNodeHandle(), ranges[i][1], grqm.getTag()),
             null
@@ -2902,7 +2847,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       IdRange commonRange = neighborhood.getResponsibleRange().intersectRange(grfm.getRequestedRange());
       if (!commonRange.isEmpty()) {
         logger.info("Range forward: Returning common range {} to requestor {}", commonRange, grfm.getRequestor());
-        sendMessage(
+        router.sendMessage(
           null,
           new GlacierRangeResponseMessage(grfm.getUID(), commonRange, getLocalNodeHandle(), grfm.getRequestor().getId(), grfm.getTag()),
           grfm.getRequestor()
@@ -2929,7 +2874,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         public void returnResponse() {
           logger.debug("Returning response with {} fragments, {} manifests ({} queries originally)", numFragments, numManifests, gfm.getNumKeys());
-          sendMessage(
+          router.sendMessage(
             null,
             new GlacierDataMessage(gfm.getUID(), gfm.getAllKeys(), fragment, manifest, getLocalNodeHandle(), gfm.getSource().getId(), true, gfm.getTag()),
             gfm.getSource()
@@ -3002,7 +2947,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                 public void receiveResult(Object o) {
                   logger.info("Stored OK, sending receipt: {}", thisKey);
 
-                  sendMessage(
+                  router.sendMessage(
                     null,
                     new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
                     gdm.getSource()
@@ -3063,7 +3008,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
                         new Continuation<Object, Exception>() {
                           public void receiveResult(Object o) {
                             logger.debug("Old manifest for {} replaced OK, sending receipt", thisKey);
-                            sendMessage(
+                            router.sendMessage(
                               null,
                               new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), true, getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
                               gdm.getSource()
@@ -3199,11 +3144,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   }
 
   public void addStatisticsListener(GlacierStatisticsListener gsl) {
-    listeners.add(gsl);
+    statisticsCollector.addListener(gsl);
   }
 
   public void removeStatisticsListener(GlacierStatisticsListener gsl) {
-    listeners.removeElement(gsl);
+    statisticsCollector.removeListener(gsl);
   }
 
   public Environment getEnvironment() {
