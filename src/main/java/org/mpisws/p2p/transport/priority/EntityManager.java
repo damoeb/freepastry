@@ -52,7 +52,6 @@ import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
-import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
@@ -297,46 +296,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
       pendingSocket = handle;
       startLivenessChecker(i, options);
 
-      handle.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
-        public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sock) {
-          handle.setSubCancellable(() -> {
-            sock.close();
-            return true;
-          });
-          sock.register(false, true, new P2PSocketReceiver<Identifier>() {
-            ByteBuffer writeMe = ByteBuffer.wrap(PriorityTransportLayerImpl.PRIMARY_SOCKET);
-            public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
-              if (canRead || !canWrite) throw new IllegalArgumentException("expected to write!  canRead:"+canRead+" canWrite:"+canWrite);
-              logger.debug("Opened Primary socket {} to {}", socket, i);
-              if (socket.write(writeMe) == -1) {
-                ctx.entityManagers.apply(i).stopLivenessChecker();
-                ctx.entityManagers.apply(socket.getIdentifier()).receiveSocketException(handle, new org.mpisws.p2p.transport.ClosedChannelException("Channel closed while writing."));
-                return;
-              }
-              if (writeMe.hasRemaining()) {
-                socket.register(false, true, this);
-              } else {
-                ctx.entityManagers.apply(socket.getIdentifier()).primarySocketAvailable(socket, handle);
-              }
-            }
-
-            public void receiveException(P2PSocket<Identifier> socket, Exception e) {
-              ctx.entityManagers.apply(socket.getIdentifier()).receiveSocketException(handle, e);
-            }
-
-            public String toString() {
-              return "PriorityTLi: Primary Socket shim to "+i;
-            }
-          });
-        } // receiveResult()
-
-        public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
-          if (handle.getSubCancellable() != null && s != handle.getSubCancellable()) throw new IllegalArgumentException(
-              "s != handle.getSubCancellable() must be a bug. s:"+
-              s+" sub:"+handle.getSubCancellable());
-          ctx.entityManagers.apply(s.getIdentifier()).receiveSocketException(handle, ex);
-        }
-      }, options));
+      handle.setSubCancellable(tl.openSocket(i, new PrimarySocketOpener<Identifier>(i, handle, ctx), options));
 
     }
   }

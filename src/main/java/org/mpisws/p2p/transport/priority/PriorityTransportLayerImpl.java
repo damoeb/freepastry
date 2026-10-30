@@ -48,7 +48,6 @@ import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
-import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
@@ -150,94 +149,18 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   /**
-   * We have to read the first byte and see if this is a
-   * passthrough (the layer higher than us asked to open it) socket or a
-   * primary (our layer tried to open it) socket.
+   * The first byte tells whether this is a passthrough (the layer higher than us asked to open it), a
+   * primary (our layer tried to open it) or a BIG message socket; see {@link IncomingSocketDispatcher}.
    */
   public void incomingSocket(final P2PSocket<Identifier> s) throws IOException {
-    s.register(true, false, new P2PSocketReceiver<Identifier>() {
-      public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
-        if (socket != s) throw new IllegalArgumentException("Sockets not equal!!! s:"+s+" socket:"+socket);
-        if (canWrite || !canRead) throw new IllegalArgumentException("Should only be able to read! canRead:"+canRead+" canWrite:"+canWrite);
-        // the first thing we need to do is to find out if this is a primary socket or a passthrough
-        ByteBuffer hdr = ByteBuffer.allocate(1);
-        int ret;
-        try {
-          ret = (int)socket.read(hdr);
-        } catch (IOException ioe) {
-          socket.close();
-          return;
-        }
-        switch (ret) {
-        case -1:
-          // closed... strange
-          socket.close();
-          break;
-        case 0:
-          // reregister
-          socket.register(true, false, this);
-          break;
-        case 1:
-          // success
-          hdr.flip();
-          byte val = hdr.get();
-          switch(val) {
-          case PASSTHROUGH_SOCKET_B:
-            callback.incomingSocket(s);
-            break;
-          case PRIMARY_SOCKET_B:
-            logger.debug("Opened Primary Socket from {}", s.getIdentifier());
-            getEntityManager(s.getIdentifier()).primarySocketAvailable(s, null);
-            break;
-          case BIG_MSG_SOCKET_B:
-            logger.debug("Opened BIG Message Socket from {}", s.getIdentifier());
-            getEntityManager(s.getIdentifier()).handleBigMsgSocket(s);
-            break;
-          }
-          break;
-        default:
-          //Whisky Tango Foxtrot?
-          socket.close();
-          throw new IllegalStateException("Read "+ret+" bytes?  Not good.  Expected to read 1 byte.");
-        }
-      }
-
-      public void receiveException(P2PSocket<Identifier> socket, Exception e) {
-        errorHandler.receivedException(socket.getIdentifier(), e);
-      }
-      });
+    s.register(true, false, new IncomingSocketDispatcher<Identifier>(s, entityManagerContext));
   }
 
   public SocketRequestHandle<Identifier> openSocket(Identifier i, final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("No handle to return socket to! (deliverSocketToMe must be non-null!)");
 
     final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i, options, logger);
-    handle.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
-      public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sock) {
-
-        handle.setSubCancellable(() -> {
-          sock.close();
-          return true;
-        });
-
-        sock.register(false, true, new P2PSocketReceiver<Identifier>() {
-
-          public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
-            if (canRead || !canWrite) throw new IllegalArgumentException("expected to write!  canRead:"+canRead+" canWrite:"+canWrite);
-            socket.write(ByteBuffer.wrap(PASSTHROUGH_SOCKET));
-            if (deliverSocketToMe != null) deliverSocketToMe.receiveResult(handle, socket);
-          }
-
-          public void receiveException(P2PSocket<Identifier> socket, Exception e) {
-            if (deliverSocketToMe != null) deliverSocketToMe.receiveException(handle, e);
-          }
-        });
-      } // receiveResult()
-      public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
-        if (handle.getSubCancellable() != null && s != handle.getSubCancellable()) throw new IllegalArgumentException("s != handle.getSubCancellable() must be a bug. s:"+s+" sub:"+handle.getSubCancellable());
-        if (deliverSocketToMe != null) deliverSocketToMe.receiveException(handle, ex);
-      }
-    }, options));
+    handle.setSubCancellable(tl.openSocket(i, new PassthroughSocketOpener<Identifier>(handle, deliverSocketToMe), options));
 
     return handle;
   }
