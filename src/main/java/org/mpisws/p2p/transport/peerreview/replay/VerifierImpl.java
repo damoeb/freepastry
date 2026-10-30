@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.replay;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -664,30 +663,28 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     case EX_TYPE_Unknown:
       String className = nextEvent.readUTF();
       String message = nextEvent.readUTF();
-      Class<?> c;
+      Class<? extends IOException> c;
       try {
-        c = Class.forName(className);
+        // don't initialize the class before we know it is an IOException
+        Class<?> loaded = Class.forName(className, false, VerifierImpl.class.getClassLoader());
+        if (!IOException.class.isAssignableFrom(loaded)) {
+          throw new RuntimeException("Logged exception class "+className+" is not an IOException: "+message);
+        }
+        c = loaded.asSubclass(IOException.class);
       } catch (ClassNotFoundException cnfe) {
         throw new RuntimeException("Couldn't find class "+className+" "+message);
       }
 
-      Class<?>[] parameterTypes = new Class<?>[1];
-      parameterTypes[0] = String.class;
       try {
-        Constructor<?> ctor = c.getConstructor(parameterTypes);
-        IOException ioe = (IOException)ctor.newInstance(message);
-        return ioe;
+        return c.getConstructor(String.class).newInstance(message);
       } catch (Exception e) {
         try {
           // no String constructor, fall back to the no-arg constructor (the message is lost)
-          Constructor<?> ctor = c.getConstructor();
-          IOException ioe = (IOException)ctor.newInstance();
-          return ioe;
+          return c.getConstructor().newInstance();
         } catch (Exception e2) {
           throw new RuntimeException("Couldn't find constructor for "+className+" "+message);
         }
       }
-      // TODO: check up front that className is an IOException; today a ClassCastException surfaces as "Couldn't find constructor"
     default: throw new RuntimeException("Unknown EX_TYPE:"+exType);
     }
   }

@@ -167,13 +167,16 @@ public class InternetPastryNodeFactory extends
   protected NATHandler getDefaultNatHandler(Environment env, InetAddress localAddress) {
     Parameters params = env.getParameters();
     if (params.contains("nat_handler_class")) {
+      String natHandlerClassName = params.getString("nat_handler_class");
       try {
-        Class<?> natHandlerClass = Class.forName(params.getString("nat_handler_class"));
-        Class<?>[] args = {Environment.class, InetAddress.class};
-        Constructor<?> constructor = natHandlerClass.getConstructor(args);
-
-        Object[] foo = {env, localAddress};
-        return (NATHandler)constructor.newInstance(foo);
+        Class<?> loaded = Class.forName(natHandlerClassName);
+        if (!NATHandler.class.isAssignableFrom(loaded)) {
+          throw new IllegalArgumentException("nat_handler_class " + natHandlerClassName + " does not implement "
+              + NATHandler.class.getName());
+        }
+        Class<? extends NATHandler> natHandlerClass = loaded.asSubclass(NATHandler.class);
+        Constructor<? extends NATHandler> constructor = natHandlerClass.getConstructor(Environment.class, InetAddress.class);
+        return constructor.newInstance(env, localAddress);
       } catch (ClassNotFoundException e) {
         logger.info("Didn't find UPnP libs, skipping UPnP");
         return new StubNATHandler(env, localAddress);
