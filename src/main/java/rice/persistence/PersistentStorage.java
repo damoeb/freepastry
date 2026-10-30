@@ -183,8 +183,7 @@ public class PersistentStorage implements Storage {
 
   private String rootDir;           // rootDirectory
 
-  private long storageSize;         // The amount of storage allowed to be used
-  private long usedSize;            // The amount of storage currently in use
+  private final StorageQuota quota; // the quota and the space in use
 
   Environment environment;
   Logger logger;
@@ -230,7 +229,7 @@ public class PersistentStorage implements Storage {
     this.factory = factory;
     this.name = name;
     this.rootDir = rootDir;
-    this.storageSize = size;
+    this.quota = new StorageQuota(size);
     this.index = index;
     this.directories = new HashMap<File, File[]>();
     this.prefixes = new HashMap<File, String>();
@@ -367,7 +366,7 @@ public class PersistentStorage implements Storage {
           logger.atTrace().log(() -> "Done writing object " + obj + " under id " + id.toStringFull() + " in root " + appDirectory);
 
           /* abort if this will put us over quota */
-          if (getUsedSpace() + StorageFiles.getFileLength(transcFile) > getStorageSize())
+          if (quota.getUsedSpace() + StorageFiles.getFileLength(transcFile) > quota.getStorageSize())
             throw new OutofDiskSpaceException();
         } catch (Exception e) {
           /* if an IOException is thrown, delete the temporary file and abort */
@@ -379,8 +378,8 @@ public class PersistentStorage implements Storage {
         logger.atTrace().log(() -> "COUNT: Storing data of class " + obj.getClass().getName() + " under " + id.toStringFull() + " of size " + transcFile.length() + " in " + name);
 
         /* recalculate amount used */
-        decreaseUsedSpace(StorageFiles.getFileLength(objFile));
-        increaseUsedSpace(StorageFiles.getFileLength(transcFile));
+        quota.decreaseUsedSpace(StorageFiles.getFileLength(objFile));
+        quota.increaseUsedSpace(StorageFiles.getFileLength(transcFile));
 
         /* now, rename the temporary file to be the real file */
         StorageFiles.renameFile(transcFile, objFile);
@@ -442,7 +441,7 @@ public class PersistentStorage implements Storage {
           return Boolean.FALSE;
 
         /* record the space collected and delete the file */
-        decreaseUsedSpace(objFile.length());
+        quota.decreaseUsedSpace(objFile.length());
         StorageFiles.deleteFile(objFile);
 
         return Boolean.TRUE;
@@ -689,7 +688,7 @@ public class PersistentStorage implements Storage {
    * @return The total size, in bytes, of data stored.
    */
   public long getTotalSize(){
-    return usedSize;
+    return quota.getUsedSpace();
   }
 
   /**
@@ -879,7 +878,7 @@ public class PersistentStorage implements Storage {
           logger.info("READING {} RETURNED NULL!", files[i]);
 
         if (len > 0) {
-          increaseUsedSpace(len);
+          quota.increaseUsedSpace(len);
 
           /* if the file is newer than the metadata file, update the metadata
           if we don't have the metadata for this file, update it */
@@ -1233,7 +1232,7 @@ public class PersistentStorage implements Storage {
       }
 
       /* record the space collected and delete the file */
-      decreaseUsedSpace(dir.length());
+      quota.decreaseUsedSpace(dir.length());
       StorageFiles.deleteFile(dir);
     } else {
       File[] dirs = dir.listFiles();
@@ -1690,10 +1689,7 @@ public class PersistentStorage implements Storage {
    * @return int the amount of storage in bytes allocated for use
    */
   public long getStorageSize() {
-    if (storageSize > 0)
-      return storageSize;
-    else
-      return Long.MAX_VALUE;
+    return quota.getStorageSize();
   }
 
   /**
@@ -1703,48 +1699,7 @@ public class PersistentStorage implements Storage {
    * @return boolean, true if the operation succeeds false if it doesn't
    */
   public boolean setStorageSize(long size) {
-    if(storageSize <= size){
-        storageSize = size;
-        return true;
-    }
-    else if( size > usedSize){
-        storageSize = size;
-        return true;
-    }
-    else {
-       return false;
-    }
-  }
-
-  /**
-   *
-   * Increases the amount of storage recorded as used
-   *
-   * @param i the amount to increase usage by
-   */
-  private void increaseUsedSpace(long i){
-     usedSize = usedSize + i;
-  }
-
-  /**
-   *
-   * decreases the amount of storage recorded as used
-   *
-   * @param i the amount to decrease usage by
-   */
-  private void decreaseUsedSpace(long i){
-     usedSize = usedSize - i;
-  }
-
-  /**
-   *
-   * Gets the amount of space currently being used on disk
-   *
-   * @return long the amount of space being used
-   *
-   */
-  private long getUsedSpace(){
-    return usedSize;
+    return quota.setStorageSize(size);
   }
 
   /**
