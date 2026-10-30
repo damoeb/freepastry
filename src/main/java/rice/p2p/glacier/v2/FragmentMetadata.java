@@ -41,55 +41,34 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
-public class FragmentMetadata implements Comparable<FragmentMetadata> {
-
-  private final long currentExpirationDate;
-  private final long previousExpirationDate;
-  private final long storedSince;
-
-  public FragmentMetadata(long currentExpirationDate, long previousExpirationDate, long storedSince) {
-    this.currentExpirationDate = currentExpirationDate;
-    this.previousExpirationDate = previousExpirationDate;
-    this.storedSince = storedSince;
-  }
+public record FragmentMetadata(long currentExpiration, long previousExpiration, long storedSince) implements Comparable<FragmentMetadata> {
 
   /**
    * Reading constructor, the counterpart of {@link #serialize(OutputBuffer)}.
    */
   public FragmentMetadata(InputBuffer buf) throws IOException {
-    currentExpirationDate = buf.readLong();
-    previousExpirationDate = buf.readLong();
-    storedSince = buf.readLong();
+    long currentExpiration = buf.readLong();
+    long previousExpiration = buf.readLong();
+    long storedSince = buf.readLong();
+    this(currentExpiration, previousExpiration, storedSince);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeLong(currentExpirationDate);
-    buf.writeLong(previousExpirationDate);
+    buf.writeLong(currentExpiration);
+    buf.writeLong(previousExpiration);
     buf.writeLong(storedSince);
-  }
-
-  long getCurrentExpiration() {
-    return currentExpirationDate;
-  }
-
-  long getPreviousExpiration() {
-    return previousExpirationDate;
-  }
-
-  long getStoredSince() {
-    return storedSince;
   }
 
   public int compareTo(FragmentMetadata object) {
     FragmentMetadata metadata = (FragmentMetadata) object;
 
-    if (metadata.currentExpirationDate > currentExpirationDate)
+    if (metadata.currentExpiration > currentExpiration)
       return -1;
-    else if (metadata.currentExpirationDate < currentExpirationDate)
+    else if (metadata.currentExpiration < currentExpiration)
       return 1;
-    else if (metadata.previousExpirationDate < previousExpirationDate)
+    else if (metadata.previousExpiration < previousExpiration)
       return -1;
-    else if (metadata.previousExpirationDate > previousExpirationDate)
+    else if (metadata.previousExpiration > previousExpiration)
       return 1;
     else if (metadata.storedSince < storedSince)
       return -1;

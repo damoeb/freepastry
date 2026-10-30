@@ -84,7 +84,7 @@ final class AggregateFlusher {
 
     while (iter.hasNext()) {
       VersionKey thisKey = (VersionKey) iter.next();
-      if (thisKey.getId().equals(id)) {
+      if (thisKey.id().equals(id)) {
         objectIsWaiting = true;
         break;
       }

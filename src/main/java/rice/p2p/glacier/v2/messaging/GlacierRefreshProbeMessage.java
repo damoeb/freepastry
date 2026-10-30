@@ -44,9 +44,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
-public class GlacierRefreshProbeMessage extends GlacierMessage {
-  public static final short TYPE = 11;
-
+public final class GlacierRefreshProbeMessage extends GlacierMessage {
   private final Id requestedId;
 
   public GlacierRefreshProbeMessage(int uid, Id requestedId, NodeHandle source, Id dest, char tag) {
@@ -65,7 +63,7 @@ public class GlacierRefreshProbeMessage extends GlacierMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return GlacierMessageType.REFRESH_PROBE.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

@@ -45,9 +45,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.VersionKey;
 
-public class GlacierRefreshPatchMessage extends GlacierMessage {
-  public static final short TYPE = 10;
-
+public final class GlacierRefreshPatchMessage extends GlacierMessage {
 
   private final VersionKey[] keys;
   private final long[] lifetimes;
@@ -87,7 +85,7 @@ public class GlacierRefreshPatchMessage extends GlacierMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return GlacierMessageType.REFRESH_PATCH.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

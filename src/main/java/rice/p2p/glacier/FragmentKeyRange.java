@@ -110,7 +110,7 @@ public class FragmentKeyRange implements IdRange {
    * @return true if the key lies within this range, false otherwise
    */
   public boolean containsId(Id key) {
-    return range.containsId(((FragmentKey)key).getVersionKey().getId());
+    return range.containsId(((FragmentKey)key).versionKey().id());
   }
 
   /**

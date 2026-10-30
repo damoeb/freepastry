@@ -63,9 +63,9 @@ class GlacierStorageSerializerTest {
     FragmentMetadata actual = (FragmentMetadata) testObj.readMetadata(reread(buf));
 
     assertEquals(0, expected.compareTo(actual));
-    assertEquals(3L, actual.getCurrentExpiration());
-    assertEquals(2L, actual.getPreviousExpiration());
-    assertEquals(1L, actual.getStoredSince());
+    assertEquals(3L, actual.currentExpiration());
+    assertEquals(2L, actual.previousExpiration());
+    assertEquals(1L, actual.storedSince());
   }
 
   @Test

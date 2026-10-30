@@ -50,28 +50,8 @@ import rice.p2p.util.MathUtils;
  * @version $Id: FragmentKey.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author ahae
  */
-public class FragmentKey implements Id {
+public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
   public static final short TYPE = 42;
-
-  /**
-   * The key of the object version this fragment belongs to
-   */
-  private final VersionKey key;
-  /**
-   * The fragment number
-   */
-  private final int id;
-
-  /**
-   * Constructor for FragmentKey.
-   *
-   * @param key the key of the object version
-   * @param id the fragment number
-   */
-  public FragmentKey(VersionKey key, int id) {
-    this.id = id;
-    this.key = key;
-  }
 
   /**
    * Not supported.
@@ -86,31 +66,13 @@ public class FragmentKey implements Id {
   }
 
   /**
-   * Gets the VersionKey attribute of the FragmentKey object
-   *
-   * @return The VersionKey value
-   */
-  public VersionKey getVersionKey() {
-    return key;
-  }
-
-  /**
-   * Gets the FragmentID attribute of the FragmentKey object
-   *
-   * @return The FragmentID value
-   */
-  public int getFragmentID() {
-    return id;
-  }
-
-  /**
    * Gets the PeerKey attribute of the FragmentKey object
    *
    * @param otherId the fragment number of the peer
    * @return The PeerKey value
    */
   public FragmentKey getPeerKey(int otherId) {
-    return new FragmentKey(key, otherId);
+    return new FragmentKey(versionKey, otherId);
   }
 
   /**
@@ -125,7 +87,7 @@ public class FragmentKey implements Id {
     }
 
     FragmentKey sk = (FragmentKey) peer;
-    return (sk.key.equals(this.key) && (sk.id == this.id));
+    return (sk.versionKey.equals(this.versionKey) && (sk.fragmentId == this.fragmentId));
   }
 
   /**
@@ -148,8 +110,8 @@ public class FragmentKey implements Id {
    * @param offset the offset in the array to start writing at
    */
   public void toByteArray(byte[] result, int offset) {
-    key.toByteArray(result, offset);
-    MathUtils.intToByteArray(id, result, offset+key.getByteArrayLength());
+    versionKey.toByteArray(result, offset);
+    MathUtils.intToByteArray(fragmentId, result, offset+versionKey.getByteArrayLength());
   }
 
   /**
@@ -158,7 +120,7 @@ public class FragmentKey implements Id {
    * @return The length of the byte[] representing this Id
    */
   public int getByteArrayLength() {
-    return key.getByteArrayLength() + 4;
+    return versionKey.getByteArrayLength() + 4;
   }
 
   /**
@@ -167,7 +129,7 @@ public class FragmentKey implements Id {
    * @return the full string form
    */
   public String toStringFull() {
-    return key.toStringFull() + "#" + id;
+    return versionKey.toStringFull() + "#" + fragmentId;
   }
 
   /**
@@ -176,7 +138,7 @@ public class FragmentKey implements Id {
    * @return the short string form
    */
   public String toString() {
-    return key.toString() + "#" + id;
+    return versionKey.toString() + "#" + fragmentId;
   }
 
   /**
@@ -230,15 +192,15 @@ public class FragmentKey implements Id {
    * @return a negative number, zero or a positive number as this key is less than, equal to or greater than o
    */
   public int compareTo(Id o) {
-    int keyResult = key.compareTo(((FragmentKey) o).key);
+    int keyResult = versionKey.compareTo(((FragmentKey) o).versionKey);
     if (keyResult != 0) {
       return keyResult;
     }
 
-    if (this.id < ((FragmentKey) o).id) {
+    if (this.fragmentId < ((FragmentKey) o).fragmentId) {
       return -1;
     }
-    if (this.id > ((FragmentKey) o).id) {
+    if (this.fragmentId > ((FragmentKey) o).fragmentId) {
       return 1;
     }
 
@@ -251,17 +213,18 @@ public class FragmentKey implements Id {
    * @return the hash code
    */
   public int hashCode() {
-    return (key.hashCode() + id);
+    return (versionKey.hashCode() + fragmentId);
   }
 
   public FragmentKey(InputBuffer buf, Endpoint endpoint) throws IOException {
-    id = buf.readInt();
-    key = new VersionKey(buf, endpoint);
+    int fragmentId = buf.readInt();
+    VersionKey versionKey = new VersionKey(buf, endpoint);
+    this(versionKey, fragmentId);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeInt(id);
-    key.serialize(buf);
+    buf.writeInt(fragmentId);
+    versionKey.serialize(buf);
   }
 
   public short getType() {

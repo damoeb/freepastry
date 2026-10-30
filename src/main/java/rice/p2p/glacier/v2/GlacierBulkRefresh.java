@@ -188,10 +188,10 @@ final class GlacierBulkRefresh {
               FragmentKey thisKey = gdm.getKey(i);
 
               if (logger.isDebugEnabled()) logger.debug("AR Received manifest for "+gdm.getKey(i)+", checking signature...");
-              if (policy.checkSignature(thisManifest, thisKey.getVersionKey())) {
+              if (policy.checkSignature(thisManifest, thisKey.versionKey())) {
                 logger.debug("AR Signature OK");
                 for (int j=0; j<ids.length; j++) {
-                  if ((manifests[j] == null) && (versionKey[j].equals(thisKey.getVersionKey()))) {
+                  if ((manifests[j] == null) && (versionKey[j].equals(thisKey.versionKey()))) {
                     manifests[j] = thisManifest;
                     logger.debug("AR Storing under #{}", j);
                   }
@@ -521,21 +521,21 @@ final class GlacierBulkRefresh {
           FragmentAndManifest fam = (FragmentAndManifest) o;
           fam.getManifest().update(grpm.getLifetime(currentIndex), grpm.getSignature(currentIndex));
 
-          if (policy.checkSignature(fam.getManifest(), currentKey.getVersionKey())) {
+          if (policy.checkSignature(fam.getManifest(), currentKey.versionKey())) {
             FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(currentKey);
             if (metadata != null) {
-              if (metadata.getCurrentExpiration() <= grpm.getLifetime(currentIndex)) {
+              if (metadata.currentExpiration() <= grpm.getLifetime(currentIndex)) {
                 currentPhase = phaseStore;
-                if (metadata.getCurrentExpiration() == grpm.getLifetime(currentIndex)) {
-                  logger.atDebug().log(() -> "AR Duplicate refresh request (prev="+metadata.getPreviousExpiration()+" cur="+metadata.getCurrentExpiration()+" updated="+grpm.getLifetime(currentIndex)+") -- ignoring");
+                if (metadata.currentExpiration() == grpm.getLifetime(currentIndex)) {
+                  logger.atDebug().log(() -> "AR Duplicate refresh request (prev="+metadata.previousExpiration()+" cur="+metadata.currentExpiration()+" updated="+grpm.getLifetime(currentIndex)+") -- ignoring");
                 } else {
-                  FragmentMetadata newMetadata = new FragmentMetadata(grpm.getLifetime(currentIndex), metadata.getCurrentExpiration(), metadata.getStoredSince());
-                  logger.debug("AR FAM {} updated ({} -> {}), writing to disk...", currentKey, newMetadata.getPreviousExpiration(), newMetadata.getCurrentExpiration());
+                  FragmentMetadata newMetadata = new FragmentMetadata(grpm.getLifetime(currentIndex), metadata.currentExpiration(), metadata.storedSince());
+                  logger.debug("AR FAM {} updated ({} -> {}), writing to disk...", currentKey, newMetadata.previousExpiration(), newMetadata.currentExpiration());
                   fragmentStorage.store(currentKey, newMetadata, fam, this);
                   return;
                 }
               } else {
-                logger.atWarn().log(() -> "RefreshPatch attempts to roll back lifetime from "+metadata.getCurrentExpiration()+" to "+grpm.getLifetime(currentIndex));
+                logger.atWarn().log(() -> "RefreshPatch attempts to roll back lifetime from "+metadata.currentExpiration()+" to "+grpm.getLifetime(currentIndex));
                 currentPhase = phaseStore;
               }
             } else {

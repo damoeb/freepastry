@@ -45,9 +45,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.FragmentKey;
 
-public class GlacierFetchMessage extends GlacierMessage {
-  public static final short TYPE = 2;
-
+public final class GlacierFetchMessage extends GlacierMessage {
   private final FragmentKey[] keys;
   private final int request;
 
@@ -88,7 +86,7 @@ public class GlacierFetchMessage extends GlacierMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return GlacierMessageType.FETCH.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

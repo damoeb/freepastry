@@ -110,7 +110,7 @@ public class VersionKeyRange implements IdRange {
    * @return true if the key lies within this range, false otherwise
    */
   public boolean containsId(Id key) {
-    return range.containsId(((VersionKey)key).getId());
+    return range.containsId(((VersionKey)key).id());
   }
 
   /**

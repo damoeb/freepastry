@@ -45,20 +45,8 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.gc.GCPastContentHandle;
 
-public class GlacierContentHandle implements GCPastContentHandle {
+public record GlacierContentHandle(Id id, long version, NodeHandle nodeHandle, Manifest manifest) implements GCPastContentHandle {
   public static final short TYPE = 4;
-
-  private final Id id;
-  private final NodeHandle nodeHandle;
-  private final Manifest manifest;
-  private final long version;
-
-  public GlacierContentHandle(Id id, long version, NodeHandle nodeHandle, Manifest manifest) {
-    this.id = id;
-    this.nodeHandle = nodeHandle;
-    this.manifest = manifest;
-    this.version = version;
-  }
 
   public Id getId() {
     return id;
@@ -76,18 +64,15 @@ public class GlacierContentHandle implements GCPastContentHandle {
     return manifest.getExpiration();
   }
 
-  public Manifest getManifest() {
-    return manifest;
-  }
-
   /**
    * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
    */
   public GlacierContentHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
-    id = endpoint.readId(buf, buf.readShort());
-    version = buf.readLong();
-    nodeHandle = endpoint.readNodeHandle(buf);
-    manifest = new Manifest(buf);
+    Id id = endpoint.readId(buf, buf.readShort());
+    long version = buf.readLong();
+    NodeHandle nodeHandle = endpoint.readNodeHandle(buf);
+    Manifest manifest = new Manifest(buf);
+    this(id, version, nodeHandle, manifest);
   }
 
   public short getType() {
@@ -101,6 +86,5 @@ public class GlacierContentHandle implements GCPastContentHandle {
     nodeHandle.serialize(buf);
     manifest.serialize(buf);
   }
-
 
 }

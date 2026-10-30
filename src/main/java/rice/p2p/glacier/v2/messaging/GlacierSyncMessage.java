@@ -46,9 +46,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.v2.BloomFilter;
 
-public class GlacierSyncMessage extends GlacierMessage {
-  public static final short TYPE = 14;
-
+public final class GlacierSyncMessage extends GlacierMessage {
   private final IdRange range;
   private final int offsetFID;
   private final BloomFilter BloomFilter;
@@ -79,7 +77,7 @@ public class GlacierSyncMessage extends GlacierMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return GlacierMessageType.SYNC.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

@@ -45,7 +45,11 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 
-public abstract class GlacierMessage implements RawMessage {
+public sealed abstract class GlacierMessage implements RawMessage
+    permits GlacierDataMessage, GlacierFetchMessage, GlacierNeighborRequestMessage, GlacierNeighborResponseMessage,
+    GlacierQueryMessage, GlacierRangeForwardMessage, GlacierRangeQueryMessage, GlacierRangeResponseMessage,
+    GlacierRefreshCompleteMessage, GlacierRefreshPatchMessage, GlacierRefreshProbeMessage, GlacierRefreshResponseMessage,
+    GlacierResponseMessage, GlacierSyncMessage, GlacierTimeoutMessage {
 
   // the unique id for this message
   private final int id;

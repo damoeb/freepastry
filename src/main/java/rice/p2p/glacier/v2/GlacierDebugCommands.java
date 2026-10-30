@@ -140,7 +140,7 @@ final class GlacierDebugCommands {
         FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
         if (metadata != null) {
           result.append(((Id)thisKey).toStringFull()+" "+(isMine ? "OK" : "MI")+" "+
-              (metadata.getCurrentExpiration()-now)+" "+(metadata.getPreviousExpiration()-now)+"\n");
+              (metadata.currentExpiration()-now)+" "+(metadata.previousExpiration()-now)+"\n");
         }
       }
 
@@ -395,10 +395,10 @@ final class GlacierDebugCommands {
       fragmentStorage.getObject(id, new Continuation<Object, Exception>() {
         public void receiveResult(Object o) {
           FragmentAndManifest fam = (FragmentAndManifest) o;
-          ret.complete("OK\n\nFragment: "+fam.getFragment().getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(fam.getFragment().getPayload()), false)+"], ID="+id.getFragmentID()+"\n\nValidation: " +
-                   (fam.getManifest().validatesFragment(fam.getFragment(), id.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
-                   fam.getManifest().toStringFull()+"\n\nMetadata:\n - Stored since: "+metadata.getStoredSince()+
-                   "\n - Current expiration: "+metadata.getCurrentExpiration()+"\n - Previous expiration: "+metadata.getPreviousExpiration()+"\n");
+          ret.complete("OK\n\nFragment: "+fam.getFragment().getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(fam.getFragment().getPayload()), false)+"], ID="+id.fragmentId()+"\n\nValidation: " +
+                   (fam.getManifest().validatesFragment(fam.getFragment(), id.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
+                   fam.getManifest().toStringFull()+"\n\nMetadata:\n - Stored since: "+metadata.storedSince()+
+                   "\n - Current expiration: "+metadata.currentExpiration()+"\n - Previous expiration: "+metadata.previousExpiration()+"\n");
         }
         public void receiveException(Exception e) {
           ret.complete("exception("+e+")");
@@ -423,7 +423,7 @@ final class GlacierDebugCommands {
           int totalChecks = 1, totalFailures = 0;
           public void receiveResult(Object o) {
             FragmentAndManifest fam = (FragmentAndManifest) o;
-            boolean success = fam.getManifest().validatesFragment(fam.getFragment(), currentKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance));
+            boolean success = fam.getManifest().validatesFragment(fam.getFragment(), currentKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance));
             if (!success)
               totalFailures ++;
             result.append(currentKey.toStringFull()+" "+ (success ? "OK" : "FAIL") + "\n");
@@ -480,7 +480,7 @@ final class GlacierDebugCommands {
             GlacierDataMessage gdm = (GlacierDataMessage) o;
             ret.complete("\n\nResponse: "+gdm.getKey(0).toStringFull()+" ("+gdm.numKeys()+" keys)\n" +  "Holder: "+gdm.getSource()+"\n" +
                      "Fragment: "+gdm.getFragment(0).getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(gdm.getFragment(0).getPayload()), false)+"]\n\nValidation: " +
-                     (gdm.getManifest(0).validatesFragment(gdm.getFragment(0), gdm.getKey(0).getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
+                     (gdm.getManifest(0).validatesFragment(gdm.getFragment(0), gdm.getKey(0).fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
                      gdm.getManifest(0).toStringFull());
 
             terminate();

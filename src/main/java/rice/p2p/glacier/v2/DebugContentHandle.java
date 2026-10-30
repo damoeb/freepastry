@@ -45,45 +45,34 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.gc.GCPastContentHandle;
 
-public class DebugContentHandle implements GCPastContentHandle {
+public record DebugContentHandle(Id id, long version, long expiration, NodeHandle nodeHandle) implements GCPastContentHandle {
   public static final short TYPE = 3;
 
-  private final Id myId;
-  private final rice.p2p.commonapi.NodeHandle myNodeHandle;
-  private final long myExpiration;
-  private final long myVersion;
-
-  DebugContentHandle(Id id, long version, long expiration, NodeHandle nodeHandle) {
-    myId = id;
-    myNodeHandle = nodeHandle;
-    myExpiration = expiration;
-    myVersion = version;
-  }
-
   public Id getId() {
-    return myId;
+    return id;
   }
 
   public NodeHandle getNodeHandle() {
-    return myNodeHandle;
+    return nodeHandle;
   }
 
   public long getVersion() {
-    return myVersion;
+    return version;
   }
 
   public long getExpiration() {
-    return myExpiration;
+    return expiration;
   }
 
   /**
    * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
    */
   public DebugContentHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
-    myId = endpoint.readId(buf, buf.readShort());
-    myVersion = buf.readLong();
-    myExpiration = buf.readLong();
-    myNodeHandle = endpoint.readNodeHandle(buf);
+    Id id = endpoint.readId(buf, buf.readShort());
+    long version = buf.readLong();
+    long expiration = buf.readLong();
+    NodeHandle nodeHandle = endpoint.readNodeHandle(buf);
+    this(id, version, expiration, nodeHandle);
   }
 
   public short getType() {
@@ -91,10 +80,10 @@ public class DebugContentHandle implements GCPastContentHandle {
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeShort(myId.getType());
-    myId.serialize(buf);
-    buf.writeLong(myVersion);
-    buf.writeLong(myExpiration);
-    myNodeHandle.serialize(buf);
+    buf.writeShort(id.getType());
+    id.serialize(buf);
+    buf.writeLong(version);
+    buf.writeLong(expiration);
+    nodeHandle.serialize(buf);
   }
 }

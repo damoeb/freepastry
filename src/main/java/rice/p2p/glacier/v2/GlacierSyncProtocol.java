@@ -151,11 +151,11 @@ final class GlacierSyncProtocol {
               if (originalRange.containsId(thisPos)) {
                 FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fkey);
                 if (metadata != null) {
-                  long currentExp = metadata.getCurrentExpiration();
-                  long prevExp = metadata.getPreviousExpiration();
-                  logger.trace(" - Adding {} as {}, ecur={}, eprev={}", fkey, fkey.getVersionKey().getId(), currentExp, prevExp);
-                  bv.add(hashInput(fkey.getVersionKey(), currentExp));
-                  bv.add(hashInput(fkey.getVersionKey(), prevExp));
+                  long currentExp = metadata.currentExpiration();
+                  long prevExp = metadata.previousExpiration();
+                  logger.trace(" - Adding {} as {}, ecur={}, eprev={}", fkey, fkey.versionKey().id(), currentExp, prevExp);
+                  bv.add(hashInput(fkey.versionKey(), currentExp));
+                  bv.add(hashInput(fkey.versionKey(), prevExp));
                 } else {
                   logger.atWarn().log(() -> "SYNC Cannot read metadata of object "+fkey.toStringFull()+", storage returned null");
                 }
@@ -241,9 +241,9 @@ final class GlacierSyncProtocol {
       if (range.containsId(thisPos)) {
         FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fkey);
         if (metadata != null) {
-          if (!bv.contains(hashInput(fkey.getVersionKey(), metadata.getCurrentExpiration()))) {
-            if (metadata.getCurrentExpiration() >= earliestAcceptableExpiration) {
-              if (metadata.getStoredSince() <= latestAcceptableStoredSince) {
+          if (!bv.contains(hashInput(fkey.versionKey(), metadata.currentExpiration()))) {
+            if (metadata.currentExpiration() >= earliestAcceptableExpiration) {
+              if (metadata.storedSince() <= latestAcceptableStoredSince) {
                 logger.trace("{} @{} - MISSING", fkey, thisPos);
                 missing.add(fkey);
                 if (missing.size() >= syncMaxFragments) {
@@ -251,10 +251,10 @@ final class GlacierSyncProtocol {
                   break;
                 }
               } else {
-                logger.atDebug().log(() -> fkey+" @"+thisPos+" - TOO FRESH (stored "+(environment.getTimeSource().currentTimeMillis()-metadata.getStoredSince())+"ms)");
+                logger.atDebug().log(() -> fkey+" @"+thisPos+" - TOO FRESH (stored "+(environment.getTimeSource().currentTimeMillis()-metadata.storedSince())+"ms)");
               }
             } else {
-              logger.atDebug().log(() -> fkey+" @"+thisPos+" - EXPIRES SOON (in "+(metadata.getCurrentExpiration()-environment.getTimeSource().currentTimeMillis())+"ms)");
+              logger.atDebug().log(() -> fkey+" @"+thisPos+" - EXPIRES SOON (in "+(metadata.currentExpiration()-environment.getTimeSource().currentTimeMillis())+"ms)");
             }
           } else {
             logger.trace("{} @{} - OK", fkey, thisPos);
@@ -292,17 +292,17 @@ final class GlacierSyncProtocol {
 
         FragmentAndManifest fam = (FragmentAndManifest) o;
 
-        if (!policy.checkSignature(fam.getManifest(), thisKey.getVersionKey()))
+        if (!policy.checkSignature(fam.getManifest(), thisKey.versionKey()))
           panic("Signature mismatch!!");
 
         fragments[manifestIndex] = null;
         manifests[manifestIndex] = fam.getManifest();
-        int hisFID = thisKey.getFragmentID() - offset;
+        int hisFID = thisKey.fragmentId() - offset;
         if (hisFID < 0)
           hisFID += numFragments;
         if (hisFID >= numFragments)
           panic("Assertion failed: L938");
-        keys[manifestIndex] = new FragmentKey(thisKey.getVersionKey(), hisFID);
+        keys[manifestIndex] = new FragmentKey(thisKey.versionKey(), hisFID);
         logger.atDebug().log(() -> "He should have key "+keys[manifestIndex]+" @"+locator.getFragmentLocation(keys[manifestIndex]));
         manifestIndex ++;
         currentLookup ++;

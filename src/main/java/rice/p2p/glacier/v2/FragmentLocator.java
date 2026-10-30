@@ -87,9 +87,9 @@ final class FragmentLocator {
 
   Id getFragmentLocation(FragmentKey fkey) {
     return getFragmentLocation(
-      fkey.getVersionKey().getId(),
-      fkey.getFragmentID(),
-      fkey.getVersionKey().getVersion()
+      fkey.versionKey().id(),
+      fkey.fragmentId(),
+      fkey.versionKey().version()
     );
   }
 }

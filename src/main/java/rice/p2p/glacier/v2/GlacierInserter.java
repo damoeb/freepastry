@@ -183,8 +183,8 @@ final class GlacierInserter {
    * new manifest to the holders of its fragments.
    */
   private void refreshOne(final VersionKey thisVersionKey, final long thisExpiration, final Continuation<Object, Exception> thisContinuation) {
-    final Id thisId = thisVersionKey.getId();
-    final long thisVersion = thisVersionKey.getVersion();
+    final Id thisId = thisVersionKey.id();
+    final long thisVersion = thisVersionKey.version();
     retriever.retrieveManifest(thisVersionKey, GlacierTags.REFRESH, new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         if (o instanceof Manifest) {
@@ -248,7 +248,7 @@ final class GlacierInserter {
 
         logger.debug("Sending queries for {}", key);
         for (int i = 0; i < numFragments; i++) {
-          Id fragmentLoc = locator.getFragmentLocation(key.getId(), i, key.getVersion());
+          Id fragmentLoc = locator.getFragmentLocation(key.id(), i, key.version());
           FragmentKey keys[] = new FragmentKey[1];
           keys[0] = new FragmentKey(key, i);
 
@@ -263,14 +263,14 @@ final class GlacierInserter {
       public void receiveResult(Object o) {
         if (o instanceof GlacierResponseMessage) {
           GlacierResponseMessage grm = (GlacierResponseMessage) o;
-          if (!grm.getKey(0).getVersionKey().equals(key)) {
+          if (!grm.getKey(0).versionKey().equals(key)) {
             logger.atWarn().log(() -> whoAmI()+" response got routed to the wrong key: "+key);
             return;
           }
 
           /* Sanity checks */
 
-          int fragmentID = grm.getKey(0).getFragmentID();
+          int fragmentID = grm.getKey(0).fragmentId();
           if (fragmentID < numFragments) {
             if (grm.getAuthoritative(0)) {
 

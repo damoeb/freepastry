@@ -228,12 +228,12 @@ final class GlacierHandoffProtocol {
           continue;
         }
 
-        if (!policy.checkSignature(thisManifest, thisKey.getVersionKey())) {
+        if (!policy.checkSignature(thisManifest, thisKey.versionKey())) {
           logger.warn("Handoff: Manifest is not signed properly");
           continue;
         }
 
-        if (!thisManifest.validatesFragment(thisFragment, thisKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
+        if (!thisManifest.validatesFragment(thisFragment, thisKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
           logger.warn("Handoff: Manifest does not validate this fragment");
           continue;
         }

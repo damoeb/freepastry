@@ -41,9 +41,7 @@ import java.io.IOException;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
-public class GlacierTimeoutMessage extends GlacierMessage {
-  public static final short TYPE = 15;
-
+public final class GlacierTimeoutMessage extends GlacierMessage {
 
   /**
    * Constructor which takes a unique integer Id and the local id
@@ -66,7 +64,7 @@ public class GlacierTimeoutMessage extends GlacierMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return GlacierMessageType.TIMEOUT.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

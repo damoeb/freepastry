@@ -51,9 +51,7 @@ import rice.p2p.glacier.FragmentKey;
  * @version $Id: GlacierQueryMessage.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author ahae
  */
-public class GlacierQueryMessage extends GlacierMessage {
-  public static final short TYPE = 5;
-
+public final class GlacierQueryMessage extends GlacierMessage {
   private final FragmentKey keys[];
 
   public GlacierQueryMessage(int uid, FragmentKey keys[], NodeHandle source, Id dest, char tag) {
@@ -76,7 +74,7 @@ public class GlacierQueryMessage extends GlacierMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return GlacierMessageType.QUERY.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

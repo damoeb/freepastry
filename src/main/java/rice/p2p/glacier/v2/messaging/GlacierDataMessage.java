@@ -47,9 +47,7 @@ import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.v2.Manifest;
 
-public class GlacierDataMessage extends GlacierMessage {
-
-  public static final short TYPE = 1;
+public final class GlacierDataMessage extends GlacierMessage {
 
   private final FragmentKey[] keys;
   private final Fragment[] fragments;
@@ -90,7 +88,7 @@ public class GlacierDataMessage extends GlacierMessage {
 
   /***************** Raw Serialization ***************************************/
   public short getType() {
-    return TYPE;
+    return GlacierMessageType.DATA.id();
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

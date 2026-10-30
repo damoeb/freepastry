@@ -244,7 +244,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     GlacierContentHandle gch = (GlacierContentHandle) handle;
     logger.debug("exact: fetch({}v{})", gch.getId(), gch.getVersion());
 
-    retriever.retrieveObject(new VersionKey(gch.getId(), gch.getVersion()), gch.getManifest(), true, GlacierTags.FETCH, command);
+    retriever.retrieveObject(new VersionKey(gch.getId(), gch.getVersion()), gch.manifest(), true, GlacierTags.FETCH, command);
   }
 
   public int getReplicationFactor() {

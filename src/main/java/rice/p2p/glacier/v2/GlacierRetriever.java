@@ -232,9 +232,9 @@ final class GlacierRetriever {
       public void receiveResult(Object o) {
         if (o instanceof GlacierDataMessage) {
           GlacierDataMessage gdm = (GlacierDataMessage) o;
-          int fragmentID = gdm.getKey(0).getFragmentID();
+          int fragmentID = gdm.getKey(0).fragmentId();
 
-          if (!gdm.getKey(0).getVersionKey().equals(key) || (fragmentID<0) || (fragmentID>=numFragments)) {
+          if (!gdm.getKey(0).versionKey().equals(key) || (fragmentID<0) || (fragmentID>=numFragments)) {
             logger.atWarn().log(() -> "retrieveObject: Bad data message (contains "+gdm.getKey(0)+", expected "+key);
             return;
           }
@@ -389,7 +389,7 @@ final class GlacierRetriever {
     if (o != null) {
       if (o instanceof FragmentAndManifest) {
         Fragment thisFragment = ((FragmentAndManifest)o).getFragment();
-        if (manifest.validatesFragment(thisFragment, key.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
+        if (manifest.validatesFragment(thisFragment, key.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
           logger.atDebug().log(() -> "retrieveFragment: Found in trash: "+key.toStringFull());
           c.receiveResult(thisFragment);
           return true;
@@ -464,7 +464,7 @@ final class GlacierRetriever {
           return;
         }
 
-        if (!manifest.validatesFragment(thisFragment, gdm.getKey(0).getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
+        if (!manifest.validatesFragment(thisFragment, gdm.getKey(0).fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
           logger.atWarn().log(() -> "Invalid fragment "+gdm.getKey(0)+" returned by primary -- ignored");
           return;
         }
@@ -487,8 +487,8 @@ final class GlacierRetriever {
         timeout = timeout + currentFragmentRequestTimeout;
         attemptsLeft --;
         router.sendMessage(
-          key.getVersionKey().getId(),
-          new GlacierFetchMessage(getMyUID(), key, GlacierFetchMessage.FETCH_FRAGMENT, router.getLocalNodeHandle(), key.getVersionKey().getId(), tag),
+          key.versionKey().id(),
+          new GlacierFetchMessage(getMyUID(), key, GlacierFetchMessage.FETCH_FRAGMENT, router.getLocalNodeHandle(), key.versionKey().id(), tag),
           null
         );
       } else {
@@ -511,10 +511,10 @@ final class GlacierRetriever {
    * Restores the whole object, and re-encodes the one fragment from it.
    */
   private void restoreFragmentFromObject(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation c) {
-    retrieveObject(key.getVersionKey(), manifest, false, tag, new Continuation<Object, Exception>() {
+    retrieveObject(key.versionKey(), manifest, false, tag, new Continuation<Object, Exception>() {
       public void receiveResult(Object o) {
         if (o == null) {
-          logger.warn("retrieveFragment: retrieveObject({}) failed, returns null", key.getVersionKey());
+          logger.warn("retrieveFragment: retrieveObject({}) failed, returns null", key.versionKey());
           c.receiveException(new GlacierException("Cannot restore either the object or the fragment -- try again later!"));
           return;
         }
@@ -533,22 +533,22 @@ final class GlacierRetriever {
    */
   private void reencodeFragment(final FragmentKey key, final Manifest manifest, final PastContent retrievedObject, final GlacierContinuation c) {
     endpoint.process(() -> {
-      logger.debug("Reencode object: {}", key.getVersionKey());
+      logger.debug("Reencode object: {}", key.versionKey());
       boolean generateFragment[] = new boolean[numFragments];
       Arrays.fill(generateFragment, false);
-      generateFragment[key.getFragmentID()] = true;
+      generateFragment[key.fragmentId()] = true;
       Fragment[] result = policy.encodeObject(retrievedObject, generateFragment);
-      logger.debug("Reencode complete: {}", key.getVersionKey());
+      logger.debug("Reencode complete: {}", key.versionKey());
       return result;
     }, new Continuation<Fragment[], Exception>() {
       public void receiveResult(Fragment[] frag) {
-        if (!manifest.validatesFragment(frag[key.getFragmentID()], key.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
-          logger.warn("Reconstructed fragment #{} does not match manifest ??!?", key.getFragmentID());
+        if (!manifest.validatesFragment(frag[key.fragmentId()], key.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
+          logger.warn("Reconstructed fragment #{} does not match manifest ??!?", key.fragmentId());
           c.receiveException(new GlacierException("Recovered object, but cannot re-encode it (strange!) -- try again later!"));
           return;
         }
 
-        c.receiveResult(frag[key.getFragmentID()]);
+        c.receiveResult(frag[key.fragmentId()]);
       }
       public void receiveException(Exception e) {
         logger.error("Recovered object, but re-encode failed: ", e);

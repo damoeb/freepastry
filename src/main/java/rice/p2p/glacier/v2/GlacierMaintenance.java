@@ -110,13 +110,13 @@ final class GlacierMaintenance {
           final Id thisKey = (Id) iter.next();
           final FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
           if (metadata != null) {
-            if (metadata.getCurrentExpiration() < now) {
+            if (metadata.currentExpiration() < now) {
               candidates ++;
               if (doneSoFar < config.garbageCollectionMaxFragmentsPerRun()) {
                 doneSoFar ++;
                 trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
                   public void receiveResult(Object o) {
-                    logger.atInfo().log(() -> "GC collected "+thisKey.toStringFull()+", expired "+(now-metadata.getCurrentExpiration())+" msec ago");
+                    logger.atInfo().log(() -> "GC collected "+thisKey.toStringFull()+", expired "+(now-metadata.currentExpiration())+" msec ago");
                   }
                   public void receiveException(Exception e) {
                     logger.atDebug().log(() -> "GC cannot collect "+thisKey.toStringFull());
@@ -170,24 +170,24 @@ final class GlacierMaintenance {
         while (iter.hasNext()) {
           final FragmentKey thisKey = (FragmentKey) iter.next();
           FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
-          if ((metadata != null) && (metadata.getCurrentExpiration() >= now)) {
-            final Id thisObjectKey = thisKey.getVersionKey().getId();
-            final long thisVersion = thisKey.getVersionKey().getVersion();
-            final int thisFragmentID = thisKey.getFragmentID();
+          if ((metadata != null) && (metadata.currentExpiration() >= now)) {
+            final Id thisObjectKey = thisKey.versionKey().id();
+            final long thisVersion = thisKey.versionKey().version();
+            final int thisFragmentID = thisKey.fragmentId();
             final int fidLeft = (thisFragmentID + numFragments - 1) % numFragments;
             final int fidRight = (thisFragmentID + 1) % numFragments;
 
             if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisObjectKey, fidLeft, thisVersion))) {
               if (!fragments.isMemberId(thisKey.getPeerKey(fidLeft))) {
                 logger.trace("Missing: {} L={}", thisKey, fidLeft);
-                queries.add(thisKey.getVersionKey());
+                queries.add(thisKey.versionKey());
               }
             }
 
             if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisObjectKey, fidRight, thisVersion))) {
               if (!fragments.isMemberId(thisKey.getPeerKey(fidRight))) {
                 logger.trace("Missing: {} R={}", thisKey, fidRight);
-                queries.add(thisKey.getVersionKey());
+                queries.add(thisKey.versionKey());
               }
             }
           } else {

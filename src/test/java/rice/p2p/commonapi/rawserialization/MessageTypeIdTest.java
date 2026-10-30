@@ -64,7 +64,8 @@ class MessageTypeIdTest {
   /** The registries that must exist; the scan below must find at least these. */
   private static final List<String> KNOWN_REGISTRIES = List.of(
       "rice.p2p.scribe.messaging.ScribeMessageType",
-      "rice.p2p.past.messaging.PastMessageType");
+      "rice.p2p.past.messaging.PastMessageType",
+      "rice.p2p.glacier.v2.messaging.GlacierMessageType");
 
   private enum Clean implements MessageTypeId {
     ONE(1), TWO(2);

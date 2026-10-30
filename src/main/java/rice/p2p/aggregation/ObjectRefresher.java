@@ -260,7 +260,7 @@ final class ObjectRefresher {
       Iterator<Id> iter = waitingList.scan().getIterator();
       while (iter.hasNext()) {
         final VersionKey vkey = (VersionKey) iter.next();
-        if (vkey.getId().equals(id))
+        if (vkey.id().equals(id))
           return refreshInWaitingList(vkey, expiration);
       }
 

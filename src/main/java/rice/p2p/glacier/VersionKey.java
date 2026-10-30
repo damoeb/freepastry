@@ -51,46 +51,8 @@ import rice.p2p.util.MathUtils;
  * @version $Id: VersionKey.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author ahae
  */
-public class VersionKey implements Id {
+public record VersionKey(Id id, long version) implements Id {
   public static final short TYPE = 41;
-
-  /**
-   * The id of the object
-   */
-  private final Id id;
-  /**
-   * The version of the object
-   */
-  private final long version;
-
-  /**
-   * Constructor for VersionKey.
-   *
-   * @param id the id of the object
-   * @param version the version of the object
-   */
-  public VersionKey(Id id, long version) {
-    this.id = id;
-    this.version = version;
-  }
-
-  /**
-   * Gets the Version attribute of the VersionKey object
-   *
-   * @return The Version value
-   */
-  public long getVersion() {
-    return version;
-  }
-
-  /**
-   * Gets the Id attribute of the VersionKey object
-   *
-   * @return The Id value
-   */
-  public Id getId() {
-    return id;
-  }
 
   /**
    * Determines equality
@@ -214,8 +176,9 @@ public class VersionKey implements Id {
   }
 
   public VersionKey(InputBuffer buf, Endpoint endpoint) throws IOException {
-    version = buf.readLong();
-    id = endpoint.readId(buf, buf.readShort());
+    long version = buf.readLong();
+    Id id = endpoint.readId(buf, buf.readShort());
+    this(id, version);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

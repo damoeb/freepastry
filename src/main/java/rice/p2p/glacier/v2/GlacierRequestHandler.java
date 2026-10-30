@@ -102,7 +102,7 @@ final class GlacierRequestHandler {
       if (haveItA[i]) {
         FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(gqm.getKey(i));
         if (metadata != null) {
-          expirationA[i] = metadata.getCurrentExpiration();
+          expirationA[i] = metadata.currentExpiration();
         } else {
           if (logger.isWarnEnabled()) logger.warn("QUERY cannot read metadata in object "+gqm.getKey(i).toStringFull()+", storage returned null");
           expirationA[i] = 0;
@@ -200,12 +200,12 @@ final class GlacierRequestHandler {
           continue;
         }
 
-        if (!policy.checkSignature(thisManifest, thisKey.getVersionKey())) {
+        if (!policy.checkSignature(thisManifest, thisKey.versionKey())) {
           logger.warn("Manifest is not signed properly");
           continue;
         }
 
-        if (!thisManifest.validatesFragment(thisFragment, thisKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance))) {
+        if (!thisManifest.validatesFragment(thisFragment, thisKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
           logger.warn("Manifest does not validate this fragment");
           continue;
         }
@@ -253,12 +253,12 @@ final class GlacierRequestHandler {
 
         if (fragmentStorage.exists(thisKey)) {
           final FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
-          if ((metadata == null) || (metadata.getCurrentExpiration() < thisManifest.getExpiration())) {
-            logger.atInfo().log(() -> "Replacing old manifest for "+thisKey+" (expires "+((metadata == null) ? "(broken)" : ""+metadata.getCurrentExpiration())+") by new one (expires "+thisManifest.getExpiration()+")");
+          if ((metadata == null) || (metadata.currentExpiration() < thisManifest.getExpiration())) {
+            logger.atInfo().log(() -> "Replacing old manifest for "+thisKey+" (expires "+((metadata == null) ? "(broken)" : ""+metadata.currentExpiration())+") by new one (expires "+thisManifest.getExpiration()+")");
 
             replaceManifest(gdm, thisKey, thisManifest, metadata);
           } else {
-            logger.atWarn().log(() -> "We already have exp="+((metadata == null) ? "(broken)" : ""+metadata.getCurrentExpiration())+", discarding manifest for "+thisKey+" with exp="+thisManifest.getExpiration());
+            logger.atWarn().log(() -> "We already have exp="+((metadata == null) ? "(broken)" : ""+metadata.currentExpiration())+", discarding manifest for "+thisKey+" with exp="+thisManifest.getExpiration());
           }
 
           continue;
@@ -289,9 +289,9 @@ final class GlacierRequestHandler {
 
           String fault = null;
 
-          if (!thisManifest.validatesFragment(fam.getFragment(), thisKey.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance)))
+          if (!thisManifest.validatesFragment(fam.getFragment(), thisKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance)))
             fault = "Update: Manifest does not validate this fragment";
-          if (!policy.checkSignature(thisManifest, thisKey.getVersionKey()))
+          if (!policy.checkSignature(thisManifest, thisKey.versionKey()))
             fault = "Update: Manifest is not signed properly";
           if (!Arrays.equals(thisManifest.getObjectHash(), fam.getManifest().getObjectHash()))
             fault = "Update: Object hashes not equal";
@@ -301,7 +301,7 @@ final class GlacierRequestHandler {
 
           if (fault == null) {
             fam.replaceManifest(thisManifest);
-            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), ((metadata == null) ? 0 : metadata.getCurrentExpiration()), environment.getTimeSource().currentTimeMillis()), fam,
+            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), ((metadata == null) ? 0 : metadata.currentExpiration()), environment.getTimeSource().currentTimeMillis()), fam,
               new Continuation<Object, Exception>() {
                 public void receiveResult(Object o) {
                   logger.debug("Old manifest for {} replaced OK, sending receipt", thisKey);
