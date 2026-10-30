@@ -43,18 +43,9 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
 
 public class EvtInit<Handle extends RawSerializable> extends HistoryEvent {
   Handle handle;
-
-  public EvtInit(Handle handle) {
-    this.handle = handle;
-  }
-
-  public short getType() {
-    return EVT_INIT;
-  }
 
   public EvtInit(InputBuffer buf, Serializer<Handle> handleSerializer) throws IOException {
     super();

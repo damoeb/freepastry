@@ -52,7 +52,6 @@ import org.mpisws.p2p.transport.peerreview.infostore.EvidenceRecord;
 import org.mpisws.p2p.transport.peerreview.infostore.PeerInfoStore;
 import org.mpisws.p2p.transport.peerreview.message.AccusationMessage;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
-import org.mpisws.p2p.transport.priority.MessageInfo;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
@@ -66,13 +65,9 @@ import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED
 
 public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable>
     implements EvidenceTransferProtocol<Handle, Identifier> {
-  static final int MAX_CACHE_ENTRIES = 500;
-  static final int MAX_PENDING_MESSAGES = 100;
-  static final int MAX_PENDING_QUERIES = 100;
   static final int WITNESS_SET_VALID_MICROS = 300*1000000;
 
   PeerReview<Handle, Identifier> peerreview;
-  IdentityTransport<Handle, Identifier> transport;
   PeerInfoStore<Handle, Identifier> infoStore;
 
   Map<Identifier, CacheInfo> witnessCache = new HashMap<Identifier, CacheInfo>();
@@ -83,7 +78,6 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
 
   public EvidenceTransferProtocolImpl(PeerReview<Handle, Identifier> peerreview, IdentityTransport<Handle, Identifier> transport, PeerInfoStore<Handle, Identifier> infoStore) {
     this.peerreview = peerreview;
-    this.transport = transport;
     this.infoStore = infoStore;
 
     logger = peerreview.getEnvironment().getLogManager().getLogger(EvidenceTransferProtocolImpl.class, null);
@@ -226,7 +220,6 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
    * is queued in here
    */
   public static class MessageInfo<Handle, Identifier> {
-    private final Identifier subject; // deliver to my witnesses
     private final PeerReviewMessage message;
     private final MessageCallback<Handle, ByteBuffer> deliverAckToMe;
     private final Map<String, Object> options;
@@ -234,7 +227,6 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     public MessageInfo(Identifier subject, PeerReviewMessage message,
         MessageCallback<Handle, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
-      this.subject = subject;
       this.message = message;
       this.deliverAckToMe = deliverAckToMe;
       this.options = options;

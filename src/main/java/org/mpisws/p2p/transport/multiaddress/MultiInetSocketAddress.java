@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.multiaddress;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
@@ -128,20 +127,6 @@ public class MultiInetSocketAddress {
       if (ctr < address.length-1) s+=":";
     }
     return s;
-  }
-
-  public void toStringShort(StringBuffer result) {
-    for (int ctr = 0; ctr < address.length; ctr++) {
-      InetSocketAddress theAddr = address[ctr];
-      InetAddress theAddr2 = theAddr.getAddress();
-      if (theAddr2 == null) {
-        result.append(theAddr.toString());
-      } else {
-        String ha = theAddr2.getHostAddress();
-        result.append(ha + ":" + theAddr.getPort());
-      }
-      if (ctr < address.length - 1) result.append(";");
-    } // ctr
   }
 
   public InetSocketAddress getInnermostAddress() {

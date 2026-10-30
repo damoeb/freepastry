@@ -67,7 +67,6 @@ import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED
  */
 public class PeerInfoStoreImpl<Handle, Identifier> implements
     PeerInfoStore<Handle, Identifier> {
-  IdentityTransport<Handle, Identifier> transport;
 
   Path directory;
   // Subject -> PeerInfoRecord
@@ -75,7 +74,6 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
   StatusChangeListener<Identifier> listener;
   boolean notificationEnabled;
 
-  private final Environment environment;
 
   private final Logger logger;
   IdStrTranslator<Identifier> stringTranslator;
@@ -93,11 +91,9 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     this.peerInfoRecords = new HashMap<Identifier, PeerInfoRecord<Handle, Identifier>>();
     this.directory = null;
     this.notificationEnabled = true;
-    this.transport = transport;
     this.listener = null;
     this.stringTranslator = stringTranslator;
     this.authSerializer = authSerializer;
-    this.environment = env;
     this.evidenceSerializer = evidenceSerializer;
     this.logger = env.getLogManager().getLogger(PeerInfoStoreImpl.class, null);
   }

@@ -46,13 +46,11 @@ public class SocketRequestHandleImpl<Identifier> implements SocketRequestHandle<
   Identifier identifier;
   Map<String, Object> options;
   Cancellable subCancellable;
-  Logger logger;
 
   public SocketRequestHandleImpl(Identifier i, Map<String, Object> options, Logger logger) {
     this.identifier = i;
     this.options = options;
     if (logger == null) throw new IllegalArgumentException("logger is null");
-    this.logger = logger;
   }
 
   public Identifier getIdentifier() {

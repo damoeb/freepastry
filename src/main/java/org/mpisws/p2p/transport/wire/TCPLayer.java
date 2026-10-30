@@ -38,13 +38,10 @@ package org.mpisws.p2p.transport.wire;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import org.mpisws.p2p.transport.SocketCallback;
@@ -54,16 +51,6 @@ import org.slf4j.Logger;
 import rice.selector.SelectionKeyHandler;
 
 public class TCPLayer extends SelectionKeyHandler {
-  public static final Map<String, Object> OPTIONS;
-  static {
-    Map<String, Object> map = new HashMap<String, Object>();
-    map.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_GUARANTEED);
-    OPTIONS = Collections.unmodifiableMap(map);
-  }
-
-  // the number of sockets where we start closing other sockets
-  public final int MAX_OPEN_SOCKETS;
-
   // the size of the buffers for the socket
   public final int SOCKET_BUFFER_SIZE;
   private final boolean TCP_NO_DELAY;
@@ -73,9 +60,6 @@ public class TCPLayer extends SelectionKeyHandler {
   // the key to accept from
   private SelectionKey key;
 
-  // the buffer used to read the header
-  private ByteBuffer buffer;
-
   Logger logger;
 
   public TCPLayer(WireTransportLayerImpl wire, boolean enableServer) throws IOException {
@@ -83,7 +67,6 @@ public class TCPLayer extends SelectionKeyHandler {
     this.logger = wire.getEnvironment().getLogManager().getLogger(TCPLayer.class, null);
 
     WireConfig config = wire.getConfig();
-    MAX_OPEN_SOCKETS = config.maxOpenSockets();
     SOCKET_BUFFER_SIZE = config.socketBufferSize();
     TCP_NO_DELAY = config.tcpNoDelay();
     ServerSocketChannel temp = null; // just to clean up after the exception

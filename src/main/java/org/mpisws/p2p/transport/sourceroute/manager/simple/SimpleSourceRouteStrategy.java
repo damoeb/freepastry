@@ -43,13 +43,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
-import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.util.TimerWeakHashMap;
 
 /**
  * This is a simple implementation of the SourceRouteStrategy.  It caches
@@ -61,17 +58,7 @@ import rice.p2p.util.TimerWeakHashMap;
  *
  */
 public class SimpleSourceRouteStrategy<Identifier> implements SourceRouteStrategy<Identifier> {
-  /**
-   * Destination -> route
-   *
-   * The order of the list is from here to the end.  The last hop is always the destination.
-   * The local node is implied and is not included.  Direct routes are also stored here.
-   */
-  TimerWeakHashMap<Identifier, SourceRoute<Identifier>>routes;
   NextHopStrategy<Identifier> strategy;
-  Environment environment;
-  Logger logger;
-  LivenessProvider<SourceRoute<Identifier>> livenessManager;
   SourceRouteFactory<Identifier> srFactory;
   Identifier localAddress;
 
@@ -83,9 +70,6 @@ public class SimpleSourceRouteStrategy<Identifier> implements SourceRouteStrateg
     this.localAddress = localAddress;
     this.srFactory = srFactory;
     this.strategy = strategy;
-    this.environment = env;
-    this.logger = environment.getLogManager().getLogger(SimpleSourceRouteStrategy.class, null);
-    routes = new TimerWeakHashMap<Identifier, SourceRoute<Identifier>>(environment.getSelectorManager(),300000);
   }
 
   /**
@@ -110,20 +94,5 @@ public class SimpleSourceRouteStrategy<Identifier> implements SourceRouteStrateg
   }
 
 
-
-  /**
-   * Produces a route to the destination.  A direct route if there is not
-   * a cached multi-hop route.
-   *
-   * @param dest
-   */
-  private SourceRoute<Identifier> getRoute(Identifier intermediate, Identifier dest) {
-    SourceRoute<Identifier> route = routes.get(dest);
-    if (route == null) {
-      route = srFactory.getSourceRoute(localAddress,dest);
-      routes.put(dest, route);
-    }
-    return route;
-  }
 
 }

@@ -245,8 +245,4 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   public byte[] hash(ByteBuffer... hashMe) {
     return hasher.hash(hashMe);
   }
-
-  public Environment getEnvironment() {
-    return environment;
-  }
 }

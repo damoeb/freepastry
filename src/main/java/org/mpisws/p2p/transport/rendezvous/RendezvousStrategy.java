@@ -51,7 +51,6 @@ import rice.p2p.commonapi.Cancellable;
  *
  */
 public interface RendezvousStrategy<Identifier> {
-  public static int SUCCESS = 1;
 
   /**
    * Calls ChannelOpener.openChannel() on target

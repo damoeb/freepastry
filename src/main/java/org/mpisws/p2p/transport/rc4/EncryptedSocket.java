@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
@@ -54,8 +53,6 @@ public class EncryptedSocket<Identifier> extends SocketWrapperSocket<Identifier,
 
   private final Cipher encryptCipher;
   private final Cipher decryptCipher;
-
-  SecretKey key;  // This is the key for the socket (it's already been hashed with a seed).
 
 
   /**

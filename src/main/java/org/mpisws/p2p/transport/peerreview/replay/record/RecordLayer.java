@@ -63,7 +63,6 @@ import rice.environment.params.simple.SimpleParameters;
 import rice.environment.processing.Processor;
 import rice.environment.processing.sim.SimProcessor;
 import rice.environment.random.RandomSource;
-import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.TimeSource;
 import rice.environment.time.simple.SimpleTimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
@@ -104,7 +103,6 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
   Logger logger;
 
   long lastLogEntry;
-  boolean initialized = false;
 
   int socketCtr = Integer.MIN_VALUE;
 
@@ -126,7 +124,6 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
 
     // no env.addDestructable(this): the TransportLayer already destroys this layer
 
-    initialized = true;
   }
 
   /**
@@ -292,13 +289,6 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
 
   public static Environment generateEnvironment() {
     return generateEnvironment(null);
-  }
-
-  public static Environment generateEnvironment(int randomSeed) {
-    SimpleRandomSource srs = new SimpleRandomSource(randomSeed, null);
-    Environment env = generateEnvironment(srs);
-    srs.setLogManager(env.getLogManager());
-    return env;
   }
 
   public static Environment generateEnvironment(RandomSource rs) {

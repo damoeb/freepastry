@@ -47,7 +47,6 @@ public class IncompleteStatementInfo<Handle, Identifier extends RawSerializable>
   private final long currentTimeout;
   private final Statement<Identifier> statement;
   private boolean isMissingCertificate;
-  private Identifier missingCertificateID;
   private final Map<String, Object> options;
 
   public IncompleteStatementInfo(boolean finished, Handle source, long currentTimeout,
@@ -57,7 +56,6 @@ public class IncompleteStatementInfo<Handle, Identifier extends RawSerializable>
     this.currentTimeout = currentTimeout;
     this.statement = statement;
     this.isMissingCertificate = isMissingCertificate;
-    this.missingCertificateID = missingCertificateId;
     this.options = options;
   }
 
@@ -72,7 +70,6 @@ public class IncompleteStatementInfo<Handle, Identifier extends RawSerializable>
   /** Records that the statement cannot be processed until the certificate of {@code id} arrives. */
   public void markMissingCertificate(Identifier id) {
     isMissingCertificate = true;
-    missingCertificateID = id;
   }
 
   public void clearMissingCertificate() {

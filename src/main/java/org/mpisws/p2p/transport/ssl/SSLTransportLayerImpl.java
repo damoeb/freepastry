@@ -38,7 +38,6 @@ package org.mpisws.p2p.transport.ssl;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
 import java.security.KeyStore;
 import java.util.Map;
 import javax.net.ssl.KeyManagerFactory;
@@ -79,7 +78,6 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
 
   private final SSLContext context;
 
-  KeyPair keyPair;
   private int clientAuth;
 
   public SSLTransportLayerImpl(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, Environment env) throws IOException {

@@ -82,8 +82,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 
   protected Identifier localHandle;
   private final SecureHistory history;
-  PeerReviewCallback<Identifier, ?> app;
-  int numEventCallbacks;
   boolean foundFault;
 
   boolean haveNextEvent;
@@ -95,15 +93,12 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   boolean initialized;
   short signatureSizeBytes;
   short hashSizeBytes;
-  int numTimers;
   int[] eventToCallback = new int[256];
   protected Logger logger;
   private final Serializer<Identifier> serializer; // was transport in c++ impl
   private final HashProvider hashProv;
 
   // these are shortcuts in the Java impl, they would all be true in the c++ impl, but in some cases it's more efficient if we can turn them off
-  boolean useSendSign = false;  // true if we're sending the signature after the message
-  boolean useSenderSeq = false;
   boolean useLogHashFlag = false;
 
   public ReplayVerifier(
@@ -117,7 +112,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       Logger logger) throws IOException {
     this.logger = logger;
     this.history = history;
-    this.numEventCallbacks = 0;
     this.serializer = serializer;
     this.hashProv = hashProv;
     this.localHandle = localHandle;
@@ -127,7 +121,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     this.initialized = false;
     this.signatureSizeBytes = signatureSizeBytes;
     this.hashSizeBytes = hashSizeBytes;
-    this.numTimers = 0;
 
     for (int i=0; i<256; i++)
       eventToCallback[i] = -1;
@@ -141,10 +134,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     return !foundFault;
   };
 
-
-  public IndexEntry getNextEvent() {
-    return next;
-  }
 
   /**
    * Callback when a message has arrived.
@@ -182,7 +171,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
   protected abstract void socketException(int socketId, IOException ioe) throws IOException;
 
   public void setApplication(PeerReviewCallback<Identifier, ?> app) {
-    this.app = app;
   }
 
   /**
@@ -281,10 +269,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         return;
       }
 
-      if (useSendSign) {
-        fetchNextEvent();
-        assert(next.getType() == EVT_SENDSIGN);
-      }
       fetchNextEvent();
       return;
     }
@@ -377,10 +361,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       }
     }
 
-    if (useSendSign) {
-      fetchNextEvent();
-      assert(next.getType() == EVT_SENDSIGN);
-    }
     fetchNextEvent();
   }
 
@@ -460,36 +440,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
     dst.position(dst.position()+ret);
     fetchNextEvent();
     return ret;
-  }
-
-  public void generatedSocketException(int socketId, IOException ioe) {
-    if (!haveNextEvent) {
-      logger.warn("Replay: WriteSocket event after end of segment; marking as invalid");
-      foundFault = true;
-      return;
-    }
-
-    if (next.getType() != EVT_SOCKET_EXCEPTION) {
-      logger.warn("Replay: EVT_SOCKET_EXCEPTION event during replay, but next event in log is #{}; marking as invalid", next.getType());
-      foundFault = true;
-      return;
-    }
-
-    try {
-      int loggedSocket = nextEvent.readInt();
-      if (loggedSocket != socketId) {
-        logger.warn("Replay: EVT_SOCKET_EXCEPTION on socket {} during replay, but log shows EVT_SOCKET_EXCEPTION to {}; marking as invalid", socketId, loggedSocket);
-        foundFault = true;
-        return;
-      }
-    } catch (IOException ioe2) {
-      logger.warn("Replay: Error reading log", ioe2);
-    }
-
-    // all good
-    fetchNextEvent();
-    return;
-
   }
 
   /**
@@ -694,7 +644,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         Identifier sender = serializer.deserialize(nextEvent);
 
         long senderSeq = 0;
-        if (useSenderSeq) senderSeq = nextEvent.readLong();
         boolean hashed = false;
         if (useLogHashFlag) hashed = nextEvent.readBoolean();
 
@@ -707,14 +656,6 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 
         /* The next event is going to be a SIGN; skip it, since it's irrelevant here */
 
-        if (useSendSign) {
-          fetchNextEvent();
-          if (!haveNextEvent || (next.getType() != EVT_SIGN) || (next.getSizeInFile() != (int)(hashSizeBytes+signatureSizeBytes))) {
-            logger.warn("Replay: RECV event not followed by SIGN; marking as invalid");
-            foundFault = true;
-            return false;
-          }
-        }
 
         fetchNextEvent();
 

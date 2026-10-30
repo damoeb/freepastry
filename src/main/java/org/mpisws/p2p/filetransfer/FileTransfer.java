@@ -43,18 +43,6 @@ import java.nio.file.Path;
 import rice.Continuation;
 
 public interface FileTransfer {
-  /**
-   *
-   * @param f the file to send
-   * @param metadata this data will be delivered to the FileAllocationStrategy and the FileTransferCallback, it can
-   * contain whatever the application needs to name the file, often a filename is sufficient.
-   * @param priority the priority of sending
-   * @param offset where to start in the file
-   * @param length how many bytes to send (must be at most fileLength-offset)
-   * @param c who to notify when it is done
-   * @return
-   */
-  public FileReceipt sendFile(Path f, ByteBuffer metadata, byte priority, long offset, long length, Continuation<FileReceipt, Exception> c) throws IOException;
   public FileReceipt sendFile(Path f, ByteBuffer metadata, byte priority, Continuation<FileReceipt, Exception> c) throws IOException;
 
   public BBReceipt sendMsg(ByteBuffer bb, byte priority, Continuation<BBReceipt, Exception> c);

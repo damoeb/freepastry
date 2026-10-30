@@ -43,7 +43,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSIGN;
 
 /**
   EVT_ACK
@@ -81,10 +80,6 @@ public class EvtAck<Identifier extends RawSerializable> extends HistoryEvent {
     buf.read(hTopMinusOne);
     signature = new byte[signatureSize];
     buf.read(signature);
-  }
-
-  public short getType() {
-    return EVT_SENDSIGN;
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

@@ -140,30 +140,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     return ctx;
   }
 
-  public void clearState() {
-    if (!selectorManager.isSelectorThread()) {
-      selectorManager.invoke(() -> clearState());
-      return;
-    }
-
-    for (P2PSocket<Identifier> socket : sockets) {
-        socket.close();
-    }
-    synchronized(queue) {
-      queue.clear();
-      messageThatIsBeingWritten = null;
-    }
-    synchronized(EntityManager.this) {
-      logger.info("{}.clearState() setting pendingSocket to null {}", EntityManager.this, pendingSocket);
-
-      if (pendingSocket != null) {
-        pendingSocket.cancel();
-        stopLivenessChecker();
-      }
-      pendingSocket = null;
-    }
-  }
-
   /**
    * Read an error, or socket was closed.
    *
@@ -657,35 +633,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
         wrapper.reset();
         enqueue(wrapper);
       }
-    }
-  }
-
-  public int queueLength() {
-    int ret = queue.size();
-    if (messageThatIsBeingWritten != null) ret++;
-    return ret;
-  }
-
-  public long bytesPending() {
-    long ret = 0;
-    synchronized(queue) {
-      if (messageThatIsBeingWritten != null) {
-        ret+=messageThatIsBeingWritten.message.remaining();
-      }
-      for (MessageWrapper<Identifier> foo : queue) {
-        ret+=foo.message.remaining();
-      }
-    }
-    return ret;
-  }
-
-  public List<MessageInfo> getPendingMessages() {
-    synchronized(queue) {
-      ArrayList<MessageInfo> ret = new ArrayList<MessageInfo>(queue.size());
-      for (MessageWrapper<Identifier> foo : queue) {
-        ret.add(foo.getMessageInfo());
-      }
-      return ret;
     }
   }
 }

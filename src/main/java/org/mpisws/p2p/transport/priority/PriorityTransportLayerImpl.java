@@ -39,9 +39,7 @@ package org.mpisws.p2p.transport.priority;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -73,8 +71,6 @@ import rice.selector.SelectorManager;
 public class PriorityTransportLayerImpl<Identifier> implements PriorityTransportLayer<Identifier>, LivenessListener<Identifier>, TransportLayerCallback<Identifier, ByteBuffer> {
 
   TransportLayer<Identifier, ByteBuffer> tl;
-  LivenessProvider<Identifier> livenessProvider;
-  ProximityProvider<Identifier> proximityProvider;
 
   public static final byte PASSTHROUGH_SOCKET_B = 0;
   public static final byte PRIMARY_SOCKET_B = 1;
@@ -144,8 +140,6 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     this.MAX_QUEUE_SIZE = maxQueueSize;
     this.tl = tl;
     logger.info("MAX_QUEUE_SIZE:{} MAX_MSG_SIZE:{}", MAX_QUEUE_SIZE, MAX_MSG_SIZE);
-    this.livenessProvider = livenessProvider;
-    this.proximityProvider = proximityProvider;
     this.entityManagerContext = new EntityManagerContext<Identifier>(tl, livenessProvider, proximityProvider,
         selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, primarySocketListeners, listeners,
         () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager);
@@ -270,52 +264,9 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     }
   }
 
-  protected EntityManager<Identifier> deleteEntityManager(Identifier i) {
-    synchronized(entityManagers) {
-      EntityManager<Identifier> ret = entityManagers.get(i);
-      if (ret != null) {
-        ret.clearState();
-      }
-      return ret;
-    }
-  }
-
   public void livenessChanged(Identifier i, int val, Map<String, Object> options) {
     if (val >= LivenessTypes.LIVENESS_DEAD) {
       getEntityManager(i).markDead();
-    }
-  }
-
-  public void cancelLivenessChecker(Identifier i) {
-    getEntityManager(i).stopLivenessChecker();
-  }
-
-  /**
-   * Logs the number of queued messages at debug level, and each non-empty queue at trace level.
-   */
-  public void printMemStats() {
-    if (logger.isDebugEnabled()) {
-      synchronized(entityManagers) {
-        int queueSum = 0;
-        for(EntityManager<Identifier> em : entityManagers.values()) {
-          int queueSize = em.queue.size();
-          queueSum+=queueSize;
-          if (queueSize > 0 && logger.isTraceEnabled()) {
-            Identifier temp = em.identifier.get();
-            String s = "";
-            Map<String, Object> options = null;
-            if (temp != null) {
-              MessageWrapper<Identifier> peek = em.peek();
-              if (peek != null) {
-                options = peek.options;
-              }
-              s = ""+livenessProvider.getLiveness(temp, options);
-            }
-            logger.trace("EM{"+temp+","+s+","+em.writingSocket+","+em.pendingSocket+"} queue:"+queueSize+" reg:"+em.registered+" lChecker:"+em.livenessChecker);
-          }
-        }
-        logger.debug("NumEMs:{} numPendingMsgs:{}", entityManagers.size(), queueSum);
-      } // synchronized
     }
   }
 
@@ -346,56 +297,11 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     listeners.notifyWrote(size, dest, options);
   }
 
-  public void notifyListenersEnqueued(int size, Identifier dest,
-      Map<String, Object> options) {
-    listeners.notifyEnqueued(size, dest, options);
-  }
-
   public void notifyListenersDropped(int size, Identifier dest,
       Map<String, Object> options) {
     listeners.notifyDropped(size, dest, options);
   }
 
-
-  // ********************************** introspection ***********************
-  public long bytesPending(Identifier i) {
-    return getEntityManager(i).bytesPending();
-  }
-
-  public int queueLength(Identifier i) {
-    return getEntityManager(i).queueLength();
-  }
-
-  public List<MessageInfo> getPendingMessages(Identifier i) {
-    return getEntityManager(i).getPendingMessages();
-  }
-
-  public Collection<Identifier> nodesWithPendingMessages() {
-    ArrayList<Identifier> ret = new ArrayList<Identifier>();
-    synchronized(entityManagers) {
-      for(EntityManager<Identifier> m : entityManagers.values()) {
-        if (m.peek() != null) {
-          ret.add(m.identifier.get());
-        }
-      }
-    }
-    return ret;
-  }
-
-  /**
-   *
-   */
-  public Map<String, Object> connectionOptions(Identifier i) {
-    // This is written with temp variables to simplify the synchronization problem
-    EntityManager<Identifier> manager = getEntityManager(i);
-    P2PSocket<Identifier> temp = manager.writingSocket;
-    if (temp != null) {
-      return temp.getOptions();
-    }
-    SocketRequestHandle<Identifier> temp2 = manager.pendingSocket;
-    if (temp2 != null) return temp2.getOptions();
-    return null;
-  }
 
   public int connectionStatus(Identifier i) {
     EntityManager<Identifier> manager = getEntityManager(i);

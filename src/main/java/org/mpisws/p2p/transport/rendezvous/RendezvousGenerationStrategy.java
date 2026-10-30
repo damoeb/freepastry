@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.rendezvous;
 
-import java.util.Map;
 
 /**
  * Picks a rendezvous point.  This has to be a node that can be directly contacted.
@@ -45,5 +44,4 @@ import java.util.Map;
  * @param <Identifier>
  */
 public interface RendezvousGenerationStrategy<Identifier> {
-  public Identifier getRendezvousPoint(Identifier dest, Map<String, Object> options);
 }

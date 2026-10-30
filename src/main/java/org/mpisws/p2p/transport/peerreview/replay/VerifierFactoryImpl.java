@@ -42,18 +42,15 @@ import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplayLayer;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
-import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public class VerifierFactoryImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements VerifierFactory<Handle, Identifier>{
 
   PeerReview<Handle, Identifier> peerreview;
-  Logger logger;
 
   public VerifierFactoryImpl(PeerReview<Handle, Identifier> peerreview) {
     this.peerreview = peerreview;
-    this.logger = peerreview.getEnvironment().getLogManager().getLogger(VerifierFactoryImpl.class, null);
   }
 
   public Verifier<Handle> getVerifier(SecureHistory history,

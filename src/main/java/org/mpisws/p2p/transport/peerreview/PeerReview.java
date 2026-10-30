@@ -109,8 +109,6 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
 
   int getHashSizeInBytes();
 
-  int getSignatureSizeInBytes();
-
   public IdentifierExtractor<Handle, Identifier> getIdentifierExtractor();
 
   public long getEvidenceSeq();
@@ -145,5 +143,4 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
   public SecureHistory getHistory();
 
   public long getTimeToleranceMillis();
-  public void sendEvidence(Handle destination, Identifier evidenceAgainst);
 }

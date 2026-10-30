@@ -107,7 +107,6 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
   private final TransportLayer<Identifier,MsgType> tl;
   private TransportLayerCallback<Identifier, MsgType> callback;
 
-  private final Environment env;
   private final Logger logger;
 
   private ErrorHandler<Identifier> errorHandler;
@@ -134,7 +133,6 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
   public RC4TransportLayer(TransportLayer<Identifier,MsgType> tl, Environment env, String password, int pwSeedLength, RandomSource random, ErrorHandler<Identifier> errorHandler) throws NoSuchAlgorithmException {
     this.tl = tl;
     this.tl.setCallback(this);
-    this.env=env;
     if (password.isEmpty()) {
       throw new IllegalArgumentException("The password must not be empty");
     }

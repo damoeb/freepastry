@@ -77,10 +77,6 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  */
 public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTransportLayer, TransportLayerCallback<InetSocketAddress, ByteBuffer> {
 
-  /**
-   * The max addresses in an EpochInetSocketAddress
-   */
-  int MAX_NUM_ADDRESSES;
   TransportLayer<InetSocketAddress, ByteBuffer> wire;
   MultiInetSocketAddress localAddress;
   TransportLayerCallback<MultiInetSocketAddress, ByteBuffer> callback;
@@ -88,7 +84,6 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   Logger logger;
   AddressStrategy strategy;
 
-  private boolean sendIdentifier = true;
 
   public MultiInetAddressTransportLayerImpl(
       MultiInetSocketAddress localAddress,
@@ -101,7 +96,6 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
     this.errorHandler = handler;
     this.localAddress = localAddress;
     this.strategy = strategy;
-    MAX_NUM_ADDRESSES = MultiAddressConfig.fromParameters(env.getParameters()).maxNumAddresses();
     if (wire == null) throw new IllegalArgumentException("TransportLayer<InetSocketAddress, ByteBuffer> wire must be non-null");
     if (localAddress == null) throw new IllegalArgumentException("EpochInetSocketAddress localAddress must be non-null");
 
@@ -139,7 +133,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
       deliverSocketToMe.receiveException(handle, ioe);
       return null;
     }
-    final ByteBuffer b = sendIdentifier ? sob.getByteBuffer() : null;
+    final ByteBuffer b = sob.getByteBuffer();
 
     InetSocketAddress addr = strategy.getAddress(getLocalIdentifier(), i);
 
@@ -155,35 +149,31 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
         });
 
         logger.trace("openSocket({}):receiveResult({})", i, result);
-        if (sendIdentifier) {
-          result.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {
-            public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
-                boolean canRead, boolean canWrite) throws IOException {
-              if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
+        result.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {
+          public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+              boolean canRead, boolean canWrite) throws IOException {
+            if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
 
-              // do the work
-              if (socket.write(b) < 0) {
-                deliverSocketToMe.receiveException(handle, new ClosedChannelException("Remote node closed socket while opening.  Try again."));
-                return;
-              }
-
-              // keep working or pass up the new socket
-              if (b.hasRemaining()) {
-                socket.register(false, true, this);
-              } else {
-                deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(i, socket, logger, errorHandler, socket.getOptions()));
-              }
+            // do the work
+            if (socket.write(b) < 0) {
+              deliverSocketToMe.receiveException(handle, new ClosedChannelException("Remote node closed socket while opening.  Try again."));
+              return;
             }
 
-            public void receiveException(P2PSocket<InetSocketAddress> socket,
-                Exception e) {
-              deliverSocketToMe.receiveException(handle, e);
+            // keep working or pass up the new socket
+            if (b.hasRemaining()) {
+              socket.register(false, true, this);
+            } else {
+              deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(i, socket, logger, errorHandler, socket.getOptions()));
             }
-          });
+          }
 
-        } else {
-          deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(i, result, logger, errorHandler, result.getOptions()));
-        }
+          public void receiveException(P2PSocket<InetSocketAddress> socket,
+              Exception e) {
+            deliverSocketToMe.receiveException(handle, e);
+          }
+        });
+
       }
       public void receiveException(SocketRequestHandle<InetSocketAddress> c, Exception exception) {
         if (handle.getSubCancellable() != null && c != handle.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
@@ -194,38 +184,31 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   }
 
   public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
-    logger.debug("incomingSocket({}):{}", s, sendIdentifier);
+    logger.debug("incomingSocket({})", s);
 
-    if (sendIdentifier) {
-      final SocketInputBuffer sib = new SocketInputBuffer(s,1024);
-      s.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
+    final SocketInputBuffer sib = new SocketInputBuffer(s,1024);
+    s.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
 
-        public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
-            boolean canRead, boolean canWrite) throws IOException {
-          logger.trace("incomingSocket({}):receiveSelectResult()", socket);
-          if (canWrite || !canRead) throw new IOException("Expected to read! "+canRead+","+canWrite);
-          try {
-            MultiInetSocketAddress eisa = MultiInetSocketAddress.build(sib);
-            logger.trace("Read {}", eisa);
-            callback.incomingSocket(new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(eisa, socket, logger, errorHandler, socket.getOptions()));
-          } catch (InsufficientBytesException ibe) {
-            socket.register(true, false, this);
-          } catch (IOException e) {
-            if (logger.isInfoEnabled()) errorHandler.receivedException(new MultiInetSocketAddress(socket.getIdentifier()), e);
-          }
+      public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+          boolean canRead, boolean canWrite) throws IOException {
+        logger.trace("incomingSocket({}):receiveSelectResult()", socket);
+        if (canWrite || !canRead) throw new IOException("Expected to read! "+canRead+","+canWrite);
+        try {
+          MultiInetSocketAddress eisa = MultiInetSocketAddress.build(sib);
+          logger.trace("Read {}", eisa);
+          callback.incomingSocket(new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(eisa, socket, logger, errorHandler, socket.getOptions()));
+        } catch (InsufficientBytesException ibe) {
+          socket.register(true, false, this);
+        } catch (IOException e) {
+          if (logger.isInfoEnabled()) errorHandler.receivedException(new MultiInetSocketAddress(socket.getIdentifier()), e);
         }
+      }
 
-        public void receiveException(P2PSocket<InetSocketAddress> socket,Exception e) {
-          errorHandler.receivedException(new MultiInetSocketAddress(socket.getIdentifier()), e);
-        }
-      });
+      public void receiveException(P2PSocket<InetSocketAddress> socket,Exception e) {
+        errorHandler.receivedException(new MultiInetSocketAddress(socket.getIdentifier()), e);
+      }
+    });
 
-    } else {
-      // just pass up the socket
-      callback.incomingSocket(
-          new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(
-              new MultiInetSocketAddress(s.getIdentifier()),s, logger, errorHandler, s.getOptions()));
-    }
   }
 
   // ************************** Messages ***************************
@@ -240,23 +223,19 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
     final MessageRequestHandleImpl<MultiInetSocketAddress, ByteBuffer> handle
       = new MessageRequestHandleImpl<MultiInetSocketAddress, ByteBuffer>(i, m, options);
     final ByteBuffer buf;
-    if (sendIdentifier) {
-      SimpleOutputBuffer sob = new SimpleOutputBuffer(m.remaining() + localAddress.getSerializedLength());
-      try {
-        localAddress.serialize(sob);
-        sob.write(m.array(), m.position(), m.remaining());
-      } catch (IOException ioe) {
-        if (deliverAckToMe == null) {
-          errorHandler.receivedException(i, ioe);
-        } else {
-          deliverAckToMe.sendFailed(handle, ioe);
-        }
-        return handle;
+    SimpleOutputBuffer sob = new SimpleOutputBuffer(m.remaining() + localAddress.getSerializedLength());
+    try {
+      localAddress.serialize(sob);
+      sob.write(m.array(), m.position(), m.remaining());
+    } catch (IOException ioe) {
+      if (deliverAckToMe == null) {
+        errorHandler.receivedException(i, ioe);
+      } else {
+        deliverAckToMe.sendFailed(handle, ioe);
       }
-      buf = ByteBuffer.wrap(sob.getBytes());
-    } else {
-      buf = m;
+      return handle;
     }
+    buf = ByteBuffer.wrap(sob.getBytes());
 
     handle.setSubCancellable(wire.sendMessage(
         strategy.getAddress(getLocalIdentifier(), i),
@@ -289,25 +268,21 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) throws IOException {
     logger.debug("messageReceived({},{})", i, m);
     // read numAddresses
-    if (sendIdentifier) {
-      int pos = m.position();
-      SimpleInputBuffer sib = new SimpleInputBuffer(m.array(),pos);
+    int pos = m.position();
+    SimpleInputBuffer sib = new SimpleInputBuffer(m.array(),pos);
 
-      MultiInetSocketAddress eisa;
-      try {
-        eisa = MultiInetSocketAddress.build(sib);
-      } catch (IOException ioe) {
-        errorHandler.receivedUnexpectedData(new MultiInetSocketAddress(i), m.array(), pos, null);
-        return;
-      }
-
-      // make sure to leave m at the proper position
-      m.position(m.array().length - sib.bytesRemaining());
-
-      callback.messageReceived(eisa, m, options);
-    } else {
-      callback.messageReceived(new MultiInetSocketAddress(i), m, options);
+    MultiInetSocketAddress eisa;
+    try {
+      eisa = MultiInetSocketAddress.build(sib);
+    } catch (IOException ioe) {
+      errorHandler.receivedUnexpectedData(new MultiInetSocketAddress(i), m.array(), pos, null);
+      return;
     }
+
+    // make sure to leave m at the proper position
+    m.position(m.array().length - sib.bytesRemaining());
+
+    callback.messageReceived(eisa, m, options);
   }
 
   // ***************************** Other ******************************
@@ -333,21 +308,5 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
 
   public void setErrorHandler(ErrorHandler<MultiInetSocketAddress> handler) {
     this.errorHandler = handler;
-  }
-
-  /**
-   * Set this to false to prevent sending/receiving the identifier at this layer for the
-   * message/socket.  Note that identity will return a guess based
-   * on the ipaddress of the message/socket, and the epoch will be UNKNOWN
-   * Only use this if a higher layer will do the work of identification.
-   *
-   * @param sendIdentifier
-   */
-  public void setSendIdentifier(boolean sendIdentifier) {
-    this.sendIdentifier = sendIdentifier;
-  }
-
-  public boolean isSendIdentifier() {
-    return sendIdentifier;
   }
 }

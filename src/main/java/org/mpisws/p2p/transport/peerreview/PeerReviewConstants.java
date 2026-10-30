@@ -91,13 +91,6 @@ public final class PeerReviewConstants {
   public static final long MAINTENANCE_INTERVAL_MILLIS = 10000;
   public static final long DEFAULT_TIME_TOLERANCE_MILLIS = 60000;
 
-  public static final int TI_CHECKPOINT = 99;
-  public static final int TI_MAINTENANCE = 6;
-  public static final int TI_AUTH_PUSH = 7;
-  public static final int TI_MAX_RESERVED = TI_AUTH_PUSH;
-  public static final int TI_STATUS_INFO = 101;
-  public static final int MAX_STATUS_INFO = 100;
-
   /* Flags for AUDIT challenges */
 
   public static final byte FLAG_INCLUDE_CHECKPOINT = 1;                /* Include a full checkpoint */
@@ -115,17 +108,7 @@ public final class PeerReviewConstants {
   public static final int PROGRESS_INTERVAL_MILLIS = 100;
   public static final int INVESTIGATION_INTERVAL_MILLIS = 250;
   public static final int DEFAULT_LOG_DOWNLOAD_TIMEOUT = 2000;
-  public static final int MAX_WITNESSED_NODES = 110;
-  public static final int MAX_ACTIVE_AUDITS = 500;
-  public static final int MAX_ACTIVE_INVESTIGATIONS = 10;
-  public static final int MAX_ENTRIES_BETWEEN_CHECKPOINTS = 100;
   public static final int AUTH_CACHE_INTERVAL = 500000;
-
-  public static final int TI_START_AUDITS = 3;
-  public static final int TI_MAKE_PROGRESS = 4;
-
-  public static final int STATE_SEND_AUDIT = 1;
-  public static final int STATE_WAIT_FOR_LOG = 2;
 
   public static final int NO_CERTIFICATE = -1;
   public static final int SIGNATURE_BAD = 0;

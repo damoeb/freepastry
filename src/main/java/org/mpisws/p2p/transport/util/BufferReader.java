@@ -51,7 +51,6 @@ import rice.Continuation;
  * @param <Identifier>
  */
 public class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
-  boolean readSize = false;
   int size = -1;
   ByteBuffer buf;
   Continuation<ByteBuffer, Exception> continuation;

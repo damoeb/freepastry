@@ -56,7 +56,6 @@ public interface PeerInfoStore<Handle, Identifier> {
   public EvidenceRecord<Handle, Identifier> statProof(Identifier subject);
 
   public EvidenceRecord<Handle, Identifier> findEvidence(Identifier originator, Identifier subject, long timestamp);
-  public EvidenceRecord<Handle, Identifier> findEvidence(Identifier originator, Identifier subject, long timestamp, boolean create);
 
   public Authenticator getLastCheckedAuth(Identifier id);
   public void setLastCheckedAuth(Identifier id, Authenticator auth);

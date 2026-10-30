@@ -83,11 +83,9 @@ import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED
 public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements AuditProtocol<Handle, Identifier> {
 
   PeerReview<Handle, Identifier> peerreview;
-  SecureHistory history;
   PeerInfoStore<Handle, Identifier> infoStore;
   AuthenticatorStore<Identifier> authInStore;
   IdentityTransport<Handle, Identifier> transport;
-  AuthenticatorStore<Identifier> authOutStore;
   EvidenceTransferProtocol<Handle, Identifier> evidenceTransferProtocol;
   AuthenticatorStore<Identifier> authCacheStore;
 
@@ -123,11 +121,9 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       AuthenticatorStore<Identifier> authCacheStore) {
     this.logger = peerreview.getEnvironment().getLogManager().getLogger(AuditProtocolImpl.class, null);
     this.peerreview = peerreview;
-    this.history = history;
     this.infoStore = infoStore;
     this.authInStore = authInStore;
     this.transport = transport;
-    this.authOutStore = authOutStore;
     this.evidenceTransferProtocol = evidenceTransferProtocol;
     this.authCacheStore = authCacheStore;
 
@@ -144,14 +140,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
       }},auditIntervalMillis);
   }
 
-
-  public void setLogDownloadTimeout(int timeoutMicros) {
-    this.logDownloadTimeout = timeoutMicros;
-  }
-
-  public void disableReplay() {
-    this.replayEnabled = false;
-  }
 
   /**
    *  Starts to audit a node
@@ -318,12 +306,6 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
 
   }
 
-
-  void setAuditInterval(long newIntervalMillis) {
-    auditIntervalMillis = newIntervalMillis;
-    auditTimer.cancel();
-    startAuditTimer();
-  }
 
 
   /**

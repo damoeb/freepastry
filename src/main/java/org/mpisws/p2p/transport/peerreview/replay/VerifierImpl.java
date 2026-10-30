@@ -57,7 +57,6 @@ import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
@@ -113,13 +112,10 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   private final Logger logger;
   private final IdentityTransport<Handle, Identifier> transport;
 
-  RandomSource prng;
-
   PeerReview<Handle, Identifier> peerreview;
 
   Environment environment;
 
-  Object extInfo;
 
   public VerifierImpl(
       PeerReview<Handle, Identifier> peerreview,
@@ -141,7 +137,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     this.foundFault = false;
     this.nextEventIndex = firstEntryToReplay-1;
     this.initialized = false;
-    this.extInfo = extInfo;
 
     for (int i=0; i<256; i++)
       eventToCallback[i] = -1;
@@ -150,10 +145,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     if (next == null) {
       foundFault = true;
     }
-  }
-
-  public Object getExtInfo() {
-    return extInfo;
   }
 
   /**
@@ -200,29 +191,9 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
   };
 
 
-  public IndexEntry getNextEvent() {
-    return next;
-  }
-
   @SuppressWarnings("unchecked")
   public void setApplication(PeerReviewCallback<Handle, ?> app) {
     this.app = (PeerReviewCallback<Handle, Identifier>)app;
-  }
-
-  /**
-   * This binds specific event types to one of the handlers
-   */
-  public void registerEvent(EventCallback callback, short... eventType) {
-    for (short s : eventType) {
-      registerEvent(callback, s);
-    }
-  }
-
-  public void registerEvent(EventCallback callback, short eventType) {
-    if (eventCallback.containsKey(eventType)) {
-      if (callback != eventCallback.get(eventType)) throw new IllegalStateException("Event #"+eventType+" registered twice");
-    }
-    eventCallback.put(eventType,callback);
   }
 
   /**
@@ -817,36 +788,6 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
     dst.position(dst.position()+ret);
     fetchNextEvent();
     return ret;
-  }
-
-  public void generatedSocketException(int socketId, IOException ioe) {
-    if (next == null) {
-      logger.warn("Replay: WriteSocket event after end of segment; marking as invalid");
-      foundFault = true;
-      return;
-    }
-
-    if (next.getType() != EVT_SOCKET_EXCEPTION) {
-      logger.warn("Replay: EVT_SOCKET_EXCEPTION event during replay, but next event in log is #{}; marking as invalid", next.getType());
-      foundFault = true;
-      return;
-    }
-
-    try {
-      int loggedSocket = nextEvent.readInt();
-      if (loggedSocket != socketId) {
-        logger.warn("Replay: EVT_SOCKET_EXCEPTION on socket {} during replay, but log shows EVT_SOCKET_EXCEPTION to {}; marking as invalid", socketId, loggedSocket);
-        foundFault = true;
-        return;
-      }
-    } catch (IOException ioe2) {
-      logger.warn("Replay: Error reading log", ioe2);
-    }
-
-    // all good
-    fetchNextEvent();
-    return;
-
   }
 
   /**

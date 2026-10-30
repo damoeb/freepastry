@@ -266,8 +266,6 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     }
   }
 
-  long lastTimePrinted = 0;
-
   /**
    * Registers write interest while there are pending datagrams.
    *

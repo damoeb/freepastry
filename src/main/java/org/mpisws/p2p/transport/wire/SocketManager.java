@@ -61,9 +61,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   // the channel we are associated with
   private final SocketChannel channel;
 
-  // the timer we use to check for stalled nodes
-  private rice.selector.TimerTask timer;
-
   private final TCPLayer tcp;
 
   Logger logger;
@@ -423,11 +420,6 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     if (delivered) throw new IllegalStateException(this+".cancel() Can't cancel, already delivered");
     close();
     return true;
-  }
-
-  private void exceptionAndClose(IOException e) {
-    tcp.wire.getErrorHandler().receivedException(addr, e);
-    close();
   }
 
   public InetSocketAddress getIdentifier() {

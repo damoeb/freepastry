@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.peerreview.history.stub;
 import java.nio.ByteBuffer;
 
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
 
 public class NullHashProvider implements HashProvider {
 
@@ -53,21 +52,12 @@ public class NullHashProvider implements HashProvider {
     return EMPTY_HASH;
   }
 
-  public byte[] build(InputBuffer buf) {
-    return EMPTY_HASH;
-  }
-
   public byte[] getEmptyHash() {
     return EMPTY_HASH;
   }
 
   public short getHashSizeBytes() {
     return 0;
-  }
-
-  public byte[] build(byte[] hashBytes, int start, int length) {
-    if (length > 0) throw new IllegalArgumentException("Length must equal 0");
-    return EMPTY_HASH;
   }
 
 }

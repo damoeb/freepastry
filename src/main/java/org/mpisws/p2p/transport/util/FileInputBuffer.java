@@ -53,10 +53,6 @@ public class FileInputBuffer extends DataInputStream implements InputBuffer {
     this.file = f;
   }
 
-  public FileInputBuffer(String fileName, Logger logger) throws IOException {
-    this(Path.of(fileName), logger);
-  }
-
   public int bytesRemaining() {
     try {
       return this.available();

@@ -85,12 +85,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   // how many tries to ping before giving up
   public final int NUM_PING_TRIES;
 
-  // the initial timeout for exponential backoff
-  public final long BACKOFF_INITIAL;
-
-  // the limit on the number of times for exponential backoff
-  public final int BACKOFF_LIMIT;
-
   // the minimum amount of time between check dead checks on dead routes
   private final long CHECK_DEAD_THROTTLE;
 
@@ -156,8 +150,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     PING_DELAY = config.pingDelay();
     PING_JITTER = config.pingJitter();
     NUM_PING_TRIES = config.numPingTries();
-    BACKOFF_INITIAL = config.backoffInitial();
-    BACKOFF_LIMIT = config.backoffLimit();
     CHECK_DEAD_THROTTLE = config.checkDeadThrottle();
     DEFAULT_RTO = config.defaultRto();
     RTO_UBOUND = config.rtoUpperBound();
@@ -235,14 +227,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
    * TODO: make this a number of failures?  Say 3?  Use 1 if using SourceRoutes
    */
   boolean connectionExceptionMeansFaulty = true;
-  /**
-   * Set this to true if you want a ConnectionException to mark the
-   * connection as faulty.  Default = true;
-   *
-   */
-  public void connectionExceptionMeansFaulty(boolean b) {
-    connectionExceptionMeansFaulty = b;
-  }
 
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     // this code marks the Identifier faulty if there is an error connecting the socket.  It's possible that this
@@ -257,13 +241,11 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
 
       public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
         // the upper layer is probably going to retry, so mark this dead first
-        if (connectionExceptionMeansFaulty) {
-          if (ex instanceof java.nio.channels.ClosedChannelException) {
-            // don't mark dead
-          } else {
-            logger.trace("Marking {} dead due to exception opening socket.", s, ex);
-            getManager(i).markDead(options);
-          }
+        if (ex instanceof java.nio.channels.ClosedChannelException) {
+          // don't mark dead
+        } else {
+          logger.trace("Marking {} dead due to exception opening socket.", s, ex);
+          getManager(i).markDead(options);
         }
         deliverSocketToMe.receiveException(s, ex);
       }
@@ -343,32 +325,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     default:
       errorHandler.receivedUnexpectedData(i, m.array(), 0, null);
     }
-  }
-
-  /**
-   * True if there was a pending liveness check.
-   *
-   * @param i
-   * @param options
-   * @return
-   */
-  public boolean cancelLivenessCheck(Identifier i, Map<String, Object> options) {
-    EntityManager manager = getManager(i);
-    if (manager == null) {
-      return false;
-    }
-    return cancelLivenessCheck(manager, options);
-  }
-
-  public boolean cancelLivenessCheck(EntityManager manager, Map<String, Object> options) {
-    synchronized(manager) {
-      if (manager.getPending() != null) {
-        manager.getPending().cancel();
-        return true;
-      }
-    }
-    manager.markAlive(options);
-    return false;
   }
 
   public String toString() {
@@ -892,14 +848,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
 
     public void destroy() {
       if (getPending() != null) getPending().cancel();
-    }
-
-    public WeakReference<Identifier> getIdentifier() {
-      return identifier;
-    }
-
-    public Set<LSocket> getSockets() {
-      return sockets;
     }
   }
 

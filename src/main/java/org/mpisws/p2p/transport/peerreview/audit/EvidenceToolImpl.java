@@ -171,10 +171,8 @@ public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends
   }
 
   static class SendEntryRecord {
-    long seq;
     ByteBuffer hashedPlusPayload;
     public SendEntryRecord(long seq, ByteBuffer hashedPlusPayload) {
-      this.seq = seq;
       this.hashedPlusPayload = hashedPlusPayload;
     }
   }

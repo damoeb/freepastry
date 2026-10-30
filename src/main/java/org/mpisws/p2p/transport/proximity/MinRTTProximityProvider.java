@@ -48,14 +48,6 @@ import rice.environment.Environment;
 import rice.environment.time.TimeSource;
 
 public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Identifier>, PingListener<Identifier> {
-  /**
-   * millis for the timeout
-   *
-   * The idea is that we don't want this parameter to change too fast,
-   * so this is the timeout for it to increase, you could set this to infinity,
-   * but that may be bad because it doesn't account for intermediate link failures
-   */
-   private int PROX_TIMEOUT;
 
    /**
     * Holds only pending DeadCheckers
@@ -146,16 +138,6 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
       }
       lastPingTime = now;
       tl.ping(identifier, options);
-    }
-
-    /**
-     * Method which returns the last cached proximity value for this identifier.
-     * If there is no cached value, then DEFAULT_PROXIMITY is returned.
-     *
-     * @return The ping value to the remote identifier
-     */
-    public int proximity() {
-      return proximity;
     }
 
     /**

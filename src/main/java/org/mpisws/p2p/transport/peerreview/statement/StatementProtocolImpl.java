@@ -87,8 +87,6 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
   private final ChallengeResponseProtocol<Handle, Identifier> challengeProtocol;
   private final IdentityTransport<Handle, Identifier> transport;
   private final PeerReview<Handle, Identifier> peerreview;
-  private final PeerInfoStore<Handle, Identifier> infoStore;
-  private boolean progressTimerActive;
 
   public StatementProtocolImpl(
       PeerReview<Handle, Identifier> peerreview,
@@ -97,7 +95,6 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
       IdentityTransport<Handle, Identifier> transport) {
     this.peerreview = peerreview;
     this.challengeProtocol = challengeProtocol;
-    this.infoStore = infoStore;
     this.transport = transport;
 
     this.logger = peerreview.getEnvironment().getLogManager().getLogger(StatementProtocolImpl.class, null);
@@ -141,13 +138,6 @@ public class StatementProtocolImpl<Handle extends RawSerializable, Identifier ex
         fooIter.remove();
       }
     }
-  }
-
-  /**
-   * We use a periodic timer to throw out stale messages
-   */
-  void timerExpired(int timerID) {
-    throw new RuntimeException("todo: implement");
   }
 
   /**

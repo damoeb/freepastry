@@ -65,13 +65,6 @@ import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED
  */
 public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements AuthenticatorPushProtocol<Handle, Identifier> {
 
-  static final int MAX_SUBJECTS_PER_WITNESS = 110;
-  static final int MAX_WITNESSES_PER_SUBJECT = 110;
-  /**
-   * The MTU of the Datagram
-   */
-  static final int MSS = 1200;
-
   AuthenticatorStore<Identifier> authOutStore;
   AuthenticatorStore<Identifier> authInStore;
   AuthenticatorStore<Identifier> authPendingStore;
@@ -83,7 +76,6 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
   double pXmit;
   RandomSource random;
 
-  Environment environment;
   Logger logger;
 
   public AuthenticatorPushProtocolImpl(
@@ -101,14 +93,8 @@ public class AuthenticatorPushProtocolImpl<Handle extends RawSerializable, Ident
     this.evidenceTransferProtocol = evidenceTransferProtocol;
     this.probabilistic = false;
     this.pXmit = 1.0;
-    this.environment = env;
     this.random = env.getRandomSource();
     this.logger = env.getLogManager().getLogger(AuthenticatorPushProtocolImpl.class, null);
-  }
-
-  public void enableProbabilisticChecking(double pXmit) {
-    this.probabilistic = true;
-    this.pXmit = pXmit;
   }
 
   /* Start an authenticator push. We begin by determining the witness sets of all the nodes

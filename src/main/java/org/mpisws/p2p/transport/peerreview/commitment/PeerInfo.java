@@ -85,38 +85,6 @@ public class PeerInfo<Handle extends RawSerializable> {
     return handle;
   }
 
-  public long getLastTransmit() {
-    return lastTransmit;
-  }
-
-  public long getCurrentTimeout() {
-    return currentTimeout;
-  }
-
-  public int getRetransmitsSoFar() {
-    return retransmitsSoFar;
-  }
-
-  public long getLastChallenge() {
-    return lastChallenge;
-  }
-
-  public long getCurrentChallengeInterval() {
-    return currentChallengeInterval;
-  }
-
-  public LinkedList<OutgoingUserDataMessage<Handle>> getXmitQueue() {
-    return xmitQueue;
-  }
-
-  public LinkedList<Tuple<UserDataMessage<Handle>,Map<String,Object>>> getRecvQueue() {
-    return recvQueue;
-  }
-
-  public boolean isReceiving() {
-    return isReceiving;
-  }
-
   public void clearXmitQueue() {
     xmitQueue.clear();
   }

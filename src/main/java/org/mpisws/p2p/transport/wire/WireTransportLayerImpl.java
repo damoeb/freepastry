@@ -218,12 +218,6 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     }
   }
 
-  protected Iterable<TransportLayerListener<InetSocketAddress>> getTLlisteners() {
-    synchronized(listeners) {
-      return new ArrayList<TransportLayerListener<InetSocketAddress>>(listeners);
-    }
-  }
-
 
   Collection<SocketCountListener<InetSocketAddress>> slisteners =
     new ArrayList<SocketCountListener<InetSocketAddress>>();

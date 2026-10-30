@@ -45,7 +45,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
 
 /**
  *
@@ -80,10 +79,6 @@ public class EvtRecv<Handle extends RawSerializable> extends HistoryEvent {
     this.payload = new byte[payload.remaining()];
     System.arraycopy(payload.array(), payload.position(), this.payload, 0, relevantLen);
     hash = hasher.hash(ByteBuffer.wrap(this.payload));
-  }
-
-  public short getType() {
-    return EVT_RECV;
   }
 
   public EvtRecv(InputBuffer buf, Serializer<Handle> serializer, int hashSize) throws IOException {

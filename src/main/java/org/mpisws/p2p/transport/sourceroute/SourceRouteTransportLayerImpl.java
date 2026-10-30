@@ -75,10 +75,6 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 public class SourceRouteTransportLayerImpl<Identifier> implements
     SourceRouteTransportLayer<Identifier>,
     TransportLayerCallback<Identifier, ByteBuffer> {
-  /**
-   * The max hops in a source route
-   */
-  int MAX_NUM_HOPS;
 
   TransportLayerCallback<SourceRoute<Identifier>, ByteBuffer> callback;
   ErrorHandler<SourceRoute<Identifier>> errorHandler;
@@ -103,7 +99,6 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     this.errorHandler = errorHandler;
     localIdentifier = this.srFactory.getSourceRoute(etl.getLocalIdentifier());
     taps = new ArrayList<SourceRouteTap<Identifier>>();
-    MAX_NUM_HOPS = SourceRouteConfig.fromParameters(env.getParameters()).maxNumHops();
 
     this.forwardSourceRouteStrategy = fSRs;
 

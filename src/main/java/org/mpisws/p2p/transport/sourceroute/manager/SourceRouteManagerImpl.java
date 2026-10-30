@@ -58,7 +58,6 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
-import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
@@ -91,9 +90,6 @@ public class SourceRouteManagerImpl<Identifier> implements
 
   // the default distance, which is used before a ping
   public static final int DEFAULT_PROXIMITY = 60*60*1000;
-  // the minimum amount of time between pings
-  private final long PING_THROTTLE;
-  private final int NUM_SOURCE_ROUTE_ATTEMPTS;
   private final int CHECK_LIVENESS_THROTTLE = 5000;
 
   TransportLayer<SourceRoute<Identifier>, ByteBuffer> tl;
@@ -108,7 +104,6 @@ public class SourceRouteManagerImpl<Identifier> implements
   private ErrorHandler<Identifier> errorHandler;
   Set<AddressManager> hardLinks;
   List<LivenessListener<Identifier>> livenessListeners;
-  List<PingListener<Identifier>> pingListeners;
   SourceRouteFactory<Identifier> srFactory;
 
   public SourceRouteManagerImpl(
@@ -137,11 +132,8 @@ public class SourceRouteManagerImpl<Identifier> implements
 
     addressManagers = new HashMap<Identifier, AddressManager>();
     SourceRouteManagerConfig config = SourceRouteManagerConfig.fromParameters(environment.getParameters());
-    PING_THROTTLE = config.pingThrottle();
-    NUM_SOURCE_ROUTE_ATTEMPTS = config.numSourceRouteAttempts();
     hardLinks = new HashSet<AddressManager>();
     livenessListeners = new ArrayList<LivenessListener<Identifier>>();
-    pingListeners = new ArrayList<PingListener<Identifier>>();
   }
 
   /**

@@ -48,24 +48,19 @@ import java.util.TreeSet;
 
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.util.Serializer;
-import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 
 public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implements AuthenticatorStore<Identifier> {
 
   private final boolean allowDuplicateSeqs;
-  PeerReview<?, Identifier> peerreview;
-  int numSubjects;
   RandomAccessFileIOBuffer authFile;
 
   Map<Identifier,SortedSet<Authenticator>> authenticators;
 
-  Logger logger;
   Serializer<Identifier> idSerializer;
   AuthenticatorSerializer authenticatorSerializer;
 
-  boolean memoryBufferDisabled = false;
 
   public AuthenticatorStoreImpl(PeerReview<?, Identifier> peerreview) {
     this(peerreview,false);
@@ -75,26 +70,9 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     this.allowDuplicateSeqs = allowDuplicateSeqs;
     this.authenticators = new HashMap<Identifier, SortedSet<Authenticator>>();
     this.authFile = null;
-    this.numSubjects = 0;
-    this.peerreview = peerreview;
     this.authenticatorSerializer = peerreview.getAuthenticatorSerializer();
     this.idSerializer = peerreview.getIdSerializer();
 
-    logger = peerreview.getEnvironment().getLogManager().getLogger(AuthenticatorStoreImpl.class, null);
-  }
-
-  public void destroy() {
-    authenticators.clear();
-
-    if (authFile != null) {
-      try {
-        authFile.close();
-      } catch (IOException ioe) {
-        logger.warn("Couldn't close authFile {}", authFile, ioe);
-      } finally {
-        authFile = null;
-      }
-    }
   }
 
   /**
@@ -183,7 +161,7 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
         idSerializer.serialize(id,authFile);
         authenticator.serialize(authFile);
       }
-      if (!memoryBufferDisabled) addAuthenticatorToMemory(id, authenticator);
+      addAuthenticatorToMemory(id, authenticator);
     } catch (IOException ioe) {
       throw new RuntimeException("Error in addAuthenticator("+id+","+authenticator+","+authFile+")",ioe);
     }
@@ -213,10 +191,6 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
         a.serialize(authFile);
       }
     }
-  }
-
-  public int getAuthenticatorSizeBytes() {
-    return authenticatorSerializer.getSerializedSize();
   }
 
   public List<Authenticator> getAuthenticators(Identifier id, long minseq,
@@ -265,10 +239,6 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
     return list.size();
   }
 
-  public int numAuthenticatorsFor(Identifier id, long minseq, long maxseq) {
-    return getAuthenticators(id, minseq, maxseq).size();
-  }
-
   public Authenticator statAuthenticator(Identifier id, long seq) {
     List<Authenticator> ret = getAuthenticators(id, seq, seq);
     if (ret == null || ret.isEmpty()) return null;
@@ -277,14 +247,6 @@ public class AuthenticatorStoreImpl<Identifier extends RawSerializable> implemen
 
   public void flush(Identifier id) {
     authenticators.remove(id);
-  }
-
-  public void flushAll() {
-    authenticators.clear();
-  }
-
-  public void disableMemoryBuffer() {
-    this.memoryBufferDisabled = true;
   }
 
 }

@@ -267,8 +267,6 @@ public class CAToolImpl implements CATool {
   }
 
   public static final String CA_STORE_PRIVATE = "private";
-  /** No longer written: PKCS12 stores cannot hold a bare public key, it is taken from {@link #CA_STORE_CERT}. */
-  public static final String CA_STORE_PUBLIC = "public";
   public static final String CA_STORE_CERT = "cert";
 
   /**
@@ -370,21 +368,19 @@ public class CAToolImpl implements CATool {
       verifier.update(msg);
       System.out.println("verified:"+verifier.verify(signature));
 
-      if (true) {
-        KeyPair bogusPair = generateKeyPair();
+      KeyPair bogusPair = generateKeyPair();
 
-        try {
-          cert.verify(bogusPair.getPublic());
-          System.out.println("WARNING!  Bogus key verified!!!");
-        } catch (InvalidKeyException | SignatureException se) {
-          System.out.println("bogus didn't verify.");
-        }
-
-        Signature bogusVerifier = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM, "BC");
-        bogusVerifier.initVerify(bogusPair.getPublic());
-        bogusVerifier.update(msg);
-        System.out.println("bogus verify: "+bogusVerifier.verify(signature));
+      try {
+        cert.verify(bogusPair.getPublic());
+        System.out.println("WARNING!  Bogus key verified!!!");
+      } catch (InvalidKeyException | SignatureException se) {
+        System.out.println("bogus didn't verify.");
       }
+
+      Signature bogusVerifier = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM, "BC");
+      bogusVerifier.initVerify(bogusPair.getPublic());
+      bogusVerifier.update(msg);
+      System.out.println("bogus verify: "+bogusVerifier.verify(signature));
 
       verifier.update(msg);
       System.out.println("verified 2:"+verifier.verify(signature));

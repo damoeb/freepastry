@@ -54,8 +54,4 @@ public class AuthenticatorSerializerImpl implements AuthenticatorSerializer {
     return new Authenticator(buf,hashLength,signatureLength);
   }
 
-  public int getSerializedSize() {
-    return 8+hashLength+signatureLength;
-  }
-
 }

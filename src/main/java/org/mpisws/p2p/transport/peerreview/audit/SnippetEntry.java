@@ -147,17 +147,6 @@ public class SnippetEntry {
     buf.writeLong(seq);
   }
 
-  public byte getSizeCode() {
-    if (isHash) return 0;
-    if (content.length < 254) {
-      return (byte)content.length; // hope this works...
-    }
-    if (content.length < 65535) return (byte)0xFF;
-    // technically, it could be twice this big, but I don't think java arrays can be so large, if we fix this, also do so in decodeSize
-    if (content.length > Integer.MAX_VALUE) throw new RuntimeException("content is too long:"+content.length);
-    return (byte)0xFE;
-  }
-
   public void encodeSize(OutputBuffer buf) throws IOException {
     if (isHash) {
       buf.writeByte((byte)0);

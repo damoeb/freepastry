@@ -42,14 +42,10 @@ package org.mpisws.p2p.transport.peerreview.commitment;
  * so we can reproduce the matching acknowledgment
  */
 public class ReceiveInfo<Identifier> {
-  Identifier sender;
-  long senderSeq;
   long indexInLocalHistory;
 
   public ReceiveInfo(Identifier sender, long senderSeq, long indexInLocalHistory) {
     super();
-    this.sender = sender;
-    this.senderSeq = senderSeq;
     this.indexInLocalHistory = indexInLocalHistory;
   }
 }

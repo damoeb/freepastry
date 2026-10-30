@@ -110,12 +110,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
    */
   private final Map<MiddleIdentifier, UpperIdentifier> bindings;  // this one may be difficult as the Upper has a ref to the lower
 
-  /**
-   * Held in the options map of the message/socket.  This is a pointer from the upper
-   * level to the lower level.
-   */
-  int intendedDestCtr = Integer.MIN_VALUE;
-
   public static final byte SUCCESS = 1;
   public static final byte FAILURE = 0;
 
@@ -183,29 +177,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       if (set.isEmpty()) {
         pendingMessages.remove(i);
       }
-    }
-  }
-
-  /**
-   * Logs the number of pending messages at debug level, and each upper identifier's queue at trace level.
-   */
-  public void printMemStats() {
-    if (logger.isDebugEnabled()) {
-      synchronized(pendingMessages) {
-        int queueSum = 0;
-        for(UpperIdentifier i : pendingMessages.keySet()) {
-          Set<IdentityMessageHandle> theSet = pendingMessages.get(i);
-          int queueSize = 0;
-          if (theSet != null) {
-            queueSize = theSet.size();
-          }
-          queueSum+=queueSize;
-          if (logger.isTraceEnabled()) {
-            logger.trace("PM{"+i+","+upper.getLiveness(i, null)+"} queue:"+queueSize);
-          }
-        }
-        logger.debug("NumUpperIds:{} numPendingMsgs:{}", pendingMessages.size(), queueSum);
-      } // synchronized
     }
   }
 
@@ -1201,10 +1172,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
     public void setSubCancellable(Cancellable cancellable) {
       this.subCancellable = cancellable;
-    }
-
-    public Cancellable getSubCancellable() {
-      return subCancellable;
     }
 
     public void ack(MessageRequestHandle<MiddleIdentifier, UpperMsgType> msg) {

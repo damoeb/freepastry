@@ -76,12 +76,10 @@ import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECT
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
 
 public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements CommitmentProtocol<Handle, Identifier> {
-  private final int MAX_PEERS = 250;
   private final int INITIAL_TIMEOUT_MILLIS = 1000;
   private final int RETRANSMIT_TIMEOUT_MILLIS = 1000;
   private final int RECEIVE_CACHE_SIZE = 100;
   private final int MAX_RETRANSMISSIONS = 2;
-  private final int TI_PROGRESS = 1;
   private final int PROGRESS_INTERVAL_MILLIS = 1000;
   private final int MAX_ENTRIES_PER_MS = 1000000;      /* Max number of entries per millisecond */
 
@@ -101,7 +99,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
 
   Map<ReceiveKey<Identifier>, ReceiveInfo<Identifier>> receiveCache;
 
-  AuthenticatorStore<Identifier> authStore;
   SecureHistory history;
   PeerReview<Handle, Identifier> peerreview;
   PeerInfoStore<Handle, Identifier> infoStore;
@@ -111,9 +108,6 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
    * If the time is more different than this from a peer, we discard the message
    */
   long timeToleranceMillis;
-  int nextReceiveCacheEntry;
-  int signatureSizeBytes;
-  int hashSizeBytes;
 
   TimerTask makeProgressTask;
   Logger logger;
@@ -126,9 +120,7 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     this.peerreview = peerreview;
     this.transport = transport;
     this.infoStore = infoStore;
-    this.authStore = authStore;
     this.history = history;
-    this.nextReceiveCacheEntry = 0;
     this.timeToleranceMillis = timeToleranceMillis;
 
     this.logger = peerreview.getEnvironment().getLogManager().getLogger(CommitmentProtocolImpl.class, null);
@@ -585,9 +577,5 @@ public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier e
     } else {
       logger.warn("We got an ACK from <{}>, but we don't have the certificate; discarding", ackMessage.getNodeId());
     }
-  }
-
-  public void setTimeToleranceMillis(long timeToleranceMillis) {
-    this.timeToleranceMillis = timeToleranceMillis;
   }
 }

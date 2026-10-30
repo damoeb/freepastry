@@ -62,13 +62,11 @@ import rice.pastry.direct.NodeRecord;
 
 
 public class DirectTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType> {
-  private boolean acceptMessages = true;
   private boolean acceptSockets = true;
 
   private final Identifier localIdentifier;
   private TransportLayerCallback<Identifier, MessageType> callback;
   private final GenericNetworkSimulator<Identifier, MessageType> simulator;
-  private ErrorHandler<Identifier> errorHandler;
   private final LivenessProvider<Identifier> livenessProvider;
 
   private final Environment environment;
@@ -88,7 +86,6 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   }
 
   public void acceptMessages(boolean b) {
-    acceptMessages = b;
   }
 
   public void acceptSockets(boolean b) {
@@ -163,7 +160,6 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   }
 
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
-    this.errorHandler = handler;
   }
 
   public void destroy() {
@@ -198,9 +194,5 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
 
   public Environment getEnvironment() {
     return environment;
-  }
-
-  public void clearState(Identifier i) {
-    // do nothing
   }
 }

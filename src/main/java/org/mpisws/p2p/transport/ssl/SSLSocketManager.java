@@ -75,8 +75,6 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   private final Logger logger;
 
-  private final boolean handshaking = true;
-  private boolean closed = true;
 
   private SSLEngineResult result;
   private HandshakeStatus status;
@@ -187,7 +185,6 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   protected boolean read() throws IOException {
     ByteBuffer foo = ByteBuffer.allocate(netBufferMax);
     if (socket.read(foo) < 0) {
-      closed = true;
       fail(new ClosedChannelException("Unexpected socket closure "+this));
     }
     if (foo.position() != 0) {
@@ -329,10 +326,6 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     return false;
   }
 
-  public X509Certificate getCert() {
-    return peerCert;
-  }
-
   /*
    * If the result indicates that we have outstanding tasks to do, go ahead and
    * run them in this thread.
@@ -364,10 +357,6 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
       }
       , sslTL.getEnvironment().getSelectorManager(), sslTL.getEnvironment().getTimeSource(), sslTL.getEnvironment().getLogManager());
     }
-  }
-
-  private static boolean isEngineClosed(SSLEngine engine) {
-    return (engine.isOutboundDone() && engine.isInboundDone());
   }
 
   public void register(boolean wantToRead, boolean wantToWrite,

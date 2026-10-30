@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
 import org.mpisws.p2p.transport.peerreview.audit.SnippetEntry;
 import org.slf4j.Logger;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 
 /**
@@ -357,97 +356,6 @@ public class SecureHistoryImpl implements SecureHistory {
 
     LogSnippet ret = new LogSnippet(baseHash,entryList);
     return ret;
-  }
-
-  public boolean serializeRange2(long idxFrom, long idxTo, HashPolicy hashPolicy, OutputBuffer outfile) throws IOException {
-    assert((0 < idxFrom) && (idxFrom <= idxTo) && (idxTo < numEntries));
-
-    IndexEntry ie;
-
-    // Write base hash value
-
-    pointerAtEnd = false;
-    indexFile.seek((idxFrom-1) * indexFactory.getSerializedSize());
-    ie = indexFactory.build(indexFile);
-    outfile.write(ie.nodeHash, 0, ie.nodeHash.length);
-
-    // Go through entries one by one
-    long previousSeq = -1;
-    for (long idx=idxFrom; idx<=idxTo; idx++) {
-
-      // Read index entry
-
-      ie = indexFactory.build(indexFile);
-      if (ie == null)
-        throw new IOException("History read error");
-
-      // we're going to write directly to outfile, in the c++ impl it used header[]/bytesInHeader
-
-      assert((previousSeq == -1) || (ie.seq > previousSeq));
-
-      // This code compresses the common case, and falls back to a longer version if
-      // it can't encode it in the compressed form
-
-      // Encode difference to previous sequence number (unless this is the first entry)
-
-      if (previousSeq >= 0) {
-        if (ie.seq == (previousSeq+1)) {
-          outfile.writeByte((byte)0);
-        } else {
-          long dhigh = (ie.seq/1000) - (previousSeq/1000);
-          if ((dhigh < 255) && ((ie.seq%1000)==0)) {
-            outfile.writeByte((byte)(dhigh & 0xFF));
-          } else {
-            outfile.writeByte((byte)0xFF);
-            outfile.writeLong(ie.seq);
-          }
-        }
-      }
-
-      previousSeq = ie.seq;
-
-      // Append entry type
-
-      outfile.writeShort(ie.type);
-
-      // If entry is not hashed, read contents from the data file
-      byte[] buffer = null;
-      if (ie.sizeInFile > 0) {
-        buffer = new byte[(int)ie.sizeInFile]; // grumble...  This needs to be long eventually...
-        assert(ie.fileIndex >= 0);
-        dataFile.seek(ie.fileIndex);
-        dataFile.read(buffer);
-      }
-
-      // The entry is hashed if (a) it is already hashed in the log file,
-      // or (b) the hash policy tells us to.
-      boolean hashIt = (ie.sizeInFile<0) || (hashPolicy != null && hashPolicy.hashEntry(ie.type, buffer));
-
-      // Encode the size of the entry
-
-      if (hashIt) {
-        outfile.writeByte((byte)0);
-        outfile.write(ie.contentHash,0,ie.contentHash.length);
-      } else if (ie.sizeInFile < 255) {
-        outfile.writeByte((byte)(ie.sizeInFile & 0xFF));
-      } else if (ie.sizeInFile < 65536) {
-        outfile.writeByte((byte)0xFF);
-        outfile.writeShort((short)(ie.sizeInFile & 0xFFFF));
-      } else {
-        outfile.writeByte((byte)0xFE);
-        outfile.writeLong(ie.sizeInFile);
-      }
-
-      // Write the entry to the output file
-
-      // don't need to do this in this impl, because we've been doing it all along
-
-      if (!hashIt) {
-        outfile.write(buffer,0,buffer.length);
-      }
-    } // for
-
-    return true;
   }
 
   /**

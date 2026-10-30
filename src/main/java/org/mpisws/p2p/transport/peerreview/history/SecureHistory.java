@@ -87,14 +87,6 @@ public interface SecureHistory {
   public long findSeq(long seq) throws IOException;
 
   /**
-   * Look up a given sequence number, or the first sequence number that is
-   * not lower than a given number. The return value is the number of
-   * the corresponding record in the index file, or -1 if no matching
-   * record was found.
-   */
-  public long findSeqOrHigher(long seq, boolean allowHigher) throws IOException;
-
-  /**
    * Serialize a given range of entries, and write the result to the specified file.
    * This is used when we need to send a portion of our log to some other node,
    * e.g. during an audit. The format of the serialized log segment is as follows:

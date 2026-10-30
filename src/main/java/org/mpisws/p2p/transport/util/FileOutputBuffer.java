@@ -37,8 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.util;
 
 import java.io.DataOutputStream;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.CREATE;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,16 +46,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class FileOutputBuffer extends DataOutputStream implements OutputBuffer {
 
-  public FileOutputBuffer(Path f, boolean append) throws IOException {
-    super(append ? Files.newOutputStream(f, CREATE, APPEND) : Files.newOutputStream(f));
-  }
-
   public FileOutputBuffer(Path f) throws IOException {
     super(Files.newOutputStream(f));
-  }
-
-  public FileOutputBuffer(String fileName) throws IOException {
-    super(Files.newOutputStream(Path.of(fileName)));
   }
 
   public int bytesRemaining() {

@@ -105,30 +105,12 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
   int NUM_OUTSTANDING_CHUNKS_TO_WRITE_TO_NETWORK = 10;
 
-  /**
-   * Number of chunks to keep in memory per file.
-   *
-   * If this is too big, takes more memory, if this is too small, we are always blocking on file I/O when there is available network I/O...
-   *
-   * Is there a way to make this adaptive?  Think about it...
-   */
-  private final int FILE_CACHE = 10;
-
-  ByteBuffer byteBuffer;
   private final SelectorManager selectorManager;
   private final Logger logger;
 
   private Processor processor;
   private final Environment environment;
 
-  public static final byte MAX_PRIORITY = -15;
-  public static final byte HIGH_PRIORITY = -10;
-  public static final byte MEDIUM_HIGH_PRIORITY = -5;
-  public static final byte MEDIUM_PRIORITY = 0;
-  public static final byte MEDIUM_LOW_PRIORITY = 5;
-  public static final byte LOW_PRIORITY = 10;
-  public static final byte LOWEST_PRIORITY = 15;
-  public static final byte DEFAULT_PRIORITY = MEDIUM_PRIORITY;
   public static final byte CANCEL_PRIORITY = -20;
 
   boolean failed = false;
@@ -247,19 +229,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         logger.trace("{}.scheduleToWriteIfNeeded() registering to write", this);
         socket.register(false, true, 300000, this);
       }
-    }
-  }
-
-  /**
-   * Returns the messageThatIsBeingWritten, or the first in the queue, w/o setting messageThatIsBeingWritten
-   * @return
-   */
-  private MessageWrapper peek() {
-    synchronized(queue) {
-      if (messageThatIsBeingWritten == null) {
-        return queue.peek();
-      }
-      return messageThatIsBeingWritten;
     }
   }
 
@@ -769,10 +738,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
     public Path getFile() {
       return f;
-    }
-
-    public long getLength() {
-      return length;
     }
 
     public ByteBuffer getMetadata() {
@@ -1466,10 +1431,6 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
     public Path getFile() {
       return f;
-    }
-
-    public long getLength() {
-      return length;
     }
 
     public ByteBuffer getMetadata() {

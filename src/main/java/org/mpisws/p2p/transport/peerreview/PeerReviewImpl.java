@@ -212,17 +212,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     return new SecureHistoryFactoryImpl(transport, env);
   }
 
-  /**
-   * PeerReview checks the timestamps on messages against the local clock, and
-   * ignores them if the timestamp is too far out of sync. The definition of
-   * 'too far' can be controlled with this method.
-   */
-  public void setTimeToleranceMillis(long timeToleranceMicros) {
-   this.timeToleranceMillis = timeToleranceMicros;
-   if (commitmentProtocol != null)
-     commitmentProtocol.setTimeToleranceMillis(timeToleranceMicros);
-  }
-
 
   /* Gets a fresh, unique sequence number for evidence */
   public long getEvidenceSeq() {
@@ -713,10 +702,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     return transport.getHashSizeBytes();
   }
 
-  public int getSignatureSizeInBytes() {
-    return transport.getSignatureSizeBytes();
-  }
-
   public IdentifierExtractor<Handle, Identifier> getIdentifierExtractor() {
     return identifierExtractor;
   }
@@ -802,10 +787,6 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     return transport.hash(hashMe);
   }
 
-  public EvidenceSerializer getEvidenceSerializer() {
-    return evidenceSerializer;
-  }
-
   public EvidenceTool<Handle, Identifier> getEvidenceTool() {
     return evidenceTool;
   }
@@ -818,24 +799,11 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     return verifierFactory;
   }
 
-  void disableAuthenticatorProcessing() {
-    assert(initialized);
-
-    maintenanceTask.cancel();
-    authInStore.disableMemoryBuffer();
-    authOutStore.disableMemoryBuffer();
-    authPendingStore.disableMemoryBuffer();
-  }
-
   public SecureHistory getHistory() {
     return history;
   }
 
   public long getTimeToleranceMillis() {
     return timeToleranceMillis;
-  }
-
-  public void sendEvidence(Handle dest, Identifier evidenceAgainst) {
-    evidenceTransferProtocol.sendEvidence(dest, evidenceAgainst);
   }
 }

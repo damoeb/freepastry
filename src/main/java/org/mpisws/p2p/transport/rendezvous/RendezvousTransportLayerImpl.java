@@ -66,7 +66,6 @@ import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.environment.time.TimeSource;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.tuples.Tuple;
 import rice.selector.SelectorManager;
@@ -155,7 +154,6 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
   private final TransportLayer<Identifier, ByteBuffer> tl;
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
-  private final RendezvousGenerationStrategy<HighIdentifier> rendezvousGenerator;
   private final PilotFinder<HighIdentifier> pilotFinder;
   private final RendezvousStrategy<HighIdentifier> rendezvousStrategy;
   private final ResponseStrategy<Identifier> responseStrategy;
@@ -164,7 +162,6 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   private final ContactDeserializer<Identifier, HighIdentifier> serializer;
   private final SelectorManager selectorManager;
   private final RandomSource random;
-  private final TimeSource time;
   private final EphemeralDB<Identifier, HighIdentifier> ephemeralDB;
   private final ContactDirectStrategy<HighIdentifier> contactDirectStrategy;
   private ErrorHandler<Identifier> errorHandler;
@@ -181,13 +178,11 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       ContactDirectStrategy<HighIdentifier> contactDirectStrategy,
       Environment env) {
     this.random = env.getRandomSource();
-    this.time = env.getTimeSource();
     this.selectorManager = env.getSelectorManager();
     this.tl = tl;
     this.localNodeHandle = myRendezvousContact;
     this.serializer = deserializer;
     this.RENDEZVOUS_CONTACT_STRING = RENDEZVOUS_CONTACT_STRING;
-    this.rendezvousGenerator = rendezvousGenerator;
     this.pilotFinder = pilotFinder;
     this.rendezvousStrategy = rendezvousStrategy;
     this.responseStrategy = responseStrategy;
@@ -422,10 +417,6 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
         deliverSocketToMe.receiveException(handle, ex);
       }
     }, options);
-  }
-
-  protected void routeForSocket() {
-    throw new RuntimeException("Not implemented.");
   }
 
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {

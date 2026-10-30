@@ -61,10 +61,6 @@ public class DefaultCallback<Identifier, MessageType> implements
     logger.info("incomingSocket({})", s);
   }
 
-  public void livenessChanged(Identifier i, int state) {
-    logger.info("livenessChanged({},{})", i, state);
-  }
-
   public void messageReceived(Identifier i, MessageType m, Map<String, Object> options)
       throws IOException {
     logger.info("messageReceived({},{})", i, m);

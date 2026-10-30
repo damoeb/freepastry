@@ -71,7 +71,6 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
   TransportLayerCallback<Identifier, RawMessage> callback;
   ErrorHandler<Identifier> errorHandler;
   RawMessageDeserializer deserializer;
-  IdFactory idFactory;
   Logger logger;
 
   public static final String MSG_CLASS = "commonapi_msg_class";
@@ -101,7 +100,6 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
     if (idFactory == null) throw new IllegalArgumentException("idFactory must be non-null");
     if (deserializer == null) throw new IllegalArgumentException("deserializer must be non-null");
 
-    this.idFactory = idFactory;
     this.errorHandler = errorHandler;
 
     if (this.callback == null) {

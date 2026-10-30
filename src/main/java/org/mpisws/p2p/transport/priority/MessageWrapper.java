@@ -100,10 +100,6 @@ final class MessageWrapper<Identifier> implements
     this.seq = seq;
   }
 
-  public MessageInfo getMessageInfo() {
-    return new MessageInfoImpl(originalMessage,options,priority);
-  }
-
   public void complete() {
     completed = true;
     if (deliverAckToMe != null) deliverAckToMe.ack(this);

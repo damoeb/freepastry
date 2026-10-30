@@ -177,15 +177,6 @@ public abstract class SourceRoute<Identifier> {
   }
 
   /**
-   * Returns whether or not this route goes through the given address
-   *
-   * @return whether or not this route goes through the given address
-   */
-  public boolean goesThrough(Identifier address) {
-    return path.contains(address);
-  }
-
-  /**
    * Returns which hop in the path the identifier is.
    * @param identifier the hop
    * @return -1 if not in the path

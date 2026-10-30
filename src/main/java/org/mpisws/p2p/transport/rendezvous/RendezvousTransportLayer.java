@@ -41,7 +41,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public interface RendezvousTransportLayer<HighIdentifier> {
-  public static int SUCCESS = 1;
 
   /**
    * Open a socket to the dest, then after writing credentials, call notify the higher layer: incomingSocket()

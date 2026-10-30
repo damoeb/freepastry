@@ -53,8 +53,6 @@ public interface AuthenticatorStore<Identifier> {
   public Authenticator getOldestAuthenticator(Identifier id);
   public Authenticator getLastAuthenticatorBefore(Identifier id, long seq);
 
-  public void disableMemoryBuffer();
-
   /**
    * Also writes it to disk.
    * @param id
@@ -74,8 +72,6 @@ public interface AuthenticatorStore<Identifier> {
 
   public int numAuthenticatorsFor(Identifier id);
 
-  public int numAuthenticatorsFor(Identifier id, long minseq, long maxseq);
-
   public void flushAuthenticatorsFor(Identifier id, long minseq, long maxseq);
   public void flushAuthenticatorsFor(Identifier id);
 
@@ -89,9 +85,6 @@ public interface AuthenticatorStore<Identifier> {
   public List<Identifier> getSubjects();
   public int getNumSubjects();
 
-  public int getAuthenticatorSizeBytes();
-
   public void flush(Identifier id);
-  public void flushAll();
 
 }

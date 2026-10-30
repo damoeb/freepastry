@@ -78,7 +78,6 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   Logger logger;
   ErrorHandler<Identifier> errorHandler;
 
-  int measurementPeriod = 5000;
 
   // current measured
   public static final int CUR_DOWN = 0;
@@ -104,7 +103,6 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   public BandwidthMeasuringTransportLayer(int measurementPeriod, TransportLayer<Identifier, ByteBuffer> tl, Environment env) {
     this.tl = tl;
     tl.setCallback(this);
-    this.measurementPeriod = measurementPeriod;
     this.logger = env.getLogManager().getLogger(BandwidthMeasuringTransportLayer.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
     this.time = env.getTimeSource();

@@ -37,8 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.priority;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.TransportLayer;
@@ -55,14 +53,7 @@ import org.mpisws.p2p.transport.TransportLayerListener;
 public interface PriorityTransportLayer<Identifier> extends TransportLayer<Identifier, ByteBuffer> {
   public static final String OPTION_PRIORITY = "OPTION_PRIORITY";
 
-  // different priority levels
-  public static final byte MAX_PRIORITY = -15;
-  public static final byte HIGH_PRIORITY = -10;
-  public static final byte MEDIUM_HIGH_PRIORITY = -5;
   public static final byte MEDIUM_PRIORITY = 0;
-  public static final byte MEDIUM_LOW_PRIORITY = 5;
-  public static final byte LOW_PRIORITY = 10;
-  public static final byte LOWEST_PRIORITY = 15;
   public static final byte DEFAULT_PRIORITY = MEDIUM_PRIORITY;
 
   public static final int STATUS_NOT_CONNECTED = 0;
@@ -82,40 +73,6 @@ public interface PriorityTransportLayer<Identifier> extends TransportLayer<Ident
    * @return STATUS_NOT_CONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
    */
   public int connectionStatus(Identifier i);
-
-  /**
-   * Returns the options on the primary connection
-   * @param i
-   * @return
-   */
-  public Map<String, Object> connectionOptions(Identifier i);
-
-  /**
-   * usually used with bytesPending() or queueLength()
-   * @return any Identifier with messages to be sent
-   */
-  public Collection<Identifier> nodesWithPendingMessages();
-
-  /**
-   * Returns the number of messages pending to be sent
-   * @param i
-   * @return
-   */
-  public int queueLength(Identifier i);
-
-  /**
-   * The number of bytes to be sent to the identifier
-   * @param i
-   * @return
-   */
-  public long bytesPending(Identifier i);
-
-  /**
-   * The number of bytes to be sent to the identifier
-   * @param i
-   * @return
-   */
-  public List<MessageInfo> getPendingMessages(Identifier i);
 
   /**
    * open a primary connection; PrimarySocketListeners are notified when it is open
