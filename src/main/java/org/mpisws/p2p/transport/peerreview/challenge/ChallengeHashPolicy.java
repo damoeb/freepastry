@@ -38,14 +38,20 @@ package org.mpisws.p2p.transport.peerreview.challenge;
 
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashPolicy;
 import org.mpisws.p2p.transport.util.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 
-public class ChallengeHashPolicy<Identifier> implements HashPolicy, PeerReviewConstants {
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSIGN;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_FULL_MESSAGES_ALL;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_FULL_MESSAGES_SENDER;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT;
+
+public class ChallengeHashPolicy<Identifier> implements HashPolicy {
   private static final Logger LOG = LoggerFactory.getLogger(ChallengeHashPolicy.class);
 
   byte flags;

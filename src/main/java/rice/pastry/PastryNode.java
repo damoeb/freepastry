@@ -92,6 +92,9 @@ import rice.pastry.transport.PMessageReceipt;
 import rice.pastry.transport.PMessageReceiptImpl;
 import rice.pastry.transport.SocketAdapter;
 
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
+
 /**
  * A Pastry node is single entity in the pastry network.
  *

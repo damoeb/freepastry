@@ -57,6 +57,7 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.identity.IdentityImpl;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.liveness.OverrideLiveness;
 import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.liveness.Pinger;
@@ -82,6 +83,7 @@ import rice.pastry.socket.TransportLayerNodeHandle;
 import rice.pastry.transport.NodeHandleAdapter;
 import rice.pastry.transport.SocketAdapter;
 import rice.pastry.transport.TLDeserializer;
+
 
 /**
  * Extends SocketPastryNodeFactory and adds getSocketFactory() to allow access to
@@ -402,7 +404,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
             public int getLiveness(SourceRoute<MultiInetSocketAddress> i,
                 Map<String, Object> options) {
-              return LivenessListener.LIVENESS_ALIVE;
+              return LivenessTypes.LIVENESS_ALIVE;
             }
 
             public boolean removeLivenessListener(

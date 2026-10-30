@@ -47,7 +47,7 @@ import java.util.Map;
  * @author Jeff Hoye
  *
  */
-public interface LivenessListener<Identifier> extends LivenessTypes {
+public interface LivenessListener<Identifier> {
 
   /**
    * Called when the liveness changes.

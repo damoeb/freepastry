@@ -52,7 +52,6 @@ import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
@@ -66,11 +65,12 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
 
 /**
  * Replays a SEND against the SEND entry in the log.
  */
-public class ReplayVerifierSendTest implements PeerReviewConstants {
+public class ReplayVerifierSendTest {
 
   static final Integer LOCAL = 1;
   static final Integer TARGET = 2;

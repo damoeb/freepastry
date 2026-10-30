@@ -44,6 +44,8 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRESP;
+
 /**
  *MSG_AUTHRESP
   byte type = MSG_AUTHRESP

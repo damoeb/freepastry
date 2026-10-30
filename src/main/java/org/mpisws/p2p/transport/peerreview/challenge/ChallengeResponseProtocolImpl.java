@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
 import org.mpisws.p2p.transport.peerreview.audit.AuditProtocol;
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
@@ -67,8 +66,20 @@ import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.tuples.Tuple;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_AUDIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACCUSATION;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_RESPONSE;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+
 public class ChallengeResponseProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable>
-    implements PeerReviewConstants, ChallengeResponseProtocol<Handle, Identifier> {
+    implements ChallengeResponseProtocol<Handle, Identifier> {
   PeerReviewImpl<Handle, Identifier> peerreview;
   IdentityTransport<Handle, Identifier> transport;
   PeerInfoStore<Handle, Identifier> infoStore;

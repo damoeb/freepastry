@@ -65,6 +65,17 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.tuples.Tuple;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CERT_MISSING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_AUDIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.INVALID;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACCUSATION;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_RESPONSE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_INCONSISTENT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONCONFORMANT;
+
 public class StatementProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements StatementProtocol<Handle, Identifier> {
 
   protected Logger logger;

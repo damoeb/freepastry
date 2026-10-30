@@ -57,6 +57,8 @@ import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+
 /**
  * This protocol collects authenticators from incoming messages and, once in a
  * while, batches them together and sends them to the witnesses.

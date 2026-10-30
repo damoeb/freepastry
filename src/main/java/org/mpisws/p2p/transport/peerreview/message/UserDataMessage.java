@@ -48,6 +48,9 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_USERDATA;
+
 /**
  *
  * Note, it's only Evidence when the type has been changed.

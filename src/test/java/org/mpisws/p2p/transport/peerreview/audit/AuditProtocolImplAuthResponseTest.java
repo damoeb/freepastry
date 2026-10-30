@@ -44,7 +44,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.peerreview.IdentifierExtractor;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceTransferProtocol;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
@@ -55,11 +54,12 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRESP;
 
 /**
  * Tests that an AUTHRESP widens the range of the ongoing investigation of its subject.
  */
-public class AuditProtocolImplAuthResponseTest implements PeerReviewConstants {
+public class AuditProtocolImplAuthResponseTest {
 
   /** Serves as both the handle and the identifier. */
   static class Id implements RawSerializable {

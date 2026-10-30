@@ -49,9 +49,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.liveness.Pinger;
 import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl;
@@ -242,7 +242,7 @@ public class LivenessTest extends SRTest {
     // starts out suspected
     assertTrue(
         alice.getLiveness(aliceToDave, null) ==
-          LivenessListener.LIVENESS_SUSPECTED);
+          LivenessTypes.LIVENESS_SUSPECTED);
 
     // becomes alive
     assertTrue(alice.checkLiveness(aliceToDave, null));
@@ -256,7 +256,7 @@ public class LivenessTest extends SRTest {
 
     assertTrue(
         alice.getLiveness(aliceToDave, null) ==
-        LivenessListener.LIVENESS_ALIVE);
+        LivenessTypes.LIVENESS_ALIVE);
     assertTrue(tupels.size() == 1);
 
 
@@ -276,7 +276,7 @@ public class LivenessTest extends SRTest {
 
     assertTrue(
         alice.getLiveness(aliceToDave, null) ==
-        LivenessListener.LIVENESS_DEAD);
+        LivenessTypes.LIVENESS_DEAD);
     // suspected/dead
     assertTrue(tupels.size() == 3);
   }

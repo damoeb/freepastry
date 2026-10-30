@@ -43,6 +43,9 @@ import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_AUDIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT;
+
 /**
  *
  * CHAL_AUDIT

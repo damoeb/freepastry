@@ -50,12 +50,14 @@ import org.mpisws.p2p.transport.direct.DirectTransportLayer;
 import org.mpisws.p2p.transport.direct.EventSimulator;
 import org.mpisws.p2p.transport.direct.GenericNetworkSimulator;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.CancellableTask;
 import rice.selector.TimerTask;
+
 
 public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulator implements
     GenericNetworkSimulator<Identifier, MessageType> {
@@ -155,7 +157,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   public void remove(Identifier i) {
     if (!environment.getSelectorManager().isSelectorThread()) throw new IllegalStateException("Operation not permitted on non-selector thread.");
     nodes.remove(i);
-    notifyLivenessListeners(i, LivenessListener.LIVENESS_DEAD, null);
+    notifyLivenessListeners(i, LivenessTypes.LIVENESS_DEAD, null);
   }
 
   public Environment getEnvironment() {
@@ -264,9 +266,9 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
 
   public int getLiveness(Identifier i, Map<String, Object> options) {
     if (nodes.containsKey(i)) {
-      return LivenessListener.LIVENESS_ALIVE;
+      return LivenessTypes.LIVENESS_ALIVE;
     }
-    return LivenessListener.LIVENESS_DEAD;
+    return LivenessTypes.LIVENESS_DEAD;
   }
 
   public void clearState(Identifier i) {

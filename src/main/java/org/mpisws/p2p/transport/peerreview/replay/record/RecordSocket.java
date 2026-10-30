@@ -43,11 +43,19 @@ import java.util.Map;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 
-public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> implements PeerReviewConstants {
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_READ;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_RW;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_WRITE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CLOSE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CLOSED;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_READ;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_SHUTDOWN_OUTPUT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_WRITE;
+
+public class RecordSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
 
   int socketId;
   ByteBuffer socketIdBuffer;

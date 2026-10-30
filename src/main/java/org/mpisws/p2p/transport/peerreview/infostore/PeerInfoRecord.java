@@ -41,9 +41,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.util.FileOutputBuffer;
+
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
 
 /**
  * This is just an index to the real evidence which is on disk
@@ -53,7 +56,7 @@ import org.mpisws.p2p.transport.util.FileOutputBuffer;
  * @param <Handle>
  * @param <Identifier>
  */
-public class PeerInfoRecord<Handle, Identifier> implements PeerReviewConstants {
+public class PeerInfoRecord<Handle, Identifier> {
   private Identifier subject;
   private Authenticator lastCheckedAuth;
   private int status;

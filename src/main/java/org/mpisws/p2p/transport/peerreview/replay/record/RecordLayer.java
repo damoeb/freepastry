@@ -48,7 +48,6 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
 import org.mpisws.p2p.transport.peerreview.history.stub.NullHashProvider;
@@ -72,8 +71,17 @@ import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.selector.SelectorManager;
 
-public class RecordLayer<Identifier> implements PeerReviewConstants,
-  TransportLayer<Identifier, ByteBuffer>,
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_EXCEPTION;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPENED_OUTGOING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPEN_INCOMING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPEN_OUTGOING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_ClosedChannel;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_IO;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_Unknown;
+
+public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteBuffer>,
   TransportLayerCallback<Identifier, ByteBuffer> {
 
   /**

@@ -44,7 +44,7 @@ import java.util.Map;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
-import org.mpisws.p2p.transport.liveness.LivenessListener;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.rendezvous.RendezvousStrategy;
 import org.mpisws.p2p.transport.rendezvous.RendezvousTransportLayer;
@@ -67,6 +67,7 @@ import rice.pastry.routing.RouteMessageNotification;
 import rice.pastry.transport.PMessageNotification;
 import rice.pastry.transport.PMessageReceipt;
 import rice.selector.SelectorManager;
+
 
 /**
  * @author Jeff Hoye
@@ -178,7 +179,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
 
     logger.atInfo().log(() -> "openChannel()"+source+"->"+target+" via "+rendezvous+" uid:"+uid+","+deliverAckToMe+","+options);
 
-    if (target.getLiveness() > LivenessListener.LIVENESS_DEAD) {
+    if (target.getLiveness() > LivenessTypes.LIVENESS_DEAD) {
       // if he's dead forever (consider changing this to dead... but think of implications)
       logger.atInfo().log(() -> "openChannel() attempted to open to dead_forever target. Dropping."+source+"->"+target+" via "+rendezvous+" uid:"+uid+","+deliverAckToMe+","+options);
       if (deliverAckToMe != null) deliverAckToMe.receiveException(new NodeIsFaultyException(target));

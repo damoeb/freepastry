@@ -38,9 +38,10 @@ package org.mpisws.p2p.transport.peerreview.history.logentry;
 
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSIGN;
 
 /**
  * EVT_SENDSIGN
@@ -50,7 +51,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * @author Jeff Hoye
  *
  */
-public class EvtSendSign implements PeerReviewConstants {
+public class EvtSendSign {
   public byte[] signature;
   public byte[] restOfMessage;
 

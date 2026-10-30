@@ -36,7 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.liveness;
 
-public interface LivenessTypes {
+public final class LivenessTypes {
+  private LivenessTypes() {
+    // constants only
+  }
+
   public static final int LIVENESS_ALIVE = 1;
   public static final int LIVENESS_SUSPECTED = 2;
   public static final int LIVENESS_DEAD = 3;

@@ -62,6 +62,10 @@ import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.MathUtils;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.NO_CERTIFICATE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_BAD;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_OK;
+
 /**
  * TODO: make it store known certs to a file, make it periodically check the revocation server.
  *

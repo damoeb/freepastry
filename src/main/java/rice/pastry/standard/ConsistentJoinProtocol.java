@@ -48,7 +48,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.liveness.LivenessListener;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -66,6 +66,7 @@ import rice.pastry.messaging.Message;
 import rice.pastry.routing.RoutingTable;
 import rice.selector.LoopObserver;
 import rice.selector.TimerTask;
+
 
 /**
  * Does not setReady until contacting entire leafset which gossips new members.
@@ -358,7 +359,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       // identify node j, the sender of the message
       NodeHandle j = cjm.ls.get(0);
 
-      if (j.getLiveness() > LivenessListener.LIVENESS_SUSPECTED) {
+      if (j.getLiveness() > LivenessTypes.LIVENESS_SUSPECTED) {
         logger.info("got message from dead node:{}", msg);
         j.checkLiveness(); // we got a message from a dead node...
       }

@@ -59,7 +59,7 @@ import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public interface PeerReview<Handle extends RawSerializable, Identifier extends RawSerializable> extends
-    IdentityTransportCallback<Handle, Identifier>, PeerReviewConstants, IdentityTransport<Handle, Identifier> {
+    IdentityTransportCallback<Handle, Identifier>, IdentityTransport<Handle, Identifier> {
 
   /**
    * Option should map to an int below 255 to record the relevant length of the message.

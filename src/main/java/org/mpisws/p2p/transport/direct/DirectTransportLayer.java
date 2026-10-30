@@ -49,8 +49,8 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
-import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
@@ -59,6 +59,7 @@ import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.CancellableTask;
 import rice.pastry.direct.NetworkSimulator;
 import rice.pastry.direct.NodeRecord;
+
 
 public class DirectTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType> {
   protected boolean acceptMessages = true;
@@ -141,7 +142,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     if (!simulator.isAlive(localIdentifier)) return null; // just make this stop, the local node is dead, he shouldn't be doing anything
     MessageRequestHandleImpl<Identifier, MessageType> handle = new MessageRequestHandleImpl<Identifier, MessageType>(i, m, options);
 
-    if (livenessProvider.getLiveness(i, null) >= LivenessListener.LIVENESS_DEAD) {
+    if (livenessProvider.getLiveness(i, null) >= LivenessTypes.LIVENESS_DEAD) {
       logger.debug("Attempt to send message {} to a dead node {}!", m, i);
 
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(handle, new NodeIsFaultyException(i));

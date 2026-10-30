@@ -71,6 +71,11 @@ import rice.environment.Environment;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Cancellable;
 
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD_FOREVER;
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED;
+
 /**
  * This class adapts a SourceRoute transport layer back to an Identifier
  * layer.  It does this by selecting an appropriate source route from a SourceRouteStrategy,

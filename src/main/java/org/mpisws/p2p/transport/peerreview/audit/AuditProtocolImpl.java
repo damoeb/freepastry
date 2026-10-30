@@ -70,6 +70,16 @@ import rice.p2p.util.MathUtils;
 import rice.selector.TimerTask;
 
 import static org.mpisws.p2p.transport.peerreview.Basics.renderStatus;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.AUTH_CACHE_INTERVAL;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_AUDIT_INTERVAL_MILLIS;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_LOG_DOWNLOAD_TIMEOUT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_FULL_MESSAGES_SENDER;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.INVESTIGATION_INTERVAL_MILLIS;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHREQ;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRESP;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROGRESS_INTERVAL_MILLIS;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
 
 public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements AuditProtocol<Handle, Identifier> {
 

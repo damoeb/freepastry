@@ -78,6 +78,7 @@ import rice.p2p.commonapi.Cancellable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_BAD;
 
 
 public class AuthenticatorStoreTest {

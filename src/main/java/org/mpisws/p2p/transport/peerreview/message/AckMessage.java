@@ -43,6 +43,9 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACK;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.RESP_SEND;
+
 /**
   MSG_ACK
   byte type = MSG_ACK

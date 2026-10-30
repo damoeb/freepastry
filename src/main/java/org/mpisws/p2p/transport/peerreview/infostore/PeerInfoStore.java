@@ -39,10 +39,9 @@ package org.mpisws.p2p.transport.peerreview.infostore;
 import java.io.File;
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 
-public interface PeerInfoStore<Handle, Identifier> extends PeerReviewConstants {
+public interface PeerInfoStore<Handle, Identifier> {
   public void setStatusChangeListener(StatusChangeListener<Identifier> listener);
   public void addEvidence(Identifier localIdentifier, Identifier subject, long evidenceSeq, Evidence evidence) throws IOException;
   public void addEvidence(Identifier localIdentifier, Identifier subject, long evidenceSeq, Evidence evidence, Handle interestedParty) throws IOException;

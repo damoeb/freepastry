@@ -36,10 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.message;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-public interface PeerReviewMessage extends PeerReviewConstants, RawSerializable {
+public interface PeerReviewMessage extends RawSerializable {
 
   public short getType();
 

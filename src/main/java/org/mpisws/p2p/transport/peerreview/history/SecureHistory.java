@@ -39,10 +39,9 @@ package org.mpisws.p2p.transport.peerreview.history;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
 
-public interface SecureHistory extends PeerReviewConstants {
+public interface SecureHistory {
   public long getNumEntries();
   public long getBaseSeq();
   public long getLastSeq();

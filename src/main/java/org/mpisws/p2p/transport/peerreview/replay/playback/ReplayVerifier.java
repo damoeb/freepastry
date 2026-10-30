@@ -45,7 +45,6 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.peerreview.PeerReviewCallback;
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
@@ -57,7 +56,30 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
-public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>,  PeerReviewConstants {
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_ACK;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSIGN;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_READ;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_RW;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_WRITE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CLOSE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CLOSED;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_EXCEPTION;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPENED_OUTGOING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPEN_INCOMING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPEN_OUTGOING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_READ;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_SHUTDOWN_OUTPUT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_WRITE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_ClosedChannel;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_IO;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EX_TYPE_Unknown;
+
+public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier> {
 
   protected Identifier localHandle;
   protected SecureHistory history;

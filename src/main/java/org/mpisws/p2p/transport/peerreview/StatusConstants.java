@@ -36,7 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview;
 
-public interface StatusConstants {
+public final class StatusConstants {
+  private StatusConstants() {
+    // constants only
+  }
+
   public static final int STATUS_TRUSTED = 0;
   public static final int STATUS_SUSPECTED = 1;
   public static final int STATUS_EXPOSED = 2;

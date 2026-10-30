@@ -50,6 +50,12 @@ import org.mpisws.p2p.transport.util.FileOutputBuffer;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_AUDIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_INCONSISTENT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONCONFORMANT;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+
 /**
  * In this class, the PeerReview library keeps information about its peers.
  * Specifically, it stores the last checked authenticator plus any challenges,

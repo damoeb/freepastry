@@ -54,6 +54,8 @@ import rice.pastry.routing.SendOptions;
 import rice.pastry.transport.PMessageNotification;
 import rice.pastry.transport.PMessageReceipt;
 
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED;
+
 /**
  * The superclass makes the routing decisions.  This class handles the rapid-rerouting.
  *

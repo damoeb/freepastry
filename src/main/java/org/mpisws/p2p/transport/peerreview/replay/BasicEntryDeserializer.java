@@ -38,7 +38,6 @@ package org.mpisws.p2p.transport.peerreview.replay;
 
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
@@ -49,7 +48,29 @@ import org.mpisws.p2p.transport.peerreview.history.stub.NullHashProvider;
 import rice.environment.Environment;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 
-public class BasicEntryDeserializer implements PeerReviewConstants, EntryDeserializer {
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_ACK;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_MAX_SOCKET_EVT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_MIN_SOCKET_EVT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSIGN;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_READ;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_RW;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CAN_WRITE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CLOSE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_CLOSED;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_EXCEPTION;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPENED_OUTGOING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPEN_INCOMING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_OPEN_OUTGOING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_READ;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_SHUTDOWN_OUTPUT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SOCKET_WRITE;
+
+public class BasicEntryDeserializer implements EntryDeserializer {
 
   public String entryId(short id) {
     switch (id) {

@@ -105,6 +105,26 @@ import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.selector.TimerTask;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_AUTH_PUSH_INTERVAL_MILLIS;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_CHECKPOINT_INTERVAL_MILLIS;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_TIME_TOLERANCE_MILLIS;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MAINTENANCE_INTERVAL_MILLIS;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACCUSATION;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_ACK;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHPUSH;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHREQ;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_AUTHRESP;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_CHALLENGE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_RESPONSE;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_USERDATA;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_BAD;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_OK;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+
 /**
  *
  * @author Jeff Hoye

@@ -39,12 +39,13 @@ package org.mpisws.p2p.transport.peerreview.history.logentry;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
+
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
 
 
 /**
@@ -59,7 +60,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  *
  * @param <Identifier>
  */
-public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent implements PeerReviewConstants {
+public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
   public Identifier receiverId;
   public ByteBuffer payload;
   public byte[] hash;

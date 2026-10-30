@@ -38,7 +38,6 @@ package org.mpisws.p2p.transport.peerreview.evidence;
 
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
@@ -46,6 +45,8 @@ import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
+
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONCONFORMANT;
 
 /**
 PROOF_NONCONFORMANT
@@ -57,7 +58,7 @@ hash baseHash
 [snippet; see RESP_AUDIT]
 */
 
-public class ProofNonconformant<Handle extends RawSerializable> implements PeerReviewConstants, Evidence {
+public class ProofNonconformant<Handle extends RawSerializable> implements Evidence {
   /**
    * Authenticates the last entry in the snippet
    */

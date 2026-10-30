@@ -36,13 +36,12 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.audit;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
 import org.mpisws.p2p.transport.peerreview.commitment.CommitmentProtocol;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.tuples.Tuple;
 
-public interface EvidenceTool<Handle extends RawSerializable, Identifier extends RawSerializable> extends PeerReviewConstants {
+public interface EvidenceTool<Handle extends RawSerializable, Identifier extends RawSerializable> {
 
   /**
    *

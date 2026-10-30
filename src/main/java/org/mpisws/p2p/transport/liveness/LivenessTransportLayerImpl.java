@@ -69,9 +69,12 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.selector.Timer;
 import rice.selector.TimerTask;
 
-public class LivenessTransportLayerImpl<Identifier> implements
-    LivenessTypes,
-    LivenessTransportLayer<Identifier, ByteBuffer>,
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD_FOREVER;
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED;
+
+public class LivenessTransportLayerImpl<Identifier> implements LivenessTransportLayer<Identifier, ByteBuffer>,
     TransportLayerCallback<Identifier, ByteBuffer>,
     OverrideLiveness<Identifier> {
   // how long to wait for a ping response to come back before declaring lost

@@ -36,7 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview;
 
-public class Basics implements PeerReviewConstants {
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+
+public class Basics {
   public static String renderStatus(int status) {
     switch (status) {
       case STATUS_TRUSTED:

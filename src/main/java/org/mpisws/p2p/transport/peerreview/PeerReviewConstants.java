@@ -36,7 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview;
 
-public interface PeerReviewConstants extends StatusConstants {
+public final class PeerReviewConstants {
+  private PeerReviewConstants() {
+    // constants only
+  }
+
 
   public static final short EVT_SEND = 0; // Outgoing message (followed by SENDSIGN entry)
   public static final short EVT_RECV = 1; // Incoming message (followed by SIGN entry)

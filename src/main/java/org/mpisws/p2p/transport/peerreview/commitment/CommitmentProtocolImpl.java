@@ -66,8 +66,16 @@ import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.tuples.Tuple;
 import rice.selector.TimerTask;
 
-public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements
-    CommitmentProtocol<Handle, Identifier>, PeerReviewConstants {
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_ACK;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSIGN;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+
+public class CommitmentProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements CommitmentProtocol<Handle, Identifier> {
   public int MAX_PEERS = 250;
   public int INITIAL_TIMEOUT_MILLIS = 1000;
   public int RETRANSMIT_TIMEOUT_MILLIS = 1000;

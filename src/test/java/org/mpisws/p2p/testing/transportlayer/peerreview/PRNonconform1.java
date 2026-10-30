@@ -43,10 +43,12 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
-import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
+import org.mpisws.p2p.transport.peerreview.StatusConstants;
 import rice.environment.Environment;
 import rice.p2p.util.MathUtils;
 import rice.selector.TimerTask;
+
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
 
 /**
  * Bob deviates from the protocol by sending an extra message.
@@ -69,12 +71,12 @@ public class PRNonconform1 extends PRRegressionTest {
   public void finish() {
     // see if everyone found bob exposed
     try {
-      if (recordedStatus.get(aliceHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
+      if (recordedStatus.get(aliceHandle).get(bobHandle.id) != StatusConstants.STATUS_EXPOSED) {
         logger.info("Alice Didn't expose bob");
         fail("Alice Didn't expose bob");
         return;
       }
-      if (recordedStatus.get(carolHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
+      if (recordedStatus.get(carolHandle).get(bobHandle.id) != StatusConstants.STATUS_EXPOSED) {
         logger.info("Carol Didn't expose bob");
         fail("Carol Didn't expose bob");
         return;

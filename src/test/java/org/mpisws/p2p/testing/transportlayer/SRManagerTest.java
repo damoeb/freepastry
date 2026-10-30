@@ -54,6 +54,7 @@ import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.liveness.Pinger;
 import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
@@ -148,15 +149,15 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     long timeout = env.getTimeSource().currentTimeMillis()+10000;
     synchronized(lock) {
       while((env.getTimeSource().currentTimeMillis()<timeout) &&
-          (aliceLP.getLiveness(bobId, null) != LivenessListener.LIVENESS_ALIVE ||
-           bobLP.getLiveness(aliceId, null) != LivenessListener.LIVENESS_ALIVE)) {
+          (aliceLP.getLiveness(bobId, null) != LivenessTypes.LIVENESS_ALIVE ||
+           bobLP.getLiveness(aliceId, null) != LivenessTypes.LIVENESS_ALIVE)) {
         lock.wait(500);
       }
     }
     aliceLP.removeLivenessListener(ll);
     bobLP.removeLivenessListener(ll);
-    assertTrue(aliceLP.getLiveness(bobId, null) == LivenessListener.LIVENESS_ALIVE, "alice->bob:"+aliceLP.getLiveness(bobId, null));
-    assertTrue(bobLP.getLiveness(aliceId, null) == LivenessListener.LIVENESS_ALIVE, "bob->alice:"+bobLP.getLiveness(aliceId, null));
+    assertTrue(aliceLP.getLiveness(bobId, null) == LivenessTypes.LIVENESS_ALIVE, "alice->bob:"+aliceLP.getLiveness(bobId, null));
+    assertTrue(bobLP.getLiveness(aliceId, null) == LivenessTypes.LIVENESS_ALIVE, "bob->alice:"+bobLP.getLiveness(aliceId, null));
   }
 
   private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
@@ -353,7 +354,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     // starts out suspected
     assertTrue(
         alice.getLiveness(daveAddress, null) ==
-        LivenessListener.LIVENESS_SUSPECTED);
+        LivenessTypes.LIVENESS_SUSPECTED);
 
     // becomes alive
 
@@ -365,7 +366,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     }
 
     int result = alice.getLiveness(daveAddress, null);
-    assertTrue(result == LivenessListener.LIVENESS_ALIVE, "result = "+result);
+    assertTrue(result == LivenessTypes.LIVENESS_ALIVE, "result = "+result);
     assertTrue(tupels.size() == 1);
 
 
@@ -384,7 +385,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     }
 
     result = alice.getLiveness(daveAddress, null);
-    assertTrue(result == LivenessListener.LIVENESS_DEAD, "result = "+result);
+    assertTrue(result == LivenessTypes.LIVENESS_DEAD, "result = "+result);
     // suspected/dead
     assertTrue(tupels.size() == 3);
   }

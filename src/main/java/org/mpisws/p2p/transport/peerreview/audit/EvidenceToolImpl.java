@@ -63,6 +63,25 @@ import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.tuples.Tuple;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CERT_MISSING;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_ACK;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHOOSE_Q;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHOOSE_RAND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_MAX_RESERVED;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSIGN;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_VRF;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_FULL_MESSAGES_SENDER;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.INVALID;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_BAD;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_OK;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.VALID;
+
 public class EvidenceToolImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements EvidenceTool<Handle, Identifier> {
 
   Logger logger;

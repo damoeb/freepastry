@@ -45,6 +45,8 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.RESP_AUDIT;
+
 /**
  * Snippit is the contents (everything but the type)
  *

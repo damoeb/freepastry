@@ -47,7 +47,7 @@ import java.util.Map;
  * @author Jeff Hoye
  *
  */
-public interface LivenessProvider<Identifier> extends LivenessTypes {
+public interface LivenessProvider<Identifier> {
 
   public int getLiveness(Identifier i, Map<String, Object> options);
 

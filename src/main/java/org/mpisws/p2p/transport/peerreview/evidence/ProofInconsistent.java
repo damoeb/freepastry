@@ -38,13 +38,14 @@ package org.mpisws.p2p.transport.peerreview.evidence;
 
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_INCONSISTENT;
 
 /**
  * PROOF_INCONSISTENT
@@ -58,7 +59,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  *
  * @author Jeff Hoye
  */
-public class ProofInconsistent implements PeerReviewConstants, Evidence {
+public class ProofInconsistent implements Evidence {
   public static final byte NO_SNIPPET = 0;
   public static final byte LOG_SNIPPET = 1;
 

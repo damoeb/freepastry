@@ -38,7 +38,6 @@ package org.mpisws.p2p.transport.peerreview.evidence;
 
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializerImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceSerializer;
@@ -48,7 +47,13 @@ import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements EvidenceSerializer, PeerReviewConstants {
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_AUDIT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.MSG_USERDATA;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_INCONSISTENT;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.PROOF_NONCONFORMANT;
+
+public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier extends RawSerializable> implements EvidenceSerializer {
   protected int hashSize;
   protected int signatureSize;
   protected Serializer<Handle> handleSerializer;

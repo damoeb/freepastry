@@ -42,6 +42,7 @@ import java.nio.ByteBuffer;
 
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
+import org.mpisws.p2p.transport.peerreview.StatusConstants;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntryFactory;
@@ -49,10 +50,13 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryImpl;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
-import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.util.RandomAccessFileIOBuffer;
+
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
 
 /**
  * Bob forks his log, that is, at some point he removes the k most
@@ -148,12 +152,12 @@ public class PRInconsistent1 extends PRRegressionTest {
   public void finish() {
     // see if everyone found bob exposed
     try {
-      if (recordedStatus.get(aliceHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
+      if (recordedStatus.get(aliceHandle).get(bobHandle.id) != StatusConstants.STATUS_EXPOSED) {
         logger.info("Alice Didn't expose bob");
         fail("Alice Didn't expose bob");
         return;
       }
-      if (recordedStatus.get(carolHandle).get(bobHandle.id) != StatusChangeListener.STATUS_EXPOSED) {
+      if (recordedStatus.get(carolHandle).get(bobHandle.id) != StatusConstants.STATUS_EXPOSED) {
         logger.info("Carol Didn't expose bob");
         fail("Carol Didn't expose bob");
         return;

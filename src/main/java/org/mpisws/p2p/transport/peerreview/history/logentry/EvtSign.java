@@ -41,6 +41,8 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
+
 public class EvtSign extends HistoryEvent {
   public byte[] hTopMinusOne;
   public byte[] signature;

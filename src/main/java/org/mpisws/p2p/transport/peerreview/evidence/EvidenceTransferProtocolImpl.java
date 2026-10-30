@@ -46,7 +46,6 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceRecord;
@@ -58,12 +57,15 @@ import org.slf4j.Logger;
 import rice.Continuation;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+
 /**
  *  This protocol transfers evidence to the witnesses
  */
 
 public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identifier extends RawSerializable>
-    implements EvidenceTransferProtocol<Handle, Identifier>, PeerReviewConstants {
+    implements EvidenceTransferProtocol<Handle, Identifier> {
   static final int MAX_CACHE_ENTRIES = 500;
   static final int MAX_PENDING_MESSAGES = 100;
   static final int MAX_PENDING_QUERIES = 100;

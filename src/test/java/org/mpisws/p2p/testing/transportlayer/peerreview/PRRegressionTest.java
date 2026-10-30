@@ -78,6 +78,7 @@ import org.mpisws.p2p.transport.peerreview.IdentifierExtractor;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewCallback;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
+import org.mpisws.p2p.transport.peerreview.StatusConstants;
 import org.mpisws.p2p.transport.peerreview.WitnessListener;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
@@ -85,7 +86,6 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA1HashProvider;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransportLayerImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.IdStrTranslator;
-import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordLayer;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -100,6 +100,8 @@ import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.tuples.Tuple;
 import rice.selector.TimerTask;
+
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
 
 public class PRRegressionTest {
   public static final byte[] EMPTY_ARRAY = new byte[0];
@@ -632,7 +634,7 @@ public class PRRegressionTest {
   public void finish() {
     for (Entry<HandleImpl, Map<IdImpl, Integer>> foo : recordedStatus.entrySet()) {
       for (Entry<IdImpl, Integer> i : foo.getValue().entrySet()) {
-        if (i.getValue() != StatusChangeListener.STATUS_TRUSTED) {
+        if (i.getValue() != StatusConstants.STATUS_TRUSTED) {
           logger.info("Fail: {} found {} {}", foo.getKey(), i.getKey(), i.getValue());
           fail(foo.getKey()+" found "+i.getKey()+" "+PeerReviewImpl.getStatusString(i.getValue()));
           return;

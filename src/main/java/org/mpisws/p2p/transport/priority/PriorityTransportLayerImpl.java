@@ -63,6 +63,7 @@ import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 import org.mpisws.p2p.transport.identity.MemoryExpiredException;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl.EntityManager.MessageWrapper;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
@@ -75,6 +76,8 @@ import rice.p2p.util.SortedLinkedList;
 import rice.p2p.util.tuples.Tuple;
 import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
+
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
 
 /**
  *
@@ -350,7 +353,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
   public void livenessChanged(Identifier i, int val, Map<String, Object> options) {
-    if (val >= LivenessListener.LIVENESS_DEAD) {
+    if (val >= LivenessTypes.LIVENESS_DEAD) {
       getEntityManager(i).markDead();
     }
   }

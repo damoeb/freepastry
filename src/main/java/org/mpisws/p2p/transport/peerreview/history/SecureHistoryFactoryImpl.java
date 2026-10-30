@@ -39,13 +39,14 @@ package org.mpisws.p2p.transport.peerreview.history;
 import java.io.File;
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 
-public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntryFactory, PeerReviewConstants {
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
+
+public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntryFactory {
   Environment environment;
 
   HashProvider hashProv;

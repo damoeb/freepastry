@@ -135,6 +135,8 @@ import rice.pastry.transport.TransportPastryNodeFactory;
 import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
 
+import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED;
+
 /**
  * Pastry node factory for Socket-linked nodes.
  *

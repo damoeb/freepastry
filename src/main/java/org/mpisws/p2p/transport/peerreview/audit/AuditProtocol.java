@@ -38,13 +38,12 @@ package org.mpisws.p2p.transport.peerreview.audit;
 
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
 import org.mpisws.p2p.transport.peerreview.evidence.AuditResponse;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-public interface AuditProtocol<Handle extends RawSerializable, Identifier> extends PeerReviewConstants {
+public interface AuditProtocol<Handle extends RawSerializable, Identifier> {
   public Evidence statOngoingAudit(Identifier subject, long evidenceSeq);
   public void processAuditResponse(Identifier subject, long timestamp, AuditResponse<Handle> auditResponse) throws IOException;
   public void handleIncomingDatagram(Handle handle, PeerReviewMessage message);
