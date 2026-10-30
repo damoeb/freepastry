@@ -45,4 +45,7 @@ advised of the possibility of such damage.
  * Threading: application upcalls arrive on the selector thread. {@code Endpoint.process()} runs a
  * CPU-intensive task on the processing thread and returns its result on the selector thread.
  */
+@NullMarked
 package rice.p2p.commonapi;
+
+import org.jspecify.annotations.NullMarked;

@@ -41,6 +41,8 @@ package rice.environment.time.simulated;
 
 import java.util.HashSet;
 
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.environment.EnvironmentConfig;
@@ -56,8 +58,8 @@ public class DirectTimeSource implements TimeSource {
   private long time = 0;
   // replaced by setLogManager(); the default lets the clock be used on its own
   private Logger logger = LoggerFactory.getLogger(DirectTimeSource.class);
-  private final String instance;
-  private SelectorManager selectorManager;
+  private final @Nullable String instance;
+  private @Nullable SelectorManager selectorManager;
 
   /**
    * When destroy is called, throw an interrupted exception on all of these.
@@ -68,7 +70,7 @@ public class DirectTimeSource implements TimeSource {
     this(time, null);
   }
 
-  public DirectTimeSource(long time, String instance) {
+  public DirectTimeSource(long time, @Nullable String instance) {
     if (time < 0) {
       this.time = System.currentTimeMillis();
     } else {
@@ -83,6 +85,10 @@ public class DirectTimeSource implements TimeSource {
 
   public void setLogManager(LogManager manager) {
     logger = manager.getLogger(DirectTimeSource.class, instance);
+  }
+
+  private SelectorManager selectorManager() {
+    return Objects.requireNonNull(selectorManager, "call setSelectorManager() first");
   }
 
   public void setSelectorManager(SelectorManager sm) {
@@ -120,9 +126,10 @@ public class DirectTimeSource implements TimeSource {
 
     @Override
     public void run() {
-      synchronized(selectorManager) {
+      SelectorManager sm = selectorManager();
+      synchronized(sm) {
         done = true;
-        selectorManager.notifyAll();
+        sm.notifyAll();
         // no Thread.yield() needed: the selector already yields enough
       }
     }
@@ -135,16 +142,17 @@ public class DirectTimeSource implements TimeSource {
 
   @Override
   public void sleep(long delay) throws InterruptedException {
-    synchronized(selectorManager) { // to prevent an out of order acquisition
+    SelectorManager sm = selectorManager();
+    synchronized(sm) { // to prevent an out of order acquisition
       // we only lock on the selector
       BlockingTimerTask btt = new BlockingTimerTask();
       pendingTimers.add(btt);
       logger.debug("DirectTimeSource.sleep({})", delay);
 
-      selectorManager.getTimer().schedule(btt,delay);
+      sm.getTimer().schedule(btt,delay);
 
       while(!btt.done) {
-        selectorManager.wait();
+        sm.wait();
         if (btt.interrupted) throw new InterruptedException("TimeSource destroyed.");
       }
       pendingTimers.remove(btt);

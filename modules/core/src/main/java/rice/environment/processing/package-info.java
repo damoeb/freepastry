@@ -45,4 +45,7 @@ advised of the possibility of such damage.
  * selector thread, via {@code SelectorManager.invoke()}. The simulator's {@code SimProcessor} runs
  * both kinds of work on the selector thread itself.
  */
+@NullMarked
 package rice.environment.processing;
+
+import org.jspecify.annotations.NullMarked;

@@ -37,8 +37,10 @@ advised of the possibility of such damage.
 
 package rice.p2p.util;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
+import org.jspecify.annotations.Nullable;
 
 /**
  *
@@ -110,7 +112,7 @@ public class ReverseTreeMap<K,V> {
    * @param key The key
    * @return The value
    */
-  public synchronized V get(Object key) {
+  public synchronized @Nullable V get(Object key) {
     return normal.get(key);
   }
 
@@ -132,7 +134,7 @@ public class ReverseTreeMap<K,V> {
     V value = normal.remove(key);
 
     if (value != null) {
-      ConcurrentRingMap<K,V> o = reverse.get(value);
+      ConcurrentRingMap<K,V> o = Objects.requireNonNull(reverse.get(value), "every value has a reverse mapping");
       o.remove(key);
 
       if (o.size() == 0) {
@@ -156,7 +158,7 @@ public class ReverseTreeMap<K,V> {
 
     // remove any old reverse mapping
     if (old != null) {
-      ConcurrentRingMap<K,V> o = reverse.get(old);
+      ConcurrentRingMap<K,V> o = Objects.requireNonNull(reverse.get(old), "every value has a reverse mapping");
       o.remove(key);
 
       if (o.size() == 0) {

@@ -50,10 +50,12 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.Destructable;
 import rice.environment.Environment;
@@ -79,7 +81,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   protected Selector selector;
 
   // a list of the invocations that need to be done in this thread
-  protected List<Runnable> invocations;
+  protected @Nullable List<Runnable> invocations;
 
   // the list of handlers which want to change their key
   protected HashSet<SelectionKey> modifyKeys;
@@ -99,7 +101,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
 
   protected Logger logger;
 
-  private final String instance;
+  private final @Nullable String instance;
 
   // written by destroy() on any thread, read by the selector thread
   protected volatile boolean running = true;
@@ -121,12 +123,11 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Constructor.
    */
-  public SelectorManager(String instance,
-      TimeSource timeSource, LogManager log, RandomSource random) {
+  public SelectorManager(@Nullable String instance,
+      TimeSource timeSource, LogManager log, @Nullable RandomSource random) {
     super(instance == null ? "FreePastry Selector" : "FreePastry Selector -- "
         + instance);
-    this.random = random;
-    if (this.random == null) this.random = new SimpleRandomSource(log);
+    this.random = random != null ? random : new SimpleRandomSource(log);
     this.instance = instance;
     this.logger = log.getLogger(getClass(), instance);
     this.invocations = new ArrayList<Runnable>();
@@ -142,12 +143,12 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     lastTime = timeSource.currentTimeMillis();
   }
 
-  public SelectorManager(String instance,
+  public SelectorManager(@Nullable String instance,
       TimeSource timeSource, LogManager log) {
     this(instance,timeSource,log,new SimpleRandomSource(log));
   }
 
-  protected Environment environment;
+  protected @Nullable Environment environment;
 
   /**
    * Can only be called once.  The rest of the time the argument is rejected.
@@ -302,7 +303,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         } // if select
       } catch (Throwable t) {
         logger.error("ERROR (SelectorManager.run): ", t);
-        environment.getExceptionStrategy().handleException(this, t);
+        getEnvironment().getExceptionStrategy().handleException(this, t);
       }
     } // while(running)
     shutdown();
@@ -322,9 +323,10 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     for (int round = 0; round < MAX_SHUTDOWN_ROUNDS; round++) {
       ArrayList<Runnable> pending;
       synchronized (this) {
-        if (invocations.isEmpty()) break;
-        pending = new ArrayList<Runnable>(invocations);
-        invocations.clear();
+        List<Runnable> current = pendingInvocations();
+        if (current.isEmpty()) break;
+        pending = new ArrayList<Runnable>(current);
+        current.clear();
       }
       for (Runnable r : pending) {
         if (!ran.add(r)) {
@@ -344,7 +346,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     int droppedInvocations;
     int droppedTasks;
     synchronized (this) {
-      droppedInvocations = invocations.size();
+      droppedInvocations = pendingInvocations().size();
       // from now on invoke() drops, and cancel() cancels immediately
       invocations = null;
       droppedTasks = timerQueue.size();
@@ -517,8 +519,9 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     logger.trace("SM.doInvocations()");
     Iterator<Runnable> i;
     synchronized (this) {
-      i = new ArrayList<Runnable>(invocations).iterator();
-      invocations.clear();
+      List<Runnable> current = pendingInvocations();
+      i = new ArrayList<Runnable>(current).iterator();
+      current.clear();
     }
 
     while (i.hasNext()) {
@@ -530,7 +533,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         synchronized(this) {
           int ctr = 0;
           while(i.hasNext()) {
-            invocations.add(ctr,i.next());
+            pendingInvocations().add(ctr,i.next());
             ctr++;
           }
         }
@@ -566,7 +569,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
       time = TIMEOUT;
 
     try {
-      if ((time <= 0) || (invocations.size() > 0) || (modifyKeys.size() > 0))
+      if ((time <= 0) || (pendingInvocations().size() > 0) || (modifyKeys.size() > 0))
         return selector.selectNow();
 
       wakeupTime = timeSource.currentTimeMillis() + time;
@@ -821,7 +824,14 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   public Environment getEnvironment() {
-    return environment;
+    return Objects.requireNonNull(environment, "setEnvironment() was not called");
+  }
+
+  /**
+   * Returns the pending invocations; only valid until {@link #shutdown()} drops them.
+   */
+  protected List<Runnable> pendingInvocations() {
+    return Objects.requireNonNull(invocations, "the selector has shut down");
   }
 
 

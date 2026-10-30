@@ -40,9 +40,10 @@ advised of the possibility of such damage.
 package rice.p2p.commonapi.exception;
 
 import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 
 public class AppSocketException extends IOException {
-  Throwable reason;
+  @Nullable Throwable reason;
 
   public AppSocketException() {}
 
@@ -54,7 +55,7 @@ public class AppSocketException extends IOException {
     super(string);
   }
 
-  public Throwable reason() {
+  public @Nullable Throwable reason() {
     return reason;
   }
 }

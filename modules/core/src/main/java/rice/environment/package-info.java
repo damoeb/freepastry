@@ -46,4 +46,7 @@ advised of the possibility of such damage.
  * {@code Environment.destroy()} stores the parameters and destroys every registered
  * {@code Destructable} on the selector thread.
  */
+@NullMarked
 package rice.environment;
+
+import org.jspecify.annotations.NullMarked;

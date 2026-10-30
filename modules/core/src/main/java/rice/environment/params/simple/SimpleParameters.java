@@ -51,9 +51,11 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.environment.params.ParameterChangeListener;
@@ -98,7 +100,7 @@ public class SimpleParameters implements Parameters {
    *          created if you ever store
    * @throws ParamsNotPresentException if a default file cannot be loaded
    */
-  public SimpleParameters(String[] orderedDefaults, String mutableConfigFileName) {
+  public SimpleParameters(String[] orderedDefaults, @Nullable String mutableConfigFileName) {
     if (mutableConfigFileName != null) {
       this.configFileName = mutableConfigFileName + FILENAME_EXTENSION;
     } else {
@@ -154,7 +156,7 @@ public class SimpleParameters implements Parameters {
     return properties.keys();
   }
 
-  protected InetSocketAddress parseInetSocketAddress(String name)
+  protected @Nullable InetSocketAddress parseInetSocketAddress(String name)
       throws UnknownHostException {
     String host = name.substring(0, name.indexOf(":"));
     String port = name.substring(name.indexOf(":") + 1);
@@ -168,7 +170,7 @@ public class SimpleParameters implements Parameters {
     }
   }
 
-  protected String getProperty(String name) {
+  protected @Nullable String getProperty(String name) {
     String result = properties.getProperty(name);
 
     if (result == null)
@@ -270,19 +272,20 @@ public class SimpleParameters implements Parameters {
   }
 
   @Override
-  public InetSocketAddress getInetSocketAddress(String name)
+  public @Nullable InetSocketAddress getInetSocketAddress(String name)
       throws UnknownHostException {
-    return parseInetSocketAddress(getString(name));
+    return parseInetSocketAddress(requireString(name));
   }
 
   @Override
   @SuppressWarnings("StringSplitter") // dropping trailing empty entries is intended
   public InetSocketAddress[] getInetSocketAddressArray(String name)
       throws UnknownHostException {
-    if (getString(name).length() == 0)
+    String list = requireString(name);
+    if (list.length() == 0)
       return new InetSocketAddress[0];
 
-    String[] addresses = getString(name).split(ARRAY_SPACER);
+    String[] addresses = list.split(ARRAY_SPACER);
     List<InetSocketAddress> result = new ArrayList<InetSocketAddress>();
 
     for (String string : addresses) {
@@ -295,13 +298,17 @@ public class SimpleParameters implements Parameters {
     return (InetSocketAddress[]) result.toArray(new InetSocketAddress[0]);
   }
 
+  private String requireString(String name) {
+    return Objects.requireNonNull(getString(name), () -> "The parameter '" + name + "' is not set");
+  }
+
   @Override
-  public String getString(String name) {
+  public @Nullable String getString(String name) {
     return getProperty(name);
   }
 
   @Override
-  public String[] getStringArray(String name) {
+  public String @Nullable [] getStringArray(String name) {
     String list = getProperty(name);
 
     if (list != null)
@@ -423,7 +430,7 @@ public class SimpleParameters implements Parameters {
     changeListeners.remove(p);
   }
 
-  private void fireChangeEvent(String name, String val) {
+  private void fireChangeEvent(String name, @Nullable String val) {
     for (ParameterChangeListener p : changeListeners) {
       p.parameterChange(name, val);
     }

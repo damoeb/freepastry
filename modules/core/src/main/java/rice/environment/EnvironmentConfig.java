@@ -65,7 +65,8 @@ public record EnvironmentConfig(boolean useSimProcessor, OptionalLong randomSeed
    * @return the seed, or empty if the key is absent or {@code clock} (in any case)
    */
   public static OptionalLong seed(Parameters p, String key) {
-    if (!p.contains(key) || p.getString(key).equalsIgnoreCase("clock")) {
+    String value = p.contains(key) ? p.getString(key) : null;
+    if (value == null || value.equalsIgnoreCase("clock")) {
       return OptionalLong.empty();
     }
     return OptionalLong.of(p.getLong(key));

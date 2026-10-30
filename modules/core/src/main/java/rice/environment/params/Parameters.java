@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Parameters interface for FreePastry
@@ -66,8 +67,8 @@ public interface Parameters {
   public void store() throws IOException;
 
   // getters
-  public String getString(String paramName);
-  public String[] getStringArray(String paramName);
+  public @Nullable String getString(String paramName);
+  public String @Nullable [] getStringArray(String paramName);
   public int getInt(String paramName);
   public double getDouble(String paramName);
   public float getFloat(String paramName);
@@ -85,7 +86,7 @@ public interface Parameters {
    * String format is name:port
    * ex: "computer.school.edu:1984"
    */
-  public InetSocketAddress getInetSocketAddress(String paramName) throws UnknownHostException;
+  public @Nullable InetSocketAddress getInetSocketAddress(String paramName) throws UnknownHostException;
 
   /**
    * String format is comma separated.

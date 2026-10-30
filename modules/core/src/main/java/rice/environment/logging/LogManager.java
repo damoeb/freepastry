@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.environment.logging;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -53,5 +54,5 @@ public interface LogManager {
    * @param instance the instance-name associated with this logger, or null.
    * @return the logger.
    */
-  Logger getLogger(Class<?> clazz, String instance);
+  Logger getLogger(Class<?> clazz, @Nullable String instance);
 }

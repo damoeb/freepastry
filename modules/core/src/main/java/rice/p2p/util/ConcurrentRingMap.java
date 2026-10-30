@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A sorted map backed by a {@link ConcurrentSkipListMap}, for the id sets and metadata indexes that one thread reads
@@ -70,13 +71,13 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
   /** the whole map, shared by all views of it */
   private final ConcurrentNavigableMap<K, Object> backing;
   /** the lowest key in this view (inclusive), or null if unbounded */
-  private final K lo;
+  private final @Nullable K lo;
   /** the key that ends this view (exclusive), or null if unbounded; below lo for a ring range */
-  private final K hi;
+  private final @Nullable K hi;
   /** the part of the backing map that this view iterates first: all of it, or the keys {@code >= lo} of a ring */
   private final ConcurrentNavigableMap<K, Object> first;
   /** for a ring range, the keys {@code < hi}, iterated after first; otherwise null */
-  private final ConcurrentNavigableMap<K, Object> second;
+  private final @Nullable ConcurrentNavigableMap<K, Object> second;
 
   /** Creates an empty map, sorted by the natural order of its keys. */
   public ConcurrentRingMap() {
@@ -91,7 +92,7 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
     putAll(m);
   }
 
-  private ConcurrentRingMap(ConcurrentNavigableMap<K, Object> backing, K lo, K hi) {
+  private ConcurrentRingMap(ConcurrentNavigableMap<K, Object> backing, @Nullable K lo, @Nullable K hi) {
     this.backing = backing;
     this.lo = lo;
     this.hi = hi;
@@ -135,8 +136,10 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
   }
 
   private boolean inRange(Object key) {
-    if (isRing()) return compare(key, lo) >= 0 || compare(key, hi) < 0;
-    return (lo == null || compare(key, lo) >= 0) && (hi == null || compare(key, hi) < 0);
+    K l = lo;
+    K h = hi;
+    if (isRing() && l != null && h != null) return compare(key, l) >= 0 || compare(key, h) < 0;
+    return (l == null || compare(key, l) >= 0) && (h == null || compare(key, h) < 0);
   }
 
   /** Returns the key, moved into the range of this (non-ring) view. */
@@ -146,18 +149,18 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
     return key;
   }
 
-  private static Object mask(Object value) {
+  private static Object mask(@Nullable Object value) {
     return value == null ? Null.VALUE : value;
   }
 
   @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"}) // the stored values are all V or Null.VALUE
-  private static <V> V unmask(Object stored) {
+  private static <V> @Nullable V unmask(@Nullable Object stored) {
     return stored == Null.VALUE ? null : (V) stored;
   }
 
   @Override
   public int size() {
-    return isRing() ? first.size() + second.size() : first.size();
+    return second != null ? first.size() + second.size() : first.size();
   }
 
   @Override
@@ -171,18 +174,18 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
   }
 
   @Override
-  public V get(Object key) {
+  public @Nullable V get(Object key) {
     return inRange(key) ? unmask(backing.get(key)) : null;
   }
 
   @Override
-  public V put(K key, V value) {
+  public @Nullable V put(K key, V value) {
     if (!inRange(key)) throw new IllegalArgumentException("key out of range");
     return unmask(backing.put(key, mask(value)));
   }
 
   @Override
-  public V remove(Object key) {
+  public @Nullable V remove(Object key) {
     return inRange(key) ? unmask(backing.remove(key)) : null;
   }
 
@@ -199,13 +202,13 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
 
   @Override
   public K firstKey() {
-    if (isRing() && !second.isEmpty()) return second.firstKey();
+    if (second != null && !second.isEmpty()) return second.firstKey();
     return first.firstKey();
   }
 
   @Override
   public K lastKey() {
-    if (isRing() && first.isEmpty()) return second.lastKey();
+    if (second != null && first.isEmpty()) return second.lastKey();
     return first.lastKey();
   }
 
@@ -233,7 +236,7 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
     return new ConcurrentRingMap<K, V>(backing, clamp(fromKey), hi);
   }
 
-  private Set<Map.Entry<K, V>> entrySet;
+  private @Nullable Set<Map.Entry<K, V>> entrySet;
 
   @Override
   public Set<Map.Entry<K, V>> entrySet() {
@@ -267,12 +270,12 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
   private class EntryIterator implements Iterator<Map.Entry<K, V>> {
     private Iterator<Map.Entry<K, Object>> current = first.entrySet().iterator();
     private boolean onSecond = second == null;
-    private Map.Entry<K, Object> last;
+    private Map.@Nullable Entry<K, Object> last;
 
     @Override
     public boolean hasNext() {
       if (current.hasNext()) return true;
-      if (onSecond) return false;
+      if (onSecond || second == null) return false;
       onSecond = true;
       current = second.entrySet().iterator();
       return current.hasNext();

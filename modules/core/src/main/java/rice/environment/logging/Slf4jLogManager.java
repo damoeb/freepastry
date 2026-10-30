@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.environment.logging;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,12 +63,12 @@ public class Slf4jLogManager implements LogManager {
   /**
    * @param prefix appended to every logger name, usually a node id; null or empty for none
    */
-  public Slf4jLogManager(String prefix) {
+  public Slf4jLogManager(@Nullable String prefix) {
     this.prefix = (prefix == null) ? "" : prefix;
   }
 
   @Override
-  public Logger getLogger(Class<?> clazz, String instance) {
+  public Logger getLogger(Class<?> clazz, @Nullable String instance) {
     return LoggerFactory.getLogger(loggerName(clazz, instance));
   }
 
@@ -76,7 +77,7 @@ public class Slf4jLogManager implements LogManager {
    * @param instance the instance name, or null or empty for none
    * @return the name {@link #getLogger(Class, String)} uses: {@code class[.instance][.prefix]}
    */
-  public String loggerName(Class<?> clazz, String instance) {
+  public String loggerName(Class<?> clazz, @Nullable String instance) {
     StringBuilder name = new StringBuilder(clazz.getName());
     if (instance != null && !instance.isEmpty()) name.append('.').append(instance);
     if (!prefix.isEmpty()) name.append('.').append(prefix);

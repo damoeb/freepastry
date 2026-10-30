@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.rawserialization.MessageTypeId;
 import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 
@@ -81,7 +82,7 @@ public enum IdType implements MessageTypeId {
    * @param id a type id
    * @return the type with that id, or {@code null} if no type has it
    */
-  public static IdType find(short id) {
+  public static @Nullable IdType find(short id) {
     return INDEX.find(id);
   }
 }

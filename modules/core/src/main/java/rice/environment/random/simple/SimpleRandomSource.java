@@ -43,6 +43,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
@@ -53,23 +54,23 @@ import rice.environment.random.RandomSource;
 public class SimpleRandomSource implements RandomSource {
   Random rnd;
 
-  Logger logger;
+  @Nullable Logger logger;
 
-  String instance;
+  @Nullable String instance;
 
-  public SimpleRandomSource(long seed, LogManager manager, String instance) {
+  public SimpleRandomSource(long seed, @Nullable LogManager manager, @Nullable String instance) {
     init(seed, manager, instance);
   }
 
-  public SimpleRandomSource(long seed, LogManager manager) {
+  public SimpleRandomSource(long seed, @Nullable LogManager manager) {
     this(seed, manager, null);
   }
 
-  public SimpleRandomSource(LogManager manager) {
+  public SimpleRandomSource(@Nullable LogManager manager) {
     this(manager, null);
   }
 
-  public SimpleRandomSource(LogManager manager, String instance) {
+  public SimpleRandomSource(@Nullable LogManager manager, @Nullable String instance) {
       // NOTE: Since we are often starting up a bunch of nodes on planetlab
       // at the same time, we need this randomsource to be seeded by more
       // than just the clock, we will include the IP address
@@ -96,7 +97,7 @@ public class SimpleRandomSource implements RandomSource {
     logger = manager.getLogger(SimpleRandomSource.class, instance);
   }
 
-  private void init(long seed, LogManager manager, String instance) {
+  private void init(long seed, @Nullable LogManager manager, @Nullable String instance) {
     if (manager != null)
       logger = manager.getLogger(SimpleRandomSource.class, instance);
     if (logger != null)

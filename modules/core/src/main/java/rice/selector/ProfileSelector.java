@@ -50,8 +50,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jspecify.annotations.Nullable;
 import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
@@ -67,9 +69,9 @@ public class ProfileSelector extends SelectorManager {
   int HEART_BEAT_INTERVAL = 60000;
   long lastHeartBeat = 0;
 
-  private String lastTaskType = null;
-  private String lastTaskClass = null;
-  private String lastTaskToString = null;
+  private @Nullable String lastTaskType = null;
+  private @Nullable String lastTaskClass = null;
+  private @Nullable String lastTaskToString = null;
   private long lastTaskHash = 0;
 
   int numInvocationsScheduled = 0;
@@ -246,8 +248,9 @@ public class ProfileSelector extends SelectorManager {
   protected void doInvocations() {
     Iterator<Runnable> i;
     synchronized(this) {
-      i = new ArrayList<Runnable>(invocations).iterator();
-      invocations.clear();
+      List<Runnable> current = pendingInvocations();
+      i = new ArrayList<Runnable>(current).iterator();
+      current.clear();
     }
     Runnable run;
     while (i.hasNext()) {
@@ -294,7 +297,7 @@ public class ProfileSelector extends SelectorManager {
    */
   static class Stat {
     int num = 0;
-    String name = null;
+    @Nullable String name = null;
     long totalTime = 0;
     long maxTime = 0;
 

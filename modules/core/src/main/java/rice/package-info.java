@@ -46,4 +46,7 @@ advised of the possibility of such damage.
  * Threading: continuations passed to FreePastry are normally called back on the selector thread;
  * never block inside them.
  */
+@NullMarked
 package rice;
+
+import org.jspecify.annotations.NullMarked;

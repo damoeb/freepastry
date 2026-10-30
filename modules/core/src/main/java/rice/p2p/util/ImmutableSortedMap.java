@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
+import org.jspecify.annotations.Nullable;
 
 /**
  *
@@ -197,7 +198,7 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
    *         <code>null</code> if the map contains no mapping for this key.
    */
   @Override
-  public V get(Object key) {
+  public @Nullable V get(Object key) {
     return map.get(key);
   }
 

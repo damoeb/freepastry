@@ -66,6 +66,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.crypto.DataLengthException;
+import org.jspecify.annotations.Nullable;
 
 /**
  * This class contains a large number of static methods for performing
@@ -315,7 +316,7 @@ public class SecurityUtils {
    * @return The 12-byte initialization vector, followed by the ciphertext and the 16-byte tag
    * @throws SecurityException If the encryption does not happen properly
    */
-  public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length, byte[] associatedData) throws SecurityException {
+  public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length, byte @Nullable [] associatedData) throws SecurityException {
     byte[] iv = generateIVSymmetric();
     try {
       Cipher cipher = Cipher.getInstance(SYMMETRIC_TRANSFORMATION);
@@ -357,7 +358,7 @@ public class SecurityUtils {
    * @throws SecurityException If the data was not encrypted under this key and additional data, or was
    *          changed since
    */
-  public static byte[] decryptSymmetric(byte[] data, byte[] key, byte[] associatedData) throws SecurityException {
+  public static byte[] decryptSymmetric(byte[] data, byte[] key, byte @Nullable [] associatedData) throws SecurityException {
     int ivLength = SYMMETRIC_IV_LENGTH / 8;
     if (data.length < ivLength + SYMMETRIC_TAG_LENGTH / 8) {
       throw new SecurityException("Ciphertext of " + data.length + " bytes is shorter than the initialization vector and tag");

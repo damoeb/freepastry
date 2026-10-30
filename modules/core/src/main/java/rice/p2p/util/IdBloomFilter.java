@@ -40,6 +40,7 @@ package rice.p2p.util;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -76,7 +77,7 @@ public class IdBloomFilter {
    * will construct a new array if there isn't one yet, then it will encode the
    * id into the array.
    */
-  private byte[] array;
+  private byte @Nullable [] array;
 
   /**
    * The parameters to the hash functions for this bloom filter
@@ -107,11 +108,13 @@ public class IdBloomFilter {
    *
    * @param id An id to build the array from
    */
-  protected void checkArray(Id id) {
-    if (array == null)
-      array = id.toByteArray();
+  protected byte[] checkArray(Id id) {
+    byte[] a = array;
+    if (a == null)
+      array = a = id.toByteArray();
     else
-      id.toByteArray(array, 0);
+      id.toByteArray(a, 0);
+    return a;
   }
 
   /**
@@ -120,8 +123,7 @@ public class IdBloomFilter {
    * @param id The id to add
    */
   protected void addId(Id id) {
-    checkArray(id);
-    filter.add(array);
+    filter.add(checkArray(id));
   }
 
   /**
@@ -132,8 +134,7 @@ public class IdBloomFilter {
    * @param id The id to check for
    */
   public boolean check(Id id) {
-    checkArray(id);
-    return filter.check(array);
+    return filter.check(checkArray(id));
   }
 
   /**

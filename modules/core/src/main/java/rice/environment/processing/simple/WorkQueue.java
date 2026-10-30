@@ -42,6 +42,7 @@ package rice.environment.processing.simple;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.environment.processing.WorkRequest;
@@ -59,6 +60,7 @@ public class WorkQueue {
    */
   private static final WorkRequest<Object> STOP = new WorkRequest<Object>() {
     @Override
+    @SuppressWarnings("NullAway") // never run: dequeue() returns null instead
     public Object doWork() {
       return null;
     }
@@ -97,7 +99,7 @@ public class WorkQueue {
    * @return the next request, or null once the queue is destroyed
    */
   @SuppressWarnings("ReferenceEquality") // STOP is a sentinel instance
-  public WorkRequest<?> dequeue() {
+  public @Nullable WorkRequest<?> dequeue() {
     boolean interrupted = false;
     try {
       while (running) {

@@ -62,6 +62,7 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
     this.selectorManager = sm;
   }
 
+  @SuppressWarnings("NullAway.Init") // only for requests that never run, such as WorkQueue's STOP sentinel
   public WorkRequest(){
     /* do nothing */
   }

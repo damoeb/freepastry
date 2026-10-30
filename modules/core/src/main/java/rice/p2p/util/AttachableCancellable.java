@@ -39,6 +39,7 @@ package rice.p2p.util;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.Cancellable;
 
 /**
@@ -53,7 +54,7 @@ public class AttachableCancellable implements Cancellable {
   /**
    * If subCancellable = null, it's been cancelled.
    */
-  Collection<Cancellable> subCancellable = new ArrayList<Cancellable>();
+  @Nullable Collection<Cancellable> subCancellable = new ArrayList<Cancellable>();
 
   // a private lock, so that code holding a reference to this object can't contend for it
   private final Object lock = new Object();

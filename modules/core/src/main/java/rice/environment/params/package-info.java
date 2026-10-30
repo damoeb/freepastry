@@ -40,4 +40,7 @@ advised of the possibility of such damage.
  * {@code .params} file over the defaults ({@code freepastry.params} on the classpath). Components read
  * their parameters at construction time, so most settings must be changed before the node is built.
  */
+@NullMarked
 package rice.environment.params;
+
+import org.jspecify.annotations.NullMarked;

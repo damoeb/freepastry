@@ -121,6 +121,7 @@ public class SimpleProcessor implements Processor {
   /**
    * This is a test to make sure the order is correct.
    */
+  @SuppressWarnings("NullAway") // the demo tasks have no result
   public static void main(String[] args) throws Exception {
     Environment env = new Environment();
     Processor p = env.getProcessor();

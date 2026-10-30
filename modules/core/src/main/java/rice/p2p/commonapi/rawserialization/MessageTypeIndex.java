@@ -39,6 +39,7 @@ package rice.p2p.commonapi.rawserialization;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Maps the wire ids of one {@link MessageTypeId} registry back to its constants. Building the index
@@ -89,7 +90,7 @@ public final class MessageTypeIndex<E extends Enum<E> & MessageTypeId> {
    * @param id a wire id
    * @return the constant with that id, or {@code null} if no constant has it
    */
-  public E find(short id) {
+  public @Nullable E find(short id) {
     return byId.get(id);
   }
 }

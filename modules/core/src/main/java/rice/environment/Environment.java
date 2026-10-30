@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.OptionalLong;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.Destructable;
 import rice.environment.exception.ExceptionStrategy;
@@ -99,7 +100,8 @@ public class Environment implements Destructable {
    * @param strategy the ExceptionStrategy.  Default: rice.environment.exception.simple.SimpleExceptionStrategy
    * @throws IllegalArgumentException if params is null
    */
-  public Environment(SelectorManager sm, Processor proc, RandomSource rs, TimeSource time, LogManager lm, Parameters params, ExceptionStrategy strategy) {
+  @SuppressWarnings("NullAway") // chooseDefaults() replaces every null argument before the fields are used
+  public Environment(@Nullable SelectorManager sm, @Nullable Processor proc, @Nullable RandomSource rs, @Nullable TimeSource time, @Nullable LogManager lm, Parameters params, @Nullable ExceptionStrategy strategy) {
     this.selectorManager = sm;
     this.randomSource = rs;
     this.time = time;
@@ -128,7 +130,7 @@ public class Environment implements Destructable {
    * @param orderedDefaultFiles the parameter files to load from the classpath, in order
    * @param paramFileName the file where parameters are saved
    */
-  public Environment(String[] orderedDefaultFiles, String paramFileName) {
+  public Environment(String[] orderedDefaultFiles, @Nullable String paramFileName) {
     this(null,null,null,null,null,new SimpleParameters(orderedDefaultFiles,paramFileName), null);
   }
 
@@ -143,7 +145,7 @@ public class Environment implements Destructable {
     return directEnvironment(null);
   }
 
-  public static Environment directEnvironment(RandomSource rs) {
+  public static Environment directEnvironment(@Nullable RandomSource rs) {
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
     DirectTimeSource dts = new DirectTimeSource(params);
     LogManager lm = generateDefaultLogManager();
@@ -156,7 +158,7 @@ public class Environment implements Destructable {
     return ret;
   }
 
-  public Environment(String paramFileName) {
+  public Environment(@Nullable String paramFileName) {
     this(defaultParamFileArray,paramFileName);
   }
 
@@ -220,7 +222,7 @@ public class Environment implements Destructable {
     return new Slf4jLogManager();
   }
 
-  public static SelectorManager generateDefaultSelectorManager(TimeSource time, LogManager logging, RandomSource randomSource) {
+  public static SelectorManager generateDefaultSelectorManager(TimeSource time, LogManager logging, @Nullable RandomSource randomSource) {
     return new SelectorManager("Default", time, logging, randomSource);
   }
 

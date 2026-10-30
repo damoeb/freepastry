@@ -39,6 +39,7 @@ advised of the possibility of such damage.
  */
 package rice.selector;
 
+import org.jspecify.annotations.Nullable;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.CancellableTask;
 
@@ -49,7 +50,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
   private long nextExecutionTime;
   protected boolean cancelled = false;
   protected int seq;
-  private SelectorManager selector;
+  private @Nullable SelectorManager selector;
 
   /**
    * If period is positive, task will be rescheduled.

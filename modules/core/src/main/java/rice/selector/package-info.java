@@ -44,4 +44,7 @@ advised of the possibility of such damage.
  * owned by this thread. Code on other threads must hand work to it with
  * {@code SelectorManager.invoke()}; {@code isSelectorThread()} tells whether that is necessary.
  */
+@NullMarked
 package rice.selector;
+
+import org.jspecify.annotations.NullMarked;

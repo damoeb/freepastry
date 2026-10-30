@@ -45,4 +45,7 @@ advised of the possibility of such damage.
  * over them exhaustively. Type 0 is reserved: routing a message of
  * type 0 throws {@link java.lang.IllegalArgumentException}.
  */
+@NullMarked
 package rice.p2p.commonapi.rawserialization;
+
+import org.jspecify.annotations.NullMarked;

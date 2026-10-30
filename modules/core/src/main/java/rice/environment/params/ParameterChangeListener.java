@@ -39,6 +39,8 @@ advised of the possibility of such damage.
  */
 package rice.environment.params;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  *   Listener interface for changes to a parameters object
  *
@@ -46,5 +48,5 @@ package rice.environment.params;
  *
  */
 public interface ParameterChangeListener {
-  public void parameterChange(String paramName, String newVal);
+  public void parameterChange(String paramName, @Nullable String newVal);
 }

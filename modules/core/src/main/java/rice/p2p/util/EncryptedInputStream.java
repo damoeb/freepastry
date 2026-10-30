@@ -41,6 +41,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.PrivateKey;
+import org.jspecify.annotations.Nullable;
 
 /**
 *
@@ -71,7 +72,7 @@ public class EncryptedInputStream extends InputStream {
   private final DataInputStream stream;
 
   // any buffered data from the stream
-  private byte[] buffer;
+  private byte @Nullable [] buffer;
 
   // the amount of buffered data which has been returned
   private int bufferLength;

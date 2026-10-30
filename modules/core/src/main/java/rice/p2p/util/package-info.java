@@ -38,4 +38,7 @@ advised of the possibility of such damage.
  * Utilities shared by the applications: bloom filters, sorted collections, encryption and
  * hashing helpers ({@code SecurityUtils}, and {@code HashUtils} for content hashes and Id material).
  */
+@NullMarked
 package rice.p2p.util;
+
+import org.jspecify.annotations.NullMarked;

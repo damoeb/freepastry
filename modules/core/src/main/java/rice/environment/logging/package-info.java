@@ -43,4 +43,7 @@ advised of the possibility of such damage.
  * in one JVM can be told apart. Levels, format and output are configured in the SLF4J backend that the application
  * puts on the classpath, not in FreePastry's parameters.
  */
+@NullMarked
 package rice.environment.logging;
+
+import org.jspecify.annotations.NullMarked;

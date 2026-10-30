@@ -39,6 +39,7 @@ package rice;
 
 import java.util.concurrent.CountDownLatch;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 
@@ -188,8 +189,8 @@ public interface Continuation<R, E extends Exception> {
    */
   public static class ExternalContinuation<R, E extends Exception> implements Continuation<R, E> {
 
-    private volatile Exception exception;
-    private volatile R result;
+    private volatile @Nullable Exception exception;
+    private volatile @Nullable R result;
     private final CountDownLatch done = new CountDownLatch(1);
 
     @Override
@@ -208,7 +209,7 @@ public interface Continuation<R, E extends Exception> {
       done.countDown();
     }
 
-    public R getResult() {
+    public @Nullable R getResult() {
       if (exception != null) {
         throw new IllegalArgumentException("Exception was thrown in ExternalContinuation, but getResult() called!");
       }
@@ -216,7 +217,7 @@ public interface Continuation<R, E extends Exception> {
       return result;
     }
 
-    public Exception getException() {
+    public @Nullable Exception getException() {
       return exception;
     }
 
