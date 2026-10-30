@@ -63,6 +63,16 @@ public class DirectTimeSourceTest {
   }
 
   @Test
+  public void setTimeWorksWithoutALogManager() {
+    DirectTimeSource ts = new DirectTimeSource(START);
+
+    ts.setTime(START + JOIN_MILLIS);
+    ts.setTime(START);
+
+    assertEquals(START + JOIN_MILLIS, ts.currentTimeMillis(), "the clock must not go back");
+  }
+
+  @Test
   public void negativeStartTimeMeansNow() {
     long before = System.currentTimeMillis();
     DirectTimeSource ts = new DirectTimeSource(-1);

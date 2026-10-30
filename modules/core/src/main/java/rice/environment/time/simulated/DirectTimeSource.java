@@ -42,6 +42,7 @@ package rice.environment.time.simulated;
 import java.util.HashSet;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rice.environment.EnvironmentConfig;
 import rice.environment.logging.LogManager;
 import rice.environment.params.Parameters;
@@ -53,7 +54,8 @@ import rice.selector.TimerTask;
 public class DirectTimeSource implements TimeSource {
 
   private long time = 0;
-  private Logger logger = null;
+  // replaced by setLogManager(); the default lets the clock be used on its own
+  private Logger logger = LoggerFactory.getLogger(DirectTimeSource.class);
   private final String instance;
   private SelectorManager selectorManager;
 
