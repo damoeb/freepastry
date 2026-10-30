@@ -49,7 +49,6 @@ import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
 import rice.p2p.commonapi.Application;
-import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
@@ -120,15 +119,9 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   private final NodeHandle localHandle;
 
   /**
-   * The hashtable of outstanding lost messags keyed by the UID of the SubscribeMessage
+   * the subscriber side: our outstanding subscriptions and our parents
    */
-  private HashMap<Integer, SubscribeLostMessage> subscribeLostMessages;
-
-  /**
-   * the next unique id
-   */
-  private int id;
-  private final Object idLock = new Object();
+  private final SubscriptionManager subscriptions;
 
   Environment environment;
 
@@ -180,12 +173,11 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.endpoint = node.buildEndpoint(this, instance);
     this.contentDeserializer = new JavaScribeContentDeserializer();
     this.endpoint.setDeserializer(new ScribeMessageDeserializer(endpoint, () -> contentDeserializer, instance, logger));
-    this.subscribeLostMessages = new HashMap<Integer, SubscribeLostMessage>();
     this.policy = policy;
     this.maintenancePolicy = maintenancePolicy;
     this.localHandle = endpoint.getLocalNodeHandle();
     this.registry = new TopicRegistry(endpoint, localHandle, this, logger);
-    this.id = Integer.MIN_VALUE;
+    this.subscriptions = new SubscriptionManager(endpoint, localHandle, node, registry, this::getPolicy, maintenancePolicy, this, MESSAGE_TIMEOUT, logger);
 
     endpoint.register();
 
@@ -276,208 +268,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       return set.getHandle(0);
   }
 
-  /**
-   * Internal methods for sending a subscribe message
-   */
-  private void sendSubscribe(Topic topic, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
-    sendSubscribe(Collections.singletonList(topic), client, content, hint);
-  }
-
-  private void sendSubscribe(List<Topic> topics, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
-    // remember that we're subscribing
-    registry.markPending(topics);
-
-    // choose the UID
-    int theId;
-    synchronized(idLock) {
-      id++;
-      if (id == MAINTENANCE_ID) id++;
-      theId = id;
-    }
-
-    // sort the topics
-    if (topics.size() > 1) {
-      Collections.sort(topics);
-    }
-
-    logger.atTrace().log(() -> "sendSubscribe("+topics+","+client+","+content+","+hint+") theId:"+theId);
-    // schedule a LostMessage
-    SubscribeLostMessage slm = new SubscribeLostMessage(localHandle, topics, theId, client);
-    CancellableTask task = endpoint.scheduleMessage(slm, MESSAGE_TIMEOUT);
-    slm.putTask(task);
-    subscribeLostMessages.put(theId, slm);
-
-    if (hint == null) {
-      // break them into groups based on the next hop
-      HashMap<NodeHandle, List<Topic>> manifest = buildManifests(topics);
-
-      for (NodeHandle nextHop : manifest.keySet()) {
-        List<Topic> theTopics = manifest.get(nextHop);
-        SubscribeMessage msg = new SubscribeMessage(localHandle, theTopics, theId, convert(policy.divideContent(theTopics, content)));
-
-        // if I'm the 1st Replica, then route direct (to prevent problem with consistency)  IE, I know he
-        // is the root for this message, even if he doesn't.  Make sure that if it is re-routed,
-        // then the RM actually gets forwarded (in the first hop: NodeHandle is the target; in the second hop: nodeId is the next hop)
-
-        // NOTE: this may have to be further thought through and subdivided
-        NodeHandleSet set = endpoint.replicaSet(msg.getTopic().getId(), 2);
-        if (set.size() > 1 && set.getHandle(1) == localHandle) {
-          endpoint.route(null, msg, nextHop);
-        } else {
-          endpoint.route(msg.getTopic().getId(), msg, nextHop);
-        }
-      }
-    } else {
-      // use the hint
-      SubscribeMessage msg = new SubscribeMessage(localHandle, topics, theId, content);
-
-      // see if hint is my direct neighbor, if so, route only directly, so that he will accept the connection even
-      // though he may still be joining
-      NodeHandleSet set = endpoint.replicaSet(msg.getTopic().getId(), 2);
-      if (set.size() > 1 && set.getHandle(1) == localHandle) {
-        endpoint.route(null, msg, hint);
-      } else {
-        endpoint.route(msg.getTopic().getId(), msg, hint);
-      }
-    }
-  }
-
-  /**
-   * This checks the underlieing overlay for the next hop for each of a
-   * number of topics and groups them accordingly.  Uses the Local NodeHandle
-   * for topics rooted here.
-   *
-   * Maintains the order of the Topics
-   *
-   * @return
-   */
-  private HashMap<NodeHandle, List<Topic>> buildManifests(List<Topic> topics) {
-    HashMap<NodeHandle, List<Topic>> manifest = new HashMap<NodeHandle, List<Topic>>();
-
-    for (Topic topic : topics) {
-      NodeHandleSet handleSet = endpoint.replicaSet(topic.getId(), 1);
-      if (handleSet.size() == 0) {
-        handleSet = endpoint.localLookup(topic.getId(), 1, false);
-      }
-
-      // no next hop = we are the next hop
-      NodeHandle handle = null;
-      if (handleSet.size() > 0) handle = handleSet.getHandle(0);
-
-      if (handle == null) {
-        handle = this.localHandle;
-        if (!isRoot(topic)) {
-          if (logger.isWarnEnabled()) {
-            logger.warn("buildManifests("+topics+") did not receive a next hop for topic "+topic+" but we are not the root of the topic. isRoot = "+isRoot(topic));
-            // print handleSet
-            logger.warn("handle set:"+handleSet);
-            // print leafset
-            logger.warn(node.printRouteState());
-          }
-        }
-      }
-
-      List<Topic> theTopics = manifest.get(handle);
-      if (theTopics == null) {
-        theTopics = new ArrayList<Topic>();
-        manifest.put(handle, theTopics);
-      }
-      theTopics.add(topic);
-    }
-
-    if (logger.isTraceEnabled()) {
-      logger.trace("buildManifest()");
-      for (NodeHandle node : manifest.keySet()) {
-        logger.trace("  "+node+" "+manifest.get(node));
-      }
-    }
-
-    return manifest;
-  }
-
-  /**
-   * Internal method which processes an ack message
-   *
-   * @param message The ackMessage
-   */
-  protected void ackMessageReceived(SubscribeAckMessage message) {
-    logger.trace("ackMessageReceived({})", message);
-    SubscribeLostMessage slm = subscribeLostMessages.get(message.getId());
-    if (slm == null) {
-      logger.debug("ackMessageReceived({}) for unknown id", message);
-    } else {
-      ScribeMultiClient multiClient = slm.getClient();
-      if (multiClient != null) multiClient.subscribeSuccess(message.getTopics());
-      if (slm.topicsAcked(message.getTopics())) {
-        logger.trace("Removing client {} from list of outstanding for ack {}", slm.getClient(), message.getId());
-        subscribeLostMessages.remove(message.getId()).cancel();
-      } else {
-         logger.atTrace().log(() -> {
-           Collection<Topic> topics = slm.getTopics();
-           int numTopics = topics.size();
-           return "Still waiting for SubscribeAck from "+
-               (numTopics == 1 ?
-                   " topic "+topics.iterator().next() +"." :
-                   numTopics+" topics.");
-         });
-      }
-    }
-  }
-
-  /**
-   * Internal method which processes a subscribe failed message
-   *
-   * @param message THe lost message
-   */
-  private void failedMessageReceived(SubscribeFailedMessage message) {
-    SubscribeLostMessage slm = subscribeLostMessages.get(message.getId());
-    if (slm == null) {
-      logger.warn("received unexpected subscribe failed message, ignoring:{}", message);
-      return;
-    }
-    // only remove it if this message covers everything
-    if (slm.topicsAcked(message.getTopics())) {
-      subscribeLostMessages.remove(message.getId()).cancel();
-    }
-
-    ScribeMultiClient client = slm.getClient();
-
-    logger.trace("Telling client {} about FAILURE for outstanding ack {}", client, message.getId());
-
-    if (client != null) {
-      client.subscribeFailed(message.getTopics());
-    } else {
-      maintenancePolicy.subscribeFailed(this, message.getTopics());
-    }
-  }
-
-  /**
-   * Internal method which processes a subscribe lost message
-   *
-   * @param message THe lost message
-   */
-  private void lostMessageReceived(SubscribeLostMessage message) {
-    SubscribeLostMessage slm = subscribeLostMessages.remove(message.getId());
-    ScribeMultiClient client = slm.getClient();
-
-    logger.trace("Telling client {} about LOSS for outstanding ack {}", client, message.getId());
-
-    ArrayList<Topic> failedTopics = new ArrayList<Topic>();
-    for (Topic topic : message.getTopics()) {
-      NodeHandle parent = getParent(topic);
-      if (!isRoot(topic) && (parent == null))
-        failedTopics.add(topic);
-    }
-
-    if (!failedTopics.isEmpty()) {
-      if (client != null) {
-        client.subscribeFailed(failedTopics);
-      } else {
-        maintenancePolicy.subscribeFailed(this, failedTopics);
-      }
-    }
-  }
-
   // ----- SCRIBE METHODS -----
   public boolean containsChild(Topic topic, NodeHandle child) {
     return registry.containsChild(topic, child);
@@ -527,99 +317,17 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   /**
    * This method prevents re-subscription to topics you are already a part of.
    * However it allows subscription if you were the root, but there is now a root.
-   *
-   * @param theTopics
-   * @param client
-   * @param content
-   * @param hint
    */
   protected void doSubscribe(Collection<Topic> theTopics, ScribeMultiClient client, RawScribeContent content, NodeHandle hint) {
-    logger.trace("Subscribing client {} to {}.", client, theTopics);
-
-    List<Topic> toSubscribe = new ArrayList<Topic>();
-    List<Topic> alreadySubscribed = new ArrayList<Topic>();
-
-    synchronized(registry.lock()) {
-      for (Topic topic : theTopics) {
-        TopicManager manager = registry.get(topic);
-
-        // if we don't know about this topic, subscribe
-        // otherwise, we simply add the client to the list
-        if (manager == null) {
-          manager = registry.create(topic);
-          toSubscribe.add(topic);
-        } else {
-          if ((manager.getParent() == null) && (! isRoot(topic))) {
-            toSubscribe.add(topic);
-          } else {
-            // else, no need to subscribe
-            alreadySubscribed.add(topic);
-          }
-        }
-        manager.addClient(client);
-      }
-    }
-
-    // we may need to make this call on the Selector thread for better consistency
-    if (client != null) {
-      if (!alreadySubscribed.isEmpty()) client.subscribeSuccess(alreadySubscribed);
-    }
-
-    if (toSubscribe.isEmpty()) return;
-
-    sendSubscribe(toSubscribe, client, content, hint);
+    subscriptions.doSubscribe(theTopics, client, content, hint);
   }
 
 
   public void unsubscribe(Topic topic, ScribeMultiClient client) {
     unsubscribe(Collections.singletonList(topic), client);
   }
-  /**
-   * This code:
-   * for each Topic:
-   *   1) removes the client from the TopicManager
-   *   2)
-   */
   public void unsubscribe(Collection<Topic> topicsToUnsubscribe, ScribeMultiClient client) {
-    logger.trace("Unsubscribing client {} from topic {}", client, registry);
-    HashMap<NodeHandle, List<Topic>> needToUnsubscribe = new HashMap<NodeHandle, List<Topic>>();
-
-    synchronized(registry.lock()) {
-      for (Topic topic : topicsToUnsubscribe) {
-        TopicManager manager = registry.get(topic);
-
-        if (manager != null) {
-
-          NodeHandle parent = manager.getParent();
-
-          // if this is the last client and there are no children,
-          // then we unsubscribe from the topic
-          if (manager.removeClient(client)) {
-            logger.info("Removing TopicManager for topic: {}", topic);
-
-            registry.remove(topic);
-
-            // After we remove the topicManager we must call updateParents() to remove the parent from the parent dat structure
-            removeFromAllParents(topic, parent);
-
-            if (parent != null) {
-              List<Topic> theTopics = needToUnsubscribe.get(parent);
-              if (theTopics == null) {
-                theTopics = new ArrayList<Topic>();
-                needToUnsubscribe.put(parent, theTopics);
-              }
-              theTopics.add(topic);
-            }
-          }
-        } else {
-          logger.warn("Attempt to unsubscribe client {} from unknown topic {}", client, topic);
-        }
-      }
-    }
-
-    for (NodeHandle parent : needToUnsubscribe.keySet()) {
-      endpoint.route(null, new UnsubscribeMessage(localHandle, needToUnsubscribe.get(parent)), parent);
-    }
+    subscriptions.unsubscribe(topicsToUnsubscribe, client);
   }
 
   /**
@@ -1250,7 +958,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     logger.trace("handleForwardSubscribeMessage() here 5 {}", sMessage);
 
     // handle the multi-subscription
-    HashMap<NodeHandle, List<Topic>> manifest = buildManifests(noManager);
+    HashMap<NodeHandle, List<Topic>> manifest = subscriptions.buildManifests(noManager);
     if (manifest.containsKey(localHandle)) {
       // we are the root, but the policy would let us accept him
       List<Topic> theTopics = manifest.remove(localHandle);
@@ -1298,26 +1006,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       // the root
       if (aMessage.getSource().equals(localHandle)) {
         if (aMessage instanceof SubscribeMessage) {
-          SubscribeMessage sMessage = (SubscribeMessage) message;
-
-          if (sMessage.isEmpty()) return; // we already handled the subscribe message
-
-          SubscribeLostMessage slm = subscribeLostMessages.get(sMessage.getId());
-          if (slm != null) {
-            ScribeMultiClient multiClient = slm.getClient();
-            if (multiClient != null) multiClient.subscribeSuccess(sMessage.getTopics());
-            // I'm not sure what to do here, because we should be the root, but if we aren't?  I suspect it is a bug.
-            if (slm.topicsAcked(sMessage.getTopics())) {
-              logger.trace("Removing client {} from list of outstanding for ack {}", slm.getClient(), sMessage.getId());
-              subscribeLostMessages.remove(sMessage.getId()).cancel();
-            }
-          }
-          for (Topic topic : sMessage.getTopics()) {
-            if (!isRoot(topic)) {
-              logger.warn("Received our own subscribe message {} for topic {} - we are not the root.", aMessage, aMessage.getTopic());
-            }
-          }
-          logger.debug("Received our own subscribe message {} for topic {} - we are the root.", aMessage, aMessage.getTopic());
+          subscriptions.ownSubscribeDelivered((SubscribeMessage) message);
         } else {
           logger.warn("WARNING : Anycast failed at Root for Topic {} was generated by us  msg= {}", aMessage.getTopic(), aMessage);
           logger.info("{}: AnycastMessage ANYCASTFAILEDHOPS {} {}", endpoint.getId(), aMessage.getVisitedSize(), aMessage.getContent());
@@ -1347,72 +1036,15 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
         }
       }
     } else if (message instanceof SubscribeAckMessage) {
-      // store the former parents/topics here so we can send Unsubscribe messages
-      HashMap<NodeHandle, List<Topic>> needToUnsubscribe = new HashMap<NodeHandle, List<Topic>>();
-      SubscribeAckMessage saMessage = (SubscribeAckMessage) message;
-
-      if (! endpoint.isAlive(saMessage.getSource())) {
-        logger.warn("Dropping subscribe ack message from dead node:{} for topics {}", saMessage.getSource(), saMessage.getTopics());
-        return;
-      }
-
-      Iterator<List<Id>> i = saMessage.getPathsToRoot().iterator();
-      for (Topic topic : saMessage.getTopics()) {
-        List<Id> pathToRoot = i.next();
-        TopicManager manager = registry.get(topic);
-
-        logger.debug("Received subscribe ack message from {} for topic {}", saMessage.getSource(), topic);
-
-        ackMessageReceived(saMessage);
-
-        // if we're the root, reject the ack message, except for the hack to implement a centralized solution with self overlays for each node (i.e everyone is a root)
-        if (isRoot(topic)) {
-          logger.debug("Received unexpected subscribe ack message (we are the root) from {} for topic {}", saMessage.getSource(), topic);
-          List<Topic> topics = needToUnsubscribe.get(saMessage.getSource());
-          if (topics == null) topics = new ArrayList<Topic>();
-          topics.add(topic);
-        } else {
-          // if we don't know about this topic, then we unsubscribe
-          // if we already have a parent, then this is either an errorous
-          // subscribe ack, or our path to the root has changed.
-          if (manager == null) {
-            logger.warn("Received unexpected subscribe ack message from {} for unknown topic {}", saMessage.getSource(), topic);
-            List<Topic> topics = needToUnsubscribe.get(saMessage.getSource());
-            if (topics == null) topics = new ArrayList<Topic>();
-            topics.add(topic);
-          } else {
-            if (manager.getParent() == null) {
-              setParent(topic, saMessage.getSource(), pathToRoot);
-            }
-
-            if (!manager.getParent().equals(saMessage.getSource())) {
-              logger.warn("Received somewhat unexpected subscribe ack message (already have parent {}) from {} for topic {} - the new policy is now to accept the message", manager.getParent(), saMessage.getSource(), topic);
-
-
-              NodeHandle parent = manager.getParent();
-              setParent(topic, saMessage.getSource(), pathToRoot);
-
-              List<Topic> topics = needToUnsubscribe.get(parent);
-              if (topics == null) {
-                topics = new ArrayList<Topic>();
-                needToUnsubscribe.put(parent, topics);
-              }
-              topics.add(topic);
-            }
-          }
-        }
-        for(NodeHandle source : needToUnsubscribe.keySet()) {
-          endpoint.route(null, new UnsubscribeMessage(localHandle, needToUnsubscribe.get(source)), source);
-        }
-      }
+      subscriptions.subscribeAckReceived((SubscribeAckMessage) message);
     } else if (message instanceof SubscribeLostMessage) {
       SubscribeLostMessage slMessage = (SubscribeLostMessage) message;
 
-      lostMessageReceived(slMessage);
+      subscriptions.lostMessageReceived(slMessage);
     } else if (message instanceof SubscribeFailedMessage) {
       SubscribeFailedMessage sfMessage = (SubscribeFailedMessage) message;
 
-      failedMessageReceived(sfMessage);
+      subscriptions.failedMessageReceived(sfMessage);
     } else if (message instanceof PublishRequestMessage) {
       PublishRequestMessage prMessage = (PublishRequestMessage) message;
       TopicManager manager = registry.get(prMessage.getTopic());
@@ -1491,7 +1123,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
           setParent(dMessage.getTopic(), null, null);
           Collection<ScribeMultiClient> clients = manager.getClients();
 
-          sendSubscribe(dMessage.getTopic(), null,
+          subscriptions.sendSubscribe(dMessage.getTopic(), null,
               maintenancePolicy.implicitSubscribe(Collections.singletonList(dMessage.getTopic())),
               null);
         } else {
@@ -1513,9 +1145,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   protected RawScribeContent convert(ScribeContent content) {
-    if (content == null) return null;
-    if (content instanceof RawScribeContent) return (RawScribeContent)content;
-    return new JavaSerializedScribeContent(content);
+    return SubscriptionManager.convert(content);
   }
 
   /**
