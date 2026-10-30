@@ -50,7 +50,9 @@ import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.simple.SimpleTimeSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ProfileSelector} without starting its selector thread; the selector loop methods are called directly.
@@ -98,5 +100,16 @@ public class ProfileSelectorTest {
     selector.doInvocations();
 
     assertEquals(1, modified[0], "a key must be modified once per modifyKey() call, not on every loop");
+  }
+
+  @Test
+  public void watchdogIsADaemonThatStopsOnDestroy() throws InterruptedException {
+    selector = new ProfileSelector("test", new SimpleTimeSource(), logManager, null, Integer.MAX_VALUE);
+    assertTrue(selector.watchdog.isDaemon(), "the watchdog must not keep the JVM alive");
+
+    selector.destroy();
+    selector.watchdog.join(10000);
+
+    assertFalse(selector.watchdog.isAlive(), "destroy() must stop the watchdog");
   }
 }

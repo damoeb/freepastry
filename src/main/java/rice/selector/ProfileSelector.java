@@ -86,21 +86,38 @@ public class ProfileSelector extends SelectorManager {
   }
 
   /**
-   * Also starts a watchdog thread that prints the last task every lastTaskTime millis.
+   * The daemon thread that logs the last task every lastTaskTime millis, until this selector is destroyed.
+   */
+  final Thread watchdog;
+
+  /**
+   * Also starts a daemon watchdog thread that logs the last task every lastTaskTime millis, until
+   * {@link #destroy()} is called or the watchdog is interrupted.
    */
   public ProfileSelector(String instance, TimeSource timeSource, LogManager log, RandomSource rand, final int lastTaskTime) {
     super(instance, timeSource, log, (rand == null)?new SimpleRandomSource(log):rand);
-    new Thread(() -> {
-      while(true) {
-        System.out.println("LastTask: type:"+lastTaskType+" class:"+lastTaskClass+" toString():"+lastTaskToString+" hash:"+lastTaskHash);
-        try {
-          Thread.sleep(lastTaskTime);
-        } catch (InterruptedException ignored) {
-          // this watchdog runs until the JVM exits, so just keep printing
-        }
-      }
-    }, "ProfileSelectorWatchdog").start();
+    watchdog = Thread.ofPlatform()
+        .name(instance == null ? "FreePastry Selector Watchdog" : "FreePastry Selector Watchdog -- " + instance)
+        .daemon(true)
+        .start(() -> {
+          while (running) {
+            logger.info("LastTask: type:{} class:{} toString():{} hash:{}", lastTaskType, lastTaskClass, lastTaskToString, lastTaskHash);
+            try {
+              Thread.sleep(lastTaskTime);
+            } catch (InterruptedException ie) {
+              return; // destroy() interrupts the watchdog to stop it
+            }
+          }
+        });
+  }
 
+  /**
+   * Also stops the watchdog thread.
+   */
+  @Override
+  public void destroy() {
+    super.destroy();
+    watchdog.interrupt();
   }
 
   protected void onLoop() {
