@@ -126,6 +126,11 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   private final ChildManager children;
 
+  /**
+   * walks anycasts through the trees
+   */
+  private final AnycastHandler anycasts;
+
   Environment environment;
 
   Logger logger;
@@ -182,6 +187,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.registry = new TopicRegistry(endpoint, localHandle, this, logger);
     this.subscriptions = new SubscriptionManager(endpoint, localHandle, node, registry, this::getPolicy, maintenancePolicy, this, MESSAGE_TIMEOUT, logger);
     this.children = new ChildManager(endpoint, localHandle, registry, this::getPolicy, maintenancePolicy, this, subscriptions, logger);
+    this.anycasts = new AnycastHandler(endpoint, localHandle, registry, this::getPolicy, logger);
 
     endpoint.register();
 
@@ -373,22 +379,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   public void anycast(Topic topic, RawScribeContent content, NodeHandle hint) {
-    logger.trace("Anycasting content {} to topic {} with hint {}", content, topic, hint);
-
-    AnycastMessage aMsg = new AnycastMessage(localHandle, topic, content);
-
-    policy.directAnycast(aMsg, getParent(topic), getChildrenOfTopic(topic));
-
-    if (hint == null || localHandle.equals(hint)) {
-      // There is a bug in Freepastry where if a message is routed with a hint
-      // equal to itself then even if the node is not the destimation for the id
-      // field, the deliver() method will be called
-
-      endpoint.route(topic.getId(), aMsg, null);
-    } else {
-
-      endpoint.route(topic.getId(), aMsg, hint);
-    }
+    anycasts.anycast(topic, content, hint);
   }
 
   /**
@@ -451,8 +442,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
   protected void recvAnycastFail(Topic topic, NodeHandle failedAtNode,
       ScribeContent content) {
-    logger.debug("received anycast failure message from {} for topic {}", failedAtNode, topic);
-    policy.recvAnycastFail(topic, failedAtNode, content);
+    anycasts.recvAnycastFail(topic, failedAtNode, content);
   }
 
   /**
@@ -537,100 +527,12 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       if (aMessage.getTopic() == null) {
         throw new RuntimeException("topic is null!");
       }
-      TopicManager manager = registry.get(aMessage.getTopic());
-
       // if it's a subscribe message, we must handle it differently
       if (internalMessage instanceof SubscribeMessage) {
         SubscribeMessage sMessage = (SubscribeMessage) internalMessage;
         return handleForwardSubscribeMessage(sMessage);
-      } else {
-        // Note that since forward() is called also on the outgoing path, it
-        // could be that the last visited node of the anycast message is itself,
-        // then in that case we return true
-        logger.trace("DEBUG: Anycast message.forward(1)");
-        // There is a special case in the modified exhaustive anycast traversal
-        // algorithm where the traversal ends at the node which happens to be
-        // the best choice in the bag of prospectiveresponders. In this scenario
-        // the local node's anycast() method will be visited again
-
-        if (endpoint.getLocalNodeHandle().equals(aMessage.getLastVisited())
-            && !endpoint.getLocalNodeHandle().equals(
-                aMessage.getInitialRequestor())) {
-          if (logger.isTraceEnabled()) {
-            logger.trace("Bypassing forward logic of anycast message becuase local node is the last visited node "
-                    + aMessage.getLastVisited() + " of in the anycast message ");
-            if (isRoot(aMessage.getTopic())) {
-                logger.trace("Local node is the root of anycast group "
-                    + aMessage.getTopic());
-            }
-          }
-          return true;
-        }
-
-        // if we are not associated with this topic at all, let the
-        // anycast continue
-        if (manager == null) {
-          logger.trace("Manager of anycast group is null");
-          return true;
-        }
-
-        Collection<ScribeMultiClient> clients = manager.getClients();
-
-        // see if one of our clients will accept the anycast
-        for (ScribeMultiClient client : clients) {
-          if (client.anycast(aMessage.getTopic(), aMessage.getContent())) {
-            logger.trace("Accepting anycast message from {} for topic {}", aMessage.getSource(), aMessage.getTopic());
-
-            return false;
-          }
-        }
-
-        // if we are the orginator for this anycast and it already has a destination,
-        // we let it go ahead
-        if (aMessage.getSource().getId().equals(endpoint.getId()) &&
-            (message.getNextHopHandle() != null) &&
-            (!localHandle.equals(message.getNextHopHandle()))) {
-          logger.trace("DEBUG: Anycast message.forward(2), before returning true");
-          return true;
-        }
-
-        logger.trace("Rejecting anycast message from {} for topic {}", aMessage.getSource(), aMessage.getTopic());
       }
-
-      // add the local node to the visited list
-      aMessage.addVisited(endpoint.getLocalNodeHandle());
-
-      // allow the policy to select the order in which the nodes are visited
-      policy.directAnycast(aMessage, manager.getParent(), manager.getChildren());
-
-      // reset the source of the message to be us
-      aMessage.setSource(endpoint.getLocalNodeHandle());
-
-      // get the next hop
-      NodeHandle handle = aMessage.getNext();
-
-      // make sure that the next node is alive
-      while ((handle != null) && (!endpoint.isAlive(handle))) {
-        handle = aMessage.getNext();
-      }
-
-      logger.trace("Forwarding anycast message for topic {}on to {}", aMessage.getTopic(), handle);
-
-      if (handle == null) {
-        logger.debug("Anycast {} failed.", aMessage);
-
-          logger.info("Anycast failed at this intermediate node:{}\nAnycastMessage ANYCASTFAILEDHOPS {} {}", aMessage, aMessage.getVisitedSize(), aMessage.getContent());
-          // We will send an anycast failure message
-          // TODO: use a faster constructor when the content is raw-serialized
-          AnycastFailureMessage aFailMsg = new AnycastFailureMessage(endpoint.getLocalNodeHandle(), aMessage.getTopic(), aMessage.getContent());
-          endpoint.route(null, aFailMsg, aMessage.getInitialRequestor());
-      } else {
-
-        logger.trace("forward() routing {} to {}", aMessage, handle);
-        endpoint.route(null, aMessage, handle);
-      }
-
-      return false;
+      return anycasts.forward(message, aMessage);
     }
 
     return true;
@@ -663,13 +565,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
         if (aMessage instanceof SubscribeMessage) {
           subscriptions.ownSubscribeDelivered((SubscribeMessage) message);
         } else {
-          logger.warn("WARNING : Anycast failed at Root for Topic {} was generated by us  msg= {}", aMessage.getTopic(), aMessage);
-          logger.info("{}: AnycastMessage ANYCASTFAILEDHOPS {} {}", endpoint.getId(), aMessage.getVisitedSize(), aMessage.getContent());
-
-          // We send a anycast failure message
-          // TODO: use a faster constructor when the content is raw-serialized
-          AnycastFailureMessage aFailMsg = new AnycastFailureMessage(endpoint.getLocalNodeHandle(), aMessage.getTopic(), aMessage.getContent());
-          endpoint.route(null, aFailMsg, aMessage.getInitialRequestor());
+          anycasts.failedAtRoot(aMessage, true);
         }
       } else {
         // here, we have had a subscribe message delivered, which means that we are the root, but
@@ -677,12 +573,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
         if (aMessage instanceof SubscribeMessage) {
           children.subscribeDeliveredAtRoot((SubscribeMessage) aMessage);
         } else {
-          logger.warn("WARNING : Anycast failed at Root for Topic {} not generated by us  msg= {}", aMessage.getTopic(), aMessage);
-          logger.info("{}: AnycastMessage ANYCASTFAILEDHOPS {} {}", endpoint.getId(), aMessage.getVisitedSize(), aMessage.getContent());
-
-          // We send an anycast failure message
-          AnycastFailureMessage aFailMsg = new AnycastFailureMessage(endpoint.getLocalNodeHandle(), aMessage.getTopic(), aMessage.getContent());
-          endpoint.route(null, aFailMsg, aMessage.getInitialRequestor());
+          anycasts.failedAtRoot(aMessage, false);
         }
       }
     } else if (message instanceof SubscribeAckMessage) {
