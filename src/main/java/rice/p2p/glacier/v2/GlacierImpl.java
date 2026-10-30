@@ -50,7 +50,6 @@ import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
-import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
@@ -99,6 +98,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final GlacierMaintenance maintenance;
   private final GlacierNeighborProtocol neighborProtocol;
   private final GlacierSyncProtocol syncProtocol;
   private final GlacierHandoffProtocol handoffProtocol;
@@ -202,6 +202,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.syncProtocol = new GlacierSyncProtocol(config, numFragments, policy, endpoint, scheduler, router, locator, neighborhood, trafficShaper, fragmentStorage, factory, environment, logger);
     this.handoffProtocol = new GlacierHandoffProtocol(config, instance, policy, router, locator, neighborhood, trash, fragmentStorage, environment, logger);
     this.neighborProtocol = new GlacierNeighborProtocol(config, endpoint, router, neighborhood, neighborStorage, factory, environment, logger);
+    this.maintenance = new GlacierMaintenance(config, numFragments, locator, neighborhood, trash, retriever, fragmentStorage, environment, logger);
     neighborhood.determineResponsibleRange();
     endpoint.register();
   }
@@ -222,207 +223,11 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     /* Garbage collection */
 
-    scheduler.addContinuation(new GlacierContinuation() {
-      long nextTimeout;
-
-      public String toString() {
-        return "Garbage collector";
-      }
-      public void init() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.garbageCollectionInterval();
-      }
-      public void receiveResult(Object o) {
-        logger.warn("GC received object: {}", o);
-      }
-      public void receiveException(Exception e) {
-        logger.warn("GC received exception: ", e);
-      }
-      public long getTimeout() {
-        return nextTimeout;
-      }
-      public void timeoutExpired() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.garbageCollectionInterval();
-
-        final long now = environment.getTimeSource().currentTimeMillis();
-        IdSet fragments = fragmentStorage.scan();
-        int doneSoFar = 0, candidates = 0;
-
-        logger.atInfo().log(() -> "Garbage collection started at "+now+", scanning "+fragments.numElements()+" fragment(s)...");
-        Iterator<Id> iter = fragments.getIterator();
-        while (iter.hasNext()) {
-          final Id thisKey = (Id) iter.next();
-          final FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
-          if (metadata != null) {
-            if (metadata.getCurrentExpiration() < now) {
-              candidates ++;
-              if (doneSoFar < config.garbageCollectionMaxFragmentsPerRun()) {
-                doneSoFar ++;
-                trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
-                  public void receiveResult(Object o) {
-                    logger.atInfo().log(() -> "GC collected "+thisKey.toStringFull()+", expired "+(now-metadata.getCurrentExpiration())+" msec ago");
-                  }
-                  public void receiveException(Exception e) {
-                    logger.atDebug().log(() -> "GC cannot collect "+thisKey.toStringFull());
-                  }
-                });
-              }
-            }
-          } else {
-            logger.atWarn().log(() -> "GC cannot read metadata in object "+thisKey.toStringFull()+", storage returned null");
-          }
-        }
-
-        logger.atInfo().log(() -> "Garbage collection completed at "+environment.getTimeSource().currentTimeMillis());
-        logger.info("Found {} candidate(s), collected {}", candidates, doneSoFar);
-      }
-    });
+    scheduler.addContinuation(maintenance.newGarbageCollectionTask());
 
     /* Local scan */
 
-    scheduler.addContinuation(new GlacierContinuation() {
-      long nextTimeout;
-
-      public String toString() {
-        return "Local scan";
-      }
-      public void init() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.localScanInterval();
-      }
-      public void receiveResult(Object o) {
-        logger.warn("Local scan received object: {}", o);
-      }
-      public void receiveException(Exception e) {
-        logger.warn("Local scan received exception: ", e);
-      }
-      public long getTimeout() {
-        return nextTimeout;
-      }
-      public void timeoutExpired() {
-        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.jitterTerm(config.localScanInterval(), environment.getRandomSource());
-
-        final IdSet fragments = fragmentStorage.scan();
-        final long now = environment.getTimeSource().currentTimeMillis();
-        java.util.TreeSet<VersionKey> queries = new java.util.TreeSet<VersionKey>();
-
-        logger.atInfo().log(() -> "Performing local scan over "+fragments.numElements()+" fragment(s)...");
-        Iterator<? extends Id> iter = fragments.getIterator();
-        while (iter.hasNext()) {
-          final FragmentKey thisKey = (FragmentKey) iter.next();
-          FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
-          if ((metadata != null) && (metadata.getCurrentExpiration() >= now)) {
-            final Id thisObjectKey = thisKey.getVersionKey().getId();
-            final long thisVersion = thisKey.getVersionKey().getVersion();
-            final int thisFragmentID = thisKey.getFragmentID();
-            final int fidLeft = (thisFragmentID + numFragments - 1) % numFragments;
-            final int fidRight = (thisFragmentID + 1) % numFragments;
-
-            if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisObjectKey, fidLeft, thisVersion))) {
-              if (!fragments.isMemberId(thisKey.getPeerKey(fidLeft))) {
-                logger.trace("Missing: {} L={}", thisKey, fidLeft);
-                queries.add(thisKey.getVersionKey());
-              }
-            }
-
-            if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisObjectKey, fidRight, thisVersion))) {
-              if (!fragments.isMemberId(thisKey.getPeerKey(fidRight))) {
-                logger.trace("Missing: {} R={}", thisKey, fidRight);
-                queries.add(thisKey.getVersionKey());
-              }
-            }
-          } else {
-            logger.trace("Expired, ignoring in local scan: {}", thisKey);
-          }
-        }
-
-        if (!queries.isEmpty()) {
-          logger.info("Local scan completed; {} objects incomplete in local store", queries.size());
-          iter = queries.iterator();
-          int queriesSent = 0;
-
-          while (iter.hasNext() && (queriesSent < config.localScanMaxFragmentsPerRun())) {
-            final VersionKey thisVKey = (VersionKey) iter.next();
-
-            int localFragmentID = 0;
-            int queriesHere = 0;
-            for (int i=0; i<numFragments; i++) {
-              FragmentKey keyHere = new FragmentKey(thisVKey, i);
-              if (fragments.isMemberId(keyHere)) {
-                localFragmentID = i;
-                break;
-              } else if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(keyHere))) {
-                queriesHere ++;
-              }
-            }
-
-            logger.debug("Local scan: Fetching manifest for {} ({} pending queries)", thisVKey, queriesHere);
-            queriesSent += queriesHere;
-
-            fragmentStorage.getObject(new FragmentKey(thisVKey, localFragmentID), new Continuation<Object, Exception>() {
-              public void receiveResult(Object o) {
-                if (o instanceof FragmentAndManifest) {
-                  final Manifest thisManifest = ((FragmentAndManifest)o).getManifest();
-
-                  for (int i=0; i<numFragments; i++) {
-                    final FragmentKey thisKey = new FragmentKey(thisVKey, i);
-                    if (neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey))) {
-                      if (!fragments.isMemberId(thisKey)) {
-                        logger.debug("Local scan: Sending query for {}", thisKey);
-                        final long tStart = environment.getTimeSource().currentTimeMillis();
-                        retriever.rateLimitedRetrieveFragment(thisKey, thisManifest, GlacierTags.LOCAL_SCAN, new GlacierContinuation() {
-                          public String toString() {
-                            return "Local scan: Fetch fragment: "+thisKey;
-                          }
-                          public void receiveResult(Object o) {
-                            if (o instanceof Fragment) {
-                              logger.info("Local scan: Received fragment {} (from primary) matches existing manifest, storing...", thisKey);
-
-                              FragmentAndManifest fam = new FragmentAndManifest((Fragment) o, thisManifest);
-
-                              fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
-                                new Continuation<Object, Exception>() {
-                                  public void receiveResult(Object o) {
-                                    logger.debug("Local scan: Recovered fragment stored OK");
-                                  }
-                                  public void receiveException(Exception e) {
-                                    logger.warn("Local scan: receiveException({}) while storing a fragment with existing manifest (key={})", e, thisKey);
-                                  }
-                                }
-                              );
-                            } else {
-                              logger.warn("Local scan: FS received something other than a fragment: {}", o);
-                            }
-                          }
-                          public void receiveException(Exception e) {
-                            logger.warn("Local scan: Exception while recovering synced fragment {}: ", thisKey, e);
-                            terminate();
-                          }
-                          public void timeoutExpired() {
-                            logger.warn("Local scan: Timeout while fetching synced fragment {} -- aborted", thisKey);
-                            terminate();
-                          }
-                          public long getTimeout() {
-                            return tStart + config.overallRestoreTimeout();
-                          }
-                        });
-                      }
-                    }
-                  }
-                } else {
-                  logger.warn("Local scan: Cannot retrieve {} from local store, received o={}", thisVKey, o);
-                }
-              }
-              public void receiveException(Exception e) {
-                logger.warn("Local scan: Cannot retrieve {} from local store, exception e=", thisVKey, e);
-              }
-            });
-          }
-
-          logger.info("{} queries sent after local scan", queriesSent);
-        } else {
-          logger.info("Local scan completed; no missing fragments");
-        }
-      }
-    });
+    scheduler.addContinuation(maintenance.newLocalScanTask());
 
     /* Traffic shaper */
 
