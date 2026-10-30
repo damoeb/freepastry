@@ -104,13 +104,13 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   private final char tiStatistics = 4;
   private final char tiExpire = 5;
   private final Hashtable<Integer, CancellableTask> timers;
-  private Continuation<? super Boolean, Exception> flushWait;
   private boolean rebuildInProgress;
   private final Vector<Id> monitorIDs;
   private AggregationStatistics stats;
 
   private final AggregationConfig config;
   private final AggregateStorer storer;
+  private final AggregateFlusher flusher;
 
   private Environment environment;
   private final Logger logger;
@@ -180,7 +180,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
 
     this.factory = factory;
-    this.flushWait = null;
+    this.flusher = new AggregateFlusher(waitingList, aggregateList, this.aggregateFactory, storer, config, logger);
     this.rebuildInProgress = false;
     this.monitorIDs = new Vector<Id>();
 
@@ -743,184 +743,6 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     }
   }
 
-  private void flushComplete(Object o) {
-    if (flushWait != null) {
-      Continuation<? super Boolean, Exception> c = flushWait;
-      flushWait = null;
-      if (o instanceof Exception)
-        c.receiveException((Exception) o);
-      else
-        c.receiveResult((Boolean) o);
-    }
-  }
-
-  private void formAggregates(final Continuation<? super Boolean, Exception> command) {
-    if (flushWait != null) {
-      logger.info("Flush in progress... daisy-chaining continuation");
-      final Continuation<? super Boolean, Exception> parent = flushWait;
-      flushWait = new Continuation<Boolean, Exception>() {
-        public void receiveResult(Boolean o) {
-          logger.info("Daisy-chain receiveResult(), restarting {}", command);
-          parent.receiveResult(o);
-          formAggregates(command);
-        }
-        public void receiveException(Exception e) {
-          logger.info("Daisy-chain receiveException(), restarting {}", command);
-          parent.receiveException(e);
-          formAggregates(command);
-        }
-      };
-      return;
-    }
-
-    flushWait = command;
-
-    IdSet waitingKeys = waitingList.scan();
-    if (waitingKeys.numElements() == 0) {
-      logger.info("NO BINS TO PACK");
-      flushComplete(Boolean.valueOf(true));
-      return;
-    }
-
-    logger.info("BIN PACKING STARTED");
-
-    List<ObjectDescriptor> currentAggregate = new ArrayList<ObjectDescriptor>();
-    List<ObjectDescriptor[]> aggregates = new ArrayList<ObjectDescriptor[]>();
-    List<Id> deletionVector = new ArrayList<Id>();
-    Iterator<Id> iter = waitingKeys.getIterator();
-    long currentAggregateSize = 0;
-    int currentObjectsInAggregate = 0;
-
-    while (true) {
-      ObjectDescriptor thisObject = null;
-      boolean mustAddObject = false;
-
-      if (aggregates.size() >= config.getMaxAggregatesPerRun())
-        break;
-
-      while (iter.hasNext()) {
-        Id thisId = (Id) iter.next();
-        thisObject = (ObjectDescriptor) waitingList.getMetadata(thisId);
-        if (thisObject != null) {
-          thisObject = new ObjectDescriptor(
-            thisObject.getKey(), thisObject.getVersion(), thisObject.getCurrentLifetime(),
-            thisObject.getRefreshedLifetime(), thisObject.getSize()
-          );
-          if ((((currentAggregateSize + thisObject.getSize()) <= config.getMaxAggregateSize()) || currentAggregate.isEmpty()) && (currentObjectsInAggregate < config.getMaxObjectsInAggregate())) {
-            currentAggregateSize += thisObject.getSize();
-            currentObjectsInAggregate ++;
-            currentAggregate.add(thisObject);
-          } else {
-            mustAddObject = true;
-            break;
-          }
-        } else {
-          logger.atWarn().log(() -> "Metadata in waiting object "+thisId.toStringFull()+" appears to be damaged. Scheduling for deletion...");
-          deletionVector.add(thisId);
-        }
-      }
-
-      int numObjectsInAggregate = currentAggregate.size();
-      if (numObjectsInAggregate < 1) {
-        logger.warn("Waiting list seems to consist entirely of damaged objects -- please remove!");
-        flushComplete(Boolean.valueOf(true));
-        return;
-      }
-
-      ObjectDescriptor[] desc = new ObjectDescriptor[numObjectsInAggregate];
-      for (int i=0; i<numObjectsInAggregate; i++) {
-        desc[i] = currentAggregate.get(i);
-        logger.debug("#{}: {} {} bytes", i, desc[i].getKey(), desc[i].getSize());
-      }
-
-      aggregates.add(desc);
-      currentAggregate.clear();
-      currentObjectsInAggregate = 0;
-      currentAggregateSize = 0;
-
-      if (mustAddObject) {
-        currentAggregate.add(thisObject);
-        currentAggregateSize += thisObject.getSize();
-      } else {
-        if (!iter.hasNext())
-          break;
-      }
-    }
-
-    for (final Id thisId : deletionVector) {
-      logger.atInfo().log(() -> "Deleting object "+thisId.toStringFull()+" from waiting list (broken metadata)");
-      waitingList.unstore(thisId, new Continuation<Boolean, Exception>() {
-        public void receiveResult(Boolean o) {
-          logger.debug("Successfully deleted: {}", thisId);
-        }
-        public void receiveException(Exception e) {
-          logger.warn("Cannot delete: {}, e=", thisId, e);
-        }
-      });
-    }
-
-    Continuation.MultiContinuation<Object[]> c = new Continuation.MultiContinuation<Object[]>(new Continuation<Object[], Exception>() {
-      public void receiveResult(Object[] o) {
-        flushComplete(Boolean.valueOf(true));
-      }
-      public void receiveException(Exception e) {
-        flushComplete(e);
-      }
-    }, aggregates.size());
-
-    for (int i=0; i<aggregates.size(); i++) {
-      final ObjectDescriptor[] desc = aggregates.get(i);
-      final GCPastContent[] obj = new GCPastContent[desc.length];
-      final long aggrExpirationF = AggregateStorer.chooseAggregateLifetime(desc);
-      final Continuation<Object, Exception> thisContinuation = c.getSubContinuation(i);
-      final int iF = i;
-
-      logger.debug("Retrieving #{}.0: {}", i, desc[0].getKey());
-      waitingList.getObject(new VersionKey(desc[0].getKey(), desc[0].getVersion()), new Continuation<Serializable, Exception>() {
-        int currentQuery = 0;
-        public void receiveResult(Serializable o) {
-          if ((o!=null) && (o instanceof GCPastContent)) {
-            obj[currentQuery++] = (GCPastContent) o;
-            if (currentQuery < desc.length) {
-              logger.debug("Retrieving #{}.{}: {}", iF, currentQuery, desc[currentQuery].getKey());
-              waitingList.getObject(new VersionKey(desc[currentQuery].getKey(), desc[currentQuery].getVersion()), this);
-            } else {
-              Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), null);
-              storer.storeAggregate(aggregateFactory.buildAggregate(obj, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
-                public void receiveResult(Boolean o) {
-                  final Continuation.MultiContinuation<Object[]> c2 = new Continuation.MultiContinuation<Object[]>(thisContinuation, desc.length);
-                  for (int i=0; i<desc.length; i++) {
-                    final Continuation<Object, Exception> c2s = c2.getSubContinuation(i);
-                    waitingList.unstore(new VersionKey(desc[i].getKey(), desc[i].getVersion()), new Continuation<Boolean, Exception>() {
-                      public void receiveResult(Boolean o) {
-                        c2s.receiveResult(o);
-                      }
-                      public void receiveException(Exception e) {
-                        logger.warn("Exception while unstoring aggregate component: ", e);
-                        c2s.receiveException(e);
-                      }
-                    });
-                  }
-                }
-                public void receiveException(Exception e) {
-                  logger.warn("Exception while storing new aggregate: ", e);
-                  thisContinuation.receiveException(e);
-                }
-              });
-            }
-          } else {
-            logger.warn("Aggregation cannot retrieve {} (found o={})", desc[currentQuery].getKey(), o);
-            thisContinuation.receiveException(new AggregationException("Cannot retrieve object from waiting list: "+desc[currentQuery].getKey()));
-          }
-        }
-        public void receiveException(Exception e) {
-          logger.atWarn().log(() -> "Exception while building aggregate: "+e);
-          thisContinuation.receiveException(e);
-        }
-      });
-    }
-  }
-
   private void refreshAggregates() {
     Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
     long now = environment.getTimeSource().currentTimeMillis();
@@ -1200,7 +1022,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
       {
         logger.info("Scheduled flush, waiting list: {}", waitingList.getSize());
 
-        formAggregates(new Continuation<Boolean, Exception>() {
+        flusher.formAggregates(new Continuation<Boolean, Exception>() {
           public void receiveResult(Boolean o) {
             logger.debug("Scheduled flush: Success (o={})", o);
           }
@@ -2094,27 +1916,11 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   }
 
   public void flush(Id id, Continuation<? super Boolean, Exception> command) {
-    Iterator<Id> iter = waitingList.scan().getIterator();
-    boolean objectIsWaiting = false;
-
-    logger.info("flush({}) invoked", id);
-
-    while (iter.hasNext()) {
-      VersionKey thisKey = (VersionKey) iter.next();
-      if (thisKey.getId().equals(id)) {
-        objectIsWaiting = true;
-        break;
-      }
-    }
-
-    if (objectIsWaiting)
-      formAggregates(command);
-    else
-      command.receiveResult(Boolean.valueOf(true));
+    flusher.flush(id, command);
   }
 
   public void flush(final Continuation<? super Boolean, Exception> command) {
-    formAggregates(command);
+    flusher.formAggregates(command);
   }
 
   public void rollback(Id id, Continuation<? super PastContent, Exception> command) {
