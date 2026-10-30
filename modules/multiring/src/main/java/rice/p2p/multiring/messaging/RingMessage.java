@@ -112,10 +112,12 @@ public class RingMessage implements ScribeContent {
     return application;
   }
 
+  @Override
   public short getType() {
     return MultiringContentType.RING_MESSAGE.id();
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     id.serialize(buf);
     buf.writeUTF(application);

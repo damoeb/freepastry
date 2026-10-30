@@ -82,6 +82,7 @@ public class MultiringRouteMessage implements RouteMessage {
    *
    * @return The destination Id
    */
+  @Override
   public Id getDestinationId() {
     return RingId.build(ringId, message.getDestinationId());
   }
@@ -91,10 +92,12 @@ public class MultiringRouteMessage implements RouteMessage {
    *
    * @return The next hop
    */
+  @Override
   public NodeHandle getNextHopHandle() {
     return new MultiringNodeHandle(ringId, message.getNextHopHandle());
   }
 
+  @Override
   public Message getMessage(MessageDeserializer md) throws IOException {
     return message.getMessage(md);
   }
@@ -104,6 +107,7 @@ public class MultiringRouteMessage implements RouteMessage {
    *
    * @param id The destination Id
    */
+  @Override
   public void setDestinationId(Id id) {
     message.setDestinationId(((RingId) id).getId());
   }
@@ -113,6 +117,7 @@ public class MultiringRouteMessage implements RouteMessage {
    *
    * @param nextHop The next hop for this handle
    */
+  @Override
   public void setNextHopHandle(NodeHandle nextHop) {
     message.setNextHopHandle(((MultiringNodeHandle) nextHop).getHandle());
   }
@@ -122,6 +127,7 @@ public class MultiringRouteMessage implements RouteMessage {
    *
    * @param message The internal message
    */
+  @Override
   public void setMessage(RawMessage message) {
     this.message.setMessage(message);
   }

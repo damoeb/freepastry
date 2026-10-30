@@ -89,6 +89,7 @@ public class MultiringIdSet implements IdSet {
   /**
    * return the number of elements
    */
+  @Override
   public int numElements() {
     return set.numElements();
   }
@@ -97,6 +98,7 @@ public class MultiringIdSet implements IdSet {
    * add a member
    * @param id the id to add
    */
+  @Override
   public void addId(Id id) {
     set.addId(((RingId) id).getId());
   }
@@ -105,6 +107,7 @@ public class MultiringIdSet implements IdSet {
     * remove a member
    * @param id the id to remove
    */
+  @Override
   public void removeId(Id id) {
     set.removeId(((RingId) id).getId());
   }
@@ -114,6 +117,7 @@ public class MultiringIdSet implements IdSet {
    * @param id the id to test
    * @return true of id is a member, false otherwise
    */
+  @Override
   public boolean isMemberId(Id id) {
     return set.isMemberId(((RingId) id).getId());
   }
@@ -123,6 +127,7 @@ public class MultiringIdSet implements IdSet {
    * @param range the range
    * @return the subset
    */
+  @Override
   public IdSet subSet(IdRange range) {
     if (range == null)
       return copy();
@@ -134,18 +139,22 @@ public class MultiringIdSet implements IdSet {
    * return an iterator over the elements of this set
    * @return the iterator
    */
+  @Override
   public Iterator<Id> getIterator() {
     return new Iterator<Id>() {
       private final Iterator<Id> i = set.getIterator();
 
+      @Override
       public boolean hasNext() {
         return i.hasNext();
       }
 
+      @Override
       public Id next() {
         return RingId.build(ringId, (Id) i.next());
       }
 
+      @Override
       public void remove() {
         i.remove();
       }
@@ -156,6 +165,7 @@ public class MultiringIdSet implements IdSet {
    * return this set as an array
    * @return the array
    */
+  @Override
   public Id[] asArray() {
     Id[] result = set.asArray();
 
@@ -170,6 +180,7 @@ public class MultiringIdSet implements IdSet {
    *
    * @return the hash of this set
    */
+  @Override
   public byte[] hash() {
     return set.hash();
   }
@@ -180,6 +191,7 @@ public class MultiringIdSet implements IdSet {
    * @param o To compare to
    * @return Equals
    */
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof MultiringIdSet other))
       return false;
@@ -191,6 +203,7 @@ public class MultiringIdSet implements IdSet {
    *
    * @return hashCode
    */
+  @Override
   public int hashCode() {
     return (set.hashCode() + ringId.hashCode());
   }
@@ -200,6 +213,7 @@ public class MultiringIdSet implements IdSet {
    *
    * @return A string
    */
+  @Override
   public String toString() {
     return "{RingId " + ringId + " " + set.toString() + "}";
   }
@@ -209,6 +223,7 @@ public class MultiringIdSet implements IdSet {
    *
    * @return the copy
    */
+  @Override
   public MultiringIdSet copy() {
     return new MultiringIdSet(ringId, set.copy());
   }
@@ -218,6 +233,7 @@ public class MultiringIdSet implements IdSet {
    *
    * @return A new IdSet
    */
+  @Override
   public IdSet build() {
     return new MultiringIdSet(ringId, set.build());
   }

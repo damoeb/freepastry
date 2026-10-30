@@ -140,6 +140,7 @@ public class MultiringIdFactory implements IdFactory {
    * @param material The material to use
    * @return The built Id.
    */
+  @Override
   public Id buildId(byte[] material) {
     return RingId.build(getRingId(), factory.buildId(material));
   }
@@ -150,6 +151,7 @@ public class MultiringIdFactory implements IdFactory {
    * @param material The material to use
    * @return The built Id.
    */
+  @Override
   public Id buildId(int[] material) {
     return RingId.build(getRingId(), factory.buildId(material));
   }
@@ -160,6 +162,7 @@ public class MultiringIdFactory implements IdFactory {
    * @param string The string to use as source data
    * @return The built Id.
    */
+  @Override
   public Id buildId(String string) {
     return RingId.build(getRingId(), factory.buildId(string));
   }
@@ -170,10 +173,12 @@ public class MultiringIdFactory implements IdFactory {
    * @param rng A random number generator
    * @return The built Id.
    */
+  @Override
   public rice.p2p.commonapi.Id buildRandomId(Random rng) {
     return RingId.build(getRingId(), factory.buildRandomId(rng));
   }
 
+  @Override
   public rice.p2p.commonapi.Id buildRandomId(RandomSource rng) {
     return RingId.build(getRingId(), factory.buildRandomId(rng));
   }
@@ -185,6 +190,7 @@ public class MultiringIdFactory implements IdFactory {
    * @param string The toString() representation of an Id
    * @return The built Id.
    */
+  @Override
   public Id buildIdFromToString(String string) {
     string = string.substring(1);
     Id ring = factory.buildIdFromToString(string.substring(0, string.indexOf(",")));
@@ -204,6 +210,7 @@ public class MultiringIdFactory implements IdFactory {
    * @param length The length to read
    * @return The built Id.
    */
+  @Override
   public Id buildIdFromToString(char[] chars, int offset, int length) {
     Id ring = factory.buildIdFromToString(chars, 1, find(chars, ',')-1);
     Id normal = factory.buildIdFromToString(chars, 2+find(chars, ','), find(chars, ')') - (2+find(chars, ',')));
@@ -227,6 +234,7 @@ public class MultiringIdFactory implements IdFactory {
    * @param string The toString() representation of an Id
    * @return The built Id.
    */
+  @Override
   public IdRange buildIdRangeFromPrefix(String string) {
     if (string.indexOf(", ") < 0)
       return new MultiringIdRange(ringId, factory.buildIdRangeFromPrefix(string));
@@ -245,6 +253,7 @@ public class MultiringIdFactory implements IdFactory {
    *
    * @return The correct length;
    */
+  @Override
   public int getIdToStringLength() {
     return 4 + (2 * factory.getIdToStringLength());
   }
@@ -255,6 +264,7 @@ public class MultiringIdFactory implements IdFactory {
    * @param material The material to use
    * @return The built Id.Distance.
    */
+  @Override
   public Id.Distance buildIdDistance(byte[] material) {
     return factory.buildIdDistance(material);
   }
@@ -266,6 +276,7 @@ public class MultiringIdFactory implements IdFactory {
    * @param ccw The counterclockwise Id
    * @return An IdRange with the appropriate delimiters.
    */
+  @Override
   public IdRange buildIdRange(Id cw, Id ccw) {
     return new MultiringIdRange(getRingId(), factory.buildIdRange(((RingId) cw).getId(), ((RingId) ccw).getId()));
   }
@@ -275,6 +286,7 @@ public class MultiringIdFactory implements IdFactory {
    *
    * @return an empty IdSet
    */
+  @Override
   public IdSet buildIdSet() {
     return new MultiringIdSet(getRingId(), factory.buildIdSet());
   }
@@ -284,6 +296,7 @@ public class MultiringIdFactory implements IdFactory {
    *
    * @return an empty IdSet
    */
+  @Override
   public IdSet buildIdSet(SortedMap<Id, ?> map) {
     return new MultiringIdSet(getRingId(), factory.buildIdSet(new MultiringSortedMap<>(map)));
   }
@@ -293,6 +306,7 @@ public class MultiringIdFactory implements IdFactory {
    *
    * @return an empty NodeHandleSet
    */
+  @Override
   public NodeHandleSet buildNodeHandleSet() {
     return new MultiringNodeHandleSet(getRingId(), factory.buildNodeHandleSet());
   }
@@ -305,25 +319,45 @@ public class MultiringIdFactory implements IdFactory {
       this.map = map;
     }
 
+    @Override
     public Comparator<? super Id> comparator() { return null; }
+    @Override
     public Id firstKey() { return (map.firstKey() == null ? null : ((RingId) map.firstKey()).getId()); }
+    @Override
     public SortedMap<Id, V> headMap(Id toKey) { return map.headMap(RingId.build(ringId, toKey)); }
+    @Override
     public Id lastKey() { return (map.lastKey() == null ? null : ((RingId) map.lastKey()).getId()); }
+    @Override
     public SortedMap<Id, V> subMap(Id fromKey, Id toKey) { return map.subMap(RingId.build(ringId, fromKey), RingId.build(ringId, toKey)); }
+    @Override
     public SortedMap<Id, V> tailMap(Id fromKey) { return map.tailMap(RingId.build(ringId, fromKey)); }
+    @Override
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
+    @Override
     public boolean containsKey(Object key) { return map.containsKey(RingId.build(ringId, (Id) key)); }
+    @Override
     public boolean containsValue(Object value) { throw new UnsupportedOperationException("containsValue not supported!"); }
+    @Override
     public Set<Map.Entry<Id, V>> entrySet() { return new MultiringEntrySet<V>(map.entrySet()); }
+    @Override
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
+    @Override
     public V get(Object key) { throw new UnsupportedOperationException("get not supported!"); }
+    @Override
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!");  }
+    @Override
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!");  }
+    @Override
     public Set<Id> keySet() { return new MultiringKeySet(map.keySet()); }
+    @Override
     public V put(Id key, V value) { return map.put(RingId.build(ringId, key), value); }
+    @Override
     public void putAll(Map<? extends Id, ? extends V> t) { throw new UnsupportedOperationException("putAll not supported!"); }
+    @Override
     public V remove(Object key) { return map.remove(RingId.build(ringId, (Id) key)); }
+    @Override
     public int size() { return map.size(); }
+    @Override
     public Collection<V> values() { throw new UnsupportedOperationException("values not supported!"); }
   }
 
@@ -335,26 +369,44 @@ public class MultiringIdFactory implements IdFactory {
       this.set = set;
     }
 
+    @Override
     public boolean add(Map.Entry<Id, V> o) { throw new UnsupportedOperationException("add not supported!"); }
+    @Override
     public boolean addAll(Collection<? extends Map.Entry<Id, V>> c) { throw new UnsupportedOperationException("addAll not supported!"); }
+    @Override
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
+    @Override
     public boolean contains(Object o) { throw new UnsupportedOperationException("contains not supported!"); }
+    @Override
     public boolean containsAll(Collection<?> c) { throw new UnsupportedOperationException("containsAll not supported!"); }
+    @Override
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
+    @Override
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
+    @Override
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
+    @Override
     public Iterator<Map.Entry<Id, V>> iterator() { return new Iterator<Map.Entry<Id, V>>() {
       private final Iterator<Map.Entry<Id, V>> i = set.iterator();
+      @Override
       public boolean hasNext() { return i.hasNext(); }
+      @Override
       public Map.Entry<Id, V> next() { return new MultiringMapEntry<V>(i.next()); }
+      @Override
       public void remove() { i.remove(); }
     };
     }
+    @Override
     public boolean remove(Object o) { throw new UnsupportedOperationException("remove not supported!"); }
+    @Override
     public boolean removeAll(Collection<?> c) { throw new UnsupportedOperationException("removeAll not supported!"); }
+    @Override
     public boolean retainAll(Collection<?> c) { throw new UnsupportedOperationException("retainAll not supported!"); }
+    @Override
     public int size() { throw new UnsupportedOperationException("size not supported!"); }
+    @Override
     public Object[] toArray() { throw new UnsupportedOperationException("toArray not supported!"); }
+    @Override
     public <T> T[] toArray(T[] a) { throw new UnsupportedOperationException("toArray not supported!"); }
   }
 
@@ -366,25 +418,42 @@ public class MultiringIdFactory implements IdFactory {
       this.set = set;
     }
 
+    @Override
     public boolean add(Id o) { throw new UnsupportedOperationException("add not supported!"); }
+    @Override
     public boolean addAll(Collection<? extends Id> c) { throw new UnsupportedOperationException("addAll not supported!"); }
+    @Override
     public void clear() { throw new UnsupportedOperationException("clear not supported!"); }
+    @Override
     public boolean contains(Object o) { throw new UnsupportedOperationException("contains not supported!"); }
+    @Override
     public boolean containsAll(Collection<?> c) { throw new UnsupportedOperationException("containsAll not supported!"); }
+    @Override
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
+    @Override
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
+    @Override
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
+    @Override
     public Iterator<Id> iterator() { return new Iterator<Id>() {
       private final Iterator<Id> i = set.iterator();
+      @Override
       public boolean hasNext() { return i.hasNext(); }
+      @Override
       public Id next() { return ((RingId) i.next()).getId(); }
+      @Override
       public void remove() { i.remove(); }
     };
     }
+    @Override
     public boolean remove(Object o) { throw new UnsupportedOperationException("remove not supported!"); }
+    @Override
     public boolean removeAll(Collection<?> c) { throw new UnsupportedOperationException("removeAll not supported!"); }
+    @Override
     public boolean retainAll(Collection<?> c) { throw new UnsupportedOperationException("retainAll not supported!"); }
+    @Override
     public int size() { throw new UnsupportedOperationException("size not supported!"); }
+    @Override
     public Object[] toArray() {
       Object[] result = new Object[set.size()];
       Iterator<Id> i = set.iterator();
@@ -395,6 +464,7 @@ public class MultiringIdFactory implements IdFactory {
 
       return result;
     }
+    @Override
     public <T> T[] toArray(T[] a) {
       T[] result = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), set.size());
       Iterator<Id> i = set.iterator();
@@ -414,10 +484,15 @@ public class MultiringIdFactory implements IdFactory {
       this.entry = entry;
     }
 
+    @Override
     public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
+    @Override
     public Id getKey() { return ((RingId) entry.getKey()).getId(); }
+    @Override
     public V getValue() { return entry.getValue(); }
+    @Override
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
+    @Override
     public V setValue(V value) { throw new UnsupportedOperationException("setValue not supported!"); }
   }
 }

@@ -98,6 +98,7 @@ public class MultiringEndpoint implements Endpoint {
    *
    * @return The local node's id
    */
+  @Override
   public Id getId() {
     return RingId.build(node.getRingId(), endpoint.getId());
   }
@@ -114,16 +115,19 @@ public class MultiringEndpoint implements Endpoint {
    * @param message The message to deliver
    * @param hint The first node to send this message to, optional
    */
+  @Override
   public MessageReceipt route(Id id, RawMessage message, NodeHandle hint) {
     return route(id, message, hint, null);
   }
 
+  @Override
   public MessageReceipt route(
       Id id, RawMessage message,
       NodeHandle hint,
       DeliveryNotification deliverAckToMe) {
     return route(id, message, hint, deliverAckToMe, null);
   }
+  @Override
   public MessageReceipt route(
       Id id, RawMessage message,
       NodeHandle hint,
@@ -140,7 +144,7 @@ public class MultiringEndpoint implements Endpoint {
       }
     } else {
       if (mId.getRingId().equals(node.getRingId())) {
-        if ((mHint != null) && (mHint.getRingId().equals(node.getRingId()))) {
+        if ((mHint != null) && mHint.getRingId().equals(node.getRingId())) {
           return endpoint.route(mId.getId(), message, mHint.getHandle(), deliverAckToMe, options);
         } else {
           return endpoint.route(mId.getId(), message, null, deliverAckToMe, options);
@@ -162,6 +166,7 @@ public class MultiringEndpoint implements Endpoint {
    * @param num The number of nodes to return.
    * @param safe Whether or not to return safe nodes.
    */
+  @Override
   public NodeHandleSet localLookup(Id id, int num, boolean safe) {
     return new MultiringNodeHandleSet(node.getRingId(), endpoint.localLookup(((RingId) id).getId(), num, safe));
   }
@@ -172,6 +177,7 @@ public class MultiringEndpoint implements Endpoint {
    *
    * @param num The number of desired handle to return.
    */
+  @Override
   public NodeHandleSet neighborSet(int num) {
     return new MultiringNodeHandleSet(node.getRingId(), endpoint.neighborSet(num));
   }
@@ -183,6 +189,7 @@ public class MultiringEndpoint implements Endpoint {
    * @param id The object's id.
    * @param maxRank The number of desired replicas.
    */
+  @Override
   public NodeHandleSet replicaSet(Id id, int maxRank) {
     if (((RingId) id).getRingId().equals(node.getRingId()))
       return new MultiringNodeHandleSet(node.getRingId(), endpoint.replicaSet(((RingId) id).getId(), maxRank));
@@ -201,6 +208,7 @@ public class MultiringEndpoint implements Endpoint {
    * @param root The root handle of the remove set
    * @param set The set of other nodes around the root handle
    */
+  @Override
   public NodeHandleSet replicaSet(Id id, int maxRank, NodeHandle root, NodeHandleSet set) {
     if (((RingId) id).getRingId().equals(node.getRingId()))
       return new MultiringNodeHandleSet(node.getRingId(), endpoint.replicaSet(((RingId) id).getId(),
@@ -226,6 +234,7 @@ public class MultiringEndpoint implements Endpoint {
    * @param rank The root rank.
    * @param lkey An "index" in case of multiple ranges.
    */
+  @Override
   public IdRange range(NodeHandle handle, int rank, Id lkey) {
     if (lkey != null)
       lkey = ((RingId) lkey).getId();
@@ -254,6 +263,7 @@ public class MultiringEndpoint implements Endpoint {
    * @param lkey An "index" in case of multiple ranges.
    * @param cumulative Whether to return the cumulative or single range
    */
+  @Override
   public IdRange range(NodeHandle handle, int rank, Id lkey, boolean cumulative) {
     if (lkey != null)
       lkey = ((RingId) lkey).getId();
@@ -272,6 +282,7 @@ public class MultiringEndpoint implements Endpoint {
    *
    * @return A NodeHandle referring to the local node.
    */
+  @Override
   public NodeHandle getLocalNodeHandle() {
     return new MultiringNodeHandle(node.getRingId(), endpoint.getLocalNodeHandle());
   }
@@ -283,6 +294,7 @@ public class MultiringEndpoint implements Endpoint {
    * @param message The message to be delivered
    * @param delay The number of milliseconds to wait before delivering the message
    */
+  @Override
   public CancellableTask scheduleMessage(Message message, long delay) {
     return endpoint.scheduleMessage(message, delay);
   }
@@ -295,14 +307,17 @@ public class MultiringEndpoint implements Endpoint {
    * @param delay The number of milliseconds to wait before delivering the first message
    * @param period The number of milliseconds to wait before delivering subsequent messages
    */
+  @Override
   public CancellableTask scheduleMessage(Message message, long delay, long period) {
     return endpoint.scheduleMessage(message, delay, period);
   }
 
+  @Override
   public CancellableTask scheduleMessageAtFixedRate(Message message, long delay, long period) {
     return endpoint.scheduleMessageAtFixedRate(message, delay, period);
   }
 
+  @Override
   public List<NodeHandle> networkNeighbors(int num) {
     return endpoint.networkNeighbors(num);
   }
@@ -315,6 +330,7 @@ public class MultiringEndpoint implements Endpoint {
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    */
+  @Override
   public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
     endpoint.process(task, command);
   }
@@ -325,6 +341,7 @@ public class MultiringEndpoint implements Endpoint {
    *
    * @return The unique instance name of this application
    */
+  @Override
   public String getInstance() {
     return "multiring" + endpoint.getInstance();
   }
@@ -332,6 +349,7 @@ public class MultiringEndpoint implements Endpoint {
   /* (non-Javadoc)
    * @see rice.p2p.commonapi.Endpoint#getEnvironment()
    */
+  @Override
   public Environment getEnvironment() {
     return node.getEnvironment();
   }
@@ -339,23 +357,28 @@ public class MultiringEndpoint implements Endpoint {
   /**
    * Passthrough to sub endpoint.
    */
+  @Override
   public void connect(NodeHandle handle, AppSocketReceiver receiver, int timeout) {
     MultiringNodeHandle mHandle = (MultiringNodeHandle) handle;
     endpoint.connect(mHandle.getHandle(), receiver, timeout);
   }
 
+  @Override
   public void accept(AppSocketReceiver receiver) {
     endpoint.accept(receiver);
   }
 
+  @Override
   public void setDeserializer(MessageDeserializer md) {
     endpoint.setDeserializer(md);
   }
 
+  @Override
   public MessageDeserializer getDeserializer() {
     return endpoint.getDeserializer();
   }
 
+  @Override
   public Id readId(InputBuffer buf, short type) throws IOException {
     if (type == IdType.RING_ID.id())
       return new RingId(buf, endpoint);
@@ -363,23 +386,26 @@ public class MultiringEndpoint implements Endpoint {
     return endpoint.readId(buf, type);
   }
 
+  @Override
   public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
     return new MultiringNodeHandle(buf, endpoint);
   }
 
+  @Override
   public IdRange readIdRange(InputBuffer buf) throws IOException {
     return new MultiringIdRange(buf,endpoint);
   }
 
+  @Override
   public NodeHandle coalesce(NodeHandle handle) {
-    if (handle instanceof MultiringNodeHandle) {
-      MultiringNodeHandle mnh = (MultiringNodeHandle)handle;
+    if (handle instanceof MultiringNodeHandle mnh) {
       mnh.coalesceHandle(endpoint);
       return mnh;
     }
     return endpoint.coalesce(handle);
   }
 
+  @Override
   public NodeHandleSet readNodeHandleSet(InputBuffer buf, short type) throws IOException {
     if (type == NodeHandleSetType.MULTIRING_NODE_HANDLE_SET.id()) {
       return new MultiringNodeHandleSet(buf, endpoint);
@@ -387,18 +413,22 @@ public class MultiringEndpoint implements Endpoint {
     return endpoint.readNodeHandleSet(buf, type);
   }
 
+  @Override
   public String toString() {
     return "MRE["+endpoint+"]";
   }
 
+  @Override
   public void register() {
     endpoint.register();
   }
 
+  @Override
   public int proximity(NodeHandle nh) {
     return endpoint.proximity(unwrap(nh));
   }
 
+  @Override
   public boolean isAlive(NodeHandle nh) {
     return endpoint.isAlive(unwrap(nh));
   }
@@ -407,20 +437,23 @@ public class MultiringEndpoint implements Endpoint {
    * The underlying endpoint only understands the wrapped handles.
    */
   private NodeHandle unwrap(NodeHandle nh) {
-    if (nh instanceof MultiringNodeHandle) {
-      return ((MultiringNodeHandle) nh).getHandle();
+    if (nh instanceof MultiringNodeHandle multiringNodeHandle) {
+      return multiringNodeHandle.getHandle();
     }
     return nh;
   }
 
+  @Override
   public void setConsistentRouting(boolean val) {
     endpoint.setConsistentRouting(val);
   }
 
+  @Override
   public boolean routingConsistentFor(Id id) {
     return endpoint.routingConsistentFor(id);
   }
 
+  @Override
   public void setSendOptions(Map<String, Object> options) {
     endpoint.setSendOptions(options);
   }

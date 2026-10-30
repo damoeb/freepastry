@@ -151,9 +151,6 @@ public class RingCertificate {
    * Helper function for refresh().  Returns an identical InetSocketAddress unless
    * the ip address in address is stale.  Then it returns the current one based on a
    * dns lookup.
-   *
-   * @param address
-   * @return
    */
   private InetSocketAddress refreshAddress(InetSocketAddress address) {
     return new InetSocketAddress(address.getAddress().getHostName(), address.getPort());
@@ -314,6 +311,7 @@ public class RingCertificate {
    *
    * @return a string
    */
+  @Override
   public String toString() {
     return "[Ring Certificate for ring '" + name + "' (" + id + ")]";
   }
@@ -498,8 +496,7 @@ public class RingCertificate {
     String pass = prompt(r, w, "Please enter a password for the ring keypair: ");
 
     // socket is the only protocol
-    int protocolId = 0;
-      protocolId = DistPastryNodeFactory.PROTOCOL_SOCKET;
+    int protocolId = DistPastryNodeFactory.PROTOCOL_SOCKET;
 
     // build the id
     Id id = generateId(ring, env);

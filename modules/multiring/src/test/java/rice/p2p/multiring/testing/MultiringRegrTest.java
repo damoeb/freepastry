@@ -344,9 +344,9 @@ public class MultiringRegrTest {
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
-    if (bootstrap instanceof BogusNodeHandle) {
+    if (bootstrap instanceof BogusNodeHandle bogusNodeHandle) {
       // socket: the bootstrapper expects the addresses
-      pn.boot(((BogusNodeHandle) bootstrap).getAddress());
+      pn.boot(bogusNodeHandle.getAddress());
     } else {
       pn.boot(bootstrap);
     }
@@ -374,17 +374,6 @@ public class MultiringRegrTest {
   protected synchronized void pause(int ms) {
     if (PROTOCOL != PROTOCOL_DIRECT)
       try { wait(ms); } catch (InterruptedException e) {}
-  }
-
-  /**
-    * Private method which generates a random Id
-   *
-   * @return A new random Id
-   */
-  private Id generateId() {
-    byte[] data = new byte[20];
-    environment.getRandomSource().nextBytes(data);
-    return idFactory.buildId(data);
   }
 
   /**
@@ -426,7 +415,7 @@ public class MultiringRegrTest {
     }
   }
 
-  public class MultiringTestApp implements Application {
+  public static class MultiringTestApp implements Application {
 
     protected Endpoint endpoint;
 
@@ -445,14 +434,17 @@ public class MultiringRegrTest {
       endpoint.route(target, new MultiringTestMessage(endpoint.getId()), null);
     }
 
+    @Override
     public boolean forward(RouteMessage message) {
       return true;
     }
 
+    @Override
     public void deliver(Id id, Message message) {
       System.out.println("RECEIVED MESSSAGE FROM " + ((MultiringTestMessage) message).source + " FOR TARGET " + id + " AT NODE " + endpoint.getId());
     }
 
+    @Override
     public void update(NodeHandle handle, boolean joined) {
     }
   }
@@ -470,14 +462,17 @@ public class MultiringRegrTest {
       source = endpoint.readId(buf, buf.readShort());
     }
 
+    @Override
     public int getPriority() {
       return MEDIUM_PRIORITY;
     }
 
+    @Override
     public short getType() {
       return TYPE;
     }
 
+    @Override
     public void serialize(OutputBuffer buf) throws IOException {
       buf.writeShort(source.getType());
       source.serialize(buf);
@@ -539,7 +534,7 @@ public class MultiringRegrTest {
   protected final void stepDone(String status, String message) {
     System.out.println("[" + status + "]");
 
-    if ((message != null) && (! message.equals(""))) {
+    if ((message != null) && ! message.equals("")) {
       System.out.println("     " + message);
     }
 

@@ -108,6 +108,7 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    *
    * @return The corresponding node's id.
    */
+  @Override
   public Id getId() {
     return RingId.build(ringId, handle.getId());
   }
@@ -118,6 +119,7 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    * @param h the updated handle
    * @param obj The paramter
    */
+  @Override
   public void nodeHandleUpdate(NodeHandle h, Object obj) {
     notifyNodeHandleListeners(obj);
   }
@@ -127,6 +129,7 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    *
    * @return A string
    */
+  @Override
   public String toString() {
     return "{MNH " + handle.toString() +"@"+ringId+"}";
   }
@@ -137,11 +140,12 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    * @param o The object to compare to
    * @return Whether or not this is object is equal
    */
+  @Override
   public boolean equals(Object o) {
-    if (! (o instanceof MultiringNodeHandle))
+    if (! (o instanceof MultiringNodeHandle multiringNodeHandle))
       return false;
 
-    return (((MultiringNodeHandle) o).handle.equals(handle) && ((MultiringNodeHandle) o).ringId.equals(ringId));
+    return (multiringNodeHandle.handle.equals(handle) && multiringNodeHandle.ringId.equals(ringId));
   }
 
   /**
@@ -149,6 +153,7 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    *
    * @return hashCode
    */
+  @Override
   public int hashCode() {
     return (handle.hashCode() + ringId.hashCode());
   }
@@ -162,6 +167,7 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    *
    * @return Whether or not the node is currently alive
    */
+  @Override
   public boolean checkLiveness() {
     return handle.checkLiveness();
   }
@@ -172,6 +178,7 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
     handle.addNodeHandleListener(this);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort(ringId.getType());
     ringId.serialize(buf);

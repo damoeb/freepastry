@@ -156,10 +156,12 @@ public class MultiringNode implements Node, ScribeMultiClient {
     this.collection.addNode(this);
   }
 
+  @Override
   public NodeHandle getLocalNodeHandle() {
     return new MultiringNodeHandle(getRingId(), node.getLocalNodeHandle());
   }
 
+  @Override
   public Endpoint buildEndpoint(Application application, String instance) {
     Endpoint endpoint = new MultiringEndpoint(this, node.buildEndpoint(new MultiringApplication(getRingId(), application), application.getClass() + "-" + instance), application);
     endpoints.put(endpoint.getInstance(), endpoint);
@@ -172,6 +174,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    *
    * @return This node's Id
    */
+  @Override
   public Id getId() {
     return RingId.build(ringId, node.getId());
   }
@@ -217,6 +220,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    *
    * @return A factory for creating Ids.
    */
+  @Override
   public IdFactory getIdFactory() {
     return new MultiringIdFactory(ringId, node.getIdFactory());
   }
@@ -255,18 +259,22 @@ public class MultiringNode implements Node, ScribeMultiClient {
       scribe.anycast(new Topic(RingId.build(ringId, getTarget(id))), new RingMessage(id, message, application));
       MessageReceipt ret = new MessageReceipt(){
 
+        @Override
         public boolean cancel() {
           return false;
         }
 
+        @Override
         public Message getMessage() {
           return message;
         }
 
+        @Override
         public Id getId() {
           return id;
         }
 
+        @Override
         public NodeHandle getHint() {
           return null;
         }
@@ -289,7 +297,6 @@ public class MultiringNode implements Node, ScribeMultiClient {
   private Id getTarget(RingId id) {
     int shared = collection.getLengthOfSharedPrefix((RingId) getId(), id);
     int thisLength = collection.getLength((RingId) getId());
-    int targetLength = collection.getLength(id);
 
     if (shared == thisLength)
       return makeTarget(id, thisLength + 1);
@@ -324,9 +331,9 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * @param content The content which was anycasted
    * @return Whether or not the anycast should continue
    */
+  @Override
   public boolean anycast(Topic topic, ScribeContent content) {
-    if (content instanceof RingMessage) {
-      RingMessage rm = (RingMessage) content;
+    if (content instanceof RingMessage rm) {
       collection.route(rm.getId(), rm.getRawMessage(), rm.getApplication(), null, null);
     } else {
       logger.warn("Received unrecognized message {}", content);
@@ -341,6 +348,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * @param topic The topic the message was published to
    * @param content The content which was published
    */
+  @Override
   public void deliver(Topic topic, ScribeContent content) {
     logger.trace("Received unexpected delivery on topic {} of {}", topic, content);
   }
@@ -352,6 +360,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * @param topic The topic to unsubscribe from
    * @param child The child that was added
    */
+  @Override
   public void childAdded(Topic topic, NodeHandle child) {
   }
 
@@ -362,6 +371,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    * @param topic The topic to unsubscribe from
    * @param child The child that was removed
    */
+  @Override
   public void childRemoved(Topic topic, NodeHandle child) {
   }
 
@@ -372,6 +382,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    *
    * @param topics The topics which the subscribe failed on
    */
+  @Override
   public void subscribeFailed(Collection<Topic> topics) {
     for (Topic topic : topics) {
       retrySubscribe(topic);
@@ -383,6 +394,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    *
    * @param topics The topics which the subscribe succeeded on
    */
+  @Override
   public void subscribeSuccess(Collection<Topic> topics) {
   }
 
@@ -401,6 +413,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
    *
    * @return A string
    */
+  @Override
   public String toString() {
     return "{MultiringNode " + getId() + "}";
   }
@@ -410,10 +423,12 @@ public class MultiringNode implements Node, ScribeMultiClient {
    *
    * @return the environment
    */
+  @Override
   public Environment getEnvironment() {
     return environment;
   }
 
+  @Override
   public String printRouteState() {
     return node.printRouteState();
   }
