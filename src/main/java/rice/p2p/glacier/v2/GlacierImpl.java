@@ -112,6 +112,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final int numSurvivors;
   private final Endpoint endpoint;
   private final IdFactory factory;
+  private final FragmentLocator locator;
   private final Hashtable<Integer, GlacierContinuation> continuations;
   private final Hashtable<Id, Continuation<Object, Exception>> pendingTraffic;
   private StorageManager trashStorage;
@@ -220,6 +221,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.numFragments = numFragmentsArg;
     this.numSurvivors = numSurvivorsArg;
     this.factory = factoryArg;
+    this.locator = new FragmentLocator(factoryArg, numFragmentsArg);
     this.responsibleRange = null;
     this.nextUID = 0;
     this.continuations = new Hashtable<Integer, GlacierContinuation>();
@@ -363,8 +365,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         if (o instanceof GlacierRangeResponseMessage) {
           final GlacierRangeResponseMessage grrm = (GlacierRangeResponseMessage) o;
 
-          Id ccwId = getFragmentLocation(grrm.getCommonRange().getCCWId(), numFragments-offset, 0);
-          Id cwId = getFragmentLocation(grrm.getCommonRange().getCWId(), numFragments-offset, 0);
+          Id ccwId = locator.getFragmentLocation(grrm.getCommonRange().getCCWId(), numFragments-offset, 0);
+          Id cwId = locator.getFragmentLocation(grrm.getCommonRange().getCWId(), numFragments-offset, 0);
           final IdRange originalRange = factory.buildIdRange(ccwId, cwId);
 
           logger.info("Range response (offset: {}): {}, original={}", offset, grrm.getCommonRange(), originalRange);
@@ -376,7 +378,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
             while (iter.hasNext()) {
               FragmentKey fkey = (FragmentKey)iter.next();
-              Id thisPos = getFragmentLocation(fkey);
+              Id thisPos = locator.getFragmentLocation(fkey);
               if (originalRange.containsId(thisPos)) {
                 FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fkey);
                 if (metadata != null) {
@@ -428,9 +430,9 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           nextTimeout = environment.getTimeSource().currentTimeMillis() + jitterTerm(syncInterval);
           offset = 1+environment.getRandomSource().nextInt(numFragments-1);
 
-          Id dest = getFragmentLocation(getLocalNodeHandle().getId(), offset, 0);
-          Id ccwId = getFragmentLocation(responsibleRange.getCCWId(), offset, 0);
-          Id cwId = getFragmentLocation(responsibleRange.getCWId(), offset, 0);
+          Id dest = locator.getFragmentLocation(getLocalNodeHandle().getId(), offset, 0);
+          Id ccwId = locator.getFragmentLocation(responsibleRange.getCCWId(), offset, 0);
+          Id cwId = locator.getFragmentLocation(responsibleRange.getCWId(), offset, 0);
           IdRange requestedRange = factory.buildIdRange(ccwId, cwId);
 
           logger.info("Sending range query for ({}) to {}", requestedRange, dest);
@@ -465,7 +467,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             final FragmentKey thisKey = grm.getKey(i);
             if (grm.getAuthoritative(i)) {
               if (grm.getHaveIt(i)) {
-                Id thisPos = getFragmentLocation(thisKey);
+                Id thisPos = locator.getFragmentLocation(thisKey);
                 if (!responsibleRange.containsId(thisPos)) {
                   logger.debug("Deleting fragment {}", thisKey);
                   deleteFragment(thisKey, new Continuation<Object, Exception>() {
@@ -513,8 +515,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             if ((thisFragment != null) && (thisManifest != null)) {
               logger.info("Handoff: Received Fragment+Manifest for {}", thisKey);
 
-              if (!responsibleRange.containsId(getFragmentLocation(thisKey))) {
-                logger.atWarn().log(() -> "Handoff: Not responsible for "+thisKey+" (at "+getFragmentLocation(thisKey)+") -- discarding");
+              if (!responsibleRange.containsId(locator.getFragmentLocation(thisKey))) {
+                logger.atWarn().log(() -> "Handoff: Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
                 continue;
               }
 
@@ -540,7 +542,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                       sendMessage(
                         null,
-                        new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), responsibleRange.containsId(getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
+                        new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), responsibleRange.containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
                         gdm.getSource()
                       );
                     }
@@ -584,7 +586,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         while (iter.hasNext()) {
           FragmentKey fkey = (FragmentKey) iter.next();
-          Id thisPos = getFragmentLocation(fkey);
+          Id thisPos = locator.getFragmentLocation(fkey);
           if (!responsibleRange.containsId(thisPos)) {
             logger.debug("Must hand off {} @{}", fkey, thisPos);
             handoffs.add(fkey);
@@ -717,14 +719,14 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             final int fidLeft = (thisFragmentID + numFragments - 1) % numFragments;
             final int fidRight = (thisFragmentID + 1) % numFragments;
 
-            if (responsibleRange.containsId(getFragmentLocation(thisObjectKey, fidLeft, thisVersion))) {
+            if (responsibleRange.containsId(locator.getFragmentLocation(thisObjectKey, fidLeft, thisVersion))) {
               if (!fragments.isMemberId(thisKey.getPeerKey(fidLeft))) {
                 logger.trace("Missing: {} L={}", thisKey, fidLeft);
                 queries.add(thisKey.getVersionKey());
               }
             }
 
-            if (responsibleRange.containsId(getFragmentLocation(thisObjectKey, fidRight, thisVersion))) {
+            if (responsibleRange.containsId(locator.getFragmentLocation(thisObjectKey, fidRight, thisVersion))) {
               if (!fragments.isMemberId(thisKey.getPeerKey(fidRight))) {
                 logger.trace("Missing: {} R={}", thisKey, fidRight);
                 queries.add(thisKey.getVersionKey());
@@ -750,7 +752,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
               if (fragments.isMemberId(keyHere)) {
                 localFragmentID = i;
                 break;
-              } else if (responsibleRange.containsId(getFragmentLocation(keyHere))) {
+              } else if (responsibleRange.containsId(locator.getFragmentLocation(keyHere))) {
                 queriesHere ++;
               }
             }
@@ -765,7 +767,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                   for (int i=0; i<numFragments; i++) {
                     final FragmentKey thisKey = new FragmentKey(thisVKey, i);
-                    if (responsibleRange.containsId(getFragmentLocation(thisKey))) {
+                    if (responsibleRange.containsId(locator.getFragmentLocation(thisKey))) {
                       if (!fragments.isMemberId(thisKey)) {
                         logger.debug("Local scan: Sending query for {}", thisKey);
                         final long tStart = environment.getTimeSource().currentTimeMillis();
@@ -1142,46 +1144,6 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     }
   }
 
-  private static byte[] getDistance(double d) {
-    byte[] result = new byte[20];
-
-    double c = 0.5;
-    for (int i=19; i>=0; i--) {
-      result[i] = 0;
-      for (int j=7; j>=0; j--) {
-        if (d >= c) {
-          result[i] |= (1<<j);
-          d -= c;
-        }
-        c /= 2;
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Determines the point in the ring where a particular fragment should
-   * be stored.
-   *
-   * @param objectKey Key of the original object (from PAST)
-   * @param fragmentNr Fragment number (0..n-1)
-   * @param version Version of the object
-   * @return The location of the fragment
-   */
-  private Id getFragmentLocation(Id objectKey, int fragmentNr, long version) {
-    double totalOffset = (((float)fragmentNr) / ((float)numFragments)) + version * (1.0/2.7182821);
-    return objectKey.addToId(factory.buildIdDistance(getDistance(totalOffset - Math.floor(totalOffset))));
-  }
-
-  private Id getFragmentLocation(FragmentKey fkey) {
-    return getFragmentLocation(
-      fkey.getVersionKey().getId(),
-      fkey.getFragmentID(),
-      fkey.getVersionKey().getVersion()
-    );
-  }
-
   /**
    * This method is called when Glacier encounters a fatal error
    *
@@ -1229,7 +1191,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
       while (iter.hasNext()) {
         FragmentKey thisKey = (FragmentKey) iter.next();
-        boolean isMine = responsibleRange.containsId(getFragmentLocation(thisKey));
+        boolean isMine = responsibleRange.containsId(locator.getFragmentLocation(thisKey));
         FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(thisKey);
         if (metadata != null) {
           result.append(((Id)thisKey).toStringFull()+" "+(isMine ? "OK" : "MI")+" "+
@@ -1413,7 +1375,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       long version = Long.parseLong(vkeyS[1]);
       VersionKey vkey = new VersionKey(key, version);
       final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
-      final Id fragmentLoc = getFragmentLocation(id);
+      final Id fragmentLoc = locator.getFragmentLocation(id);
 
       final String[] ret = new String[] { "" }; // only touched by the selector thread, until done completes
       final CompletableFuture<String> done = new CompletableFuture<String>();
@@ -1566,7 +1528,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       VersionKey vkey = new VersionKey(key, version);
       final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
       final long now = environment.getTimeSource().currentTimeMillis();
-      final Id fragmentLoc = getFragmentLocation(id);
+      final Id fragmentLoc = locator.getFragmentLocation(id);
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       addContinuation(new GlacierContinuation() {
@@ -1735,7 +1697,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
             versionKey[i] = new VersionKey(ids[i], versions[i]);
             for (int j=0; j<numFragments; j++) {
               fragmentKey[i][j] = new FragmentKey(new VersionKey(ids[i], versions[i]), j);
-              fragmentLocation[i][j] = getFragmentLocation(fragmentKey[i][j]);
+              fragmentLocation[i][j] = locator.getFragmentLocation(fragmentKey[i][j]);
               fragmentChecked[i][j] = false;
               if (fragmentStorage.getMetadata(fragmentKey[i][j]) != null) {
                 haveFragmentMyself = true;
@@ -2102,7 +2064,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         logger.debug("Sending queries for {}", key);
         for (int i = 0; i < numFragments; i++) {
-          Id fragmentLoc = getFragmentLocation(key.getId(), i, key.getVersion());
+          Id fragmentLoc = locator.getFragmentLocation(key.getId(), i, key.getVersion());
           FragmentKey keys[] = new FragmentKey[1];
           keys[0] = new FragmentKey(key, i);
 
@@ -2517,7 +2479,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         checkedFragment[nextID] = true;
         FragmentKey nextKey = new FragmentKey(key, nextID);
-        Id nextLocation = getFragmentLocation(nextKey);
+        Id nextLocation = locator.getFragmentLocation(nextKey);
         logger.debug("retrieveManifest: Asking {} for {}", nextLocation, nextKey);
         sendMessage(
           nextLocation,
@@ -2713,7 +2675,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         checkedFragment[nextID] = true;
         FragmentKey nextKey = new FragmentKey(key, nextID);
-        Id nextLocation = getFragmentLocation(nextKey);
+        Id nextLocation = locator.getFragmentLocation(nextKey);
         logger.debug("retrieveObject: Asking {} for {}", nextLocation, nextKey);
         sendMessage(
           nextLocation,
@@ -3062,7 +3024,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
       boolean[] authoritativeA = new boolean[gqm.numKeys()];
 
       for (int i=0; i<gqm.numKeys(); i++) {
-        Id fragmentLocation = getFragmentLocation(gqm.getKey(i));
+        Id fragmentLocation = locator.getFragmentLocation(gqm.getKey(i));
         if (logger.isInfoEnabled()) logger.info("Queried for " + gqm.getKey(i) + " (at "+fragmentLocation+")");
 
         keyA[i] = gqm.getKey(i);
@@ -3163,7 +3125,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
       while (iter.hasNext()) {
         FragmentKey fkey = (FragmentKey)iter.next();
-        Id thisPos = getFragmentLocation(fkey);
+        Id thisPos = locator.getFragmentLocation(fkey);
         if (range.containsId(thisPos)) {
           FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fkey);
           if (metadata != null) {
@@ -3229,7 +3191,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
           if (hisFID >= numFragments)
             panic("Assertion failed: L938");
           keys[manifestIndex] = new FragmentKey(thisKey.getVersionKey(), hisFID);
-          logger.atDebug().log(() -> "He should have key "+keys[manifestIndex]+" @"+getFragmentLocation(keys[manifestIndex]));
+          logger.atDebug().log(() -> "He should have key "+keys[manifestIndex]+" @"+locator.getFragmentLocation(keys[manifestIndex]));
           manifestIndex ++;
           currentLookup ++;
           if ((manifestIndex == config.manifestAggregationFactor()) || (currentLookup == numLookups)) {
@@ -3494,8 +3456,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
         if ((thisFragment != null) && (thisManifest != null)) {
           logger.info("Data: Fragment+Manifest for {}", thisKey);
 
-          if (!responsibleRange.containsId(getFragmentLocation(thisKey))) {
-            logger.atWarn().log(() -> "Not responsible for "+thisKey+" (at "+getFragmentLocation(thisKey)+") -- discarding");
+          if (!responsibleRange.containsId(locator.getFragmentLocation(thisKey))) {
+            logger.atWarn().log(() -> "Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
             continue;
           }
 
@@ -3521,7 +3483,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
                   sendMessage(
                     null,
-                    new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), responsibleRange.containsId(getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
+                    new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), responsibleRange.containsId(locator.getFragmentLocation(thisKey)), getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
                     gdm.getSource()
                   );
                 }
@@ -3541,8 +3503,8 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
         if ((thisFragment == null) && (thisManifest != null)) {
 
-          if (!responsibleRange.containsId(getFragmentLocation(thisKey))) {
-            logger.atWarn().log(() -> "Not responsible for "+thisKey+" (at "+getFragmentLocation(thisKey)+") -- discarding");
+          if (!responsibleRange.containsId(locator.getFragmentLocation(thisKey))) {
+            logger.atWarn().log(() -> "Not responsible for "+thisKey+" (at "+locator.getFragmentLocation(thisKey)+") -- discarding");
             continue;
           }
 
