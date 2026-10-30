@@ -1093,7 +1093,7 @@ public class ScribeRegrTest extends CommonAPITest {
       }
       String s = "";
       for (Topic topic : topics) {
-        s+=topics.toString()+" ";
+        s+=topic.toString()+" ";
       }
       return s+scribe;
     }
