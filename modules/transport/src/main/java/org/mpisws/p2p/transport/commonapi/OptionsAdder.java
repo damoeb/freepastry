@@ -44,9 +44,6 @@ public interface OptionsAdder {
 
   /**
    * Add any options related to this message
-   * @param options
-   * @param m
-   * @return
    */
   public Map<String, Object> addOptions(Map<String, Object> options,RawMessage m);
 

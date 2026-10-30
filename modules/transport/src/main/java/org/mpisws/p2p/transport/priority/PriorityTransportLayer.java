@@ -69,15 +69,12 @@ public interface PriorityTransportLayer<Identifier> extends TransportLayer<Ident
   /**
    * Returns if there is a primary connection to the identifier
    *
-   * @param i
    * @return STATUS_NOT_CONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
    */
   public int connectionStatus(Identifier i);
 
   /**
    * open a primary connection; PrimarySocketListeners are notified when it is open
-   * @param i
-   * @param options
    */
   public void openPrimaryConnection(Identifier i, Map<String, Object> options);
 

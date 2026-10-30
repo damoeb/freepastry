@@ -56,11 +56,13 @@ public class DefaultCallback<Identifier, MessageType> implements
     this.logger = logger;
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s)
       throws IOException {
     logger.info("incomingSocket({})", s);
   }
 
+  @Override
   public void messageReceived(Identifier i, MessageType m, Map<String, Object> options)
       throws IOException {
     logger.info("messageReceived({},{})", i, m);

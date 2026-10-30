@@ -40,8 +40,6 @@ package org.mpisws.p2p.transport.rendezvous;
  * Tells a NATted node about outgoingPilots.
  *
  * @author Jeff Hoye
- *
- * @param <HighIdentifier>
  */
 public interface OutgoingPilotListener<HighIdentifier> {
   void pilotOpening(HighIdentifier i);

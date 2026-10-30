@@ -47,8 +47,6 @@ import rice.p2p.util.TimerWeakHashMap;
  * This impl allows responses up to timeout millis later.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public class TimeoutResponseStrategy<Identifier> implements ResponseStrategy<Identifier> {
   /** Receive times are kept this much longer than the timeout. */
@@ -66,14 +64,17 @@ public class TimeoutResponseStrategy<Identifier> implements ResponseStrategy<Ide
     this.time = env.getTimeSource();
   }
 
+  @Override
   public void messageReceived(Identifier i, ByteBuffer msg, Map<String,Object> options) {
     lastTimeReceived.put(i, time.currentTimeMillis());
   }
 
+  @Override
   public void messageSent(Identifier i, ByteBuffer msg, Map<String,Object> options) {
 
   }
 
+  @Override
   public boolean sendDirect(Identifier i, ByteBuffer msg, Map<String,Object> options) {
     long lastTime = 0;
     if (lastTimeReceived.containsKey(i)) {

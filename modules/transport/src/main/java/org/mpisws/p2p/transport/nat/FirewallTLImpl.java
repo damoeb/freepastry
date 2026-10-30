@@ -57,9 +57,6 @@ import rice.environment.time.TimeSource;
  * Drops all incoming UDP connections that we didn't initiate, or that are since UDP_OPEN_MILLIS
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
- * @param <MessageType>
  */
 public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType> {
 
@@ -82,11 +79,10 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
 
   /**
    *
-   * @param tl
-   * @param udp_open_millis how long the udp hole remains open
+   * @param udpOpenMillis how long the udp hole remains open
    */
-  public FirewallTLImpl(TransportLayer<Identifier, MessageType> tl, int udp_open_millis, Environment env) {
-    this.UDP_OPEN_MILLIS = udp_open_millis;
+  public FirewallTLImpl(TransportLayer<Identifier, MessageType> tl, int udpOpenMillis, Environment env) {
+    this.UDP_OPEN_MILLIS = udpOpenMillis;
     this.environment = env;
     this.timeSource = environment.getTimeSource();
     this.logger = env.getLogManager().getLogger(FirewallTLImpl.class, null);
@@ -96,12 +92,14 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
     tl.acceptSockets(false);
   }
 
+  @Override
   public MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, MessageCallback<Identifier, MessageType> deliverAckToMe, Map<String, Object> options) {
     long now = timeSource.currentTimeMillis();
     udpTable.put(i,now);
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
+  @Override
   public void messageReceived(Identifier i, MessageType m, Map<String, Object> options) throws IOException {
     if (udpTable.containsKey(i)) {
       long now = timeSource.currentTimeMillis();
@@ -118,34 +116,41 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
   /**
    * Only allow outgoing sockets.
    */
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     logger.debug("closing incomingSocket({})", s);
     s.close();
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
-    return;
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
     return tl.openSocket(i, deliverSocketToMe, options);
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, MessageType> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
   }
 
+  @Override
   public void destroy() {
     tl.destroy();
   }

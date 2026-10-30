@@ -42,12 +42,10 @@ package org.mpisws.p2p.transport.direct;
 public interface Delivery {
   /**
    * What to do when time to deliver.
-   *
    */
   public void deliver();
   /**
    * Preserve order.
-   * @return
    */
   public int getSeq();
 }

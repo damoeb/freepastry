@@ -42,8 +42,6 @@ import java.util.Map;
  * Called when a ping is received.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public interface PingListener<Identifier> {
   /**
@@ -57,8 +55,6 @@ public interface PingListener<Identifier> {
 
   /**
    * Called when we receive a ping (not a pong)
-   * @param i
-   * @param options
    */
   public void pingReceived(Identifier i, Map<String, Object> options);
 }

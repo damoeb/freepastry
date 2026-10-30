@@ -187,9 +187,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
   /**
    * Put this in lower.
-   * @param l
-   * @param i
-   * @param options
    */
   public void setDeadForever(LowerIdentifier l, UpperIdentifier i, Map<String, Object> options) {
     if (deadForever.contains(i)) return;
@@ -222,9 +219,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
   }
 
   /**
-   * @param u
    * @param l is optional, and is set when the lower-layer calls it
-   * @param options
    * @return false if the new binding is actually old (IE, don't upgrade it)
    */
   protected boolean addBinding(UpperIdentifier u, LowerIdentifier l, Map<String, Object> options) {
@@ -281,11 +276,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
    * Return true if the new one is a valid replacement of the old
    *
    * True if they are the same
-   *
-   * @param oldDest
-   * @param newDest
-   * @param i
-   * @return
    */
   public boolean destinationChanged(UpperIdentifier oldDest, UpperIdentifier newDest, LowerIdentifier i, Map<String, Object> options) {
     if (oldDest.equals(newDest)) {
@@ -340,6 +330,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       tl.setCallback(this);
     }
 
+    @Override
     public SocketRequestHandle<LowerIdentifier> openSocket(
         final LowerIdentifier i,
         final SocketCallback<LowerIdentifier> deliverSocketToMe,
@@ -351,7 +342,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       final SocketRequestHandleImpl<LowerIdentifier> ret = new SocketRequestHandleImpl<LowerIdentifier>(i, options, logger);
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       try {
-        if ((options == null) || options.containsKey(DONT_VERIFY) && ((Boolean)options.get(DONT_VERIFY)).booleanValue()) {
+        if ((options == null) || (options.containsKey(DONT_VERIFY) && ((Boolean)options.get(DONT_VERIFY)).booleanValue())) {
           // don't send TO
           sob.writeByte(0);
         } else {
@@ -385,6 +376,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       ret.setSubCancellable(tl.openSocket(i,
           new SocketCallback<LowerIdentifier>(){
 
+            @Override
             public void receiveResult(SocketRequestHandle<LowerIdentifier> cancellable, final P2PSocket<LowerIdentifier> sock) {
               ret.setSubCancellable(() -> {
                 sock.close();
@@ -393,6 +385,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
               try {
                 new P2PSocketReceiver<LowerIdentifier>() {
 
+                  @Override
                   public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
                     if (canRead) throw new IOException("Never asked to read!");
                     if (!canWrite) throw new IOException("Can't write!");
@@ -407,10 +400,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                       socket.register(true, false, new P2PSocketReceiver<LowerIdentifier>() {
                         ByteBuffer responseBuffer = ByteBuffer.allocate(1);
 
+                        @Override
                         public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
                           deliverSocketToMe.receiveException(ret, ioe);
                         }
 
+                        @Override
                         public void receiveSelectResult(final P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
                           if (!canRead) throw new IOException("Can't read!");
                           if (canWrite) throw new IOException("Never asked to write!");
@@ -452,6 +447,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                     }
                   }
 
+                  @Override
                   public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
                     deliverSocketToMe.receiveException(ret, ioe);
                   }
@@ -461,6 +457,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
               }
             }
 
+            @Override
             public void receiveException(SocketRequestHandle<LowerIdentifier> s, Exception ex) {
               deliverSocketToMe.receiveException(ret, ex);
             }
@@ -470,6 +467,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       return ret;
     }
 
+    @Override
     public void incomingSocket(P2PSocket<LowerIdentifier> s) throws IOException {
       logger.debug("incomingSocket({})", s);
 
@@ -477,10 +475,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       new P2PSocketReceiver<LowerIdentifier>() {
         ByteBuffer buf = ByteBuffer.allocate(1);
 
+        @Override
         public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
           errorHandler.receivedException(socket.getIdentifier(), ioe);
         }
 
+        @Override
         public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
           if (socket.read(buf) < 0) {
             // socket closed
@@ -500,10 +500,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           new P2PSocketReceiver<LowerIdentifier>() {
             ByteBuffer buf = ByteBuffer.allocate(localIdentifier.length);
 
+            @Override
             public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
               errorHandler.receivedException(socket.getIdentifier(), ioe);
             }
 
+            @Override
             public void receiveSelectResult(final P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
               if (canWrite) throw new IOException("Never asked to write!");
               if (!canRead) throw new IOException("Can't read!");
@@ -534,10 +536,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                   System.arraycopy(localIdentifier, 0, result, 1, localIdentifier.length);
                   final ByteBuffer writeMe = ByteBuffer.wrap(result);
                   new P2PSocketReceiver<LowerIdentifier>() {
+                    @Override
                     public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
                       errorHandler.receivedException(socket.getIdentifier(), ioe);
                     }
 
+                    @Override
                     public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
                       if (canRead) throw new IOException("Not expecting to read.");
                       if (!canWrite) throw new IOException("Expecting to write.");
@@ -565,10 +569,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
               // now read the FROM, and add the proper index into the options
               final SocketInputBuffer sib = new SocketInputBuffer(socket, 1024);
               new P2PSocketReceiver<LowerIdentifier>() {
+                @Override
                 public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
                   errorHandler.receivedException(socket.getIdentifier(), ioe);
                 }
 
+                @Override
                 public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
                   if (canWrite) throw new IOException("Never asked to write!");
                   if (!canRead) throw new IOException("Can't read!");
@@ -601,10 +607,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                   byte[] result = {SUCCESS};
                   final ByteBuffer writeMe = ByteBuffer.wrap(result);
                   new P2PSocketReceiver<LowerIdentifier>() {
+                    @Override
                     public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
                       if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), ioe);
                     }
 
+                    @Override
                     public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
                       if (canRead) throw new IOException("Not expecting to read.");
                       if (!canWrite) throw new IOException("Expecting to write.");
@@ -639,6 +647,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     /**
      * Head the message with the expected identifier
      */
+    @Override
+    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
     public MessageRequestHandle<LowerIdentifier, ByteBuffer> sendMessage(
         final LowerIdentifier i,
         ByteBuffer m,
@@ -707,6 +717,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       ret.setSubCancellable(tl.sendMessage(i, buf,
           new MessageCallback<LowerIdentifier, ByteBuffer>(){
 
+            @Override
+            @SuppressWarnings("ReferenceEquality") // the same instance is meant
             public void ack(MessageRequestHandle<LowerIdentifier, ByteBuffer> msg) {
               if (ret.getSubCancellable() != null && msg != ret.getSubCancellable())
                 throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+
@@ -714,6 +726,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
               if (deliverAckToMe != null) deliverAckToMe.ack(ret);
             }
 
+            @Override
+            @SuppressWarnings("ReferenceEquality") // the same instance is meant
             public void sendFailed(MessageRequestHandle<LowerIdentifier, ByteBuffer> msg, Exception ex) {
               if (ret.getSubCancellable() != null && msg != ret.getSubCancellable())
                 throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+
@@ -729,6 +743,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       return ret;
     }
 
+    @Override
+    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
     public void messageReceived(LowerIdentifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
       Map<String, Object> newOptions = OptionsFactory.copyOptions(options);
 
@@ -752,8 +768,10 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
             tl.sendMessage(i, buf, null, options);   // it's important to the rendezvous layer to reuse the options
             return;
           }
+          // fall through: a message for me is read like one without an id
 
         case NO_ID:
+          @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
           SimpleInputBuffer sib = new SimpleInputBuffer(m.array(),m.position());
           UpperIdentifier from = serializer.deserialize(sib, i);
           m.position(m.array().length - sib.bytesRemaining());
@@ -783,6 +801,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           // it's an error, read it in
           UpperIdentifier oldDest = bindings.get(serializer.translateUp(i));
 
+          @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
           UpperIdentifier newDest = serializer.deserialize(new SimpleInputBuffer(m.array(),m.position()), i);
           logger.info("received INCORRECT_IDENTITY:{} old:{} new:{}", i, oldDest, newDest);
 
@@ -793,26 +812,32 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       }
     }
 
+    @Override
     public void acceptMessages(boolean b) {
       tl.acceptMessages(b);
     }
 
+    @Override
     public void acceptSockets(boolean b) {
       tl.acceptMessages(b);
     }
 
+    @Override
     public LowerIdentifier getLocalIdentifier() {
       return tl.getLocalIdentifier();
     }
 
+    @Override
     public void setCallback(TransportLayerCallback<LowerIdentifier, ByteBuffer> callback) {
       this.callback = callback;
     }
 
+    @Override
     public void setErrorHandler(ErrorHandler<LowerIdentifier> handler) {
       this.errorHandler = handler;
     }
 
+    @Override
     public void destroy() {
       logger.info("destroy()");
       tl.destroy();
@@ -864,10 +889,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       prox.addProximityListener(this);
     }
 
+    @Override
     public void clearState(UpperIdentifier i) {
       livenessProvider.clearState(serializer.translateDown(i));
     }
 
+    @Override
     public SocketRequestHandle<UpperIdentifier> openSocket(
         final UpperIdentifier i,
         final SocketCallback<UpperIdentifier> deliverSocketToMe,
@@ -891,9 +918,11 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
 
       handle.setSubCancellable(tl.openSocket(middle, new SocketCallback<MiddleIdentifier>(){
+        @Override
         public void receiveException(SocketRequestHandle<MiddleIdentifier> s, Exception ex) {
           deliverSocketToMe.receiveException(handle, ex);
         }
+        @Override
         public void receiveResult(SocketRequestHandle<MiddleIdentifier> cancellable, P2PSocket<MiddleIdentifier> sock) {
           deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<UpperIdentifier, MiddleIdentifier>(i,sock,logger,errorHandler,options));
         }
@@ -905,6 +934,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
      * Synchronization by selector thread.  Make sure setDeadForever() is only called on selector, otherwise the
      * next layer down could get stuck trying to send to dead-forever node.
      */
+    @Override
     public MessageRequestHandle<UpperIdentifier, UpperMsgType> sendMessage(
         UpperIdentifier i,
         UpperMsgType m,
@@ -946,6 +976,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       return ret;
     }
 
+    @Override
     public void incomingSocket(P2PSocket<MiddleIdentifier> s) throws IOException {
       logger.debug("incomingSocket({})", s);
       final UpperIdentifier from = getIntendedDest(s.getOptions());
@@ -965,6 +996,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       }
     }
 
+    @Override
     public void messageReceived(MiddleIdentifier i, UpperMsgType m, Map<String, Object> options) throws IOException {
       logger.debug("messageReceived({},{},{})", i, m, options);
       final UpperIdentifier from = getIntendedDest(options);
@@ -982,6 +1014,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
 
 
+    @Override
     public boolean checkLiveness(UpperIdentifier i, Map<String, Object> options) {
       logger.debug("checkLiveness({},{})", i, options);
       if (deadForever.contains(i)) return false;
@@ -991,19 +1024,22 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       return livenessProvider.checkLiveness(serializer.translateDown(i), options);
     }
 
-    List<LivenessListener<UpperIdentifier>> livenessListeners = new ArrayList<LivenessListener<UpperIdentifier>>();
+    final List<LivenessListener<UpperIdentifier>> livenessListeners = new ArrayList<LivenessListener<UpperIdentifier>>();
+    @Override
     public void addLivenessListener(LivenessListener<UpperIdentifier> name) {
       synchronized(livenessListeners) {
         livenessListeners.add(name);
       }
     }
 
+    @Override
     public boolean removeLivenessListener(LivenessListener<UpperIdentifier> name) {
       synchronized(livenessListeners) {
         return livenessListeners.remove(name);
       }
     }
 
+    @Override
     public int getLiveness(UpperIdentifier i, Map<String, Object> options) {
       logger.trace("getLiveness({},{})", i, options);
       if (deadForever.contains(i)) return LIVENESS_DEAD_FOREVER;
@@ -1013,6 +1049,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       return livenessProvider.getLiveness(serializer.translateDown(i), options);
     }
 
+    @Override
     public void livenessChanged(MiddleIdentifier i, int val, Map<String, Object> options) {
       if (deadForever.contains(i)) {
         if (val < LIVENESS_DEAD) {
@@ -1031,10 +1068,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
     /**
      * This is a guard so we don't notify about changes in liveness too many times.
-     *
-     * @param i
-     * @param val
-     * @param options
      */
     protected void setLiveness(UpperIdentifier i, int val, Map<String, Object> options) {
       // handle the first time
@@ -1063,26 +1096,30 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       }
     }
 
-    Collection<ProximityListener<UpperIdentifier>> proxListeners =
+    final Collection<ProximityListener<UpperIdentifier>> proxListeners =
       new ArrayList<ProximityListener<UpperIdentifier>>();
+    @Override
     public void addProximityListener(ProximityListener<UpperIdentifier> name) {
       synchronized(proxListeners) {
         proxListeners.add(name);
       }
     }
 
+    @Override
     public boolean removeProximityListener(ProximityListener<UpperIdentifier> name) {
       synchronized(proxListeners) {
         return proxListeners.remove(name);
       }
     }
 
+    @Override
     public int proximity(UpperIdentifier i, Map<String, Object> options) {
       logger.trace("proximity({})", i);
       if (deadForever.contains(i)) return Integer.MAX_VALUE;
       return prox.proximity(serializer.translateDown(i), OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, i));
     }
 
+    @Override
     public void proximityChanged(MiddleIdentifier i, int newProx, Map<String, Object> options) {
       UpperIdentifier upper = getIntendedDest(options);
       if (upper == null) {
@@ -1104,26 +1141,32 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       }
     }
 
+    @Override
     public void acceptMessages(boolean b) {
       tl.acceptMessages(b);
     }
 
+    @Override
     public void acceptSockets(boolean b) {
       tl.acceptSockets(b);
     }
 
+    @Override
     public UpperIdentifier getLocalIdentifier() {
       return localIdentifier;
     }
 
+    @Override
     public void setCallback(TransportLayerCallback<UpperIdentifier, UpperMsgType> callback) {
       this.callback = callback;
     }
 
+    @Override
     public void setErrorHandler(ErrorHandler<UpperIdentifier> handler) {
       this.errorHandler = handler;
     }
 
+    @Override
     public void destroy() {
       logger.info("destroy()");
       tl.destroy();
@@ -1148,14 +1191,17 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       this.deliverAckToMe = deliverAckToMe;
     }
 
+    @Override
     public UpperIdentifier getIdentifier() {
       return identifier;
     }
 
+    @Override
     public UpperMsgType getMessage() {
       return message;
     }
 
+    @Override
     public Map<String, Object> getOptions() {
       return options;
     }
@@ -1165,6 +1211,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(this, new NodeIsFaultyException(identifier,message));
     }
 
+    @Override
     public boolean cancel() {
       removePendingMessage(identifier, this);
       return subCancellable.cancel();
@@ -1174,16 +1221,19 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       this.subCancellable = cancellable;
     }
 
+    @Override
     public void ack(MessageRequestHandle<MiddleIdentifier, UpperMsgType> msg) {
       removePendingMessage(identifier, this);
       if (deliverAckToMe != null) deliverAckToMe.ack(this);
     }
 
+    @Override
     public void sendFailed(MessageRequestHandle<MiddleIdentifier, UpperMsgType> msg, Exception reason) {
       removePendingMessage(identifier, this);
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(this, reason);
     }
 
+    @Override
     public String toString() {
       return "IdMsgHdl{"+message+"}->"+identifier;
     }

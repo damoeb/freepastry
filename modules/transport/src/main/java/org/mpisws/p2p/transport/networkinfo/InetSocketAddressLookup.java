@@ -52,7 +52,6 @@ import rice.p2p.commonapi.Cancellable;
  * Third, call verifyConnectivity to make sure it all worked
  *
  * @author Jeff Hoye
- *
  */
 public interface InetSocketAddressLookup extends Destructable {
 
@@ -61,8 +60,6 @@ public interface InetSocketAddressLookup extends Destructable {
    *
    * @param bootstrap the node to ask
    * @param c receives the external addresses
-   * @param options
-   * @return
    */
   public Cancellable getExternalNodes(InetSocketAddress bootstrap,
       Continuation<Collection<InetSocketAddress>, IOException> c,
@@ -93,8 +90,6 @@ public interface InetSocketAddressLookup extends Destructable {
    * @param local the addresses to verify
    * @param probeAddresses the node that coordinates the probe
    * @param deliverResultToMe receives the probe results
-   * @param options
-   * @return
    */
   public Cancellable verifyConnectivity(MultiInetSocketAddress local,
       InetSocketAddress probeAddresses,

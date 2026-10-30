@@ -101,8 +101,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   // TODO: think about the behavior of this when it wraps around...
   int seq = Integer.MIN_VALUE;
-  SortedLinkedList<MessageWrapper<Identifier>> queue; // messages we want to send
-  Collection<P2PSocket<Identifier>> sockets;
+  final SortedLinkedList<MessageWrapper<Identifier>> queue; // messages we want to send
+  final Collection<P2PSocket<Identifier>> sockets;
 
   WeakReference<Identifier> identifier;
 
@@ -129,6 +129,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     sockets = new HashSet<P2PSocket<Identifier>>();
   }
 
+  @Override
   public String toString() {
     return "EM{"+identifier.get()+"}";
   }
@@ -150,9 +151,9 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    *
    * The purpose of this method is to let the currently writing message to complete.
    *
-   * @param socket
    * @return true if we did it now
    */
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public boolean closeMe(P2PSocket<Identifier> socket) {
     if (logger.isTraceEnabled()) logger.atTrace().setCause(new Exception("Stack Trace")).log(() -> "closeMe("+socket+"):"+(socket == writingSocket)+","+messageThatIsBeingWritten);
     if (socket == writingSocket) {
@@ -174,9 +175,9 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   /**
    * Get's the socket, both when we open it, and when a remote node opens it.
    *
-   * @param s
    * @param receipt null if a remote node opened the socket
    */
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void primarySocketAvailable(P2PSocket<Identifier> s, SocketRequestHandle<Identifier> receipt) {
     // make sure we're on the selector thread so synchronization of writingSocket is simple
     if (!selectorManager.isSelectorThread()) throw new IllegalStateException("Must be called on the selector");
@@ -225,7 +226,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    * A) finds a writingSocket if possible
    *   opens one if needed
    */
-  protected void scheduleToWriteIfNeeded() {
+  void scheduleToWriteIfNeeded() {
     if (!selectorManager.isSelectorThread()) throw new IllegalStateException("Must be called on the selector");
 
     Identifier temp = identifier.get();
@@ -267,6 +268,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
       logger.debug("Opening Primary Socket to {}", i);
 
       final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i, options, logger) {
+        @Override
         public boolean cancel() {
           ctx.entityManagers.apply(i).receiveSocketException(this, new org.mpisws.p2p.transport.ClosedChannelException("Channel cancelled."));
           return super.cancel();
@@ -326,7 +328,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   /**
    * Returns the messageThatIsBeingWritten, or the first in the queue, w/o setting messageThatIsBeingWritten
-   * @return
    */
   MessageWrapper<Identifier> peek() {
     synchronized(queue) {
@@ -339,7 +340,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   /**
    * Returns the messageThatIsBeingWritten, polls the queue if it is null
-   * @return
    */
   private MessageWrapper<Identifier> poll() {
     synchronized(queue) {
@@ -356,7 +356,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   /**
    * True if we have a message to send
-   * @return
    */
   private boolean haveMessageToSend() {
     if (messageThatIsBeingWritten == null && queue.isEmpty()) return false;
@@ -366,6 +365,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   /**
    * This is called when the socket has an exception but was already opened.
    */
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
 
     if (logger.isTraceEnabled()) {
@@ -385,6 +386,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     scheduleToWriteIfNeeded();
   }
 
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
     registered  = false;
     if (canRead || !canWrite) throw new IllegalStateException(this+" Expected only to write. canRead:"+canRead+" canWrite:"+canWrite+" socket:"+socket);
@@ -406,10 +409,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    * TODO: The synchronization here may need work.
    *
    * This is called while we are waiting to open the new socket.
-   *
-   * @param handle
-   * @param ex
    */
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveSocketException(SocketRequestHandleImpl<Identifier> handle, Exception ex) {
     synchronized(EntityManager.this) {
       if (handle == pendingSocket) {
@@ -424,7 +425,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   /**
    * Enqueue the message.
-   * @param ret
    */
   private void enqueue(MessageWrapper<Identifier> ret) {
     synchronized(queue) {
@@ -441,7 +441,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   /**
    * This method is a keeper, but may need some additional functions, and/or error handling.
-   *
    */
   public void markDead() {
     purge(new NodeIsFaultyException(identifier.get()));
@@ -495,10 +494,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   /**
    * Read a sizeBuf, then a msgBuff, repeat
-   *
-   * @param socket
    */
-  protected void handleBigMsgSocket(P2PSocket<Identifier> socket) {
+  void handleBigMsgSocket(P2PSocket<Identifier> socket) {
     logger.info("handling BIG message socket from:{}", socket);
     try {
       new BigMessageReader<Identifier>(ctx).receiveSelectResult(socket, true, false);
@@ -511,11 +508,6 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
 
   /**
    * Note: We got to get rid of all the calls to poll().
-   *
-   * @param message
-   * @param deliverAckToMe
-   * @param options
-   * @return
    */
   public MessageRequestHandle<Identifier, ByteBuffer> send(
       Identifier temp,
@@ -583,7 +575,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     return ret;
   }
 
-  protected boolean complete(MessageWrapper<Identifier> wrapper) {
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
+  boolean complete(MessageWrapper<Identifier> wrapper) {
     logger.debug("{}.complete({})", this, wrapper);
     if (wrapper != messageThatIsBeingWritten) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+messageThatIsBeingWritten);
 

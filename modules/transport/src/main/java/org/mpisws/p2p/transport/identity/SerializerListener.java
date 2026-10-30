@@ -39,8 +39,6 @@ package org.mpisws.p2p.transport.identity;
 /**
  * Notified every time we hear of a new UpperIdentifier (usually deserialization)
  * @author Jeff Hoye
- *
- * @param <UpperIdentifier>
  */
 public interface SerializerListener<UpperIdentifier> {
   public void nodeHandleFound(UpperIdentifier handle);

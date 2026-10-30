@@ -111,16 +111,12 @@ public interface TransportLayer<Identifier, MessageType> extends Destructable {
   /**
    * Toggle accepting new sockets.  Useful in flow control if overwhelmed by incoming sockets.
    * Default: true
-   *
-   * @param b
    */
   public void acceptSockets(boolean b);
 
   /**
    * Toggle accepting incoming messages.  Useful in flow control if overwhelmed by incoming sockets.
    * Default: true
-   *
-   * @param b
    */
   public void acceptMessages(boolean b);
 

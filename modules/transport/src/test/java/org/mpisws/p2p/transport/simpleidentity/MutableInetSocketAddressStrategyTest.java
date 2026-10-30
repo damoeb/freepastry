@@ -60,12 +60,14 @@ public class MutableInetSocketAddressStrategyTest {
   static class AddressSerializer implements Serializer<InetSocketAddress> {
     int calls;
 
+    @Override
     public void serialize(InetSocketAddress i, OutputBuffer b) throws IOException {
       calls++;
       byte[] addr = i.getAddress().getAddress();
       b.write(addr, 0, addr.length);
     }
 
+    @Override
     public InetSocketAddress deserialize(InputBuffer b, InetSocketAddress i, Map<String, Object> options) {
       throw new UnsupportedOperationException();
     }

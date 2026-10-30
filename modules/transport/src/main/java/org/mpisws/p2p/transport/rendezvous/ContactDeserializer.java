@@ -54,9 +54,6 @@ public interface ContactDeserializer<Identifier, HighIdentifier> {
 
   /**
    * Return the options that all the layers would make on this identifier.
-   *
-   * @param high
-   * @return
    */
   Map<String, Object> getOptions(HighIdentifier high);
 

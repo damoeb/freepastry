@@ -56,6 +56,8 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
     this.ctx = ctx;
   }
 
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
     if (socket != s) throw new IllegalArgumentException("Sockets not equal!!! s:"+s+" socket:"+socket);
     if (canWrite || !canRead) throw new IllegalArgumentException("Should only be able to read! canRead:"+canRead+" canWrite:"+canWrite);
@@ -105,6 +107,7 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
     }
   }
 
+  @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception e) {
     ctx.errorHandler.get().receivedException(socket.getIdentifier(), e);
   }

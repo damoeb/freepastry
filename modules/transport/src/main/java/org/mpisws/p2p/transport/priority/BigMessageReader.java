@@ -57,11 +57,13 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
     this.ctx = ctx;
   }
 
+  @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
     ctx.errorHandler.get().receivedException(socket.getIdentifier(), ioe);
     socket.close();
   }
 
+  @Override
   public void receiveSelectResult(P2PSocket<Identifier> socket,
       boolean canRead, boolean canWrite) throws IOException {
     if (sizeBuf.hasRemaining()) {

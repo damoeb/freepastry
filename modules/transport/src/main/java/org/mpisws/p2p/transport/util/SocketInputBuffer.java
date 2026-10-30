@@ -72,7 +72,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
  * Implementation notes: readPtr/writePtr are operating on the same byte[] called cache
  *
  * @author Jeff Hoye
- *
  */
 public class SocketInputBuffer implements InputBuffer {
   /** Initial read buffer size in bytes. */
@@ -139,6 +138,7 @@ public class SocketInputBuffer implements InputBuffer {
     });
   }
 
+  @Override
   public int bytesRemaining() {
     return UNKNOWN;
   }
@@ -164,11 +164,7 @@ public class SocketInputBuffer implements InputBuffer {
   /**
    *
    *
-   * @param b
-   * @param off
-   * @param len
    * @return the number of bytes read
-   * @throws IOException
    */
   public int readInternal(byte[] b, int off, int len) throws IOException {
     int bytesToRead = needBytes(len, false);
@@ -179,9 +175,7 @@ public class SocketInputBuffer implements InputBuffer {
   /**
    *
    *
-   * @param b
    * @return the number of bytes read
-   * @throws IOException
    */
   public int readInternal(byte[] b) throws IOException {
     int bytesToRead = needBytes(b.length, false);
@@ -193,7 +187,6 @@ public class SocketInputBuffer implements InputBuffer {
    *
    *
    * @return the value of one byte
-   * @throws IOException
    */
   public int readInternal() throws IOException {
     needBytes(1, true);
@@ -201,46 +194,57 @@ public class SocketInputBuffer implements InputBuffer {
   }
 
 
+  @Override
   public int read(byte[] b, int off, int len) throws IOException {
     return dis.read(b, off, len);
   }
 
+  @Override
   public int read(byte[] b) throws IOException {
     return dis.read(b);
   }
 
+  @Override
   public byte readByte() throws IOException {
     return dis.readByte();
   }
 
+  @Override
   public boolean readBoolean() throws IOException {
     return dis.readBoolean();
   }
 
+  @Override
   public char readChar() throws IOException {
     return dis.readChar();
   }
 
+  @Override
   public double readDouble() throws IOException {
     return dis.readDouble();
   }
 
+  @Override
   public float readFloat() throws IOException {
     return dis.readFloat();
   }
 
+  @Override
   public int readInt() throws IOException {
     return dis.readInt();
   }
 
+  @Override
   public long readLong() throws IOException {
     return dis.readLong();
   }
 
+  @Override
   public short readShort() throws IOException {
     return dis.readShort();
   }
 
+  @Override
   public String readUTF() throws IOException {
     return dis.readUTF();
   }
@@ -252,7 +256,6 @@ public class SocketInputBuffer implements InputBuffer {
    * @param num the number of bytes you need
    * @param fail true if you want it to throw an exception if there aren't enough bytes
    * @return the actual number of bytes read
-   * @throws IOException
    */
   private int needBytes(int num, boolean fail) throws IOException {
     int bytesToReadIntoCache = num - (writePtr.position() - readPtr.position());
@@ -272,10 +275,6 @@ public class SocketInputBuffer implements InputBuffer {
    * Reads this many bytes into the cache, grows the cache if needed
    *
    * Increases the writeBB
-   *
-   * @param num
-   * @return
-   * @throws IOException
    */
   private int readBytesIntoCache(int num) throws IOException {
     ByteBuffer in;

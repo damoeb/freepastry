@@ -66,6 +66,7 @@ final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier
     this.ctx = ctx;
   }
 
+  @Override
   public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sock) {
     handle.setSubCancellable(() -> {
       sock.close();
@@ -74,6 +75,8 @@ final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier
     sock.register(false, true, new HeaderWriter());
   }
 
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
     if (handle.getSubCancellable() != null && s != handle.getSubCancellable()) throw new IllegalArgumentException(
         "s != handle.getSubCancellable() must be a bug. s:"+
@@ -87,6 +90,7 @@ final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier
   private final class HeaderWriter implements P2PSocketReceiver<Identifier> {
     ByteBuffer writeMe = ByteBuffer.wrap(PriorityTransportLayerImpl.PRIMARY_SOCKET);
 
+    @Override
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       if (canRead || !canWrite) throw new IllegalArgumentException("expected to write!  canRead:"+canRead+" canWrite:"+canWrite);
       ctx.logger.debug("Opened Primary socket {} to {}", socket, i);
@@ -102,10 +106,12 @@ final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier
       }
     }
 
+    @Override
     public void receiveException(P2PSocket<Identifier> socket, Exception e) {
       ctx.entityManagers.apply(socket.getIdentifier()).receiveSocketException(handle, e);
     }
 
+    @Override
     public String toString() {
       return "PriorityTLi: Primary Socket shim to "+i;
     }

@@ -58,6 +58,7 @@ public class PongMessage {
     this.sentTime = sentTime;
   }
 
+  @Override
   public String toString() {
     return "PongMessage<"+sentTime+">";
   }

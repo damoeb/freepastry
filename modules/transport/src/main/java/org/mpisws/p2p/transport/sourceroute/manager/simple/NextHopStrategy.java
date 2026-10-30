@@ -34,9 +34,6 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/**
- *
- */
 package org.mpisws.p2p.transport.sourceroute.manager.simple;
 
 import java.util.Collection;
@@ -46,12 +43,10 @@ import java.util.Collection;
  * provide a next hop.
  *
  * @author Jeff Hoye
- *
  */
 public interface NextHopStrategy<Identifier> {
 
   /**
-   * @param destination
    * @return good next candidates (random nodes that we suspect are alive are a good start)
    * to reach the destination
    */

@@ -65,6 +65,7 @@ final class SizeReader<Identifier> extends BufferReader<Identifier> {
     new BufferReader<Identifier>(owner, msgSize, socket);
   }
 
+  @Override
   public String toString() {
     return "SizeReader";
   }

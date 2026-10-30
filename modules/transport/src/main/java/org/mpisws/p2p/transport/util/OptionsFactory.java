@@ -67,10 +67,6 @@ public class OptionsFactory {
 
   /**
    * Merge 2 options, keeping the first if there is a conflict
-   *
-   * @param options
-   * @param options2
-   * @return
    */
   public static Map<String, Object> merge(Map<String, Object> options,
       Map<String, Object> options2) {

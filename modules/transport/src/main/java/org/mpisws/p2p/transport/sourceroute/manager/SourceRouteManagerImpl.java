@@ -80,7 +80,6 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
  * which generates SourceRoutes to try.
  *
  * @author Jeff Hoye
- *
  */
 public class SourceRouteManagerImpl<Identifier> implements
     SourceRouteManager<Identifier>,
@@ -99,11 +98,11 @@ public class SourceRouteManagerImpl<Identifier> implements
   Environment environment;
   Logger logger;
   Identifier localAddress;
-  Map<Identifier, AddressManager> addressManagers;
+  final Map<Identifier, AddressManager> addressManagers;
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
   private ErrorHandler<Identifier> errorHandler;
-  Set<AddressManager> hardLinks;
-  List<LivenessListener<Identifier>> livenessListeners;
+  final Set<AddressManager> hardLinks;
+  final List<LivenessListener<Identifier>> livenessListeners;
   SourceRouteFactory<Identifier> srFactory;
 
   public SourceRouteManagerImpl(
@@ -131,7 +130,7 @@ public class SourceRouteManagerImpl<Identifier> implements
     livenessProvider.addLivenessListener(this);
 
     addressManagers = new HashMap<Identifier, AddressManager>();
-    SourceRouteManagerConfig config = SourceRouteManagerConfig.fromParameters(environment.getParameters());
+    SourceRouteManagerConfig.fromParameters(environment.getParameters()); // fails fast on invalid parameters
     hardLinks = new HashSet<AddressManager>();
     livenessListeners = new ArrayList<LivenessListener<Identifier>>();
   }
@@ -142,6 +141,7 @@ public class SourceRouteManagerImpl<Identifier> implements
    * @param i The address to send the message to
    * @param m The message to send
    */
+  @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(
       Identifier i,
       ByteBuffer m,
@@ -171,6 +171,7 @@ public class SourceRouteManagerImpl<Identifier> implements
   }
 
 
+  @Override
   public void clearState(Identifier i) {
     getAddressManager(i).clearLivenessState();
   }
@@ -193,6 +194,7 @@ public class SourceRouteManagerImpl<Identifier> implements
    * @param i The address to open the socket to
    * @param deliverSocketToMe receives the socket
    */
+  @Override
   public SocketRequestHandle<Identifier> openSocket(
       Identifier i,
       SocketCallback<Identifier> deliverSocketToMe,
@@ -209,6 +211,7 @@ public class SourceRouteManagerImpl<Identifier> implements
    *
    * @return true if node is currently alive.
    */
+  @Override
   public boolean checkLiveness(Identifier address, Map<String, Object> options) {
     return getAddressManager(address).checkLiveness(options);
   }
@@ -220,6 +223,7 @@ public class SourceRouteManagerImpl<Identifier> implements
    * @param address The address to return the value for
    * @return The liveness value
    */
+  @Override
   public int getLiveness(Identifier address, Map<String, Object> options) {
     return getAddressManager(address).getLiveness(options);
   }
@@ -231,30 +235,37 @@ public class SourceRouteManagerImpl<Identifier> implements
    * @param address The address to return the value for
    * @return The ping value to the remote address
    */
+  @Override
   public int proximity(Identifier address, Map<String, Object> options) {
     return getAddressManager(address).proximity(options);
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return localAddress;
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
   }
 
+  @Override
   public void destroy() {
     tl.destroy();
   }
@@ -302,6 +313,7 @@ public class SourceRouteManagerImpl<Identifier> implements
      *
      * @param address The address
      */
+    @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
     public AddressManager(Identifier address) {
       this.address = address;
       this.pendingMessages = new LinkedList<PendingMessage>();
@@ -356,10 +368,12 @@ public class SourceRouteManagerImpl<Identifier> implements
         this.options = options;
       }
 
+      @Override
       public void receiveResult(SocketRequestHandle<SourceRoute<Identifier>> cancellable, P2PSocket<SourceRoute<Identifier>> sock) {
         deliverSocketToMe.receiveResult(this, new SourceRouteManagerP2PSocket<Identifier>(sock, logger, errorHandler, environment));
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<SourceRoute<Identifier>> s, Exception ex) {
         deliverSocketToMe.receiveException(this, ex);
       }
@@ -369,6 +383,7 @@ public class SourceRouteManagerImpl<Identifier> implements
         receiveException(null, ex);
       }
 
+      @Override
       public boolean cancel() {
         if (cancellable == null) {
           return pendingSockets.remove(this);
@@ -376,10 +391,12 @@ public class SourceRouteManagerImpl<Identifier> implements
         return cancellable.cancel();
       }
 
+      @Override
       public Identifier getIdentifier() {
         return address;
       }
 
+      @Override
       public Map<String, Object> getOptions() {
         return options;
       }
@@ -397,6 +414,7 @@ public class SourceRouteManagerImpl<Identifier> implements
         this.options = options;
       }
 
+      @Override
       public boolean cancel() {
         if (cancellable == null) {
           return pendingMessages.remove(this);
@@ -404,22 +422,27 @@ public class SourceRouteManagerImpl<Identifier> implements
         return cancellable.cancel();
       }
 
+      @Override
       public Map<String, Object> getOptions() {
         return options;
       }
 
+      @Override
       public Identifier getIdentifier() {
         return address;
       }
 
+      @Override
       public ByteBuffer getMessage() {
         return message;
       }
 
+      @Override
       public void ack(MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> msg) {
         deliverAckToMe.ack(this);
       }
 
+      @Override
       public void sendFailed(MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> msg, Exception reason) {
         deliverAckToMe.sendFailed(this, reason);
       }
@@ -489,11 +512,15 @@ public class SourceRouteManagerImpl<Identifier> implements
       final MessageRequestHandleImpl<Identifier, ByteBuffer> handle
         = new MessageRequestHandleImpl<Identifier, ByteBuffer>(address, message, options);
       handle.setSubCancellable(tl.sendMessage(best, message, new MessageCallback<SourceRoute<Identifier>, ByteBuffer>(){
+        @Override
+        @SuppressWarnings("ReferenceEquality") // the same instance is meant
         public void ack(MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> msg) {
           if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
           if (deliverAckToMe != null) deliverAckToMe.ack(handle);
         }
 
+        @Override
+        @SuppressWarnings("ReferenceEquality") // the same instance is meant
         public void sendFailed(MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> msg, Exception ex) {
           if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
           if (deliverAckToMe == null) {
@@ -534,11 +561,13 @@ public class SourceRouteManagerImpl<Identifier> implements
           new SocketRequestHandleImpl<Identifier>(address, options, logger);
 
         handle.setSubCancellable(tl.openSocket(best, new SocketCallback<SourceRoute<Identifier>>(){
+          @Override
           public void receiveResult(
               SocketRequestHandle<SourceRoute<Identifier>> cancellable,
               P2PSocket<SourceRoute<Identifier>> sock) {
             deliverSocketToMe.receiveResult(handle, new SourceRouteManagerP2PSocket<Identifier>(sock, logger, errorHandler, environment));
           }
+          @Override
           public void receiveException(SocketRequestHandle<SourceRoute<Identifier>> s, Exception ex) {
             deliverSocketToMe.receiveException(handle, ex);
           }
@@ -583,6 +612,7 @@ public class SourceRouteManagerImpl<Identifier> implements
       }
     }
 
+    @Override
     public String toString() {
       return "AM "+this.address;
     }
@@ -645,7 +675,7 @@ public class SourceRouteManagerImpl<Identifier> implements
     protected synchronized void markSuspected(SourceRoute<Identifier> route, Map<String, Object> options) {
       logger.trace("{} markSuspected({}):{}", this, route, best);
       // mark this address as suspected, if this is currently the best route
-      if (((best == null) || (best.equals(route))) && // because we set the best == null when we didn't have a route
+      if (((best == null) || best.equals(route)) && // because we set the best == null when we didn't have a route
           (liveness < LIVENESS_DEAD)) // don't promote the node
           setSuspected(options);
     }
@@ -666,7 +696,7 @@ public class SourceRouteManagerImpl<Identifier> implements
       // if this route was the best, or if we have no best, we need to
       // look for alternate routes - if all alternates are now dead,
       // we mark ourselves as dead
-      if ((best == null) || (deadRoute.equals(best))) {
+      if ((best == null) || deadRoute.equals(best)) {
         best = null;
 
         Collection<SourceRoute<Identifier>> newroutes = strategy.getSourceRoutes(address);
@@ -878,12 +908,14 @@ public class SourceRouteManagerImpl<Identifier> implements
     }
   }
 
+  @Override
   public void addLivenessListener(LivenessListener<Identifier> name) {
     synchronized(livenessListeners) {
       livenessListeners.add(name);
     }
   }
 
+  @Override
   public boolean removeLivenessListener(LivenessListener<Identifier> name) {
     synchronized(livenessListeners) {
       return livenessListeners.remove(name);
@@ -901,32 +933,38 @@ public class SourceRouteManagerImpl<Identifier> implements
     }
   }
 
+  @Override
   public void incomingSocket(P2PSocket<SourceRoute<Identifier>> s) throws IOException {
     callback.incomingSocket(new SourceRouteManagerP2PSocket<Identifier>(s, logger, errorHandler, environment));
   }
 
+  @Override
   public void messageReceived(SourceRoute<Identifier> i, ByteBuffer m, Map<String, Object> options) throws IOException {
     callback.messageReceived(i.getLastHop(), m, options);
   }
 
+  @Override
   public void livenessChanged(SourceRoute<Identifier> i, int val, Map<String, Object> options) {
     logger.trace("livenessChanged({},{})", i, val);
     getAddressManager(i.getLastHop()).livenessChanged(i,val, options);
   }
 
-  Collection<ProximityListener<Identifier>> listeners = new ArrayList<ProximityListener<Identifier>>();
+  final Collection<ProximityListener<Identifier>> listeners = new ArrayList<ProximityListener<Identifier>>();
+  @Override
   public void addProximityListener(ProximityListener<Identifier> listener) {
     synchronized(listeners) {
       listeners.add(listener);
     }
   }
 
+  @Override
   public boolean removeProximityListener(ProximityListener<Identifier> listener) {
     synchronized(listeners) {
       return listeners.remove(listener);
     }
   }
 
+  @Override
   public void proximityChanged(SourceRoute<Identifier> i, int newProximity, Map<String, Object> options) {
     getAddressManager(i.getLastHop()).markProximity(i, newProximity, options);
   }

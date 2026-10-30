@@ -46,7 +46,6 @@ import rice.p2p.commonapi.Cancellable;
 /**
  * This is used in a network
  * @author Jeff Hoye
- *
  */
 public interface ProbeStrategy {
   /**
@@ -62,7 +61,6 @@ public interface ProbeStrategy {
 
   /**
    * Returns some known external addresses.
-   * @return
    */
   Collection<InetSocketAddress> getExternalAddresses();
 }

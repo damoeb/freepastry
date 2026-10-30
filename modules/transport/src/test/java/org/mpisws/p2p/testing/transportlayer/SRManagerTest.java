@@ -83,6 +83,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
   /**
    * Goes to Alice/Bob
    */
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
   public static final byte[] GOOD_HDR = {(byte)0xDE,(byte)0xAD,(byte)0xBE,(byte)0xEF};
 
   static TransportLayer<MultiInetSocketAddress, ByteBuffer> dave; // going to be the middle hop for alice/bob
@@ -237,6 +238,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
       this.local = local;
     }
 
+    @Override
     public Collection<SourceRoute<MultiInetSocketAddress>> getSourceRoutes(MultiInetSocketAddress destination) {
       ArrayList<MultiInetSocketAddress> eList = new ArrayList<MultiInetSocketAddress>();
       eList.add((MultiInetSocketAddress)alice.getLocalIdentifier());
@@ -294,6 +296,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     final Object lock = new Object();
 
     PingListener<SourceRoute<MultiInetSocketAddress>> pl = new PingListener<SourceRoute<MultiInetSocketAddress>>() {
+      @Override
       public void pingResponse(SourceRoute<MultiInetSocketAddress> i, int rtt, Map<String, Object> options) {
         synchronized(lock) {
           pingResponse.put(i.getLastHop(), new Tupel(i.getLastHop(), rtt));
@@ -301,6 +304,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         }
       }
 
+      @Override
       public void pingReceived(SourceRoute<MultiInetSocketAddress> i, Map<String, Object> options) {
 
       }
@@ -327,7 +331,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     assertTrue(aliceProx > carolProx+100, "aliceProx:"+aliceProx+" carolProx:"+carolProx);
   }
 
-  class Tupel {
+  static class Tupel {
     MultiInetSocketAddress sr;
     int val;
 

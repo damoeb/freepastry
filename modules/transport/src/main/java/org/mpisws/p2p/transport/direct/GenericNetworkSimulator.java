@@ -45,8 +45,6 @@ public interface GenericNetworkSimulator<Identifier, MessageType> extends Livene
 
   /**
    * Get the environment related to a specific node.
-   * @param i
-   * @return
    */
   public Environment getEnvironment(Identifier i);
 
@@ -85,7 +83,6 @@ public interface GenericNetworkSimulator<Identifier, MessageType> extends Livene
 
   /**
    * Kill identifier.
-   * @param i
    */
   public void remove(Identifier i);
 

@@ -83,7 +83,6 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  *
  *
  * @author Jeff Hoye
- *
  */
 public class NetworkInfoTransportLayer implements
     InetSocketAddressLookup,
@@ -131,11 +130,13 @@ public class NetworkInfoTransportLayer implements
 
   InetSocketAddressSerializer addrSerializer = new InetSocketAddressSerializer();
 
+  @Override
   public Cancellable getMyInetAddress(InetSocketAddress bootstrap,
       final Continuation<InetSocketAddress, IOException> c, Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, HEADER_IP_ADDRESS_REQUEST, new SocketCallback<InetSocketAddress>() {
 
+      @Override
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         final SocketInputBuffer sib = new SocketInputBuffer(sock);
@@ -143,6 +144,7 @@ public class NetworkInfoTransportLayer implements
         try {
           new P2PSocketReceiver<InetSocketAddress>() {
 
+            @Override
             public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               // read IP address
@@ -156,9 +158,10 @@ public class NetworkInfoTransportLayer implements
               }
             }
 
+            @Override
             public void receiveException(P2PSocket<InetSocketAddress> socket,
                 Exception ioe) {
-              if (ioe instanceof IOException) c.receiveException((IOException)ioe);
+              if (ioe instanceof IOException ioException) c.receiveException(ioException);
               c.receiveException(new NetworkInfoIOException(ioe));
             }
 
@@ -168,9 +171,10 @@ public class NetworkInfoTransportLayer implements
         }
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
-        if (ex instanceof IOException) c.receiveException((IOException)ex);
+        if (ex instanceof IOException ioException) c.receiveException(ioException);
         c.receiveException(new NetworkInfoIOException(ex));
       }
     }, options));
@@ -190,6 +194,7 @@ public class NetworkInfoTransportLayer implements
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, hdr, new SocketCallback<InetSocketAddress>() {
 
+      @Override
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         final SocketInputBuffer sib = new SocketInputBuffer(sock);
@@ -197,6 +202,7 @@ public class NetworkInfoTransportLayer implements
         try {
           new P2PSocketReceiver<InetSocketAddress>() {
 
+            @Override
             public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               try {
@@ -212,9 +218,10 @@ public class NetworkInfoTransportLayer implements
               }
             }
 
+            @Override
             public void receiveException(P2PSocket<InetSocketAddress> socket,
                 Exception ioe) {
-              if (ioe instanceof IOException) c.receiveException((IOException)ioe);
+              if (ioe instanceof IOException ioException) c.receiveException(ioException);
               c.receiveException(new NetworkInfoIOException(ioe));
             }
 
@@ -224,20 +231,23 @@ public class NetworkInfoTransportLayer implements
         }
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
-        if (ex instanceof IOException) c.receiveException((IOException)ex);
+        if (ex instanceof IOException ioException) c.receiveException(ioException);
         c.receiveException(new NetworkInfoIOException(ex));
       }
     }, options));
     return ret;
   }
 
+  @Override
   public Cancellable getExternalNodes(InetSocketAddress bootstrap,
       final Continuation<Collection<InetSocketAddress>, IOException> c, Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, HEADER_NODES_REQUEST, new SocketCallback<InetSocketAddress>() {
 
+      @Override
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         final SocketInputBuffer sib = new SocketInputBuffer(sock);
@@ -245,6 +255,7 @@ public class NetworkInfoTransportLayer implements
         try {
           new P2PSocketReceiver<InetSocketAddress>() {
 
+            @Override
             public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               // read IP address
@@ -263,9 +274,10 @@ public class NetworkInfoTransportLayer implements
               }
             }
 
+            @Override
             public void receiveException(P2PSocket<InetSocketAddress> socket,
                 Exception ioe) {
-              if (ioe instanceof IOException) c.receiveException((IOException)ioe);
+              if (ioe instanceof IOException ioException) c.receiveException(ioException);
               c.receiveException(new NetworkInfoIOException(ioe));
             }
 
@@ -275,15 +287,17 @@ public class NetworkInfoTransportLayer implements
         }
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
-        if (ex instanceof IOException) c.receiveException((IOException)ex);
+        if (ex instanceof IOException ioException) c.receiveException(ioException);
         c.receiveException(new NetworkInfoIOException(ex));
       }
     }, options));
     return ret;
   }
 
+  @Override
   public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress i,
       SocketCallback<InetSocketAddress> deliverSocketToMe,
       Map<String, Object> options) {
@@ -302,6 +316,8 @@ public class NetworkInfoTransportLayer implements
     final SocketRequestHandleImpl<InetSocketAddress> cancellable = new SocketRequestHandleImpl<InetSocketAddress>(i, options, logger);
 
     cancellable.setSubCancellable(tl.openSocket(i, new SocketCallback<InetSocketAddress>(){
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void receiveResult(SocketRequestHandle<InetSocketAddress> c, final P2PSocket<InetSocketAddress> result) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
 
@@ -312,6 +328,7 @@ public class NetworkInfoTransportLayer implements
 
         result.register(false, true, new P2PSocketReceiver<InetSocketAddress>(){
           ByteBuffer buf = ByteBuffer.wrap(header);
+          @Override
           public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
             if (canRead) throw new IOException("Never asked to read!");
             if (!canWrite) throw new IOException("Can't write!");
@@ -328,11 +345,14 @@ public class NetworkInfoTransportLayer implements
               deliverSocketToMe.receiveResult(cancellable, socket);
             }
           }
+          @Override
           public void receiveException(P2PSocket<InetSocketAddress> socket, Exception e) {
             deliverSocketToMe.receiveException(cancellable, e);
           }
         });
       }
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void receiveException(SocketRequestHandle<InetSocketAddress> c, Exception exception) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
         deliverSocketToMe.receiveException(cancellable, exception);
@@ -342,10 +362,12 @@ public class NetworkInfoTransportLayer implements
     return cancellable;
   }
 
+  @Override
   public void incomingSocket(final P2PSocket<InetSocketAddress> s) throws IOException {
     logger.trace("incomingSocket({})", s);
     new P2PSocketReceiver<InetSocketAddress>() {
       ByteBuffer bb = ByteBuffer.allocate(HEADER_PASSTHROUGH.length);
+      @Override
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
           boolean canRead, boolean canWrite) throws IOException {
         long bytesRead = socket.read(bb);
@@ -389,6 +411,7 @@ public class NetworkInfoTransportLayer implements
 
       }
 
+      @Override
       public void receiveException(P2PSocket<InetSocketAddress> socket,
           Exception ioe) {
         errorHandler.receivedException(socket.getIdentifier(), ioe);
@@ -403,6 +426,7 @@ public class NetworkInfoTransportLayer implements
     addrSerializer.serialize(socket.getIdentifier(), sob);
     final ByteBuffer writeMe = sob.getByteBuffer();
     new P2PSocketReceiver<InetSocketAddress>() {
+      @Override
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
           boolean canRead, boolean canWrite) throws IOException {
         if (socket.write(writeMe) < 0) {
@@ -415,6 +439,7 @@ public class NetworkInfoTransportLayer implements
         }
       }
 
+      @Override
       public void receiveException(P2PSocket<InetSocketAddress> socket,
           Exception ioe) {
         // do nothing
@@ -448,6 +473,7 @@ public class NetworkInfoTransportLayer implements
     }
     final ByteBuffer writeMe = sob.getByteBuffer();
     new P2PSocketReceiver<InetSocketAddress>() {
+      @Override
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
           boolean canRead, boolean canWrite) throws IOException {
         if (socket.write(writeMe) < 0) {
@@ -460,6 +486,7 @@ public class NetworkInfoTransportLayer implements
         }
       }
 
+      @Override
       public void receiveException(P2PSocket<InetSocketAddress> socket,
           Exception ioe) {
         // do nothing
@@ -470,9 +497,9 @@ public class NetworkInfoTransportLayer implements
 
   public void handleIdRequest(final P2PSocket<InetSocketAddress> socket) throws IOException {
     // read the index
-    final ByteBuffer indexBuf = ByteBuffer.allocate(1);
     new BufferReader<InetSocketAddress>(socket,new Continuation<ByteBuffer, Exception>() {
 
+      @Override
       public void receiveResult(ByteBuffer result) {
         byte index = result.get();
         if (serializedIds.get(index) == null) {
@@ -483,6 +510,7 @@ public class NetworkInfoTransportLayer implements
         new BufferWriter<InetSocketAddress>(ByteBuffer.wrap(serializedIds.get(index)),socket,null);
       }
 
+      @Override
       public void receiveException(Exception exception) {
         socket.close();
       }
@@ -495,6 +523,7 @@ public class NetworkInfoTransportLayer implements
       new P2PSocketReceiver<InetSocketAddress>() {
         SocketInputBuffer sib = new SocketInputBuffer(socket);
 
+        @Override
         public void receiveSelectResult(final P2PSocket<InetSocketAddress> socket,
             boolean canRead, boolean canWrite) throws IOException {
           // try to read the stuff until it works or fails
@@ -502,21 +531,24 @@ public class NetworkInfoTransportLayer implements
             MultiInetSocketAddress addr = MultiInetSocketAddress.build(sib);
             long uid = sib.readLong();
             probeStrategy.requestProbe(addr, uid, new Continuation<Boolean, Exception>() {
+              @Override
               public void receiveResult(Boolean result) {
                 returnResult(result.booleanValue());
               }
 
+              @Override
               public void receiveException(Exception exception) {
                 returnResult(false);
               }
 
-              public void returnResult(boolean ret) {
+              void returnResult(boolean ret) {
                 final ByteBuffer writeMe = ByteBuffer.allocate(1);
                 writeMe.put(ret ? (byte)1 : (byte)0);
                 writeMe.flip();
 
                 try {
                   new P2PSocketReceiver<InetSocketAddress>() {
+                    @Override
                     public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                         boolean canRead, boolean canWrite) throws IOException {
                       long bytesWritten = socket.write(writeMe);
@@ -531,6 +563,7 @@ public class NetworkInfoTransportLayer implements
                       }
                     }
 
+                    @Override
                     public void receiveException(P2PSocket<InetSocketAddress> socket,
                         Exception ioe) {
                       socket.close();
@@ -546,6 +579,7 @@ public class NetworkInfoTransportLayer implements
           }
         }
 
+        @Override
         public void receiveException(P2PSocket<InetSocketAddress> socket,
             Exception ioe) {
           socket.close();
@@ -564,6 +598,7 @@ public class NetworkInfoTransportLayer implements
       new P2PSocketReceiver<InetSocketAddress>() {
         SocketInputBuffer sib = new SocketInputBuffer(socket);
 
+        @Override
         public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
             boolean canRead, boolean canWrite) throws IOException {
           // try to read the stuff until it works or fails
@@ -575,6 +610,7 @@ public class NetworkInfoTransportLayer implements
           }
         }
 
+        @Override
         public void receiveException(P2PSocket<InetSocketAddress> socket,
             Exception ioe) {
 
@@ -587,10 +623,12 @@ public class NetworkInfoTransportLayer implements
     }
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<InetSocketAddress> handler) {
     if (handler == null) {
       this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
@@ -599,14 +637,17 @@ public class NetworkInfoTransportLayer implements
     this.errorHandler = handler;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public InetSocketAddress getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
@@ -614,6 +655,7 @@ public class NetworkInfoTransportLayer implements
   /**
    * Set the PASSTHROUGH header
    */
+  @Override
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress i, ByteBuffer m,
       final MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
@@ -630,10 +672,12 @@ public class NetworkInfoTransportLayer implements
     if (deliverAckToMe != null) {
       myCallback = new MessageCallback<InetSocketAddress, ByteBuffer>() {
 
+        @Override
         public void ack(MessageRequestHandle<InetSocketAddress, ByteBuffer> msg) {
           deliverAckToMe.ack(ret);
         }
 
+        @Override
         public void sendFailed(
             MessageRequestHandle<InetSocketAddress, ByteBuffer> msg,
             Exception reason) {
@@ -645,6 +689,7 @@ public class NetworkInfoTransportLayer implements
     return ret;
   }
 
+  @Override
   public void messageReceived(InetSocketAddress i, ByteBuffer m,
       Map<String, Object> options) throws IOException {
     byte header = m.get();
@@ -659,6 +704,7 @@ public class NetworkInfoTransportLayer implements
     }
   }
 
+  @Override
   public void destroy() {
     verifyConnectionRequests.clear();
     tl.destroy();
@@ -672,11 +718,12 @@ public class NetworkInfoTransportLayer implements
     this.probeStrategy = probeStrategy;
   }
 
-  Map<Long, ConnectivityResult> verifyConnectionRequests = new HashMap<Long, ConnectivityResult>();
+  final Map<Long, ConnectivityResult> verifyConnectionRequests = new HashMap<Long, ConnectivityResult>();
 
   /**
    * ask probeAddress to call probeStrategy.requestProbe()
    */
+  @Override
   public Cancellable verifyConnectivity(final MultiInetSocketAddress local,
       final InetSocketAddress probeAddress,
       final ConnectivityResult deliverResultToMe,
@@ -715,6 +762,7 @@ public class NetworkInfoTransportLayer implements
     });
 
     ret.attach(openSocket(probeAddress, sob.getBytes(), new SocketCallback<InetSocketAddress>() {
+      @Override
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         // maybe we should read a response here, but I don't think it's important, just read to close
@@ -722,6 +770,7 @@ public class NetworkInfoTransportLayer implements
         sock.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
           ByteBuffer readMe = ByteBuffer.allocate(1);
 
+          @Override
           public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
               boolean canRead, boolean canWrite) throws IOException {
             // read result
@@ -748,6 +797,7 @@ public class NetworkInfoTransportLayer implements
             }
           }
 
+          @Override
           public void receiveException(P2PSocket<InetSocketAddress> socket,
               Exception ioe) {
             deliverResultToMe.receiveException(ioe);
@@ -756,6 +806,7 @@ public class NetworkInfoTransportLayer implements
 
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         deliverResultToMe.receiveException(ex);
@@ -764,6 +815,7 @@ public class NetworkInfoTransportLayer implements
     return ret;
   }
 
+  @Override
   public Cancellable probe(final InetSocketAddress addr, final long uid, final Continuation<Long, Exception> deliverResponseToMe, final Map<String, Object> options) {
     logger.debug("probe({},{},{},{})", addr, uid, deliverResponseToMe, options);
     // udp
@@ -782,6 +834,7 @@ public class NetworkInfoTransportLayer implements
     MessageCallback<InetSocketAddress, ByteBuffer> mc = null;
     if (deliverResponseToMe != null) {
       mc = new MessageCallback<InetSocketAddress, ByteBuffer>() {
+        @Override
         public void ack(MessageRequestHandle<InetSocketAddress, ByteBuffer> msg) {
           logger.trace("probe({},{},{},{}).udpSuccess()", addr, uid, deliverResponseToMe, options);
           success[0] = true;
@@ -790,6 +843,7 @@ public class NetworkInfoTransportLayer implements
           }
         }
 
+        @Override
         public void sendFailed(
             MessageRequestHandle<InetSocketAddress, ByteBuffer> msg, Exception reason) {
           logger.trace("probe({},{},{},{}).udpFailure()", addr, uid, deliverResponseToMe, options);
@@ -810,6 +864,7 @@ public class NetworkInfoTransportLayer implements
     writeMe.putLong(uid);
     writeMe.flip();
     ret.attach(openSocket(addr, writeMe.array(), new SocketCallback<InetSocketAddress>() {
+      @Override
       public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
           P2PSocket<InetSocketAddress> sock) {
         // maybe we should read a response here, but I don't think it's important, just read to close
@@ -822,6 +877,7 @@ public class NetworkInfoTransportLayer implements
 
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<InetSocketAddress> s,
           Exception ex) {
         logger.atTrace().log(() -> "probe("+addr+","+uid+","+deliverResponseToMe+","+options+").tcpFailure2() "+ex);

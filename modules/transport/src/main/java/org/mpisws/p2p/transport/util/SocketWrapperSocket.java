@@ -50,9 +50,6 @@ import org.slf4j.Logger;
  * Just maps a socket from one form into another.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
- * @param <SubIdentifier>
  */
 public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket<Identifier>, P2PSocketReceiver<SubIdentifier> {
 
@@ -73,9 +70,11 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
     this.errorHandler = errorHandler;
   }
 
+  @Override
   public Identifier getIdentifier() {
     return identifier;
   }
+  @Override
   public void close() {
     if (logger.isTraceEnabled()) {
       logger.trace("Closing "+this, new Exception("Stack Trace"));
@@ -83,12 +82,15 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
     socket.close();
   }
 
+  @Override
   public long read(ByteBuffer dsts) throws IOException {
     long ret = socket.read(dsts);
     logger.trace("{}read():{}", this, ret);
     return ret;
   }
 
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void register(boolean wantToRead, boolean wantToWrite,
       final P2PSocketReceiver<Identifier> receiver) {
     logger.trace("{}register({},{},{})", this, wantToRead, wantToWrite, receiver);
@@ -104,6 +106,8 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
 
   }
 
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveSelectResult(P2PSocket<SubIdentifier> socket, boolean canRead,
       boolean canWrite) throws IOException {
     logger.trace("{}rsr({},{},{})", this, socket, canRead, canWrite);
@@ -138,6 +142,8 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
 
   }
 
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveException(P2PSocket<SubIdentifier> socket, Exception e) {
     if (writer != null) {
       if (writer == reader) {
@@ -161,10 +167,12 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
   }
 
 
+  @Override
   public void shutdownOutput() {
     socket.shutdownOutput();
   }
 
+  @Override
   public long write(ByteBuffer srcs) throws IOException {
     long ret = socket.write(srcs);
     logger.trace("{}write():{}", this, ret);
@@ -172,11 +180,13 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public String toString() {
     if (getIdentifier() == socket.getIdentifier()) return socket.toString();
     return identifier+"-"+socket;
   }
 
+  @Override
   public Map<String, Object> getOptions() {
     return options;
   }

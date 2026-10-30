@@ -34,9 +34,6 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/**
- *
- */
 package org.mpisws.p2p.transport.liveness;
 
 import java.util.Map;
@@ -45,15 +42,11 @@ import java.util.Map;
  * Notified of liveness changes.
  *
  * @author Jeff Hoye
- *
  */
 public interface LivenessListener<Identifier> {
 
   /**
    * Called when the liveness changes.
-   *
-   * @param i
-   * @param val
    */
   public void livenessChanged(Identifier i, int val, Map<String, Object> options);
 }

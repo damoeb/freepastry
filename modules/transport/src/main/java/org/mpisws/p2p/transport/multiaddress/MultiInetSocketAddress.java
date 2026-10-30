@@ -79,6 +79,7 @@ public class MultiInetSocketAddress {
    *
    * @return The hashCode
    */
+  @Override
   public int hashCode() {
     int result = 31173;
     for (InetSocketAddress inetSocketAddress : address) {
@@ -93,10 +94,10 @@ public class MultiInetSocketAddress {
    * @param o The address list to compare to
    * @return The equality
    */
+  @Override
   public boolean equals(Object o) {
     if (o == null) return false;
-    if (! (o instanceof MultiInetSocketAddress)) return false;
-    MultiInetSocketAddress that = (MultiInetSocketAddress)o;
+    if (! (o instanceof MultiInetSocketAddress that)) return false;
     return addressEquals(that);
   }
 
@@ -120,6 +121,7 @@ public class MultiInetSocketAddress {
    *
    * @return The string
    */
+  @Override
   public String toString() {
     String s = "";
     for (int ctr = 0; ctr < address.length; ctr++) {
@@ -162,10 +164,6 @@ public class MultiInetSocketAddress {
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *   +   port k                      +       ...
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *
-   * @param buf
-   * @return
-   * @throws IOException
    */
   public static MultiInetSocketAddress build(InputBuffer buf) throws IOException {
     byte numAddresses = buf.readByte();

@@ -40,8 +40,6 @@ package org.mpisws.p2p.transport;
  * Notifies TransportLayerListeners of reading/writing.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public interface ListenableTransportLayer<Identifier> {
   public void addTransportLayerListener(TransportLayerListener<Identifier> listener);

@@ -66,7 +66,7 @@ public class EncryptedSocket<Identifier> extends SocketWrapperSocket<Identifier,
    * the eWB while it is in a socket.write() call.
    */
   byte[] encryptedBytes;
-  ByteBuffer encryptedWriteBuffer;
+  final ByteBuffer encryptedWriteBuffer;
 
   public EncryptedSocket(Identifier identifier, P2PSocket<Identifier> socket,
       Logger logger, ErrorHandler<Identifier> handler, Map<String, Object> options, Cipher encryptCipher, Cipher decryptCipher, int writeBufferSize) {
@@ -115,11 +115,8 @@ public class EncryptedSocket<Identifier> extends SocketWrapperSocket<Identifier,
 
   /**
    * Only to be called holding the encryptedWriteBuffer, probably should only be called from this.write()
-   *
-   * @param srcs
-   * @return
-   * @throws IOException
    */
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   protected long writeHelper(ByteBuffer srcs) throws IOException {
     long ret;
 

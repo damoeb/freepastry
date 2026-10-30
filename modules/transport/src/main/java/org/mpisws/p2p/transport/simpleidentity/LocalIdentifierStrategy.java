@@ -42,8 +42,6 @@ import java.io.IOException;
  * Returns serialized form of the local identifier.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public interface LocalIdentifierStrategy<Identifier> {
 

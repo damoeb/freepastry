@@ -65,16 +65,11 @@ public interface P2PSocket<Identifier> {
   /**
    *
    * Reads a sequence of bytes from this channel into a subsequence of the given buffer.
-   *
-   * @param dsts
-   * @return
-   * @throws IOException
    */
   long read(ByteBuffer dsts) throws IOException;
 
   /**
    * Writes a sequence of bytes to this channel from a subsequence of the given buffers.
-   * @throws IOException
    */
   long write(ByteBuffer srcs) throws IOException;
 

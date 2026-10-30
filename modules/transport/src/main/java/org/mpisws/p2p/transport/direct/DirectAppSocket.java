@@ -118,6 +118,7 @@ public class DirectAppSocket<Identifier, MessageType> {
     /**
      * of byte[]
      */
+    @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
     LinkedList<byte[]> byteDeliveries = new LinkedList<byte[]>();
     /**
      * The offset of the first delivery, in case the reader didn't have enough space to read everything available.
@@ -138,6 +139,8 @@ public class DirectAppSocket<Identifier, MessageType> {
       return counterpart.localNodeHandle;
     }
 
+    @Override
+    @SuppressWarnings("ReferenceEquality") // the same instance is meant
     public long read(ByteBuffer dsts) throws IOException {
       int lengthRead = 0;
 
@@ -182,12 +185,15 @@ public class DirectAppSocket<Identifier, MessageType> {
       logger.trace("{}.write({}) len:{} inFlight:{}", this, dsts, lengthRead, bytesInFlight);
 
       simulator.enqueueDelivery(new Delivery() {
+        @Override
         public void deliver() {
           counterpart.notifyCanWrite();
         }
+        @Override
         public int getSeq() {
           return 0;
         }
+        @Override
         public String toString() {
           return DirectAppSocketEndpoint.this.toString()+" counterpart notifyCanWrite()";
         }
@@ -195,6 +201,8 @@ public class DirectAppSocket<Identifier, MessageType> {
       return lengthRead;
     }
 
+    @Override
+    @SuppressWarnings("SynchronizeOnNonFinalField") // set once by setCounterpart, before any IO
     public long write(ByteBuffer srcs) throws IOException {
       if (outputClosed) return -1;
 
@@ -223,12 +231,15 @@ public class DirectAppSocket<Identifier, MessageType> {
       logger.trace("{}.write({}) len:{} inFlight:{}", this, srcs, lengthToWrite, counterpart.bytesInFlight);
       simulator.enqueueDelivery(new Delivery() {
         int mySeq = seq++;
+        @Override
         public void deliver() {
           counterpart.addToReadQueue(msg);
         }
+        @Override
         public int getSeq() {
           return mySeq;
         }
+        @Override
         public String toString() {
           return DirectAppSocketEndpoint.this.toString()+" deliver msg of "+msg.length+" bytes";
         }
@@ -240,6 +251,7 @@ public class DirectAppSocket<Identifier, MessageType> {
      * only called on simulator thread
      * @param msg the bytes to queue, or EOF
      */
+    @SuppressWarnings("ReferenceEquality") // the same instance is meant
     protected void addToReadQueue(byte[] msg) {
       synchronized(this) {
         if (logger.isDebugEnabled()) {
@@ -291,20 +303,24 @@ public class DirectAppSocket<Identifier, MessageType> {
     /**
      * Can be called on any thread
      */
+    @Override
     public void register(boolean wantToRead, boolean wantToWrite,
         P2PSocketReceiver<Identifier> receiver) {
       if (wantToWrite) {
         writer = receiver;
 
         simulator.enqueueDelivery(new Delivery() {
+          @Override
           public void deliver() {
             if (!simulator.isAlive(localNodeHandle)) return;
             notifyCanWrite(); // only actually notifies if proper at the time
           }
           // I don't think this needs a sequence number, but I may be wrong
+          @Override
           public int getSeq() {
             return 0;
           }
+          @Override
           public String toString() {
             return DirectAppSocketEndpoint.this.toString()+" notifyCanWrite()";
           }
@@ -316,14 +332,17 @@ public class DirectAppSocket<Identifier, MessageType> {
         reader = receiver;
 
         simulator.enqueueDelivery(new Delivery() {
+          @Override
           public void deliver() {
             if (!simulator.isAlive(localNodeHandle)) return;
             notifyCanRead(); // only actually notifies if proper at the time
           }
           // I don't think this needs a sequence number, but I may be wrong
+          @Override
           public int getSeq() {
             return 0;
           }
+          @Override
           public String toString() {
             return DirectAppSocketEndpoint.this.toString()+" notifyCanRead()";
           }
@@ -331,18 +350,22 @@ public class DirectAppSocket<Identifier, MessageType> {
       }
     }
 
+    @Override
     public void shutdownOutput() {
       logger.trace("{}.shutdownOutput()", this);
       outputClosed = true;
       if (!simulator.isAlive(counterpart.localNodeHandle)) return; // do nothing
       simulator.enqueueDelivery(new Delivery() {
         int mySeq = seq++;
+        @Override
         public void deliver() {
           counterpart.addToReadQueue(EOF);
         }
+        @Override
         public int getSeq() {
           return mySeq;
         }
+        @Override
         public String toString() {
           return DirectAppSocketEndpoint.this.toString()+" counterpart shutDownOutput()";
         }
@@ -352,19 +375,23 @@ public class DirectAppSocket<Identifier, MessageType> {
     public void shutdownInput() {
     }
 
+    @Override
     public void close() {
       shutdownOutput();
       shutdownInput();
     }
 
+    @Override
     public String toString() {
       return "DAS{"+localNodeHandle+":"+simulator.isAlive(localNodeHandle)+"->"+counterpart.localNodeHandle+":"+simulator.isAlive(counterpart.localNodeHandle)+" w:"+writer+" r:"+reader+"}";
     }
 
+    @Override
     public Identifier getIdentifier() {
       return getRemoteNodeHandle();
     }
 
+    @Override
     public Map<String, Object> getOptions() {
       return options;
     }
@@ -379,6 +406,7 @@ public class DirectAppSocket<Identifier, MessageType> {
    * @author Jeff Hoye
    */
   class AcceptorDelivery implements Delivery {
+    @Override
     public void deliver() {
       if (simulator.isAlive(acceptor)) {
         DirectTransportLayer<Identifier, MessageType> acceptorTL = simulator.getTL(acceptor);
@@ -395,12 +423,14 @@ public class DirectAppSocket<Identifier, MessageType> {
         // TODO: this should probably take into account a real delay, however, acceptor has already been removed from the simulator
       }
     }
+    @Override
     public int getSeq() {
       return -1;
     }
   }
 
   class ConnectorDelivery implements Delivery {
+    @Override
     public void deliver() {
       if (simulator.isAlive(connector)) {
         connectorReceiver.receiveResult(connectorHandle, connectorEndpoint);
@@ -409,6 +439,7 @@ public class DirectAppSocket<Identifier, MessageType> {
       }
     }
     // out of band, needs to get in front of any other message
+    @Override
     public int getSeq() {
       return -1;
     }
@@ -418,6 +449,7 @@ public class DirectAppSocket<Identifier, MessageType> {
     return new AcceptorDelivery();
   }
 
+  @Override
   public String toString() {
     return "DAS{"+connector+"["+connectorReceiver+"]->"+acceptor+"}";
   }

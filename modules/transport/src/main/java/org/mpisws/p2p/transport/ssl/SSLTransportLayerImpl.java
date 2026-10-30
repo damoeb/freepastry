@@ -66,8 +66,6 @@ import rice.environment.Environment;
  *
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransportLayer<Identifier, MessageType> {
   private final TransportLayer<Identifier, MessageType> tl;
@@ -86,12 +84,9 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
 
   /**
    *
-   * @param tl
    * @param keyStore this node's keypair and certificate
    * @param trustStore the certificates to trust
    * @param clientAuth CLIENT_AUTH_NONE or CLIENT_AUTH_REQUIRED, used on the server side
-   * @param env
-   * @throws IOException
    */
   public SSLTransportLayerImpl(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, int clientAuth, Environment env) throws IOException {
     if (clientAuth != CLIENT_AUTH_NONE && clientAuth != CLIENT_AUTH_REQUIRED) throw new IllegalArgumentException("clientAuth type:"+clientAuth+" not supported.");
@@ -123,24 +118,29 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
 
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
 
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> s,
           Exception ex) {
         deliverSocketToMe.receiveException(s, ex);
       }
 
+      @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
           P2PSocket<Identifier> sock) {
         getSocketManager(SSLTransportLayerImpl.this, sock, new Continuation<SSLSocketManager<Identifier>, Exception>() {
 
+          @Override
           public void receiveException(Exception exception) {
             deliverSocketToMe.receiveException(ret, exception);
           }
 
+          @Override
           public void receiveResult(SSLSocketManager<Identifier> result) {
             deliverSocketToMe.receiveResult(ret, result);
           }}, false, clientAuth != CLIENT_AUTH_NONE);
@@ -153,13 +153,16 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
   /**
    * TODO: support SSL session resumption
    */
+  @Override
   public void incomingSocket(final P2PSocket<Identifier> s) throws IOException {
     getSocketManager(this,s,new Continuation<SSLSocketManager<Identifier>, Exception>() {
 
+      @Override
       public void receiveException(Exception exception) {
         errorHandler.receivedException(s.getIdentifier(), exception);
       }
 
+      @Override
       public void receiveResult(SSLSocketManager<Identifier> result) {
         try {
           callback.incomingSocket(result);
@@ -170,36 +173,44 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
       }},true, clientAuth != CLIENT_AUTH_NONE);
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, MessageType> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public void destroy() {
     tl.destroy();
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i,
       MessageType m, MessageCallback<Identifier, MessageType> deliverAckToMe,
       Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
   }
 
+  @Override
   public void messageReceived(Identifier i, MessageType m,
       Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);

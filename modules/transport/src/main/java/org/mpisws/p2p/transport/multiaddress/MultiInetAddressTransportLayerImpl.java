@@ -73,7 +73,6 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  * Optimization: Pre-serialize localAddress in the ctor, then just mem-copy it to the buffer
  *
  * @author Jeff Hoye
- *
  */
 public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTransportLayer, TransportLayerCallback<InetSocketAddress, ByteBuffer> {
 
@@ -111,11 +110,13 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
     wire.setCallback(this);
   }
 
+  @Override
   public AddressStrategy getAddressStrategy() {
     return strategy;
   }
 
   // ******************************** Sockets **************************
+  @Override
   public SocketRequestHandle<MultiInetSocketAddress> openSocket(
       final MultiInetSocketAddress i,
       final SocketCallback<MultiInetSocketAddress> deliverSocketToMe,
@@ -140,6 +141,8 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
     handle.setSubCancellable(wire.openSocket(addr,
         new SocketCallback<InetSocketAddress>(){
 
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void receiveResult(SocketRequestHandle<InetSocketAddress> c, final P2PSocket<InetSocketAddress> result) {
         if (handle.getSubCancellable() != null && c != handle.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
 
@@ -150,6 +153,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
 
         logger.trace("openSocket({}):receiveResult({})", i, result);
         result.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {
+          @Override
           public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
               boolean canRead, boolean canWrite) throws IOException {
             if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
@@ -168,6 +172,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
             }
           }
 
+          @Override
           public void receiveException(P2PSocket<InetSocketAddress> socket,
               Exception e) {
             deliverSocketToMe.receiveException(handle, e);
@@ -175,6 +180,8 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
         });
 
       }
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void receiveException(SocketRequestHandle<InetSocketAddress> c, Exception exception) {
         if (handle.getSubCancellable() != null && c != handle.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
         deliverSocketToMe.receiveException(handle, exception);
@@ -183,12 +190,14 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
     return handle;
   }
 
+  @Override
   public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
     logger.debug("incomingSocket({})", s);
 
     final SocketInputBuffer sib = new SocketInputBuffer(s);
     s.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
 
+      @Override
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
           boolean canRead, boolean canWrite) throws IOException {
         logger.trace("incomingSocket({}):receiveSelectResult()", socket);
@@ -204,6 +213,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
         }
       }
 
+      @Override
       public void receiveException(P2PSocket<InetSocketAddress> socket,Exception e) {
         errorHandler.receivedException(new MultiInetSocketAddress(socket.getIdentifier()), e);
       }
@@ -212,6 +222,8 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   }
 
   // ************************** Messages ***************************
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> sendMessage(
       final MultiInetSocketAddress i,
       final ByteBuffer m,
@@ -242,11 +254,15 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
         buf,
         new MessageCallback<InetSocketAddress, ByteBuffer>() {
 
+          @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void ack(MessageRequestHandle<InetSocketAddress, ByteBuffer> msg) {
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(handle);
           }
 
+          @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void sendFailed(MessageRequestHandle<InetSocketAddress, ByteBuffer> msg, Exception ex) {
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe == null) {
@@ -261,14 +277,18 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
     return handle;
   }
 
+  @Override
   public String toString() {
     return "MultiInetAddrTL{"+localAddress+"}";
   }
 
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) throws IOException {
     logger.debug("messageReceived({},{})", i, m);
     // read numAddresses
     int pos = m.position();
+    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
     SimpleInputBuffer sib = new SimpleInputBuffer(m.array(),pos);
 
     MultiInetSocketAddress eisa;
@@ -286,26 +306,32 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   }
 
   // ***************************** Other ******************************
+  @Override
   public MultiInetSocketAddress getLocalIdentifier() {
     return localAddress;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     wire.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     wire.acceptSockets(b);
   }
 
+  @Override
   public void destroy() {
     wire.destroy();
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<MultiInetSocketAddress, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<MultiInetSocketAddress> handler) {
     this.errorHandler = handler;
   }

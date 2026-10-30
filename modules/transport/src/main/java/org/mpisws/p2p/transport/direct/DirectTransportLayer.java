@@ -88,13 +88,16 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     this.logger = environment.getLogManager().getLogger(DirectTransportLayer.class, null);
   }
 
+  @Override
   public void acceptMessages(boolean b) {
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     acceptSockets = b;
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return localIdentifier;
   }
@@ -108,6 +111,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
       this.cancelMe = task;
     }
 
+    @Override
     public boolean cancel() {
       closeMe.connectorEndpoint.close();
       return cancelMe.cancel();
@@ -115,6 +119,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
 
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
     SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i,options, logger);
 
@@ -135,6 +140,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     return handle;
   }
 
+  @Override
   public MessageRequestHandle<Identifier, MessageType> sendMessage(
       Identifier i, MessageType m,
       MessageCallback<Identifier, MessageType> deliverAckToMe,
@@ -158,13 +164,16 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     return handle;
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, MessageType> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
   }
 
+  @Override
   public void destroy() {
     simulator.remove(getLocalIdentifier());
   }

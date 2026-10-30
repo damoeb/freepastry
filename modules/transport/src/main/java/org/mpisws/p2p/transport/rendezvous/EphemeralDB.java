@@ -40,16 +40,12 @@ package org.mpisws.p2p.transport.rendezvous;
  * Keeps track of tags, ephemeral identifiers, timestamps, highIdentifiers
  *
  * @author Jeff Hoye
- *
  */
 public interface EphemeralDB<Identifier, HighIdentifier> {
   public static final long NO_TAG = Long.MIN_VALUE;
 
   /**
    * Get the existing tag, or make a new one if needed
-   *
-   * @param addr
-   * @return
    */
   public long getTagForEphemeral(Identifier addr);
 
@@ -58,23 +54,17 @@ public interface EphemeralDB<Identifier, HighIdentifier> {
    *
    * only a getter
    *
-   * @param tag
    * @param i the default identifier
-   * @return
    */
   public Identifier getEphemeral(long tag, Identifier i);
 
   /**
    * Tell the DB that the high identifier points to this tag
-   *
-   * @param high
-   * @param tag
    */
   public void mapHighToTag(HighIdentifier high, long tag);
 
   /**
    * Get the valid Identifier for this highIdentifier
-   * @param high
    * @return null if there isn't a valid one
    */
   public Identifier getEphemeral(HighIdentifier high);

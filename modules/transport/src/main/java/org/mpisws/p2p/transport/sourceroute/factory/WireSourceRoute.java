@@ -60,6 +60,7 @@ public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
     super(address);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte) path.size());
     for (InetSocketAddress i : path) {
@@ -68,6 +69,7 @@ public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
     }
   }
 
+  @Override
   public int getSerializedLength() {
     int ret = 5; // version+numhops
 

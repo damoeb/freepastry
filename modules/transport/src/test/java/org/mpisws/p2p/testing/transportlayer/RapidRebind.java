@@ -47,9 +47,6 @@ import rice.environment.Environment;
 
 public class RapidRebind {
 
-  /**
-   * @param args
-   */
   public static void main(String[] args) throws IOException {
     Environment env = new Environment();
     InetSocketAddress isa = new InetSocketAddress(InetAddress.getLocalHost(),9001);
@@ -57,7 +54,7 @@ public class RapidRebind {
 
     boolean bindException = false;
     try {
-      WireTransportLayer wtl2 = new WireTransportLayerImpl(isa,env,null);
+      new WireTransportLayerImpl(isa,env,null); // the port is still bound, so this must fail
     } catch (BindException be) {
       bindException = true;
     }
@@ -68,7 +65,7 @@ public class RapidRebind {
 
     wtl.destroy();
 
-    wtl = new WireTransportLayerImpl(isa,env,null);
+    new WireTransportLayerImpl(isa,env,null); // the port is free again
 
     System.out.println("Test Succeded.");
 

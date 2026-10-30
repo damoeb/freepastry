@@ -111,6 +111,7 @@ final class MessageWrapper<Identifier> implements
    *
    * @return true if should keep writing
    */
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public boolean receiveSelectResult(P2PSocket<Identifier> socket) throws IOException {
     logger.trace("{}.receiveSelectResult({})", this, socket);
     try {
@@ -163,6 +164,7 @@ final class MessageWrapper<Identifier> implements
   /**
    * Compares first on priority, second on seq.
    */
+  @Override
   public int compareTo(MessageWrapper<Identifier> that) {
     if (this.priority == that.priority) {
       return this.seq-that.seq;
@@ -170,14 +172,17 @@ final class MessageWrapper<Identifier> implements
     return this.priority-that.priority;
   }
 
+  @Override
   public Identifier getIdentifier() {
     return myIdentifier;
   }
 
+  @Override
   public ByteBuffer getMessage() {
     return originalMessage;
   }
 
+  @Override
   public Map<String, Object> getOptions() {
     return options;
   }
@@ -187,10 +192,12 @@ final class MessageWrapper<Identifier> implements
     socket = null;
   }
 
+  @Override
   public boolean cancel() {
     cancelled = true;
     return owner.cancel(this);
   }
+  @Override
   public String toString() {
     return "MessagWrapper{"+message+"}@"+System.identityHashCode(this)+"->"+owner.identifier.get()+" pri:"+priority+" seq:"+seq+" s:"+this.socket;
   }

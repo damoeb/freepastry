@@ -34,9 +34,6 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/**
- *
- */
 package org.mpisws.p2p.transport.sourceroute;
 
 import java.io.IOException;
@@ -70,7 +67,6 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  * It does not manage current routes to nodes.
  *
  * @author Jeff Hoye
- *
  */
 public class SourceRouteTransportLayerImpl<Identifier> implements
     SourceRouteTransportLayer<Identifier>,
@@ -113,6 +109,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     etl.setCallback(this);
   }
 
+  @Override
   public SocketRequestHandle<SourceRoute<Identifier>> openSocket(
       final SourceRoute<Identifier> i,
       final SocketCallback<SourceRoute<Identifier>> deliverSocketToMe,
@@ -144,6 +141,8 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     final ByteBuffer b = ByteBuffer.wrap(sob.getBytes());
 
     handle.setSubCancellable(etl.openSocket(i.getHop(1), new SocketCallback<Identifier>(){
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void receiveResult(
           SocketRequestHandle<Identifier> c,
           final P2PSocket<Identifier> result) {
@@ -156,6 +155,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
 
         logger.trace("openSocket({}):receiveResult({})", i, result);
         result.register(false, true, new P2PSocketReceiver<Identifier>() {
+          @Override
           public void receiveSelectResult(P2PSocket<Identifier> socket,
               boolean canRead, boolean canWrite) throws IOException {
             if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
@@ -171,12 +171,14 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
             }
           }
 
+          @Override
           public void receiveException(P2PSocket<Identifier> socket,
               Exception e) {
             deliverSocketToMe.receiveException(handle, e);
           }
         });
       }
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> c, Exception exception) {
         deliverSocketToMe.receiveException(handle, exception);
       }
@@ -196,15 +198,12 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
 
   /**
    * To override this behavior if needed.
-   *
-   * @param socket
-   * @param sr
-   * @throws IOException
    */
   protected void incomingSocketHelper(P2PSocket<Identifier> socket, SourceRoute<Identifier> sr) throws IOException {
     callback.incomingSocket(new SocketWrapperSocket<SourceRoute<Identifier>, Identifier>(sr, socket, logger, errorHandler, socket.getOptions()));
   }
 
+  @Override
   public void incomingSocket(final P2PSocket<Identifier> socka) throws IOException {
     // read the header
     logger.debug("incomingSocket({})", socka);
@@ -212,6 +211,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     final SocketInputBuffer sib = new SocketInputBuffer(socka);
     socka.register(true, false, new P2PSocketReceiver<Identifier>() {
 
+      @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket,
           boolean canRead, boolean canWrite) throws IOException {
         logger.trace("incomingSocket({}):receiveSelectResult()", socket);
@@ -250,9 +250,11 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
 
               etl.openSocket(nextHop, new SocketCallback<Identifier>() {
 
+                @Override
                 public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sockb) {
                   sockb.register(false, true, new P2PSocketReceiver<Identifier>() {
 
+                    @Override
                     public void receiveSelectResult(P2PSocket<Identifier> socket,
                         boolean canRead, boolean canWrite) throws IOException {
                       if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
@@ -271,6 +273,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
                       }
                     }
 
+                    @Override
                     public void receiveException(P2PSocket<Identifier> socket,
                         Exception e) {
                       errorHandler.receivedException(sr, e);
@@ -284,6 +287,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
                 /**
                  * Couldn't open the socket, the next hop was dead.
                  */
+                @Override
                 public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
                   // may be nice to send some kind of error message to the opener
                   socka.close();
@@ -304,6 +308,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
         }
       }
 
+      @Override
       public void receiveException(P2PSocket<Identifier> socket,Exception e) {
         errorHandler.receivedException(srFactory.getSourceRoute(etl.getLocalIdentifier(), socket.getIdentifier()), e);
       }
@@ -312,6 +317,8 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   }
 
 
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> sendMessage(final SourceRoute<Identifier> i, final ByteBuffer m,
       final MessageCallback<SourceRoute<Identifier>, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
@@ -350,10 +357,14 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
         i.getHop(1),
         buf,
         new MessageCallback<Identifier, ByteBuffer>() {
+          @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != handle.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(handle);
           }
+          @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != handle.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe == null) {
@@ -367,6 +378,8 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     return handle;
   }
 
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
     assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
     if (!m.hasRemaining()) {
@@ -374,6 +387,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     }
 
     int pos = m.position(); // need to reset to this spot if we forward the message
+    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
     SimpleInputBuffer sib = new SimpleInputBuffer(m.array(), pos);
 
     SourceRoute<Identifier> tempSr;
@@ -403,6 +417,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
       logger.trace("I'm hop {} in {}", hopNum, sr);
       // notify taps
       for (SourceRouteTap<Identifier> tap : taps) {
+        @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
         byte[] retArr = new byte[m.array().length];
         System.arraycopy(m.array(), 0, retArr, 0, retArr.length);
         ByteBuffer ret = ByteBuffer.wrap(retArr);
@@ -421,35 +436,43 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   }
 
   // ************************** Getters/Setters *****************
+  @Override
   public void setCallback(
       TransportLayerCallback<SourceRoute<Identifier>, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<SourceRoute<Identifier>> errorHandler) {
     this.errorHandler = errorHandler;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     etl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     etl.acceptSockets(b);
   }
 
+  @Override
   public SourceRoute<Identifier> getLocalIdentifier() {
     return localIdentifier;
   }
 
+  @Override
   public void destroy() {
     etl.destroy();
   }
 
+  @Override
   public void addSourceRouteTap(SourceRouteTap<Identifier> tap) {
     taps.add(tap);
   }
 
+  @Override
   public boolean removeSourceRouteTap(SourceRouteTap<Identifier> tap) {
     return taps.remove(tap);
   }

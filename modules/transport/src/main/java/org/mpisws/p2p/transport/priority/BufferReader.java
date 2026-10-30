@@ -64,6 +64,7 @@ class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
     socket.register(true, false, this);
   }
 
+  @Override
   public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
     if (canWrite || !canRead) throw new IllegalStateException(owner+" Expected only to read. canRead:"+canRead+" canWrite:"+canWrite+" socket:"+socket);
 
@@ -85,6 +86,7 @@ class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
     }
   }
 
+  @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception e) {
 
     if (e instanceof ClosedChannelException) {
@@ -116,6 +118,7 @@ class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
     new SizeReader<Identifier>(owner, socket);
   }
 
+  @Override
   public String toString() {
     return "BufferReader{"+buf+"}";
   }

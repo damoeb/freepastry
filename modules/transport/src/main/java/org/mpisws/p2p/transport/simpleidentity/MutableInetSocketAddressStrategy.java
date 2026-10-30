@@ -64,6 +64,7 @@ public class MutableInetSocketAddressStrategy implements LocalIdentifierStrategy
     this.port = port;
   }
 
+  @Override
   public synchronized byte[] getLocalIdentifierBytes() throws IOException {
     InetAddress newAddr = getLocalAddress();
     if (lastLocalAddress == null || !newAddr.equals(lastLocalAddress)) {

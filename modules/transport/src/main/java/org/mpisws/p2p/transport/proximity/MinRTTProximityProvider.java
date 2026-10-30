@@ -52,7 +52,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
    /**
     * Holds only pending DeadCheckers
     */
-   Map<Identifier, EntityManager> managers;
+   final Map<Identifier, EntityManager> managers;
 
    Pinger<Identifier> tl;
 
@@ -70,6 +70,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     this.managers = new HashMap<Identifier, EntityManager>();
   }
 
+  @Override
   public int proximity(Identifier i, Map<String, Object> options) {
     EntityManager manager = getManager(i);
     int ret = manager.proximity;
@@ -79,14 +80,17 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     return ret;
   }
 
+  @Override
   public void pingResponse(Identifier i, int rtt, Map<String, Object> options) {
     getManager(i).markProximity(rtt, options);
   }
 
+  @Override
   public void pingReceived(Identifier i, Map<String, Object> options) {
 
   }
 
+  @Override
   public void clearState(Identifier i) {
     synchronized(managers) {
       managers.remove(i);
@@ -108,7 +112,6 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
   /**
    * Internal class which is charges with managing the remote connection via
    * a specific route
-   *
    */
   public class EntityManager {
 
@@ -155,18 +158,21 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
       }
     }
 
+    @Override
     public String toString() {
       return identifier.toString();
     }
   }
 
-  Collection<ProximityListener<Identifier>> listeners = new ArrayList<ProximityListener<Identifier>>();
+  final Collection<ProximityListener<Identifier>> listeners = new ArrayList<ProximityListener<Identifier>>();
+  @Override
   public void addProximityListener(ProximityListener<Identifier> listener) {
     synchronized(listeners) {
       listeners.add(listener);
     }
   }
 
+  @Override
   public boolean removeProximityListener(ProximityListener<Identifier> listener) {
     synchronized(listeners) {
       return listeners.remove(listener);

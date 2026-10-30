@@ -60,6 +60,7 @@
           Checks disabled for the whole build, each because it is noise for this codebase:
           - NotJavadoc: the license banner that opens every file starts with /*****, which javac parses as a doc comment
           - MissingSummary: most legacy Javadoc consists of @param/@return tags only, and Error Prone's fix mangles the comment layout
+          - StatementSwitchToExpressionSwitch: a style suggestion, not a defect; its fix loses the indentation of every case
           Suppress anything else locally: @SuppressWarnings("CheckName") on the narrowest declaration, with a comment saying why.
         -->
         <errorprone.flags>
@@ -68,6 +69,7 @@
             -XepOpt:NullAway:JSpecifyMode=true
             -Xep:NotJavadoc:OFF
             -Xep:MissingSummary:OFF
+            -Xep:StatementSwitchToExpressionSwitch:OFF
         </errorprone.flags>
         <!--
           Per-module Error Prone flags. TODO phase 2 (D7): the modules that still set this to -XepDisableAllWarnings

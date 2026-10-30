@@ -53,6 +53,7 @@ public class FileInputBuffer extends DataInputStream implements InputBuffer {
     this.file = f;
   }
 
+  @Override
   public int bytesRemaining() {
     try {
       return this.available();
@@ -62,6 +63,7 @@ public class FileInputBuffer extends DataInputStream implements InputBuffer {
     }
   }
 
+  @Override
   public String toString() {
     return "FIB{"+file+"}";
   }

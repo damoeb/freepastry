@@ -79,7 +79,9 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   private SSLEngineResult result;
   private HandshakeStatus status;
 
+  @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
   private final LinkedList<ByteBuffer> writeMe = new LinkedList<ByteBuffer>(); // cipher, outgoing
+  @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
   private final LinkedList<ByteBuffer> unwrapMe = new LinkedList<ByteBuffer>(); // cipher, incoming
   private final LinkedList<ByteBuffer> readMe; // plain, incoming
 
@@ -102,13 +104,8 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   /**
    * Called on incoming side
-   *
-   * @param sslTL
-   * @param s
-   * @param c
-   * @param server
-   * @param useClientAuth
    */
+  @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
   public SSLSocketManager(SSLTransportLayerImpl<Identifier, ?> sslTL,
       P2PSocket<Identifier> s,
       Continuation<SSLSocketManager<Identifier>, Exception> c, boolean server, boolean useClientAuth) {
@@ -134,6 +131,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     handshakeWrap();
   }
 
+  @Override
   public String toString() {
     return "SSLSocket to "+(name == null ? "unknown" : name)+" at "+socket.toString();
   }
@@ -145,6 +143,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   boolean handshakeFail = false;
 
+  @Override
   public void receiveSelectResult(P2PSocket<Identifier> socket,
       boolean canRead, boolean canWrite) throws IOException {
     if (handshakeFail) return;
@@ -292,13 +291,14 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     case NEED_UNWRAP:
       handshakeUnwrap();
       return;
+    default:
+      // NEED_UNWRAP_AGAIN only occurs with DTLS
+      return;
     }
   }
 
   /**
    * Return true when done.
-   *
-   * @return
    */
   protected boolean checkDone() {
     if (((status == HandshakeStatus.FINISHED) || (status == HandshakeStatus.NOT_HANDSHAKING))) {
@@ -347,9 +347,11 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         }
         return null;
       },new Continuation<Object, Exception>() {
+        @Override
         public void receiveException(Exception exception) {
           logger.warn("SSL handshake task failed", exception);
         };
+        @Override
         public void receiveResult(Object result) {
           runningTaskLock = false;
           continueHandshaking();
@@ -359,6 +361,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
   }
 
+  @Override
   public void register(boolean wantToRead, boolean wantToWrite,
       P2PSocketReceiver<Identifier> receiver) {
     if (wantToRead) {
@@ -403,6 +406,8 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   P2PSocketReceiver<Identifier> registeredToRead;
   P2PSocketReceiver<Identifier> registeredToWrite;
 
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public long read(ByteBuffer dsts) throws IOException {
 
     long start = dsts.position();
@@ -438,6 +443,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     return dsts.position()-start;
   }
 
+  @Override
   public long write(ByteBuffer srcs) throws IOException {
     ByteBuffer outgoing = ByteBuffer.allocate(netBufferMax);
     SSLEngineResult tempResult = engine.wrap(srcs, outgoing);
@@ -450,22 +456,27 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     return tempResult.bytesConsumed();
   }
 
+  @Override
   public void close() {
     socket.close();
   }
 
+  @Override
   public Identifier getIdentifier() {
     return socket.getIdentifier();
   }
 
+  @Override
   public Map<String, Object> getOptions() {
     return options;
   }
 
+  @Override
   public void shutdownOutput() {
     engine.closeOutbound();
   }
 
+  @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
     c.receiveException(ioe);
   }

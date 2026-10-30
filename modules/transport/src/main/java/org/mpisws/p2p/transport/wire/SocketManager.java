@@ -83,9 +83,8 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    * is received, the manager makes sure that a socket for this handle is not
    * already open, and then proceeds as normal.
    *
-   * @param tcp
    * @param serverKey The server accepting key for the channel
-   * @exception IOException if the connection cannot be accepted
+   * @throws IOException if the connection cannot be accepted
    */
   public SocketManager(TCPLayer tcp, SelectionKey serverKey) throws IOException {
     this.tcp = tcp;
@@ -110,11 +109,9 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    * across the greeting message. Once the response greeting message is
    * received, everything proceeds as normal.
    *
-   * @param tcp
    * @param addr The destination of this socket
    * @param c receives the socket once it is connected
-   * @param options
-   * @exception IOException An error
+   * @throws IOException An error
    */
   public SocketManager(final TCPLayer tcp, final InetSocketAddress addr, final SocketCallback<InetSocketAddress> c, Map<String, Object> options) throws IOException {
     this.tcp = tcp;
@@ -159,6 +156,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
          *
          * @param key The key which is connectable.
          */
+        @Override
         public void connect(SelectionKey key) {
           try {
             // unregister interest in connecting to this socket
@@ -182,6 +180,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     }
   }
 
+  @Override
   public String toString() {
     return "SM "+addr+" "+channel;
   }
@@ -190,6 +189,8 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    * Method which closes down this socket manager, by closing the socket,
    * cancelling the key and setting the key to be interested in nothing
    */
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void close() {
     try {
       if (logger.isDebugEnabled()) {
@@ -245,6 +246,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    *
    * @param key The key in question
    */
+  @Override
   public synchronized void modifyKey(SelectionKey key) {
     int flag = 0;
     if (reader != null) {
@@ -261,6 +263,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    *
    * @param key The selection key for this manager
    */
+  @Override
   public void read(SelectionKey key) {
     P2PSocketReceiver<InetSocketAddress> temp = null;
     synchronized(this) {
@@ -284,6 +287,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    *
    * @param key The selection key for this manager
    */
+  @Override
   public void write(SelectionKey key) {
     P2PSocketReceiver<InetSocketAddress> temp = null;
     synchronized(this) {
@@ -302,6 +306,8 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     tcp.wire.getEnvironment().getSelectorManager().modifyKey(key);
   }
 
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public synchronized void register(final boolean wantToRead, final boolean wantToWrite, P2PSocketReceiver<InetSocketAddress> receiver) {
     logger.atTrace().log(() -> this+".register("+(wantToRead?"r":"")+(wantToWrite?"w":"")+","+receiver+")");
     if (key == null) {
@@ -343,6 +349,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    * shutdownOutput().  This has the effect of removing the manager from
    * the open list.
    */
+  @Override
   public void shutdownOutput() {
     boolean closeMe = false;
     synchronized(this) {
@@ -381,6 +388,8 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     }
   }
 
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public long read(ByteBuffer dst) throws IOException {
     if (key == null || channel.socket().isInputShutdown()) return -1;
     try {
@@ -398,6 +407,8 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     }
   }
 
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public long write(ByteBuffer src) throws IOException {
     if (key == null || channel.socket().isOutputShutdown()) return -1;
     try {
@@ -415,6 +426,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     }
   }
 
+  @Override
   public boolean cancel() {
     if (key == null) return false;
     if (delivered) throw new IllegalStateException(this+".cancel() Can't cancel, already delivered");
@@ -422,10 +434,12 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     return true;
   }
 
+  @Override
   public InetSocketAddress getIdentifier() {
     return addr;
   }
 
+  @Override
   public Map<String, Object> getOptions() {
     return options;
   }

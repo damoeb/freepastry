@@ -50,18 +50,22 @@ public class FileOutputBuffer extends DataOutputStream implements OutputBuffer {
     super(Files.newOutputStream(f));
   }
 
+  @Override
   public int bytesRemaining() {
     return Integer.MAX_VALUE;
   }
 
+  @Override
   public void writeByte(byte v) throws IOException {
     this.write(v);
   }
 
+  @Override
   public void writeChar(char v) throws IOException {
     writeChar((int) v);
   }
 
+  @Override
   public void writeShort(short v) throws IOException {
     writeShort((int) v);
   }

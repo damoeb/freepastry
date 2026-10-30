@@ -83,6 +83,7 @@ public abstract class SourceRoute<Identifier> {
    *
    * @return The hashCode
    */
+  @Override
   public int hashCode() {
     int result = 399388937;
 
@@ -98,6 +99,7 @@ public abstract class SourceRoute<Identifier> {
    * @param o The source route to compare to
    * @return The equality
    */
+  @Override
   public boolean equals(Object o) {
     if (o == null)
       return false;
@@ -115,6 +117,7 @@ public abstract class SourceRoute<Identifier> {
    *
    * @return The string
    */
+  @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
     result.append("{");

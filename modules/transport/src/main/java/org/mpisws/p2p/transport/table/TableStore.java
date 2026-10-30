@@ -39,9 +39,6 @@ package org.mpisws.p2p.transport.table;
 /**
  * A subset of the functionality of java.util.Map.  The idea is that you can optionally use an implementation of Map.
  * @author Jeff Hoye
- *
- * @param <Key>
- * @param <Value>
  */
 public interface TableStore<Key, Value> {
   public boolean containsKey(Key key);

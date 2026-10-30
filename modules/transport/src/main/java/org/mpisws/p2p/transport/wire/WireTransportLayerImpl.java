@@ -85,7 +85,6 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
    *
    * @param bindAddress the address to bind to, if it fails, it will throw an exception
    * @param env will acquire the SelectorManager from the env
-   * @throws IOException
    */
   public WireTransportLayerImpl(
       InetSocketAddress bindAddress,
@@ -144,14 +143,17 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     return config;
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress destination, SocketCallback<InetSocketAddress> deliverSocketToMe, Map<String, Object> options) {
     return tcp.openSocket(destination, deliverSocketToMe, options);
   }
 
+  @Override
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination,
       ByteBuffer m,
@@ -161,11 +163,13 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     return udp.sendMessage(destination, m, deliverAckToMe, options);
   }
 
+  @Override
   public InetSocketAddress getLocalIdentifier() {
     return bindAddress;
   }
 
   boolean destroyed = false;
+  @Override
   public void destroy() {
     logger.info("destroy()");
     destroyed = true;
@@ -177,6 +181,7 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     return destroyed;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<InetSocketAddress> handler) {
     if (handler == null) {
       this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
@@ -185,10 +190,12 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     this.errorHandler = handler;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     udp.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tcp.acceptSockets(b);
   }
@@ -202,7 +209,7 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     callback.incomingSocket(sm);
   }
 
-  Collection<TransportLayerListener<InetSocketAddress>> listeners =
+  final Collection<TransportLayerListener<InetSocketAddress>> listeners =
     new ArrayList<TransportLayerListener<InetSocketAddress>>();
   public void addTransportLayerListener(
       TransportLayerListener<InetSocketAddress> listener) {
@@ -219,9 +226,10 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
   }
 
 
-  Collection<SocketCountListener<InetSocketAddress>> slisteners =
+  final Collection<SocketCountListener<InetSocketAddress>> slisteners =
     new ArrayList<SocketCountListener<InetSocketAddress>>();
 
+  @Override
   public void addSocketCountListener(
       SocketCountListener<InetSocketAddress> listener) {
     synchronized(slisteners) {
@@ -229,6 +237,7 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
     }
   }
 
+  @Override
   public void removeSocketCountListener(
       SocketCountListener<InetSocketAddress> listener) {
     synchronized(slisteners) {

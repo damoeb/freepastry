@@ -63,9 +63,6 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  * socket is using an ephemeral port.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
- * @param <MessageType>
  */
 public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType>{
@@ -80,16 +77,15 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
   /**
    * Sends the same identifier every time.
    * @author Jeff Hoye
-   *
-   * @param <Identifier>
    */
-  class DefaultLocalIdentifierStrategy<Identifier> implements LocalIdentifierStrategy<Identifier> {
+  class DefaultLocalIdentifierStrategy<Identifier2> implements LocalIdentifierStrategy<Identifier2> {
     byte[] localIdentifierBytes;
-    public DefaultLocalIdentifierStrategy(Identifier i) throws IOException {
+    public DefaultLocalIdentifierStrategy(Identifier2 i) throws IOException {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       serializer.serialize(tl.getLocalIdentifier(), sob);
       localIdentifierBytes = sob.getBytes();
     }
+    @Override
     public byte[] getLocalIdentifierBytes() {
       return localIdentifierBytes;
     }
@@ -107,28 +103,34 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     }
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
+      @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
           P2PSocket<Identifier> sock) {
         // write the local identifier
         try {
           final ByteBuffer writeMe = ByteBuffer.wrap(localIdStrategy.getLocalIdentifierBytes());
           new P2PSocketReceiver<Identifier>() {
+            @Override
             public void receiveSelectResult(P2PSocket<Identifier> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               if (socket.write(writeMe) < 0) {
@@ -142,6 +144,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
               // done
               deliverSocketToMe.receiveResult(ret, new SocketWrapperSocket<Identifier, Identifier>(socket.getIdentifier(),socket,logger,errorHandler,socket.getOptions()));
             }
+            @Override
             public void receiveException(P2PSocket<Identifier> socket,
                 Exception ioe) {
               deliverSocketToMe.receiveException(ret, ioe);
@@ -151,6 +154,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
           deliverSocketToMe.receiveException(ret, ioe);
         }
       }
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> s,
           Exception ex) {
         deliverSocketToMe.receiveException(ret, ex);
@@ -159,6 +163,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     return ret;
   }
 
+  @Override
   public MessageRequestHandle<Identifier, MessageType> sendMessage(
       Identifier i, MessageType m,
       MessageCallback<Identifier, MessageType> deliverAckToMe,
@@ -166,23 +171,28 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
+  @Override
   public void setCallback(
       TransportLayerCallback<Identifier, MessageType> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
   }
 
+  @Override
   public void destroy() {
 
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     final SocketInputBuffer sib = new SocketInputBuffer(s);
 
     new P2PSocketReceiver<Identifier>() {
+      @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket,
           boolean canRead, boolean canWrite) throws IOException {
         try {
@@ -193,6 +203,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
         } // throw the rest
       }
 
+      @Override
       public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
         errorHandler.receivedException(socket.getIdentifier(), ioe);
       }
@@ -200,6 +211,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     }.receiveSelectResult(s, true, false);
   }
 
+  @Override
   public void messageReceived(Identifier i, MessageType m,
       Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);

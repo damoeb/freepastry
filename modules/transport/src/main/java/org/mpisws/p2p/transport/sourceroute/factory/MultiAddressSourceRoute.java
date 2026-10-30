@@ -57,6 +57,7 @@ public class MultiAddressSourceRoute extends SourceRoute<MultiInetSocketAddress>
     super(address);
   }
 
+  @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte) path.size());
     if (path.size() == 2) return; // special case direct connection
@@ -65,6 +66,7 @@ public class MultiAddressSourceRoute extends SourceRoute<MultiInetSocketAddress>
     }
   }
 
+  @Override
   public int getSerializedLength() {
     if (path.size() == 2) return 1;
     int ret = 1; // numhops

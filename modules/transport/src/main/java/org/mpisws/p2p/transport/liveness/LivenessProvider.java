@@ -34,9 +34,6 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/**
- *
- */
 package org.mpisws.p2p.transport.liveness;
 
 import java.util.Map;
@@ -45,7 +42,6 @@ import java.util.Map;
  * Expands the Transport Layer to include pings and liveness checks.
  *
  * @author Jeff Hoye
- *
  */
 public interface LivenessProvider<Identifier> {
 
@@ -70,8 +66,6 @@ public interface LivenessProvider<Identifier> {
   /**
    * Force layer to clear the existing state related to the Identifier.  Usually
    * if there is reason to believe a node has returned.
-   *
-   * @param i
    */
   public void clearState(Identifier i);
 }

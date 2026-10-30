@@ -42,12 +42,11 @@ import java.util.Map;
  * Always accepts.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public class DefaultForwardSourceRouteStrategy<Identifier> implements
     SourceRouteForwardStrategy<Identifier> {
 
+  @Override
   public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr,
       boolean socket, Map<String, Object> options) {
     return true;

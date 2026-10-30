@@ -182,6 +182,7 @@ public class LivenessTest extends SRTest {
     final Object lock = new Object();
 
     PingListener<SourceRoute<MultiInetSocketAddress>> pl = new PingListener<SourceRoute<MultiInetSocketAddress>>() {
+      @Override
       public void pingResponse(SourceRoute<MultiInetSocketAddress> i, int rtt, Map<String, Object> options) {
         synchronized(lock) {
           pingResponse.put(i.getLastHop(), new Tupel(i, rtt));
@@ -189,6 +190,7 @@ public class LivenessTest extends SRTest {
         }
       }
 
+      @Override
       public void pingReceived(SourceRoute<MultiInetSocketAddress> i, Map<String, Object> options) {
 
       }
@@ -214,7 +216,7 @@ public class LivenessTest extends SRTest {
     assertTrue(aliceProx > carolProx+100, "aliceProx:"+aliceProx+" carolProx:"+carolProx);
   }
 
-  class Tupel {
+  static class Tupel {
     SourceRoute<MultiInetSocketAddress> sr;
     int val;
 

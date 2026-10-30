@@ -43,9 +43,6 @@ import java.util.Map;
  * Used to receive incoming messages/sockets.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
- * @param <MessageType>
  */
 public interface TransportLayerCallback<Identifier, MessageType> {
   /**
@@ -61,7 +58,6 @@ public interface TransportLayerCallback<Identifier, MessageType> {
    * Notification of a new socket.
    *
    * @param s the incoming socket
-   * @throws IOException
    */
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException;
 }

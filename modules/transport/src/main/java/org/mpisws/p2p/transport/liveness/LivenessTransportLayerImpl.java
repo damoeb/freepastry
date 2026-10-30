@@ -135,7 +135,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   /**
    * Holds only pending DeadCheckers
    */
-  Map<Identifier, EntityManager> managers;
+  final Map<Identifier, EntityManager> managers;
 
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
 
@@ -172,11 +172,13 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
+  @Override
   public void clearState(Identifier i) {
     logger.debug("clearState({})", i);
     deleteManager(i);
   }
 
+  @Override
   public boolean checkLiveness(Identifier i, Map<String, Object> options) {
     return getManager(i).checkLiveness(options);
   }
@@ -210,6 +212,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
+  @Override
   public int getLiveness(Identifier i, Map<String, Object> options) {
     logger.trace("getLiveness({},{})", i, options);
     synchronized(managers) {
@@ -219,14 +222,17 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     return LIVENESS_SUSPECTED;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
@@ -236,6 +242,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
    */
   boolean connectionExceptionMeansFaulty = true;
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     // this code marks the Identifier faulty if there is an error connecting the socket.  It's possible that this
     // should be moved to the source route manager, but there needs to be a way to cancel the liveness
@@ -243,10 +250,12 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
     return tl.openSocket(i, new SocketCallback<Identifier>(){
+      @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
         deliverSocketToMe.receiveResult(cancellable, getLSocket(sock,getManager(i)));
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
         // the upper layer is probably going to retry, so mark this dead first
         if (ex instanceof java.nio.channels.ClosedChannelException) {
@@ -260,6 +269,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }, options);
   }
 
+  @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(
       final Identifier i,
       final ByteBuffer m,
@@ -280,10 +290,14 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     final ByteBuffer myMsg = ByteBuffer.wrap(msgBytes);
 
     handle.setSubCancellable(tl.sendMessage(i, myMsg, new MessageCallback<Identifier, ByteBuffer>() {
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
         if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != handle.getSubCancelable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
         if (deliverAckToMe != null) deliverAckToMe.ack(handle);
       }
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
         if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != handle.getSubCancelable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
         if (deliverAckToMe == null) {
@@ -296,6 +310,8 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     return handle;
   }
 
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
     assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
     byte hdr = m.get();
@@ -316,11 +332,9 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       int rtt = (int)(time.currentTimeMillis()-sendTime);
       if (rtt >= 0) {
         manager.updateRTO(rtt);
-        boolean markAlive = false;
         synchronized(manager) {
           if (manager.getPending() != null) {
             manager.getPending().pingResponse(sendTime, options);
-            markAlive = true;
           }
         }
         manager.markAlive(options); // do this outside of the synchronized block
@@ -335,15 +349,15 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
+  @Override
   public String toString() {
     return "LivenessTL{"+getLocalIdentifier()+"}";
   }
 
   /**
    * Send the ping.
-   *
-   * @param i
    */
+  @Override
   public boolean ping(final Identifier i, final Map<String, Object> options) {
     logger.trace("ping({})", i);
     if (i.equals(tl.getLocalIdentifier())) return false;
@@ -353,8 +367,10 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       final long now = time.currentTimeMillis();
       new PingMessage(now).serialize(sob);
       tl.sendMessage(i, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
+        @Override
         public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
         }
+        @Override
         public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception reason) {
           if (logger.isTraceEnabled()) {
             logger.trace("ping("+i+","+now+","+options+") failed", reason);
@@ -373,9 +389,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
 
   /**
    * Send the pong();
-   *
-   * @param i
-   * @param senderTime
    */
   public void pong(final Identifier i, final long senderTime, final Map<String, Object> options) {
     logger.trace("pong({},{})", i, senderTime);
@@ -384,8 +397,10 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       sob.writeByte(HDR_PONG);
       new PongMessage(senderTime).serialize(sob);
       tl.sendMessage(i, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
+        @Override
         public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
         }
+        @Override
         public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception reason) {
           if (logger.isTraceEnabled()) {
             logger.trace("pong("+i+","+senderTime+","+options+") failed", reason);
@@ -400,10 +415,12 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
     if (this.errorHandler == null) {
@@ -412,21 +429,21 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   }
 
   boolean destroyed = false;
+  @Override
   public void destroy() {
-    if (destroyed) return; // the listener lists are already gone
+    if (destroyed) return;
     logger.info("destroy()");
     destroyed = true;
     tl.destroy();
     livenessListeners.clear();
-    livenessListeners = null;
     pingListeners.clear();
-    pingListeners = null;
     for (EntityManager em : managers.values()) {
       em.destroy();
     }
     managers.clear();
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     EntityManager m = getManager(s.getIdentifier());
     if (m.liveness > LIVENESS_SUSPECTED) {
@@ -436,7 +453,8 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     callback.incomingSocket(getLSocket(s, getManager(s.getIdentifier())));
   }
 
-  List<LivenessListener<Identifier>> livenessListeners;
+  final List<LivenessListener<Identifier>> livenessListeners;
+  @Override
   public void addLivenessListener(LivenessListener<Identifier> name) {
     if (destroyed) return;
     synchronized(livenessListeners) {
@@ -444,6 +462,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
+  @Override
   public boolean removeLivenessListener(LivenessListener<Identifier> name) {
     if (destroyed) return true;
     synchronized(livenessListeners) {
@@ -464,7 +483,8 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
-  List<PingListener<Identifier>> pingListeners;
+  final List<PingListener<Identifier>> pingListeners;
+  @Override
   public void addPingListener(PingListener<Identifier> name) {
     if (destroyed) return;
     synchronized(pingListeners) {
@@ -472,6 +492,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
+  @Override
   public boolean removePingListener(PingListener<Identifier> name) {
     if (destroyed) return true;
     synchronized(pingListeners) {
@@ -571,8 +592,8 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
      * 3:2000:3500
      * 4:4000:7500
      * 5:8000:15500 // ~15 seconds to find 1 path faulty, using source routes gives us 30 seconds to find a node faulty
-     *
      */
+    @Override
     public void run() {
       if (destroyed) return;
       if (tries < numTries) {
@@ -594,6 +615,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       }
     }
 
+    @Override
     public boolean cancel() {
       synchronized(manager) {
         manager.setPending(null);
@@ -601,6 +623,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       return super.cancel();
     }
 
+    @Override
     public String toString() {
       return "DeadChecker("+manager.identifier.get()+" #"+System.identityHashCode(this)+"):"+tries+"/"+numTries;
     }
@@ -609,7 +632,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   /**
    * Internal class which is charged with managing the liveness of a remote
    * identifier
-   *
    */
   public class EntityManager {
 
@@ -822,6 +844,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
         final int theRTO = rto;
 
         Runnable r = new Runnable() {
+          @Override
           public void run() {
             if (getPending() == null) return;  // could have been set to null in the meantime
             timer.schedule(getPending(), theRTO);
@@ -831,6 +854,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
             }
           }
 
+          @Override
           public String toString() {
             return EntityManager.this.toString();
           }
@@ -847,6 +871,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       return ret;
     }
 
+    @Override
     public String toString() {
       Identifier temp = identifier.get();
       if (temp == null) return "null";
@@ -866,7 +891,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
    * TODO: think about exactly what we want to use for the delay on the timer, currently using rto*4
    *
    * @author Jeff Hoye
-   *
    */
   class LSocket extends SocketWrapperSocket<Identifier, Identifier> {
     EntityManager manager;
@@ -923,6 +947,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
         if (livenessCheckerTimer != null) return;
         livenessCheckerTimer = new TimerTask(){
           @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void run() {
             synchronized(LSocket.this) {
               if (livenessCheckerTimer == this) livenessCheckerTimer = null;
@@ -932,7 +957,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
         };
       } // sync
       logger.atTrace().log(() -> "Checking liveness on "+manager.identifier.get()+" in "+manager.rto()+" millis if we don't write.");
-      timer.schedule(livenessCheckerTimer, manager.rto()*IDLE_CHECK_RTO_MULTIPLIER, IDLE_CHECK_PERIOD_MILLIS);
+      timer.schedule(livenessCheckerTimer, (long) manager.rto()*IDLE_CHECK_RTO_MULTIPLIER, IDLE_CHECK_PERIOD_MILLIS);
     }
 
     public void stopLivenessCheckerTimer() {
@@ -949,11 +974,13 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       super.close();
     }
 
+    @Override
     public String toString() {
       return "LSocket{"+socket+"}";
     }
   }
 
+  @Override
   public void setLiveness(Identifier i, int liveness, Map<String, Object> options) {
     EntityManager man = getManager(i);
     switch(liveness) {

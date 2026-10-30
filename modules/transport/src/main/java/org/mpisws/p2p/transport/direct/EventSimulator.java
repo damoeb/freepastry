@@ -49,7 +49,7 @@ public class EventSimulator {
 
   protected RandomSource random;
 
-  protected SelectorManager manager;
+  protected final SelectorManager manager;
 
   // true if we are responsible for incrementing the time
   private boolean isDirectTimeSource = false;
@@ -151,10 +151,12 @@ public class EventSimulator {
   public void start() {
     // this makes things single threaded
     manager.invoke(new Runnable() {
+      @Override
       public void run() {
         if (running) return;
         running = true;
         manager.invoke(new Runnable() {
+          @Override
           public void run() {
             if (!running) return;
             try {

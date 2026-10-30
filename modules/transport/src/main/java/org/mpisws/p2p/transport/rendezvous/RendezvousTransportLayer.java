@@ -44,17 +44,11 @@ public interface RendezvousTransportLayer<HighIdentifier> {
 
   /**
    * Open a socket to the dest, then after writing credentials, call notify the higher layer: incomingSocket()
-   *
    */
   public void openChannel(HighIdentifier requestor, HighIdentifier middleMan, int uid);
 
   /**
    * Called when a message was routed by the overlay to this node.
-   *
-   * @param i
-   * @param m
-   * @param options
-   * @throws IOException
    */
   public void messageReceivedFromOverlay(HighIdentifier i, ByteBuffer m, Map<String, Object> options) throws IOException;
 }

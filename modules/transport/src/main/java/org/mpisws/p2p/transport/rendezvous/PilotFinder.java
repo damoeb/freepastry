@@ -45,14 +45,10 @@ package org.mpisws.p2p.transport.rendezvous;
  * c) route the request, include local pilot
  *
  * @author Jeff Hoye
- *
  */
 public interface PilotFinder<HighIdentifier> {
   /**
    * Return null if there isn't one.
-   *
-   * @param i
-   * @return
    */
   public HighIdentifier findPilot(HighIdentifier i);
 }

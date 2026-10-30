@@ -108,6 +108,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
    */
   @Test
   @Override
+  @SuppressWarnings("JUnitMethodInvoked") // reruns the inherited test with other options
   public void sendUDP() throws Exception {
     options.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_DATAGRAM);
     try {
@@ -122,6 +123,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
    */
   @Test
   @Override
+  @SuppressWarnings("JUnitMethodInvoked") // reruns the inherited test with other options
   public void messageTooBigUDP() throws Exception {
     options.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_DATAGRAM);
     try {
@@ -144,6 +146,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
       // the early, low priority messages are dropped
 
       alice.sendMessage(bogus, ByteBuffer.wrap(new byte[ctr]), new MessageCallback<MultiInetSocketAddress, ByteBuffer>(){
+        @Override
         public void sendFailed(MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> msg, Exception reason) {
           if (reason instanceof NodeIsFaultyException) {
           } else {
@@ -158,6 +161,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
             }
           }
         }
+        @Override
         public void ack(MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> msg) {
           System.out.println("ack");
         }
@@ -167,7 +171,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
     System.out.println("sleeping");
     synchronized(dropped) {
       if (dropped.size() < 10)
-        try { dropped.wait(10000); } catch (InterruptedException ie) {}
+        try { dropped.wait(10000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     }
     System.out.println("done sleeping"+dropped.size());
 

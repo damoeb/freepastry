@@ -42,8 +42,6 @@ import java.util.Map;
  * Strategy that gives the opportunity to disallow forwarding of a socket or packet.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public interface SourceRouteForwardStrategy<Identifier> {
   public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr, boolean socket, Map<String, Object> options);

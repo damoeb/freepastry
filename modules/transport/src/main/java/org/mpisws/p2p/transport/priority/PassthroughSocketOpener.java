@@ -63,6 +63,7 @@ final class PassthroughSocketOpener<Identifier> implements SocketCallback<Identi
     this.deliverSocketToMe = deliverSocketToMe;
   }
 
+  @Override
   public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sock) {
 
     handle.setSubCancellable(() -> {
@@ -73,6 +74,8 @@ final class PassthroughSocketOpener<Identifier> implements SocketCallback<Identi
     sock.register(false, true, new HeaderWriter());
   }
 
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
     if (handle.getSubCancellable() != null && s != handle.getSubCancellable()) throw new IllegalArgumentException("s != handle.getSubCancellable() must be a bug. s:"+s+" sub:"+handle.getSubCancellable());
     if (deliverSocketToMe != null) deliverSocketToMe.receiveException(handle, ex);
@@ -83,12 +86,14 @@ final class PassthroughSocketOpener<Identifier> implements SocketCallback<Identi
    */
   private final class HeaderWriter implements P2PSocketReceiver<Identifier> {
 
+    @Override
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       if (canRead || !canWrite) throw new IllegalArgumentException("expected to write!  canRead:"+canRead+" canWrite:"+canWrite);
       socket.write(ByteBuffer.wrap(PriorityTransportLayerImpl.PASSTHROUGH_SOCKET));
       if (deliverSocketToMe != null) deliverSocketToMe.receiveResult(handle, socket);
     }
 
+    @Override
     public void receiveException(P2PSocket<Identifier> socket, Exception e) {
       if (deliverSocketToMe != null) deliverSocketToMe.receiveException(handle, e);
     }

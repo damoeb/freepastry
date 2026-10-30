@@ -34,9 +34,6 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/**
- *
- */
 package org.mpisws.p2p.transport.sourceroute.manager.simple;
 
 import java.util.ArrayList;
@@ -55,7 +52,6 @@ import rice.environment.Environment;
  * source-route to get to them, we simply prepend the route with that one.
  *
  * @author Jeff Hoye
- *
  */
 public class SimpleSourceRouteStrategy<Identifier> implements SourceRouteStrategy<Identifier> {
   NextHopStrategy<Identifier> strategy;
@@ -76,6 +72,7 @@ public class SimpleSourceRouteStrategy<Identifier> implements SourceRouteStrateg
    * Note, this implementation only allows 1 - hop routes, need to check the liveness, of a route
    * to determine longer routes.  In most cases a 1-hop route should be sufficient.
    */
+  @Override
   public Collection<SourceRoute<Identifier>> getSourceRoutes(Identifier destination) {
     Collection<Identifier> nextHops = strategy.getNextHops(destination);
     List<SourceRoute<Identifier>> ret = new ArrayList<SourceRoute<Identifier>>(nextHops.size());

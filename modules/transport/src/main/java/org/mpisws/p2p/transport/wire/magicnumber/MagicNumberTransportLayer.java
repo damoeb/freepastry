@@ -68,7 +68,6 @@ import rice.selector.TimerTask;
  * layer into the mpisws transport layer system.
  *
  * @author Jeff Hoye
- *
  */
 public class MagicNumberTransportLayer<Identifier> implements
     TransportLayer<Identifier, ByteBuffer>,
@@ -87,21 +86,19 @@ public class MagicNumberTransportLayer<Identifier> implements
 
   /**
    *
-   * @param wtl
-   * @param env
    * @param errorHandler call me when there is a problem
-   * @param header the header to expect from a socket/packet
+   * @param headerBytes the header to expect from a socket/packet
    * @param timeOut how long to wait before killing a socket that is not sending (milliseconds)
    */
   public MagicNumberTransportLayer(TransportLayer<Identifier, ByteBuffer> wtl,
       Environment env,
       ErrorHandler<Identifier> errorHandler,
-      byte[] header,
+      byte[] headerBytes,
       int timeOut) {
     this.logger = env.getLogManager().getLogger(MagicNumberTransportLayer.class, null);
     this.environment = env;
     this.wire = wtl;
-    this.HEADER = header;
+    this.HEADER = headerBytes;
     this.SOCKET_TIMEOUT = timeOut;
 
     this.errorHandler = errorHandler;
@@ -115,10 +112,12 @@ public class MagicNumberTransportLayer<Identifier> implements
     wire.setCallback(this);
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     wire.setErrorHandler(handler);
     if (handler == null) {
@@ -128,18 +127,22 @@ public class MagicNumberTransportLayer<Identifier> implements
     this.errorHandler = handler;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     wire.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     wire.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return wire.getLocalIdentifier();
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe,
       Map<String, Object> options) {
@@ -148,6 +151,8 @@ public class MagicNumberTransportLayer<Identifier> implements
     final SocketRequestHandleImpl<Identifier> cancellable = new SocketRequestHandleImpl<Identifier>(i, options, logger);
 
     cancellable.setSubCancellable(wire.openSocket(i, new SocketCallback<Identifier>(){
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void receiveResult(SocketRequestHandle<Identifier> c, final P2PSocket<Identifier> result) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
 
@@ -158,6 +163,7 @@ public class MagicNumberTransportLayer<Identifier> implements
 
         result.register(false, true, new P2PSocketReceiver<Identifier>(){
           ByteBuffer buf = ByteBuffer.wrap(HEADER);
+          @Override
           public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
             if (canRead) throw new IOException("Never asked to read!");
             if (!canWrite) throw new IOException("Can't write!");
@@ -173,11 +179,14 @@ public class MagicNumberTransportLayer<Identifier> implements
               deliverSocketToMe.receiveResult(cancellable, socket);
             }
           }
+          @Override
           public void receiveException(P2PSocket<Identifier> socket, Exception e) {
             deliverSocketToMe.receiveException(cancellable, e);
           }
         });
       }
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void receiveException(SocketRequestHandle<Identifier> c, Exception exception) {
         if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
         deliverSocketToMe.receiveException(cancellable, exception);
@@ -187,6 +196,7 @@ public class MagicNumberTransportLayer<Identifier> implements
     return cancellable;
   }
 
+  @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(
       final Identifier i,
       final ByteBuffer m,
@@ -208,6 +218,8 @@ public class MagicNumberTransportLayer<Identifier> implements
         buf,
         new MessageCallback<Identifier, ByteBuffer>() {
 
+          @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             if (cancellable.getSubCancellable() != null && msg != cancellable.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+cancellable.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(cancellable);
@@ -215,6 +227,8 @@ public class MagicNumberTransportLayer<Identifier> implements
             notifyListenersWrite(buf.limit()-HEADER.length, i, cancellable.getOptions(), true, false); // passthrough part
           }
 
+          @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             if (cancellable.getSubCancellable() != null && msg != cancellable.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+cancellable.getSubCancellable());
             if (deliverAckToMe == null) {
@@ -229,14 +243,18 @@ public class MagicNumberTransportLayer<Identifier> implements
     return cancellable;
   }
 
+  @Override
   public void destroy() {
     wire.destroy();
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     s.register(true, false, new VerifyHeaderReceiver(s));
   }
 
+  @Override
+  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
     logger.debug("messageReceived({},{})", i, m);
 
@@ -277,11 +295,13 @@ public class MagicNumberTransportLayer<Identifier> implements
       environment.getSelectorManager().getTimer().schedule(this,SOCKET_TIMEOUT);
     }
 
+    @Override
     public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
       if (stalled) return; // already reported as a StalledSocketException
       errorHandler.receivedException(socket.getIdentifier(), ioe);
     }
 
+    @Override
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       // TODO: Optimization: Check array at each step, to fail faster
       // TODO: Make timeout/cancellable
@@ -314,13 +334,15 @@ public class MagicNumberTransportLayer<Identifier> implements
       errorHandler.receivedException(socket.getIdentifier(), new StalledSocketException(socket.getIdentifier(), "Timeout on incoming socket expired."));
     }
 
+    @Override
     public String toString() {
       return MagicNumberTransportLayer.this+" VHR";
     }
   }
 
   // ******************************** TransportLayerListeners *******************************
-  ArrayList<TransportLayerListener<Identifier>> listeners = new ArrayList<TransportLayerListener<Identifier>>();
+  final ArrayList<TransportLayerListener<Identifier>> listeners = new ArrayList<TransportLayerListener<Identifier>>();
+  @Override
   public void addTransportLayerListener(
       TransportLayerListener<Identifier> listener) {
     synchronized(listeners) {
@@ -328,6 +350,7 @@ public class MagicNumberTransportLayer<Identifier> implements
     }
   }
 
+  @Override
   public void removeTransportLayerListener(
       TransportLayerListener<Identifier> listener) {
     synchronized(listeners) {

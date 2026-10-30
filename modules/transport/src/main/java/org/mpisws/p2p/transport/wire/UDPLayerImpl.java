@@ -78,12 +78,13 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   // largest message size than can be sent via UDP
   private int DATAGRAM_SEND_BUFFER_SIZE;
 
-  List<Envelope> pendingMsgs;
+  final List<Envelope> pendingMsgs;
 
   WireTransportLayerImpl wire;
 
   ByteBuffer readBuffer;
 
+  @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
   public UDPLayerImpl(WireTransportLayerImpl wire) throws IOException {
     this.wire = wire;
 
@@ -96,10 +97,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   /**
    * The ack is not the end to end, it's called when actually sent
    *
-   * @param destination
-   * @param msg
    * @param deliverAckToMe ack is when the message is sent to the wire
    */
+  @Override
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination,
       ByteBuffer msg,
@@ -191,6 +191,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    *
    * @param key the selection key of the channel
    */
+  @Override
   public void read(SelectionKey key) {
     assert wire.getEnvironment().getSelectorManager().isSelectorThread() : "selection keys are handled on the selector thread";
 
@@ -228,6 +229,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    *
    * @param key the selection key of the channel
    */
+  @Override
   public void write(SelectionKey key) {
     Envelope write = null;
 
@@ -271,6 +273,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    *
    * @param key the selection key of the channel
    */
+  @Override
   public void modifyKey(SelectionKey key) {
     synchronized (pendingMsgs) {
       if (! pendingMsgs.isEmpty())
@@ -295,10 +298,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     /**
      * Constructor for Envelope.
      *
-     * @param destination
-     * @param msg
      * @param deliverAckToMe notified when the datagram was written to the wire
-     * @param options
      */
     public Envelope(InetSocketAddress destination,
         ByteBuffer msg,
@@ -310,6 +310,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
       this.options = options;
     }
 
+    @Override
     public boolean cancel() {
       if (pendingMsgs.remove(this)) {
         return true;
@@ -317,19 +318,23 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
       return false;
     }
 
+    @Override
     public InetSocketAddress getIdentifier() {
       return destination;
     }
 
+    @Override
     public ByteBuffer getMessage() {
       return msg;
     }
 
+    @Override
     public Map<String, Object> getOptions() {
       return options;
     }
   }
 
+  @Override
   public void destroy() {
     Runnable r = () -> {
       try {
@@ -353,6 +358,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     }
   }
 
+  @Override
   public void acceptMessages(final boolean b) {
     Runnable r = () -> {
       if (b) {

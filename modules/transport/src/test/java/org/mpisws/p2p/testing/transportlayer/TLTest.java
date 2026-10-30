@@ -144,8 +144,6 @@ public abstract class TLTest<Identifier> {
 
   /**
    * A's view of b
-   * @param a
-   * @param b
    *
    * @return A's view of b
    */
@@ -157,8 +155,6 @@ public abstract class TLTest<Identifier> {
 
   /**
    * The identifier to a bogus node.
-   *
-   * @return
    */
   public abstract Identifier getBogusIdentifier(Identifier local) throws IOException;
 
@@ -182,11 +178,13 @@ public abstract class TLTest<Identifier> {
     // Part I opening a connection
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
 
+      @Override
       public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options)
           throws IOException {
 
       }
 
+      @Override
       public void incomingSocket(P2PSocket<Identifier> s)
           throws IOException {
         synchronized(lock) {
@@ -198,6 +196,7 @@ public abstract class TLTest<Identifier> {
     });
 
     alice().openSocket(getIdentifier(alice(), bob()), new SocketCallback<Identifier>(){
+      @Override
       public void receiveResult(SocketRequestHandle<Identifier> s, P2PSocket<Identifier> result) {
         synchronized(lock) {
           aliceSockets.add(result);
@@ -205,6 +204,7 @@ public abstract class TLTest<Identifier> {
         }
       }
 
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> s, Exception exception) {
         synchronized(lock) {
           exceptionList.add(exception);
@@ -232,6 +232,7 @@ public abstract class TLTest<Identifier> {
     final ByteBuffer in = ByteBuffer.allocate(sentBytes.length);
 
     bobSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {
+      @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
 
@@ -247,6 +248,7 @@ public abstract class TLTest<Identifier> {
         }
       }
 
+      @Override
       public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
@@ -256,6 +258,7 @@ public abstract class TLTest<Identifier> {
     });
 
     aliceSockets.get(0).register(false, true, new P2PSocketReceiver<Identifier>() {
+      @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
         socket.write(sentBuffer);
@@ -270,6 +273,7 @@ public abstract class TLTest<Identifier> {
         }
       }
 
+      @Override
       public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
@@ -297,6 +301,7 @@ public abstract class TLTest<Identifier> {
     aliceSockets.get(0).shutdownOutput();
 
     bobSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {
+      @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
 
@@ -315,6 +320,7 @@ public abstract class TLTest<Identifier> {
         }
       }
 
+      @Override
       public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
@@ -324,6 +330,7 @@ public abstract class TLTest<Identifier> {
     });
 
     aliceSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {
+      @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
 
@@ -342,6 +349,7 @@ public abstract class TLTest<Identifier> {
         }
       }
 
+      @Override
       public void receiveException(P2PSocket<Identifier> socket, Exception e) {
         synchronized(lock) {
           exceptionList.add(e);
@@ -382,13 +390,14 @@ public abstract class TLTest<Identifier> {
    * Sends udp message from alice to bob.
    */
   @Test
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void sendUDP() throws Exception {
     final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes);
 
-    class Tupel<Identifier> {
-      Identifier i;
+    class Tupel<Identifier2> {
+      Identifier2 i;
       ByteBuffer buf;
-      public Tupel(Identifier i, ByteBuffer buf) {
+      Tupel(Identifier2 i, ByteBuffer buf) {
         this.i = i;
         this.buf = buf;
       }
@@ -402,12 +411,14 @@ public abstract class TLTest<Identifier> {
 
     // make a way for bob to receive the callback
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
+      @Override
       public void messageReceived(Identifier i, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
           receivedList.add(new Tupel<Identifier>(i, buf));
           lock.notify();
         }
       }
+      @Override
       public void incomingSocket(P2PSocket<Identifier> s) {}
     });
 
@@ -416,6 +427,7 @@ public abstract class TLTest<Identifier> {
         sentBuffer,
         new MessageCallback<Identifier, ByteBuffer>() {
 
+          @Override
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             synchronized(lock) {
               sentList.add(msg);
@@ -423,6 +435,7 @@ public abstract class TLTest<Identifier> {
             }
           }
 
+          @Override
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             synchronized(lock) {
               ex.printStackTrace();
@@ -458,6 +471,7 @@ public abstract class TLTest<Identifier> {
    * Sends huge udp message from alice to bob, should fail.
    */
   @Test
+  @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void messageTooBigUDP() throws Exception {
     final byte[] sentBytes = new byte[1000000]; // a big message
     final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes);
@@ -473,12 +487,14 @@ public abstract class TLTest<Identifier> {
         sentBuffer,
         new MessageCallback<Identifier, ByteBuffer>() {
 
+          @Override
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             synchronized(lock) {
               sentList.add(msg);
               lock.notify();
             }
           }
+          @Override
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception exception) {
             synchronized(lock) {
               failedList.add(msg);
@@ -510,10 +526,10 @@ public abstract class TLTest<Identifier> {
   public void noCallbackTest() throws Exception {
     final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes);
 
-    class Tupel<Identifier> {
-      Identifier i;
+    class Tupel<Identifier2> {
+      Identifier2 i;
       ByteBuffer buf;
-      public Tupel(Identifier i, ByteBuffer buf) {
+      Tupel(Identifier2 i, ByteBuffer buf) {
         this.i = i;
         this.buf = buf;
       }
@@ -526,12 +542,14 @@ public abstract class TLTest<Identifier> {
 
     // make a way for bob to receive the callback
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
+      @Override
       public void messageReceived(Identifier i, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
           receivedList.add(new Tupel<Identifier>(i, buf));
           lock.notify();
         }
       }
+      @Override
       public void incomingSocket(P2PSocket<Identifier> s) {}
     });
 

@@ -45,19 +45,15 @@ import rice.p2p.commonapi.Cancellable;
  * socket when it has been opened.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public interface SocketRequestHandle<Identifier> extends Cancellable {
   /**
    * The identifier that the caller requested to open to.
-   * @return
    */
   public Identifier getIdentifier();
 
   /**
    * The options that the caller used.
-   * @return
    */
   public Map<String, Object> getOptions();
 }

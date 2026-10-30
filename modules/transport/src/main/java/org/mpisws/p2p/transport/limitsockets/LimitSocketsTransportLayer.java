@@ -68,7 +68,6 @@ import rice.selector.TimerTask;
  * Uses the LinkedHashMap to perform the LRU policy.
  *
  * @author Jeff Hoye
- *
  */
 public class LimitSocketsTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType> {
   /** A socket whose output was shut down is closed after this delay. */
@@ -83,8 +82,8 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   private ErrorHandler<Identifier> handler;
 
 
-  public LimitSocketsTransportLayer(int max_sockets, TransportLayer<Identifier, MessageType> tl, ErrorHandler<Identifier> handler, Environment env) {
-    this.MAX_SOCKETS = max_sockets;
+  public LimitSocketsTransportLayer(int maxSockets, TransportLayer<Identifier, MessageType> tl, ErrorHandler<Identifier> handler, Environment env) {
+    this.MAX_SOCKETS = maxSockets;
     this.tl = tl;
     this.logger = env.getLogManager().getLogger(LimitSocketsTransportLayer.class, null);
     this.timer = env.getSelectorManager().getTimer();
@@ -97,6 +96,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
     tl.setCallback(this);
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     if (logger.isTraceEnabled()) logger.trace("{}.openSocket({},{},{})", LimitSocketsTransportLayer.this, i, deliverSocketToMe, options, new Exception("Stack Trace"));
 
@@ -107,20 +107,24 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
         return super.cancel();
       }
 
+      @Override
       public String toString() {
         return LimitSocketsTransportLayer.this+"RequestHandle.openSocket("+i+","+deliverSocketToMe+","+options+")";
       }
     };
 
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>(){
+      @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
         logger.trace("{}.openSocket({},{}):{}.receiveResult()", this, i, deliverSocketToMe, ret);
         deliverSocketToMe.receiveResult(ret, getLSSock(sock));
       }
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
         logger.atTrace().log(() -> this+".openSocket("+i+","+deliverSocketToMe+"):"+ret+".receiveException("+ex+")");
         deliverSocketToMe.receiveException(ret, ex);
       }
+      @Override
       public String toString() {
         return LimitSocketsTransportLayer.this+"SocketCallback.openSocket("+i+","+deliverSocketToMe+","+options+")";
       }
@@ -130,6 +134,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
     return ret;
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     logger.trace("{}.incomingSocket({})", this, s);
     callback.incomingSocket(getLSSock(s));
@@ -165,7 +170,6 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
 
     /**
      * Called when we force a socket closed.
-     *
      */
     public void forceClose() {
       logger.debug("{}.forceClose()", this);
@@ -247,39 +251,48 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
     }
   }
 
+  @Override
   public String toString() {
     return "LimitSocks<"+cache.size()+">";
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, MessageCallback<Identifier, MessageType> deliverAckToMe, Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
+  @Override
   public void messageReceived(Identifier i, MessageType m, Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, MessageType> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.handler = handler;
     tl.setErrorHandler(handler);
   }
 
+  @Override
   public void destroy() {
     tl.destroy();
   }

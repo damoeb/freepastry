@@ -48,7 +48,6 @@ import rice.p2p.commonapi.Cancellable;
  * Uses a 3rd party channel to request a node to connect to a dest.
  *
  * @author Jeff Hoye
- *
  */
 public interface RendezvousStrategy<Identifier> {
 
@@ -72,19 +71,12 @@ public interface RendezvousStrategy<Identifier> {
    * @param source the node that wants the channel, also passed to ChannelOpener.openChannel()
    * @param uid identifies the channel request, also passed to ChannelOpener.openChannel()
    * @param deliverResultToMe notify me when success/failure
-   * @param options
    * @return a way to cancel the request
    */
   public Cancellable openChannel(Identifier target, Identifier rendezvous, Identifier source, int uid, Continuation<Integer, Exception> deliverResultToMe, Map<String, Object> options);
 
   /**
    * Sends the message via an out-of-band channel.  Usually routing.
-   *
-   * @param i
-   * @param m
-   * @param deliverAckToMe
-   * @param options
-   * @return
    */
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options);
 

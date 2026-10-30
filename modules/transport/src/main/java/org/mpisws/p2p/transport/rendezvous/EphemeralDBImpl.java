@@ -72,7 +72,6 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
 
   /**
    *
-   * @param env
    * @param stalePortTime how long until we should forget about the port binding
    */
   public EphemeralDBImpl(Environment env, long stalePortTime) {
@@ -84,15 +83,14 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
 
   /**
    * Tell the DB that the high identifier points to this tag
-   *
-   * @param high
-   * @param tag
    */
+  @Override
   public void mapHighToTag(HighIdentifier high, long tag) {
     logger.debug("mapHighToTag({},{})", high, tag);
     highToTag.put(high, tag);
   }
 
+  @Override
   public Identifier getEphemeral(HighIdentifier high) {
     Long tag = highToTag.get(high);
     if (tag == null) {
@@ -107,6 +105,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
     return ret;
   }
 
+  @Override
   public Identifier getEphemeral(long tag, Identifier i) {
     Ephemeral<Identifier> ret = tagToEphemeral.get(tag);
     if (ret == null) {
@@ -122,6 +121,7 @@ public class EphemeralDBImpl<Identifier, HighIdentifier> implements EphemeralDB<
     return ret.addr();
   }
 
+  @Override
   public long getTagForEphemeral(Identifier addr) {
     long now = time.currentTimeMillis();
     Long tag = ephemeralToTag.get(addr);

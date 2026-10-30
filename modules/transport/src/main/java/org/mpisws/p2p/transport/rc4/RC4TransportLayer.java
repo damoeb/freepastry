@@ -98,9 +98,6 @@ import rice.p2p.util.SecurityUtils;
  *  // and maybe learn something about the first packet... but maybe this doesn't matter because of the Hashing to generate the secret key
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
- * @param <MsgType>
  */
 public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Identifier,MsgType>, TransportLayerCallback<Identifier, MsgType> {
 
@@ -150,18 +147,22 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
     return new SecretKeySpec(SecurityUtils.hmac(password, seed), KEY_ALGORITHM);
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
 
@@ -172,11 +173,13 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
 
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
 
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> s,
           Exception ex) {
         deliverSocketToMe.receiveException(s, ex);
       }
 
+      @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
           P2PSocket<Identifier> sock) {
 
@@ -187,6 +190,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
         P2PSocketReceiver<Identifier> writeDecryptSeedReceiver = new P2PSocketReceiver<Identifier>() {
           ByteBuffer dsBB = ByteBuffer.wrap(decryptSeed);
 
+          @Override
           public void receiveSelectResult(P2PSocket<Identifier> socket,
               boolean canRead, boolean canWrite) throws IOException {
             long bytesWritten = socket.write(dsBB);
@@ -209,6 +213,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
               // decrypt/read the response
               P2PSocketReceiver<Identifier> readEncryptSeedReceiver = new P2PSocketReceiver<Identifier>() {
                 ByteBuffer encryptedSeeds = ByteBuffer.allocate(PW_SEED_LENGTH*2); // Because we have to verify that SeedB is properly encrypted
+                @Override
                 public void receiveSelectResult(P2PSocket<Identifier> socket,
                     boolean canRead, boolean canWrite) throws IOException {
                   long bytesRead = socket.read(encryptedSeeds);
@@ -256,6 +261,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
                   }
                 }
 
+                @Override
                 public void receiveException(P2PSocket<Identifier> socket,
                     Exception ioe) {
                   deliverSocketToMe.receiveException(ret, ioe);
@@ -268,6 +274,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
             }
           }
 
+          @Override
           public void receiveException(P2PSocket<Identifier> socket,
               Exception ioe) {
             deliverSocketToMe.receiveException(ret, ioe);
@@ -284,6 +291,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
     return ret;
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     // read the encryptSeed in plaintext
     // generate the encryptCipher
@@ -297,6 +305,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
       byte[] encryptSeed = new byte[PW_SEED_LENGTH];
       ByteBuffer encryptSeedBuffer = ByteBuffer.wrap(encryptSeed);
 
+      @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket,
           boolean canRead, boolean canWrite) throws IOException {
         // read the encryptSeedBuffer until it is full
@@ -333,6 +342,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
           final ByteBuffer encryptedSeedsBuffer = ByteBuffer.wrap(encryptedSeeds);
           new P2PSocketReceiver<Identifier>() {
 
+            @Override
             public void receiveSelectResult(P2PSocket<Identifier> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               long ret = socket.write(encryptedSeedsBuffer);
@@ -349,6 +359,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
               callback.incomingSocket(new EncryptedSocket<Identifier>(socket.getIdentifier(),socket,logger,errorHandler,socket.getOptions(),encryptCipher,decryptCipher,WRITE_BUFFER_SIZE));
             }
 
+            @Override
             public void receiveException(P2PSocket<Identifier> socket,
                 Exception ioe) {
               errorHandler.receivedException(socket.getIdentifier(), ioe);
@@ -363,6 +374,7 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
 
       }
 
+      @Override
       public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
         errorHandler.receivedException(socket.getIdentifier(), ioe);
         socket.close();
@@ -371,24 +383,29 @@ public class RC4TransportLayer<Identifier, MsgType> implements TransportLayer<Id
     }.receiveSelectResult(s,true,false);
   }
 
+  @Override
   public MessageRequestHandle<Identifier, MsgType> sendMessage(Identifier i,
       MsgType m, MessageCallback<Identifier, MsgType> deliverAckToMe,
       Map<String, Object> options) {
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, MsgType> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
   }
 
+  @Override
   public void destroy() {
 
   }
 
+  @Override
   public void messageReceived(Identifier i, MsgType m,
       Map<String, Object> options) throws IOException {
     callback.messageReceived(i, m, options);

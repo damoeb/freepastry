@@ -55,6 +55,7 @@ public class EpochTest extends TLTest<MultiInetSocketAddress>{
   /**
    * Goes to Alice/Bob
    */
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
   public static final byte[] GOOD_HDR = {(byte)0xDE,(byte)0xAD,(byte)0xBE,(byte)0xEF};
 
   @BeforeAll

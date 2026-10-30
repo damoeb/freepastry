@@ -69,6 +69,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
   /**
    * Put on back, get from front
    */
+  @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
   LinkedList<PendingMessage> msgs =
     new LinkedList<PendingMessage>();
   P2PSocket<Identifier> socket;
@@ -97,9 +98,11 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     return ret;
   }
 
+  @Override
   public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
     receiveException(ex);
   }
+  @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
     receiveException(ioe);
   }
@@ -115,6 +118,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     }
   }
 
+  @Override
   public void receiveSelectResult(P2PSocket<Identifier> socket,
       boolean canRead, boolean canWrite) throws IOException {
     if (header.hasRemaining()) {
@@ -139,6 +143,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     }
   }
 
+  @Override
   public void receiveResult(SocketRequestHandle<Identifier> cancellable,
       P2PSocket<Identifier> sock) {
     socket = sock;
@@ -150,7 +155,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     }
   }
 
-  protected void sendNextMessage() throws IOException {
+  void sendNextMessage() throws IOException {
     if (msgs.isEmpty()) {
       socket.close();
       pendingBigMessages.remove(i);
@@ -186,18 +191,22 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
       receiveSelectResult(socket, false, true);
     }
 
+    @Override
     public Identifier getIdentifier() {
       return i;
     }
 
+    @Override
     public ByteBuffer getMessage() {
       return msg;
     }
 
+    @Override
     public Map<String, Object> getOptions() {
       return options;
     }
 
+    @Override
     public boolean cancel() {
       if (!started) {
         msgs.remove(this);
@@ -209,10 +218,13 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     /**
      * The socket is blown, just fail them all.
      */
+    @Override
     public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
       BigMessageSender.this.receiveException(ioe);
     }
 
+    @Override
+    @SuppressWarnings("ReferenceEquality") // the same instance is meant
     public void receiveSelectResult(P2PSocket<Identifier> socket,
         boolean canRead, boolean canWrite) throws IOException {
       if (sizeBuffer.hasRemaining()) {

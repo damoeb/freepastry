@@ -93,6 +93,7 @@ public class PriorityMissingCallbackTest {
   public void setUp() throws IOException {
     env = new Environment();
     env.setExceptionStrategy(new ExceptionStrategy() {
+      @Override
       public void handleException(Object source, Throwable t) {
         selectorExceptions.add(t);
       }
@@ -125,9 +126,11 @@ public class PriorityMissingCallbackTest {
 
   static class Recorder implements TransportLayerCallback<MultiInetSocketAddress, ByteBuffer> {
     final BlockingQueue<ByteBuffer> messages = new ArrayBlockingQueue<ByteBuffer>(10);
+    @Override
     public void messageReceived(MultiInetSocketAddress i, ByteBuffer m, Map<String, Object> options) {
       messages.add(m);
     }
+    @Override
     public void incomingSocket(P2PSocket<MultiInetSocketAddress> s) {
       s.close();
     }
@@ -137,9 +140,11 @@ public class PriorityMissingCallbackTest {
   private void send(byte[] bytes) throws InterruptedException {
     final CountDownLatch acked = new CountDownLatch(1);
     alice.sendMessage(bobAddr, ByteBuffer.wrap(bytes), new MessageCallback<MultiInetSocketAddress, ByteBuffer>() {
+      @Override
       public void ack(MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> msg) {
         acked.countDown();
       }
+      @Override
       public void sendFailed(MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> msg, Exception reason) {
         selectorExceptions.add(reason);
         acked.countDown();
@@ -160,9 +165,11 @@ public class PriorityMissingCallbackTest {
     final byte[] first = new byte[] {1, 2, 3};
     final CountDownLatch bobRead = new CountDownLatch(1);
     bob.addTransportLayerListener(new TransportLayerListener<MultiInetSocketAddress>() {
+      @Override
       public void read(int bytes, MultiInetSocketAddress i, Map<String, Object> options, boolean passthrough, boolean socket) {
         if (bytes == first.length) bobRead.countDown();
       }
+      @Override
       public void wrote(int bytes, MultiInetSocketAddress i, Map<String, Object> options, boolean passthrough, boolean socket) {
       }
     });
@@ -208,10 +215,12 @@ public class PriorityMissingCallbackTest {
     final BlockingQueue<Object> outcome = new ArrayBlockingQueue<Object>(2);
     env.getSelectorManager().invoke(() ->
       alice.openSocket(bobAddr, new SocketCallback<MultiInetSocketAddress>() {
+        @Override
         public void receiveResult(SocketRequestHandle<MultiInetSocketAddress> cancellable,
             P2PSocket<MultiInetSocketAddress> sock) {
           // wait for bob to close it
           sock.register(true, false, new P2PSocketReceiver<MultiInetSocketAddress>() {
+            @Override
             public void receiveSelectResult(P2PSocket<MultiInetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
               long ret = socket.read(ByteBuffer.allocate(1));
               if (ret < 0) {
@@ -221,11 +230,13 @@ public class PriorityMissingCallbackTest {
                 socket.register(true, false, this);
               }
             }
+            @Override
             public void receiveException(P2PSocket<MultiInetSocketAddress> socket, Exception e) {
               outcome.add("closed: "+e);
             }
           });
         }
+        @Override
         public void receiveException(SocketRequestHandle<MultiInetSocketAddress> s, Exception ex) {
           outcome.add(ex);
         }

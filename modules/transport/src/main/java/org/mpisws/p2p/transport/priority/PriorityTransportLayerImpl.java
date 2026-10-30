@@ -66,7 +66,6 @@ import rice.selector.SelectorManager;
 /**
  *
  * @author Jeff Hoye
- *
  */
 public class PriorityTransportLayerImpl<Identifier> implements PriorityTransportLayer<Identifier>, LivenessListener<Identifier>, TransportLayerCallback<Identifier, ByteBuffer> {
 
@@ -75,8 +74,11 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   public static final byte PASSTHROUGH_SOCKET_B = 0;
   public static final byte PRIMARY_SOCKET_B = 1;
   public static final byte BIG_MSG_SOCKET_B = 2;
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
   public static final byte[] PASSTHROUGH_SOCKET = {PASSTHROUGH_SOCKET_B};
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
   public static final byte[] PRIMARY_SOCKET = {PRIMARY_SOCKET_B};
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
   public static final byte[] BIG_MSG_SOCKET = {BIG_MSG_SOCKET_B};
 
   private int MAX_MSG_SIZE = 10000;
@@ -155,10 +157,12 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
    * The first byte tells whether this is a passthrough (the layer higher than us asked to open it), a
    * primary (our layer tried to open it) or a BIG message socket; see {@link IncomingSocketDispatcher}.
    */
+  @Override
   public void incomingSocket(final P2PSocket<Identifier> s) throws IOException {
     s.register(true, false, new IncomingSocketDispatcher<Identifier>(s, entityManagerContext));
   }
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(Identifier i, final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("No handle to return socket to! (deliverSocketToMe must be non-null!)");
 
@@ -168,24 +172,29 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     return handle;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
     assert selectorManager.isSelectorThread() : "transport callbacks run on the selector thread";
     callback.messageReceived(i, m, options);
     notifyListenersRead(m.remaining(), i, options);
   }
 
+  @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier i, ByteBuffer m, final MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> opts) {
     logger.debug("sendMessage({},{},{},{})", i, m, deliverAckToMe, opts);
     // callers may pass null options, but queued messages need non-null options (e.g. EntityManager.startLivenessChecker())
@@ -200,11 +209,13 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
           final int originalSize = m.remaining();
           return tl.sendMessage(i, m, new MessageCallback<Identifier, ByteBuffer>() {
 
+            @Override
             public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
               notifyListenersWrote(originalSize, i, options);
               if (deliverAckToMe != null) deliverAckToMe.ack(msg);
             }
 
+            @Override
             public void sendFailed(
                 MessageRequestHandle<Identifier, ByteBuffer> msg,
                 Exception reason) {
@@ -219,6 +230,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     return getEntityManager(i).send(i, m, deliverAckToMe, options);
   }
 
+  @Override
   public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
     this.callback = (callback == null) ? new MissingCallback() : callback;
   }
@@ -228,21 +240,25 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
    * passthrough sockets are logged and closed (so they don't leak).
    */
   class MissingCallback implements TransportLayerCallback<Identifier, ByteBuffer> {
+    @Override
     public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
       logger.warn("No TransportLayerCallback set, dropping message of size {} from {}", m.remaining(), i);
     }
 
+    @Override
     public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
       logger.warn("No TransportLayerCallback set, closing incoming socket {}", s);
       s.close();
     }
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
   }
 
   private boolean destroyed = false;
+  @Override
   public void destroy() {
     if (destroyed) return;
     if (environment.getSelectorManager().isSelectorThread()) {
@@ -264,6 +280,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     }
   }
 
+  @Override
   public void livenessChanged(Identifier i, int val, Map<String, Object> options) {
     if (val >= LivenessTypes.LIVENESS_DEAD) {
       getEntityManager(i).markDead();
@@ -273,16 +290,20 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   // *************************** Listeners *********************
   private final TransportListeners<Identifier> listeners = new TransportListeners<Identifier>();
 
+  @Override
   public void addTransportLayerListener(TransportLayerListener<Identifier> listener) {
     listeners.addTransportLayerListener(listener);
   }
+  @Override
   public void removeTransportLayerListener(TransportLayerListener<Identifier> listener) {
     listeners.removeTransportLayerListener(listener);
   }
 
+  @Override
   public void addPriorityTransportLayerListener(PriorityTransportLayerListener<Identifier> listener) {
     listeners.addPriorityTransportLayerListener(listener);
   }
+  @Override
   public void removePriorityTransportLayerListener(PriorityTransportLayerListener<Identifier> listener) {
     listeners.removePriorityTransportLayerListener(listener);
   }
@@ -303,6 +324,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   }
 
 
+  @Override
   public int connectionStatus(Identifier i) {
     EntityManager<Identifier> manager = getEntityManager(i);
     // this may not be thread safe, but ... who cares, it at least won't throw an exception.
@@ -311,14 +333,17 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     return STATUS_NOT_CONNECTED;
   }
 
+  @Override
   public void openPrimaryConnection(Identifier i, Map<String, Object> options) {
     getEntityManager(i).openPrimarySocketHelper(i, options);
   }
 
+  @Override
   public void addPrimarySocketListener(PrimarySocketListener<Identifier> listener) {
     primarySocketListeners.add(listener);
   }
 
+  @Override
   public void removePrimarySocketListener(PrimarySocketListener<Identifier> listener) {
     primarySocketListeners.remove(listener);
   }

@@ -52,8 +52,6 @@ import rice.Continuation;
  * If continuation is null, then it closes the socket when done, or if there is an error.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public class BufferWriter<Identifier> implements P2PSocketReceiver<Identifier> {
   ByteBuffer sizeBuf = null;
@@ -62,9 +60,6 @@ public class BufferWriter<Identifier> implements P2PSocketReceiver<Identifier> {
 
   /**
    *
-   * @param writeMe
-   * @param socket
-   * @param continuation
    * @param includeSizeHeader true if the size needs to be written in a header, false if it is a fixed size buffer
    */
   public BufferWriter(ByteBuffer writeMe, P2PSocket<Identifier> socket,
@@ -88,6 +83,7 @@ public class BufferWriter<Identifier> implements P2PSocketReceiver<Identifier> {
     this(writeMe, socket, continuation, true);
   }
 
+  @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
     if (continuation == null) {
       socket.close();
@@ -96,6 +92,7 @@ public class BufferWriter<Identifier> implements P2PSocketReceiver<Identifier> {
     }
   }
 
+  @Override
   public void receiveSelectResult(P2PSocket<Identifier> socket,
       boolean canRead, boolean canWrite) throws IOException {
     if (sizeBuf != null && sizeBuf.hasRemaining()) {

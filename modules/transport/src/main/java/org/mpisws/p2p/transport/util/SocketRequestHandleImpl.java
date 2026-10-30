@@ -53,14 +53,17 @@ public class SocketRequestHandleImpl<Identifier> implements SocketRequestHandle<
     if (logger == null) throw new IllegalArgumentException("logger is null");
   }
 
+  @Override
   public Identifier getIdentifier() {
     return identifier;
   }
 
+  @Override
   public Map<String, Object> getOptions() {
     return options;
   }
 
+  @Override
   public boolean cancel() {
     if (subCancellable != null) {
         return subCancellable.cancel();

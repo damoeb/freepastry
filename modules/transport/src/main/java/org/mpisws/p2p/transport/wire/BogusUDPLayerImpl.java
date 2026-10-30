@@ -47,6 +47,7 @@ import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 
 public class BogusUDPLayerImpl implements UDPLayer {
 
+  @Override
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination, ByteBuffer m,
       MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
@@ -57,9 +58,11 @@ public class BogusUDPLayerImpl implements UDPLayer {
     return ret;
   }
 
+  @Override
   public void destroy() {
   }
 
+  @Override
   public void acceptMessages(boolean b) {
   }
 }

@@ -69,12 +69,9 @@ public class TCPLayer extends SelectionKeyHandler {
     WireConfig config = wire.getConfig();
     SOCKET_BUFFER_SIZE = config.socketBufferSize();
     TCP_NO_DELAY = config.tcpNoDelay();
-    ServerSocketChannel temp = null; // just to clean up after the exception
-
     // bind to port
     if (enableServer) {
       final ServerSocketChannel channel = ServerSocketChannel.open();
-      temp = channel;
       channel.configureBlocking(false);
       channel.socket().setReuseAddress(true);
       channel.socket().bind(wire.getLocalIdentifier());
@@ -111,7 +108,7 @@ public class TCPLayer extends SelectionKeyHandler {
     }
   }
 
-  Collection<SocketManager> sockets = new HashSet<SocketManager>();
+  final Collection<SocketManager> sockets = new HashSet<SocketManager>();
 
   protected void socketClosed(SocketManager sm) {
     wire.broadcastChannelClosed(sm.addr, sm.options);
@@ -163,6 +160,7 @@ public class TCPLayer extends SelectionKeyHandler {
    *
    * @param key The key which is acceptable.
    */
+  @Override
   public void accept(SelectionKey key) {
     assert wire.getEnvironment().getSelectorManager().isSelectorThread() : "selection keys are handled on the selector thread";
     try {

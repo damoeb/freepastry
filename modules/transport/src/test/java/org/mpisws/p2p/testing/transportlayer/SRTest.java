@@ -88,6 +88,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
   /**
    * Goes to Alice/Bob
    */
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
   public static final byte[] GOOD_HDR = {(byte)0xDE,(byte)0xAD,(byte)0xBE,(byte)0xEF};
 
   @BeforeAll
@@ -145,6 +146,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
 
   @Test
   @Override
+  @SuppressWarnings("JUnitMethodInvoked") // reruns the inherited test with other options
   public void openTCP() throws Exception {
     final Object lock = new Object();
     final List<Triplet> opened = new ArrayList<Triplet>(1);
@@ -153,6 +155,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     final List<Triplet> bad = new ArrayList<Triplet>(1);
 
     SourceRouteTap<MultiInetSocketAddress> tap = new SourceRouteTap<MultiInetSocketAddress>(){
+      @Override
       public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
           opened.add(new Triplet(path, a, b));
@@ -160,10 +163,12 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
         }
       }
 
+      @Override
       public void receivedMessage(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path) {
         bad.add(new Triplet(path, null, null));
       }
 
+      @Override
       public void socketClosed(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
           closed.add(new Triplet(path, a, b));
@@ -171,6 +176,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
         }
       }
 
+      @Override
       public void receivedBytes(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
           Triplet t = new Triplet(path, a, b);
@@ -209,12 +215,11 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
 
   @Test
   @Override
+  @SuppressWarnings("JUnitMethodInvoked") // reruns the inherited test with other options
   public void sendUDP() throws Exception {
     class TapTupel {
-      ByteBuffer m;
       SourceRoute<MultiInetSocketAddress> path;
-      public TapTupel(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path) {
-        this.m = m;
+      TapTupel(SourceRoute<MultiInetSocketAddress> path) {
         this.path = path;
       }
     }
@@ -222,20 +227,24 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     final List<TapTupel> taptupels = new ArrayList<TapTupel>(1);
 
     SourceRouteTap<MultiInetSocketAddress> tap = new SourceRouteTap<MultiInetSocketAddress>(){
+      @Override
       public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
       }
 
+      @Override
       public void receivedBytes(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
 
       }
 
+      @Override
       public void socketClosed(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
 
       }
 
+      @Override
       public void receivedMessage(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path) {
         synchronized(lock) {
-          taptupels.add(new TapTupel(m,path));
+          taptupels.add(new TapTupel(path));
           lock.notify();
         }
       }

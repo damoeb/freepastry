@@ -65,8 +65,6 @@ import rice.selector.TimerTask;
  * Measure the bandwidth of the connections.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public class BandwidthMeasuringTransportLayer<Identifier> implements
   TransportLayer<Identifier, ByteBuffer>,
@@ -97,7 +95,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   /**
    * Current measure, last measure
    */
-  Map<Identifier, Tuple<int[], Collection<MySocket>>> measured = new HashMap<Identifier, Tuple<int[], Collection<MySocket>>>();
+  final Map<Identifier, Tuple<int[], Collection<MySocket>>> measured = new HashMap<Identifier, Tuple<int[], Collection<MySocket>>>();
   private final rice.environment.time.TimeSource time;
 
   public BandwidthMeasuringTransportLayer(int measurementPeriod, TransportLayer<Identifier, ByteBuffer> tl, Environment env) {
@@ -154,9 +152,6 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
 
   /**
    * Should be holding the lock on measured
-   *
-   * @param i
-   * @return
    */
   public Tuple<int[], Collection<MySocket>> getVals(Identifier i) {
     Tuple<int[], Collection<MySocket>> ret = measured.get(i);
@@ -170,7 +165,6 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   /**
    * For all Identifiers that used any bandwidth since the measurementPeriod, returns:
    * downstream bytes/sec, upstream bytes/sec, if the upstream was saturated
-   * @return
    */
   public Map<Identifier, Tuple3<Integer, Integer, Boolean>> getBandwidthUsed() {
     synchronized(measured) {
@@ -184,6 +178,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     }
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     callback.incomingSocket(new MySocket(s.getIdentifier(),s,logger,errorHandler,s.getOptions()));
   }
@@ -208,7 +203,6 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
 
     /**
      * true if we are waiting to write.
-     * @return
      */
     public boolean wantsToWrite() {
       return (writer != null);
@@ -237,7 +231,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
         if (srcs.hasRemaining()) {
           vals[CUR_SATURATED] = SATURATED;
         }
-        vals[CUR_UP]+=ret;
+        vals[CUR_UP] = (int) (vals[CUR_UP] + ret);
       }
       return ret;
     }
@@ -247,13 +241,14 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
       long ret = super.read(srcs);
       synchronized(measured) {
         int[] vals = getVals(getIdentifier()).a();
-        vals[CUR_DOWN]+=ret;
+        vals[CUR_DOWN] = (int) (vals[CUR_DOWN] + ret);
       }
       return ret;
     }
 
   }
 
+  @Override
   public void messageReceived(Identifier i, ByteBuffer m,
       Map<String, Object> options) throws IOException {
     synchronized (measured) {
@@ -262,6 +257,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     callback.messageReceived(i, m, options);
   }
 
+  @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i,
       ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
@@ -272,17 +268,20 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   }
 
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe,
       final Map<String, Object> options) {
     final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
     ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
 
+      @Override
       public void receiveException(SocketRequestHandle<Identifier> s,
           Exception ex) {
         deliverSocketToMe.receiveException(s, ex);
       }
 
+      @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
           P2PSocket<Identifier> sock) {
         deliverSocketToMe.receiveResult(ret, new MySocket(i,sock,logger,errorHandler,options));
@@ -292,27 +291,33 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     return ret;
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public void setCallback(
       TransportLayerCallback<Identifier, ByteBuffer> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
   }
 
+  @Override
   public void destroy() {
     tl.destroy();
   }

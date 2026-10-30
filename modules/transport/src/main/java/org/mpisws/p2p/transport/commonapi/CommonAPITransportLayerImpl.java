@@ -114,18 +114,22 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
 
   }
 
+  @Override
   public void acceptMessages(boolean b) {
     tl.acceptMessages(b);
   }
 
+  @Override
   public void acceptSockets(boolean b) {
     tl.acceptSockets(b);
   }
 
+  @Override
   public Identifier getLocalIdentifier() {
     return tl.getLocalIdentifier();
   }
 
+  @Override
   public MessageRequestHandle<Identifier, RawMessage> sendMessage(
       final Identifier i,
       final RawMessage m,
@@ -169,12 +173,16 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
         buf,
         new MessageCallback<Identifier, ByteBuffer>() {
 
+          @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
             logger.trace("sendMessage({},{}).ack()", i, m);
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(handle);
           }
 
+          @Override
+          @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             if (ex instanceof NodeIsFaultyException) {
               ex = new NodeIsFaultyException(i, m, ex);
@@ -195,23 +203,28 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
     return handle;
   }
 
+  @Override
   public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
     SimpleInputBuffer buf = new SimpleInputBuffer(m.array(), m.position());
     RawMessage ret = deserializer.deserialize(buf, i);
     logger.debug("messageReceived({},{})", i, ret);
     callback.messageReceived(i, ret, options);
   }
 
+  @Override
   public void setCallback(
       TransportLayerCallback<Identifier, RawMessage> callback) {
     this.callback = callback;
   }
 
+  @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
   }
 
   private boolean destroyed = false;
+  @Override
   public void destroy() {
     destroyed = true;
     tl.destroy();
@@ -220,6 +233,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
 
 
 
+  @Override
   public SocketRequestHandle<Identifier> openSocket(
       final Identifier i,
       final SocketCallback<Identifier> deliverSocketToMe,
@@ -232,6 +246,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
     // we only serialize the Id, we assume the underlying layer got the address of the NodeHandle correct
   }
 
+  @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     logger.debug("incomingSocket({})", s);
     callback.incomingSocket(s);

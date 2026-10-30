@@ -112,22 +112,26 @@ public class Forwarder<Identifier> {
     P2PSocket<Identifier> to;
     ByteBuffer buf;
 
-    public HalfPipe(P2PSocket<Identifier> from, P2PSocket<Identifier> to) {
+    HalfPipe(P2PSocket<Identifier> from, P2PSocket<Identifier> to) {
       this.from = from;
       this.to = to;
       buf = ByteBuffer.allocate(PIPE_BUFFER_SIZE);
       from.register(true, false, this);
     }
 
+    @Override
     public String toString() {
       return "HalfPipe "+from+"=>"+to;
     }
 
+    @Override
     public void receiveException(P2PSocket<Identifier> socket, Exception e) {
       logger.debug("{} {}", this, socket, e);
       close();
     }
 
+    @Override
+    @SuppressWarnings("ReferenceEquality") // the same instance is meant
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       if (canRead) {
         if (socket != from) throw new IOException("Expected to read from "+from+" got "+socket);
@@ -169,7 +173,7 @@ public class Forwarder<Identifier> {
             from.register(true, false, this);
           }
         } else {
-          throw new IOException("Didn't select for either "+socket+","+canRead+","+canWrite);
+          throw new IOException("Didn't select for either "+socket);
         }
       }
     }

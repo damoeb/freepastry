@@ -47,8 +47,6 @@ import org.slf4j.event.Level;
  * Just logs the problems.
  *
  * @author Jeff Hoye
- *
- * @param <Identifier>
  */
 public class DefaultErrorHandler<Identifier> implements
     ErrorHandler<Identifier> {
@@ -70,6 +68,7 @@ public class DefaultErrorHandler<Identifier> implements
     this.printlevel = printlevel;
   }
 
+  @Override
   public void receivedUnexpectedData(Identifier id, byte[] bytes, int pos, Map<String, Object> options) {
     if (logger.isInfoEnabled()) {
       // make this pretty
@@ -83,6 +82,7 @@ public class DefaultErrorHandler<Identifier> implements
     }
   }
 
+  @Override
   public void receivedException(Identifier i, Throwable error) {
     logger.atLevel(printlevel).setCause(error).log(() -> String.valueOf(i));
   }
