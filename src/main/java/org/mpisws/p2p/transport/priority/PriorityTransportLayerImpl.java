@@ -1493,87 +1493,40 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   } // EntityManager
 
   // *************************** Listeners *********************
-  /**
-   * Note that listeners contains a superset of plisteners
-   */
-  ArrayList<TransportLayerListener<Identifier>> listeners = new ArrayList<TransportLayerListener<Identifier>>();
-  ArrayList<PriorityTransportLayerListener<Identifier>> plisteners = new ArrayList<PriorityTransportLayerListener<Identifier>>();
+  private final TransportListeners<Identifier> listeners = new TransportListeners<Identifier>();
 
   public void addTransportLayerListener(TransportLayerListener<Identifier> listener) {
-    synchronized(listeners) {
-      listeners.add(listener);
-    }
+    listeners.addTransportLayerListener(listener);
   }
   public void removeTransportLayerListener(TransportLayerListener<Identifier> listener) {
-    synchronized(listeners) {
-      listeners.remove(listener);
-    }
+    listeners.removeTransportLayerListener(listener);
   }
 
   public void addPriorityTransportLayerListener(PriorityTransportLayerListener<Identifier> listener) {
-    synchronized(plisteners) {
-      plisteners.add(listener);
-    }
-    addTransportLayerListener(listener);
+    listeners.addPriorityTransportLayerListener(listener);
   }
   public void removePriorityTransportLayerListener(PriorityTransportLayerListener<Identifier> listener) {
-    synchronized(plisteners) {
-      plisteners.remove(listener);
-    }
-    removeTransportLayerListener(listener);
+    listeners.removePriorityTransportLayerListener(listener);
   }
 
   public void notifyListenersRead(int size, Identifier source,
       Map<String, Object> options) {
-
-    if (listeners.isEmpty()) return;
-    ArrayList<TransportLayerListener<Identifier>> temp;
-
-    synchronized(listeners) {
-      temp = new ArrayList<TransportLayerListener<Identifier>>(listeners);
-    }
-    for (TransportLayerListener<Identifier> l : temp) {
-      l.read(size, source, options, true, true);
-    }
+    listeners.notifyRead(size, source, options);
   }
 
   public void notifyListenersWrote(int size, Identifier dest,
       Map<String, Object> options) {
-    if (listeners.isEmpty()) return;
-    ArrayList<TransportLayerListener<Identifier>> temp;
-
-    synchronized(listeners) {
-      temp = new ArrayList<TransportLayerListener<Identifier>>(listeners);
-    }
-    for (TransportLayerListener<Identifier> l : temp) {
-      l.wrote(size, dest, options, true, true);
-    }
+    listeners.notifyWrote(size, dest, options);
   }
 
   public void notifyListenersEnqueued(int size, Identifier dest,
       Map<String, Object> options) {
-    if (plisteners.isEmpty()) return;
-    ArrayList<PriorityTransportLayerListener<Identifier>> temp;
-
-    synchronized(plisteners) {
-      temp = new ArrayList<PriorityTransportLayerListener<Identifier>>(plisteners);
-    }
-    for (PriorityTransportLayerListener<Identifier> l : temp) {
-      l.enqueued(size, dest, options, true, true);
-    }
+    listeners.notifyEnqueued(size, dest, options);
   }
 
   public void notifyListenersDropped(int size, Identifier dest,
       Map<String, Object> options) {
-    if (plisteners.isEmpty()) return;
-    ArrayList<PriorityTransportLayerListener<Identifier>> temp;
-
-    synchronized(plisteners) {
-      temp = new ArrayList<PriorityTransportLayerListener<Identifier>>(plisteners);
-    }
-    for (PriorityTransportLayerListener<Identifier> l : temp) {
-      l.dropped(size, dest, options, true, true);
-    }
+    listeners.notifyDropped(size, dest, options);
   }
 
 
