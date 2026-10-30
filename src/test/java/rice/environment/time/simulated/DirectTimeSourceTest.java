@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.environment.time.simulated;
 
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,11 @@ public class DirectTimeSourceTest {
   @Test
   public void startsAtTheGivenTime() {
     assertEquals(START, new DirectTimeSource(START).currentTimeMillis());
+  }
+
+  @Test
+  public void nowIsTheVirtualTime() {
+    assertEquals(Instant.ofEpochMilli(START), new DirectTimeSource(START).now());
   }
 
   @Test

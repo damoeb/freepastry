@@ -39,6 +39,9 @@ advised of the possibility of such damage.
  */
 package rice.environment.time;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import rice.Destructable;
 
 /**
@@ -65,4 +68,23 @@ public interface TimeSource extends Destructable {
    * @throws InterruptedException
    */
   public void sleep(long delay) throws InterruptedException;
+
+  /**
+   * The current time of this clock as an {@link Instant}: virtual time in the simulator.
+   *
+   * @return {@link #currentTimeMillis()} as an Instant
+   */
+  default Instant now() {
+    return Instant.ofEpochMilli(currentTimeMillis());
+  }
+
+  /**
+   * block for this long, truncated to millis
+   *
+   * @param delay the amount of time to sleep
+   * @throws InterruptedException
+   */
+  default void sleep(Duration delay) throws InterruptedException {
+    sleep(delay.toMillis());
+  }
 }
