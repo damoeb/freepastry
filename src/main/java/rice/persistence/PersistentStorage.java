@@ -54,7 +54,6 @@ import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Continuation.ListenerContinuation;
 import rice.environment.Environment;
-import rice.environment.processing.WorkRequest;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
@@ -144,6 +143,7 @@ public class PersistentStorage implements Storage {
   private boolean index;            // whether or not we are indexing the objects
   private final StorageLayout layout; // the directory tree
   private final ObjectFiles objectFiles; // the object operations on disk
+  private final BlockingIO blockingIO; // runs them on the blocking IO thread
 
   private MetadataIndex metadataIndex; // the in-memory cache of object metadata (if indexing)
 
@@ -207,6 +207,7 @@ public class PersistentStorage implements Storage {
 
     logger.info("Launching persistent storage in {} with name {} spliting factor {}", rootDir, name, MAX_FILES);
 
+    this.blockingIO = new BlockingIO(environment);
     this.objectFiles = new ObjectFiles(layout, metadataIndex, quota, stats, name, environment.getTimeSource(), logger);
 
     new StorageRecovery(layout, metadataIndex, quota, logger).init();
@@ -228,12 +229,9 @@ public class PersistentStorage implements Storage {
       timer.scheduleAtFixedRate(new rice.selector.TimerTask() {
         public String toString() { return "persistence dirty purge enqueue"; }
         public void run() {
-          environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(new ListenerContinuation<Boolean, Exception>("Enqueue of writeMetadataFile", environment), environment.getSelectorManager()) {
-            public String toString() { return "persistence dirty purge"; }
-            public Boolean doWork() throws Exception {
-              writeDirty();
-              return Boolean.TRUE;
-            }
+          blockingIO.run(() -> "persistence dirty purge", new ListenerContinuation<Boolean, Exception>("Enqueue of writeMetadataFile", environment), () -> {
+            writeDirty();
+            return Boolean.TRUE;
           });
         }
       }, environment.getRandomSource().nextInt(METADATA_SYNC_TIME), METADATA_SYNC_TIME);
@@ -251,12 +249,7 @@ public class PersistentStorage implements Storage {
   public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
     printStats();
 
-    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
-      public String toString() { return "rename " + oldId + " " + newId; }
-      public Boolean doWork() throws Exception {
-        return objectFiles.rename(oldId, newId);
-      }
-    });
+    blockingIO.run(() -> "rename " + oldId + " " + newId, c, () -> objectFiles.rename(oldId, newId));
   }
 
   /**
@@ -285,12 +278,7 @@ public class PersistentStorage implements Storage {
 
     printStats();
 
-    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
-      public String toString() { return "store " + id; }
-      public Boolean doWork() throws Exception {
-        return objectFiles.store(id, metadata, obj);
-      }
-    });
+    blockingIO.run(() -> "store " + id, c, () -> objectFiles.store(id, metadata, obj));
   }
 
   /**
@@ -311,12 +299,7 @@ public class PersistentStorage implements Storage {
   public void unstore(final Id id, Continuation<? super Boolean, Exception> c) {
     printStats();
 
-    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
-      public String toString() { return "unstore " + id; }
-      public Boolean doWork() throws Exception {
-        return objectFiles.unstore(id);
-      }
-    });
+    blockingIO.run(() -> "unstore " + id, c, () -> objectFiles.unstore(id));
   }
 
   /**
@@ -364,12 +347,7 @@ public class PersistentStorage implements Storage {
     if (! exists(id)) {
       c.receiveResult(Boolean.valueOf(false));
     } else {
-      environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
-        public String toString() { return "setMetadata " + id; }
-        public Boolean doWork() throws Exception {
-          return objectFiles.setMetadata(id, metadata);
-        }
-      });
+      blockingIO.run(() -> "setMetadata " + id, c, () -> objectFiles.setMetadata(id, metadata));
     }
   }
 
@@ -385,12 +363,7 @@ public class PersistentStorage implements Storage {
     if (index && (! exists(id))) {
       c.receiveResult(null);
     } else {
-      environment.getProcessor().processBlockingIO(new WorkRequest<Serializable>(c, environment.getSelectorManager()) {
-        public String toString() { return "getObject " + id; }
-        public Serializable doWork() throws Exception {
-          return objectFiles.getObject(id);
-        }
-      });
+      blockingIO.run(() -> "getObject " + id, c, () -> objectFiles.getObject(id));
     }
   }
 
@@ -530,12 +503,7 @@ public class PersistentStorage implements Storage {
    * @param c The command to run once done
    */
   public void flush(Continuation<? super Boolean, Exception> c) {
-    environment.getProcessor().processBlockingIO(new WorkRequest<Boolean>(c, environment.getSelectorManager()) {
-      public String toString() { return "flush"; }
-      public Boolean doWork() throws Exception {
-        return objectFiles.flush();
-      }
-    });
+    blockingIO.run(() -> "flush", c, () -> objectFiles.flush());
   }
 
   /*****************************************************************/
