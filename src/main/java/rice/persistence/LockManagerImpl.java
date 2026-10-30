@@ -51,6 +51,9 @@ public class LockManagerImpl implements LockManager {
   // map: Id -> List<Continuation>
   private HashMap<Id, List<Continuation<?, ?>>> locks;
 
+  // guards locks; private, so that code holding a reference to this object can't contend for it
+  private final Object locksLock = new Object();
+
   private final Logger logger;
 
   public LockManagerImpl(Environment env) {
@@ -62,7 +65,7 @@ public class LockManagerImpl implements LockManager {
   public void lock(Id id, Continuation<?, ?> c) {
     Continuation<?, ?> torun = null;
     logger.debug("locking on id {} for continuation {}", id, c);
-    synchronized (this) {
+    synchronized (locksLock) {
       if (locks.containsKey(id)) {
         List<Continuation<?, ?>> locklist = locks.get(id);
         logger.trace("locking on id {}; blocked on {} earlier continuations", id, locklist.size());
@@ -81,7 +84,7 @@ public class LockManagerImpl implements LockManager {
   public void unlock(Id id) {
     Continuation<?, ?> torun = null;
     logger.debug("unlocking on id {}", id);
-    synchronized (this) {
+    synchronized (locksLock) {
       if (locks.containsKey(id)) {
         if (locks.get(id).isEmpty()) {
           logger.trace("unlocking on id {}; last out the door -- removing lock ", id);

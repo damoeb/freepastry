@@ -131,6 +131,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * the next unique id
    */
   private int id;
+  private final Object idLock = new Object();
 
   Environment environment;
 
@@ -373,7 +374,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
 
     // choose the UID
     int theId;
-    synchronized(this) {
+    synchronized(idLock) {
       id++;
       if (id == MAINTENANCE_ID) id++;
       theId = id;

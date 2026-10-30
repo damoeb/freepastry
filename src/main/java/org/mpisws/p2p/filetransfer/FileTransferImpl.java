@@ -204,6 +204,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   int seq = Integer.MIN_VALUE;
+  private final Object uidLock = new Object();
   SortedLinkedList<MessageWrapper> queue; // messages we want to send
   MessageWrapper messageThatIsBeingWritten = null;
   boolean registered = false;
@@ -395,8 +396,10 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     return ret;
   }
 
-  protected synchronized int getUid() {
-    return seq++;
+  protected int getUid() {
+    synchronized (uidLock) {
+      return seq++;
+    }
   }
 
   /**
@@ -711,8 +714,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
 
     boolean closing = false;
+    private final Object closingLock = new Object();
     void scheduleClose() {
-      synchronized (this) {
+      synchronized (closingLock) {
         if (closing) return;
         closing = true;
       }
@@ -1322,6 +1326,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     long length;
 
     long ptr;
+    private final Object ptrLock = new Object();
 
     boolean requestedCancel = false;
     boolean cancelled = false;
@@ -1403,7 +1408,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         public Long doWork() throws Exception {
           if (cancelled) return -1L;
           file.write(writeMe);
-          synchronized(FileDataReader.this) {
+          synchronized(ptrLock) {
             ptr+=writeMe.length;
           }
           return ptr;
