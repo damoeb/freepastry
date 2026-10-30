@@ -106,6 +106,11 @@ import rice.pastry.transport.NodeHandleAdapter;
  *
  */
 public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
+  /** A natted node answers a peer only within this long after hearing from it. */
+  private static final int RESPONSE_TIMEOUT_MILLIS = 3000;
+  /** How long a simulated firewall keeps a hole open for a peer we contacted. */
+  private static final int SIMULATED_FIREWALL_TIMEOUT_MILLIS = 5000;
+
   /**
    * Maps to a byte contactState
    */
@@ -266,7 +271,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
 
   protected ResponseStrategy<InetSocketAddress> getResponseStrategy(PastryNode pn) {
-  return new TimeoutResponseStrategy<InetSocketAddress>(3000, pn.getEnvironment());
+  return new TimeoutResponseStrategy<InetSocketAddress>(RESPONSE_TIMEOUT_MILLIS, pn.getEnvironment());
 }
 
   protected ContactDirectStrategy<RendezvousSocketNodeHandle> getContactDirectStrategy(PastryNode pn) {
@@ -423,7 +428,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     TransportLayer<InetSocketAddress, ByteBuffer> baseTl = super.getWireTransportLayer(innermostAddress, pn);
     if ((pn.getVars().containsKey(SIMULATE_FIREWALL) && ((Boolean)pn.getVars().get(SIMULATE_FIREWALL)).booleanValue()) ||
         rendezvousConfig.simulateFirewall()) {
-      return new FirewallTLImpl<InetSocketAddress, ByteBuffer>(baseTl,5000,pn.getEnvironment());
+      return new FirewallTLImpl<InetSocketAddress, ByteBuffer>(baseTl,SIMULATED_FIREWALL_TIMEOUT_MILLIS,pn.getEnvironment());
     }
 
     // do the normal thing

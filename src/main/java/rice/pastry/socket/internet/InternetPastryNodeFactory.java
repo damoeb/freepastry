@@ -79,6 +79,10 @@ import rice.selector.TimerTask;
  */
 public class InternetPastryNodeFactory extends
     RendezvousSocketPastryNodeFactory {
+  /** How long the connectivity check may take before the node starts without it. */
+  private static final int CONNECTIVITY_TIMEOUT_MILLIS = 10000;
+  /** Delay after a timed-out connectivity check, so cancelling it can release the bind address. */
+  private static final int RETRY_AFTER_TIMEOUT_DELAY_MILLIS = 1000;
 
   /**
    * NAT policy variables
@@ -502,10 +506,10 @@ public class InternetPastryNodeFactory extends
           public void run() {
             newNodeSelector(nodeId, proxyAddress, deliverResultToMe, null, true);
           }
-        }, 1000);
+        }, RETRY_AFTER_TIMEOUT_DELAY_MILLIS);
       }
     };
-    environment.getSelectorManager().getTimer().schedule(timer, 10000);
+    environment.getSelectorManager().getTimer().schedule(timer, CONNECTIVITY_TIMEOUT_MILLIS);
 
     cancelme[0] = connectivityVerifier.verifyConnectivity(proxyAddress, probeAddresses, new ConnectivityResult() {
       boolean udpSuccess = false;

@@ -50,6 +50,12 @@ import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouterStrategy;
 
 public class RendezvousRouterStrategy implements RouterStrategy {
+  /** routingQuality() of a dead node. */
+  private static final int QUALITY_DEAD = 10;
+  /** routingQuality() of a node we can neither contact directly nor are connected to. */
+  private static final int QUALITY_NOT_CONTACTABLE = 5;
+  /** Worst routingQuality() still used as a next hop. */
+  private static final int MAX_ROUTABLE_QUALITY = 3;
 
   PriorityTransportLayer<MultiInetSocketAddress> priority;
   Logger logger;
@@ -83,7 +89,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
 
     }
 
-    if (bestRating > 3) {
+    if (bestRating > MAX_ROUTABLE_QUALITY) {
       logger.info("Can't find route for {}", msg);
 
       /*
@@ -112,7 +118,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
   protected int routingQuality(NodeHandle nh) {
     RendezvousSocketNodeHandle rnh = (RendezvousSocketNodeHandle)nh;
     if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
-      return 10;
+      return QUALITY_DEAD;
     }
     int connectionStatus = priority.connectionStatus(rnh.getAddress());
     int liveness = nh.getLiveness();
@@ -146,7 +152,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     }
 
     // !contactDirect, !connected, don't really care about suspected or not
-    return 5;
+    return QUALITY_NOT_CONTACTABLE;
   }
 
   protected Map<String, Object> getOptions(NodeHandle nh) {

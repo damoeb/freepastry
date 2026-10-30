@@ -87,6 +87,11 @@ import rice.pastry.transport.PMessageReceipt;
  */
 
 public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
+  /** The join message is resent after 2 s, doubling up to 60 s. */
+  private static final long JOIN_RETRY_INITIAL_MILLIS = 2000;
+  private static final double JOIN_RETRY_BACKOFF_FACTOR = 2;
+  private static final long JOIN_RETRY_MAX_MILLIS = 60000;
+
   protected NodeHandle localHandle;
 
   private final RoutingTable routeTable;
@@ -139,7 +144,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
       joinEvent = new ExponentialBackoffScheduledMessage(
           thePastryNode, new InitiateJoin(bootstrap),
           thePastryNode.getEnvironment().getSelectorManager().getTimer(),
-          0, 2000, 2, 60000);
+          0, JOIN_RETRY_INITIAL_MILLIS, JOIN_RETRY_BACKOFF_FACTOR, JOIN_RETRY_MAX_MILLIS);
     }
   }
 

@@ -74,6 +74,10 @@ import rice.selector.TimerTask;
  * @author Alan Mislove
  */
 public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy, NodeSetListener, NodeHandleListener, PastryNodeListener, LeafSetProtocol {
+  /** Listener priority on leaf set members' node handles. */
+  private static final int NODE_HANDLE_LISTENER_PRIORITY = 50;
+  /** How long the last send and receive times of a leaf set broadcast are kept per node. */
+  private static final int BLS_TIME_HARD_LINK_MILLIS = 300000;
 
   private final NodeHandle localHandle;
 
@@ -149,12 +153,12 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     // make sure to register all the existing leafset entries
     this.leafSet = ls;
     for (NodeHandle nh : this.leafSet.asList()) {
-      nh.addNodeHandleListener(this, 50);
+      nh.addNodeHandleListener(this, NODE_HANDLE_LISTENER_PRIORITY);
     }
 
     this.routeTable = rt;
-    this.lastTimeReceivedBLS = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), 300000);
-    this.lastTimeSentBLS = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), 300000);
+    this.lastTimeReceivedBLS = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), BLS_TIME_HARD_LINK_MILLIS);
+    this.lastTimeSentBLS = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), BLS_TIME_HARD_LINK_MILLIS);
     PING_NEIGHBOR_PERIOD = config.pingNeighborPeriod();
     LEASE_PERIOD = config.leasePeriod();
     BLS_THROTTLE = config.requestLeaseThrottle();
@@ -481,7 +485,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   public void leafSetChange(NodeHandle nh, boolean wasAdded) {
     super.leafSetChange(nh, wasAdded);
     if (wasAdded) {
-      nh.addNodeHandleListener(this, 50);
+      nh.addNodeHandleListener(this, NODE_HANDLE_LISTENER_PRIORITY);
       if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
         removeFromLeafsetIfPossible(nh);
       }

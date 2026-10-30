@@ -147,6 +147,13 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
  * @author Alan Mislove
  */
 public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
+  /** How long a new socket may take to send the magic number. */
+  private static final int MAGIC_NUMBER_TIMEOUT_MILLIS = 5000;
+  /** How many bytes of unexpected data are logged. */
+  private static final int UNEXPECTED_BYTES_TO_LOG = 8;
+  /** How long boot() waits for the remaining bootstrap handles before starting PNS. */
+  private static final int BOOT_HANDLE_WAIT_MILLIS = 20000;
+
   /**
    * Maps to a MultiInetSocketAddress
    */
@@ -401,7 +408,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected TransportLayer<InetSocketAddress, ByteBuffer> getMagicNumberTransportLayer(TransportLayer<InetSocketAddress, ByteBuffer> wtl, PastryNode pn) {
     Environment environment = pn.getEnvironment();
     MagicNumberTransportLayer<InetSocketAddress> mntl =
-      new MagicNumberTransportLayer<InetSocketAddress>(wtl,environment,null,PASTRY_MAGIC_NUMBER, 5000);
+      new MagicNumberTransportLayer<InetSocketAddress>(wtl,environment,null,PASTRY_MAGIC_NUMBER, MAGIC_NUMBER_TIMEOUT_MILLIS);
     return mntl;
   }
 
@@ -703,7 +710,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
             if (logger.isWarnEnabled()) {
               // make this pretty
               String s = "";
-              int numBytes = 8;
+              int numBytes = UNEXPECTED_BYTES_TO_LOG;
               if (bytes.length < numBytes) numBytes = bytes.length;
               for (int i = 0; i < numBytes; i++) {
                 s+=bytes[i]+",";
@@ -927,7 +934,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       // need to synchronize, because this can be called on any thread
       synchronized(bootHandles) {
         if (bootHandles.size() < tempBootHandles.size()) {
-          // only wait 10 seconds for the nodes
+          // only wait BOOT_HANDLE_WAIT_MILLIS for the nodes
           environment.getSelectorManager().schedule(new TimerTask(){
 
             @Override
@@ -936,7 +943,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
               beginPns.receiveResult(bootHandles);
             }
-          }, 20000);
+          }, BOOT_HANDLE_WAIT_MILLIS);
         }
       }
 

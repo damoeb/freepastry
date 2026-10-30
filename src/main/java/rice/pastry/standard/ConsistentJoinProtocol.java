@@ -81,6 +81,10 @@ import rice.selector.TimerTask;
  * @author Jeff Hoye
  */
 public class ConsistentJoinProtocol extends StandardJoinProtocol implements NodeHandleListener, PastryNodeListener, NodeSetListener, LoopObserver /*, ReadyStrategy */{
+  /** Listener priority on the node handles we wait to hear from. */
+  private static final int NODE_HANDLE_LISTENER_PRIORITY = 40;
+  /** How long a node that answered our join is remembered. */
+  private static final int GOT_RESPONSE_HARD_LINK_MILLIS = 300000;
 
   /**
    * This variable is set to prevent the process from going to sleep or not
@@ -188,7 +192,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
       RoutingTable rt, LeafSet ls, ReadyStrategy nextReadyStrategy,
       MessageDeserializer md) {
     super(ln, lh, rt, ls, md != null ? md : new CJPDeserializer(ln));
-    gotResponse = new TimerWeakHashMap<NodeHandle, Object>(ln.getEnvironment().getSelectorManager().getTimer(), 300000);
+    gotResponse = new TimerWeakHashMap<NodeHandle, Object>(ln.getEnvironment().getSelectorManager().getTimer(), GOT_RESPONSE_HARD_LINK_MILLIS);
     failed = new HashMap<NodeHandle, FailedTime>();
     observing = new HashSet<NodeHandle>();
     this.nextReadyStrategy = nextReadyStrategy;
@@ -264,7 +268,7 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     leafSet.put(nh);
     if (!observing.contains(nh)) {
       logger.debug("CJP observing {}", nh);
-      nh.addNodeHandleListener(this, 40);
+      nh.addNodeHandleListener(this, NODE_HANDLE_LISTENER_PRIORITY);
       observing.add(nh);
     }
   }
