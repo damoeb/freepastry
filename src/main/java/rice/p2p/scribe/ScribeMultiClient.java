@@ -42,15 +42,12 @@ import java.util.Collection;
 import rice.p2p.commonapi.NodeHandle;
 
 /**
- * The new interface for scribe as of FreePastry 2.1.  Handles multiple concurrent Joins/Failures.
+ * This interface represents a client using the Scribe system.  Handles multiple concurrent Joins/Failures.
  *
  * @author Jeff Hoye
  *
  */
-// Must keep extending the deprecated ScribeClient: ScribeMultiClient instances are still accepted
-// by (and returned from) the deprecated ScribeClient-based Scribe API, so there is no replacement.
-@SuppressWarnings("deprecation")
-public interface ScribeMultiClient extends ScribeClient {
+public interface ScribeMultiClient {
   /**
    * This method is invoked when an anycast is received for a topic
    * which this client is interested in.  The client should return
@@ -88,17 +85,6 @@ public interface ScribeMultiClient extends ScribeClient {
    * @param child The child that was removed
    */
   public void childRemoved(Topic topic, NodeHandle child);
-
-  /**
-   * Informs the client that a subscribe on the given topic failed
-   * - the client should retry the subscribe or take appropriate
-   * action.
-   *
-   * @deprecated use subscribeFailed(Collection<Topic> topics)
-   * @param topic The topic which the subscribe failed on
-   */
-  @Deprecated
-  public void subscribeFailed(Topic topic);
 
   /**
    * Informs the client that a subscribe on the given topics failed

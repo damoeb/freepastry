@@ -40,7 +40,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.testing.transportlayer.replay;
 
 import java.util.Collection;
-import java.util.Collections;
 
 import org.slf4j.Logger;
 import rice.p2p.commonapi.Application;
@@ -195,14 +194,6 @@ public class MyScribeClient implements ScribeMultiClient, Application {
   }
 
   public void subscribeFailed(Collection<Topic> topics) {
-  }
-
-  /**
-   * @deprecated use subscribeFailed(Collection)
-   */
-  @Deprecated
-  public void subscribeFailed(Topic topic) {
-    subscribeFailed(Collections.singletonList(topic));
   }
 
   public void subscribeSuccess(Collection<Topic> topics) {

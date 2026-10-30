@@ -52,25 +52,11 @@ import rice.p2p.commonapi.NodeHandle;
 public interface BaseScribe extends Destructable {
   // ***************** Membership functions messages **************
   /**
-   * Subscribes the given client to the provided topic.  Any message published
-   * to the topic will be delivered to the Client via the deliver() method.
-   *
-   * @deprecated use subscribe(Topic, ScribeMultiClient, ScribeContent, NodeHandle hint)
-   * @param topic The topic to subscribe to
-   * @param client The client to give messages to
-   */
-  @Deprecated
-  public void subscribe(Topic topic, ScribeClient client);
-
-  /**
    * Unsubscribes the given client from the provided topic.
    *
-   * @deprecated use unsubscribe(Topic, ScribeMultiClient)
    * @param topic The topic to unsubscribe from
    * @param client The client to unsubscribe
    */
-  @Deprecated
-  public void unsubscribe(Topic topic, ScribeClient client);
   public void unsubscribe(Topic topic, ScribeMultiClient client);
   public void unsubscribe(Collection<Topic> topicsToUnsubscribe, ScribeMultiClient client);
 
@@ -110,12 +96,9 @@ public interface BaseScribe extends Destructable {
   /**
    * Returns the list of children for a given topic
    *
-   * @deprecated use getChildrenOfTopic
    * @param topic The topic to return the children of
    * @return The children of the topic
    */
-  @Deprecated
-  public NodeHandle[] getChildren(Topic topic);
   public Collection<NodeHandle> getChildrenOfTopic(Topic topic);
 
   /**
@@ -130,27 +113,13 @@ public interface BaseScribe extends Destructable {
    * Returns the list of topics the given client is subscribed
    * to.
    *
-   * @deprecated use getTopicsByClient()
    * @param client The client in question
    * @return The list of topics
    */
-  @Deprecated
-  public Topic[] getTopics(ScribeClient client);
-  /**
-   * @deprecated use getTopicsByClient(ScribeMultiClient)
-   */
-  @Deprecated
-  public Collection<Topic> getTopicsByClient(ScribeClient client);
   public Collection<Topic> getTopicsByClient(ScribeMultiClient client);
 
   public int numChildren(Topic topic);
 
-
-  /**
-   * @deprecated use getClientsByTopic(Topic)
-   */
-  @Deprecated
-  Collection<ScribeClient> getClients(Topic topic);
   Collection<ScribeMultiClient> getClientsByTopic(Topic topic);
 
   /**

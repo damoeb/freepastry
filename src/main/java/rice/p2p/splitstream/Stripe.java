@@ -277,17 +277,6 @@ public class Stripe implements ScribeMultiClient {
   }
 
   /**
-   * Informs this client that a subscription failed
-   *
-   * @deprecated use subscribeFailed(Collection)
-   * @param topic The topic that failed
-   */
-  @Deprecated
-  public void subscribeFailed(final Topic topic) {
-    retrySubscribe(topic);
-  }
-
-  /**
    * Retries the subscription after a failure
    *
    * @param topic The topic that failed

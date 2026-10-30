@@ -39,8 +39,7 @@ advised of the possibility of such damage.
  * at the node responsible for the topic's id: subscribers route a subscribe message towards that id
  * and the nodes on the way become forwarders, publish messages are routed to the root and pushed down
  * the tree, and anycasts walk the tree until a client accepts them. {@link rice.p2p.scribe.ScribeImpl}
- * implements {@link rice.p2p.scribe.Scribe}, clients implement {@link rice.p2p.scribe.ScribeMultiClient}
- * (or the older {@link rice.p2p.scribe.ScribeClient}), and a {@link rice.p2p.scribe.ScribePolicy} decides
- * which children to accept. Client callbacks arrive on the selector thread.
+ * implements {@link rice.p2p.scribe.Scribe}, clients implement {@link rice.p2p.scribe.ScribeMultiClient},
+ * and a {@link rice.p2p.scribe.ScribePolicy} decides which children to accept. Client callbacks arrive on the selector thread.
  */
 package rice.p2p.scribe;

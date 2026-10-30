@@ -388,19 +388,6 @@ public class MultiringNode implements Node, ScribeMultiClient {
   }
 
   /**
-   * Informs the client that a subscribe on the given topic failed
-   * - the client should retry the subscribe or take appropriate
-   * action.
-   *
-   * @deprecated use subscribeFailed(Collection)
-   * @param topic The topic which the subscribe failed on
-   */
-  @Deprecated
-  public void subscribeFailed(Topic topic) {
-    retrySubscribe(topic);
-  }
-
-  /**
    * Re-joins the ringId topic after a failed subscribe
    *
    * @param topic The topic which the subscribe failed on

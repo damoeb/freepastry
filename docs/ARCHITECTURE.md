@@ -337,7 +337,7 @@ The implementations:
 - `anycast()` routes an `AnycastMessage` towards the topic id and then visits tree members from its `toVisit` list until a client's `anycast()` returns true (`AnycastFailureMessage` otherwise). The order is set by the `ScribePolicy`, which can add nodes at the front or the back of the list.
 - Tree repair runs every `p2p_scribe_maintenance_interval`, through `ScribeMaintenancePolicy`.
 - `ScribePolicy` decides which children a node accepts.
-- Clients implement `ScribeMultiClient`, or the older `ScribeClient`. Content can be raw (`RawScribeContent` with a `ScribeContentDeserializer`) or Java-serialized.
+- Clients implement `ScribeMultiClient`. Content can be raw (`RawScribeContent` with a `ScribeContentDeserializer`) or Java-serialized.
 
 **SplitStream** (`rice.p2p.splitstream`, `SplitStreamImpl`): high-bandwidth multicast. A `Channel` has `2^p2p_splitStream_stripeBaseBitLength` (16) `Stripe`s. Each stripe id is the channel id with its first `stripeBaseBitLength` bits replaced by the stripe number (`Channel.generateStripeIds`), and each stripe is a Scribe topic. Because the stripe ids differ in the first digit, each node tends to be an interior node in only one stripe tree. `SplitStreamScribePolicy` caps a node's children (`p2p_splitStream_policy_default_maximum_children`, 24).
 

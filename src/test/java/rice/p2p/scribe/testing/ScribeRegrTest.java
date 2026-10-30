@@ -39,7 +39,6 @@ package rice.p2p.scribe.testing;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -1036,14 +1035,6 @@ public class ScribeRegrTest extends CommonAPITest {
         subscribeFailed = true;
         scribe.subscribe(topic, this, (RawScribeContent) null, null);
       }
-    }
-
-    /**
-     * @deprecated use subscribeFailed(Collection)
-     */
-    @Deprecated
-    public void subscribeFailed(Topic topic) {
-      subscribeFailed(Collections.singletonList(topic));
     }
 
     public void subscribeSuccess(Collection<Topic> topics) {

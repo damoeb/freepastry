@@ -38,7 +38,6 @@ advised of the possibility of such damage.
 package rice.p2p.scribe;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,9 +46,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -303,18 +300,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     }
   }
 
-  /**
-   * @deprecated use getClientsByTopic(Topic)
-   */
-  @Deprecated
-  public Collection<ScribeClient> getClients(Topic topic) {
-    TopicManager manager = topicManagers.get(topic);
-    if (manager != null) {
-      return getSimpleClients(manager.getClients());
-    }
-    return new ArrayList<ScribeClient>();
-  }
-
   public Collection<ScribeMultiClient> getClientsByTopic(Topic topic) {
     TopicManager manager = topicManagers.get(topic);
     if (manager != null) {
@@ -324,128 +309,8 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
 
-  /**
-   * Adapts an old ScribeClient to a new ScribeMultiClient
-   *
-   * This is for reverse compatibility.
-   *
-   * @deprecated only needed to support the deprecated ScribeClient API; use ScribeMultiClient
-   */
-  @Deprecated
-  public static class ScribeClientConverter implements ScribeMultiClient {
-    WeakReference<ScribeClient> client;
-
-    public ScribeClientConverter(ScribeClient client) {
-      this.client = new WeakReference<ScribeClient>(client);
-    }
-
-    public void subscribeFailed(Collection<Topic> topics) {
-      ScribeClient theClient = client.get();
-      if (theClient == null) return;
-      for (Topic topic : topics) {
-        theClient.subscribeFailed(topic);
-      }
-    }
-
-    public void subscribeSuccess(Collection<Topic> topics) {
-      // do nothing, this is a new interface
-    }
-
-    public boolean anycast(Topic topic, ScribeContent content) {
-      ScribeClient theClient = client.get();
-      if (theClient == null) return false;
-      return theClient.anycast(topic, content);
-    }
-
-    public void childAdded(Topic topic, NodeHandle child) {
-      ScribeClient theClient = client.get();
-      if (theClient == null) return;
-      theClient.childAdded(topic, child);
-    }
-
-    public void childRemoved(Topic topic, NodeHandle child) {
-      ScribeClient theClient = client.get();
-      if (theClient == null) return;
-      theClient.childRemoved(topic, child);
-    }
-
-    public void deliver(Topic topic, ScribeContent content) {
-      ScribeClient theClient = client.get();
-      if (theClient == null) return;
-      theClient.deliver(topic, content);
-    }
-
-    @Deprecated
-    public void subscribeFailed(Topic topic) {
-      ScribeClient theClient = client.get();
-      if (theClient == null) return;
-      theClient.subscribeFailed(topic);
-    }
-  }
-
-  /**
-   * @deprecated only needed to support the deprecated ScribeClient API
-   */
-  @Deprecated
-  protected Collection<ScribeClient> getSimpleClients(Collection<ScribeMultiClient> multi) {
-    ArrayList<ScribeClient> ret = new ArrayList<ScribeClient>(multi.size());
-    for(ScribeMultiClient client : multi) {
-      if (client instanceof ScribeClientConverter) {
-        ScribeClient theClient = ((ScribeClientConverter)client).client.get();
-        if (theClient != null) {
-          ret.add(theClient);
-        }
-      } else {
-        ret.add(client);
-      }
-    }
-    return ret;
-  }
 
 
-  /**
-   * @deprecated only needed to support the deprecated ScribeClient API
-   */
-  @Deprecated
-  private Map<ScribeClient,ScribeClientConverter> clientConverters = new WeakHashMap<ScribeClient,ScribeClientConverter>();
-
-  /**
-   * @deprecated only needed to support the deprecated ScribeClient API
-   */
-  @Deprecated
-  protected ScribeMultiClient getMultiClient(ScribeClient client) {
-    if (client instanceof ScribeMultiClient) {
-      return (ScribeMultiClient)client;
-    } else {
-      // it's a simple client
-      synchronized(clientConverters) {
-        ScribeClientConverter scc = clientConverters.get(client);
-        if (scc == null || scc.client.get() == null) {
-          scc = new ScribeClientConverter(client);
-          clientConverters.put(client, scc);
-        }
-        return scc;
-      }
-    }
-  }
-
-
-
-  /**
-   * Returns the list of children for a given topic
-   *
-   * @param topic The topic to return the children of
-   * @deprecated use getChildrenOfTopic(Topic)
-   * @return The children of the topic
-   */
-  @Deprecated
-  public NodeHandle[] getChildren(Topic topic) {
-    if (topicManagers.get(topic) != null) {
-      return ((TopicManager) topicManagers.get(topic)).getChildren().toArray(new NodeHandle[0]);
-    }
-
-    return new NodeHandle[0];
-  }
 
   public Collection<NodeHandle> getChildrenOfTopic(Topic topic) {
     TopicManager manager = topicManagers.get(topic);
@@ -729,37 +594,9 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    *
    * @param topic The topic to subscribe to
    * @param client The client to give messages to
+   * @param content The content to include in the subscribe
+   * @param hint The first hop of the message, or null
    */
-  // ************* deprecate this ***********
-  @Deprecated
-  public void subscribe(Topic topic, ScribeClient client) {
-    doSubscribe(Collections.singletonList(topic), getMultiClient(client), null, null);
-  }
-  @Deprecated
-  public void subscribe(Topic topic, ScribeClient client, ScribeContent content) {
-    doSubscribe(Collections.singletonList(topic), getMultiClient(client), toRawScribeContent(content), null);
-  }
-  @Deprecated
-  public void subscribe(Topic topic, ScribeClient client, ScribeContent content, NodeHandle hint) {
-    doSubscribe(Collections.singletonList(topic), getMultiClient(client), toRawScribeContent(content), hint);
-  }
-  @Deprecated
-  public void subscribe(Topic topic, ScribeClient client, RawScribeContent content) {
-    doSubscribe(Collections.singletonList(topic), getMultiClient(client), content, null);
-  }
-  @Deprecated
-  public void subscribe(Topic topic, ScribeClient client, RawScribeContent content, NodeHandle hint) {
-    doSubscribe(Collections.singletonList(topic), getMultiClient(client), content, hint);
-  }
-  @Deprecated
-  public void subscribe(Collection<Topic> theTopics, ScribeClient client, RawScribeContent content, NodeHandle hint) {
-    doSubscribe(theTopics, getMultiClient(client), content, hint);
-  }
-  @Deprecated
-  public void subscribe(Collection<Topic> theTopics, ScribeClient client, ScribeContent content, NodeHandle hint) {
-    doSubscribe(theTopics, getMultiClient(client), toRawScribeContent(content), hint);
-  }
-  // ***************** end deprecation
   public void subscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
     doSubscribe(Collections.singletonList(topic), client, toRawScribeContent(content), hint);
   }
@@ -824,17 +661,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     sendSubscribe(toSubscribe, client, content, hint);
   }
 
-
-  /**
-   * Unsubscribes the given client from the provided topic.getId
-   *
-   * @param topic The topic to unsubscribe from
-   * @param client The client to unsubscribe
-   */
-  @Deprecated
-  public void unsubscribe(Topic topic, ScribeClient client) {
-    unsubscribe(Collections.singletonList(topic), getMultiClient(client));
-  }
 
   public void unsubscribe(Topic topic, ScribeMultiClient client) {
     unsubscribe(Collections.singletonList(topic), client);
@@ -1110,26 +936,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     }
   }
 
-  /**
-   * Returns the list of topics the given client is subscribed
-   * to.
-   *
-   * @param client The client in question
-   * @deprecated use getTopicsByClient(ScribeMultiClient)
-   * @return The list of topics
-   */
-  @Deprecated
-  public Collection<Topic> getTopicsByClient(ScribeClient client) {
-    ArrayList<Topic> result = new ArrayList<Topic>();
-
-    for (TopicManager topicManager : topicManagers.values()) {
-      if (topicManager.containsClient(getMultiClient(client)))
-        result.add(topicManager.getTopic());
-    }
-
-    return result;
-  }
-
   public Collection<Topic> getTopicsByClient(ScribeMultiClient client) {
     ArrayList<Topic> result = new ArrayList<Topic>();
 
@@ -1139,11 +945,6 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     }
 
     return result;
-  }
-
-  @Deprecated
-  public Topic[] getTopics(ScribeClient client) {
-    return getTopicsByClient(client).toArray(new Topic[0]);
   }
 
   protected void recvAnycastFail(Topic topic, NodeHandle failedAtNode,

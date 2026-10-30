@@ -189,13 +189,6 @@ public class MyScribeClient implements ScribeMultiClient, Application {
   public void subscribeFailed(Collection<Topic> topics) {
   }
 
-  /**
-   * @deprecated use subscribeFailed(Collection)
-   */
-  @Deprecated
-  public void subscribeFailed(Topic topic) {
-  }
-
   public void subscribeSuccess(Collection<Topic> topics) {
   }
 

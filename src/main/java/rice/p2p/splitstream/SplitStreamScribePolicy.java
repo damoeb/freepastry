@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.splitstream;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -47,7 +46,6 @@ import java.util.Vector;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.Scribe;
-import rice.p2p.scribe.ScribeClient;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.ScribePolicy.DefaultScribePolicy;
@@ -171,19 +169,6 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
       }
     }
     return topics;
-  }
-
-  /**
-   * @deprecated use allowSubscribe(Scribe, NodeHandle, List, ScribeContent)
-   * @param message The subscribe message in question
-   * @param children The list of children who are currently subscribed to this topic
-   * @param clients The list of clients are are currently subscribed to this topic
-   * @return Whether or not this child should be allowed add.
-   */
-  @Deprecated
-  public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
-    return allowSubscribe(message.getTopic(), message.getSubscriber(), message.getSource(),
-        message.getContent(), Arrays.asList(children));
   }
 
   /**

@@ -766,11 +766,6 @@ public class RoutingTableTest {
     public void childRemoved(Topic topic, rice.p2p.commonapi.NodeHandle child) {
     }
 
-    @Deprecated
-    public void subscribeFailed(Topic topic) {
-      subscribeFailed = true;
-    }
-
     public void subscribeFailed(Collection<Topic> topics) {
       if (!topics.isEmpty()) subscribeFailed = true;
     }

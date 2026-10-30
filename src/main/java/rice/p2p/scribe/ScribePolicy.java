@@ -46,7 +46,6 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.messaging.AnycastMessage;
 import rice.p2p.scribe.messaging.ScribeMessage;
-import rice.p2p.scribe.messaging.SubscribeMessage;
 
 /**
  * This interface represents a policy for Scribe, which is asked whenever a
@@ -137,7 +136,7 @@ public interface ScribePolicy {
   public void recvAnycastFail(Topic topic, NodeHandle failedAtNode, ScribeContent content);
 
   /**
-   * This is invoked whenever this message arrives on any overlay node, this gives the ScribeClient's power
+   * This is invoked whenever this message arrives on any overlay node, this gives the ScribeMultiClient's power
    * to tap into some datastructures they might wanna edit
    */
   public void intermediateNode(ScribeMessage message);
@@ -168,61 +167,16 @@ public interface ScribePolicy {
       environment = env;
     }
     /**
-     * Asks the deprecated allowSubscribe(SubscribeMessage, ScribeClient[], NodeHandle[]) for each topic
-     * and removes the rejected ones; unless that method is overridden, all topics are accepted.
+     * Accepts all topics.
      *
      * @param scribe the Scribe that is making the request
      * @param source the subscriber
-     * @param topics the topics that are requested; rejected topics are removed from this list
+     * @param topics the topics that are requested
      * @param content the content that came with the message
      * @return the topics to accept
      */
-    // Bridges to the deprecated allowSubscribe(SubscribeMessage, ScribeClient[], NodeHandle[]) hook so that
-    // existing subclasses which only override that one keep working; it needs the deprecated ScribeClient
-    // view of the clients, so there is no non-deprecated replacement here.
-    @SuppressWarnings("deprecation")
     public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
-      Iterator<Topic> i = topics.iterator();
-      while(i.hasNext()) {
-        Topic topic = i.next();
-        if (!allowSubscribe(
-            new BogusSubscribeMessage(source, topic, 0, content),
-            scribe.getClients(topic).toArray(new ScribeClient[0]),
-            scribe.getChildrenOfTopic(topic).toArray(new NodeHandle[0]))) {
-          i.remove();
-        }
-      }
       return topics;
-    }
-
-    class BogusSubscribeMessage extends SubscribeMessage {
-      ScribeContent theContent;
-
-      public BogusSubscribeMessage(NodeHandle source, Topic topic, int i, ScribeContent content) {
-        super(source, topic, i, null);
-        theContent = content;
-      }
-
-
-      public ScribeContent getContent() {
-        return theContent;
-      }
-    }
-
-    /**
-     * This method should be deprecated, but is here for reverse compatibility.  We changed the
-     * allowSubscribe() method, but classes that extend DefaultScribePolicy object could make a mistake
-     * and not override the new one.
-     *
-     * @deprecated override allowSubscribe(Scribe, NodeHandle, List, ScribeContent) instead
-     * @param message
-     * @param clients
-     * @param children
-     * @return
-     */
-    @Deprecated
-    public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
-      return true;
     }
 
     /**
@@ -302,16 +256,22 @@ public interface ScribePolicy {
     }
 
     /**
-     * This method returns {@code (children.length < maxChildren-1)};
+     * Accepts a topic while it has fewer than {@code maxChildren - 1} children.
      *
-     * @param message The subscribe message in question
-     * @param clients The list of clients who are currently subscribed
-     * @param children The list of children who are currently subscribed
-     * @return whether the topic has room for another child
+     * @param scribe the Scribe that is making the request
+     * @param source the subscriber
+     * @param topics the topics that are requested; rejected topics are removed from this list
+     * @param content the content that came with the message
+     * @return the topics to accept
      */
-    @Deprecated
-    public boolean allowSubscribe(SubscribeMessage message, ScribeClient[] clients, NodeHandle[] children) {
-      return (children.length < (maxChildren - 1));
+    public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
+      Iterator<Topic> i = topics.iterator();
+      while (i.hasNext()) {
+        if (scribe.getChildrenOfTopic(i.next()).size() >= maxChildren - 1) {
+          i.remove();
+        }
+      }
+      return topics;
     }
   }
 }

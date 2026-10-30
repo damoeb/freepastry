@@ -58,7 +58,7 @@ import rice.pastry.commonapi.PastryIdFactory;
 
 /**
  * We implement the Application interface to receive regular timed messages (see lesson5).
- * We implement the ScribeClient interface to receive scribe messages (called ScribeContent).
+ * We implement the SplitStreamClient interface to receive splitstream data.
  *
  * @author Jeff Hoye
  */

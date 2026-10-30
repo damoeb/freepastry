@@ -41,7 +41,6 @@ import java.util.Collection;
 
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.scribe.BaseScribe;
-import rice.p2p.scribe.ScribeClient;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
@@ -61,36 +60,18 @@ public interface JavaScribe extends BaseScribe {
    * @param topic The topic to subscribe to
    * @param client The client to give messages to
    * @param content The content to include in the subscribe
-   * @deprecated use subscribe(Topic, ScribeMultiClient, ScribeContent, NodeHandle)
-   */
-  @Deprecated
-  public void subscribe(Topic topic, ScribeClient client, ScribeContent content);
-
-  /**
-   * Subscribes the given client to the provided topic.  Any message published
-   * to the topic will be delivered to the Client via the deliver() method.
-   *
-   * @param topic The topic to subscribe to
-   * @param client The client to give messages to
-   * @param content The content to include in the subscribe
    * @param hint The first hop of the message ( Helpful to implement a centralized solution)
-   * @deprecated use the version with the MultiClient
    */
-  @Deprecated
-  public void subscribe(Topic topic, ScribeClient client, ScribeContent content, NodeHandle hint);
   public void subscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint);
 
   /**
    * Subscribe to multiple topics.
    *
-   * @param topics
-   * @param client
-   * @param content
-   * @param hint
-   * @deprecated use the version with the MultiClient
+   * @param topics The topics to subscribe to
+   * @param client The client to give messages to
+   * @param content The content to include in the subscribe
+   * @param hint The first hop of the message
    */
-  @Deprecated
-  public void subscribe(Collection<Topic> topics, ScribeClient client, ScribeContent content, NodeHandle hint);
   public void subscribe(Collection<Topic> topics, ScribeMultiClient client, ScribeContent content, NodeHandle hint);
 
   // ***************** Messaging functions ****************
