@@ -38,8 +38,6 @@ package rice.p2p.aggregation.raw;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 import rice.p2p.aggregation.Aggregate;
 import rice.p2p.commonapi.Endpoint;
@@ -50,6 +48,7 @@ import rice.p2p.past.gc.GCPastContent;
 import rice.p2p.past.gc.rawserialization.JavaSerializedGCPastContent;
 import rice.p2p.past.gc.rawserialization.RawGCPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
+import rice.p2p.util.HashUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 public class RawAggregate extends Aggregate implements RawGCPastContent {
@@ -89,17 +88,7 @@ public class RawAggregate extends Aggregate implements RawGCPastContent {
       return null;
     }
 
-    MessageDigest md = null;
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch (NoSuchAlgorithmException e) {
-      return null;
-    }
-
-    md.reset();
-    md.update(bytes,0,numBytes);
-
-    return md.digest();
+    return HashUtils.hash(bytes, 0, numBytes);
   }
 
   /***************** Raw Serialization ***************************************/

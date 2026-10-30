@@ -39,8 +39,6 @@ package rice.p2p.aggregation;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
@@ -51,6 +49,7 @@ import rice.p2p.past.gc.GCPast;
 import rice.p2p.past.gc.GCPastContent;
 import rice.p2p.past.gc.GCPastContentHandle;
 import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.util.HashUtils;
 
 public class Aggregate implements GCPastContent {
   protected GCPastContent[] components;
@@ -118,17 +117,7 @@ public class Aggregate implements GCPastContent {
       return null;
     }
 
-    MessageDigest md = null;
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch (NoSuchAlgorithmException e) {
-      return null;
-    }
-
-    md.reset();
-    md.update(bytes);
-
-    return md.digest();
+    return HashUtils.hash(bytes);
   }
 
   public PastContentHandle getHandle(Past local) {

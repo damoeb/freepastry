@@ -55,7 +55,7 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
-import org.mpisws.p2p.transport.peerreview.history.hasher.SHA1HashProvider;
+import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.util.Serializer;
 import org.slf4j.LoggerFactory;
 import rice.environment.Environment;
@@ -157,7 +157,7 @@ public class ReplayVerifierSendTest {
   @BeforeEach
   public void setUp() throws Exception {
     env = new Environment();
-    hashProv = new SHA1HashProvider();
+    hashProv = new SHA256HashProvider();
     history = new SecureHistoryFactoryImpl(hashProv, env).create(new File(dir, "log").getPath(), 0, hashProv.getEmptyHash());
   }
 

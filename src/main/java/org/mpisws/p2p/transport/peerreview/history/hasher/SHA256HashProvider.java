@@ -39,17 +39,18 @@ package org.mpisws.p2p.transport.peerreview.history.hasher;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
+import rice.p2p.util.HashUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
-public class SHA1HashProvider implements HashProvider {
-  private MessageDigest md;
+/**
+ * Hashes PeerReview log entries with SHA-256 (it used to be SHA-1); hashes are 32 bytes.
+ */
+public class SHA256HashProvider implements HashProvider {
+  private final MessageDigest md = HashUtils.newDigest();
 
-  public SHA1HashProvider() throws NoSuchAlgorithmException {
-      md = MessageDigest.getInstance("SHA");
-
+  public SHA256HashProvider() {
   }
 
   public byte[] getEmptyHash() {
@@ -57,7 +58,7 @@ public class SHA1HashProvider implements HashProvider {
   }
 
   public short getHashSizeBytes() {
-    return 20;
+    return HashUtils.LENGTH;
   }
 
   public synchronized byte[] hash(long seq, short type, byte[] nodeHash, byte[] contentHash) {

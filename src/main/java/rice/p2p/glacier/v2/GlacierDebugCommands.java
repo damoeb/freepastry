@@ -36,8 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
@@ -55,6 +53,7 @@ import rice.p2p.glacier.v2.messaging.GlacierFetchMessage;
 import rice.p2p.glacier.v2.messaging.GlacierQueryMessage;
 import rice.p2p.glacier.v2.messaging.GlacierResponseMessage;
 import rice.p2p.util.DebugCommandHandler;
+import rice.p2p.util.HashUtils;
 import rice.persistence.StorageManager;
 
 /**
@@ -395,19 +394,7 @@ final class GlacierDebugCommands {
       fragmentStorage.getObject(id, new Continuation<Object, Exception>() {
         public void receiveResult(Object o) {
           FragmentAndManifest fam = (FragmentAndManifest) o;
-          MessageDigest md = null;
-          try {
-            md = MessageDigest.getInstance("SHA");
-          } catch (NoSuchAlgorithmException e) {
-            logger.error("SHA digest unavailable", e);
-            ret.complete("exception(" + e + ")");
-            return;
-          }
-
-          md.reset();
-          md.update(fam.getFragment().getPayload());
-
-          ret.complete("OK\n\nFragment: "+fam.getFragment().getPayload().length+" bytes, Hash=["+dump(md.digest(), false)+"], ID="+id.getFragmentID()+"\n\nValidation: " +
+          ret.complete("OK\n\nFragment: "+fam.getFragment().getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(fam.getFragment().getPayload()), false)+"], ID="+id.getFragmentID()+"\n\nValidation: " +
                    (fam.getManifest().validatesFragment(fam.getFragment(), id.getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
                    fam.getManifest().toStringFull()+"\n\nMetadata:\n - Stored since: "+metadata.getStoredSince()+
                    "\n - Current expiration: "+metadata.getCurrentExpiration()+"\n - Previous expiration: "+metadata.getPreviousExpiration()+"\n");
@@ -490,21 +477,8 @@ final class GlacierDebugCommands {
         public void receiveResult(Object o) {
           if (o instanceof GlacierDataMessage) {
             GlacierDataMessage gdm = (GlacierDataMessage) o;
-            MessageDigest md = null;
-            try {
-              md = MessageDigest.getInstance("SHA");
-            } catch (NoSuchAlgorithmException e) {
-              logger.error("SHA digest unavailable", e);
-              ret.complete("Exception=" + e);
-              terminate();
-              return;
-            }
-
-            md.reset();
-            md.update(gdm.getFragment(0).getPayload());
-
             ret.complete("\n\nResponse: "+gdm.getKey(0).toStringFull()+" ("+gdm.numKeys()+" keys)\n" +  "Holder: "+gdm.getSource()+"\n" +
-                     "Fragment: "+gdm.getFragment(0).getPayload().length+" bytes, Hash=["+dump(md.digest(), false)+"]\n\nValidation: " +
+                     "Fragment: "+gdm.getFragment(0).getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(gdm.getFragment(0).getPayload()), false)+"]\n\nValidation: " +
                      (gdm.getManifest(0).validatesFragment(gdm.getFragment(0), gdm.getKey(0).getFragmentID(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
                      gdm.getManifest(0).toStringFull());
 

@@ -41,7 +41,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
-import org.mpisws.p2p.transport.peerreview.history.hasher.SHA1HashProvider;
+import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
@@ -67,7 +67,7 @@ public class EvtSendTest {
 
   @Test
   public void partlyRelevantSendMatchesWhatTheReceiverSigns() throws Exception {
-    HashProvider hasher = new SHA1HashProvider();
+    HashProvider hasher = new SHA256HashProvider();
     Id receiver = new Id(2);
 
     EvtSend<Id> evtSend = new EvtSend<Id>(receiver, ByteBuffer.wrap(MESSAGE), RELEVANT, hasher);

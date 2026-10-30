@@ -83,7 +83,7 @@ import org.mpisws.p2p.transport.peerreview.WitnessListener;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
-import org.mpisws.p2p.transport.peerreview.history.hasher.SHA1HashProvider;
+import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransportLayerImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.IdStrTranslator;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
@@ -535,7 +535,7 @@ public class PRRegressionTest {
     public MyIdTL getIdTransport() throws Exception {
       return new MyIdTL(
           new IdSerializer(), new X509SerializerImpl(),this.localHandle.id,
-          cert,pair.getPrivate(),t1,new SHA1HashProvider(),env) {
+          cert,pair.getPrivate(),t1,new SHA256HashProvider(),env) {
       };
     }
 
@@ -603,7 +603,7 @@ public class PRRegressionTest {
     // an in-memory CA, valid for a day (CAToolImpl.getCATool() would keep it in a key store file in the working directory)
     Tuple<X509Certificate, KeyPair> ca = CAToolImpl.generateNewCA("CommitmentTest", new Date(System.currentTimeMillis()+24L*60*60*1000));
     caTool = new CAToolImpl(ca.a(), ca.b());
-    hasher = new SHA1HashProvider();
+    hasher = new SHA256HashProvider();
     historyFactory = new SecureHistoryFactoryImpl(hasher,env);
   }
 

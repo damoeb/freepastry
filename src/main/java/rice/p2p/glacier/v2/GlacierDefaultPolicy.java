@@ -37,8 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
@@ -53,6 +51,7 @@ import rice.p2p.past.rawserialization.JavaSerializedPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.RawPastContent;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
+import rice.p2p.util.HashUtils;
 
 public class GlacierDefaultPolicy implements GlacierPolicy {
 
@@ -106,29 +105,14 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
 
   private Manifest[] createManifestsHelper(VersionKey key, byte[] bytes, int length, Fragment[] fragments, long expiration) {
 
-    /* Get the SHA-1 hash object. */
-
-    MessageDigest md = null;
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch (NoSuchAlgorithmException e) {
-      logger.warn("No SHA support!");
-      return null;
-    }
-
     /* Compute the hash values. */
 
     byte[][] fragmentHash = new byte[fragments.length][];
     for (int i = 0; i < fragments.length; i++) {
-      md.reset();
-      md.update(fragments[i].getPayload());
-      fragmentHash[i] = md.digest();
+      fragmentHash[i] = HashUtils.hash(fragments[i].getPayload());
     }
 
-    byte[] objectHash = null;
-    md.reset();
-    md.update(bytes,0,length);
-    objectHash = md.digest();
+    byte[] objectHash = HashUtils.hash(bytes, 0, length);
 
     /* Create the manifest */
 

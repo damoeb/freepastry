@@ -40,10 +40,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 import org.slf4j.Logger;
+import rice.p2p.util.HashUtils;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.Fragment;
@@ -97,18 +96,7 @@ public class Manifest implements Serializable {
     if ((fragmentID < 0) || (fragmentID >= fragmentHash.length))
       return false;
 
-    MessageDigest md = null;
-    try {
-      md = MessageDigest.getInstance("SHA");
-    } catch (NoSuchAlgorithmException e) {
-      logger.atError().log(() -> "*** SHA-1 not supported ***"+toStringFull());
-      return false;
-    }
-
-    md.reset();
-    md.update(fragment.getPayload());
-
-    byte[] thisHash = md.digest();
+    byte[] thisHash = HashUtils.hash(fragment.getPayload());
 
     if (thisHash.length != fragmentHash[fragmentID].length) {
       logger.atWarn().log(() -> "*** LENGTH MISMATCH: "+thisHash.length+" != "+fragmentHash[fragmentID].length+" ***"+toStringFull());
