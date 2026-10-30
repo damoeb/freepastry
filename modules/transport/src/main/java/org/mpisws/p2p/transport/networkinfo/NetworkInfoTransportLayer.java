@@ -604,7 +604,9 @@ public class NetworkInfoTransportLayer implements
           // try to read the stuff until it works or fails
           try {
             long uid = sib.readLong();
-            verifyConnectionRequests.get(uid).tcpSuccess(socket.getIdentifier(), socket.getOptions());
+            ConnectivityResult request = verifyConnectionRequests.get(uid);
+            // null if the request was cancelled or already answered
+            if (request != null) request.tcpSuccess(socket.getIdentifier(), socket.getOptions());
           } catch (InsufficientBytesException ibe) {
             socket.register(true, false, this);
           }
@@ -700,7 +702,9 @@ public class NetworkInfoTransportLayer implements
     case HEADER_PROBE_RESPONSE_BYTE:
       long uid = m.getLong();
       // No need to remove them from the table, this will get done in destroy()
-      verifyConnectionRequests.get(uid).udpSuccess(i, null);
+      ConnectivityResult request = verifyConnectionRequests.get(uid);
+      // null if the request was cancelled or already answered
+      if (request != null) request.udpSuccess(i, null);
     }
   }
 
