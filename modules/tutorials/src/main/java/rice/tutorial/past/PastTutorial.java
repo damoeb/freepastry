@@ -241,7 +241,7 @@ public class PastTutorial {
   }
 
   /**
-   * Usage: {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar}
+   * Usage: {@code java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar}
    * rice.tutorial.past.PastTutorial localbindport bootIP bootPort numNodes
    * example java rice.tutorial.past.PastTutorial 9001 pokey.cs.almamater.edu 9001 10
    */
@@ -270,7 +270,7 @@ public class PastTutorial {
       // remind user how to use
       System.out.println("Usage:");
       System.out
-          .println("java [-cp FreePastry-<version>.jar] rice.tutorial.past.PastTutorial localbindport bootIP bootPort numNodes");
+          .println("java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.past.PastTutorial localbindport bootIP bootPort numNodes");
       System.out
           .println("example java rice.tutorial.past.PastTutorial 9001 pokey.cs.almamater.edu 9001 10");
       throw e;

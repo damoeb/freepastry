@@ -174,7 +174,7 @@ public class DirectTutorial {
 
   /**
    * Usage:
-   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.direct.DirectTutorial numNodes}
+   * {@code java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.direct.DirectTutorial numNodes}
    * example java rice.tutorial.direct.DirectTutorial 100
    */
   public static void main(String[] args) throws Exception {
@@ -190,7 +190,7 @@ public class DirectTutorial {
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");
-      System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.direct.DirectTutorial numNodes");
+      System.out.println("java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.direct.DirectTutorial numNodes");
       System.out.println("example java rice.tutorial.direct.DirectTutorial 100");
       throw e;
     }

@@ -135,7 +135,7 @@ public class LookupServiceTest {
   }
 
   /**
-   * Usage: {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar}
+   * Usage: {@code java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar}
    * rice.tutorial.lookup.LookupServiceTest localbindport bootIP bootPort
    * numNodes example java rice.tutorial.lookup.LookupServiceTest 9001
    * pokey.cs.almamater.edu 9001 10
@@ -168,7 +168,7 @@ public class LookupServiceTest {
       // remind user how to use
       System.out.println("Usage:");
       System.out
-          .println("java [-cp FreePastry-<version>.jar] rice.tutorial.lookup.LookupServiceTest localbindport bootIP bootPort numNodes");
+          .println("java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lookup.LookupServiceTest localbindport bootIP bootPort numNodes");
       System.out.println("example java rice.tutorial.lookup.LookupServiceTest 9001 pokey.cs.almamater.edu 9001 10");
       throw e;
     }

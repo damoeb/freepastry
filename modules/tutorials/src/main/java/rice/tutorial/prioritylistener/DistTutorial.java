@@ -227,7 +227,7 @@ public class DistTutorial {
 
   /**
    * Usage:
-   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.prioritylistener.DistTutorial localbindport bootIP bootPort numNodes}
+   * {@code java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.prioritylistener.DistTutorial localbindport bootIP bootPort numNodes}
    * example java rice.tutorial.prioritylistener.DistTutorial 9001 pokey.cs.almamater.edu 9001 10
    */
   public static void main(String[] args) throws Exception {
@@ -254,7 +254,7 @@ public class DistTutorial {
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");
-      System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.lesson4.DistTutorial localbindport bootIP bootPort numNodes");
+      System.out.println("java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson4.DistTutorial localbindport bootIP bootPort numNodes");
       System.out.println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10");
       throw e;
     }

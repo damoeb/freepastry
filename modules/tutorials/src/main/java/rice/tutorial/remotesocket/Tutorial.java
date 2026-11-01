@@ -194,9 +194,9 @@ public class Tutorial {
 
   /**
    * Usage:
-   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.remotesocket.Tutorial localbindport bootIP bootPort numNodes}
+   * {@code java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.remotesocket.Tutorial localbindport bootIP bootPort numNodes}
    *   or
-   * {@code java -cp target/freepastry-<version>-jar-with-dependencies.jar rice.tutorial.remotesocket.Tutorial -direct numNodes}
+   * {@code java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.remotesocket.Tutorial -direct numNodes}
    *
    * example java rice.tutorial.remotesocket.Tutorial 9001 pokey.cs.almamater.edu 9001 10
    * example java rice.tutorial.remotesocket.Tutorial -direct 10
@@ -243,9 +243,9 @@ public class Tutorial {
     } catch (Exception e) {
       // remind user how to use
       System.out.println("Usage:");
-      System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.appsocket.Tutorial localbindport bootIP bootPort numNodes");
+      System.out.println("java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.appsocket.Tutorial localbindport bootIP bootPort numNodes");
       System.out.println("  or");
-      System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.appsocket.Tutorial -direct numNodes");
+      System.out.println("java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.appsocket.Tutorial -direct numNodes");
       System.out.println();
       System.out.println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10");
       System.out.println("example java rice.tutorial.DistTutorial -direct 10");
