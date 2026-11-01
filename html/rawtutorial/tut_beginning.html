@@ -71,11 +71,11 @@ In this lesson we are going to use Socket transport layer to communicate.  The S
     while(!node.isReady() &amp;&amp; !node.joinFailed()) {
       // delay so we don't busy-wait
       node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS);
+    }
 
-      // abort if can't join
-      if (node.joinFailed()) {
-        throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
-      }
+    // abort if can't join
+    if (node.joinFailed()) {
+      throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
     }
 
     System.out.println("Finished creating new node "+node);
@@ -116,11 +116,11 @@ node.boot(bootaddress);</pre></li>
     while(!node.isReady() &amp;&amp; !node.joinFailed()) {
       // delay so we don't busy-wait
       node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS);
+    }
 
-      // abort if can't join
-      if (node.joinFailed()) {
-        throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
-      }
+    // abort if can't join
+    if (node.joinFailed()) {
+      throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
     }
 </pre>
   Why might a join fail?  Perhaps the Bootstrap node that you acquired above failed before joining could complete.  

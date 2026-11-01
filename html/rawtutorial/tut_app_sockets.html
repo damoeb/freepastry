@@ -179,11 +179,11 @@ This code properly manages the bootHandle.  In the simulator, the first node boo
       while(!node.isReady() &amp;&amp; !node.joinFailed()) {
         // delay so we don't busy-wait
         node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS);
+      }
 
-        // abort if can't join
-        if (node.joinFailed()) {
-          throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
-        }
+      // abort if can't join
+      if (node.joinFailed()) {
+        throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
       }
 </pre>
 
