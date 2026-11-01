@@ -228,7 +228,7 @@ public class LRUCache implements Cache {
       return;
     }
 
-    synchronized (this) {
+    synchronized (order) {
       order.remove(id);
       order.addFirst(id);
     }
@@ -412,7 +412,11 @@ public class LRUCache implements Cache {
       @Override
       public void receiveResult(Boolean o) {
         if (storage.getTotalSize() > size) {
-          uncache((Id) order.getLast(), this);
+          Id last;
+          synchronized (order) {
+            last = order.getLast();
+          }
+          uncache(last, this);
         } else {
           parent.receiveResult(Boolean.valueOf(true));
         }
@@ -450,7 +454,9 @@ public class LRUCache implements Cache {
     storage.flush(new StandardContinuation<Boolean, Boolean, Exception>(c) {
       @Override
       public void receiveResult(Boolean o) {
-        order.clear();
+        synchronized (order) {
+          order.clear();
+        }
         parent.receiveResult(Boolean.TRUE);
       }
     });
