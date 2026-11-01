@@ -112,6 +112,7 @@ final class GlacierScheduler {
    * @param timeoutMsec Length of the delay (in milliseconds)
    */
   private void setTimer(int timeoutMsec) {
+    cancelTimer();
     timer = endpoint.scheduleMessage(new GlacierTimeoutMessage(0, endpoint.getLocalNodeHandle()), timeoutMsec);
   }
 
@@ -127,6 +128,9 @@ final class GlacierScheduler {
 
   void timerExpired() {
     logger.debug("Timer expired");
+    // Cancelling is a no-op for a timer that fired; it stops a second chain when timerExpired() is called directly.
+    cancelTimer();
+    nextContinuationTimeout = -1;
 
     long earliestTimeout;
     int numDelete;
@@ -168,6 +172,7 @@ final class GlacierScheduler {
 
     if (earliestTimeout >= 0) {
       logger.debug("Next timeout is at {}", earliestTimeout);
+      nextContinuationTimeout = earliestTimeout;
       setTimer((int)Math.max(earliestTimeout - environment.getTimeSource().currentTimeMillis(), 1*GlacierConfig.SECONDS));
     } else logger.debug("No more timeouts");
   }
