@@ -44,6 +44,7 @@ import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
+import rice.p2p.util.rawserialization.WireLengths;
 
 
 /**
@@ -88,8 +89,7 @@ public class EvtRecv<Handle extends RawSerializable> extends HistoryEvent {
     boolean hashed = buf.readBoolean();
     int payloadLength = buf.bytesRemaining();
     if (hashed) payloadLength-=hashSize;
-    payload = new byte[payloadLength];
-    buf.read(payload);
+    payload = WireLengths.readBytes(buf, payloadLength);
     if (hashed) {
       hash = new byte[hashSize];
       buf.read(hash);

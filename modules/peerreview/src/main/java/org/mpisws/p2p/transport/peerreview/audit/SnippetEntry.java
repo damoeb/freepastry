@@ -44,6 +44,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.MathUtils;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  *
@@ -109,8 +110,7 @@ public class SnippetEntry {
       isHash = true;
       size = hashSize;
     }
-    content = new byte[size];
-    buf.read(content);
+    content = WireLengths.readBytes(buf, size);
   }
 
   @Override
