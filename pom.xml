@@ -294,7 +294,10 @@
                     <version>3.5.1</version>
                     <configuration>
                         <archive>
-                            <manifestFile>${maven.multiModuleProjectDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                            <manifestEntries>
+                                <Implementation-Title>${project.name}</Implementation-Title>
+                                <Implementation-Version>${project.version}</Implementation-Version>
+                            </manifestEntries>
                         </archive>
                     </configuration>
                 </plugin>
@@ -360,9 +363,12 @@
                     <artifactId>maven-assembly-plugin</artifactId>
                     <version>3.8.0</version>
                     <configuration>
-                        <descriptorRefs>
-                            <descriptorRef>jar-with-dependencies</descriptorRef>
-                        </descriptorRefs>
+                        <archive>
+                            <manifestEntries>
+                                <Implementation-Title>${project.name}</Implementation-Title>
+                                <Implementation-Version>${project.version}</Implementation-Version>
+                            </manifestEntries>
+                        </archive>
                     </configuration>
                 </plugin>
             </plugins>

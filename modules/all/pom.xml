@@ -81,6 +81,9 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/jar-with-dependencies.xml</descriptor>
+                            </descriptors>
                             <finalName>freepastry-${project.version}</finalName>
                         </configuration>
                     </execution>
