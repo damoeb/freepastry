@@ -44,11 +44,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
-import java.security.Security;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.mpisws.p2p.pki.x509.CAToolImpl;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.identity.BindStrategy;
@@ -88,9 +86,6 @@ public class DistTutorial {
 
     // Generate the NodeIds Randomly
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
-
-    // Add the bouncycastle security provider
-    Security.addProvider(new BouncyCastleProvider());
 
     // create the keystore
     // written by "CAToolImpl -store" (PKCS12, blank password)

@@ -39,11 +39,9 @@ package org.mpisws.p2p.testing.pki.x509;
 import java.io.FileInputStream;
 import java.security.Key;
 import java.security.KeyStore;
-import java.security.Security;
 import java.security.cert.Certificate;
 import java.util.Enumeration;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class LoadStore {
 
@@ -52,9 +50,6 @@ public class LoadStore {
     if (args.length > 0) {
       pw = args[0].toCharArray();
     }
-
-    // install BC
-    Security.addProvider(new BouncyCastleProvider());
 
     // store it
     KeyStore store = KeyStore.getInstance(org.mpisws.p2p.pki.x509.CAToolImpl.DEFAULT_KEYSTORE_TYPE);

@@ -45,7 +45,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.Security;
+import java.security.Provider;
 import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -157,6 +157,13 @@ public class SecurityUtils {
    */
   public final static String HMAC_ALGORITHM = "HmacSHA256";
 
+  /**
+   * BouncyCastle, for the features the JDK lacks (e.g. X.509 certificate generation).  It is deliberately not
+   * registered with {@link java.security.Security}: callers hand this instance to the JCA/BC APIs explicitly, so
+   * the JVM's provider order is never changed.
+   */
+  public static final Provider BOUNCY_CASTLE = new org.bouncycastle.jce.provider.BouncyCastleProvider();
+
   // ----- STATIC CIPHER OBJECTS -----
 
   /**
@@ -182,9 +189,6 @@ public class SecurityUtils {
   // ----- STATIC BLOCK TO INITIALIZE THE KEY GENERATORS -----
 
   static {
-    // Add a provider for RSA encryption
-    Security.insertProviderAt(new org.bouncycastle.jce.provider.BouncyCastleProvider(), 2);
-
     try {
       generatorSymmetric = KeyGenerator.getInstance(SYMMETRIC_GENERATOR);
       generatorAsymmetric = KeyPairGenerator.getInstance(ASYMMETRIC_GENERATOR);

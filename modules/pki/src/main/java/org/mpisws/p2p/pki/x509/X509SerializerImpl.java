@@ -52,7 +52,7 @@ public class X509SerializerImpl implements X509Serializer {
   CertificateFactory certificatefactory;
 
   public X509SerializerImpl() throws CertificateException, NoSuchProviderException {
-    certificatefactory = CertificateFactory.getInstance("X.509", "BC");
+    certificatefactory = CertificateFactory.getInstance("X.509");
   }
 
   @Override

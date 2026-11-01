@@ -54,7 +54,6 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
@@ -78,23 +77,18 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
 import org.bouncycastle.cert.jcajce.JcaX509v1CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import rice.environment.Environment;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
+import rice.p2p.util.SecurityUtils;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.Id;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 public class CAToolImpl implements CATool {
-
-  static {
-    // install BC
-    Security.addProvider(new BouncyCastleProvider());
-  }
 
   static final SecureRandom random = new SecureRandom();
   /** Was SHA1withRSA, which JDK 25 rejects for certificate paths in TLS. */
@@ -175,7 +169,7 @@ public class CAToolImpl implements CATool {
    * @return a new RSA key pair of {@link #DEFAULT_KEY_SIZE} bits, suitable for a CA or a node certificate
    */
   public static KeyPair generateKeyPair() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
-    KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA", "BC");
+    KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA", SecurityUtils.BOUNCY_CASTLE);
     keyPairGen.initialize(new RSAKeyGenParameterSpec(DEFAULT_KEY_SIZE, RSAKeyGenParameterSpec.F4), random);
     return keyPairGen.generateKeyPair();
   }
@@ -202,7 +196,7 @@ public class CAToolImpl implements CATool {
    */
   private static ContentSigner signer(String signatureAlgorithm, PrivateKey privateKey) throws InvalidKeyException {
     try {
-      return new JcaContentSignerBuilder(signatureAlgorithm).setProvider("BC").build(privateKey);
+      return new JcaContentSignerBuilder(signatureAlgorithm).setProvider(SecurityUtils.BOUNCY_CASTLE).build(privateKey);
     } catch (OperatorCreationException oce) {
       throw new InvalidKeyException("Could not create signer for "+signatureAlgorithm, oce);
     }
@@ -210,7 +204,7 @@ public class CAToolImpl implements CATool {
 
   private static X509Certificate generate(org.bouncycastle.cert.X509CertificateHolder holder) throws CertificateEncodingException {
     try {
-      return new JcaX509CertificateConverter().setProvider("BC").getCertificate(holder);
+      return new JcaX509CertificateConverter().setProvider(SecurityUtils.BOUNCY_CASTLE).getCertificate(holder);
     } catch (CertificateException ce) {
       throw new CertificateEncodingException(ce);
     }
@@ -327,7 +321,7 @@ public class CAToolImpl implements CATool {
       System.out.println(pair.getPublic().getFormat()+" "+pair.getPublic().getAlgorithm());
       System.out.println(pair.getPrivate().getFormat()+" "+pair.getPrivate().getAlgorithm());
 
-      Signature signer = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM,"BC");
+      Signature signer = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM, SecurityUtils.BOUNCY_CASTLE);
       signer.initSign(pair.getPrivate());
 
       byte[] msg = new byte[400];
@@ -340,7 +334,7 @@ public class CAToolImpl implements CATool {
 
       System.out.println("Signature length:"+signature.length);
 
-      Signature verifier = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM, "BC");
+      Signature verifier = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM, SecurityUtils.BOUNCY_CASTLE);
       verifier.initVerify(cert);
       verifier.update(msg);
       System.out.println("verified:"+verifier.verify(signature));
@@ -354,7 +348,7 @@ public class CAToolImpl implements CATool {
         System.out.println("bogus didn't verify.");
       }
 
-      Signature bogusVerifier = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM, "BC");
+      Signature bogusVerifier = Signature.getInstance(DEFAULT_SIGNATURE_ALGORITHM, SecurityUtils.BOUNCY_CASTLE);
       bogusVerifier.initVerify(bogusPair.getPublic());
       bogusVerifier.update(msg);
       System.out.println("bogus verify: "+bogusVerifier.verify(signature));

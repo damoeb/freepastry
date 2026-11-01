@@ -39,7 +39,6 @@ package org.mpisws.p2p.transport.peerreview.identity;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
@@ -91,7 +90,6 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   public static final short DEFAULT_SIGNATURE_SIZE = 256;
   String signatureAlgorithm = DEFAULT_SIGNATURE_ALGORITHM;
   short signatureSize = DEFAULT_SIGNATURE_SIZE;
-  String signatureImpl = "BC";
 
   Signature signer;
 
@@ -129,7 +127,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   public IdentityTransportLayerImpl(
       Serializer<I> iSerializer, X509Serializer cSerializer, I localId,
       X509Certificate localCert, PrivateKey localPrivate, TransportLayer<Identifier, ByteBuffer> tl,
-      HashProvider hasher, Environment env) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
+      HashProvider hasher, Environment env) throws InvalidKeyException, NoSuchAlgorithmException {
     super(iSerializer, cSerializer, getTableStore(localId, localCert, iSerializer, cSerializer, null), tl, env);
     this.tl = tl;
     tl.setCallback(this);
@@ -140,7 +138,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     if (localCert.getPublicKey() instanceof RSAPublicKey) {
       signatureSize = (short)((((RSAPublicKey)localCert.getPublicKey()).getModulus().bitLength()+7)/8);
     }
-    signer = Signature.getInstance(signatureAlgorithm,signatureImpl);
+    signer = Signature.getInstance(signatureAlgorithm);
     signer.initSign(localPrivate);
   }
 
@@ -210,12 +208,12 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
       if (ret == null) {
         if (knownValues.containsKey(i)) {
           X509Certificate cert = knownValues.get(i);
-          ret = Signature.getInstance(signatureAlgorithm, signatureImpl);
+          ret = Signature.getInstance(signatureAlgorithm);
           ret.initVerify(cert);
           verifiers.put(i, ret);
         }
       }
-    } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e) {
+    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
       throw new RuntimeException(e);
     }
     return ret;
