@@ -54,8 +54,8 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
   private Continuation<? super R, Exception> c;
   private SelectorManager selectorManager;
 
-  protected boolean cancelled = false;
-  private boolean running = false;
+  protected volatile boolean cancelled = false;
+  private volatile boolean running = false;
 
   public WorkRequest(Continuation<? super R, Exception> c, SelectorManager sm){
     this.c = c;
