@@ -64,6 +64,9 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    */
   public static final int REPLICATION_FACTOR = 3;
 
+  /** How long to wait for the replica count to settle before the assertion decides. */
+  private static final long REPLICA_TIMEOUT_MILLIS = 60_000;
+
   /**
    * the instance name to use
    */
@@ -155,12 +158,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     for (int i=0; i<NUM_NODES; i++)
       simulate();
 
-    int count = 0;
-
-    for (int i=0; i<NUM_NODES; i++)  {
-      if (clients[i].scan(all).isMemberId(id))
-        count++;
-    }
+    int count = awaitReplicas(all, id, REPLICATION_FACTOR + 1);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 1) + " was " + count,
                count == REPLICATION_FACTOR + 1);
@@ -192,12 +190,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
 
-    int count = 0;
-
-    for (int i=0; i<NUM_NODES; i++)  {
-      if (clients[i].scan(all).isMemberId(id))
-        count++;
-    }
+    int count = awaitReplicas(all, id, REPLICATION_FACTOR + 1);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 1) + " was " + count,
                count == REPLICATION_FACTOR + 1);
@@ -221,12 +214,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
 
-    count = 0;
-
-    for (int i=0; i<NUM_NODES; i++)  {
-      if (clients[i].scan(all).isMemberId(id))
-        count++;
-    }
+    count = awaitReplicas(all, id, REPLICATION_FACTOR + 2);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 2) + " was " + count,
                count == REPLICATION_FACTOR + 2);
@@ -343,6 +331,30 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     stepDone(SUCCESS);
 
     sectionDone();
+  }
+
+  /**
+   * Counts the nodes holding the id, polling until the expected count is reached or the timeout passes. Replica
+   * fetches complete asynchronously, so a fixed pause is flaky when the machine is loaded.
+   */
+  private int awaitReplicas(IdRange all, Id id, int expected) {
+    long deadline = System.currentTimeMillis() + REPLICA_TIMEOUT_MILLIS;
+    int count = countReplicas(all, id);
+    while (count != expected && System.currentTimeMillis() < deadline) {
+      simulate();
+      count = countReplicas(all, id);
+    }
+    return count;
+  }
+
+  private int countReplicas(IdRange all, Id id) {
+    int count = 0;
+    for (int i = 0; i < NUM_NODES; i++) {
+      if (clients[i].scan(all).isMemberId(id)) {
+        count++;
+      }
+    }
+    return count;
   }
 
   public void printValsForRange(IdRange range) {
