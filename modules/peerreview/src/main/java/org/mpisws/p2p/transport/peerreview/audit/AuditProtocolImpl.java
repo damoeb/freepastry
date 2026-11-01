@@ -111,9 +111,9 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
   /**
    * Null if there is no current timer.
    */
-  @SuppressWarnings("UnusedVariable") // nothing cancels it yet: AuditProtocol has no destroy()
   private TimerTask auditTimer;
   private TimerTask progressTimer;
+  private boolean destroyed;
 
   Logger logger;
 
@@ -313,9 +313,17 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
    * A periodic timer to audit all nodes for which we are a witness
    */
   protected void auditsTimerExpired() {
+    if (destroyed) return;
     startAudits();
     lastAuditStarted = peerreview.getTime();
     startAuditTimer();
+  }
+
+  @Override
+  public void destroy() {
+    destroyed = true;
+    if (auditTimer != null) auditTimer.cancel();
+    if (progressTimer != null) progressTimer.cancel();
   }
 
   protected void startAuditTimer() {

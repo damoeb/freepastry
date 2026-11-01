@@ -48,4 +48,7 @@ public interface AuditProtocol<Handle extends RawSerializable, Identifier> {
   public void processAuditResponse(Identifier subject, long timestamp, AuditResponse<Handle> auditResponse) throws IOException;
   public void handleIncomingDatagram(Handle handle, PeerReviewMessage message);
 
+  /** Cancels the periodic audit and progress timers; the protocol schedules nothing afterwards. */
+  public void destroy();
+
 }

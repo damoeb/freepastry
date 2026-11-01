@@ -691,6 +691,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     if (maintenanceTask != null) maintenanceTask.cancel();
     if (authPushTask != null) authPushTask.cancel();
     if (checkpointTask != null) checkpointTask.cancel();
+    if (auditProtocol != null) auditProtocol.destroy();
     transport.destroy();
   }
 
