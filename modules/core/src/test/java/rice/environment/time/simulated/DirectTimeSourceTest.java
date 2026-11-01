@@ -109,4 +109,27 @@ public class DirectTimeSourceTest {
       env.destroy();
     }
   }
+
+  @Test
+  public void sleepOnTheSelectorThreadFailsInsteadOfHanging() throws InterruptedException {
+    Environment env = Environment.directEnvironment();
+    try {
+      final DirectTimeSource ts = (DirectTimeSource)env.getTimeSource();
+      final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
+      env.getSelectorManager().invoke(() -> {
+        try {
+          ts.sleep(1000);
+        } catch (Throwable t) {
+          thrown.set(t);
+        }
+      });
+      long deadline = System.currentTimeMillis() + JOIN_MILLIS;
+      while (thrown.get() == null && System.currentTimeMillis() < deadline) {
+        Thread.sleep(10);
+      }
+      assertInstanceOf(IllegalStateException.class, thrown.get());
+    } finally {
+      env.destroy();
+    }
+  }
 }

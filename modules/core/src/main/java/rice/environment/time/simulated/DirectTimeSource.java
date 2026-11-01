@@ -143,6 +143,9 @@ public class DirectTimeSource implements TimeSource {
   @Override
   public void sleep(long delay) throws InterruptedException {
     SelectorManager sm = selectorManager();
+    if (sm.isSelectorThread()) {
+      throw new IllegalStateException("sleep() on the selector thread would block the timers it waits for");
+    }
     synchronized(sm) { // to prevent an out of order acquisition
       // we only lock on the selector
       BlockingTimerTask btt = new BlockingTimerTask();
