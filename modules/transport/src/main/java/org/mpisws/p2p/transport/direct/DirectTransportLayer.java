@@ -65,6 +65,8 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   private static final int CONNECT_TIMEOUT_MILLIS = 5000;
 
   private boolean acceptSockets = true;
+  private volatile boolean acceptMessages = true;
+  private volatile @Nullable ErrorHandler<Identifier> errorHandler;
 
   private final Identifier localIdentifier;
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
@@ -92,6 +94,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
 
   @Override
   public void acceptMessages(boolean b) {
+    acceptMessages = b;
   }
 
   @Override
@@ -173,6 +176,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
 
   @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
+    errorHandler = handler;
   }
 
   @Override
@@ -189,6 +193,10 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
       callback.incomingSocket(acceptorEndpoint);
     } catch (IOException ioe) {
       logger.warn("Exception in {}", callback, ioe);
+      ErrorHandler<Identifier> handler = errorHandler;
+      if (handler != null) {
+        handler.receivedException(acceptorEndpoint.getIdentifier(), ioe);
+      }
     }
   }
 
@@ -203,6 +211,10 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   }
 
   public void incomingMessage(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException {
+    if (!acceptMessages) {
+      logger.debug("Dropping message from {}: not accepting messages", i);
+      return;
+    }
     callback.messageReceived(i, m, options);
   }
 
