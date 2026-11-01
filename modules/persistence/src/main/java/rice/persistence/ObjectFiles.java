@@ -37,6 +37,8 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
+import static rice.persistence.PersistentStorage.METADATA_FILENAME;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -236,7 +238,9 @@ final class ObjectFiles {
       quota.decreaseUsedSpace(StorageFiles.getFileLength(dir));
       StorageFiles.deleteFile(dir);
     } else {
-      Path[] dirs = StorageFiles.list(dir, entry -> true);
+      /* the metadata cache is not an object; it goes with its directory */
+      StorageFiles.deleteFile(dir.resolve(METADATA_FILENAME));
+      Path[] dirs = StorageFiles.list(dir, entry -> ! entry.getFileName().toString().equals(METADATA_FILENAME));
 
       /* remove all subdirectories */
       for (int i=0; i<dirs.length; i++) {
