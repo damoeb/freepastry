@@ -1104,11 +1104,6 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           throw soe;
         }
       } else {
-        // clean up Environment
-        if (factoryConfig.multipleNodes()) {
-          environment.destroy();
-        }
-
         throw new RuntimeException(e);
       }
     } catch (IOException ioe) {

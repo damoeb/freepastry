@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeListener;
 import rice.pastry.standard.RandomNodeIdFactory;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SocketPastryNodeFactoryTest {
@@ -51,6 +53,22 @@ class SocketPastryNodeFactoryTest {
     node.boot((Object)null);
 
     assertTrue(readyOnSelector.get(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void aFailedBindLeavesTheFactorysEnvironmentRunning() throws Exception {
+    env.getParameters().setBoolean("pastry_socket_increment_port_after_construction", false);
+    InetAddress loopback = InetAddress.getLoopbackAddress();
+    try (ServerSocket occupied = new ServerSocket(0, 1, loopback)) {
+      SocketPastryNodeFactory factory =
+        new SocketPastryNodeFactory(new RandomNodeIdFactory(env), loopback, occupied.getLocalPort(), env);
+
+      assertThrows(RuntimeException.class, factory::newNode);
+    }
+
+    CountDownLatch selectorRuns = new CountDownLatch(1);
+    env.getSelectorManager().invoke(selectorRuns::countDown);
+    assertTrue(selectorRuns.await(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
   }
 
   @Test
