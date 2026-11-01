@@ -168,12 +168,15 @@ Everything on the wire and on disk is raw-serialized; there is no Java serializa
 
 ### Trusted networks only, by default
 
-The default socket transport does no authentication or encryption. Use it only on trusted networks: anyone who can reach a node's port can join the ring, claim any node id (spoof a node), read the traffic, or surround a node with colluding identities (eclipse it). `CertifiedNodeIdFactory` only keeps a node's id stable across restarts; it does not verify the id against anything.
+The default socket transport does no authentication or encryption. Use it only on trusted networks: anyone who can reach a node's port can join the ring, claim any node id (spoof a node), read the traffic, or surround a node with colluding identities (eclipse it).
 
-For untrusted networks, insert `org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl` (mutual TLS for the TCP sockets) and bind node ids to certificates:
+For untrusted networks, insert `org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl` (mutual TLS for the TCP sockets) and bind node ids to certificates. A certificate authority (CA) issues each node one X.509 certificate whose common name is the node id (`CN=<40 hex digits>`); a node can only use the id in its certificate, and peers refuse a connection whose claimed id differs from the certificate. The design is in the Javadoc of `rice.pastry.standard.NodeIdCertificate`.
 
-1. Create a CA and one PKCS12 keystore per node with `org.mpisws.p2p.pki.x509.CAToolImpl` (see its `main` for the `-ca`, `-cn`, `-p` and `-store` options). Name each node's certificate after its node id.
-2. Subclass `SocketPastryNodeFactory`, override `getSourceRouteTransportLayer()` to wrap the default layer in an `SSLTransportLayerImpl` with the node's keystore and truststore, and override `getBindStrategy()` to accept a node handle only if its id equals the certificate subject (`SSLTransportLayer.OPTION_CERT_SUBJECT`). `rice.tutorial.ssl.DistTutorial` does exactly this.
+1. Create a CA and one PKCS12 keystore per node with `org.mpisws.p2p.pki.x509.CAToolImpl`: `-ca <name> -p <ca password> -store` creates the CA on first use and writes `<node id>.store` (blank password) with the node's key, its certificate and the CA certificate. Without `-cn` the node gets a random node id; with `-cn` it must be a node id in hex. In code, `CAToolImpl.signNodeId(id, publicKey)` issues the certificate.
+2. Take the node id from the certificate with `CertifiedNodeIdFactory.fromKeyStore()` or `load()`. It checks that the CA signed the certificate, that the certificate and the CA certificate are valid now, and that the node holds the certificate's private key, and throws a `SecurityException` otherwise.
+3. Subclass `SocketPastryNodeFactory`, override `getSourceRouteTransportLayer()` to wrap the default layer in an `SSLTransportLayerImpl` with client authentication required (the default) and the node's keystore as key and trust store, and override `getBindStrategy()` to return a `rice.pastry.socket.CertifiedIdBindStrategy`. TLS validates the peer's chain against the CA and the validity period; the bind strategy accepts a node handle only if its id equals the certificate's common name, and logs a warning for a peer that claims another id. `rice.tutorial.ssl.DistTutorial` does exactly this.
+
+Limits: the CA signs node certificates directly (no intermediate CAs, no revocation list; a certificate stops working when it expires, so issue short validity periods), and the trust anchor is whatever CA certificate is in the node's keystore.
 
 TLS covers sockets only: UDP datagrams (pings and other `TRANSPORT_TYPE_DATAGRAM` messages) stay unauthenticated and unencrypted. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#cryptography).
 

@@ -305,7 +305,7 @@ Everything on the wire is raw-serialized; there is no Java serialization. The en
 - Content is raw in the same way: `PastContent`, `PastContentHandle` and `ScribeContent` declare `getType()` and `serialize(OutputBuffer)` and are read back by the application's `PastContentDeserializer`, `PastContentHandleDeserializer` and `ScribeContentDeserializer`. PAST starts with `PastContentDeserializer.NONE` and `PastContentHandleDeserializer.CONTENT_HASH`.
 - A PAST response that a `ContinuationMessage` subclass cannot write raw is an error. An exception travels as its class name and message and arrives as a `rice.p2p.past.PastRemoteException`.
 
-The files outside `rice.persistence` are raw too: `RingCertificate` writes certificates and key pairs, and `CertifiedNodeIdFactory` node id certificates, in small versioned binary formats; key pairs are encoded with `SecurityUtils.encodeKeyPair()` and encrypted with `SecurityUtils.encryptWithPassword()`.
+The files outside `rice.persistence` are raw too: `RingCertificate` writes certificates and key pairs, in small versioned binary formats; key pairs are encoded with `SecurityUtils.encodeKeyPair()` and encrypted with `SecurityUtils.encryptWithPassword()`.
 
 ## Cryptography
 
@@ -315,13 +315,13 @@ The files outside `rice.persistence` are raw too: `RingCertificate` writes certi
 - Symmetric encryption: AES-256-GCM (`encryptSymmetric()`/`decryptSymmetric()`). GCM is authenticated: a wrong key or any change to the data makes decryption throw a `SecurityException`.
 - MACs: HMAC-SHA256 (`hmac()`).
 - Asymmetric encryption: RSA-OAEP with SHA-256 for the hash and MGF1. Signatures: SHA256withRSA.
-- Password-encrypted files (`encryptWithPassword()`/`decryptWithPassword()`): a random salt, then AES-256-GCM under a key PBKDF2-HMAC-SHA256 derives from the password. The CA key pair (`ca.keypair.enc`, read by `CertifiedNodeIdFactory` and `RingCertificate`) and the ring key pairs (`RingCertificate.readKeyPair()`) are stored this way.
+- Password-encrypted files (`encryptWithPassword()`/`decryptWithPassword()`): a random salt, then AES-256-GCM under a key PBKDF2-HMAC-SHA256 derives from the password. The CA key pair (`ca.keypair.enc`, read by `RingCertificate`) and the ring key pairs (`RingCertificate.readKeyPair()`) are stored this way.
 
 ### Trust model
 
-The default socket stack (above) is for trusted networks only. It has no authentication and no encryption: anyone who can reach a node's port can join the ring, claim any node id (spoof a node), read the traffic, or fill a node's routing state with colluding identities (eclipse it). `CertifiedNodeIdFactory` does not change this: it only keeps a node's id stable across restarts and does not verify it.
+The default socket stack (above) is for trusted networks only. It has no authentication and no encryption: anyone who can reach a node's port can join the ring, claim any node id (spoof a node), read the traffic, or fill a node's routing state with colluding identities (eclipse it).
 
-Untrusted deployments need `SSLTransportLayerImpl` plus node ids that are bound to certificates. The layer sits above the source-route layer and runs mutual TLS on TCP sockets, with the node's keystore as key and trust store (create them with `CAToolImpl`). It reports the peer certificate's subject in the socket options as `SSLTransportLayer.OPTION_CERT_SUBJECT`. A `BindStrategy` returned from the overridden `getBindStrategy()` then accepts a node handle only if its id equals that subject, which is what stops id spoofing. `rice.tutorial.ssl.DistTutorial` is the working example. UDP datagrams are outside TLS and stay unauthenticated.
+Untrusted deployments need `SSLTransportLayerImpl` plus node ids that a CA has bound to certificates. The CA issues each node one X.509 certificate with the node id as its common name (`CAToolImpl.signNodeId()`); the node's PKCS12 keystore holds it with the private key and the CA certificate. `CertifiedNodeIdFactory` takes the node's id from that certificate after checking signature, validity and key ownership (`NodeIdCertificate.verify()`), so a node cannot pick its own id. The SSL layer sits above the source-route layer and runs mutual TLS on TCP sockets, validating the peer's chain against the CA, and reports the peer certificate's subject in the socket options as `SSLTransportLayer.OPTION_CERT_SUBJECT`. A `CertifiedIdBindStrategy`, returned from the overridden `getBindStrategy()`, then accepts a node handle only if its id equals that subject; on a mismatch the binding is refused and a warning is logged. This is what stops id spoofing. `rice.tutorial.ssl.DistTutorial` is the working example. UDP datagrams are outside TLS and stay unauthenticated.
 
 ## Configuration
 
