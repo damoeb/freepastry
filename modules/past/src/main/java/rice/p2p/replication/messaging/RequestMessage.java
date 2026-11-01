@@ -45,6 +45,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.IdBloomFilter;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * This class represents a request for a set of keys in the replication
@@ -133,12 +134,12 @@ public final class RequestMessage extends ReplicationMessage {
   private RequestMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
 
-    filters = new IdBloomFilter[buf.readInt()];
+    filters = new IdBloomFilter[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < filters.length; i++) {
       filters[i] = new IdBloomFilter(buf);
     }
 
-    ranges = new IdRange[buf.readInt()];
+    ranges = new IdRange[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < ranges.length; i++) {
       ranges[i] = endpoint.readIdRange(buf);
     }

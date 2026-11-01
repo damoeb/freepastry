@@ -46,6 +46,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.gc.GCId;
 import rice.p2p.past.gc.GCIdSet;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * This class represents a message which is an request to extend the lifetime
@@ -137,14 +138,14 @@ public final class GCRefreshMessage extends ContinuationMessage {
     super(buf, endpoint);
 
     if (serType == S_SUB) {
-      int arrayLength = buf.readInt();
+      int arrayLength = WireLengths.readInt(buf, 1);
       Boolean[] array = new Boolean[arrayLength];
       for (int i = 0; i < arrayLength; i++) {
         array[i] = Boolean.valueOf(buf.readBoolean());
       }
     }
 
-    keys = new GCId[buf.readInt()];
+    keys = new GCId[WireLengths.readInt(buf, 2)];
     for (int i = 0; i < keys.length; i++) {
       keys[i] = (GCId)endpoint.readId(buf, buf.readShort());
     }

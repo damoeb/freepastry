@@ -46,6 +46,7 @@ import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * This class represents a response for a set of keys in the replication
@@ -150,16 +151,16 @@ public final class ResponseMessage extends ReplicationMessage {
     super(buf, endpoint);
 
     // decode ids
-    ids = new Id[buf.readInt()][];
+    ids = new Id[WireLengths.readInt(buf, Integer.BYTES)][];
     for (int i=0; i<ids.length; i++) {
-      ids[i] = new Id[buf.readInt()];
+      ids[i] = new Id[WireLengths.readInt(buf, 2)];
       for (int j = 0; j<ids[i].length;j++) {
         ids[i][j] = endpoint.readId(buf, buf.readShort());
       }
     }
 
     // decode ranges
-    ranges = new IdRange[buf.readInt()];
+    ranges = new IdRange[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < ranges.length; i++) {
       ranges[i] = endpoint.readIdRange(buf);
     }
