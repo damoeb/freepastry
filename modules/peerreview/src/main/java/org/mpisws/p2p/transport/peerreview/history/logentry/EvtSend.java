@@ -84,7 +84,7 @@ public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
     if (hasHash) {
       payload_bytes = new byte[buf.bytesRemaining()-hashSize];
     } else {
-      payload_bytes = new byte[hashSize];
+      payload_bytes = new byte[buf.bytesRemaining()];
     }
     buf.read(payload_bytes);
     payload = ByteBuffer.wrap(payload_bytes);

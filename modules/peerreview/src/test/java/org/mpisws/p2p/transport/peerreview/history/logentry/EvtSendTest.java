@@ -43,8 +43,11 @@ import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
+import org.mpisws.p2p.transport.util.Serializer;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
+import rice.p2p.util.rawserialization.SimpleInputBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
@@ -92,6 +95,32 @@ public class EvtSendTest {
 
     assertArrayEquals(expected, hasher.hash(evtSend.serialize()));
     assertArrayEquals(expected, udm.getInnerHash(receiver, hasher));
+  }
+
+  @Test
+  public void unhashedSendSurvivesARoundTrip() throws Exception {
+    HashProvider hasher = new SHA256HashProvider();
+    ByteBuffer serialized = new EvtSend<Id>(new Id(2), ByteBuffer.wrap(MESSAGE)).serialize();
+    byte[] bytes = new byte[serialized.remaining()];
+    serialized.get(bytes);
+    Serializer<Id> idSerializer = new Serializer<Id>() {
+      @Override
+      public void serialize(Id i, OutputBuffer buf) throws IOException {
+        i.serialize(buf);
+      }
+
+      @Override
+      public Id deserialize(InputBuffer buf) throws IOException {
+        return new Id(buf.readInt());
+      }
+    };
+
+    EvtSend<Id> read = new EvtSend<Id>(new SimpleInputBuffer(bytes), idSerializer, hasher.getHashSizeBytes());
+
+    ByteBuffer payload = read.getPayload();
+    byte[] actual = new byte[payload.remaining()];
+    payload.get(actual);
+    assertArrayEquals(MESSAGE, actual);
   }
 
   /** MESSAGE as a view into a larger array: arrayOffset() == 2, position() == 0. */
