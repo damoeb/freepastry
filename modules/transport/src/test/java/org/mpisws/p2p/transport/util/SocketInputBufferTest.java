@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
 
@@ -72,6 +73,22 @@ class SocketInputBufferTest {
     byte[] actual = new byte[4];
     assertEquals(4, sib.read(actual));
     assertArrayEquals(new byte[] {1, 2, 3, 4}, actual);
+  }
+
+  @Test
+  @Timeout(10)
+  void aReadLargerThanTheInitialCacheGrowsIt() throws Exception {
+    TrickleSocket socket = new TrickleSocket();
+    SocketInputBuffer sib = new SocketInputBuffer(socket, 4);
+    byte[] data = new byte[40];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = (byte) i;
+    }
+    socket.arrive(data);
+
+    byte[] actual = new byte[40];
+    assertEquals(40, sib.read(actual));
+    assertArrayEquals(data, actual);
   }
 
   @Test
