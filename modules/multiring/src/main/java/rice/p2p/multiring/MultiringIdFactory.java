@@ -272,15 +272,15 @@ public class MultiringIdFactory implements IdFactory {
   }
 
   /**
-   * Creates an IdRange given the CW and CCW ids.
+   * Creates an IdRange given the CCW and CW ids.
    *
-   * @param cw The clockwise Id
-   * @param ccw The counterclockwise Id
+   * @param ccw The counterclockwise Id, the inclusive start of the range
+   * @param cw The clockwise Id, the exclusive end of the range
    * @return An IdRange with the appropriate delimiters.
    */
   @Override
-  public IdRange buildIdRange(Id cw, Id ccw) {
-    return new MultiringIdRange(getRingId(), factory.buildIdRange(((RingId) cw).getId(), ((RingId) ccw).getId()));
+  public IdRange buildIdRange(Id ccw, Id cw) {
+    return new MultiringIdRange(getRingId(), factory.buildIdRange(((RingId) ccw).getId(), ((RingId) cw).getId()));
   }
 
   /**

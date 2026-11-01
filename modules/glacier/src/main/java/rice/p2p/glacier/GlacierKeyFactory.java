@@ -124,13 +124,13 @@ public abstract class GlacierKeyFactory implements IdFactory {
   /**
    * Not supported.
    *
-   * @param cw The clockwise Id
    * @param ccw The counterclockwise Id
+   * @param cw The clockwise Id
    * @return never returns
    * @throws RuntimeException always
    */
   @Override
-  public IdRange buildIdRange(Id cw, Id ccw) {
+  public IdRange buildIdRange(Id ccw, Id cw) {
     throw unsupported("buildIdRange()");
   }
 
