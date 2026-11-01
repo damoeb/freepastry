@@ -112,7 +112,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
    * Null if there is no current timer.
    */
   private TimerTask auditTimer;
-  private TimerTask progressTimer;
+  TimerTask progressTimer;
   private boolean destroyed;
 
   Logger logger;
@@ -347,7 +347,10 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
    * While some audits haven't finished, we must call makeProgress() regularly
    */
   protected void makeProgressTimerExpired() {
-    progressTimer.cancel();
+    if (progressTimer != null) {
+      progressTimer.cancel();
+      progressTimer = null;
+    }
     cleanupAudits();
     makeProgressOnInvestigations();
     if (progressTimer == null && ((activeAudit.size() > 0) || (activeInvestigation.size() > 0))) {
