@@ -48,6 +48,7 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.glacier.FragmentKey;
+import rice.p2p.glacier.GlacierException;
 import rice.p2p.glacier.FragmentKeySet;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.glacier.v2.messaging.GlacierDataMessage;
@@ -285,7 +286,7 @@ final class GlacierDebugCommands {
       for (int i=0; i<numObjects; i++) {
         final Id randomID = factory.buildRandomId(environment.getRandomSource());
         result = result + randomID.toStringFull() + "\n";
-        trafficShaper.enqueue(new VersionKey(randomID, 0), new Continuation.SimpleContinuation() {
+        Continuation<Object, Exception> prev = trafficShaper.enqueue(new VersionKey(randomID, 0), new Continuation.SimpleContinuation() {
           @Override
           public void receiveResult(Object o) {
             inserter.insert(
@@ -300,7 +301,15 @@ final class GlacierDebugCommands {
                 }
               });
           }
+          @Override
+          public void receiveException(Exception e) {
+            /* Displaced by a newer job for the same key: drop this insert instead of running it unshaped */
+            logger.warn("Debug insert of {} dropped", randomID.toStringFull(), e);
+          }
         });
+
+        if (prev != null)
+          prev.receiveException(new GlacierException("Key collision in traffic shaper (insert)"));
       }
 
       return result + numObjects + " object(s) with lifetime "+lifetime+"ms created\n";
