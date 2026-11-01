@@ -97,7 +97,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
 
   private final Logger logger;
 
-  private final Map<Identifier, EntityManager<Identifier>> entityManagers;
+  private final EntityManagerRegistry<Identifier> entityManagers;
 
   /**
    * what each EntityManager needs from this layer
@@ -152,7 +152,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       int maxBigMsgSize,
       ErrorHandler<Identifier> handler) {
     this.MAX_BIG_MSG_SIZE = maxBigMsgSize;
-    entityManagers = new HashMap<Identifier, EntityManager<Identifier>>();
+    entityManagers = new EntityManagerRegistry<Identifier>(this::newEntityManager);
     this.logger = env.getLogManager().getLogger(PriorityTransportLayerImpl.class, null);
     this.selectorManager = env.getSelectorManager();
     this.environment = env;
@@ -287,21 +287,21 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
     }
   }
 
+  private EntityManager<Identifier> newEntityManager(Identifier i) {
+    return new EntityManager<Identifier>(i, entityManagerContext);
+  }
+
   protected EntityManager<Identifier> getEntityManager(Identifier i) {
-    synchronized(entityManagers) {
-      EntityManager<Identifier> ret = entityManagers.get(i);
-      if (ret == null) {
-        ret = new EntityManager<Identifier>(i, entityManagerContext);
-        entityManagers.put(i, ret);
-      }
-      return ret;
-    }
+    return entityManagers.get(i, selectorManager.isSelectorThread());
   }
 
   @Override
   public void livenessChanged(Identifier i, int val, @Nullable Map<String, Object> options) {
     if (val >= LivenessTypes.LIVENESS_DEAD) {
       getEntityManager(i).markDead();
+      if (selectorManager.isSelectorThread()) {
+        entityManagers.forgetIfIdle(i);
+      }
     }
   }
 

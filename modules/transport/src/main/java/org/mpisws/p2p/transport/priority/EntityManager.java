@@ -357,6 +357,20 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   }
 
   /**
+   * True if this manager holds nothing a new one would not have: no queued or half-written message, no socket
+   * and no socket being opened, no big message.
+   */
+  boolean isIdle() {
+    synchronized (queue) {
+      if (!queue.isEmpty() || messageThatIsBeingWritten != null) return false;
+    }
+    synchronized (EntityManager.this) {
+      if (pendingSocket != null) return false;
+    }
+    return writingSocket == null && sockets.isEmpty() && pendingBigMessages.isEmpty();
+  }
+
+  /**
    * True if we have a message to send
    */
   private boolean haveMessageToSend() {
