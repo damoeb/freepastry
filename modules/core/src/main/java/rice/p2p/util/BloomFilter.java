@@ -49,6 +49,7 @@ import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  *
@@ -186,12 +187,14 @@ public class BloomFilter {
   public BloomFilter(InputBuffer buf) throws IOException {
     length = buf.readInt();
 
-    parameters = new int[buf.readInt()];
+    parameters = new int[WireLengths.readInt(buf, Integer.BYTES)];
     for(int i = 0; i < parameters.length; i++) {
       parameters[i] = buf.readInt();
     }
 
-    int numBits = buf.readInt();
+    int numBits = WireLengths.check(buf, buf.readInt(), 0);
+    // the bits are packed into bytes, at least one byte is read
+    WireLengths.check(buf, ((long) numBits + 7) / 8, 1);
     set = new BitSet(numBits);
 
     byte curByte = buf.readByte();
@@ -263,7 +266,7 @@ public class BloomFilter {
           return dis.readByte();
         }
         @Override
-        public int bytesRemaining() {throw new RuntimeException("Not Implemented.");}
+        public int bytesRemaining() {return UNKNOWN;}
         @Override
         public String readUTF() throws IOException {throw new RuntimeException("Not Implemented.");}
         @Override
