@@ -489,6 +489,9 @@ public class RouteSet implements NodeSetI,
     byte maxSize = buf.readByte();
     theSize = buf.readByte();
     closest = buf.readByte();
+    if (maxSize < 0 || theSize < 0 || theSize > maxSize) {
+      throw new IOException("Invalid route set sizes: max " + maxSize + ", size " + theSize);
+    }
     nodes = new NodeHandle[maxSize];
     for (int i = 0; i < theSize; i++) {
       nodes[i] = nhf.readNodeHandle(buf);
