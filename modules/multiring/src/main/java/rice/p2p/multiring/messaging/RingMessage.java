@@ -143,7 +143,7 @@ public class RingMessage implements ScribeContent {
    * @throws IOException if the buffer cannot be read or the application is unknown
    */
   public RingMessage(InputBuffer buf, Endpoint ringEndpoint, Map<String, Endpoint> endpoints) throws IOException {
-    id = new RingId(buf, ringEndpoint);
+    id = RingId.build(buf, ringEndpoint);
     application = buf.readUTF();
 
     // this code finds the proper deserializer

@@ -378,7 +378,7 @@ public class MultiringEndpoint implements Endpoint {
   @Override
   public Id readId(InputBuffer buf, short type) throws IOException {
     if (type == IdType.RING_ID.id())
-      return new RingId(buf, endpoint);
+      return RingId.build(buf, endpoint);
 
     return endpoint.readId(buf, type);
   }

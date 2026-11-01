@@ -308,7 +308,9 @@ public class RingId implements Id {
    */
   @Override
   public int compareTo(Id o) {
-    return id.compareTo(((RingId)o).id);
+    RingId that = (RingId) o;
+    int byRing = ringId.compareTo(that.ringId);
+    return byRing != 0 ? byRing : id.compareTo(that.id);
   }
 
   /***************** Raw Serialization ***************************************/
@@ -325,8 +327,14 @@ public class RingId implements Id {
     id.serialize(buf);
   }
 
-  public RingId(InputBuffer buf, Endpoint endpoint) throws IOException {
-    ringId = endpoint.readId(buf, buf.readShort());
-    id = endpoint.readId(buf, buf.readShort());
+  /**
+   * Reads the canonical RingId from the buffer.
+   *
+   * @throws IllegalArgumentException if the buffer holds an id that is not valid in a RingId
+   */
+  public static RingId build(InputBuffer buf, Endpoint endpoint) throws IOException {
+    Id ringId = endpoint.readId(buf, buf.readShort());
+    Id id = endpoint.readId(buf, buf.readShort());
+    return build(ringId, id);
   }
 }
