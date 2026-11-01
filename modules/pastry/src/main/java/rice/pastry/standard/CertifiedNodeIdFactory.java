@@ -150,17 +150,15 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
    * @param key The private key to use to sign the result
    */
   public static void generateCertificate(Id id, OutputStream os, PrivateKey key) {
-    try {
+    try (DataOutputStream out = new DataOutputStream(os)) {
       byte[] bytes = id.toByteArray();
       byte[] signature = SecurityUtils.sign(bytes, key);
 
-      DataOutputStream out = new DataOutputStream(os);
       out.writeInt(CERTIFICATE_FORMAT_VERSION);
       out.writeInt(bytes.length);
       out.write(bytes);
       out.writeInt(signature.length);
       out.write(signature);
-      out.close();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

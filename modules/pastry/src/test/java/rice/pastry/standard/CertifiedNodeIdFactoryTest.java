@@ -2,10 +2,14 @@ package rice.pastry.standard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.security.PrivateKey;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +44,28 @@ class CertifiedNodeIdFactoryTest {
     Id actual = CertifiedNodeIdFactory.readCertificate(new ByteArrayInputStream(bytes.toByteArray()));
 
     assertEquals(expected, actual);
+  }
+
+  @Test
+  void closesTheStreamWhenAWriteFails() throws IOException {
+    AtomicBoolean closed = new AtomicBoolean();
+    OutputStream failing = new OutputStream() {
+      @Override
+      public void write(int b) throws IOException {
+        throw new IOException("disk full");
+      }
+
+      @Override
+      public void close() {
+        closed.set(true);
+      }
+    };
+    Id id = new RandomNodeIdFactory(env).generateNodeId();
+    PrivateKey key = SecurityUtils.generateKeyAsymmetric().getPrivate();
+
+    assertThrows(RuntimeException.class, () -> CertifiedNodeIdFactory.generateCertificate(id, failing, key));
+
+    assertTrue(closed.get());
   }
 
   @Test
