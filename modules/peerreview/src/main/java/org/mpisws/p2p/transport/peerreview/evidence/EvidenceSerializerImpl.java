@@ -78,7 +78,6 @@ public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier e
         return new ChallengeAudit(buf, hashSize, signatureSize);
       }
     case CHAL_SEND:
-    case 16: // PeerReviewMessageType.USERDATA, accepted as an alias of CHAL_SEND
       if (response) {
         return AckMessage.build(buf, idSerializer, hashSize, signatureSize);
       } else {
