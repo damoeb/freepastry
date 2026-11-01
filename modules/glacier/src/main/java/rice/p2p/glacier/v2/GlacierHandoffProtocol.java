@@ -100,8 +100,6 @@ final class GlacierHandoffProtocol {
       public void receiveResult(Object o) {
         if (o instanceof GlacierResponseMessage glacierResponseMessage) {
           handleResponse(glacierResponseMessage);
-        } else if (o instanceof GlacierDataMessage glacierDataMessage) {
-          acceptFragments(glacierDataMessage);
         } else {
           logger.warn("Unexpected response in handoff continuation: {} -- ignored", o);
         }
@@ -207,7 +205,7 @@ final class GlacierHandoffProtocol {
           FragmentAndManifest fam = (FragmentAndManifest) o;
           router.sendMessage(
             null,
-            new GlacierDataMessage(grm.getUID(), thisKey, fam.getFragment(), fam.getManifest(), router.getLocalNodeHandle(), grm.getSource().getId(), true, GlacierTags.HANDOFF),
+            new GlacierDataMessage(grm.getUID(), thisKey, fam.getFragment(), fam.getManifest(), router.getLocalNodeHandle(), grm.getSource().getId(), false, GlacierTags.HANDOFF),
             grm.getSource()
           );
         } else {
@@ -222,9 +220,10 @@ final class GlacierHandoffProtocol {
   }
 
   /**
-   * Stores the fragments handed off to this node, and confirms each one to the sender.
+   * Stores the fragments handed off to this node, and confirms each one to the sender. The data message is a
+   * request, not a response: the sender's continuation UID means nothing in this node's scheduler.
    */
-  private void acceptFragments(final GlacierDataMessage gdm) {
+  void acceptFragments(final GlacierDataMessage gdm) {
     for (int i=0; i<gdm.numKeys(); i++) {
       final FragmentKey thisKey = gdm.getKey(i);
       final Fragment thisFragment = gdm.getFragment(i);
