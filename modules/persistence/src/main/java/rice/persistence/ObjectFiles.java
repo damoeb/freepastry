@@ -145,6 +145,9 @@ final class ObjectFiles {
     /* first get the file */
     Path objFile = layout.getFile(id);
 
+    if (objFile == null)
+      return Boolean.FALSE;
+
     logger.atTrace().log(() -> "COUNT: Unstoring data under " + id.toStringFull() + " of size " + StorageFiles.getFileLength(objFile) + " in " + name);
 
     /* remove id from stored list */
@@ -153,7 +156,7 @@ final class ObjectFiles {
     }
 
     /* check to make sure file exists */
-    if ((objFile == null) || ! Files.exists(objFile))
+    if (! Files.exists(objFile))
       return Boolean.FALSE;
 
     /* record the space collected and delete the file */
