@@ -108,9 +108,6 @@ public class DistTutorial {
 
     // loop to construct the nodes/apps
     for (int curNode = 0; curNode < numNodes; curNode++) {
-      // This will return null if we there is no node at that location
-      ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
-
       // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
       PastryNode node = factory.newNode();
 
@@ -126,11 +123,11 @@ public class DistTutorial {
       while(!node.isReady() && !node.joinFailed()) {
         // delay so we don't busy-wait
         node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS);
+      }
 
-        // abort if can't join
-        if (node.joinFailed()) {
-          throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
-        }
+      // abort if can't join
+      if (node.joinFailed()) {
+        throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
       }
 
       System.out.println("Finished creating new node "+node);
