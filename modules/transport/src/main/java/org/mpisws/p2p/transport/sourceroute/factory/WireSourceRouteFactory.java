@@ -53,9 +53,28 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
  */
 public class WireSourceRouteFactory implements SourceRouteFactory<InetSocketAddress> {
 
+  private final int maxNumHops;
+
+  /**
+   * @param maxNumHops the longest source route that is accepted from the wire
+   */
+  public WireSourceRouteFactory(int maxNumHops) {
+    this.maxNumHops = maxNumHops;
+  }
+
+  /**
+   * Accepts routes of up to {@link SourceRouteConfig#DEFAULT_MAX_NUM_HOPS} hops.
+   */
+  public WireSourceRouteFactory() {
+    this(SourceRouteConfig.DEFAULT_MAX_NUM_HOPS);
+  }
+
   @Override
   public SourceRoute<InetSocketAddress> build(InputBuffer buf, InetSocketAddress localAddr, InetSocketAddress lastHop) throws IOException {
     byte numInPath = buf.readByte();
+    if (numInPath < 1 || numInPath > maxNumHops) {
+      throw new IOException("Invalid number of hops in source route: " + numInPath + " (max: " + maxNumHops + ")");
+    }
     ArrayList<InetSocketAddress> path = new ArrayList<InetSocketAddress>(numInPath);
     for (int i = 0; i < numInPath; i++) {
       byte[] addrBytes = new byte[WireSourceRoute.IPV4_BYTES];

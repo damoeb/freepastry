@@ -48,12 +48,31 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 
 public class MultiAddressSourceRouteFactory implements SourceRouteFactory<MultiInetSocketAddress> {
 
+  private final int maxNumHops;
+
+  /**
+   * @param maxNumHops the longest source route that is accepted from the wire
+   */
+  public MultiAddressSourceRouteFactory(int maxNumHops) {
+    this.maxNumHops = maxNumHops;
+  }
+
+  /**
+   * Accepts routes of up to {@link SourceRouteConfig#DEFAULT_MAX_NUM_HOPS} hops.
+   */
+  public MultiAddressSourceRouteFactory() {
+    this(SourceRouteConfig.DEFAULT_MAX_NUM_HOPS);
+  }
+
   /**
    * 2 in the path is a special case, and we can just generate it from the local and last hops
    */
   @Override
   public SourceRoute<MultiInetSocketAddress> build(InputBuffer buf, MultiInetSocketAddress local, MultiInetSocketAddress lastHop) throws IOException {
     byte numInPath = buf.readByte();
+    if (numInPath < 1 || numInPath > maxNumHops) {
+      throw new IOException("Invalid number of hops in source route: " + numInPath + " (max: " + maxNumHops + ")");
+    }
     if (numInPath == 2) {
       return new MultiAddressSourceRoute(lastHop, local);
     }

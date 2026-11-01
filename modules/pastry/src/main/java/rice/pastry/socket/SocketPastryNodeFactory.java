@@ -82,6 +82,7 @@ import org.mpisws.p2p.transport.multiaddress.SimpleAddressStrategy;
 import org.mpisws.p2p.transport.networkinfo.NetworkInfoTransportLayer;
 import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.priority.PriorityConfig;
+import org.mpisws.p2p.transport.sourceroute.factory.SourceRouteConfig;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
@@ -401,7 +402,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   protected MultiAddressSourceRouteFactory getMultiAddressSourceRouteFactory(PastryNode pn) {
-    return new MultiAddressSourceRouteFactory();
+    return new MultiAddressSourceRouteFactory(SourceRouteConfig.fromParameters(pn.getEnvironment().getParameters()).maxNumHops());
   }
 
   protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {

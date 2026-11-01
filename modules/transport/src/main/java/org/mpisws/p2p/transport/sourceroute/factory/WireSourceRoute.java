@@ -71,7 +71,7 @@ public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
 
   @Override
   public int getSerializedLength() {
-    int ret = 5; // version+numhops
+    int ret = 1; // numhops
 
     // IPV4+port
     ret += path.size() * HOP_BYTES;
