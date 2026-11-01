@@ -56,6 +56,9 @@ public final class IdSet extends SortedMapIdSet<IdSet> {
   // a cache of the fingerprint hash, or null if it must be recomputed
   private byte[] cachedHash;
 
+  // the set this one is a view of: changes made through the view change that set's members too
+  private IdSet parent;
+
   /**
    * Constructor.
    */
@@ -78,8 +81,16 @@ public final class IdSet extends SortedMapIdSet<IdSet> {
   }
 
   @Override
+  public IdSet subSet(rice.p2p.commonapi.Id from, rice.p2p.commonapi.Id to) {
+    IdSet view = super.subSet(from, to);
+    view.parent = this;
+    return view;
+  }
+
+  @Override
   protected void membersChanged() {
     cachedHash = null;
+    if (parent != null) parent.membersChanged();
   }
 
   /**
@@ -89,7 +100,7 @@ public final class IdSet extends SortedMapIdSet<IdSet> {
    */
   @Override
   public byte[] hash() {
-    if (cachedHash != null) return cachedHash;
+    if (cachedHash != null) return cachedHash.clone();
 
     // recompute the hash
     MessageDigest md = HashUtils.newDigest();
@@ -105,6 +116,6 @@ public final class IdSet extends SortedMapIdSet<IdSet> {
 
     cachedHash = md.digest();
 
-    return cachedHash;
+    return cachedHash.clone();
   }
 }

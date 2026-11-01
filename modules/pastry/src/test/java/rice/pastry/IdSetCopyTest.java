@@ -29,6 +29,27 @@ class IdSetCopyTest {
   }
 
   @Test
+  void changingASubsetViewInvalidatesTheParentsHash() {
+    IdSet parent = setOf(A, B, C);
+    parent.hash();
+
+    Id inside = Id.build("3000000000000000000000000000000000000000");
+    parent.subSet(new IdRange(A, B)).addId(inside);
+
+    assertArrayEquals(setOf(A, inside, B, C).hash(), parent.hash());
+  }
+
+  @Test
+  void changingTheReturnedHashLeavesTheSetsHashAlone() {
+    IdSet set = setOf(A, B);
+    byte[] expected = set.hash().clone();
+
+    set.hash()[0] ^= 0x7f;
+
+    assertArrayEquals(expected, set.hash());
+  }
+
+  @Test
   void changingTheCopyLeavesTheOriginalAndItsHashAlone() {
     IdSet original = setOf(A, B);
     byte[] hash = original.hash().clone();
