@@ -43,6 +43,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
         <junit.version>6.1.3</junit.version>
+        <jazzer.version>0.30.0</jazzer.version>
         <!-- JUnit tag expressions for surefire: the default build runs everything except the "integration" tests -->
         <surefire.groups></surefire.groups>
         <surefire.excludedGroups>integration</surefire.excludedGroups>
@@ -118,6 +119,23 @@
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-engine</artifactId>
                 <version>${junit.version}</version>
+            </dependency>
+            <!-- jazzer-junit pulls JUnit 5.9 params and launcher jars, which must follow the JUnit 6 platform -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-launcher</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <!-- Coverage-guided fuzzing of the wire deserializers, see "Fuzzing" in the README -->
+            <dependency>
+                <groupId>com.code-intelligence</groupId>
+                <artifactId>jazzer-junit</artifactId>
+                <version>${jazzer.version}</version>
             </dependency>
 
             <!-- The FreePastry modules -->
@@ -226,6 +244,11 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.code-intelligence</groupId>
+            <artifactId>jazzer-junit</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

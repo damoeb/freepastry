@@ -35,3 +35,6 @@ Thumbs.db
 
 # Old Ant build directories (legacy)
 classes/
+
+# Jazzer
+.cifuzz-corpus/

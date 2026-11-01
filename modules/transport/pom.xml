@@ -22,5 +22,13 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>freepastry-core</artifactId>
         </dependency>
+
+        <!-- Test only -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>freepastry-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

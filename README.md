@@ -143,6 +143,22 @@ Every module compiles with [Error Prone](https://errorprone.info/) and, for the 
 - NullAway checks only code in `@NullMarked` packages, in JSpecify mode. For now these are all packages of `freepastry-core` and `freepastry-transport` (see their `package-info.java`); test code is not checked. In those packages every type is non-null unless it is annotated `@Nullable` (`org.jspecify.annotations.Nullable`, a type-use annotation: `String @Nullable []` for a nullable array, `Map.@Nullable Entry` for a nested type). Where a value is set after construction and always before use, the field carries `@SuppressWarnings("NullAway.Init")`; where null is impossible once the object is set up, the code says so with `Objects.requireNonNull` and a message.
 - To suppress a finding that is intended, put `@SuppressWarnings("CheckName")` (for example `"ReferenceEquality"` or `"NullAway"`) on the narrowest declaration that covers it, a method, field or local variable, and say why in a comment on the same line. To turn a check off everywhere, add `-Xep:CheckName:OFF` to `errorprone.flags` in the parent `pom.xml`, with the reason in the comment above it.
 
+## Fuzzing
+
+The raw-message deserializers read bytes from untrusted peers, so they are fuzzed with [Jazzer](https://github.com/CodeIntelligenceTesting/jazzer) (`jazzer-junit`, test scope, version in the parent `pom.xml`). The invariant of every target: given arbitrary bytes, deserialization returns a value or throws `IOException`. Any other exception (`RuntimeException`, `OutOfMemoryError`, `NegativeArraySizeException`, `ClassCastException`, `IndexOutOfBoundsException`, `StackOverflowError`) or a huge allocation is a finding.
+
+The fuzz tests are `@FuzzTest` methods in classes named `*FuzzTest`: `AddressFuzzTest`, `PriorityFuzzTest` and `NetworkInfoFuzzTest` (transport), `PastryWireFuzzTest` (pastry), `PastFuzzTest`, `ScribeFuzzTest`, `MultiringFuzzTest`, `GlacierFuzzTest` (glacier and aggregation), `PeerReviewFuzzTest` and `PkiFuzzTest`. Shared helpers are in `rice.testing.fuzz.FuzzSupport` (core test classes) and `org.mpisws.p2p.transport.fuzz.FuzzSocket` (transport test classes).
+
+In a normal `./mvnw verify` Jazzer runs in regression mode: each target only replays the seed inputs committed under `src/test/resources/<package>/<TestClass>Inputs/<method>/`, which is fast and deterministic. Every crash that fuzzing found is kept there as a regression seed.
+
+To fuzz, set `JAZZER_FUZZ=1` and run one target of one module (Jazzer fuzzes only one `@FuzzTest` per run; each runs for the `maxDuration` of its annotation, 30 seconds):
+
+```bash
+JAZZER_FUZZ=1 ./mvnw test -pl modules/pastry -am -Dtest='PastryWireFuzzTest#tlDeserializer' -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+The coverage-guided corpus of a run is kept in `.cifuzz-corpus/` of the module (ignored by git). A crashing input is saved as a `crash-<hash>` file in the seed directory of the target and replays on the next regression run; fix the bug, then keep the file as a regression seed. To keep a good corpus, copy the files of `.cifuzz-corpus/<TestClass>/<method>/` into the seed directory.
+
 ## Logging
 
 FreePastry logs through the [SLF4J](https://www.slf4j.org/) 2 API and does not bring a logging backend of its own. Put exactly one SLF4J backend on your application's classpath, for example `org.slf4j:slf4j-simple` for console output or `ch.qos.logback:logback-classic` for files and rotation. Without a backend, SLF4J prints one warning and discards all log output.
