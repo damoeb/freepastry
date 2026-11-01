@@ -43,6 +43,7 @@ import java.util.Vector;
 import rice.p2p.commonapi.NodeHandleSetType;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * Represents an ordered set of NodeHandles. *
@@ -274,7 +275,7 @@ public class NodeSet implements NodeSetI {
 
   @SuppressWarnings("JdkObsolete") // set is shared across threads; Vector's synchronization guards it
   public NodeSet(InputBuffer buf, NodeHandleFactory<? extends NodeHandle> nhf) throws IOException {
-    short numNodes = buf.readShort();
+    int numNodes = WireLengths.readShort(buf, 1);
     set = new Vector<NodeHandle>(numNodes);
 
     for (int i = 0; i < numNodes; i++) {
