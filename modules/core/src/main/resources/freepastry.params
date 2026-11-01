@@ -96,8 +96,6 @@ pastry_socket_scm_ping_delay = 800
 pastry_socket_scm_ping_jitter = 0.1
 # how many pings until we call the node faulty
 pastry_socket_scm_num_ping_tries = 5
-pastry_socket_scm_backoff_initial = 250
-pastry_socket_scm_backoff_limit = 5
 pastry_socket_increment_port_after_construction = true
 # if you want to allow connection to 127.0.0.1, set this to true
 pastry_socket_allow_loopback = false

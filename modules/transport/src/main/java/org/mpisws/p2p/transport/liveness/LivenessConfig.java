@@ -50,8 +50,6 @@ import rice.environment.params.Parameters;
  *        random jitter
  * @param numPingTries {@code pastry_socket_scm_num_ping_tries}: the number of pings before a node is
  *        declared dead
- * @param backoffInitial {@code pastry_socket_scm_backoff_initial}
- * @param backoffLimit {@code pastry_socket_scm_backoff_limit}
  * @param checkDeadThrottle {@code pastry_socket_srm_check_dead_throttle}: the minimum time between
  *        liveness checks of a dead node
  * @param defaultRto {@code pastry_socket_srm_default_rto}: the retransmission timeout before an RTT
@@ -67,8 +65,6 @@ public record LivenessConfig(
     int pingDelay,
     float pingJitter,
     int numPingTries,
-    int backoffInitial,
-    int backoffLimit,
     int checkDeadThrottle,
     int defaultRto,
     int rtoUpperBound,
@@ -85,8 +81,6 @@ public record LivenessConfig(
       positive("pastry_socket_scm_ping_delay", p.getInt("pastry_socket_scm_ping_delay")),
       p.getFloat("pastry_socket_scm_ping_jitter"),
       nonNegative("pastry_socket_scm_num_ping_tries", p.getInt("pastry_socket_scm_num_ping_tries")),
-      p.getInt("pastry_socket_scm_backoff_initial"),
-      p.getInt("pastry_socket_scm_backoff_limit"),
       nonNegative("pastry_socket_srm_check_dead_throttle", p.getInt("pastry_socket_srm_check_dead_throttle")),
       positive("pastry_socket_srm_default_rto", p.getInt("pastry_socket_srm_default_rto")),
       positive("pastry_socket_srm_rto_ubound", p.getInt("pastry_socket_srm_rto_ubound")),
@@ -99,7 +93,7 @@ public record LivenessConfig(
    * @return a copy of this config with the given check dead throttle
    */
   public LivenessConfig withCheckDeadThrottle(int checkDeadThrottle) {
-    return new LivenessConfig(pingDelay, pingJitter, numPingTries, backoffInitial, backoffLimit, checkDeadThrottle,
+    return new LivenessConfig(pingDelay, pingJitter, numPingTries, checkDeadThrottle,
         defaultRto, rtoUpperBound, rtoLowerBound, gainH, gainG);
   }
 }
