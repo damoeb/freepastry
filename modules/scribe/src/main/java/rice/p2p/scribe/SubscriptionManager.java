@@ -462,18 +462,14 @@ final class SubscriptionManager {
       // if we're the root, reject the ack message, except for the hack to implement a centralized solution with self overlays for each node (i.e everyone is a root)
       if (registry.isRoot(topic)) {
         logger.debug("Received unexpected subscribe ack message (we are the root) from {} for topic {}", saMessage.getSource(), topic);
-        List<Topic> topics = needToUnsubscribe.get(saMessage.getSource());
-        if (topics == null) topics = new ArrayList<Topic>();
-        topics.add(topic);
+        needToUnsubscribe.computeIfAbsent(saMessage.getSource(), k -> new ArrayList<Topic>()).add(topic);
       } else {
         // if we don't know about this topic, then we unsubscribe
         // if we already have a parent, then this is either an errorous
         // subscribe ack, or our path to the root has changed.
         if (manager == null) {
           logger.warn("Received unexpected subscribe ack message from {} for unknown topic {}", saMessage.getSource(), topic);
-          List<Topic> topics = needToUnsubscribe.get(saMessage.getSource());
-          if (topics == null) topics = new ArrayList<Topic>();
-          topics.add(topic);
+          needToUnsubscribe.computeIfAbsent(saMessage.getSource(), k -> new ArrayList<Topic>()).add(topic);
         } else {
           if (manager.getParent() == null) {
             registry.getOrCreate(topic).setParent(saMessage.getSource(), pathToRoot);

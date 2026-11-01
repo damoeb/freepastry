@@ -106,4 +106,33 @@ class SubscriptionManagerTest {
     assertEquals(oldParent, unsubscribes.get(0).hint());
     assertEquals(List.of(a, b), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
   }
+
+  @Test
+  void ackForUnknownTopicIsAnsweredWithUnsubscribe() {
+    Topic a = ScribeTestSupport.topic(1);
+    int id = subscribe(new ArrayList<>(List.of(a)));
+    registry.remove(a);
+
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a)), emptyPaths(1), id));
+
+    List<Routed> unsubscribes = unsubscribes();
+    assertEquals(1, unsubscribes.size());
+    assertEquals(fake.remote, unsubscribes.get(0).hint());
+    assertEquals(List.of(a), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
+  }
+
+  @Test
+  void ackForRootTopicIsAnsweredWithUnsubscribe() {
+    Topic a = ScribeTestSupport.topic(1);
+    int id = subscribe(new ArrayList<>(List.of(a)));
+    registry.create(a);
+    fake.rootTopics.add(a);
+
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a)), emptyPaths(1), id));
+
+    List<Routed> unsubscribes = unsubscribes();
+    assertEquals(1, unsubscribes.size());
+    assertEquals(fake.remote, unsubscribes.get(0).hint());
+    assertEquals(List.of(a), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
+  }
 }
