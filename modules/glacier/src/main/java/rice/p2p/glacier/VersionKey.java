@@ -101,13 +101,7 @@ public record VersionKey(Id id, long version) implements Id {
       return idResult;
     }
 
-    if ((version - ((VersionKey) o).version)<0)
-      return -1;
-
-    if ((version - ((VersionKey) o).version)>0)
-      return 1;
-
-    return 0;
+    return Long.compare(version, ((VersionKey) o).version);
   }
 
   /**
