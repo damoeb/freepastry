@@ -53,6 +53,11 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 public class MultiInetSocketAddress {
   static final InetSocketAddressSerializer serializer = new InetSocketAddressSerializer();
 
+  /**
+   * The most addresses {@link #build(InputBuffer)} accepts, for the callers that have no configuration at hand.
+   */
+  public static final int HARD_MAX_NUM_ADDRESSES = 8;
+
   // the address list, most external first
   private final InetSocketAddress address[];
 
@@ -166,7 +171,19 @@ public class MultiInetSocketAddress {
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    */
   public static MultiInetSocketAddress build(InputBuffer buf) throws IOException {
+    return build(buf, HARD_MAX_NUM_ADDRESSES);
+  }
+
+  /**
+   * Like {@link #build(InputBuffer)}, but rejects an address list longer than {@code maxNumAddresses}.
+   *
+   * @throws IOException if the number of addresses is not between 1 and {@code maxNumAddresses}
+   */
+  public static MultiInetSocketAddress build(InputBuffer buf, int maxNumAddresses) throws IOException {
     byte numAddresses = buf.readByte();
+    if (numAddresses < 1 || numAddresses > maxNumAddresses) {
+      throw new IOException("Invalid number of addresses: " + numAddresses + " (max: " + maxNumAddresses + ")");
+    }
     InetSocketAddress[] saddr = new InetSocketAddress[numAddresses];
     for (int ctr = 0; ctr < numAddresses; ctr++) {
       saddr[ctr] = serializer.deserialize(buf, null, null);

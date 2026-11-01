@@ -83,6 +83,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   ErrorHandler<MultiInetSocketAddress> errorHandler;
   Logger logger;
   AddressStrategy strategy;
+  private final int maxNumAddresses;
 
 
   public MultiInetAddressTransportLayerImpl(
@@ -92,6 +93,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
       ErrorHandler<MultiInetSocketAddress> handler,
       AddressStrategy strategy) {
     this.logger = env.getLogManager().getLogger(MultiInetAddressTransportLayerImpl.class, null);
+    this.maxNumAddresses = MultiInetAddressConfig.fromParameters(env.getParameters()).maxNumAddresses();
     this.wire = wire;
     this.errorHandler = handler;
     this.localAddress = localAddress;
@@ -204,7 +206,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
         logger.trace("incomingSocket({}):receiveSelectResult()", socket);
         if (canWrite || !canRead) throw new IOException("Expected to read! "+canRead+","+canWrite);
         try {
-          MultiInetSocketAddress eisa = MultiInetSocketAddress.build(sib);
+          MultiInetSocketAddress eisa = MultiInetSocketAddress.build(sib, maxNumAddresses);
           logger.trace("Read {}", eisa);
           callback.incomingSocket(new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(eisa, socket, logger, errorHandler, socket.getOptions()));
         } catch (InsufficientBytesException ibe) {
@@ -294,7 +296,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
 
     MultiInetSocketAddress eisa;
     try {
-      eisa = MultiInetSocketAddress.build(sib);
+      eisa = MultiInetSocketAddress.build(sib, maxNumAddresses);
     } catch (IOException ioe) {
       errorHandler.receivedUnexpectedData(new MultiInetSocketAddress(i), m.array(), pos, null);
       return;

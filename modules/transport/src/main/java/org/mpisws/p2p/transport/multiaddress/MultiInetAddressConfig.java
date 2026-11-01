@@ -1,0 +1,22 @@
+package org.mpisws.p2p.transport.multiaddress;
+
+import static rice.environment.params.ConfigChecks.positive;
+
+import rice.environment.params.Parameters;
+
+/**
+ * The tuning parameters of a {@link MultiInetAddressTransportLayerImpl}.
+ *
+ * @param maxNumAddresses {@code transport_epoch_max_num_addresses}: the most addresses a remote node may
+ *        announce for itself; a peer announcing more is rejected
+ */
+public record MultiInetAddressConfig(int maxNumAddresses) {
+
+  /**
+   * @throws IllegalArgumentException if a value is not positive
+   */
+  public static MultiInetAddressConfig fromParameters(Parameters p) {
+    return new MultiInetAddressConfig(
+      positive("transport_epoch_max_num_addresses", p.getInt("transport_epoch_max_num_addresses")));
+  }
+}
