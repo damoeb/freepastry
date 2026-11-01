@@ -69,10 +69,10 @@ public class ProfileSelector extends SelectorManager {
   int HEART_BEAT_INTERVAL = 60000;
   long lastHeartBeat = 0;
 
-  private @Nullable String lastTaskType = null;
-  private @Nullable String lastTaskClass = null;
-  private @Nullable String lastTaskToString = null;
-  private long lastTaskHash = 0;
+  private volatile @Nullable String lastTaskType = null;
+  private volatile @Nullable String lastTaskClass = null;
+  private volatile @Nullable String lastTaskToString = null;
+  private volatile long lastTaskHash = 0;
 
   int numInvocationsScheduled = 0;
   int numInvocationsExecuted = 0;
@@ -120,7 +120,7 @@ public class ProfileSelector extends SelectorManager {
   protected void onLoop() {
     long curTime = timeSource.currentTimeMillis();
     if ((curTime - lastHeartBeat) > HEART_BEAT_INTERVAL) {
-      System.out.println("selector heartbeat "+DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.systemDefault()))+" maxInvokes:"+maxInvokes+" invokesSched:"+numInvocationsScheduled+" invokesExe:"+numInvocationsExecuted+" CurrentThread:"+Thread.currentThread()+"@"+System.identityHashCode(Thread.currentThread()));
+      logger.info("selector heartbeat {} maxInvokes:{} invokesSched:{} invokesExe:{} CurrentThread:{}@{}", DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.systemDefault())), maxInvokes, numInvocationsScheduled, numInvocationsExecuted, Thread.currentThread(), System.identityHashCode(Thread.currentThread()));
       printStats();
       lastHeartBeat = curTime;
     }
@@ -162,7 +162,7 @@ public class ProfileSelector extends SelectorManager {
       return Long.compare(stat2.totalTime, stat1.totalTime);
     });
     for (Stat stat : list) {
-      System.out.println("  "+stat);
+      logger.info("  {}", stat);
     }
   }
 
