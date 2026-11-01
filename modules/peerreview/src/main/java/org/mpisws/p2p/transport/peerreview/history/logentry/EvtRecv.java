@@ -74,9 +74,12 @@ public class EvtRecv<Handle extends RawSerializable> extends HistoryEvent {
       int relevantLen, HashProvider hasher) {
     this.senderHandle = senderHandle;
     this.senderSeq = topSeq;
-    this.payload = new byte[payload.remaining()];
+    this.payload = new byte[relevantLen];
     System.arraycopy(payload.array(), payload.arrayOffset()+payload.position(), this.payload, 0, relevantLen);
-    hash = hasher.hash(ByteBuffer.wrap(this.payload));
+    // the irrelevant rest of the payload is logged as its hash
+    ByteBuffer irrelevant = payload.duplicate();
+    irrelevant.position(payload.position()+relevantLen);
+    hash = hasher.hash(irrelevant);
   }
 
   public EvtRecv(InputBuffer buf, Serializer<Handle> serializer, int hashSize) throws IOException {
