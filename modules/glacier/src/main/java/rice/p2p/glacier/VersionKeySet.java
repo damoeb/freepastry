@@ -80,14 +80,4 @@ public class VersionKeySet extends SortedMapIdSet<VersionKeySet> {
   public byte[] hash() {
     throw new RuntimeException("VersionKeySet.getHash() is not supported!");
   }
-
-  /**
-   * Returns a string without the members.
-   *
-   * @return "[ IdSet:  ]"
-   */
-  @Override
-  public String toString() {
-    return "[ IdSet:  ]";
-  }
 }
