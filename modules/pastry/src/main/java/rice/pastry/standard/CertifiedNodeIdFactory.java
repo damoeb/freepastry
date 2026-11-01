@@ -37,30 +37,36 @@ advised of the possibility of such damage.
 
 package rice.pastry.standard;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.security.KeyPair;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.security.PrivateKey;
-import java.util.zip.GZIPInputStream;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.util.SecurityUtils;
 import rice.pastry.Id;
 import rice.pastry.NodeIdFactory;
 
 /**
- * Builds nodeIds in a certified manner, guaranteeing that a given node will always
- * have the same nodeId.  NOTE:  Actual certification is not yet implemented, rather,
- * using this factory simply guarantees that the node's nodeId will never change.
+ * Hands out the node id that a certificate authority (CA) bound to this node's certificate. The id is
+ * the common name of the node's X.509 certificate; {@link #generateNodeId()} checks that the CA signed
+ * the certificate, that both certificates are valid now, and that the node holds the certificate's
+ * private key, and fails otherwise, so a node cannot start with an id it was not granted. The same id
+ * is returned on every call and every restart. See {@link NodeIdCertificate} for the whole design,
+ * including how peers check the id.
+ * <p>
+ * The key store is the one {@code org.mpisws.p2p.pki.x509.CAToolImpl} writes with {@code -store}: the
+ * node's private key and certificate under {@link NodeIdCertificate#NODE_KEY_ALIAS}, the CA certificate
+ * under {@link NodeIdCertificate#CA_CERT_ALIAS}.
  *
  * @version $Id: CertifiedNodeIdFactory.java 3613 2007-02-15 14:45:14Z jstewart $
  *
@@ -68,135 +74,89 @@ import rice.pastry.NodeIdFactory;
  */
 public class CertifiedNodeIdFactory implements NodeIdFactory {
 
-  public static final String NODE_ID_FILENAME = "nodeId";
+  private final X509Certificate nodeCert;
 
-  // the format version of node id certificates
-  private static final int CERTIFICATE_FORMAT_VERSION = 1;
+  private final X509Certificate caCert;
 
-  private final int port;
-
-  private final Environment environment;
+  private final PrivateKey nodeKey;
 
   private final Logger logger;
 
   /**
-   * Constructor.
+   * @param nodeCert the node's certificate; its subject is the node id
+   * @param nodeKey the private key of nodeCert
+   * @param caCert the trust anchor that must have issued nodeCert
    */
-  public CertifiedNodeIdFactory(InetAddress localIP, int port, Environment env) {
-    this.environment = env;
-    this.port = port;
-    this.logger = environment.getLogManager().getLogger(CertifiedNodeIdFactory.class,null);
-    new IPNodeIdFactory(localIP, port, env); // logs an alert if localIP is a loopback address
+  public CertifiedNodeIdFactory(X509Certificate nodeCert, PrivateKey nodeKey, X509Certificate caCert, Environment env) {
+    this.nodeCert = nodeCert;
+    this.nodeKey = nodeKey;
+    this.caCert = caCert;
+    this.logger = env.getLogManager().getLogger(CertifiedNodeIdFactory.class, null);
   }
 
   /**
-   * generate a nodeId
-   *
-   * @return the new nodeId
+   * @param store a key store with the entries described in the class comment
+   */
+  public static CertifiedNodeIdFactory fromKeyStore(KeyStore store, char[] keyPassword, Environment env) throws GeneralSecurityException {
+    Certificate[] chain = store.getCertificateChain(NodeIdCertificate.NODE_KEY_ALIAS);
+    Certificate ca = store.getCertificate(NodeIdCertificate.CA_CERT_ALIAS);
+    if (chain == null || chain.length == 0 || !(chain[0] instanceof X509Certificate node)) {
+      throw new CertificateException("The key store has no node certificate under '" + NodeIdCertificate.NODE_KEY_ALIAS + "'");
+    }
+    if (!(ca instanceof X509Certificate caCert)) {
+      throw new CertificateException("The key store has no CA certificate under '" + NodeIdCertificate.CA_CERT_ALIAS + "'");
+    }
+    if (!(store.getKey(NodeIdCertificate.NODE_KEY_ALIAS, keyPassword) instanceof PrivateKey key)) {
+      throw new CertificateException("The key store has no private key under '" + NodeIdCertificate.NODE_KEY_ALIAS + "'");
+    }
+    return new CertifiedNodeIdFactory(node, key, caCert, env);
+  }
+
+  /**
+   * @param file a PKCS12 key store, as written by {@code CAToolImpl -store}
+   * @param password the store and key password (blank for {@code CAToolImpl -store})
+   */
+  public static CertifiedNodeIdFactory load(Path file, char[] password, String keyStoreType, Environment env) throws IOException, GeneralSecurityException {
+    KeyStore store = KeyStore.getInstance(keyStoreType);
+    try (InputStream in = Files.newInputStream(file)) {
+      store.load(in, password);
+    }
+    return fromKeyStore(store, password, env);
+  }
+
+  /**
+   * @return the node id the CA granted
+   * @throws SecurityException if the certificate is not valid for this CA now, or the node does not hold its key
    */
   @Override
   public Id generateNodeId() {
-    Path f = Path.of(NODE_ID_FILENAME);
-
-    if (! Files.exists(f)) {
-      Path g = Path.of("." + NODE_ID_FILENAME + "-" + port);
-
-      if (Files.exists(g)) {
-        try {
-          Files.move(g, f, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-          // as with renameTo, a failed rename shows up as the missing certificate below
-        }
-      }
-    }
-
-    if (! Files.exists(f)) {
-      logger.warn("Unable to find NodeID certificate - exiting.");
-      throw new RuntimeException("Unable to find NodeID certificate - make sure that the NodeID certificate file '" + NODE_ID_FILENAME + "' exists in your ePOST directory.");
-    }
-
-    try (InputStream in = Files.newInputStream(f)) {
-      return readCertificate(in);
-    } catch (IOException e) {
-      logger.warn("", e);
-      throw new RuntimeException(e);
+    try {
+      Id id = NodeIdCertificate.verify(nodeCert, caCert, Instant.now());
+      requireKeyPair(nodeKey, nodeCert.getPublicKey());
+      return id;
+    } catch (GeneralSecurityException e) {
+      logger.warn("The node id certificate is not valid: {}", e.getMessage());
+      throw new SecurityException("The node id certificate is not valid: " + e.getMessage(), e);
     }
   }
 
-  /**
-   * Reads the node id from a certificate written by {@link #generateCertificate(Id, OutputStream, PrivateKey)}.
-   * The signature is not checked.
-   *
-   * @param in the certificate
-   * @return the node id
-   */
-  static Id readCertificate(InputStream in) throws IOException {
-    DataInputStream data = new DataInputStream(in);
-    int version = data.readInt();
-    if (version != CERTIFICATE_FORMAT_VERSION) {
-      throw new IOException("Unknown node id certificate format " + version);
+  /** a signature made with the private key must verify with the certificate's public key */
+  private static void requireKeyPair(PrivateKey key, PublicKey pub) throws GeneralSecurityException {
+    String algorithm = switch (key.getAlgorithm()) {
+      case "RSA" -> "SHA256withRSA";
+      case "EC" -> "SHA256withECDSA";
+      default -> throw new CertificateException("Unsupported node key algorithm " + key.getAlgorithm());
+    };
+    byte[] challenge = {1, 2, 3, 4};
+    Signature signer = Signature.getInstance(algorithm);
+    signer.initSign(key);
+    signer.update(challenge);
+    byte[] signature = signer.sign();
+    Signature verifier = Signature.getInstance(algorithm);
+    verifier.initVerify(pub);
+    verifier.update(challenge);
+    if (!verifier.verify(signature)) {
+      throw new CertificateException("The node's private key does not belong to its certificate");
     }
-    byte[] id = new byte[data.readInt()];
-    data.readFully(id);
-    return Id.build(id);
-  }
-
-  /**
-   * Method which generates a certificate given the nodeid, location, and private key: the format version,
-   * the id's bytes and the signature over them, each preceded by its length.
-   *
-   * @param id The id of the certificate to generate
-   * @param os The stream to write the certificate to
-   * @param key The private key to use to sign the result
-   */
-  public static void generateCertificate(Id id, OutputStream os, PrivateKey key) {
-    try (DataOutputStream out = new DataOutputStream(os)) {
-      byte[] bytes = id.toByteArray();
-      byte[] signature = SecurityUtils.sign(bytes, key);
-
-      out.writeInt(CERTIFICATE_FORMAT_VERSION);
-      out.writeInt(bytes.length);
-      out.write(bytes);
-      out.writeInt(signature.length);
-      out.write(signature);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Main method which, for convenience, allows certificate creation.  The parameters allowed are
-   * -ca [file] -out [dir]
-   */
-  public static void main(String[] args) throws Exception {
-    String pw = getArg(args, "-pw");
-    String caDirectory = getArg(args, "-ca");
-
-    // the CA key pair, encrypted with the password: gzipped, preceded by its length
-    Path f = (caDirectory == null) ? Path.of("ca.keypair.enc") : Path.of(caDirectory, "ca.keypair.enc");
-    byte[] cipher;
-    try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(f))))) {
-      cipher = new byte[in.readInt()];
-      in.readFully(cipher);
-    }
-
-    KeyPair caPair = SecurityUtils.decodeKeyPair(SecurityUtils.decryptWithPassword(cipher, pw.toCharArray()));
-
-    Environment env = new Environment();
-    generateCertificate(new RandomNodeIdFactory(env).generateNodeId(), Files.newOutputStream(Path.of(NODE_ID_FILENAME)), caPair.getPrivate());
-    env.destroy();
-  }
-
-  public static String getArg(String[] args, String argType) {
-    for (int i = 0; i < args.length; i++) {
-      if (args[i].startsWith(argType)) {
-        if (args.length > i+1) {
-          String ret = args[i+1];
-          if (!ret.startsWith("-"))
-            return ret;
-        }
-      }
-    }
-    return null;
   }
 }

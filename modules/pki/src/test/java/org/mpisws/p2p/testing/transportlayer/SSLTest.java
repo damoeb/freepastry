@@ -67,12 +67,20 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import rice.environment.Environment;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.dist.DistNodeHandle;
+import rice.pastry.socket.CertifiedIdBindStrategy;
+import rice.pastry.socket.TransportLayerNodeHandle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Two SSL transport layers ("alice" accepts, "bob" connects) over real loopback TCP sockets, with
@@ -287,5 +295,89 @@ public class SSLTest {
 
     assertNotNull(aliceError.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
     assertFalse(aliceRead.isDone() && !aliceRead.isCompletedExceptionally(), "alice must not receive data");
+  }
+
+  /** a node handle that only has an id; the bind strategy looks at nothing else */
+  static TransportLayerNodeHandle<MultiInetSocketAddress> handleWithId(Id id) {
+    return new DistNodeHandle<MultiInetSocketAddress>(id) {
+      @Override
+      public MultiInetSocketAddress getAddress() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public long getEpoch() {
+        return 0;
+      }
+
+      @Override
+      public int getLiveness() {
+        return LIVENESS_ALIVE;
+      }
+
+      @Override
+      public boolean ping() {
+        return false;
+      }
+
+      @Override
+      public boolean checkLiveness() {
+        return false;
+      }
+
+      @Override
+      public void serialize(OutputBuffer buf) {
+      }
+
+      @Override
+      public String toString() {
+        return "handle(" + getNodeId() + ")";
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return obj instanceof NodeHandle h && h.getNodeId().equals(getNodeId());
+      }
+
+      @Override
+      public int hashCode() {
+        return getNodeId().hashCode();
+      }
+    };
+  }
+
+  /** bob, whose certificate is for bobId, connects to alice; returns the options of the socket alice accepted */
+  Map<String, Object> bobConnectsWithCertificateFor(Id bobId) throws Exception {
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), ca(false)), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store(bobId.toStringFull(), ca(false), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    acceptOn(alice);
+    sendPayload(bob, new InetSocketAddress(addr, alicePort)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    assertEquals(PAYLOAD, aliceRead.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    return Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, aliceSawSubject.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void peerClaimingTheIdOfItsCertificateIsAccepted() throws Exception {
+    Id bobId = Id.build("1234567890ABCDEF1234567890ABCDEF12345678");
+
+    Map<String, Object> options = bobConnectsWithCertificateFor(bobId);
+
+    assertTrue(new CertifiedIdBindStrategy().accept(handleWithId(bobId), null, options));
+  }
+
+  @Test
+  void peerClaimingAnotherIdThanItsCertificateIsRefused() throws Exception {
+    Id bobId = Id.build("1234567890ABCDEF1234567890ABCDEF12345678");
+    Id claimed = Id.build("FEDCBA0987654321FEDCBA0987654321FEDCBA09");
+
+    Map<String, Object> options = bobConnectsWithCertificateFor(bobId);
+
+    assertFalse(new CertifiedIdBindStrategy().accept(handleWithId(claimed), null, options));
+  }
+
+  @Test
+  void optionsWithoutCertificateAreNotChecked() {
+    // UDP datagrams carry no certificate subject
+    assertTrue(new CertifiedIdBindStrategy().accept(handleWithId(Id.build("1234567890ABCDEF1234567890ABCDEF12345678")), null, Map.of()));
   }
 }

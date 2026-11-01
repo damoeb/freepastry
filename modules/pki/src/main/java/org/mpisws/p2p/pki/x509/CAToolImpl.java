@@ -86,6 +86,7 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.SecurityUtils;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.Id;
+import rice.pastry.standard.NodeIdCertificate;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 public class CAToolImpl implements CATool {
@@ -216,11 +217,32 @@ public class CAToolImpl implements CATool {
     return sign(CN,key,exp,System.currentTimeMillis());
   }
 
+  /**
+   * Issues the certificate that binds a node id to a public key, valid for one year: the subject is
+   * {@link NodeIdCertificate#subjectFor(Id)}, which peers and {@code CertifiedNodeIdFactory} check.
+   */
+  public X509Certificate signNodeId(Id id, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
+    Instant now = Instant.now();
+    return signNodeId(id, key, now, ZonedDateTime.now(ZoneOffset.UTC).plusYears(1).toInstant());
+  }
+
+  /**
+   * @param notBefore start of the validity period
+   * @param notAfter end of the validity period
+   */
+  public X509Certificate signNodeId(Id id, PublicKey key, Instant notBefore, Instant notAfter) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
+    return sign(id.toStringFull(), key, notBefore, notAfter, System.currentTimeMillis(), cert, keyPair.getPrivate());
+  }
+
   public static X509Certificate sign(String CN, PublicKey publicKey, Instant expiryDate, long serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
+    return sign(CN, publicKey, Instant.now(), expiryDate, serialNumber, caCert, privateKey);
+  }
+
+  public static X509Certificate sign(String CN, PublicKey publicKey, Instant startDate, Instant expiryDate, long serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     X500Principal subjectName = new X500Principal("CN="+CN);
 
     X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
-        caCert.getSubjectX500Principal(), BigInteger.valueOf(serialNumber), Date.from(Instant.now()), Date.from(expiryDate),
+        caCert.getSubjectX500Principal(), BigInteger.valueOf(serialNumber), Date.from(startDate), Date.from(expiryDate),
         subjectName, publicKey);
 
     try {
@@ -240,12 +262,17 @@ public class CAToolImpl implements CATool {
     return sign(CN,publicKey,expiryDate,serialNumber,cert,keyPair.getPrivate());
   }
 
-  public static final String CA_STORE_PRIVATE = "private";
-  public static final String CA_STORE_CERT = "cert";
+  /** also the aliases of a node store, which {@code CertifiedNodeIdFactory} reads */
+  public static final String CA_STORE_PRIVATE = NodeIdCertificate.NODE_KEY_ALIAS;
+  public static final String CA_STORE_CERT = NodeIdCertificate.CA_CERT_ALIAS;
 
   /**
    *
    * -p CApassword -ca CAname -cn newCN
+   * <p>
+   * Without -cn the node gets a random node id as its common name, which binds the id to the
+   * certificate (see {@link NodeIdCertificate}); -cn must be a node id (40 hex digits) to be usable with
+   * {@code CertifiedNodeIdFactory}.
    */
   public static void main(String[] args) throws Exception {
     char[] pw = new char[0];
@@ -285,10 +312,10 @@ public class CAToolImpl implements CATool {
       clientStore.load(null, null);
 
       // store the private key under the client cert
-      clientStore.setKeyEntry("private",pair.getPrivate(), "".toCharArray(), new Certificate[] {cert});
+      clientStore.setKeyEntry(NodeIdCertificate.NODE_KEY_ALIAS,pair.getPrivate(), "".toCharArray(), new Certificate[] {cert});
 
       // store the CA cert
-      clientStore.setCertificateEntry("cert", caTool.getCertificate());
+      clientStore.setCertificateEntry(NodeIdCertificate.CA_CERT_ALIAS, caTool.getCertificate());
 
       // write the clientStore to disk
       String fileName = CN+".store";

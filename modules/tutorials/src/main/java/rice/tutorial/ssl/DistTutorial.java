@@ -53,7 +53,6 @@ import org.mpisws.p2p.transport.identity.BindStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
-import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
@@ -62,8 +61,10 @@ import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
 import rice.pastry.leafset.LeafSet;
+import rice.pastry.socket.CertifiedIdBindStrategy;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.TransportLayerNodeHandle;
+import rice.pastry.standard.CertifiedNodeIdFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 /**
@@ -94,10 +95,9 @@ public class DistTutorial {
       store.load(fis, "".toCharArray());
     }
 
-    // create the id from the file name
-    String keyStoreName = keyStoreFile.getFileName().toString();
-    int extensionStart = keyStoreName.indexOf('.');
-    rice.pastry.Id id = rice.pastry.Id.build(extensionStart < 0 ? keyStoreName : keyStoreName.substring(0, extensionStart));
+    // the node id is the one the CA put in the node's certificate; this fails if the certificate
+    // is not valid for the CA in the store, or does not belong to the node's key
+    rice.pastry.Id id = CertifiedNodeIdFactory.fromKeyStore(store, "".toCharArray(), env).generateNodeId();
 
     // construct the PastryNodeFactory, this is how we use rice.pastry.socket
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
@@ -120,29 +120,8 @@ public class DistTutorial {
 
       @Override
       protected BindStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>, SourceRoute<MultiInetSocketAddress>> getBindStrategy() {
-        return new BindStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>, SourceRoute<MultiInetSocketAddress>>() {
-          @Override
-          public boolean accept(TransportLayerNodeHandle<MultiInetSocketAddress> u,
-              SourceRoute<MultiInetSocketAddress> l, Map<String, Object> options) {
-
-            // get the id from the certificate
-            String idName = (String)options.get(SSLTransportLayer.OPTION_CERT_SUBJECT);
-
-            // if it's not there, it could be because this is a UDP message, just accept
-            if (idName != null) {
-              // compare the name to the id
-              if (u.getId().toStringFull().equals(idName)) {
-                // accept
-                return true;
-              } else {
-                // reject
-                System.out.println("Rejecting id:"+u+" which does not match the certificate entry:"+idName);
-                return false;
-              }
-            }
-            return true;
-          }
-        };
+        // accept a node handle only if its id is the common name of the peer's certificate
+        return new CertifiedIdBindStrategy();
       }
     };
 

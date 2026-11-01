@@ -27,8 +27,8 @@ import rice.p2p.util.SecurityUtils;
 
 /**
  * The password-encrypted key pair files: the ring key pair that {@link RingCertificate#readKeyPair(String, String)}
- * reads, and the CA key pair ({@code ca.keypair.enc}) that {@code CertifiedNodeIdFactory} and
- * {@code RingCertificate.main} load. Both files hold {@link SecurityUtils#encodeKeyPair(KeyPair)} encrypted with
+ * reads, and the CA key pair ({@code ca.keypair.enc}) that
+ * {@code RingCertificate.main} loads. Both files hold {@link SecurityUtils#encodeKeyPair(KeyPair)} encrypted with
  * {@link SecurityUtils#encryptWithPassword(byte[], char[])}, preceded by its length and gzipped.
  */
 class PasswordEncryptedKeyPairFileTest {
@@ -132,7 +132,7 @@ class PasswordEncryptedKeyPairFileTest {
       file = dir.resolve("ca.keypair.enc");
     }
 
-    /** Loads the file the way CertifiedNodeIdFactory.main does. */
+    /** Loads the file the way RingCertificate.main does. */
     private KeyPair load(String password) throws IOException {
       return SecurityUtils.decodeKeyPair(SecurityUtils.decryptWithPassword(readGzippedBytes(file), password.toCharArray()));
     }
