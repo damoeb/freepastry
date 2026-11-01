@@ -63,7 +63,9 @@ public class NonAggregate implements PastContent {
 
   @Override
   public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
-    content = content.checkInsert(id, ((NonAggregate)existingContent).content);
+    // stored copies are unwrapped by the content deserializer, so the existing content is usually not a NonAggregate
+    PastContent existing = (existingContent instanceof NonAggregate wrapped) ? wrapped.content : existingContent;
+    content = content.checkInsert(id, existing);
     return this;
   }
 
