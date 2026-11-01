@@ -38,6 +38,7 @@ advised of the possibility of such damage.
 package rice.p2p.util;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -264,55 +265,38 @@ public class ImmutableSortedMap<K, V> implements SortedMap<K, V> {
   }
 
   /**
-   * Returns a set view of the keys contained in this map.  The set is
-   * backed by the map, so changes to the map are reflected in the set, and
-   * vice-versa.  If the map is modified while an iteration over the set is
-   * in progress, the results of the iteration are undefined.  The set
-   * supports element removal, which removes the corresponding mapping from
-   * the map, via the <code>Iterator.remove</code>, <code>Set.remove</code>,
-   * <code>removeAll</code> <code>retainAll</code>, and <code>clear</code> operations.
-   * It does not support the add or <code>addAll</code> operations.
+   * Returns an unmodifiable set view of the keys contained in this map.  The set is
+   * backed by the map, so changes to the map are reflected in the set.  Every
+   * attempt to modify the set throws an <code>UnsupportedOperationException</code>.
    *
    * @return a set view of the keys contained in this map.
    */
   @Override
   public Set<K> keySet() {
-    return map.keySet();
+    return Collections.unmodifiableSet(map.keySet());
   }
 
   /**
-   * Returns a collection view of the values contained in this map.  The
-   * collection is backed by the map, so changes to the map are reflected in
-   * the collection, and vice-versa.  If the map is modified while an
-   * iteration over the collection is in progress, the results of the
-   * iteration are undefined.  The collection supports element removal,
-   * which removes the corresponding mapping from the map, via the
-   * <code>Iterator.remove</code>, <code>Collection.remove</code>,
-   * <code>removeAll</code>, <code>retainAll</code> and <code>clear</code> operations.
-   * It does not support the add or <code>addAll</code> operations.
+   * Returns an unmodifiable collection view of the values contained in this map.  The
+   * collection is backed by the map, so changes to the map are reflected in it.  Every
+   * attempt to modify the collection throws an <code>UnsupportedOperationException</code>.
    *
    * @return a collection view of the values contained in this map.
    */
   @Override
   public Collection<V> values() {
-    return map.values();
+    return Collections.unmodifiableCollection(map.values());
   }
 
   /**
-   * Returns a set view of the mappings contained in this map.  Each element
-   * in the returned set is a {@link Map.Entry}.  The set is backed by the
-   * map, so changes to the map are reflected in the set, and vice-versa.
-   * If the map is modified while an iteration over the set is in progress,
-   * the results of the iteration are undefined.  The set supports element
-   * removal, which removes the corresponding mapping from the map, via the
-   * <code>Iterator.remove</code>, <code>Set.remove</code>, <code>removeAll</code>,
-   * <code>retainAll</code> and <code>clear</code> operations.  It does not support
-   * the <code>add</code> or <code>addAll</code> operations.
+   * Returns an unmodifiable set view of the mappings contained in this map.  The set is
+   * backed by the map, so changes to the map are reflected in it.  Every attempt to modify
+   * the set or one of its entries throws an <code>UnsupportedOperationException</code>.
    *
    * @return a set view of the mappings contained in this map.
    */
   @Override
   public Set<Map.Entry<K, V>> entrySet() {
-    return map.entrySet();
+    return Collections.unmodifiableMap(map).entrySet();
   }
 }
