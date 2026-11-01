@@ -48,6 +48,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.Topic;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * The ack for a subscribe message.
@@ -153,7 +154,7 @@ public final class SubscribeAckMessage extends AbstractSubscribeMessage {
   private SubscribeAckMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
 
-    int numTopics = buf.readInt();
+    int numTopics = WireLengths.readInt(buf, 2);
     topics = new ArrayList<Topic>(numTopics);
     pathsToRoot = new ArrayList<List<Id>>(numTopics);
 
@@ -161,7 +162,7 @@ public final class SubscribeAckMessage extends AbstractSubscribeMessage {
     for (int i = 0; i < numTopics; i++) {
       topics.add(new Topic(buf, endpoint));
 
-      int length = buf.readInt();
+      int length = WireLengths.readInt(buf, 2);
       List<Id> pathToRoot = new ArrayList<Id>(length);
       for (int j = 0; j < length; j++) {
         pathToRoot.add(endpoint.readId(buf, buf.readShort()));

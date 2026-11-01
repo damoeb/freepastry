@@ -47,6 +47,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.scribe.Topic;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * The unsubscribe message.
@@ -99,7 +100,7 @@ public record UnsubscribeMessage(NodeHandle source, List<Topic> topics) implemen
     NodeHandle source = null;
     if (buf.readBoolean())
       source = endpoint.readNodeHandle(buf);
-    int numTopics = buf.readInt();
+    int numTopics = WireLengths.readInt(buf, 2);
     List<Topic> topics = new ArrayList<Topic>(numTopics);
     for (int i = 0; i < numTopics; i++) {
       topics.add(new Topic(buf, endpoint));

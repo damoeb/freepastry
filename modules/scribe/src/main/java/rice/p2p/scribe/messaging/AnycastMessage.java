@@ -48,6 +48,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * The anycast message.
@@ -275,12 +276,12 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
     initialRequestor = endpoint.readNodeHandle(buf);
 
     toVisit = new ArrayDeque<NodeHandle>();
-    int toVisitLength = buf.readInt();
+    int toVisitLength = WireLengths.readInt(buf, 1);
     for (int i = 0; i < toVisitLength; i++) {
       toVisit.addLast(endpoint.readNodeHandle(buf));
     }
 
-    int visitedLength = buf.readInt();
+    int visitedLength = WireLengths.readInt(buf, 1);
     visited = new ArrayList<NodeHandle>(visitedLength);
     for (int i = 0; i < visitedLength; i++) {
       visited.add(endpoint.readNodeHandle(buf));

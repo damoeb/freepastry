@@ -50,6 +50,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.Topic;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * The subscribe message.
@@ -169,7 +170,7 @@ public final class SubscribeMessage extends AnycastMessage {
     subscriber = endpoint.readNodeHandle(buf);
 
 
-    int numTopics = buf.readInt();
+    int numTopics = WireLengths.readInt(buf, 2);
     topics = new ArrayList<Topic>(numTopics);
 
     // the first topic is the super's topic

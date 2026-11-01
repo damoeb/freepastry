@@ -40,6 +40,7 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.ScribeContent;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * This represents data sent through scribe for splitstream
@@ -72,9 +73,7 @@ public record SplitStreamContent(byte[] data) implements ScribeContent {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        byte[] data = new byte[buf.readInt()];
-        buf.read(data);
-        return data;
+        return WireLengths.readBytes(buf);
       default:
         throw new IOException("Unknown Version: "+version);
     }

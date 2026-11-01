@@ -46,6 +46,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.scribe.Topic;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * The ack for a subscribe message.
@@ -103,7 +104,7 @@ public final class SubscribeFailedMessage extends AbstractSubscribeMessage {
   private SubscribeFailedMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
 
-    int numTopics = buf.readInt();
+    int numTopics = WireLengths.readInt(buf, 2);
     topics = new ArrayList<Topic>(numTopics);
 
     // note: make sure to start at 1 so we don't overflow
