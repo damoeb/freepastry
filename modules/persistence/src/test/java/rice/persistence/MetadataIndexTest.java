@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.SortedMap;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.AfterEach;
@@ -147,5 +148,19 @@ class MetadataIndexTest {
 
     assertEquals(1, actual.get(low));
     assertEquals(2, actual.get(high));
+  }
+
+  @Test
+  void keyMapIsASnapshot() throws IOException {
+    Id first = storedId("1");
+    MetadataIndex index = newIndex();
+    index.put(first, 1, dir);
+
+    SortedMap<Id, Object> snapshot = index.keyMap();
+    SortedMap<Id, Object> subSnapshot = index.keySubMap(first, storedId("9"));
+    index.put(storedId("2"), 2, dir);
+
+    assertEquals(1, snapshot.size());
+    assertEquals(1, subSnapshot.size());
   }
 }

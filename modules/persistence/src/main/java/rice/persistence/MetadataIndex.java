@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -143,7 +144,7 @@ final class MetadataIndex {
    */
   SortedMap<Id, Object> keyMap() {
     synchronized (metadata) {
-      return new ImmutableSortedMap<Id, Object>(metadata.keyMap());
+      return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keyMap()));
     }
   }
 
@@ -152,7 +153,7 @@ final class MetadataIndex {
    */
   SortedMap<Id, Object> keySubMap(Id ccw, Id cw) {
     synchronized (metadata) {
-      return new ImmutableSortedMap<Id, Object>(metadata.keySubMap(ccw, cw));
+      return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keySubMap(ccw, cw)));
     }
   }
 
