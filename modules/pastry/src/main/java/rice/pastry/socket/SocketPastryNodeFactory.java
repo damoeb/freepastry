@@ -908,6 +908,13 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         }
       }
 
+      // every boot address was this node itself: nobody else to join, so start a new ring
+      if (tempBootHandles.isEmpty()) {
+        logger.info("boot() calling pn.doneNode(empty), all boot addresses are self");
+        bootAsBootstrap();
+        return;
+      }
+
       // this is the end of the task, but we have to declare it here
       final Continuation<Collection<NodeHandle>, Exception> beginPns = new Continuation<Collection<NodeHandle>, Exception>(){
         boolean done = false; // to make sure this is only called once
