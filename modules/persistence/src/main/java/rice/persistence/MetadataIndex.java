@@ -46,7 +46,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.Function;
@@ -205,16 +204,13 @@ final class MetadataIndex {
     for (int i=0; i<files.length; i++) {
       HashMap<Id, Object> map = new HashMap<Id, Object>();
       IdRange range = rangeForDirectory.apply(files[i]);
-      Iterator<Id> keys = null;
 
-      if (range.getCCWId().compareTo(range.getCWId()) <= 0)
-        keys = metadata.keySubMap(range.getCCWId(), range.getCWId()).keySet().iterator();
-      else
-        keys = metadata.keyTailMap(range.getCCWId()).keySet().iterator();
-
-      while (keys.hasNext()) {
-        Id next = keys.next();
-        map.put(next, metadata.get(next));
+      if (range.getCCWId().compareTo(range.getCWId()) <= 0) {
+        map.putAll(metadata.keySubMap(range.getCCWId(), range.getCWId()));
+      } else {
+        /* the range wraps around: it holds the keys from ccw up and the keys below cw */
+        map.putAll(metadata.keyTailMap(range.getCCWId()));
+        map.putAll(metadata.keyMap().headMap(range.getCWId()));
       }
 
       try {

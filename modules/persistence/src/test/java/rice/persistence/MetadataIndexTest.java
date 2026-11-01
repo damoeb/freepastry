@@ -119,4 +119,33 @@ class MetadataIndexTest {
   void reportsAMissingCacheFile() throws IOException {
     assertEquals(-1L, newIndex().readMetadataFile(dir, rangeForDirectory, prefixOf));
   }
+
+  private Id fullId(String firstHexDigit, String lastHexDigit) throws IOException {
+    Id id = factory.buildIdFromToString(firstHexDigit + "0".repeat(38) + lastHexDigit);
+    Files.createFile(dir.resolve(id.toStringFull()));
+    return id;
+  }
+
+  @Test
+  void writesBothEndsOfAWrappingRange() throws IOException {
+    Id low = fullId("1", "1");
+    Id middle = fullId("8", "0");
+    Id high = fullId("F", "1");
+    IdRange wrapping = factory.buildIdRange(fullId("E", "0"), fullId("2", "0"));
+    if (! wrapping.containsId(low)) {
+      wrapping = factory.buildIdRange(wrapping.getCWId(), wrapping.getCCWId());
+    }
+    assertTrue(wrapping.containsId(low) && wrapping.containsId(high) && ! wrapping.containsId(middle));
+    IdRange range = wrapping;
+    MetadataIndex written = newIndex();
+    written.put(low, 1, dir);
+    written.put(high, 2, dir);
+
+    written.writeDirty(d -> range);
+    MetadataIndex actual = newIndex();
+    actual.readMetadataFile(dir, d -> range, d -> "");
+
+    assertEquals(1, actual.get(low));
+    assertEquals(2, actual.get(high));
+  }
 }
