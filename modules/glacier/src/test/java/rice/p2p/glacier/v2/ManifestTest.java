@@ -29,6 +29,13 @@ class ManifestTest {
   }
 
   @Test
+  void toStringFullOfAnUnsignedManifestDoesNotThrow() {
+    Manifest manifest = new Manifest(new byte[HashUtils.LENGTH], new byte[][] {new byte[HashUtils.LENGTH]}, 0);
+
+    assertTrue(manifest.toStringFull().contains("signature  = [null]"));
+  }
+
+  @Test
   void rejectsAFragmentHashOfTheOldSha1Length() {
     Fragment fragment = new Fragment(8);
     byte[] sha1Sized = Arrays.copyOf(HashUtils.hash(fragment.getPayload()), 20);

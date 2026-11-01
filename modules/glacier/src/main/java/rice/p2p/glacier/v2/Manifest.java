@@ -116,6 +116,9 @@ public class Manifest {
 
   private static String dump(byte[] data, boolean linebreak) {
     final String hex = "0123456789ABCDEF";
+    if (data == null)
+      return "null";
+
     String result = "";
 
     for (int i=0; i<data.length; i++) {
