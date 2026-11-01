@@ -126,7 +126,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     DATAGRAM_SEND_BUFFER_SIZE = config.datagramSendBufferSize();
 
     // allocate enough bytes to read data
-    this.readBuffer = ByteBuffer.allocateDirect(DATAGRAM_SEND_BUFFER_SIZE);
+    this.readBuffer = ByteBuffer.allocateDirect(DATAGRAM_RECEIVE_BUFFER_SIZE);
 
     try {
       // bind to the appropriate port
