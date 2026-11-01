@@ -84,7 +84,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
       return switch (RouteSetMessageType.find(type)) {
         case REQUEST_ROUTE_ROW -> new RequestRouteRow(sender,buf);
         case BROADCAST_ROUTE_ROW -> new BroadcastRouteRow(buf,pn,pn);
-        case null -> null;
+        case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());
       };
     }
   }

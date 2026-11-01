@@ -120,7 +120,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
       return switch (LeafSetMessageType.find(type)) {
         case REQUEST_LEAF_SET -> new RequestLeafSet(sender, buf);
         case BROADCAST_LEAF_SET -> new BroadcastLeafSet(buf, pn);
-        case null -> null;
+        case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());
       };
     }
 

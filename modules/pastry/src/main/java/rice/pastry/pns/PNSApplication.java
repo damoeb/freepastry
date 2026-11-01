@@ -826,7 +826,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
         case LEAF_SET_RESPONSE -> LeafSetResponse.build(buf, thePastryNode, getAddress());
         case ROUTE_ROW_REQUEST -> RouteRowRequest.build(buf, (NodeHandle)sender, getAddress());
         case ROUTE_ROW_RESPONSE -> new RouteRowResponse(buf, thePastryNode, (NodeHandle)sender, getAddress());
-        case null -> null;
+        case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());
       };
     }
 

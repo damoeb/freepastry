@@ -79,7 +79,7 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
 
     Message msg = deserializer.deserialize(buf, type, priority, sender);
     if (msg == null) {
-      logger.atWarn().log(() -> "Deserialized message to null! d:"+deserializer+" a:"+address+" t:"+type+" p:"+priority+" s:"+sender+" b:"+buf);
+      throw new IOException("Deserialized message to null! d:"+deserializer+" a:"+address+" t:"+type+" p:"+priority);
     }
     logger.trace("deserialize():{}", msg);
     return (RawMessage)msg;

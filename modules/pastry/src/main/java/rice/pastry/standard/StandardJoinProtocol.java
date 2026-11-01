@@ -109,7 +109,7 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
         case JOIN_REQUEST -> new JoinRequest(buf,pn, (NodeHandle)sender, pn);
         // read by the subclasses' deserializers
         case CONSISTENT_JOIN, RENDEZVOUS_JOIN_REQUEST -> null;
-        case null -> null;
+        case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());
       };
     }
   }
