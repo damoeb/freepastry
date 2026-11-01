@@ -41,6 +41,23 @@ class GCIdSetTest {
   }
 
   @Test
+  void equalsComparesTheMembersOfNonEmptySets() {
+    Id a = idFactory.buildId("a");
+    Id b = idFactory.buildId("b");
+    GCIdSet left = new GCIdSet(idFactory);
+    GCIdSet right = new GCIdSet(idFactory);
+    left.addId(new GCId(a, 100));
+    right.addId(new GCId(a, 100));
+
+    assertEquals(right, left);
+
+    right.addId(new GCId(b, 100));
+    left.addId(new GCId(idFactory.buildId("c"), 100));
+
+    assertNotEquals(right, left);
+  }
+
+  @Test
   void copyHasItsOwnIdsAndExpirations() {
     Id a = idFactory.buildId("a");
     Id b = idFactory.buildId("b");
