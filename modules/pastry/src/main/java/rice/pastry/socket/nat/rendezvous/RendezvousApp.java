@@ -57,6 +57,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.util.AttachableCancellable;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.messaging.Message;
@@ -91,9 +92,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
           version = buf.readByte();
           if (version == 0) { // version 0
             NodeHandle originalSender = thePastryNode.readNodeHandle(buf);
-            int length = buf.readInt();
-            byte[] msg = new byte[length];
-            buf.read(msg);
+            byte[] msg = WireLengths.readBytes(buf);
             return new ByteBufferMsg(ByteBuffer.wrap(msg),originalSender,priority,getAddress());
           } else {
             throw new IllegalArgumentException("Unknown version for ByteBufferMsg: "+version);
