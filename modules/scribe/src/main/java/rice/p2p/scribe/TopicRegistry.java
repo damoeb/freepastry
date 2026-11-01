@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -350,14 +351,14 @@ final class TopicRegistry {
   Collection<Topic> getTopicsByParent(NodeHandle parent) {
     // handle local node as null or the localHandle
     if (parent == null) parent = localHandle;
-    if (parent.equals(localHandle)) return roots;
+    if (parent.equals(localHandle)) return List.copyOf(roots);
 
     Collection<Topic> topic = allParents.get(parent);
     if (topic == null) {
       return Collections.emptyList();
     }
 
-    return topic;
+    return List.copyOf(topic);
   }
 
   // This returns the topics for which the parameter 'child' is a Scribe tree child of the local node
@@ -370,7 +371,7 @@ final class TopicRegistry {
     if (topic == null) {
       return Collections.emptyList();
     }
-    return topic;
+    return List.copyOf(topic);
   }
 
   @Override
