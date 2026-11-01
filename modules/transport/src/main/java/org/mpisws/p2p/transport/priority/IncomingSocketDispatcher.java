@@ -104,6 +104,10 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
       ctx.logger.debug("Opened BIG Message Socket from {}", s.getIdentifier());
       ctx.entityManagers.apply(s.getIdentifier()).handleBigMsgSocket(s);
       break;
+    default:
+      ctx.logger.warn("Closing socket from {}, unknown socket header:{}", s.getIdentifier(), val);
+      s.close();
+      break;
     }
   }
 
