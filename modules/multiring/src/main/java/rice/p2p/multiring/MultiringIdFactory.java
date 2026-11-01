@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.multiring;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -212,8 +213,9 @@ public class MultiringIdFactory implements IdFactory {
    */
   @Override
   public Id buildIdFromToString(char[] chars, int offset, int length) {
-    Id ring = factory.buildIdFromToString(chars, 1, find(chars, ',')-1);
-    Id normal = factory.buildIdFromToString(chars, 2+find(chars, ','), find(chars, ')') - (2+find(chars, ',')));
+    char[] ringId = Arrays.copyOfRange(chars, offset, offset + length);
+    Id ring = factory.buildIdFromToString(ringId, 1, find(ringId, ',')-1);
+    Id normal = factory.buildIdFromToString(ringId, 2+find(ringId, ','), find(ringId, ')') - (2+find(ringId, ',')));
 
     return RingId.build(ring, normal);
   }
