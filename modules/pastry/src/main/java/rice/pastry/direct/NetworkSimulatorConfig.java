@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.direct;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
 import static rice.environment.params.ConfigChecks.positive;
 
 import java.util.OptionalLong;
@@ -54,7 +53,6 @@ import rice.environment.params.Parameters;
  *        if absent or {@code clock}
  * @param maxDiameter {@code pastry_direct_max_diameter}: the diameter of the sphere and euclidean
  *        topologies, in milliseconds of delay
- * @param minDelay {@code pastry_direct_min_delay}: the smallest simulated link delay, in milliseconds
  * @param guaranteeConsistency {@code pastry_direct_guarantee_consistency}: use the periodic, consistent
  *        leaf set protocol instead of the standard one
  */
@@ -62,18 +60,16 @@ public record NetworkSimulatorConfig(
     boolean useOwnRandom,
     OptionalLong randomSeed,
     int maxDiameter,
-    int minDelay,
     boolean guaranteeConsistency) {
 
   /**
-   * @throws IllegalArgumentException if maxDiameter is not positive or minDelay is negative
+   * @throws IllegalArgumentException if maxDiameter is not positive
    */
   public static NetworkSimulatorConfig fromParameters(Parameters p) {
     return new NetworkSimulatorConfig(
       p.contains("pastry_direct_use_own_random") && p.getBoolean("pastry_direct_use_own_random"),
       EnvironmentConfig.seed(p, "pastry_direct_random_seed"),
       positive("pastry_direct_max_diameter", p.getInt("pastry_direct_max_diameter")),
-      nonNegative("pastry_direct_min_delay", p.getInt("pastry_direct_min_delay")),
       p.getBoolean("pastry_direct_guarantee_consistency"));
   }
 }
