@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.splitstream;
 
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import rice.environment.Environment;
@@ -101,7 +102,7 @@ public class SplitStreamImpl implements SplitStream {
       return switch (SplitStreamContentType.find(contentType)) {
         case CONTENT -> new SplitStreamContent(buf);
         case SUBSCRIBE_CONTENT -> new SplitStreamSubscribeContent(buf);
-        case null -> throw new IllegalArgumentException("Invalid type:"+contentType);
+        case null -> throw new IOException("Invalid type:"+contentType);
       };
     });
 

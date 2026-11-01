@@ -80,7 +80,7 @@ final class ScribeMessageDeserializer implements MessageDeserializer {
   public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
     ScribeContentDeserializer cd = contentDeserializer.get();
     try {
-      return switch (ScribeMessageType.of(type)) {
+      return switch (ScribeMessageType.find(type)) {
         case ANYCAST -> AnycastMessage.build(buf, endpoint, cd);
         case SUBSCRIBE -> SubscribeMessage.buildSM(buf, endpoint, cd);
         case SUBSCRIBE_ACK -> SubscribeAckMessage.build(buf, endpoint);
@@ -90,6 +90,7 @@ final class ScribeMessageDeserializer implements MessageDeserializer {
         case PUBLISH_REQUEST -> PublishRequestMessage.build(buf, endpoint, cd);
         case UNSUBSCRIBE -> UnsubscribeMessage.build(buf, endpoint);
         case ANYCAST_FAILURE -> AnycastFailureMessage.build(buf, endpoint, cd);
+        case null -> throw new IOException("Unknown type:" + type);
       };
     } catch (IOException e) {
       logger.atError().log(() -> "Exception in deserializer in "+endpoint.toString()+":"+instance+" "+cd+" "+e);
