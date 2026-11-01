@@ -368,7 +368,7 @@ public class RingCertificate {
     protocol = in.readInt();
     port = in.readInt();
     version = in.readLong();
-    bootstraps = new InetSocketAddress[in.readInt()];
+    bootstraps = new InetSocketAddress[readCount(in, MAX_BOOTSTRAPS)];
     for (int i = 0; i < bootstraps.length; i++) {
       bootstraps[i] = readAddress(in);
     }
@@ -409,8 +409,27 @@ public class RingCertificate {
     out.write(bytes);
   }
 
+  /** Most bootstrap addresses a certificate can name. */
+  static final int MAX_BOOTSTRAPS = 1024;
+
+  /** Longest id, key or signature, in bytes, a certificate can hold. */
+  static final int MAX_FIELD_BYTES = 64 * 1024;
+
+  /**
+   * Reads a count that the certificate's author chose, before it is used to allocate.
+   *
+   * @throws IOException if the count is negative or more than {@code max}
+   */
+  private static int readCount(DataInput in, int max) throws IOException {
+    int count = in.readInt();
+    if (count < 0 || count > max) {
+      throw new IOException("Invalid length " + count + " in ring certificate (max: " + max + ")");
+    }
+    return count;
+  }
+
   private static byte[] readBytes(DataInput in) throws IOException {
-    byte[] bytes = new byte[in.readInt()];
+    byte[] bytes = new byte[readCount(in, MAX_FIELD_BYTES)];
     in.readFully(bytes);
     return bytes;
   }

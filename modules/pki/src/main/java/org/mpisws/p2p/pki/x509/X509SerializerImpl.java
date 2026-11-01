@@ -46,6 +46,7 @@ import java.security.cert.X509Certificate;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public class X509SerializerImpl implements X509Serializer {
 
@@ -71,8 +72,7 @@ public class X509SerializerImpl implements X509Serializer {
   @Override
   public X509Certificate deserialize(InputBuffer buf) throws IOException {
     try {
-      byte[] encoded = new byte[buf.readInt()];
-      buf.read(encoded);
+      byte[] encoded = WireLengths.readBytes(buf);
       ByteArrayInputStream bytearrayinputstream = new ByteArrayInputStream(encoded);
       return (X509Certificate)certificatefactory.generateCertificate(bytearrayinputstream);
     } catch (CertificateException ce) {
