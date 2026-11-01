@@ -91,6 +91,7 @@ public class SourceRouteManagerImpl<Identifier> implements
   // the default distance, which is used before a ping
   public static final int DEFAULT_PROXIMITY = 60*60*1000;
   private final int CHECK_LIVENESS_THROTTLE = 5000;
+  private final SourceRouteManagerConfig config;
 
   TransportLayer<SourceRoute<Identifier>, ByteBuffer> tl;
   LivenessProvider<SourceRoute<Identifier>> livenessProvider;
@@ -133,7 +134,7 @@ public class SourceRouteManagerImpl<Identifier> implements
     livenessProvider.addLivenessListener(this);
 
     addressManagers = new HashMap<Identifier, AddressManager>();
-    SourceRouteManagerConfig.fromParameters(environment.getParameters()); // fails fast on invalid parameters
+    this.config = SourceRouteManagerConfig.fromParameters(environment.getParameters());
     hardLinks = new HashSet<AddressManager>();
     livenessListeners = new ArrayList<LivenessListener<Identifier>>();
   }
@@ -151,6 +152,20 @@ public class SourceRouteManagerImpl<Identifier> implements
       @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     return getAddressManager(i).sendMessage(m, deliverAckToMe, options);
+  }
+
+  /**
+   * Asks the strategy for alternate routes to the address, at most numSourceRouteAttempts of them.
+   */
+  protected Collection<SourceRoute<Identifier>> getSourceRoutes(Identifier address) {
+    return limit(strategy.getSourceRoutes(address), config.numSourceRouteAttempts());
+  }
+
+  static <T> Collection<T> limit(Collection<T> routes, int max) {
+    if (routes.size() <= max) {
+      return routes;
+    }
+    return new ArrayList<T>(routes).subList(0, max);
   }
 
   /**
@@ -595,7 +610,7 @@ public class SourceRouteManagerImpl<Identifier> implements
           boolean ret = false;
           if (livenessProvider.checkLiveness(srFactory.getSourceRoute(getLocalIdentifier(), address), options)) ret = true; // only checks the direct route
 
-          Collection<SourceRoute<Identifier>> newroutes = strategy.getSourceRoutes(address);
+          Collection<SourceRoute<Identifier>> newroutes = getSourceRoutes(address);
           for (SourceRoute<Identifier> route : newroutes) {
             if (livenessProvider.checkLiveness(route, options)) ret = true;
           }
@@ -702,7 +717,7 @@ public class SourceRouteManagerImpl<Identifier> implements
       if ((best == null) || deadRoute.equals(best)) {
         best = null;
 
-        Collection<SourceRoute<Identifier>> newroutes = strategy.getSourceRoutes(address);
+        Collection<SourceRoute<Identifier>> newroutes = getSourceRoutes(address);
         this.routes.addAll(newroutes);
         // if we found a route, or are probing one, this goes true, otherwise we go dead
         boolean found = false;

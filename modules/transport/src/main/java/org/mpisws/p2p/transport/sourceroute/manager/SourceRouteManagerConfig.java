@@ -43,19 +43,16 @@ import rice.environment.params.Parameters;
 /**
  * The tuning parameters of a {@link SourceRouteManagerImpl}.
  *
- * @param pingThrottle {@code pastry_socket_srm_ping_throttle}: the minimum time between pings of the
- *        same address, in milliseconds
  * @param numSourceRouteAttempts {@code pastry_socket_srm_num_source_route_attempts}: the number of
  *        source routes tried when the direct route fails; 0 disables source routing
  */
-public record SourceRouteManagerConfig(long pingThrottle, int numSourceRouteAttempts) {
+public record SourceRouteManagerConfig(int numSourceRouteAttempts) {
 
   /**
-   * @throws IllegalArgumentException if a value is negative
+   * @throws IllegalArgumentException if the value is negative
    */
   public static SourceRouteManagerConfig fromParameters(Parameters p) {
     return new SourceRouteManagerConfig(
-      nonNegative("pastry_socket_srm_ping_throttle", p.getLong("pastry_socket_srm_ping_throttle")),
       nonNegative("pastry_socket_srm_num_source_route_attempts", p.getInt("pastry_socket_srm_num_source_route_attempts")));
   }
 }

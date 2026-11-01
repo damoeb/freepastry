@@ -76,7 +76,6 @@ pastry_socket_writer_max_msg_size = 20480
 pastry_socket_writer_max_big_msg_size = 4194304
 # the time before it will retry a route that was already found dead
 pastry_socket_srm_check_dead_throttle = 300000
-pastry_socket_srm_ping_throttle = 30000
 pastry_socket_srm_default_rto = 3000
 pastry_socket_srm_rto_ubound = 10000
 pastry_socket_srm_rto_lbound = 50
