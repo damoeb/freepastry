@@ -309,13 +309,19 @@ The files outside `rice.persistence` are raw too: `RingCertificate` writes certi
 
 ## Cryptography
 
-`rice.p2p.util.SecurityUtils` and `rice.p2p.util.HashUtils` hold the primitives, all from the JDK or Bouncy Castle:
+`rice.p2p.util.SecurityUtils` and `rice.p2p.util.HashUtils` hold the primitives, from the JDK providers; Bouncy Castle is passed explicitly (`SecurityUtils.BOUNCY_CASTLE`) where the JDK has no equivalent, such as X.509 certificate generation, and is never registered as a JVM-wide provider:
 
 - Hashes: SHA-256 (`HashUtils.hash()`). Ids built from data (`PastryIdFactory.buildId()`) are SHA-256 truncated to 160 bits.
 - Symmetric encryption: AES-256-GCM (`encryptSymmetric()`/`decryptSymmetric()`). GCM is authenticated: a wrong key or any change to the data makes decryption throw a `SecurityException`.
 - MACs: HMAC-SHA256 (`hmac()`).
 - Asymmetric encryption: RSA-OAEP with SHA-256 for the hash and MGF1. Signatures: SHA256withRSA.
 - Password-encrypted files (`encryptWithPassword()`/`decryptWithPassword()`): a random salt, then AES-256-GCM under a key PBKDF2-HMAC-SHA256 derives from the password. The CA key pair (`ca.keypair.enc`, read by `CertifiedNodeIdFactory` and `RingCertificate`) and the ring key pairs (`RingCertificate.readKeyPair()`) are stored this way.
+
+### Trust model
+
+The default socket stack (above) is for trusted networks only. It has no authentication and no encryption: anyone who can reach a node's port can join the ring, claim any node id (spoof a node), read the traffic, or fill a node's routing state with colluding identities (eclipse it). `CertifiedNodeIdFactory` does not change this: it only keeps a node's id stable across restarts and does not verify it.
+
+Untrusted deployments need `SSLTransportLayerImpl` plus node ids that are bound to certificates. The layer sits above the source-route layer and runs mutual TLS on TCP sockets, with the node's keystore as key and trust store (create them with `CAToolImpl`). It reports the peer certificate's subject in the socket options as `SSLTransportLayer.OPTION_CERT_SUBJECT`. A `BindStrategy` returned from the overridden `getBindStrategy()` then accepts a node handle only if its id equals that subject, which is what stops id spoofing. `rice.tutorial.ssl.DistTutorial` is the working example. UDP datagrams are outside TLS and stay unauthenticated.
 
 ## Configuration
 

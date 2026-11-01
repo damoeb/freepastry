@@ -164,7 +164,18 @@ Everything on the wire and on disk is raw-serialized; there is no Java serializa
 
 ## Cryptography
 
-`rice.p2p.util.SecurityUtils` and `HashUtils` provide the primitives: AES-256-GCM for symmetric encryption, SHA-256 for hashes and ids, HMAC-SHA256, RSA-OAEP with SHA-256 for asymmetric encryption, and SHA256withRSA signatures. Password-encrypted key pair files (the CA and ring key pairs) derive their key with PBKDF2-HMAC-SHA256.
+`rice.p2p.util.SecurityUtils` and `HashUtils` provide the primitives: AES-256-GCM for symmetric encryption, SHA-256 for hashes and ids, HMAC-SHA256, RSA-OAEP with SHA-256 for asymmetric encryption, and SHA256withRSA signatures. Password-encrypted key pair files (the CA and ring key pairs) derive their key with PBKDF2-HMAC-SHA256. These use the JDK providers; Bouncy Castle is used explicitly (`SecurityUtils.BOUNCY_CASTLE`) for X.509 certificate generation and is not registered as a JVM-wide provider.
+
+### Trusted networks only, by default
+
+The default socket transport does no authentication or encryption. Use it only on trusted networks: anyone who can reach a node's port can join the ring, claim any node id (spoof a node), read the traffic, or surround a node with colluding identities (eclipse it). `CertifiedNodeIdFactory` only keeps a node's id stable across restarts; it does not verify the id against anything.
+
+For untrusted networks, insert `org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl` (mutual TLS for the TCP sockets) and bind node ids to certificates:
+
+1. Create a CA and one PKCS12 keystore per node with `org.mpisws.p2p.pki.x509.CAToolImpl` (see its `main` for the `-ca`, `-cn`, `-p` and `-store` options). Name each node's certificate after its node id.
+2. Subclass `SocketPastryNodeFactory`, override `getSourceRouteTransportLayer()` to wrap the default layer in an `SSLTransportLayerImpl` with the node's keystore and truststore, and override `getBindStrategy()` to accept a node handle only if its id equals the certificate subject (`SSLTransportLayer.OPTION_CERT_SUBJECT`). `rice.tutorial.ssl.DistTutorial` does exactly this.
+
+TLS covers sockets only: UDP datagrams (pings and other `TRANSPORT_TYPE_DATAGRAM` messages) stay unauthenticated and unencrypted. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#cryptography).
 
 ## Applications
 
