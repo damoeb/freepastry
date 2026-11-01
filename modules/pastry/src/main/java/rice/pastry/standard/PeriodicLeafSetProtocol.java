@@ -140,7 +140,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     if (config.useOwnRandom()) {
       if (config.randomSeed().isPresent()) {
         this.random = new SimpleRandomSource(config.randomSeed().getAsLong(), ln.getEnvironment().getLogManager(),
-            "socket");
+            "periodic_leaf_set");
       } else {
         this.random = new SimpleRandomSource(ln.getEnvironment().getLogManager(), "periodic_leaf_set");
       }
