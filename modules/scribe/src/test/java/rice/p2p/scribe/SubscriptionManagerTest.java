@@ -90,4 +90,20 @@ class SubscriptionManagerTest {
 
     assertEquals(1, successes.size());
   }
+
+  @Test
+  void replacedParentIsUnsubscribedOnce() {
+    Topic a = ScribeTestSupport.topic(1);
+    Topic b = ScribeTestSupport.topic(2);
+    Handle oldParent = new Handle(3);
+    int id = subscribe(new ArrayList<>(List.of(a, b)));
+    for (Topic t : List.of(a, b)) registry.create(t).setParent(oldParent, new ArrayList<>());
+
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a, b)), emptyPaths(2), id));
+
+    List<Routed> unsubscribes = unsubscribes();
+    assertEquals(1, unsubscribes.size());
+    assertEquals(oldParent, unsubscribes.get(0).hint());
+    assertEquals(List.of(a, b), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
+  }
 }

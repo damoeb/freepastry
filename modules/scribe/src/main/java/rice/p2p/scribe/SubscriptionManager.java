@@ -495,9 +495,10 @@ final class SubscriptionManager {
           }
         }
       }
-      for(NodeHandle source : needToUnsubscribe.keySet()) {
-        endpoint.route(null, new UnsubscribeMessage(localHandle, needToUnsubscribe.get(source)), source);
-      }
+    }
+
+    for (NodeHandle source : needToUnsubscribe.keySet()) {
+      endpoint.route(null, new UnsubscribeMessage(localHandle, needToUnsubscribe.get(source)), source);
     }
   }
 
