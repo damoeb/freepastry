@@ -47,6 +47,7 @@ package rice.persistence;
  */
 import java.util.HashMap;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 import rice.Continuation;
 import rice.p2p.commonapi.Id;
@@ -287,7 +288,7 @@ public class MemoryStorage implements Storage {
     else if (range.getCCWId().equals(range.getCWId()))
       return scanMetadata();
     else
-      return new ImmutableSortedMap<Id, Object>(metadata.keySubMap(range.getCCWId(), range.getCWId()));
+      return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keySubMap(range.getCCWId(), range.getCWId())));
   }
 
   /**
@@ -298,7 +299,7 @@ public class MemoryStorage implements Storage {
    */
   @Override
   public SortedMap<Id, Object> scanMetadata() {
-    return new ImmutableSortedMap<Id, Object>(metadata.keyMap());
+    return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keyMap()));
   }
 
   /**
