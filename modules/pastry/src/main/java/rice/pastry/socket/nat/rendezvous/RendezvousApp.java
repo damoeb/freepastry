@@ -87,7 +87,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         byte version;
         switch (RendezvousMessageType.find(type)) {
         case null:
-          throw new IllegalArgumentException("Unknown type: "+type);
+          throw new IOException("Unknown type: "+type);
         case BYTE_BUFFER:
           version = buf.readByte();
           if (version == 0) { // version 0
@@ -95,7 +95,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
             byte[] msg = WireLengths.readBytes(buf);
             return new ByteBufferMsg(ByteBuffer.wrap(msg),originalSender,priority,getAddress());
           } else {
-            throw new IllegalArgumentException("Unknown version for ByteBufferMsg: "+version);
+            throw new IOException("Unknown version for ByteBufferMsg: "+version);
           }
         case PILOT_FORWARD:
           version = buf.readByte();
@@ -104,7 +104,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
             ByteBufferMsg subMsg = (ByteBufferMsg)deserialize(buf, RendezvousMessageType.BYTE_BUFFER.id(), priority, sender);
             return new PilotForwardMsg(getAddress(), subMsg, target);
           } else {
-            throw new IllegalArgumentException("Unknown version for PilotForwardMsg: "+version);
+            throw new IOException("Unknown version for PilotForwardMsg: "+version);
           }
         case OPEN_CHANNEL:
           version = buf.readByte();
@@ -114,7 +114,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
             int uid = buf.readInt();
             return new OpenChannelMsg(getAddress(), rendezvous, source, uid);
           } else {
-            throw new IllegalArgumentException("Unknown version for OpenChannelMsg: "+version);
+            throw new IOException("Unknown version for OpenChannelMsg: "+version);
           }
         }
       }

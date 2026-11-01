@@ -54,4 +54,18 @@ class RendezvousAppDeserializerTest {
     assertThrows(IOException.class,
         () -> target.deserialize(buf, RendezvousMessageType.BYTE_BUFFER.id(), 0, null));
   }
+
+  @Test
+  void rejectsAnUnknownTypeWithAnIOException() {
+    assertThrows(IOException.class,
+        () -> target.deserialize(new SimpleInputBuffer(new byte[0]), (short) 12345, 0, null));
+  }
+
+  @Test
+  void rejectsAnUnknownByteBufferVersionWithAnIOException() {
+    SimpleInputBuffer buf = new SimpleInputBuffer(new byte[] {7});
+
+    assertThrows(IOException.class,
+        () -> target.deserialize(buf, RendezvousMessageType.BYTE_BUFFER.id(), 0, null));
+  }
 }
