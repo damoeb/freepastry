@@ -115,7 +115,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
             int uid = buf.readInt();
             return new OpenChannelMsg(getAddress(), rendezvous, source, uid);
           } else {
-            throw new IllegalArgumentException("Unknown version for PilotForwardMsg: "+version);
+            throw new IllegalArgumentException("Unknown version for OpenChannelMsg: "+version);
           }
         }
       }
