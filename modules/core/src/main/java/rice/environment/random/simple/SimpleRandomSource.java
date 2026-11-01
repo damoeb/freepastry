@@ -40,7 +40,9 @@ advised of the possibility of such damage.
 package rice.environment.random.simple;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.Random;
 
 import org.jspecify.annotations.Nullable;
@@ -80,14 +82,21 @@ public class SimpleRandomSource implements RandomSource {
       // a second, then there is only 100 different numbers to seed the generator with
       // -Jeff
       long time = System.currentTimeMillis();
+      // the interface addresses are read without a name lookup: InetAddress.getLocalHost() can block for seconds
       try {
-        byte[] foo = InetAddress.getLocalHost().getAddress();
-        for (int ctr = 0; ctr < foo.length; ctr++) {
-          int i = (int)foo[ctr];
-          i <<= (ctr*8);
-          time ^= i;
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces != null && interfaces.hasMoreElements()) {
+          Enumeration<InetAddress> addresses = interfaces.nextElement().getInetAddresses();
+          while (addresses.hasMoreElements()) {
+            byte[] foo = addresses.nextElement().getAddress();
+            for (int ctr = 0; ctr < foo.length; ctr++) {
+              int i = (int)foo[ctr];
+              i <<= (ctr*8);
+              time ^= i;
+            }
+          }
         }
-      } catch (UnknownHostException ignored) {
+      } catch (SocketException ignored) {
         // if there is no NIC, screw it, this is really unlikely anyway
       }
       init(time, manager, instance);
