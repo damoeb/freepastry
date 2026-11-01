@@ -184,15 +184,17 @@ public class PastryIdFactory implements IdFactory {
   }
 
   /**
-   * Creates an IdRange given the CW and CCW ids.
+   * Creates an IdRange given its two ends. The arguments are in the order of the IdRange constructor and of every
+   * caller: the counterclockwise end first, then the clockwise end (the IdFactory interface names them the other way
+   * round).
    *
-   * @param cw The clockwise Id
-   * @param ccw The counterclockwise Id
+   * @param ccw The counterclockwise Id, the inclusive start of the range
+   * @param cw The clockwise Id, the exclusive end of the range
    * @return An IdRange with the appropriate delimiters.
    */
   @Override
-  public IdRange buildIdRange(Id cw, Id ccw) {
-    return new rice.pastry.IdRange((rice.pastry.Id) cw, (rice.pastry.Id) ccw);
+  public IdRange buildIdRange(Id ccw, Id cw) {
+    return new rice.pastry.IdRange((rice.pastry.Id) ccw, (rice.pastry.Id) cw);
   }
 
   /**
