@@ -264,6 +264,9 @@ public class NetworkInfoTransportLayer implements
               try {
                 ArrayList<InetSocketAddress> ret = new ArrayList<InetSocketAddress>();
                 byte numAddrs = sib.readByte();
+                if (numAddrs < 0 || numAddrs > MAX_EXTERNAL_ADDRESSES) {
+                  throw new IOException("Invalid number of external addresses: " + numAddrs + " (max: " + MAX_EXTERNAL_ADDRESSES + ")");
+                }
                 for (int ctr = 0; ctr < numAddrs; ctr++) {
                   InetSocketAddress addr = addrSerializer.deserialize(sib, null, null);
                   ret.add(addr);
@@ -464,7 +467,7 @@ public class NetworkInfoTransportLayer implements
       for (InetSocketAddress foo : ret) {
         temp.add(foo);
         ctr++;
-        if (ctr > MAX_EXTERNAL_ADDRESSES) break;
+        if (ctr >= MAX_EXTERNAL_ADDRESSES) break;
       }
       ret = temp;
     }
