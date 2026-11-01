@@ -523,13 +523,14 @@ final class StorageLayout {
       return (String) prefixes.get(file);
 
     StringBuilder buffer = new StringBuilder();
-    while (! file.equals(appDirectory)) {
-      buffer.insert(0, file.getFileName().toString().replaceAll(ZERO_LENGTH_NAME, ""));
-      file = file.getParent();
+    Path current = file;
+    while (! current.equals(appDirectory)) {
+      buffer.insert(0, current.getFileName().toString().replaceAll(ZERO_LENGTH_NAME, ""));
+      current = current.getParent();
     }
     prefixes.put(file, buffer.toString());
 
-    return getPrefix(file);
+    return buffer.toString();
   }
 
   /**
