@@ -824,8 +824,20 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     }
 
     /**
-     * This method is a bit out of order to make it work on any thread.  The method itself is non-blocking.
-     *
+     * Non-blocking, and may be called on any thread: the boot itself runs on the selector thread, where the join and
+     * the readiness change belong.
+     */
+    @Override
+    public void boot(Collection<InetSocketAddress> bootaddresses) {
+      SelectorManager selector = pn.getEnvironment().getSelectorManager();
+      if (selector.isSelectorThread()) {
+        bootOnSelector(bootaddresses);
+      } else {
+        selector.invoke(() -> bootOnSelector(bootaddresses));
+      }
+    }
+
+    /**
      * The problem is that we don't have any NodeHandles yet, only Ip addresses.  So, we're going to check liveness on a
      * bogus node handle, and when the WrongEpochAddress message comes back, the bogus node will be faulty, but a new
      * node (the real NodeHandle at that address) will come alive.  We can discover this by installing a LivenessListener
@@ -840,8 +852,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
      * Continuation.receiveResult() unregisters the LivenessListener and then calls ProximityNeighborSelection.nearNodes()
      * PNS.nearNodes() calls into the continuation which calls PastryNode.doneNode()
      */
-    @Override
-    public void boot(Collection<InetSocketAddress> bootaddresses_temp) {
+    protected void bootOnSelector(Collection<InetSocketAddress> bootaddresses_temp) {
       logger.debug("boot({})", bootaddresses_temp);
       final Collection<InetSocketAddress> bootaddresses;
       if (bootaddresses_temp == null) {

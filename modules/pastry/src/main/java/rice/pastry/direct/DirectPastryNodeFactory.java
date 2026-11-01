@@ -68,6 +68,7 @@ import rice.pastry.standard.StandardLeafSetProtocol;
 import rice.pastry.transport.NodeHandleAdapter;
 import rice.pastry.transport.TLDeserializer;
 import rice.pastry.transport.TransportPastryNodeFactory;
+import rice.selector.SelectorManager;
 
 /**
  * Pastry node factory for direct connections between nodes (local instances).
@@ -256,8 +257,9 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   @Override
   protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector pns) {
+    // boot() may be called on any thread, but PNS, the join and the readiness change belong on the selector
     return bootaddresses -> {
-      pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {
+      Runnable boot = () -> pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {
         @Override
         public void receiveResult(Collection<NodeHandle> result) {
           logger.info("boot() calling pn.doneNode({})", result);
@@ -267,6 +269,12 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
         public void receiveException(Exception exception) {
         }
       });
+      SelectorManager selector = pn.getEnvironment().getSelectorManager();
+      if (selector.isSelectorThread()) {
+        boot.run();
+      } else {
+        selector.invoke(boot);
+      }
     };
   }
 }
