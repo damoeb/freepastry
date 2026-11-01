@@ -384,6 +384,7 @@ final class TopicRegistry {
    */
   void destroy() {
     topicManagers.clear();
+    roots.clear();
 
     for (NodeHandle handle : allChildren.keySet()) {
       handle.removeNodeHandleListener(livenessListener);
@@ -391,5 +392,7 @@ final class TopicRegistry {
     for (NodeHandle handle : allParents.keySet()) {
       handle.removeNodeHandleListener(livenessListener);
     }
+    allChildren.clear();
+    allParents.clear();
   }
 }

@@ -51,4 +51,17 @@ class TopicRegistryTest {
     assertEquals(1, snapshot.size());
     assertTrue(registry.getTopicsByChild(other).isEmpty());
   }
+
+  @Test
+  void destroyForgetsParentsAndChildren() {
+    Topic a = ScribeTestSupport.topic(1);
+    registry.addToAllParents(a, other);
+    registry.addToAllChildren(a, other);
+
+    registry.destroy();
+
+    assertTrue(registry.getTopicsByParent(other).isEmpty());
+    assertTrue(registry.getTopicsByChild(other).isEmpty());
+    assertEquals(new ArrayList<Topic>(), new ArrayList<>(registry.topics()));
+  }
 }
