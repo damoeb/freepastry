@@ -44,6 +44,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.messaging.PRawMessage;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * Broadcast message for a row from a routing table.
@@ -139,7 +140,7 @@ public final class BroadcastRouteRow extends PRawMessage implements RouteSetProt
     switch(version) {
       case 0:
         fromNode = nhf.readNodeHandle(buf);
-        row = new RouteSet[buf.readByte()];
+        row = new RouteSet[WireLengths.readByte(buf, 1)];
         for (int i=0; i<row.length; i++)
           if (buf.readBoolean()) {
             row[i] = new RouteSet(buf, nhf, localNode);

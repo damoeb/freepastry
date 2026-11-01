@@ -44,6 +44,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.messaging.PRawMessage;
 import rice.pastry.routing.RouteSet;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public final class RouteRowResponse extends PRawMessage implements PNSMessage {
 
@@ -86,7 +87,7 @@ public final class RouteRowResponse extends PRawMessage implements PNSMessage {
       case 0:
         setSender(sender);
         index = buf.readShort();
-        int numRouteSets = buf.readInt();
+        int numRouteSets = WireLengths.readInt(buf, 1);
         row = new RouteSet[numRouteSets];
         for (int i = 0; i<numRouteSets; i++) {
           if (buf.readBoolean()) {
