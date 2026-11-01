@@ -56,7 +56,7 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
   /**
    * The internal handle
    */
-  private NodeHandle handle;
+  private volatile NodeHandle handle;
 
   /**
    * The handle's ringId
