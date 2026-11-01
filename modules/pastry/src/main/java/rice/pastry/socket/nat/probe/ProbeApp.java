@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.socket.nat.probe;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,7 +69,7 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
     setDeserializer((buf, type, priority, sender) -> {
       return switch (ProbeMessageType.find(type)) {
         case PROBE_REQUEST -> ProbeRequestMessage.build(buf, getAddress());
-        case null -> throw new IllegalArgumentException("Unknown type: "+type);
+        case null -> throw new IOException("Unknown type: "+type);
       };
     });
   }
