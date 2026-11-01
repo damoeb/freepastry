@@ -53,6 +53,7 @@ import rice.pastry.pns.PNSApplication;
 import rice.pastry.routing.RouteSetProtocol;
 import rice.pastry.routing.RouterStrategy;
 import rice.pastry.routing.RoutingTable;
+import rice.pastry.standard.ConsistentJoinConfig;
 import rice.pastry.standard.ConsistentJoinProtocol;
 import rice.pastry.standard.PeriodicLeafSetProtocol;
 import rice.pastry.standard.ProximityNeighborSelector;
@@ -156,9 +157,16 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
 
   protected JoinProtocol getJoinProtocol(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, ReadyStrategy lsProtocol) {
     ConsistentJoinProtocol jProtocol = new ConsistentJoinProtocol(pn,
-        pn.getLocalHandle(), routeTable, leafSet, lsProtocol);
+        pn.getLocalHandle(), routeTable, leafSet, lsProtocol, null, getConsistentJoinConfig(pn));
     jProtocol.register();
     return jProtocol;
+  }
+
+  /**
+   * The parameters of the join protocol; can be overridden to differ from the environment's without changing them.
+   */
+  protected ConsistentJoinConfig getConsistentJoinConfig(PastryNode pn) {
+    return ConsistentJoinConfig.fromParameters(pn.getEnvironment().getParameters());
   }
 
   protected TLDeserializer getTLDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {

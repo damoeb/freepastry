@@ -188,6 +188,15 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   public ConsistentJoinProtocol(PastryNode ln, NodeHandle lh,
       RoutingTable rt, LeafSet ls, ReadyStrategy nextReadyStrategy,
       MessageDeserializer md) {
+    this(ln, lh, rt, ls, nextReadyStrategy, md, ConsistentJoinConfig.fromParameters(ln.getEnvironment().getParameters()));
+  }
+
+  /**
+   * As above, with the parameters given instead of read from the environment.
+   */
+  public ConsistentJoinProtocol(PastryNode ln, NodeHandle lh,
+      RoutingTable rt, LeafSet ls, ReadyStrategy nextReadyStrategy,
+      MessageDeserializer md, ConsistentJoinConfig config) {
     super(ln, lh, rt, ls, md != null ? md : new CJPDeserializer(ln));
     gotResponse = new TimerWeakHashMap<NodeHandle, Object>(ln.getEnvironment().getSelectorManager().getTimer(), GOT_RESPONSE_HARD_LINK_MILLIS);
     failed = new HashMap<NodeHandle, FailedTime>();
@@ -195,7 +204,6 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     this.nextReadyStrategy = nextReadyStrategy;
     ls.addNodeSetListener(this);
     ln.addPastryNodeListener(this);
-    ConsistentJoinConfig config = ConsistentJoinConfig.fromParameters(ln.getEnvironment().getParameters());
     MAX_TIME_TO_BE_SCHEDULED = config.maxTimeToBeScheduled();
     RETRY_INTERVAL = config.retryInterval();
     failedNodeExpirationTime = config.failedRetentionTime();

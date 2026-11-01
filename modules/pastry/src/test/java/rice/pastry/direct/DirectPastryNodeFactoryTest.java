@@ -14,6 +14,7 @@ import rice.pastry.PastryNodeFactory;
 import rice.pastry.PastryNodeListener;
 import rice.pastry.standard.RandomNodeIdFactory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,6 +35,15 @@ class DirectPastryNodeFactoryTest {
   @AfterEach
   void tearDown() {
     env.destroy();
+  }
+
+  @Test
+  void leavesTheSharedParametersAlone() {
+    int before = env.getParameters().getInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled");
+
+    new DirectPastryNodeFactory(new RandomNodeIdFactory(env), new EuclideanNetwork<DirectNodeHandle, RawMessage>(env), env);
+
+    assertEquals(before, env.getParameters().getInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled"));
   }
 
   @Test

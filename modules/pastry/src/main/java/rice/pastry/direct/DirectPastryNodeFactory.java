@@ -63,6 +63,7 @@ import rice.pastry.boot.Bootstrapper;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.LeafSetProtocol;
 import rice.pastry.routing.RoutingTable;
+import rice.pastry.standard.ConsistentJoinConfig;
 import rice.pastry.standard.ProximityNeighborSelector;
 import rice.pastry.standard.StandardLeafSetProtocol;
 import rice.pastry.transport.NodeHandleAdapter;
@@ -88,6 +89,8 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   private final Collection<NodeHandleFactoryListener<? super NodeHandle>> listeners =
     new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>();
 
+  private static final int SIMULATED_MAX_TIME_TO_BE_SCHEDULED = 120000;
+
   private final NetworkSimulatorConfig simulatorConfig;
 
   /**
@@ -99,10 +102,20 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
    */
   public DirectPastryNodeFactory(NodeIdFactory nf, NetworkSimulator<DirectNodeHandle,RawMessage> sim, Environment env) {
     super(env);
-    env.getParameters().setInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled",120000);
     nidFactory = nf;
     simulator = sim;
     simulatorConfig = NetworkSimulatorConfig.fromParameters(env.getParameters());
+  }
+
+  /**
+   * A simulated node is scheduled far less often than a real one, so it is given longer before it assumes it was
+   * not scheduled; the environment's parameters are left alone, as they are shared.
+   */
+  @Override
+  protected ConsistentJoinConfig getConsistentJoinConfig(PastryNode pn) {
+    ConsistentJoinConfig config = super.getConsistentJoinConfig(pn);
+    return new ConsistentJoinConfig(SIMULATED_MAX_TIME_TO_BE_SCHEDULED, config.retryInterval(),
+        config.failedRetentionTime(), config.maxFailedToSend(), config.cleanupInterval());
   }
 
   @Override
