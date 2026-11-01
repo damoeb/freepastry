@@ -88,7 +88,7 @@ public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier e
     case PROOF_NONCONFORMANT:
       return new ProofNonconformant<Handle>(buf,handleSerializer,hashSize,signatureSize);
     }
-    throw new IllegalArgumentException("Unknown type:"+type);
+    throw new IOException("Unknown type:"+type);
   }
 
 

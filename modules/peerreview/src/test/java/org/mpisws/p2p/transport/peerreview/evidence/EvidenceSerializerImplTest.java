@@ -71,7 +71,15 @@ public class EvidenceSerializerImplTest {
   public void messageTypeIsNotAnEvidenceType() {
     EvidenceSerializerImpl<Id, Id> target = new EvidenceSerializerImpl<Id, Id>(ID_SERIALIZER, ID_SERIALIZER, 32, 64);
 
-    assertThrows(IllegalArgumentException.class,
+    assertThrows(IOException.class,
         () -> target.deserialize(new SimpleInputBuffer(new byte[128]), (byte) PeerReviewMessageType.USERDATA.id(), false));
+  }
+
+  @Test
+  public void rejectsAnUnknownTypeWithAnIOException() {
+    EvidenceSerializerImpl<Id, Id> target = new EvidenceSerializerImpl<Id, Id>(ID_SERIALIZER, ID_SERIALIZER, 20, 128);
+
+    assertThrows(IOException.class,
+        () -> target.deserialize(new SimpleInputBuffer(new byte[0]), (byte) 99, false));
   }
 }

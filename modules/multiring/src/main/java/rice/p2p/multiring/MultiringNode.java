@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.multiring;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -134,7 +135,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
     scribe.setContentDeserializer((buf, endpoint, type) -> {
       return switch (MultiringContentType.find(type)) {
         case RING_MESSAGE -> new RingMessage(buf, endpoint, endpoints);
-        case null -> throw new IllegalArgumentException("Invalid type:"+type);
+        case null -> throw new IOException("Invalid type:"+type);
       };
     });
 
