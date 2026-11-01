@@ -109,6 +109,7 @@ final class AggregateFlusher {
     List<ObjectDescriptor[]> aggregates = packBins(waitingKeys, deletionVector);
     if (aggregates == null) {
       logger.warn("Waiting list seems to consist entirely of damaged objects -- please remove!");
+      deleteDamagedObjects(deletionVector);
       flushComplete(Boolean.valueOf(true));
       return;
     }
@@ -147,7 +148,7 @@ final class AggregateFlusher {
    *
    * @return the bins, or null if the first bin would be empty because all objects are damaged
    */
-  private List<ObjectDescriptor[]> packBins(IdSet waitingKeys, List<Id> deletionVector) {
+  List<ObjectDescriptor[]> packBins(IdSet waitingKeys, List<Id> deletionVector) {
     List<ObjectDescriptor> currentAggregate = new ArrayList<ObjectDescriptor>();
     List<ObjectDescriptor[]> aggregates = new ArrayList<ObjectDescriptor[]>();
     Iterator<Id> iter = waitingKeys.getIterator();
@@ -201,6 +202,7 @@ final class AggregateFlusher {
       if (mustAddObject) {
         currentAggregate.add(thisObject);
         currentAggregateSize += thisObject.getSize();
+        currentObjectsInAggregate ++;
       } else {
         if (!iter.hasNext())
           break;
