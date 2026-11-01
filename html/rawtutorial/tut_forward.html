@@ -29,9 +29,9 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 A powerful feature of Key Based Routing in the commonAPI is the ability for your application to intercept and modify a routed message along its path to the key.  For example, Past uses this feature to cache popular immutable data along the lookup path.  Scribe uses it to implement anycast.  
 
 <h3>Download the tutorial files:
-<a href="./src/forwarding/DistTutorial.java">DistTutorial.java</a>
-<a href="./src/forwarding/MyApp.java">MyApp.java</a>,
-<a href="./src/forwarding/MyMsg.java">MyMsg.java</a> into a directory called rice/tutorial/forwarding/.</h3>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/forwarding/DistTutorial.java">DistTutorial.java</a>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/forwarding/MyApp.java">MyApp.java</a>,
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/forwarding/MyMsg.java">MyMsg.java</a> into a directory called rice/tutorial/forwarding/.</h3>
 
 <p/>In previous tutorials, you had to implement the <code>forward()</code> method because it is part of the Application interface, but we didn't do anything with it except return true.  In this tutorial, we will add a "passport" to MyMsg.java.  Each hop along ther route will add its NodeHandle to the MyMsg so that the destination can see how the message got there.
 

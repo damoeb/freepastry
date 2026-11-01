@@ -25,8 +25,8 @@ API and software toolkit.</div>
 <a name="SplitStream"><h1>SplitStream</h1></a>
 <h2>Introducing SplitStream.</h2>
 <h3>Download the tutorial files: 
-<a href="./src/splitstream/MySplitStreamClient.java">MySplitStreamClient.java</a>,
-<a href="./src/splitstream/SplitStreamTutorial.java">SplitStreamTutorial.java</a> into a directory called rice/tutorial/splitstream/.</h3>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/splitstream/MySplitStreamClient.java">MySplitStreamClient.java</a>,
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/splitstream/SplitStreamTutorial.java">SplitStreamTutorial.java</a> into a directory called rice/tutorial/splitstream/.</h3>
 
 <p/>SplitStream is an application that utilizes multiple independent scribe trees to provide high-bandwidth content distribution.  For each Channel, SplitStream creates B (FreePastry's routing base, 16 by default) Stripes.   Each Stripe is an independent Scribe tree.  To load-balance upstream bandwidth among the nodes in the Channel, SplitStream attempts to make each node an interior node of only 1 Stripe, and a leaf of all the rest of the Stripes.  Each Stripe delivers data on a best-effort basis.  Due to membership changes and unreliable links and nodes, you should not expect to receive all data that is sent to all stripes.  A typical use case would be to use redundant encoding (such as <a href="http://en.wikipedia.org/wiki/Erasure_codes">Erasure Codes</a>) for the data dissemination.  The coding mechanisms and recommendations on the number of Stripes to use is out of the scope of this tutorial.   
 

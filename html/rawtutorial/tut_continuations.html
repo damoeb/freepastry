@@ -88,7 +88,7 @@ Note the differences between this call and the alternative approach mentioned be
 
 When the result arrives, Past will call <code>command.receiveResult()</code> with the response.  Inside the continuation, you can complete the task that required the lookup.  If instead, an error occurs, Past will call <code>command.receiveException()</code>.  Because the continuation is typed, <code>receiveResult()</code> receives a <code>PastContent</code> and you do not need to cast it.<br/><br/>
 
-Here is an example implementation of a continuation <a href="./src/lesson0a/MyContinuation.java">MyContinuation.java</a>:<br/><br/>
+Here is an example implementation of a continuation <a href="../../modules/tutorials/src/main/java/rice/tutorial/lesson0a/MyContinuation.java">MyContinuation.java</a>:<br/><br/>
 
 First, create the continuation :
 <pre>
@@ -113,7 +113,7 @@ Note that the continuation has 2 methods it must implement: <code>receiveResult(
 
 Here is the code to use our continuation.  Note that this code will not run, because Past and Id have not been initialized.  (You will learn how to do that in the <a href="tut_past.html#past">Past tutorial</a>).<br/><br/>  
 
-Download the code here: <a href="./src/lesson0a/TestContinuation.java">TestContinuation.java</a>
+Download the code here: <a href="../../modules/tutorials/src/main/java/rice/tutorial/lesson0a/TestContinuation.java">TestContinuation.java</a>
 
 <pre>
 public class TestContinuation {
@@ -135,7 +135,7 @@ This code calls lookup with the continuation.  When the result arrives, <code>co
 
 <h3>Anonymous inner classes</h3>
 Java hackers love anonymous inner classes, so here is the same code as an anonymous inner class, rather than a seperate class.  This is handy because it flows a bit more like a typical blocking program.  <i>First do a <code>past.lookup()</code> then <code>System.out.println()</code>.</i><br/><br/>
-Download the code here: <a href="./src/lesson0a/TestContinuationAnon.java">TestContinuationAnon.java</a>
+Download the code here: <a href="../../modules/tutorials/src/main/java/rice/tutorial/lesson0a/TestContinuationAnon.java">TestContinuationAnon.java</a>
 
 <pre>
 public class TestContinuationAnon {

@@ -27,9 +27,9 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 <h2>Serializing your Application's Messages.</h2>
 
 <h3>Download the tutorial files: 
-<a href="./src/rawserialization/DistTutorial.java">DistTutorial.java</a>
-<a href="./src/rawserialization/MyApp.java">MyApp.java</a>,
-<a href="./src/rawserialization/MyMsg.java">MyMsg.java</a> into a directory called rice/tutorial/rawserialization/.</h3>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/rawserialization/DistTutorial.java">DistTutorial.java</a>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/rawserialization/MyApp.java">MyApp.java</a>,
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/rawserialization/MyMsg.java">MyMsg.java</a> into a directory called rice/tutorial/rawserialization/.</h3>
 
 <p/>This tutorial shows how the messages of the application from <a href="tut_multiple_nodes.html#lesson4">Lesson 4</a> are serialized.  FreePastry has no Java serialization: every message that goes over the wire implements <code>RawMessage</code> and writes itself to an <code>OutputBuffer</code>, and every application installs a <code>MessageDeserializer</code> that reads its messages back.  This keeps the CPU, memory and bandwidth overhead low, and it takes only a few lines of code per message.<br/>
 
