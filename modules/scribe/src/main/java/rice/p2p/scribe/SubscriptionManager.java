@@ -449,14 +449,15 @@ final class SubscriptionManager {
       return;
     }
 
+    // the ack covers all of its topics, so it is processed once, not once per topic
+    ackMessageReceived(saMessage);
+
     Iterator<List<Id>> i = saMessage.getPathsToRoot().iterator();
     for (Topic topic : saMessage.getTopics()) {
       List<Id> pathToRoot = i.next();
       TopicManager manager = registry.get(topic);
 
       logger.debug("Received subscribe ack message from {} for topic {}", saMessage.getSource(), topic);
-
-      ackMessageReceived(saMessage);
 
       // if we're the root, reject the ack message, except for the hack to implement a centralized solution with self overlays for each node (i.e everyone is a root)
       if (registry.isRoot(topic)) {
