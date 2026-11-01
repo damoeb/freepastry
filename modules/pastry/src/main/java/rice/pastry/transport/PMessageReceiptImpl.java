@@ -44,10 +44,11 @@ import rice.pastry.NodeHandle;
 import rice.pastry.messaging.Message;
 
 public class PMessageReceiptImpl implements PMessageReceipt {
-  MessageRequestHandle<NodeHandle, RawMessage> internal;
+  // written under the lock, read by any thread
+  private volatile MessageRequestHandle<NodeHandle, RawMessage> internal;
   Message message;
   Map<String, Object> options;
-  boolean cancelled = false;
+  private volatile boolean cancelled = false;
 
   // a private lock, so that code holding a reference to this object can't contend for it
   private final Object lock = new Object();
@@ -59,8 +60,9 @@ public class PMessageReceiptImpl implements PMessageReceipt {
 
   @Override
   public NodeHandle getIdentifier() {
-    if (internal == null) return null;
-    return (NodeHandle)internal.getIdentifier();
+    MessageRequestHandle<NodeHandle, RawMessage> handle = internal;
+    if (handle == null) return null;
+    return (NodeHandle)handle.getIdentifier();
   }
 
   @Override
