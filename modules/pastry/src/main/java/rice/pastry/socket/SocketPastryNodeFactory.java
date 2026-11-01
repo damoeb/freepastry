@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -820,6 +821,23 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       this.pns = pns;
     }
 
+    /**
+     * True if the boot address designates this node: the same port as the node's own, and either its exact address or
+     * one that reaches this host (loopback, wildcard, or an address of a local network interface).
+     */
+    static boolean isSelf(InetSocketAddress candidate, InetSocketAddress own) {
+      if (candidate.equals(own)) return true;
+      if (candidate.getPort() != own.getPort()) return false;
+      InetAddress address = candidate.getAddress();
+      if (address == null) return false;
+      if (address.isLoopbackAddress() || address.isAnyLocalAddress()) return true;
+      try {
+        return NetworkInterface.getByInetAddress(address) != null;
+      } catch (SocketException e) {
+        return false;
+      }
+    }
+
     protected void bootAsBootstrap() {
       pn.doneNode(Collections.EMPTY_LIST);
     }
@@ -862,7 +880,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
         bootaddresses = bootaddresses_temp;
       }
 
-      final boolean seed = socketConfig.seed() || bootaddresses.isEmpty() || bootaddresses.contains(((SocketNodeHandle)pn.getLocalHandle()).getAddress().getInnermostAddress());
+      final InetSocketAddress ownAddress = ((SocketNodeHandle)pn.getLocalHandle()).getAddress().getInnermostAddress();
+      final boolean seed = socketConfig.seed() || bootaddresses.isEmpty() || bootaddresses.stream().anyMatch(a -> isSelf(a, ownAddress));
 
       if (bootaddresses.isEmpty() ||
           (bootaddresses.size() == 1 && seed)) {
@@ -884,7 +903,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       // fill in tempBootHandles
       for (InetSocketAddress addr : bootaddresses) {
         logger.trace("addr:{} local:{}", addr, localAddr);
-        if (!addr.equals(localAddr)) {
+        if (!isSelf(addr, localAddr)) {
           tempBootHandles.add(getTempNodeHandle(addr));
         }
       }

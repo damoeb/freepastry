@@ -1,6 +1,7 @@
 package rice.pastry.socket;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -50,5 +51,26 @@ class SocketPastryNodeFactoryTest {
     node.boot((Object)null);
 
     assertTrue(readyOnSelector.get(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void bootToOwnLoopbackAddressOnAnotherInterfaceCreatesANewRing() throws Exception {
+    InetAddress bind = InetAddress.getLocalHost();
+    int port;
+    try (ServerSocket probe = new ServerSocket(0, 1, bind)) {
+      port = probe.getLocalPort();
+    }
+    PastryNode node = new SocketPastryNodeFactory(new RandomNodeIdFactory(env), bind, port, env).newNode();
+    CompletableFuture<Boolean> ready = new CompletableFuture<Boolean>();
+    node.addPastryNodeListener(new PastryNodeListener() {
+      @Override
+      public void pastryNodeReady(PastryNode n, boolean isReady) {
+        if (isReady) ready.complete(true);
+      }
+    });
+
+    node.boot(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
+
+    assertTrue(ready.get(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
   }
 }
