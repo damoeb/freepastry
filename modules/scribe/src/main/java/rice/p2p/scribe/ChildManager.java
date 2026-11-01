@@ -453,9 +453,11 @@ final class ChildManager {
     }
     logger.trace("handleForwardSubscribeMessage() here 6 {}", sMessage);
 
-    endpoint.route(null,
-        new SubscribeFailedMessage(localHandle, failed, sMessage.getId()),
-        sMessage.getSubscriber());
+    if (!failed.isEmpty()) {
+      endpoint.route(null,
+          new SubscribeFailedMessage(localHandle, failed, sMessage.getId()),
+          sMessage.getSubscriber());
+    }
 
     if (manifest.keySet().size() == 1) {
       logger.trace("handleForwardSubscribeMessage() returning true at this location!!! {}", sMessage);
