@@ -414,7 +414,11 @@ public class LRUCache implements Cache {
         if (storage.getTotalSize() > size) {
           Id last;
           synchronized (order) {
-            last = order.getLast();
+            last = order.isEmpty() ? null : order.getLast();
+          }
+          if (last == null) {
+            parent.receiveException(new IllegalStateException("Cache exceeds its size limit, but holds no evictable objects"));
+            return;
           }
           uncache(last, this);
         } else {
