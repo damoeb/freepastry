@@ -172,6 +172,11 @@ final class GlacierInserter {
           public void receiveResult(Object o) {
             refreshOne(thisVersionKey, thisExpiration, thisContinuation);
           }
+          @Override
+          public void receiveException(Exception e) {
+            /* Displaced by a newer job for the same key: fail this refresh instead of running it unshaped */
+            thisContinuation.receiveException(e);
+          }
         });
 
         if (prev != null)

@@ -589,6 +589,11 @@ final class GlacierRetriever {
       public void receiveResult(Object o) {
         retrieveFragment(key, manifest, tag, c);
       }
+      @Override
+      public void receiveException(Exception e) {
+        /* Displaced by a newer job for the same key: fail this request instead of running it unshaped */
+        c.receiveException(e);
+      }
     });
 
     if (prev != null)
