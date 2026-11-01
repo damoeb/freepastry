@@ -97,4 +97,12 @@ public enum GlacierMessageType implements MessageTypeId {
   public static GlacierMessageType of(short id) {
     return INDEX.get(id);
   }
+
+  /**
+   * @param id a wire id
+   * @return the type with that id, or {@code null} if no Glacier message has it
+   */
+  public static GlacierMessageType find(short id) {
+    return INDEX.find(id);
+  }
 }

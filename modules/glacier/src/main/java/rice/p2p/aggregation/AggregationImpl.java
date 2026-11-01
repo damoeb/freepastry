@@ -132,7 +132,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.aggregateStore.setContentDeserializer((buf, endpoint, contentType) -> {
       AggregationContentType type = AggregationContentType.find(contentType);
       if (type == null) {
-        throw new IllegalArgumentException("Unknown Type:"+contentType);
+        throw new IOException("Unknown Type:"+contentType);
       }
       return switch (type) {
         case AGGREGATE -> new Aggregate(buf, endpoint, contentDeserializer);
@@ -148,7 +148,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.aggregateStore.setContentHandleDeserializer((buf, endpoint, contentType) -> {
       AggregationHandleType type = AggregationHandleType.find(contentType);
       if (type == null) {
-        throw new IllegalArgumentException("Unknown Type:"+contentType);
+        throw new IOException("Unknown Type:"+contentType);
       }
       return switch (type) {
         case AGGREGATE_HANDLE -> new AggregateHandle(buf, endpoint);

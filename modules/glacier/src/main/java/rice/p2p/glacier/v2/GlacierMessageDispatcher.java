@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.glacier.v2;
 
+import java.io.IOException;
 import org.slf4j.Logger;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -88,7 +89,7 @@ final class GlacierMessageDispatcher {
    * @return the deserializer for all the message types Glacier sends
    */
   static MessageDeserializer deserializer(final Endpoint endpoint) {
-    return (buf, type, priority, sender) -> switch (GlacierMessageType.of(type)) {
+    return (buf, type, priority, sender) -> switch (GlacierMessageType.find(type)) {
       case DATA -> GlacierDataMessage.build(buf, endpoint);
       case FETCH -> GlacierFetchMessage.build(buf, endpoint);
       case NEIGHBOR_REQUEST -> GlacierNeighborRequestMessage.build(buf, endpoint);
@@ -104,7 +105,8 @@ final class GlacierMessageDispatcher {
       case RESPONSE -> GlacierResponseMessage.build(buf, endpoint);
       case SYNC -> GlacierSyncMessage.build(buf, endpoint);
       // local timer message, never sent
-      case TIMEOUT -> throw new IllegalArgumentException("Unknown type:"+type);
+      case TIMEOUT -> throw new IOException("Unknown type:"+type);
+      case null -> throw new IOException("Unknown type:"+type);
     };
   }
 
