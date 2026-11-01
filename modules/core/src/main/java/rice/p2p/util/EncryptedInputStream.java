@@ -38,9 +38,11 @@ advised of the possibility of such damage.
 package rice.p2p.util;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.PrivateKey;
+import java.util.Arrays;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -54,7 +56,9 @@ import org.jspecify.annotations.Nullable;
  * e(k)
  * chunks of upper-level data
  *
- * where each chunk is length(c) [4 bytes] followed by c, see {@link EncryptedOutputStream}
+ * where each chunk is length(c) [4 bytes] followed by c, see {@link EncryptedOutputStream}.  The stream ends
+ * cleanly only after the authenticated final chunk; if the underlying stream ends earlier, reading throws a
+ * {@link SecurityException}.
  *
  * @version $Id: EncryptedInputStream.java 3613 2007-02-15 14:45:14Z jstewart $
  *
@@ -79,6 +83,9 @@ public class EncryptedInputStream extends InputStream {
 
   // the number of chunks read so far
   private long chunks;
+
+  // whether the authenticated final chunk has been read
+  private boolean finished;
 
   /**
    * Builds an encrypted inputstream given a private key to
@@ -113,14 +120,11 @@ public class EncryptedInputStream extends InputStream {
    */
   @Override
   public int read() throws IOException {
-    if ((buffer != null) && (bufferLength < buffer.length)) {
-      bufferLength++;
-
-      return buffer[bufferLength-1] & 0xff;
-    } else {
-      readBuffer();
-      return read();
+    byte[] data = fill();
+    if (data == null) {
+      return -1;
     }
+    return data[bufferLength++] & 0xff;
   }
 
   /**
@@ -139,26 +143,62 @@ public class EncryptedInputStream extends InputStream {
    */
   @Override
   public int read(byte b[], int off, int len) throws IOException {
-    if ((buffer != null) && (bufferLength < buffer.length)) {
-      int l = (len > available() ? available() : len);
-      System.arraycopy(buffer, bufferLength, b, off, l);
-      bufferLength += l;
-
-      return l;
-    } else {
-      readBuffer();
-      return read(b, off, len);
+    java.util.Objects.checkFromIndexSize(off, len, b.length);
+    if (len == 0) {
+      return 0;
     }
+    byte[] data = fill();
+    if (data == null) {
+      return -1;
+    }
+    int l = Math.min(len, available());
+    System.arraycopy(data, bufferLength, b, off, l);
+    bufferLength += l;
+
+    return l;
+  }
+
+  /**
+   * Makes sure there is unread buffered data, reading chunks as needed.
+   *
+   * @return the buffer holding the next unread data, or null if the authenticated end of the stream was reached
+   */
+  private byte @Nullable [] fill() throws IOException {
+    while (available() == 0) {
+      if (finished) {
+        return null;
+      }
+      readBuffer();
+    }
+    return buffer;
   }
 
   /**
    * Internal method which reads in the next chunk of buffered data
+   *
+   * @throws SecurityException if the stream ends before the final chunk, or a chunk fails authentication
    */
   protected void readBuffer() throws IOException {
-    byte[] encdata = new byte[stream.readInt()];
-    stream.readFully(encdata);
+    byte[] encdata;
+    try {
+      encdata = new byte[stream.readInt()];
+      stream.readFully(encdata);
+    } catch (EOFException e) {
+      throw new SecurityException("Encrypted stream truncated after " + chunks + " chunks", e);
+    }
 
-    this.buffer = SecurityUtils.decryptSymmetric(encdata, key, MathUtils.longToByteArray(chunks++));
+    // the final chunk is authenticated with a 1 as the last byte; try the data variant first
+    byte[] aad = Arrays.copyOf(MathUtils.longToByteArray(chunks), Long.BYTES + 1);
+    byte[] plain;
+    try {
+      plain = SecurityUtils.decryptSymmetric(encdata, key, aad);
+    } catch (SecurityException notData) {
+      aad[Long.BYTES] = 1;
+      plain = SecurityUtils.decryptSymmetric(encdata, key, aad);
+      finished = true;
+    }
+    chunks++;
+    this.buffer = plain;
     this.bufferLength = 0;
   }
 

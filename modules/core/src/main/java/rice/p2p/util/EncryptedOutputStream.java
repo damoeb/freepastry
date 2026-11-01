@@ -41,6 +41,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.PublicKey;
+import java.util.Arrays;
 
 /**
  *
@@ -55,8 +56,9 @@ import java.security.PublicKey;
  * where each chunk is length(c) [4 bytes] followed by c, the output of
  * {@link SecurityUtils#encryptSymmetric(byte[], byte[], int, int, byte[])}: a 12-byte IV, the ciphertext and a
  * 16-byte tag.  The additional authenticated data of the n-th chunk (from 0) is n as an 8-byte big-endian long,
- * so that dropping, repeating or reordering chunks fails authentication.  Truncation after a whole chunk is
- * not detected.
+ * followed by one byte that is 1 for the final chunk and 0 for all others.  So dropping, repeating or reordering
+ * chunks fails authentication, and so does cutting the stream off: {@link #close()} writes the final chunk, and
+ * a reader that hits the end of the stream before it fails with a {@link SecurityException}.
  *
  * @version $Id: EncryptedOutputStream.java 3613 2007-02-15 14:45:14Z jstewart $
  *
@@ -84,6 +86,9 @@ public class EncryptedOutputStream extends OutputStream {
 
   // the number of chunks written so far
   private long chunks;
+
+  // whether the final chunk has been written
+  private boolean closed;
 
   /**
    * Builds an encrypted outputstream given a public key to
@@ -163,7 +168,13 @@ public class EncryptedOutputStream extends OutputStream {
    * Internal method which writes out the buffered data
    */
   protected void writeBuffer() throws IOException {
-    byte[] encdata = SecurityUtils.encryptSymmetric(buffer, key, 0, bufferLength, MathUtils.longToByteArray(chunks++));
+    writeChunk(false);
+  }
+
+  private void writeChunk(boolean last) throws IOException {
+    byte[] aad = Arrays.copyOf(MathUtils.longToByteArray(chunks++), Long.BYTES + 1);
+    aad[Long.BYTES] = (byte) (last ? 1 : 0);
+    byte[] encdata = SecurityUtils.encryptSymmetric(buffer, key, 0, bufferLength, aad);
     stream.writeInt(encdata.length);
     stream.write(encdata);
 
@@ -176,7 +187,9 @@ public class EncryptedOutputStream extends OutputStream {
    */
   @Override
   public void flush() throws IOException {
-    writeBuffer();
+    if (bufferLength > 0) {
+      writeBuffer();
+    }
     stream.flush();
   }
 
@@ -186,7 +199,11 @@ public class EncryptedOutputStream extends OutputStream {
    */
   @Override
   public void close() throws IOException {
-    flush();
+    if (!closed) {
+      closed = true;
+      writeChunk(true);
+      stream.flush();
+    }
     stream.close();
   }
 }

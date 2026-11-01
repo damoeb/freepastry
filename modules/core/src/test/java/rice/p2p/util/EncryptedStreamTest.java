@@ -82,6 +82,11 @@ public class EncryptedStreamTest {
     return out.toByteArray();
   }
 
+  /** The additional authenticated data of a chunk: its index as a big-endian long, then 1 if it is the final chunk. */
+  static byte[] aad(long index, boolean last) {
+    return ByteBuffer.allocate(9).putLong(index).put((byte) (last ? 1 : 0)).array();
+  }
+
   /** Splits a stream into its length-prefixed records: the wrapped key, then the chunks. */
   static List<byte[]> records(byte[] stream) {
     List<byte[]> result = new ArrayList<byte[]>();
@@ -125,8 +130,8 @@ public class EncryptedStreamTest {
     byte[] key = SecurityUtils.decryptAsymmetric(records.get(0), pair.getPrivate());
     assertEquals(32, key.length);
     assertEquals(12 + FIRST.length + 16, records.get(1).length);
-    assertArrayEquals(FIRST, SecurityUtils.decryptSymmetric(records.get(1), key, MathUtils.longToByteArray(0)));
-    assertArrayEquals(SECOND, SecurityUtils.decryptSymmetric(records.get(2), key, MathUtils.longToByteArray(1)));
+    assertArrayEquals(FIRST, SecurityUtils.decryptSymmetric(records.get(1), key, aad(0, false)));
+    assertArrayEquals(SECOND, SecurityUtils.decryptSymmetric(records.get(2), key, aad(1, true)));
   }
 
   @Test
@@ -158,5 +163,49 @@ public class EncryptedStreamTest {
     records.remove(1);
     byte[] stream = join(records);
     assertThrows(SecurityException.class, () -> read(stream, pair, 1));
+  }
+
+  @Test
+  public void readingToTheEndReturnsMinusOne() throws IOException {
+    EncryptedInputStream in = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(twoChunks()));
+    assertArrayEquals(FIRST, in.readNBytes(FIRST.length));
+    assertArrayEquals(SECOND, in.readNBytes(SECOND.length));
+    assertEquals(-1, in.read());
+    assertEquals(-1, in.read(new byte[4], 0, 4));
+  }
+
+  @Test
+  public void anEmptyStreamReadsAsEmpty() throws IOException {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    new EncryptedOutputStream(pair.getPublic(), out, 1024).close();
+    EncryptedInputStream in = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(out.toByteArray()));
+    assertEquals(-1, in.read());
+  }
+
+  @Test
+  public void truncationAfterAWholeChunkThrows() throws IOException {
+    List<byte[]> records = records(twoChunks());
+    records.remove(2); // the final chunk
+    byte[] stream = join(records);
+    EncryptedInputStream in = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(stream));
+    assertArrayEquals(FIRST, in.readNBytes(FIRST.length));
+    assertThrows(SecurityException.class, in::read);
+  }
+
+  @Test
+  public void truncationInsideAChunkThrows() throws IOException {
+    byte[] stream = twoChunks();
+    byte[] cut = java.util.Arrays.copyOf(stream, stream.length - 5);
+    assertThrows(SecurityException.class, () -> read(cut, pair, FIRST.length + SECOND.length));
+  }
+
+  @Test
+  public void closingTwiceWritesOneFinalChunk() throws IOException {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    EncryptedOutputStream eos = new EncryptedOutputStream(pair.getPublic(), out, 1024);
+    eos.write(FIRST);
+    eos.close();
+    eos.close();
+    assertEquals(2, records(out.toByteArray()).size());
   }
 }
