@@ -135,4 +135,15 @@ class SubscriptionManagerTest {
     assertEquals(fake.remote, unsubscribes.get(0).hint());
     assertEquals(List.of(a), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
   }
+
+  @Test
+  void lostMessageForCompletedSubscribeIsIgnored() {
+    Topic a = ScribeTestSupport.topic(1);
+    int id = subscribe(new ArrayList<>(List.of(a)));
+    registry.create(a);
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a)), emptyPaths(1), id));
+
+    // the timer already fired for an ack that completed the subscribe: must not throw
+    manager.lostMessageReceived(new rice.p2p.scribe.messaging.SubscribeLostMessage(local, List.of(a), id, client));
+  }
 }

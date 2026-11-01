@@ -391,6 +391,10 @@ final class SubscriptionManager {
    */
   void lostMessageReceived(SubscribeLostMessage message) {
     SubscribeLostMessage slm = subscribeLostMessages.remove(message.getId());
+    if (slm == null) {
+      logger.debug("received subscribe lost message for an already completed subscribe, ignoring:{}", message);
+      return;
+    }
     ScribeMultiClient client = slm.getClient();
 
     logger.trace("Telling client {} about LOSS for outstanding ack {}", client, message.getId());
