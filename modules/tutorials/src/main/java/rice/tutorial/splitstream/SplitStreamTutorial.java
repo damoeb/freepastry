@@ -199,7 +199,7 @@ public class SplitStreamTutorial {
       // remind user how to use
       System.out.println("Usage:");
       System.out
-          .println("java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.lesson6.ScribeTutorial localbindport bootIP bootPort numNodes");
+          .println("java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.splitstream.SplitStreamTutorial localbindport bootIP bootPort numNodes");
       System.out
           .println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10");
       throw e;
