@@ -43,6 +43,7 @@ import rice.p2p.util.HashUtils;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.Fragment;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public class Manifest {
 
@@ -170,19 +171,23 @@ public class Manifest {
 
   public Manifest(InputBuffer buf) throws IOException {
     expirationDate = buf.readLong();
-    int objectHashLength = buf.readInt();
-    int fragmentHashLength = buf.readInt();
-    int fragmentHashSubLength = buf.readInt();
-    int signatureLength = buf.readInt();
-    objectHash = new byte[objectHashLength];
-    buf.read(objectHash, 0, objectHashLength);
-    byte[] fragmentHashField = new byte[fragmentHashLength * fragmentHashSubLength];
-    buf.read(fragmentHashField, 0, fragmentHashLength * fragmentHashSubLength);
+    int objectHashLength = WireLengths.check(buf, buf.readInt(), 0);
+    int fragmentHashLength = WireLengths.check(buf, buf.readInt(), 0);
+    int fragmentHashSubLength = WireLengths.check(buf, buf.readInt(), 0);
+    int signatureLength = WireLengths.check(buf, buf.readInt(), 0);
+    // checked as a long, the product of two ints can overflow
+    long fragmentHashBytes = (long) fragmentHashLength * fragmentHashSubLength;
+    // rows of no bytes cost nothing on the wire, but an array each
+    if (fragmentHashBytes > Integer.MAX_VALUE || (fragmentHashSubLength == 0 && fragmentHashLength != 0)) {
+      throw new IOException("Fragment hashes of " + fragmentHashLength + "x" + fragmentHashSubLength + " bytes are too big");
+    }
+    WireLengths.check(buf, objectHashLength + fragmentHashBytes + signatureLength, 1);
+    objectHash = WireLengths.readBytes(buf, objectHashLength);
+    byte[] fragmentHashField = WireLengths.readBytes(buf, (int) fragmentHashBytes);
     fragmentHash = new byte[fragmentHashLength][fragmentHashSubLength];
     for (int i=0; i<fragmentHashLength; i++)
       for (int j=0; j<fragmentHashSubLength; j++)
         fragmentHash[i][j] = fragmentHashField[i*fragmentHashSubLength + j];
-    signature = new byte[signatureLength];
-    buf.read(signature, 0, signatureLength);
+    signature = WireLengths.readBytes(buf, signatureLength);
   }
 }

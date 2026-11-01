@@ -44,6 +44,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.VersionKey;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public final class GlacierRefreshPatchMessage extends GlacierMessage {
 
@@ -124,18 +125,17 @@ public final class GlacierRefreshPatchMessage extends GlacierMessage {
 
   private GlacierRefreshPatchMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
-    lifetimes = new long[buf.readInt()];
+    lifetimes = new long[WireLengths.readInt(buf, Long.BYTES)];
     for (int i = 0; i < lifetimes.length; i++) {
       lifetimes[i] = buf.readLong();
     }
-    keys = new VersionKey[buf.readInt()];
+    keys = new VersionKey[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < keys.length; i++) {
       keys[i] = new VersionKey(buf, endpoint);
     }
-    signatures = new byte[buf.readInt()][];
+    signatures = new byte[WireLengths.readInt(buf, Integer.BYTES)][];
     for (int i = 0; i < signatures.length; i++) {
-      signatures[i] = new byte[buf.readInt()];
-      buf.read(signatures[i]);
+      signatures[i] = WireLengths.readBytes(buf);
     }
   }
 }

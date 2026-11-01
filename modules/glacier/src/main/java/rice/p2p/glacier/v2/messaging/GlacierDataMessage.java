@@ -46,6 +46,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.v2.Manifest;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public final class GlacierDataMessage extends GlacierMessage {
 
@@ -140,18 +141,18 @@ public final class GlacierDataMessage extends GlacierMessage {
   private GlacierDataMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
 
-    fragments = new Fragment[buf.readInt()];
+    fragments = new Fragment[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < fragments.length; i++) {
       if (buf.readBoolean())
         fragments[i] = new Fragment(buf);
     }
 
-    keys = new FragmentKey[buf.readInt()];
+    keys = new FragmentKey[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < keys.length; i++) {
       keys[i] = new FragmentKey(buf, endpoint);
     }
 
-    manifests = new Manifest[buf.readInt()];
+    manifests = new Manifest[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < manifests.length; i++) {
       if (buf.readBoolean())
         manifests[i] = new Manifest(buf);

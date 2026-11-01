@@ -53,6 +53,7 @@ import rice.p2p.past.gc.GCPastMetadata;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.util.HashUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * An aggregate: a group of small objects stored in Past as one, plus the pointers to the aggregates it
@@ -78,11 +79,11 @@ public class Aggregate implements GCPastContent {
     switch(version) {
       case 0:
         myId = endpoint.readId(buf, buf.readShort());
-        pointers = new Id[buf.readShort()];
+        pointers = new Id[WireLengths.readShort(buf, 2)];
         for (int i = 0; i < pointers.length; i++) {
           pointers[i] = endpoint.readId(buf, buf.readShort());
         }
-        components = new GCPastContent[buf.readShort()];
+        components = new GCPastContent[WireLengths.readShort(buf, 2)];
         for (int i = 0; i < components.length; i++) {
           components[i] = (GCPastContent) contentDeserializer.deserializePastContent(buf, endpoint, buf.readShort());
         }

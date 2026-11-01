@@ -40,6 +40,7 @@ import java.io.IOException;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public class Fragment {
   private byte payload[];
@@ -53,8 +54,7 @@ public class Fragment {
   }
 
   public Fragment(InputBuffer buf) throws IOException {
-    payload = new byte[buf.readInt()];
-    buf.read(payload, 0, payload.length);
+    payload = WireLengths.readBytes(buf);
 
   }
 

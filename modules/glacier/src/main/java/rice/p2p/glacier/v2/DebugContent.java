@@ -50,6 +50,7 @@ import rice.p2p.past.gc.GCPast;
 import rice.p2p.past.gc.GCPastContent;
 import rice.p2p.past.gc.GCPastContentHandle;
 import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public class DebugContent implements GCPastContent {
   /** Content type id; whoever reads DebugContent registers it with its PastContentDeserializer. */
@@ -111,8 +112,7 @@ public class DebugContent implements GCPastContent {
     myId = endpoint.readId(buf, buf.readShort());
     isMutable = buf.readBoolean();
     version = buf.readLong();
-    payload = new byte[buf.readInt()];
-    buf.read(payload, 0, payload.length);
+    payload = WireLengths.readBytes(buf);
   }
 
   @Override

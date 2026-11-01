@@ -44,6 +44,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.FragmentKey;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * Asks a fragment holder which of the given fragment keys it stores (answered with GlacierResponseMessages).
@@ -101,7 +102,7 @@ public final class GlacierQueryMessage extends GlacierMessage {
 
   private GlacierQueryMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
-    keys = new FragmentKey[buf.readInt()];
+    keys = new FragmentKey[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < keys.length; i++) {
       keys[i] = new FragmentKey(buf, endpoint);
     }

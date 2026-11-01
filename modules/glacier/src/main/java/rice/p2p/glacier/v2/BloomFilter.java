@@ -42,6 +42,7 @@ import java.util.Arrays;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public class BloomFilter {
 
@@ -132,12 +133,11 @@ public class BloomFilter {
   }
 
   public BloomFilter(InputBuffer buf) throws IOException {
-    hashParams = new int[buf.readInt()];
+    hashParams = new int[WireLengths.readInt(buf, Integer.BYTES)];
     for (int i = 0; i < hashParams.length; i++) {
       hashParams[i] = buf.readInt();
     }
-    bitfield = new byte[buf.readInt()];
-    buf.read(bitfield);
+    bitfield = WireLengths.readBytes(buf);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

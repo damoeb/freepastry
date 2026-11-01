@@ -43,6 +43,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public final class GlacierNeighborResponseMessage extends GlacierMessage {
   private final Id[] neighbors;
@@ -113,12 +114,12 @@ public final class GlacierNeighborResponseMessage extends GlacierMessage {
 
   private GlacierNeighborResponseMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
-    lastSeen = new long[buf.readInt()];
+    lastSeen = new long[WireLengths.readInt(buf, Long.BYTES)];
     for (int i = 0; i < lastSeen.length; i++) {
       lastSeen[i] = buf.readLong();
     }
-    neighbors = new Id[buf.readInt()];
-    for (int i = 0; i < lastSeen.length; i++) {
+    neighbors = new Id[WireLengths.readInt(buf, 1)];
+    for (int i = 0; i < neighbors.length; i++) {
       neighbors[i] = endpoint.readId(buf, buf.readShort());
     }
   }

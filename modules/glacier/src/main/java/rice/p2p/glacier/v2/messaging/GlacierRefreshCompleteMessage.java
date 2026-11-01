@@ -44,6 +44,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.VersionKey;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public final class GlacierRefreshCompleteMessage extends GlacierMessage {
   private final VersionKey[] keys;
@@ -106,11 +107,11 @@ public final class GlacierRefreshCompleteMessage extends GlacierMessage {
 
   private GlacierRefreshCompleteMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
-    updates = new int[buf.readInt()];
+    updates = new int[WireLengths.readInt(buf, Integer.BYTES)];
     for (int i = 0; i < updates.length; i++) {
       updates[i] = buf.readInt();
     }
-    keys = new VersionKey[buf.readInt()];
+    keys = new VersionKey[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < keys.length; i++) {
       keys[i] = new VersionKey(buf, endpoint);
     }

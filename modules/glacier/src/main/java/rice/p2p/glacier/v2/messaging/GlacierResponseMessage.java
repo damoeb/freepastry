@@ -44,6 +44,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.FragmentKey;
+import rice.p2p.util.rawserialization.WireLengths;
 
 public final class GlacierResponseMessage extends GlacierMessage {
   private final FragmentKey[] keys;
@@ -132,20 +133,20 @@ public final class GlacierResponseMessage extends GlacierMessage {
   private GlacierResponseMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
 
-    keys = new FragmentKey[buf.readInt()];
+    keys = new FragmentKey[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < keys.length; i++) {
       keys[i] = new FragmentKey(buf, endpoint);
     }
 
-    lifetimes = new long[buf.readInt()];
+    lifetimes = new long[WireLengths.readInt(buf, Long.BYTES)];
     for (int i = 0; i < lifetimes.length; i++) {
       lifetimes[i] = buf.readLong();
     }
-    authoritative = new boolean[buf.readInt()];
+    authoritative = new boolean[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < authoritative.length; i++) {
       authoritative[i] = buf.readBoolean();
     }
-    haveIt = new boolean[buf.readInt()];
+    haveIt = new boolean[WireLengths.readInt(buf, 1)];
     for (int i = 0; i < haveIt.length; i++) {
       haveIt[i] = buf.readBoolean();
     }
