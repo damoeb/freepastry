@@ -183,6 +183,9 @@ public class JoinRequest extends PRawMessage {
     return rows.length;
   }
 
+  /** Most bits per routing table digit a join request may use: each row has 2^bits columns. */
+  static final int MAX_RT_BASE_BIT_LENGTH = 8;
+
   private void initialize(byte rtBaseBitLength) {
     joinHandle = null;
     this.rtBaseBitLength = rtBaseBitLength;
@@ -259,6 +262,9 @@ public class JoinRequest extends PRawMessage {
       case 0:
         setSender(sender);
         rtBaseBitLength = buf.readByte();
+        if (rtBaseBitLength < 1 || rtBaseBitLength > MAX_RT_BASE_BIT_LENGTH) {
+          throw new IOException("Invalid routing table base bit length: " + rtBaseBitLength);
+        }
         initialize(rtBaseBitLength);
 
         handle = nhf.readNodeHandle(buf);
