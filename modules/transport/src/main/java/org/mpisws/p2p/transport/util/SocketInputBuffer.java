@@ -163,25 +163,25 @@ public class SocketInputBuffer implements InputBuffer {
   }
 
   /**
+   * Fills the range completely or throws: a short read would be misparsed by callers.
    *
-   *
-   * @return the number of bytes read
+   * @return the number of bytes read, always len
+   * @throws InsufficientBytesException if fewer than len bytes are available (the read pointer is rewound)
    */
   public int readInternal(byte[] b, int off, int len) throws IOException {
-    int bytesToRead = needBytes(len, false);
-    readPtr.get(b, off, bytesToRead);
-    return bytesToRead;
+    needBytes(len, true);
+    readPtr.get(b, off, len);
+    return len;
   }
 
   /**
+   * Fills the array completely or throws: a short read would be misparsed by callers.
    *
-   *
-   * @return the number of bytes read
+   * @return the number of bytes read, always b.length
+   * @throws InsufficientBytesException if fewer than b.length bytes are available (the read pointer is rewound)
    */
   public int readInternal(byte[] b) throws IOException {
-    int bytesToRead = needBytes(b.length, false);
-    readPtr.get(b, 0, bytesToRead);
-    return bytesToRead;
+    return readInternal(b, 0, b.length);
   }
 
   /**
