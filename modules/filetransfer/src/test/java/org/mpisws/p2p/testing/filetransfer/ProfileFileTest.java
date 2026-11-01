@@ -60,7 +60,6 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
-import org.mpisws.p2p.transport.rc4.RC4TransportLayer;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 import org.mpisws.p2p.transport.simpleidentity.SimpleIdentityTransportLayer;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
@@ -102,7 +101,7 @@ public class ProfileFileTest {
     final Logger logger = env.getLogManager().getLogger(ProfileFileTest.class, null);
     DefaultErrorHandler<InetSocketAddress> errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
     final TimeSource time = env.getTimeSource();
-    logger.info("Encrypted Test");
+    logger.info("Profile Test");
 
     // this node will receive a file
     InetSocketAddress addr1 = new InetSocketAddress(local, 9001);
@@ -111,7 +110,7 @@ public class ProfileFileTest {
     LivenessTransportLayer<InetSocketAddress, ByteBuffer> ltl1 = new LivenessTransportLayerImpl<InetSocketAddress>(idtl1,env,errorHandler,300000);
     ltl1.addLivenessListener((i, val, options) -> logger.info("Node1: livenessChanged({},{},{})", i, val, options));
 
-    RC4TransportLayer<InetSocketAddress, ByteBuffer> etl1 = new RC4TransportLayer<InetSocketAddress, ByteBuffer>(ltl1,env,"badpassword", errorHandler);
+    LivenessTransportLayer<InetSocketAddress, ByteBuffer> etl1 = ltl1;
 
     etl1.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
 
@@ -218,7 +217,7 @@ public class ProfileFileTest {
     ltl2.addLivenessListener((i, val, options) -> logger.info("Node2: livenessChanged({},{},{})", i, val, options));
     ltl2.checkLiveness(addr1, null);
 
-    RC4TransportLayer<InetSocketAddress, ByteBuffer> etl2 = new RC4TransportLayer<InetSocketAddress, ByteBuffer>(ltl2,env,"badpassword", errorHandler);
+    LivenessTransportLayer<InetSocketAddress, ByteBuffer> etl2 = ltl2;
 
     etl2.openSocket(addr1, new SocketCallback<InetSocketAddress>() {
 
