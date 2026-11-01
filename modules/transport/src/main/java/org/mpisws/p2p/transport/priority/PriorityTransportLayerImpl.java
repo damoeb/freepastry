@@ -86,9 +86,14 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
   private int MAX_QUEUE_SIZE = 30;
 
   /**
+   * The biggest message size allowed when none is configured, see {@link PriorityConfig#maxBigMsgSize()}.
+   */
+  public static final int DEFAULT_MAX_BIG_MSG_SIZE = 4 * 1024 * 1024;
+
+  /**
    * BIG messages open a socket especially for big messages.  This is the biggest message size allowed.
    */
-  private final int MAX_BIG_MSG_SIZE = Integer.MAX_VALUE;
+  private final int MAX_BIG_MSG_SIZE;
 
   private final Logger logger;
 
@@ -125,7 +130,7 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       Environment env,
       PriorityConfig config,
       ErrorHandler<Identifier> handler) {
-    this(tl, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), handler);
+    this(tl, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), config.maxBigMsgSize(), handler);
   }
 
   public PriorityTransportLayerImpl(TransportLayer<Identifier, ByteBuffer> tl,
@@ -135,6 +140,18 @@ public class PriorityTransportLayerImpl<Identifier> implements PriorityTransport
       int maxMsgSize,
       int maxQueueSize,
       ErrorHandler<Identifier> handler) {
+    this(tl, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, DEFAULT_MAX_BIG_MSG_SIZE, handler);
+  }
+
+  public PriorityTransportLayerImpl(TransportLayer<Identifier, ByteBuffer> tl,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
+      int maxMsgSize,
+      int maxQueueSize,
+      int maxBigMsgSize,
+      ErrorHandler<Identifier> handler) {
+    this.MAX_BIG_MSG_SIZE = maxBigMsgSize;
     entityManagers = new HashMap<Identifier, EntityManager<Identifier>>();
     this.logger = env.getLogManager().getLogger(PriorityTransportLayerImpl.class, null);
     this.selectorManager = env.getSelectorManager();

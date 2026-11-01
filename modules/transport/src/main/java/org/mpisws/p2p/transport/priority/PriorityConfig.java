@@ -46,10 +46,12 @@ import rice.environment.params.Parameters;
  * @param maxMsgSize {@code pastry_socket_writer_max_msg_size}: the largest message, in bytes, that is
  *        queued on the primary socket; larger ones are sent on their own socket, up to the big message
  *        limit
+ * @param maxBigMsgSize {@code pastry_socket_writer_max_big_msg_size}: the largest message, in bytes, that
+ *        is accepted or sent at all; a peer announcing a bigger one on a big message socket is disconnected
  * @param maxQueueLength {@code pastry_socket_writer_max_queue_length}: the most messages queued per
  *        destination
  */
-public record PriorityConfig(int maxMsgSize, int maxQueueLength) {
+public record PriorityConfig(int maxMsgSize, int maxQueueLength, int maxBigMsgSize) {
 
   /**
    * @throws IllegalArgumentException if a value is not positive
@@ -57,6 +59,7 @@ public record PriorityConfig(int maxMsgSize, int maxQueueLength) {
   public static PriorityConfig fromParameters(Parameters p) {
     return new PriorityConfig(
       positive("pastry_socket_writer_max_msg_size", p.getInt("pastry_socket_writer_max_msg_size")),
-      positive("pastry_socket_writer_max_queue_length", p.getInt("pastry_socket_writer_max_queue_length")));
+      positive("pastry_socket_writer_max_queue_length", p.getInt("pastry_socket_writer_max_queue_length")),
+      positive("pastry_socket_writer_max_big_msg_size", p.getInt("pastry_socket_writer_max_big_msg_size")));
   }
 }

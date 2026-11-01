@@ -79,14 +79,13 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
         return;
       } else {
         int size = MathUtils.byteArrayToInt(sizeBytes);
-        msgBuf = ByteBuffer.allocate(size);
-        ctx.logger.trace("Receiving BIG message of size:{} from:{}", size, socket);
-        // continue
-        if (size > ctx.maxBigMsgSize) {
-          ctx.logger.warn("Closing socket, BIG message of size:{} is too big! (max:{}) from:{}", size, ctx.maxBigMsgSize, socket);
+        if (size <= 0 || size > ctx.maxBigMsgSize) {
+          ctx.logger.warn("Closing socket, BIG message of size:{} is invalid or too big! (max:{}) from:{}", size, ctx.maxBigMsgSize, socket);
           socket.close();
           return;
         }
+        msgBuf = ByteBuffer.allocate(size);
+        ctx.logger.trace("Receiving BIG message of size:{} from:{}", size, socket);
       }
     }
 

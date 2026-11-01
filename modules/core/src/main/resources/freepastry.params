@@ -72,6 +72,8 @@ pastry_factory_processorPerNode = false
 # the maximum number of outgoing messages to queue when a socket is slower than the number of messages you are queuing
 pastry_socket_writer_max_queue_length = 30
 pastry_socket_writer_max_msg_size = 20480
+# the largest message, in bytes, that is sent or accepted on a socket of its own; a peer announcing a bigger one is disconnected
+pastry_socket_writer_max_big_msg_size = 4194304
 # the time before it will retry a route that was already found dead
 pastry_socket_srm_check_dead_throttle = 300000
 pastry_socket_srm_ping_throttle = 30000
