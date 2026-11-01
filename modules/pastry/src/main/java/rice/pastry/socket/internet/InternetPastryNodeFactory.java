@@ -149,8 +149,8 @@ public class InternetPastryNodeFactory extends
     this.externalAddresses = externalAddresses;
 
     if (socketConfig.hasExternalAddress()) {
-      externalAddresses = new InetAddress[1];
-      externalAddresses[0] = socketConfig.externalAddress().getAddress();
+      this.externalAddresses = new InetAddress[1];
+      this.externalAddresses[0] = socketConfig.externalAddress().getAddress();
     }
 
     this.connectivityVerifier = new ConnectivityVerifierImpl(this);
