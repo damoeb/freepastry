@@ -106,6 +106,8 @@ public class NetworkInfoTransportLayer implements
   private static final int PROBE_RESPONSE_LENGTH = 1 + Long.BYTES;
   /** Most external addresses sent in one answer. */
   private static final int MAX_EXTERNAL_ADDRESSES = 20;
+  /** Largest id, in bytes, that is accepted as the answer to an id request. */
+  static final int MAX_ID_SIZE = 64 * 1024;
   private static final byte HEADER_NODES_REQUEST_BYTE = (byte)4;
   private static final byte HEADER_ID_REQUEST_BYTE = (byte)5;
   private static final byte[] HEADER_PASSTHROUGH = {HEADER_PASSTHROUGH_BYTE};
@@ -131,6 +133,26 @@ public class NetworkInfoTransportLayer implements
   }
 
   InetSocketAddressSerializer addrSerializer = new InetSocketAddressSerializer();
+
+  /**
+   * Reads the answer to a {@link #HEADER_ID_REQUEST_BYTE}: the size of the id, then the id.
+   *
+   * @throws InsufficientBytesException if the answer has not arrived completely, the buffer is rewound to read it again
+   * @throws IOException if the size is negative or more than {@link #MAX_ID_SIZE}
+   */
+  static byte[] readId(SocketInputBuffer sib) throws IOException {
+    int size = sib.readInt();
+    if (size < 0 || size > MAX_ID_SIZE) {
+      throw new IOException("Invalid id size: " + size + " (max: " + MAX_ID_SIZE + ")");
+    }
+    byte[] ret = new byte[size];
+    int read = sib.read(ret);
+    if (read < size) {
+      sib.reset();
+      throw new InsufficientBytesException(size, read);
+    }
+    return ret;
+  }
 
   @Override
   public Cancellable getMyInetAddress(InetSocketAddress bootstrap,
@@ -208,11 +230,7 @@ public class NetworkInfoTransportLayer implements
             public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
                 boolean canRead, boolean canWrite) throws IOException {
               try {
-                // read size
-                int size = sib.readInt();
-                byte[] ret = new byte[size];
-                sib.read(ret);
-                c.receiveResult(ret);
+                c.receiveResult(readId(sib));
               } catch (InsufficientBytesException ibe) {
                 socket.register(true, false, this);
               } catch (IOException e) {
