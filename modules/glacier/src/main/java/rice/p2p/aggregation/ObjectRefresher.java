@@ -409,7 +409,12 @@ final class ObjectRefresher {
       waitingList.store(vkey, new ObjectDescriptor(obj.getId(), theVersion, expiration, expiration, theSize), obj, new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean o) {
-          ((PastImpl) objectStore).cache(obj, new Continuation<Boolean, Exception>() {
+          if (!(objectStore instanceof PastImpl pastImpl)) {
+            /* Precaching only speeds up later lookups; other Past implementations simply skip it */
+            RefreshRun.this.receiveResult(Boolean.valueOf(true));
+            return;
+          }
+          pastImpl.cache(obj, new Continuation<Boolean, Exception>() {
             @Override
             public void receiveResult(Boolean o) {
               logger.atDebug().log(() -> "Refresh: Missing object "+id.toStringFull()+" added ok");
