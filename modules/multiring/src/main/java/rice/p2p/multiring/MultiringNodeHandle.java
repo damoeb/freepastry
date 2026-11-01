@@ -90,8 +90,14 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
    *
    * @param endpoint The endpoint that coalesces the internal handle
    */
+  @SuppressWarnings("ReferenceEquality") // the identity of the canonical instance is what counts
   protected void coalesceHandle(Endpoint endpoint) {
-    handle = endpoint.coalesce(handle);
+    NodeHandle coalesced = endpoint.coalesce(handle);
+    if (coalesced != handle) {
+      handle.removeNodeHandleListener(this);
+      coalesced.addNodeHandleListener(this);
+      handle = coalesced;
+    }
   }
 
   /**
