@@ -38,6 +38,7 @@ advised of the possibility of such damage.
 package rice.p2p.replication;
 
 
+import java.io.IOException;
 import org.slf4j.Logger;
 import rice.Destructable;
 import rice.Executable;
@@ -161,11 +162,12 @@ public class ReplicationImpl implements Replication, Application, Destructable {
     this.endpoint = node.buildEndpoint(this, instance);
 
     endpoint.setDeserializer((buf, type, priority, sender) -> {
-      return switch (ReplicationMessageType.of(type)) {
+      return switch (ReplicationMessageType.find(type)) {
         case REQUEST -> RequestMessage.build(buf, endpoint);
         case RESPONSE -> ResponseMessage.build(buf, endpoint);
         // local timer message, never sent
-        case REMINDER -> throw new IllegalArgumentException("Unknown type:"+type);
+        case REMINDER -> throw new IOException("Unknown type:"+type);
+        case null -> throw new IOException("Unknown type:"+type);
       };
     });
 

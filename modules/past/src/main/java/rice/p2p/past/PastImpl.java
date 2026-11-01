@@ -227,8 +227,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
       throw unknownType(type.id());
     }
 
-    protected IllegalArgumentException unknownType(short type) {
-      return new IllegalArgumentException("Unknown type:"+type+" in "+PastImpl.this.toString());
+    protected IOException unknownType(short type) {
+      return new IOException("Unknown type:"+type+" in "+PastImpl.this.toString());
     }
   }
   public PastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, StorageManager trash) {
