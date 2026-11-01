@@ -1,5 +1,6 @@
 package org.mpisws.p2p.transport.priority;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.mpisws.p2p.transport.P2PSocket;
@@ -10,6 +11,8 @@ final class FakeSocket implements P2PSocket<String> {
   private final ByteBuffer incoming;
   boolean closed;
   boolean registeredForRead;
+  /** thrown by {@link #read} instead of delivering bytes, if set */
+  IOException readFailure;
 
   FakeSocket(byte... incoming) {
     this.incoming = ByteBuffer.wrap(incoming);
@@ -26,7 +29,10 @@ final class FakeSocket implements P2PSocket<String> {
   }
 
   @Override
-  public long read(ByteBuffer dst) {
+  public long read(ByteBuffer dst) throws IOException {
+    if (readFailure != null) {
+      throw readFailure;
+    }
     int n = Math.min(dst.remaining(), incoming.remaining());
     for (int i = 0; i < n; i++) {
       dst.put(incoming.get());

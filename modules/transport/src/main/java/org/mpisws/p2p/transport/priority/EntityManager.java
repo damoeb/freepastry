@@ -503,6 +503,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
       new BigMessageReader<Identifier>(ctx).receiveSelectResult(socket, true, false);
     } catch (IOException ioe) {
       logger.warn("Error reading big message from {}", socket, ioe);
+      socket.close();
     }
   }
 
