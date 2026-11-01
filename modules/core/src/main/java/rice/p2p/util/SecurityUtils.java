@@ -47,11 +47,10 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Provider;
 import java.security.Signature;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.MGF1ParameterSpec;
-import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 import javax.crypto.AEADBadTagException;
@@ -65,7 +64,6 @@ import javax.crypto.spec.PSource;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.bouncycastle.crypto.DataLengthException;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -518,9 +516,6 @@ public class SecurityUtils {
       return cipher.doFinal(data);
     } catch (GeneralSecurityException e) {
       throw new SecurityException("Could not decrypt " + data.length + " bytes: " + e, e);
-    } catch (DataLengthException e) {
-      // the ciphertext is larger than the modulus of this key, so it was encrypted with another one
-      throw new SecurityException("DataLengthException decrypting object: " + e, e);
     }
   }
 
@@ -584,47 +579,26 @@ public class SecurityUtils {
   }
 
   /**
-   * Utility method which will encode a private key
+   * Utility method which will encode a private key as PKCS#8, which keeps the CRT parameters (decoded keys decrypt
+   * and sign about four times faster with them).
    *
    * @param key The key to encode
-   * @return An encoded public key
+   * @return An encoded private key
    */
   public static byte[] encodePrivateKey(PrivateKey key) {
-    RSAPrivateKey rkey = (RSAPrivateKey) key;
-
-    byte[] modulus = rkey.getModulus().toByteArray();
-    byte[] exponent = rkey.getPrivateExponent().toByteArray();
-    byte[] length = MathUtils.intToByteArray(modulus.length);
-
-    byte[] result = new byte[length.length + modulus.length + exponent.length];
-    System.arraycopy(length, 0, result, 0, length.length);
-    System.arraycopy(modulus, 0, result, length.length, modulus.length);
-    System.arraycopy(exponent, 0, result, length.length + modulus.length, exponent.length);
-
-    return result;
+    return key.getEncoded();
   }
 
   /**
-   * Utility method which will decode a previously encoded private key
+   * Utility method which will decode a key previously encoded with {@link #encodePrivateKey(PrivateKey)}
    *
    * @param data The previously encoded key
    * @return The key
    */
   public static PrivateKey decodePrivateKey(byte[] data) throws SecurityException {
-    byte[] len = new byte[4];
-    System.arraycopy(data, 0, len, 0, len.length);
-    int length = MathUtils.byteArrayToInt(len);
-
-    byte[] modulus = new byte[length];
-    System.arraycopy(data, len.length, modulus, 0, length);
-    byte[] exponent = new byte[data.length - length - 4];
-    System.arraycopy(data, len.length + length, exponent, 0, exponent.length);
-
-    RSAPrivateKeySpec rpks = new RSAPrivateKeySpec(new BigInteger(modulus), new BigInteger(exponent));
-
     try {
       synchronized (factoryAsymmetric) {
-        return factoryAsymmetric.generatePrivate(rpks);
+        return factoryAsymmetric.generatePrivate(new PKCS8EncodedKeySpec(data));
       }
     } catch (InvalidKeySpecException e) {
       throw new SecurityException("InvalidKeySpecException while decoding key: " + e);

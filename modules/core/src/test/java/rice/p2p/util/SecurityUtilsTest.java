@@ -42,6 +42,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.MGF1ParameterSpec;
 import java.util.Arrays;
@@ -289,5 +290,12 @@ public class SecurityUtilsTest {
     PrivateKey priv = SecurityUtils.decodePrivateKey(SecurityUtils.encodePrivateKey(pairA.getPrivate()));
     assertArrayEquals(PLAIN, SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(PLAIN, pub), priv));
     assertTrue(SecurityUtils.verify(PLAIN, SecurityUtils.sign(PLAIN, priv), pub));
+  }
+
+  @Test
+  public void decodedPrivateKeysKeepTheCrtParameters() {
+    PrivateKey priv = SecurityUtils.decodePrivateKey(SecurityUtils.encodePrivateKey(pairA.getPrivate()));
+    assertTrue(priv instanceof RSAPrivateCrtKey, "without the CRT parameters every private-key operation is several times slower");
+    assertEquals(((RSAPrivateCrtKey) pairA.getPrivate()).getPrimeP(), ((RSAPrivateCrtKey) priv).getPrimeP());
   }
 }
