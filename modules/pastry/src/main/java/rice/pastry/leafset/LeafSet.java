@@ -880,6 +880,9 @@ public class LeafSet implements Iterable<NodeHandle> {
     byte numUniqueHandles = buf.readByte();
     byte cwSize = buf.readByte();
     byte ccwSize = buf.readByte();
+    if (theSize < 0 || numUniqueHandles < 0 || cwSize < 0 || ccwSize < 0) {
+      throw new IOException("Invalid leafset sizes: " + theSize + "/" + numUniqueHandles + "/" + cwSize + "/" + ccwSize);
+    }
     NodeHandle baseHandle = nhf.readNodeHandle(buf);
     NodeHandle[] nhTable = new NodeHandle[numUniqueHandles];
     for (int i = 0; i < numUniqueHandles; i++) {
@@ -890,14 +893,22 @@ public class LeafSet implements Iterable<NodeHandle> {
     NodeHandle[] ccwTable = new NodeHandle[ccwSize];
 
     for (int i = 0; i < cwSize; i++) {
-      cwTable[i] = nhTable[buf.readByte()];
+      cwTable[i] = readTableEntry(buf, nhTable);
     }
 
     for (int i = 0; i < ccwSize; i++) {
-      ccwTable[i] = nhTable[buf.readByte()];
+      ccwTable[i] = readTableEntry(buf, nhTable);
     }
 
     return new LeafSet(baseHandle,theSize, true, cwTable, ccwTable);
+  }
+
+  private static NodeHandle readTableEntry(InputBuffer buf, NodeHandle[] nhTable) throws IOException {
+    byte index = buf.readByte();
+    if (index < 0 || index >= nhTable.length) {
+      throw new IOException("Leafset handle index " + index + " out of range 0.." + (nhTable.length - 1));
+    }
+    return nhTable[index];
   }
 
   public LeafSet(NodeHandle localNode, int size, boolean observe, NodeHandle[] cwTable, NodeHandle[] ccwTable) {
