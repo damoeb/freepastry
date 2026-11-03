@@ -951,7 +951,6 @@ Chapter 2 CommonApi Apps ******************************************************
                 
       short idType // the type of the id (next value)
       Id id // the id to fetch
-      boolean cached // whether or not this message has been cached
   
 2.2 GCPast ********************************************************************
 2.2.1 GCPast Objects **********************************************************

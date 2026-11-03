@@ -62,9 +62,6 @@ public final class LookupMessage extends ContinuationMessage {
   // the id to fetch
   private Id id;
 
-  // whether or not this message has been cached
-  private boolean cached = false;
-
   /**
    * Constructor
    *
@@ -118,7 +115,6 @@ public final class LookupMessage extends ContinuationMessage {
 
     buf.writeShort(id.getType());
     id.serialize(buf);
-    buf.writeBoolean(cached);
   }
 
   public static LookupMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
@@ -143,6 +139,5 @@ public final class LookupMessage extends ContinuationMessage {
       endpoint.getEnvironment().getLogManager().getLogger(LookupMessage.class, null).atWarn().log(() -> iae+" "+this+" serType:"+serType+" UID:"+getUID()+" d:"+getDestination()+" s:"+getSource());
       throw iae;
     }
-    cached = buf.readBoolean();
   }
 }
