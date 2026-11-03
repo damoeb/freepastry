@@ -47,6 +47,7 @@ import java.util.Objects;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 /**
@@ -113,8 +114,7 @@ public class LogSnippet {
   public LogSnippet(InputBuffer buf, int hashSize) throws IOException {
     long firstSeq = buf.readLong();
     if (buf.readByte() != 0) throw new IOException("Unexpected extInfo");
-    baseHash = new byte[hashSize];
-    buf.read(baseHash);
+    baseHash = WireLengths.readBytes(buf, hashSize);
     entries = new ArrayList<SnippetEntry>();
     SnippetEntry prev = new SnippetEntry(buf,firstSeq,hashSize);
     entries.add(prev);

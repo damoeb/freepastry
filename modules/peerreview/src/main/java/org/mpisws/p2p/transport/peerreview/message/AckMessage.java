@@ -40,6 +40,7 @@ import java.io.IOException;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
@@ -96,10 +97,8 @@ public final class AckMessage<Identifier extends RawSerializable> implements Pee
     Identifier remoteId = serializer.deserialize(sib);
     long ackedSeq = sib.readLong();
     long hisSeq = sib.readLong();
-    byte[] hTopMinusOne = new byte[hashSizeInBytes];
-    sib.read(hTopMinusOne);
-    byte[] signature = new byte[signatureSizeInBytes];
-    sib.read(signature);
+    byte[] hTopMinusOne = WireLengths.readBytes(sib, hashSizeInBytes);
+    byte[] signature = WireLengths.readBytes(sib, signatureSizeInBytes);
     return new AckMessage<Identifier>(remoteId, ackedSeq, hisSeq, hTopMinusOne, signature);
   }
 

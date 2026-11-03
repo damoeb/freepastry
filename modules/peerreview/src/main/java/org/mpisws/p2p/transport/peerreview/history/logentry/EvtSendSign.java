@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.peerreview.history.logentry;
 import java.io.IOException;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 
 /**
@@ -54,10 +55,8 @@ public class EvtSendSign {
   private final byte[] restOfMessage;
 
   public EvtSendSign(InputBuffer buf, int signatureSize) throws IOException {
-    signature = new byte[signatureSize];
-    buf.read(signature);
-    restOfMessage = new byte[buf.bytesRemaining()];
-    buf.read(restOfMessage);
+    signature = WireLengths.readBytes(buf, signatureSize);
+    restOfMessage = WireLengths.readBytes(buf, buf.bytesRemaining());
   }
 
   public byte[] getRestOfMessage() {

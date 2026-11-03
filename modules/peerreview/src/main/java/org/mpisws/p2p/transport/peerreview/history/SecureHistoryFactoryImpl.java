@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.util.RandomAccessFileIOBuffer;
 
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
@@ -157,10 +158,8 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
     long fileIndex = buf.readLong();
     int sizeInFile = buf.readInt();
     short type = buf.readShort();
-    byte[] contentHash = new byte[hashProv.getHashSizeBytes()];
-    buf.read(contentHash);
-    byte[] nodeHash = new byte[hashProv.getHashSizeBytes()];
-    buf.read(nodeHash);
+    byte[] contentHash = WireLengths.readBytes(buf, hashProv.getHashSizeBytes());
+    byte[] nodeHash = WireLengths.readBytes(buf, hashProv.getHashSizeBytes());
     return new IndexEntry(seq, fileIndex, type, sizeInFile, contentHash, nodeHash);
   }
 

@@ -43,6 +43,7 @@ import org.mpisws.p2p.transport.peerreview.history.logentry.EvtRecv;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;
@@ -125,15 +126,12 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
       InputBuffer buf, Serializer<H> serializer, int hashSize, int sigSize) throws IOException {
     long seq = buf.readLong();
     H handle = serializer.deserialize(buf);
-    byte[] hash = new byte[hashSize];
-    buf.read(hash);
-    byte[] sig = new byte[sigSize];
-    buf.read(sig);
+    byte[] hash = WireLengths.readBytes(buf, hashSize);
+    byte[] sig = WireLengths.readBytes(buf, sigSize);
     byte relevantCode = buf.readByte();
     int len = MathUtils.uByteToInt(relevantCode);
 
-    byte[] msg = new byte[buf.bytesRemaining()];
-    buf.read(msg);
+    byte[] msg = WireLengths.readBytes(buf, buf.bytesRemaining());
 
     if (len == MathUtils.uByteToInt(RELEVANT_LEN_ALL)) {
       len = msg.length;

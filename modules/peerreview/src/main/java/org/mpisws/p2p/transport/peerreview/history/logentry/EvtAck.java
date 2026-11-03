@@ -40,6 +40,7 @@ import java.io.IOException;
 
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
@@ -74,10 +75,8 @@ public class EvtAck<Identifier extends RawSerializable> extends HistoryEvent {
     remoteId = idSerializer.deserialize(buf);
     ackedSeq = buf.readLong();
     hisSeq = buf.readLong();
-    hTopMinusOne = new byte[hashSize];
-    buf.read(hTopMinusOne);
-    signature = new byte[signatureSize];
-    buf.read(signature);
+    hTopMinusOne = WireLengths.readBytes(buf, hashSize);
+    signature = WireLengths.readBytes(buf, signatureSize);
   }
 
   @Override

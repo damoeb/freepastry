@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -72,10 +73,8 @@ public class Authenticator implements Comparable<Authenticator> {
 
   public Authenticator(InputBuffer buf, int hashSize, int signatureSize) throws IOException {
     seq = buf.readLong();
-    hash = new byte[hashSize];
-    buf.read(hash);
-    signature = new byte[signatureSize];
-    buf.read(signature);
+    hash = WireLengths.readBytes(buf, hashSize);
+    signature = WireLengths.readBytes(buf, signatureSize);
     hashCode = (int)(seq ^ (seq >>> 32))^Arrays.hashCode(hash)^Arrays.hashCode(signature);
   }
 

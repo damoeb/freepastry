@@ -91,8 +91,7 @@ public class EvtRecv<Handle extends RawSerializable> extends HistoryEvent {
     if (hashed) payloadLength-=hashSize;
     payload = WireLengths.readBytes(buf, payloadLength);
     if (hashed) {
-      hash = new byte[hashSize];
-      buf.read(hash);
+      hash = WireLengths.readBytes(buf, hashSize);
     }
   }
 

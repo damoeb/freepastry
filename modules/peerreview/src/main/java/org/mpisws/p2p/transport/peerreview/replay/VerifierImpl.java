@@ -58,6 +58,7 @@ import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -274,8 +275,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
         int msgLen = nextEvent.bytesRemaining();
 
-        byte[] msgBytes = new byte[msgLen];
-        nextEvent.read(msgBytes);
+        byte[] msgBytes = WireLengths.readBytes(nextEvent, msgLen);
         ByteBuffer msgBuf = ByteBuffer.wrap(msgBytes);
 
         /* The next event is going to be a SIGN; skip it, since it's irrelevant here */
@@ -350,8 +350,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
 
 
             // compare the checkpoints
-            byte[] bar = new byte[actualCheckpointSize];
-            nextEvent.read(bar);
+            byte[] bar = WireLengths.readBytes(nextEvent, actualCheckpointSize);
 
             if (!Arrays.equals(bar, buf.getBytes())) {
               logger.warn("Replay: Checkpoint does not match");
@@ -546,8 +545,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return null;
       }
 
-      byte[] loggedMsg = new byte[logRelevantLen];
-      nextEvent.read(loggedMsg);
+      byte[] loggedMsg = WireLengths.readBytes(nextEvent, logRelevantLen);
       ByteBuffer loggedMsgBB = ByteBuffer.wrap(loggedMsg);
       ByteBuffer relevant = message.duplicate();
       relevant.limit(pos+relevantLen);
@@ -559,8 +557,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return null;
       }
 
-      byte[] logHash = new byte[transport.getHashSizeBytes()];
-      nextEvent.read(logHash);
+      byte[] logHash = WireLengths.readBytes(nextEvent, transport.getHashSizeBytes());
       ByteBuffer irrelevant = message.duplicate();
       irrelevant.position(pos+relevantLen);
       byte[] msgHash = transport.hash(irrelevant);
@@ -585,8 +582,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
         return null;
       }
 
-      byte[] loggedMsg = new byte[nextEvent.bytesRemaining()];
-      nextEvent.read(loggedMsg);
+      byte[] loggedMsg = WireLengths.readBytes(nextEvent, nextEvent.bytesRemaining());
       byte[] sentMsg = new byte[message.remaining()];
       message.get(sentMsg);
 
@@ -795,8 +791,7 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       return 0;
     }
 
-    nextEvent.read(dst.array(), dst.arrayOffset()+dst.position(), ret);
-    dst.position(dst.position()+ret);
+    dst.put(WireLengths.readBytes(nextEvent, ret));
     fetchNextEvent();
     return ret;
   }
@@ -839,9 +834,8 @@ public class VerifierImpl<Handle extends RawSerializable, Identifier extends Raw
       return 0;
     }
 
-    byte[] loggedMsg = new byte[ret];
+    byte[] loggedMsg = WireLengths.readBytes(nextEvent, ret);
     byte[] sentMsg = new byte[ret];
-    nextEvent.read(loggedMsg);
     src.get(sentMsg);
 
     if (!Arrays.equals(loggedMsg, sentMsg)) {

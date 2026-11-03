@@ -347,7 +347,7 @@ public class SecureHistoryImpl implements SecureHistory {
         buffer = new byte[(int)ie.sizeInFile]; // grumble...  This needs to be long eventually...
         assert(ie.fileIndex >= 0);
         dataFile.seek(ie.fileIndex);
-        dataFile.read(buffer);
+        dataFile.readFully(buffer);
       }
 
       // The entry is hashed if (a) it is already hashed in the log file,
@@ -410,7 +410,7 @@ public class SecureHistoryImpl implements SecureHistory {
     int bytesToRead = (maxSizeToRead>=ie.sizeInFile) ? ie.sizeInFile : maxSizeToRead;
 
     byte[] ret = new byte[bytesToRead];
-    dataFile.read(ret);
+    dataFile.readFully(ret);
 
     return ret;
   }

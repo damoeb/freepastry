@@ -42,6 +42,7 @@ import java.nio.ByteBuffer;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
@@ -80,17 +81,12 @@ public class EvtSend<Identifier extends RawSerializable> extends HistoryEvent {
   public EvtSend(InputBuffer buf, Serializer<Identifier> idSerializer, int hashSize) throws IOException {
     receiverId = idSerializer.deserialize(buf);
     boolean hasHash = buf.readBoolean();
-    byte[] payload_bytes;
-    if (hasHash) {
-      payload_bytes = new byte[buf.bytesRemaining()-hashSize];
-    } else {
-      payload_bytes = new byte[buf.bytesRemaining()];
-    }
-    buf.read(payload_bytes);
+    int payloadLength = buf.bytesRemaining();
+    if (hasHash) payloadLength -= hashSize;
+    byte[] payload_bytes = WireLengths.readBytes(buf, payloadLength);
     payload = ByteBuffer.wrap(payload_bytes);
     if (hasHash) {
-      hash = new byte[hashSize];
-      buf.read(hash);
+      hash = WireLengths.readBytes(buf, hashSize);
     }
   }
 

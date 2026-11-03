@@ -52,6 +52,7 @@ import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.util.Serializer;
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
@@ -296,8 +297,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         return;
       }
 
-      byte[] loggedMsg = new byte[logRelevantLen];
-      nextEvent.read(loggedMsg);
+      byte[] loggedMsg = WireLengths.readBytes(nextEvent, logRelevantLen);
       ByteBuffer loggedMsgBB = ByteBuffer.wrap(loggedMsg);
       ByteBuffer relevant = message.duplicate();
       relevant.limit(pos+relevantLen);
@@ -309,8 +309,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         return;
       }
 
-      byte[] logHash = new byte[hashSizeBytes];
-      nextEvent.read(logHash);
+      byte[] logHash = WireLengths.readBytes(nextEvent, hashSizeBytes);
       ByteBuffer irrelevant = message.duplicate();
       irrelevant.position(pos+relevantLen);
       byte[] msgHash = hashProv.hash(irrelevant);
@@ -335,8 +334,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
         return;
       }
 
-      byte[] loggedMsg = new byte[nextEvent.bytesRemaining()];
-      nextEvent.read(loggedMsg);
+      byte[] loggedMsg = WireLengths.readBytes(nextEvent, nextEvent.bytesRemaining());
       byte[] sentMsg = new byte[message.remaining()];
       message.get(sentMsg);
 
@@ -426,8 +424,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       return 0;
     }
 
-    nextEvent.read(dst.array(), dst.arrayOffset()+dst.position(), ret);
-    dst.position(dst.position()+ret);
+    dst.put(WireLengths.readBytes(nextEvent, ret));
     fetchNextEvent();
     return ret;
   }
@@ -470,9 +467,8 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
       return 0;
     }
 
-    byte[] loggedMsg = new byte[ret];
+    byte[] loggedMsg = WireLengths.readBytes(nextEvent, ret);
     byte[] sentMsg = new byte[ret];
-    nextEvent.read(loggedMsg);
     src.get(sentMsg);
 
     if (!Arrays.equals(loggedMsg, sentMsg)) {
@@ -638,8 +634,7 @@ public abstract class ReplayVerifier<Identifier> implements Verifier<Identifier>
 
         int msgLen = nextEvent.bytesRemaining();
 
-        byte[] msgBytes = new byte[msgLen];
-        nextEvent.read(msgBytes);
+        byte[] msgBytes = WireLengths.readBytes(nextEvent, msgLen);
         ByteBuffer msgBuf = ByteBuffer.wrap(msgBytes);
 
         /* The next event is going to be a SIGN; skip it, since it's irrelevant here */
