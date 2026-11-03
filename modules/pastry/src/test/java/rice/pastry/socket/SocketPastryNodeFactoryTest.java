@@ -6,15 +6,21 @@ import java.net.ServerSocket;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import rice.environment.Environment;
+import rice.pastry.Id;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeListener;
 import rice.pastry.standard.RandomNodeIdFactory;
+import rice.selector.SelectorManager;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,6 +72,38 @@ class SocketPastryNodeFactoryTest {
       assertThrows(RuntimeException.class, factory::newNode);
     }
 
+    CountDownLatch selectorRuns = new CountDownLatch(1);
+    env.getSelectorManager().invoke(selectorRuns::countDown);
+    assertTrue(selectorRuns.await(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+  }
+
+  @Test
+  @DisplayName("a failed bind stops the selector and processor cloned for the node, but not the shared ones")
+  void aFailedBindDestroysWhatWasClonedForTheNode() throws Exception {
+    env.getParameters().setBoolean("pastry_socket_increment_port_after_construction", false);
+    env.getParameters().setBoolean("pastry_factory_multipleNodes", true);
+    env.getParameters().setBoolean("pastry_factory_selectorPerNode", true);
+    env.getParameters().setBoolean("pastry_factory_processorPerNode", true);
+    InetAddress loopback = InetAddress.getLoopbackAddress();
+    AtomicReference<Environment> cloned = new AtomicReference<>();
+    try (ServerSocket occupied = new ServerSocket(0, 1, loopback)) {
+      SocketPastryNodeFactory factory =
+        new SocketPastryNodeFactory(new RandomNodeIdFactory(env), loopback, occupied.getLocalPort(), env) {
+          @Override
+          protected Environment cloneEnvironment(Environment rootEnvironment, Id nodeId) {
+            Environment clone = super.cloneEnvironment(rootEnvironment, nodeId);
+            cloned.set(clone);
+            return clone;
+          }
+        };
+
+      assertThrows(RuntimeException.class, factory::newNode);
+    }
+
+    SelectorManager clonedSelector = cloned.get().getSelectorManager();
+    assertNotSame(env.getSelectorManager(), clonedSelector);
+    clonedSelector.join(TimeUnit.SECONDS.toMillis(READY_TIMEOUT_SECONDS));
+    assertFalse(clonedSelector.isAlive());
     CountDownLatch selectorRuns = new CountDownLatch(1);
     env.getSelectorManager().invoke(selectorRuns::countDown);
     assertTrue(selectorRuns.await(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));

@@ -1167,19 +1167,51 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected void newNodeSelector(Id nodeId,
       MultiInetSocketAddress proxyAddress, Continuation<PastryNode, IOException> deliverResultToMe, Map<String, Object> initialVars) {
 
+    Environment environment = null;
+    PastryNode pn = null;
+    boolean delivered = false;
     try {
       // this code builds a different environment for each PastryNode
-      Environment environment = cloneEnvironment(this.environment, nodeId);
+      environment = cloneEnvironment(this.environment, nodeId);
 
-      PastryNode pn = new PastryNode(nodeId, environment);
+      pn = new PastryNode(nodeId, environment);
       if (initialVars != null) pn.getVars().putAll(initialVars);
       pn.getVars().put(PROXY_ADDRESS, proxyAddress);
 
       nodeHandleHelper(pn);
 
+      delivered = true;
       deliverResultToMe.receiveResult(pn);
     } catch (IOException ioe) {
+      if (!delivered) {
+        if (pn != null) pn.destroy();
+        if (environment != null) releaseClonedEnvironment(this.environment, environment);
+      }
       deliverResultToMe.receiveException(ioe);
+    } catch (RuntimeException | Error e) {
+      if (!delivered) {
+        if (pn != null) pn.destroy();
+        if (environment != null) releaseClonedEnvironment(this.environment, environment);
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Undoes {@link #cloneEnvironment} for a node that was never handed out: unhooks the clone from the root
+   * environment and stops the selector and processor the clone created for itself. The root's own selector
+   * and processor, which the clone shares unless the factory is configured to give every node its own,
+   * stay running, so the clone is not destroyed as a whole.
+   */
+  @SuppressWarnings("ReferenceEquality") // shared instances are meant
+  void releaseClonedEnvironment(Environment rootEnvironment, Environment cloned) {
+    if (cloned == rootEnvironment) return;
+    rootEnvironment.removeDestructable(cloned);
+    if (cloned.getSelectorManager() != rootEnvironment.getSelectorManager()) {
+      cloned.getSelectorManager().destroy();
+    }
+    if (cloned.getProcessor() != rootEnvironment.getProcessor()) {
+      cloned.getProcessor().destroy();
     }
   }
 
