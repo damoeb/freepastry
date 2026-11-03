@@ -49,6 +49,7 @@ import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * Builds the message to a target size.
@@ -56,6 +57,14 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  * @author Jeff Hoye
  */
 public record AuthPushMessage<Identifier extends RawSerializable>(Map<Identifier, List<Authenticator>> authenticators) implements PeerReviewMessage {
+  /** The most identifiers one push may carry. */
+  public static final int MAX_IDENTIFIERS = 1024;
+  /** The most authenticators one push may carry for a single identifier. */
+  public static final int MAX_AUTHENTICATORS_PER_ID = 4096;
+  private static final int MIN_ID_BYTES = 1;
+  /** An authenticator starts with its 8 byte sequence number. */
+  private static final int MIN_AUTHENTICATOR_BYTES = 8;
+
 
   @Override
   public short getType() {
@@ -64,10 +73,12 @@ public record AuthPushMessage<Identifier extends RawSerializable>(Map<Identifier
 
   public static <I extends RawSerializable> AuthPushMessage<I> build(InputBuffer buf, Serializer<I> idSerializer, AuthenticatorSerializer authSerializer) throws IOException {
     Map<I, List<Authenticator>> authenticators = new HashMap<I, List<Authenticator>>();
-    int numIds = buf.readShort();
+    int numIds = WireLengths.readShort(buf, MIN_ID_BYTES);
+    if (numIds > MAX_IDENTIFIERS) throw new IOException("Too many identifiers: " + numIds);
     for (int i = 0; i < numIds; i++) {
       I id = idSerializer.deserialize(buf);
-      int numAuths = buf.readShort();
+      int numAuths = WireLengths.readShort(buf, MIN_AUTHENTICATOR_BYTES);
+      if (numAuths > MAX_AUTHENTICATORS_PER_ID) throw new IOException("Too many authenticators: " + numAuths);
       List<Authenticator> l = new ArrayList<Authenticator>();
       authenticators.put(id, l);
       for (int a = 0; a < numAuths; a++) {
