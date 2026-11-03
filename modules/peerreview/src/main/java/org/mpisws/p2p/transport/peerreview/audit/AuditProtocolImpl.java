@@ -482,8 +482,7 @@ public class AuditProtocolImpl<Handle extends RawSerializable, Identifier extend
        so we can remove them from our local store. */
 //
     logger.debug("All authenticators in range [{},{}] check out OK; flushing", fromSeq, toSeq);
-    // TODO: check the old authenticators and flush only from fromSeq instead of Long.MIN_VALUE
-    authInStore.flushAuthenticatorsFor(subject, Long.MIN_VALUE, toSeq);
+    authInStore.flushAuthenticatorsFor(subject, fromSeq, toSeq);
 
     /* Find out if the log snippet is 'useful', i.e. if we can append it to our local history */
 
