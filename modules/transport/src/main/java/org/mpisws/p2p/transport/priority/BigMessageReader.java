@@ -104,6 +104,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
         ctx.logger.debug("Received BIG message of size:{} from:{}", msgBuf.capacity(), socket);
         msgBuf.flip();
         sizeBuf.clear();
+        ctx.listeners.notifyRead(msgBuf.remaining(), socket.getIdentifier(), socket.getOptions());
         ctx.callback.get().messageReceived(socket.getIdentifier(), msgBuf, socket.getOptions());
         this.msgBuf = null;
         socket.register(true, false, this);
