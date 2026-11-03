@@ -211,7 +211,7 @@ final class AggregateConsolidator {
 
             GCPastContent temp = aggr[i].getComponent(j);
 
-            components[componentIndex] = (GCPastContent)temp;
+            components[componentIndex] = temp;
             desc[componentIndex] = adc[i].getObjects()[j];
             if (logger.isDebugEnabled()) logger.debug("  #"+componentIndex+": "+adc[i].getObjects()[j].getKey().toStringFull());
             componentIndex ++;
