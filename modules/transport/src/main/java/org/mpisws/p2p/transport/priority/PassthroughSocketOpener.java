@@ -85,11 +85,21 @@ final class PassthroughSocketOpener<Identifier> implements SocketCallback<Identi
    * Writes the passthrough header, then hands the socket up.
    */
   private final class HeaderWriter implements P2PSocketReceiver<Identifier> {
+    private final ByteBuffer header = ByteBuffer.wrap(PriorityTransportLayerImpl.PASSTHROUGH_SOCKET);
 
     @Override
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       if (canRead || !canWrite) throw new IllegalArgumentException("expected to write!  canRead:"+canRead+" canWrite:"+canWrite);
-      socket.write(ByteBuffer.wrap(PriorityTransportLayerImpl.PASSTHROUGH_SOCKET));
+      if (header.hasRemaining() && socket.write(header) < 0) {
+        socket.close();
+        receiveException(socket, new org.mpisws.p2p.transport.ClosedChannelException("Channel closed while writing the passthrough header."));
+        return;
+      }
+      if (header.hasRemaining()) {
+        // a short write: keep writing the rest of the header before the socket is handed up
+        socket.register(false, true, this);
+        return;
+      }
       if (deliverSocketToMe != null) deliverSocketToMe.receiveResult(handle, socket);
     }
 
