@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -1084,23 +1085,42 @@ public class PastryNode implements
 
 
 
+  private @Nullable ScheduledMessage routeSetMaintTask;
+  private @Nullable ScheduledMessage leafSetMaintTask;
+
+  private static boolean isScheduled(@Nullable ScheduledMessage task) {
+    return task != null && !task.isCancelled();
+  }
+
+  /** The periodic routeset maintenance task, or null if it is not scheduled. */
+  @Nullable ScheduledMessage routeSetMaintenanceTask() {
+    return isScheduled(routeSetMaintTask) ? routeSetMaintTask : null;
+  }
+
+  /** The periodic leafset maintenance task, or null if it is not scheduled. */
+  @Nullable ScheduledMessage leafSetMaintenanceTask() {
+    return isScheduled(leafSetMaintTask) ? leafSetMaintTask : null;
+  }
+
   /**
-   * Called after the node is initialized.
+   * Called after the node is initialized, on every boot. The periodic maintenance tasks are scheduled by the
+   * first call; later calls (a rejoin boots the node again) keep them.
    *
    * @param bootstrap The node which this node should boot off of.
    */
   public void doneNode(Collection<NodeHandle> bootstrap) {
     logger.info("doneNode:{}", bootstrap);
     logger.info("doneNode:{}", bootstrap);
-    if (routeSetMaintFreq > 0) {
+    // doneNode runs on every boot, also on a rejoin, but the maintenance tasks are scheduled only once
+    if (routeSetMaintFreq > 0 && !isScheduled(routeSetMaintTask)) {
       // schedule the routeset maintenance event
-      scheduleMsgAtFixedRate(new InitiateRouteSetMaintenance(),
+      routeSetMaintTask = scheduleMsgAtFixedRate(new InitiateRouteSetMaintenance(),
         routeSetMaintFreq * 1000L, routeSetMaintFreq * 1000L);
       logger.atInfo().log(() -> "Scheduling routeSetMaint for "+routeSetMaintFreq * 1000+","+routeSetMaintFreq * 1000);
     }
-    if (leafSetMaintFreq > 0) {
+    if (leafSetMaintFreq > 0 && !isScheduled(leafSetMaintTask)) {
       // schedule the leafset maintenance event
-      scheduleMsgAtFixedRate(new InitiateLeafSetMaintenance(),
+      leafSetMaintTask = scheduleMsgAtFixedRate(new InitiateLeafSetMaintenance(),
         leafSetMaintFreq * 1000L, leafSetMaintFreq * 1000L);
       logger.atInfo().log(() -> "Scheduling leafSetMaint for "+leafSetMaintFreq * 1000+","+leafSetMaintFreq * 1000);
     }

@@ -84,6 +84,11 @@ public class ScheduledMessage extends TimerTask {
     return "SchedMsg for " + msg;
   }
 
+  /** True once {@link #cancel()} was called. */
+  public boolean isCancelled() {
+    return cancelled;
+  }
+
   // see rice.p2p.commonapi.CancellableTask#cancel()
   @Override
   public boolean cancel() {
