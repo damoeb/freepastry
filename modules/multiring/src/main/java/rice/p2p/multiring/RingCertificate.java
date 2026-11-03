@@ -373,8 +373,16 @@ public class RingCertificate {
       bootstraps[i] = readAddress(in);
     }
     logServer = in.readBoolean() ? readAddress(in) : null;
-    key = SecurityUtils.decodePublicKey(readBytes(in));
+    key = readPublicKey(in);
     signature = readBytes(in);
+  }
+
+  private static PublicKey readPublicKey(DataInput in) throws IOException {
+    try {
+      return SecurityUtils.decodePublicKey(readBytes(in));
+    } catch (SecurityException e) {
+      throw new IOException("Invalid public key in ring certificate", e);
+    }
   }
 
   private void writeFields(DataOutput out) throws IOException {
@@ -401,13 +409,19 @@ public class RingCertificate {
 
   private static InetSocketAddress readAddress(DataInput in) throws IOException {
     String host = in.readUTF();
-    return new InetSocketAddress(host, in.readInt());
+    int port = in.readInt();
+    if (port < 0 || port > MAX_PORT) {
+      throw new IOException("Invalid port " + port + " in ring certificate");
+    }
+    return new InetSocketAddress(host, port);
   }
 
   private static void writeBytes(DataOutput out, byte[] bytes) throws IOException {
     out.writeInt(bytes.length);
     out.write(bytes);
   }
+
+  private static final int MAX_PORT = 0xFFFF;
 
   /** Most bootstrap addresses a certificate can name. */
   static final int MAX_BOOTSTRAPS = 1024;

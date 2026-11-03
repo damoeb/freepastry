@@ -559,8 +559,14 @@ public class SecurityUtils {
    */
   public static PublicKey decodePublicKey(byte[] data) throws SecurityException {
     byte[] len = new byte[4];
+    if (data.length < len.length) {
+      throw new SecurityException("Encoded key is too short: " + data.length + " bytes");
+    }
     System.arraycopy(data, 0, len, 0, len.length);
     int length = MathUtils.byteArrayToInt(len);
+    if (length <= 0 || length >= data.length - len.length) {
+      throw new SecurityException("Encoded key has an invalid modulus length " + length + " for " + data.length + " bytes");
+    }
 
     byte[] modulus = new byte[length];
     System.arraycopy(data, len.length, modulus, 0, length);
