@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedMap;
 
 import org.slf4j.Logger;
@@ -60,10 +61,12 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.past.ObjectNotFoundException;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastException;
 import rice.p2p.past.PastImpl;
 import rice.p2p.past.PastPolicy;
+import rice.p2p.past.RefreshFailedException;
 import rice.p2p.past.messaging.GCCollectMessage;
 import rice.p2p.past.messaging.GCInsertMessage;
 import rice.p2p.past.messaging.GCLookupHandlesMessage;
@@ -218,15 +221,36 @@ public class GCPastImpl extends PastImpl implements GCPast {
     for (int i=0; i<array.length; i++)
       set.addId(new GCId(array[i], expirations[i]));
 
-    refresh(set, new StandardContinuation<Object, Object[], Exception>(command) {
+    final Map<Id, Boolean> outcome = new HashMap<>();
+    refresh(set, outcome, new StandardContinuation<Object, Object[], Exception>(command) {
       @Override
       public void receiveResult(Object o) {
-        Object[] result = new Object[array.length];
-        Arrays.fill(result, true);
-
-        parent.receiveResult(result);
+        parent.receiveResult(collectRefreshResults(array, outcome));
       }
     });
+  }
+
+  /**
+   * Turns the replicas' answers into the per-id result of {@link #refresh(Id[], long[], Continuation)}.
+   *
+   * @param ids The ids that were to be refreshed
+   * @param outcome Per id: TRUE if at least one replica refreshed it (or already had a later expiration), FALSE if
+   *   replicas answered but none had the object, absent if no replica answered at all
+   * @return Per id Boolean.TRUE, an ObjectNotFoundException or a RefreshFailedException
+   */
+  static Object[] collectRefreshResults(Id[] ids, Map<Id, Boolean> outcome) {
+    Object[] result = new Object[ids.length];
+    for (int i = 0; i < ids.length; i++) {
+      Boolean refreshed = outcome.get(ids[i]);
+      if (refreshed == null) {
+        result[i] = new RefreshFailedException("No replica answered the refresh of " + ids[i]);
+      } else if (refreshed.booleanValue()) {
+        result[i] = true;
+      } else {
+        result[i] = new ObjectNotFoundException("No object found under " + ids[i]);
+      }
+    }
+    return result;
   }
 
   /**
@@ -237,6 +261,17 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * @param command The command to return the result to
    */
   protected void refresh(final GCIdSet ids, Continuation<? super Object, Exception> command) {
+    refresh(ids, new HashMap<>(), command);
+  }
+
+  /**
+   * Does the refreshing, recording in outcome the replicas' answers per id.
+   *
+   * @param ids The ids to refresh, each with the time to extend its lifetime until
+   * @param outcome Collects per id whether a replica refreshed it, see {@link #collectRefreshResults(Id[], Map)}
+   * @param command The command to return the result to
+   */
+  private void refresh(final GCIdSet ids, final Map<Id, Boolean> outcome, Continuation<? super Object, Exception> command) {
     final Logger logger = getEnvironment().getLogManager().getLogger(GCPastImpl.class, getInstance());
     logger.atDebug().log(() -> "REFRESH: CALLED WITH "+ ids.numElements() + " ELEMENTS");
 
@@ -292,16 +327,27 @@ public class GCPastImpl extends PastImpl implements GCPast {
               public void receiveResult(Object o) {
                 if (iterator.hasNext()) {
                   NodeHandle next = iterator.next();
-                  GCIdSet ids = map.getIds(next);
-                  logger.debug("REFRESH: SENDING REQUEST TO {} FOR IDSET {}", next, ids);
+                  GCIdSet sent = map.getIds(next);
+                  // the replica answers one Boolean per key, in the order of the message's keys
+                  final Id[] sentIds = sent.asArray();
+                  logger.debug("REFRESH: SENDING REQUEST TO {} FOR IDSET {}", next, sent);
 
 
-                  sendRequest(next, new GCRefreshMessage(getUID(), ids, getLocalNodeHandle(), next.getId()),
-                              new NamedContinuation<Object, Exception>("GCRefresh to " + next, this));
+                  sendRequest(next, new GCRefreshMessage(getUID(), sent, getLocalNodeHandle(), next.getId()),
+                              new NamedContinuation<Object, Exception>("GCRefresh to " + next, new StandardContinuation<Object, Object, Exception>(this) {
+                    @Override
+                    public void receiveResult(Object answers) {
+                      if (answers instanceof Boolean[] booleans && booleans.length == sentIds.length) {
+                        for (int k = 0; k < sentIds.length; k++)
+                          outcome.merge(((GCId) sentIds[k]).id(), booleans[k], Boolean::logicalOr);
+                      }
+                      parent.receiveResult(null);
+                    }
+                  }));
                 } else {
                   logger.debug("REFRESH: DONE SENDING REQUESTS, RECURSING");
 
-                  refresh(ids, parent);
+                  refresh(ids, outcome, parent);
                 }
               }
 
@@ -390,10 +436,14 @@ public class GCPastImpl extends PastImpl implements GCPast {
           other += rmsg.getKeys().length;
 
           StandardContinuation<Object, Object, Exception> process = new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
+            private boolean started;
+
             @Override
             public void receiveResult(Object o) {
-              if (o != null)
-                result.add(o);
+              // one answer per key, in order, so the caller can match them up: the first call only starts the chain
+              if (started)
+                result.add(Boolean.TRUE.equals(o));
+              started = true;
 
               if (i.hasNext()) {
                 final GCId id = i.next();
@@ -407,7 +457,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
                     if (metadata.expiration() < id.expiration()) {
                       storage.setMetadata(id.id(), metadata.setExpiration(id.expiration()), this);
                     } else {
-                      receiveResult(false);
+                      /* already refreshed to a later expiration, which counts as success */
+                      receiveResult(true);
                     }
                   } else {
                     storage.getObject(id.id(), new StandardContinuation<Object, Object, Exception>(this) {
