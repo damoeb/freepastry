@@ -46,8 +46,6 @@ import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
  * that never go on the wire, but keep their ids reserved.
  */
 public enum PastMessageType implements MessageTypeId {
-  /** {@link CacheMessage} */
-  CACHE(1),
   /** {@link FetchHandleMessage} */
   FETCH_HANDLE(2),
   /** {@link FetchMessage} */

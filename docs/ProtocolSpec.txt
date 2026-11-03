@@ -71,7 +71,6 @@ Table of contents:
   PastContent
   PastContentHandle  
 2.1.2: Past Messages 
-  CacheMessage    
   FetchHandleMessage 
   FetchMessage    
   InsertMessage
@@ -842,18 +841,6 @@ Chapter 2 CommonApi Apps ******************************************************
     format: user defined, no required fields, but must declare a type
   
 2.1.2 Past Messages ***********************************************************
-  CacheMessage:    
-    type 1
-    use: Pushes an object forward one hop in order to be cached.   
-    format:
-      byte version (0)
-      int id // unique id of this message
-      short idType // the type of the dest (next value)
-      Id dest // the destination of this request
-      NodeHandle source // the source of this request
-      boolean isResponse // if this is a response     
-      PastContent content // the content of this cache request
-      
   FetchHandleMessage:    
     type 2
     use: Request a PastContentHandle based on an Id (both request/response).   

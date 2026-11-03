@@ -45,7 +45,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Continuation.ListenerContinuation;
 import rice.Continuation.MultiContinuation;
 import rice.Continuation.NamedContinuation;
 import rice.Continuation.SimpleContinuation;
@@ -67,7 +66,6 @@ import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.past.PastPolicy.DefaultPastPolicy;
-import rice.p2p.past.messaging.CacheMessage;
 import rice.p2p.past.messaging.ContinuationMessage;
 import rice.p2p.past.messaging.FetchHandleMessage;
 import rice.p2p.past.messaging.FetchMessage;
@@ -204,7 +202,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
       }
       try {
         return switch (t) {
-          case CACHE -> CacheMessage.build(buf, endpoint, contentDeserializer);
           case FETCH_HANDLE -> FetchHandleMessage.build(buf, endpoint, contentHandleDeserializer);
           case FETCH -> FetchMessage.build(buf, endpoint, contentDeserializer, contentHandleDeserializer);
           case INSERT -> InsertMessage.build(buf, endpoint, contentDeserializer);
@@ -648,15 +645,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         }
       });
     }
-  }
-
-  /**
-   * Method which inserts the given object into the cache
-   *
-   * @param content The content to cache
-   */
-  private void cache(final PastContent content) {
-    cache(content, new ListenerContinuation<Object, Exception>("Caching of " + content, environment));
   }
 
   /**
@@ -1138,7 +1126,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
             }
           });
         }
-        case CacheMessage cmsg -> cache(cmsg.getContent());
         case MessageLostMessage _, GCRefreshMessage _, GCCollectMessage _ ->
           logger.error("ERROR - Received message {}of unknown type.", msg);
       }
