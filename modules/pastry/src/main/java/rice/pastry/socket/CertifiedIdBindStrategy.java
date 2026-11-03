@@ -1,5 +1,6 @@
 package rice.pastry.socket;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
@@ -9,34 +10,75 @@ import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rice.pastry.Id;
 import rice.pastry.standard.NodeIdCertificate;
 
 /**
- * Accepts a node handle only if its id is the one the peer's TLS certificate is bound to: the id must
- * equal the certificate's common name, which {@code SSLTransportLayerImpl} reports in the socket options
- * as {@link SSLTransportLayer#OPTION_CERT_SUBJECT}. A peer that claims another id than its certificate
- * grants is refused (the binding is not made) and a warning is logged. Return it from
- * {@code SocketPastryNodeFactory.getBindStrategy()} when the factory inserts the SSL layer; see
- * {@link NodeIdCertificate} for the whole design.
- * <p>
- * Options without a certificate subject (UDP datagrams, which TLS does not cover) are accepted: this
- * strategy authenticates TCP connections only. Use it with {@code SSLTransportLayer.CLIENT_AUTH_REQUIRED},
- * otherwise connecting peers carry no certificate at all.
+ * Binds a node handle to its node id only as far as a TLS certificate vouches for it. The certificate's
+ * common name is reported by {@code SSLTransportLayerImpl} in the socket options as
+ * {@link SSLTransportLayer#OPTION_CERT_SUBJECT}. Every id is in one of three states:
+ * <ul>
+ * <li><b>unverified</b> (pending): the id was only learned over the wire (a handle from routing state, or a
+ * datagram, neither carries a certificate). The handle is accepted, so a node can route towards it and connect
+ * to it, but it is not an authenticated identity: {@link #isAuthenticated} is false.</li>
+ * <li><b>authenticated</b>: a TLS connection presented a certificate whose common name equals the id. This
+ * promotes a pending id.</li>
+ * <li><b>refused</b>: a connection presented a certificate whose common name differs from the id the peer
+ * claims. The binding is not made, a warning is logged and the id loses its pending state. An authenticated id
+ * stays authenticated, as the certificate proved it.</li>
+ * </ul>
+ * Return it from {@code SocketPastryNodeFactory.getBindStrategy()} when the factory inserts the SSL layer, with
+ * {@code SSLTransportLayer.CLIENT_AUTH_REQUIRED} (otherwise connecting peers carry no certificate) and a
+ * subject validator that only lets node ids pass ({@link NodeIdCertificate#isNodeId}); see
+ * {@link NodeIdCertificate} for the whole design. Both states are bounded, the least recently used id is
+ * forgotten first.
  */
 public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>, SourceRoute<MultiInetSocketAddress>> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CertifiedIdBindStrategy.class);
 
+  /** ids remembered per state */
+  private static final int MAX_TRACKED_IDS = 4096;
+
+  private final Map<Id, Boolean> authenticated = lru();
+  private final Map<Id, Boolean> pending = lru();
+
+  private static Map<Id, Boolean> lru() {
+    return new LinkedHashMap<>(16, 0.75f, true) {
+      @Override
+      protected boolean removeEldestEntry(Map.Entry<Id, Boolean> eldest) {
+        return size() > MAX_TRACKED_IDS;
+      }
+    };
+  }
+
   @Override
-  public boolean accept(TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable SourceRoute<MultiInetSocketAddress> l, @Nullable Map<String, Object> options) {
+  public synchronized boolean accept(TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable SourceRoute<MultiInetSocketAddress> l, @Nullable Map<String, Object> options) {
+    Id id = u.getNodeId();
     Object subject = options == null ? null : options.get(SSLTransportLayer.OPTION_CERT_SUBJECT);
     if (subject == null) {
+      if (!authenticated.containsKey(id)) {
+        pending.put(id, Boolean.TRUE);
+      }
       return true;
     }
-    if (NodeIdCertificate.matches(u.getNodeId(), subject)) {
+    if (NodeIdCertificate.matches(id, subject)) {
+      pending.remove(id);
+      authenticated.put(id, Boolean.TRUE);
       return true;
     }
+    pending.remove(id);
     LOGGER.warn("Rejecting node {} which claims an id that does not match its certificate subject {}", u, subject);
     return false;
+  }
+
+  /** @return true if a TLS certificate whose common name is this id has been presented */
+  public synchronized boolean isAuthenticated(Id id) {
+    return authenticated.containsKey(id);
+  }
+
+  /** @return true if the id was learned without a certificate and no matching certificate has been seen yet */
+  public synchronized boolean isPending(Id id) {
+    return pending.containsKey(id);
   }
 }

@@ -53,9 +53,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.pki.x509.CAToolImpl;
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -75,6 +77,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.dist.DistNodeHandle;
 import rice.pastry.socket.CertifiedIdBindStrategy;
 import rice.pastry.socket.TransportLayerNodeHandle;
+import rice.pastry.standard.NodeIdCertificate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -155,9 +158,13 @@ public class SSLTest {
   }
 
   SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> layer(String name, int port, KeyStore keys, KeyStore trust, int clientAuth) throws IOException {
+    return layer(name, port, keys, trust, clientAuth, subject -> true);
+  }
+
+  SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> layer(String name, int port, KeyStore keys, KeyStore trust, int clientAuth, Predicate<String> subjectValidator) throws IOException {
     Environment env = rootEnv.cloneEnvironment(name);
     WireTransportLayerImpl wire = new WireTransportLayerImpl(new InetSocketAddress(addr, port), env, null);
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> ret = new SSLTransportLayerImpl<InetSocketAddress, ByteBuffer>(wire, keys, trust, clientAuth, env);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> ret = new SSLTransportLayerImpl<InetSocketAddress, ByteBuffer>(wire, keys, trust, clientAuth, subjectValidator, env);
     layers.add(ret);
     environments.put(ret, env);
     return ret;
@@ -348,8 +355,12 @@ public class SSLTest {
 
   /** bob, whose certificate is for bobId, connects to alice; returns the options of the socket alice accepted */
   Map<String, Object> bobConnectsWithCertificateFor(Id bobId) throws Exception {
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), ca(false)), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
-    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store(bobId.toStringFull(), ca(false), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
+    return bobConnectsWithCertificateFor(bobId.toStringFull(), subject -> true);
+  }
+
+  Map<String, Object> bobConnectsWithCertificateFor(String bobCn, Predicate<String> aliceSubjectValidator) throws Exception {
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), ca(false)), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED, aliceSubjectValidator);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store(bobCn, ca(false), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
     acceptOn(alice);
     sendPayload(bob, new InetSocketAddress(addr, alicePort)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     assertEquals(PAYLOAD, aliceRead.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
@@ -379,5 +390,58 @@ public class SSLTest {
   void optionsWithoutCertificateAreNotChecked() {
     // UDP datagrams carry no certificate subject
     assertTrue(new CertifiedIdBindStrategy().accept(handleWithId(Id.build("1234567890ABCDEF1234567890ABCDEF12345678")), null, Map.of()));
+  }
+
+  static final Id BOB = Id.build("1234567890ABCDEF1234567890ABCDEF12345678");
+
+  @Test
+  @DisplayName("a binding learned over the wire is unverified, not authenticated")
+  void wireLearnedBindingIsUnverified() {
+    CertifiedIdBindStrategy strategy = new CertifiedIdBindStrategy();
+
+    assertTrue(strategy.accept(handleWithId(BOB), null, null), "usable: routing and connecting towards it is allowed");
+
+    assertTrue(strategy.isPending(BOB));
+    assertFalse(strategy.isAuthenticated(BOB));
+  }
+
+  @Test
+  @DisplayName("a TLS certificate whose CN equals the id promotes the pending binding")
+  void matchingCertificatePromotesPendingBinding() throws Exception {
+    CertifiedIdBindStrategy strategy = new CertifiedIdBindStrategy();
+    strategy.accept(handleWithId(BOB), null, null);
+
+    assertTrue(strategy.accept(handleWithId(BOB), null, bobConnectsWithCertificateFor(BOB)));
+
+    assertTrue(strategy.isAuthenticated(BOB));
+    assertFalse(strategy.isPending(BOB));
+    strategy.accept(handleWithId(BOB), null, null);
+    assertTrue(strategy.isAuthenticated(BOB), "a later certificate-less sighting does not demote it");
+    assertFalse(strategy.isPending(BOB));
+  }
+
+  @Test
+  @DisplayName("a TLS certificate whose CN differs from the claimed id rejects the pending binding")
+  void mismatchingCertificateRejectsPendingBinding() throws Exception {
+    Id claimed = Id.build("FEDCBA0987654321FEDCBA0987654321FEDCBA09");
+    CertifiedIdBindStrategy strategy = new CertifiedIdBindStrategy();
+    strategy.accept(handleWithId(claimed), null, null);
+
+    assertFalse(strategy.accept(handleWithId(claimed), null, bobConnectsWithCertificateFor(BOB)));
+
+    assertFalse(strategy.isPending(claimed));
+    assertFalse(strategy.isAuthenticated(claimed));
+  }
+
+  @Test
+  @DisplayName("strict mode aborts the handshake when the CN is not a node id")
+  void strictModeRefusesCommonNameThatIsNotANodeId() {
+    assertThrows(Exception.class, () -> bobConnectsWithCertificateFor("bob", NodeIdCertificate::isNodeId));
+  }
+
+  @Test
+  @DisplayName("strict mode lets a CN that is a node id pass")
+  void strictModeAcceptsNodeIdCommonName() throws Exception {
+    assertEquals(BOB.toStringFull(), bobConnectsWithCertificateFor(BOB.toStringFull(), NodeIdCertificate::isNodeId).get(SSLTransportLayer.OPTION_CERT_SUBJECT));
   }
 }
