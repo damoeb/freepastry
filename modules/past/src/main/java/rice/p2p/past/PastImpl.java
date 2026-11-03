@@ -753,6 +753,11 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           public void receiveResult(Object o) {
             parent.receiveResult(array);
           }
+          @Override
+          public void receiveException(Exception e) {
+            logger.warn("Caching after insert failed, continuing", e);
+            parent.receiveResult(array);
+          }
         });
       }
     },
@@ -819,6 +824,11 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
                     public void receiveResult(Object object) {
                       command.receiveResult(o);
                     }
+                    @Override
+                    public void receiveException(Exception e) {
+                      logger.warn("Caching after lookup failed, continuing", e);
+                      command.receiveResult(o);
+                    }
                   });
                 } else {
                   command.receiveResult(o);
@@ -838,6 +848,11 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
                               cache(o, new SimpleContinuation()  {
                                 @Override
                                 public void receiveResult(Object object) {
+                                  command.receiveResult(o);
+                                }
+                                @Override
+                                public void receiveException(Exception e) {
+                                  logger.warn("Caching after lookup failed, continuing", e);
                                   command.receiveResult(o);
                                 }
                               });

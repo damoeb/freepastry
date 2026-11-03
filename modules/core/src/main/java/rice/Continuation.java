@@ -41,6 +41,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rice.environment.Environment;
 
 /**
@@ -163,20 +164,23 @@ public interface Continuation<R, E extends Exception> {
   }
 
   /**
-   * This class is a Continuation provided for simplicity which
-   * passes both results and exceptions to the receiveResult() method.
+   * This class is a Continuation provided for simplicity: subclasses only need to implement
+   * receiveResult(). An exception is NOT treated as a result; by default it is logged and dropped.
+   * Subclasses that must react to failures should override receiveException().
    */
   public abstract static class SimpleContinuation implements Continuation<Object, Exception> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SimpleContinuation.class);
+
     /**
      * Called when an exception occurred as a result of the
-     * previous command.  Simply prints an error message to the screen.
+     * previous command.  Logs the exception; the result handler is not invoked.
      *
      * @param result The exception which was caused.
      */
     @Override
     public void receiveException(Exception result) {
-      receiveResult(result);
+      LOG.warn("Received exception in SimpleContinuation {}", getClass().getName(), result);
     }
   }
 
