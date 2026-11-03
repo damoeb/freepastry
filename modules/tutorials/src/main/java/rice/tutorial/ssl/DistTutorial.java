@@ -44,7 +44,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.mpisws.p2p.pki.x509.CAToolImpl;
