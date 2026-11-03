@@ -84,7 +84,7 @@ public class ProbeRequestMessage extends PRawMessage {
 
   public static ProbeRequestMessage build(InputBuffer buf, int appAddress) throws IOException {
     byte version = buf.readByte();
-    if (version != 0) throw new IllegalStateException("Unknown version: "+version);
+    if (version != 0) throw new IOException("Unknown version: "+version);
     MultiInetSocketAddress addr = MultiInetSocketAddress.build(buf);
     long uid = buf.readLong();
     return new ProbeRequestMessage(addr, uid, appAddress);
