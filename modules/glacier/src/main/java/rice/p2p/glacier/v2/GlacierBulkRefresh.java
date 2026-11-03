@@ -459,8 +459,10 @@ final class GlacierBulkRefresh {
               if (logger.isDebugEnabled()) logger.debug(" - AR Result for "+versionKey[i]+": " + ((result[i] instanceof Boolean) ? "OK" : "Failed") + " (with "+successes[i]+"/"+numFragments+" fragments, "+minAcceptable+" acceptable)");
             }
 
-            answered = true;
-            command.receiveResult(result);
+            if (!answered) {
+              answered = true;
+              command.receiveResult(result);
+            }
           }
         }
       }
