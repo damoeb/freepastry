@@ -47,6 +47,9 @@ import rice.p2p.util.rawserialization.WireLengths;
 
 public class Manifest {
 
+  /** Written in place of the signature length when the manifest is not signed yet. */
+  private static final int NO_SIGNATURE = -1;
+
   private byte[] objectHash;
   private byte[][] fragmentHash;
   private byte[] signature;
@@ -160,7 +163,7 @@ public class Manifest {
     buf.writeInt(objectHash.length);
     buf.writeInt(fragmentHash.length);
     buf.writeInt(fragmentHash[0].length);
-    buf.writeInt(signature.length);
+    buf.writeInt(signature == null ? NO_SIGNATURE : signature.length);
     buf.write(objectHash, 0, objectHash.length);
     int dim1 = fragmentHash.length;
     int dim2 = fragmentHash[0].length;
@@ -169,7 +172,7 @@ public class Manifest {
       for (int j=0; j<dim2; j++)
         fragmentHashField[i*dim2 + j] = fragmentHash[i][j];
     buf.write(fragmentHashField, 0, fragmentHashField.length);
-    buf.write(signature, 0, signature.length);
+    if (signature != null) buf.write(signature, 0, signature.length);
   }
 
   public Manifest(InputBuffer buf) throws IOException {
@@ -177,7 +180,9 @@ public class Manifest {
     int objectHashLength = WireLengths.check(buf, buf.readInt(), 0);
     int fragmentHashLength = WireLengths.check(buf, buf.readInt(), 0);
     int fragmentHashSubLength = WireLengths.check(buf, buf.readInt(), 0);
-    int signatureLength = WireLengths.check(buf, buf.readInt(), 0);
+    int rawSignatureLength = buf.readInt();
+    boolean hasSignature = rawSignatureLength != NO_SIGNATURE;
+    int signatureLength = hasSignature ? WireLengths.check(buf, rawSignatureLength, 0) : 0;
     // checked as a long, the product of two ints can overflow
     long fragmentHashBytes = (long) fragmentHashLength * fragmentHashSubLength;
     // rows of no bytes cost nothing on the wire, but an array each
@@ -191,6 +196,6 @@ public class Manifest {
     for (int i=0; i<fragmentHashLength; i++)
       for (int j=0; j<fragmentHashSubLength; j++)
         fragmentHash[i][j] = fragmentHashField[i*fragmentHashSubLength + j];
-    signature = WireLengths.readBytes(buf, signatureLength);
+    signature = hasSignature ? WireLengths.readBytes(buf, signatureLength) : null;
   }
 }

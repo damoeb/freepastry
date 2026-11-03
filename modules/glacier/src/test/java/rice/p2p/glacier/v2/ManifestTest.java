@@ -2,13 +2,21 @@ package rice.p2p.glacier.v2;
 
 import java.util.Arrays;
 
+import java.io.IOException;
+
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.util.HashUtils;
+import rice.p2p.util.rawserialization.SimpleInputBuffer;
+import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ManifestTest {
@@ -43,5 +51,32 @@ class ManifestTest {
     manifest.setSignature(new byte[0]); // toStringFull(), logged on a mismatch, needs one
 
     assertFalse(manifest.validatesFragment(fragment, 0, LOG));
+  }
+
+  private static Manifest roundTrip(Manifest manifest) throws IOException {
+    SimpleOutputBuffer out = new SimpleOutputBuffer();
+    manifest.serialize(out);
+    return new Manifest(new SimpleInputBuffer(out.getBytes()));
+  }
+
+  @Test
+  @DisplayName("an unsigned manifest serializes and reads back with a null signature")
+  void roundTripsAnUnsignedManifest() throws IOException {
+    Manifest manifest = new Manifest(new byte[HashUtils.LENGTH], new byte[][] {new byte[HashUtils.LENGTH]}, 7);
+
+    Manifest actual = roundTrip(manifest);
+
+    assertNull(actual.getSignature());
+    assertEquals(7, actual.getExpiration());
+    assertArrayEquals(manifest.getFragmentHash(0), actual.getFragmentHash(0));
+  }
+
+  @Test
+  @DisplayName("a signed manifest keeps its signature through a round trip")
+  void roundTripsASignedManifest() throws IOException {
+    Manifest manifest = new Manifest(new byte[HashUtils.LENGTH], new byte[][] {new byte[HashUtils.LENGTH]}, 7);
+    manifest.setSignature(new byte[] {1, 2, 3});
+
+    assertArrayEquals(new byte[] {1, 2, 3}, roundTrip(manifest).getSignature());
   }
 }
