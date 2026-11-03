@@ -717,12 +717,18 @@ public class NetworkInfoTransportLayer implements
   @Override
   public void messageReceived(InetSocketAddress i, ByteBuffer m,
       @Nullable Map<String, Object> options) throws IOException {
+    if (!m.hasRemaining()) {
+      throw new IOException("Empty message from " + i);
+    }
     byte header = m.get();
     switch(header) {
     case HEADER_PASSTHROUGH_BYTE:
       callback.messageReceived(i, m, options);
       return;
     case HEADER_PROBE_RESPONSE_BYTE:
+      if (m.remaining() < Long.BYTES) {
+        throw new IOException("Probe response from " + i + " is too short for its uid: " + m.remaining() + " bytes");
+      }
       long uid = m.getLong();
       // No need to remove them from the table, this will get done in destroy()
       ConnectivityResult request = verifyConnectionRequests.get(uid);
