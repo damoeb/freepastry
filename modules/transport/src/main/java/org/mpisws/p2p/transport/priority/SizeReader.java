@@ -56,7 +56,7 @@ final class SizeReader<Identifier> extends BufferReader<Identifier> {
     int msgSize = buf.asIntBuffer().get();
     ctx.logger.trace("{} reading message of size {}", owner, msgSize);
 
-    if (msgSize > ctx.maxMsgSize) {
+    if (msgSize < 0 || msgSize > ctx.maxMsgSize) {
       ctx.logger.warn("{} attempted to send a message of size {}. MAX_MSG_SIZE = {}", socket, msgSize, ctx.maxMsgSize);
       owner.closeMe(socket);
       return;
