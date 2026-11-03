@@ -528,9 +528,15 @@ final class GlacierBulkRefresh {
           logger.debug("AR Patch: Got FAM for {}", currentKey);
 
           FragmentAndManifest fam = (FragmentAndManifest) o;
-          fam.getManifest().update(grpm.getLifetime(currentIndex), grpm.getSignature(currentIndex));
+          if (fam == null) {
+            // the fragment vanished between exists() and getObject(): treat it as missing and go on
+            logger.warn("AR Patch: Fragment {} vanished before it could be fetched, skipping", currentKey);
+            currentPhase = phaseAdvance;
+          } else {
+            fam.getManifest().update(grpm.getLifetime(currentIndex), grpm.getSignature(currentIndex));
+          }
 
-          if (policy.checkSignature(fam.getManifest(), currentKey.versionKey())) {
+          if (fam != null && policy.checkSignature(fam.getManifest(), currentKey.versionKey())) {
             FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(currentKey);
             if (metadata != null) {
               if (metadata.currentExpiration() <= grpm.getLifetime(currentIndex)) {
@@ -551,7 +557,7 @@ final class GlacierBulkRefresh {
               logger.warn("Cannot fetch metadata for key {}, got 'null'", currentKey);
               currentPhase = phaseAdvance;
             }
-          } else {
+          } else if (fam != null) {
             logger.warn("RefreshPatch with invalid signature: {}", currentKey);
             currentPhase = phaseAdvance;
           }
