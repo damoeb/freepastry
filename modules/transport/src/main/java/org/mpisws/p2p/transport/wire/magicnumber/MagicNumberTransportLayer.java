@@ -54,6 +54,7 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.TransportLayerListener;
+import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.DefaultCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
@@ -255,12 +256,11 @@ public class MagicNumberTransportLayer<Identifier> implements
   }
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     logger.debug("messageReceived({},{})", i, m);
 
     if (m.remaining() < HEADER.length) {
-      errorHandler.receivedUnexpectedData(i, m.array(), 0, null);
+      errorHandler.receivedUnexpectedData(i, ByteBuffers.arrayForRead(m), ByteBuffers.arrayStart(m), null);
       return;
     }
     byte[] hdr = new byte[HEADER.length];
@@ -278,7 +278,7 @@ public class MagicNumberTransportLayer<Identifier> implements
     notifyListenersRead(HEADER.length, i, options, false, false);  // non-passthrough part
     notifyListenersRead(remaining, i, options, true, false); // passthrough part
 
-    errorHandler.receivedUnexpectedData(i, m.array(), 0, null);
+    errorHandler.receivedUnexpectedData(i, ByteBuffers.arrayForRead(m), ByteBuffers.arrayStart(m), null);
   }
 
   protected class VerifyHeaderReceiver extends TimerTask implements P2PSocketReceiver<Identifier> {

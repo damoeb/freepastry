@@ -51,6 +51,7 @@ import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 import org.mpisws.p2p.transport.priority.QueueOverflowException;
+import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.DefaultCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
@@ -206,8 +207,7 @@ public class CommonAPITransportLayerImpl<Identifier extends NodeHandle> implemen
 
   @Override
   public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
-    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-    SimpleInputBuffer buf = new SimpleInputBuffer(m.array(), m.position());
+    SimpleInputBuffer buf = new SimpleInputBuffer(ByteBuffers.arrayForRead(m), ByteBuffers.arrayPosition(m));
     RawMessage ret = deserializer.deserialize(buf, i);
     logger.debug("messageReceived({},{})", i, ret);
     callback.messageReceived(i, ret, options);

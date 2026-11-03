@@ -52,6 +52,7 @@ import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
+import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -408,7 +409,6 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   @Nullable P2PSocketReceiver<Identifier> registeredToWrite;
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public long read(ByteBuffer dsts) throws IOException {
 
     long start = dsts.position();
@@ -418,7 +418,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
       ByteBuffer foo = readMe.getFirst();
       int len = Math.min(dsts.remaining(), foo.remaining());
       int pos = foo.position();
-      dsts.put(foo.array(),pos,len);
+      dsts.put(ByteBuffers.array(foo), foo.arrayOffset() + pos, len);
       foo.position(pos+len);
       if (foo.hasRemaining()) {
         return dsts.position()-start;
@@ -435,7 +435,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
           ByteBuffer foo = readMe.getFirst();
           int len = Math.min(dsts.remaining(), foo.remaining());
           int pos = foo.position();
-          dsts.put(foo.array(),pos,len);
+          dsts.put(ByteBuffers.array(foo), foo.arrayOffset() + pos, len);
           foo.position(pos+len);
           if (!foo.hasRemaining()) readMe.removeFirst();
         }

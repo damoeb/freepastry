@@ -51,6 +51,7 @@ import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
+import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.slf4j.Logger;
 import rice.selector.SelectionKeyHandler;
 
@@ -390,13 +391,12 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   }
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public long read(ByteBuffer dst) throws IOException {
     if (key == null || channel.socket().isInputShutdown()) return -1;
     try {
       long ret = channel.read(dst);
       if (logger.isTraceEnabled()) {
-        logger.trace(this+"read("+ret+"):"+Arrays.toString(dst.array()));
+        logger.trace(this+"read("+ret+"):"+Arrays.toString(ByteBuffers.peekPreceding(dst, ret)));
       }
       return ret;
     } catch (IOException ioe) {
@@ -409,13 +409,12 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
   }
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public long write(ByteBuffer src) throws IOException {
     if (key == null || channel.socket().isOutputShutdown()) return -1;
     try {
       long ret = channel.write(src);
       if (logger.isTraceEnabled()) {
-        logger.trace(this+"write("+ret+"):"+Arrays.toString(src.array()));
+        logger.trace(this+"write("+ret+"):"+Arrays.toString(ByteBuffers.peekPreceding(src, ret)));
       }
       return ret;
     } catch (IOException ioe) {

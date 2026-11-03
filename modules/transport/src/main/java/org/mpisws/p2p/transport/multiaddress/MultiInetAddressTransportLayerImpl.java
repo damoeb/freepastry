@@ -53,6 +53,7 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
+import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.DefaultCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.InsufficientBytesException;
@@ -226,7 +227,6 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
 
   // ************************** Messages ***************************
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> sendMessage(
       final MultiInetSocketAddress i,
       final ByteBuffer m,
@@ -241,7 +241,7 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
     SimpleOutputBuffer sob = new SimpleOutputBuffer(m.remaining() + localAddress.getSerializedLength());
     try {
       localAddress.serialize(sob);
-      sob.write(m.array(), m.position(), m.remaining());
+      sob.write(ByteBuffers.array(m), ByteBuffers.arrayPosition(m), m.remaining());
     } catch (IOException ioe) {
       if (deliverAckToMe == null) {
         errorHandler.receivedException(i, ioe);
@@ -286,24 +286,23 @@ public class MultiInetAddressTransportLayerImpl implements MultiInetAddressTrans
   }
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public void messageReceived(InetSocketAddress i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     logger.debug("messageReceived({},{})", i, m);
     // read numAddresses
-    int pos = m.position();
-    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-    SimpleInputBuffer sib = new SimpleInputBuffer(m.array(),pos);
+    byte[] array = ByteBuffers.arrayForRead(m);
+    int pos = ByteBuffers.arrayPosition(m);
+    SimpleInputBuffer sib = new SimpleInputBuffer(array, pos);
 
     MultiInetSocketAddress eisa;
     try {
       eisa = MultiInetSocketAddress.build(sib, maxNumAddresses);
     } catch (IOException ioe) {
-      errorHandler.receivedUnexpectedData(new MultiInetSocketAddress(i), m.array(), pos, null);
+      errorHandler.receivedUnexpectedData(new MultiInetSocketAddress(i), array, pos, null);
       return;
     }
 
     // make sure to leave m at the proper position
-    m.position(m.array().length - sib.bytesRemaining());
+    ByteBuffers.setArrayPosition(m, array.length - sib.bytesRemaining());
 
     callback.messageReceived(eisa, m, options);
   }

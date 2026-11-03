@@ -57,6 +57,7 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
+import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
@@ -313,7 +314,6 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   }
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
     byte hdr = m.get();
@@ -343,11 +343,11 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
         notifyPingListenersPong(i,rtt, options);
       } else {
         logger.warn("I think the clock is fishy, rtt must be >= 0, was:{}", rtt);
-        errorHandler.receivedUnexpectedData(i, m.array(), 0, null);
+        errorHandler.receivedUnexpectedData(i, ByteBuffers.arrayForRead(m), ByteBuffers.arrayStart(m), null);
       }
       return;
     default:
-      errorHandler.receivedUnexpectedData(i, m.array(), 0, null);
+      errorHandler.receivedUnexpectedData(i, ByteBuffers.arrayForRead(m), ByteBuffers.arrayStart(m), null);
     }
   }
 

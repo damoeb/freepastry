@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.sourceroute;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -52,6 +53,7 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
+import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.InsufficientBytesException;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
@@ -320,7 +322,6 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
 
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public @Nullable MessageRequestHandle<SourceRoute<Identifier>, ByteBuffer> sendMessage(final SourceRoute<Identifier> i, final ByteBuffer m,
       final @Nullable MessageCallback<SourceRoute<Identifier>, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
@@ -344,7 +345,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     SimpleOutputBuffer sob = new SimpleOutputBuffer(m.remaining() + i.getSerializedLength());
     try {
       i.serialize(sob);
-      sob.write(m.array(), m.position(), m.remaining());
+      sob.write(ByteBuffers.array(m), ByteBuffers.arrayPosition(m), m.remaining());
     } catch (IOException ioe) {
       if (deliverAckToMe == null) {
         errorHandler.receivedException(i, ioe);
@@ -381,16 +382,15 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
   }
 
   @Override
-  @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
   public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
     if (!m.hasRemaining()) {
-      errorHandler.receivedUnexpectedData(srFactory.getSourceRoute(etl.getLocalIdentifier(), i), m.array(), m.position(), null);
+      errorHandler.receivedUnexpectedData(srFactory.getSourceRoute(etl.getLocalIdentifier(), i), ByteBuffers.arrayForRead(m), ByteBuffers.arrayPosition(m), null);
     }
 
+    byte[] array = ByteBuffers.arrayForRead(m);
     int pos = m.position(); // need to reset to this spot if we forward the message
-    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-    SimpleInputBuffer sib = new SimpleInputBuffer(m.array(), pos);
+    SimpleInputBuffer sib = new SimpleInputBuffer(array, ByteBuffers.arrayPosition(m));
 
     SourceRoute<Identifier> tempSr;
     try {
@@ -404,7 +404,7 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
     final SourceRoute<Identifier> sr = tempSr;
 
     // advance m properly
-    m.position(m.array().length - sib.bytesRemaining());
+    ByteBuffers.setArrayPosition(m, array.length - sib.bytesRemaining());
 
     if (sr.getLastHop().equals(etl.getLocalIdentifier())) {
       // last hop
@@ -413,15 +413,13 @@ public class SourceRouteTransportLayerImpl<Identifier> implements
       // sr hop
       int hopNum = sr.getHop(etl.getLocalIdentifier());
       if (hopNum < 1) {
-        errorHandler.receivedUnexpectedData(sr, m.array(), pos, null);
+        errorHandler.receivedUnexpectedData(sr, array, ByteBuffers.arrayStart(m) + pos, null);
         return;
       }
       logger.trace("I'm hop {} in {}", hopNum, sr);
       // notify taps
       for (SourceRouteTap<Identifier> tap : taps) {
-        @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-        byte[] retArr = new byte[m.array().length];
-        System.arraycopy(m.array(), 0, retArr, 0, retArr.length);
+        byte[] retArr = Arrays.copyOfRange(array, ByteBuffers.arrayStart(m), ByteBuffers.arrayStart(m) + m.capacity());
         ByteBuffer ret = ByteBuffer.wrap(retArr);
         ret.position(m.position());
         tap.receivedMessage(ret, sr);
