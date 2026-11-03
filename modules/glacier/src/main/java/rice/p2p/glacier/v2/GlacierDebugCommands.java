@@ -282,6 +282,7 @@ final class GlacierDebugCommands {
       final int numObjects = Integer.parseInt(numObjectsArg);
       final int lifetime = Integer.parseInt(expirationArg);
       String result = "";
+      final java.util.concurrent.atomic.AtomicInteger displaced = new java.util.concurrent.atomic.AtomicInteger();
 
       for (int i=0; i<numObjects; i++) {
         final Id randomID = factory.buildRandomId(environment.getRandomSource());
@@ -304,6 +305,7 @@ final class GlacierDebugCommands {
           @Override
           public void receiveException(Exception e) {
             /* Displaced by a newer job for the same key: drop this insert instead of running it unshaped */
+            displaced.incrementAndGet();
             logger.warn("Debug insert of {} dropped", randomID.toStringFull(), e);
           }
         });
@@ -312,7 +314,8 @@ final class GlacierDebugCommands {
           prev.receiveException(new GlacierException("Key collision in traffic shaper (insert)"));
       }
 
-      return result + numObjects + " object(s) with lifetime "+lifetime+"ms created\n";
+      int dropped = displaced.get();
+      return result + (numObjects - dropped) + " of " + numObjects + " object(s) with lifetime "+lifetime+"ms queued, " + dropped + " displaced in the traffic shaper\n";
     }
 
     if (cmd.startsWith("delete") && config.faultInjectionEnabled()) {
