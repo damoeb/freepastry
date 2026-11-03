@@ -949,8 +949,6 @@ Chapter 2 CommonApi Apps ******************************************************
         int errorLength 
         byte[errorLength] // platform dependent error message
                 
-      boolean hasHandle
-        NodeHandle handle // where this message has been        
       short idType // the type of the id (next value)
       Id id // the id to fetch
       boolean cached // whether or not this message has been cached

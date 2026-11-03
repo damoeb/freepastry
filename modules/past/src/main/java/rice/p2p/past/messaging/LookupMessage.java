@@ -65,9 +65,6 @@ public final class LookupMessage extends ContinuationMessage {
   // whether or not this message has been cached
   private boolean cached = false;
 
-  // the list of nodes where this message has been
-  private NodeHandle handle;
-
   /**
    * Constructor
    *
@@ -119,9 +116,6 @@ public final class LookupMessage extends ContinuationMessage {
       super.serialize(buf, false);
     }
 
-    buf.writeBoolean(handle != null);
-    if (handle != null) handle.serialize(buf);
-
     buf.writeShort(id.getType());
     id.serialize(buf);
     buf.writeBoolean(cached);
@@ -143,7 +137,6 @@ public final class LookupMessage extends ContinuationMessage {
       short contentType = buf.readShort();
       response = pcd.deserializePastContent(buf, endpoint, contentType);
     }
-    if (buf.readBoolean())handle = endpoint.readNodeHandle(buf);
     try {
       id = endpoint.readId(buf, buf.readShort());
     } catch (IllegalArgumentException iae) {
