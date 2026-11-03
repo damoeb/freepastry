@@ -165,8 +165,8 @@ public class DistPastTest {
       } catch (Exception e) {
         // remind user how to use
         System.out.println("Usage:");
-        System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.lesson4.DistTutorial localbindport bootIP bootPort numNodes");
-        System.out.println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10");
+        System.out.println("java [-cp FreePastry-<version>.jar] rice.p2p.past.testing.DistPastTest localbindport bootIP bootPort numNodes");
+        System.out.println("example java rice.p2p.past.testing.DistPastTest 9001 pokey.cs.almamater.edu 9001 10");
         throw e;
       }
     }
