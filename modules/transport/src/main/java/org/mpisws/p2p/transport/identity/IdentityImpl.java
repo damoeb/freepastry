@@ -760,11 +760,17 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     public void messageReceived(LowerIdentifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
       @Nullable Map<String, Object> newOptions = OptionsFactory.copyOptions(options);
 
+      if (!m.hasRemaining()) {
+        throw new IOException("Empty message from " + i);
+      }
       byte msgType = m.get();
       logger.debug("messageReceived({},{}):{}", i, m, msgType);
       switch(msgType) {
         case NORMAL:
           // this is a normal message, make sure it's for me
+          if (m.remaining() < localIdentifier.length) {
+            throw new IOException("Message from " + i + " is too short for the destination identity: " + m.remaining() + " bytes");
+          }
           byte[] dest = new byte[localIdentifier.length];
           m.get(dest);
           if (!Arrays.equals(dest, localIdentifier)) {
