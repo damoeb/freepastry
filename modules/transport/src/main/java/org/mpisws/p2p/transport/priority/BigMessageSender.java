@@ -109,7 +109,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     receiveException(ioe);
   }
   public void receiveException(Exception ex) {
-    pendingBigMessages.remove(this);
+    pendingBigMessages.remove(i, this);
     for (PendingMessage foo : msgs) {
       foo.sendFailed(ex);
     }
