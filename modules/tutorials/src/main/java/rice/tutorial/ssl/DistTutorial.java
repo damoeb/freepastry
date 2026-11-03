@@ -40,31 +40,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
 
 import org.mpisws.p2p.pki.x509.CAToolImpl;
-import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.identity.BindStrategy;
-import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import org.mpisws.p2p.transport.sourceroute.SourceRoute;
-import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
-import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
-import org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
-import rice.pastry.PastryNodeFactory;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.socket.CertifiedIdBindStrategy;
-import rice.pastry.standard.NodeIdCertificate;
-import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.socket.TransportLayerNodeHandle;
+import rice.pastry.socket.CertifiedSocketPastryNodeFactory;
 import rice.pastry.standard.CertifiedNodeIdFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
 
@@ -100,31 +88,9 @@ public class DistTutorial {
     // is not valid for the CA in the store, or does not belong to the node's key
     rice.pastry.Id id = CertifiedNodeIdFactory.fromKeyStore(store, "".toCharArray(), env).generateNodeId();
 
-    // construct the PastryNodeFactory, this is how we use rice.pastry.socket
-    PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
-      @Override
-      protected TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getSourceRouteTransportLayer(
-          TransportLayer<MultiInetSocketAddress, ByteBuffer> etl,
-          PastryNode pn,
-          MultiAddressSourceRouteFactory esrFactory) {
-
-        // get the default layer by calling super
-        TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> sourceRoutingTransportLayer = super.getSourceRouteTransportLayer(etl, pn, esrFactory);
-
-        try {
-          // return our layer
-          return new SSLTransportLayerImpl<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(sourceRoutingTransportLayer,store,store,SSLTransportLayer.CLIENT_AUTH_REQUIRED,NodeIdCertificate::isNodeId,pn.getEnvironment());
-        } catch (IOException ioe) {
-          throw new RuntimeException(ioe);
-        }
-      }
-
-      @Override
-      protected BindStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>, SourceRoute<MultiInetSocketAddress>> getBindStrategy() {
-        // accept a node handle only if its id is the common name of the peer's certificate
-        return new CertifiedIdBindStrategy();
-      }
-    };
+    // construct the PastryNodeFactory: it runs mutual TLS, takes the node id from the certificate, accepts only
+    // certificate common names that are node ids, and admits a node into the routing state once its certificate was seen
+    CertifiedSocketPastryNodeFactory factory = new CertifiedSocketPastryNodeFactory(store, "".toCharArray(), bindport, env);
 
     // construct a node with the id this time
     PastryNode node = factory.newNode(id);
