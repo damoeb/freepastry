@@ -109,8 +109,8 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
     TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
     tmf.init(trustStore);
 
+    // always the configured trust managers: null would fall back to the JVM default trust store, even without client auth
     TrustManager[] tms = tmf.getTrustManagers();
-    if (clientAuth == CLIENT_AUTH_NONE) tms = null;
     context.init(kmf.getKeyManagers(), tms, null);
 
     tl.setCallback(this);
