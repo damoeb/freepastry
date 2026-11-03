@@ -43,6 +43,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.glacier.FragmentKey;
 
 public final class GlacierFetchMessage extends GlacierMessage {
@@ -117,9 +118,8 @@ public final class GlacierFetchMessage extends GlacierMessage {
   private GlacierFetchMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
     request = buf.readInt();
-    int l = buf.readInt();
-    keys = new FragmentKey[l];
-    for (int i = 0; i < l; i++) {
+    keys = new FragmentKey[WireLengths.readInt(buf, 1)];
+    for (int i = 0; i < keys.length; i++) {
       keys[i] = new FragmentKey(buf, endpoint);
     }
   }
