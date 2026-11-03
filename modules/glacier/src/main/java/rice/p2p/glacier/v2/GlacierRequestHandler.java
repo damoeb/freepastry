@@ -251,6 +251,11 @@ final class GlacierRequestHandler {
           continue;
         }
 
+        if (!policy.checkSignature(thisManifest, thisKey.versionKey())) {
+          logger.warn("Manifest is not signed properly");
+          continue;
+        }
+
         /* We are being informed of a fragment that
              a) we should have, but currently don't, or
              b) we already have, but whose manifest will soon expire */
