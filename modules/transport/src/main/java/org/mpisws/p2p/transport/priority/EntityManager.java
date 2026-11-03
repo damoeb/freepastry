@@ -43,10 +43,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -73,7 +73,10 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
  * Responsible for writing messages to the socket.
  *
  * Synchronization: all state is changed on the selector thread, except the queue, which must be carefully
- * synchronized.
+ * synchronized, and what {@link #send} touches, because sends may come from any thread: the sequence number
+ * (guarded by the queue) and the pending big messages (a concurrent map; creating a sender is guarded by
+ * the map itself). {@link #send} has to hand its caller a handle, so it cannot be marshalled onto the
+ * selector as a whole; only the socket work it triggers is.
  *
  * If we have something to write that means !queue.isEmpty() || messageThatIsBeingWritten != null,
  *   we should have a writingSocket, or a pendingSocket
@@ -102,7 +105,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   private final List<PrimarySocketListener<Identifier>> primarySocketListeners;
 
   // TODO: think about the behavior of this when it wraps around...
-  int seq = Integer.MIN_VALUE;
+  private int seq = Integer.MIN_VALUE; // guarded by queue
   final SortedLinkedList<MessageWrapper<Identifier>> queue; // messages we want to send
   final Collection<P2PSocket<Identifier>> sockets;
 
@@ -506,7 +509,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   }
 
   // ******************************* Big messages **************************** //
-  Map<Identifier, BigMessageSender<Identifier>> pendingBigMessages = new HashMap<Identifier, BigMessageSender<Identifier>>();
+  final Map<Identifier, BigMessageSender<Identifier>> pendingBigMessages = new ConcurrentHashMap<>();
 
   /**
    * Read a sizeBuf, then a msgBuff, repeat
@@ -556,19 +559,23 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
         return ret;
       }
 
-      BigMessageSender<Identifier> pm = pendingBigMessages.get(temp);
-      if (pm == null) {
-        pm = new BigMessageSender<Identifier>(temp, tl, logger, pendingBigMessages);
-        // note, this fixes a timing issue, because the socket is closed if there are no pending big messages
-        MessageRequestHandle<Identifier, ByteBuffer> ret2 = pm.addMessage(message,deliverAckToMe,options);
-        pendingBigMessages.put(temp, pm);
-        pm.start(options);
-        return ret2;
-      } else {
-        return pm.addMessage(message,deliverAckToMe,options);
+      BigMessageSender<Identifier> pm;
+      MessageRequestHandle<Identifier, ByteBuffer> ret2;
+      boolean created = false;
+      synchronized (pendingBigMessages) {
+        pm = pendingBigMessages.get(temp);
+        if (pm == null) {
+          pm = new BigMessageSender<Identifier>(temp, tl, logger, pendingBigMessages);
+          // note, this fixes a timing issue, because the socket is closed if there are no pending big messages
+          ret2 = pm.addMessage(message, deliverAckToMe, options);
+          pendingBigMessages.put(temp, pm);
+          created = true;
+        } else {
+          ret2 = pm.addMessage(message, deliverAckToMe, options);
+        }
       }
-
-
+      if (created) pm.start(options);
+      return ret2;
     }
 
     // make sure it's alive
@@ -580,9 +587,11 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     }
 
     // enqueue the message
-    ret = new MessageWrapper<Identifier>(this, temp, message, deliverAckToMe, options, priority, seq++);
+    synchronized (queue) {
+      ret = new MessageWrapper<Identifier>(this, temp, message, deliverAckToMe, options, priority, seq++);
+      enqueue(ret);
+    }
     ctx.listeners.notifyEnqueued(ret.originalSize, temp, options);
-    enqueue(ret);
     if (selectorManager.isSelectorThread()) {
       scheduleToWriteIfNeeded();
     } else {
