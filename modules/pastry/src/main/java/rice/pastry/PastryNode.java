@@ -176,6 +176,15 @@ public class PastryNode implements
   /** certified mode: decides which node ids count as authenticated; null accepts every id */
   private @Nullable Predicate<NodeHandle> identityPolicy;
 
+  /** certified mode: messages of senders whose id is being verified */
+  private final DeferredDeliveries deferred = new DeferredDeliveries((task, delay) ->
+      getEnvironment().getSelectorManager().schedule(new rice.selector.TimerTask() {
+        @Override
+        public void run() {
+          task.run();
+        }
+      }, delay));
+
   /**
    * Constructor, with NodeId. Need to set the node's ID before this node is
    * inserted as localHandle.localNode.
@@ -486,6 +495,21 @@ public class PastryNode implements
     identityPolicy = policy;
     getLeafSet().setAdmission(policy);
     getRoutingTable().setAdmission(policy);
+  }
+
+  /**
+   * Certified mode: keeps a message from a sender that is not authenticated yet until its id is verified
+   * ({@link #identityResolved}); the bounds and the timeout are those of {@link DeferredDeliveries}.
+   *
+   * @return false if the message was dropped because a bound is reached
+   */
+  public boolean deferUntilAuthenticated(NodeHandle sender, Runnable delivery) {
+    return deferred.defer(sender.getNodeId(), delivery);
+  }
+
+  /** Certified mode: the check of the id ended; delivers the messages that waited for it, or drops them. */
+  public void identityResolved(Id id, boolean authenticated) {
+    deferred.resolve(id, authenticated);
   }
 
   /** @return false in certified mode if the handle's id is not authenticated (yet) */

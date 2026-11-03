@@ -32,7 +32,9 @@ import rice.pastry.standard.NodeIdCertificate;
  * The node also trusts only authenticated ids. The routing table and the leaf set admit a handle only after a TLS
  * certificate for its id was seen, and application messages sent directly to this node are delivered only from
  * an authenticated sender. An id learned over the wire is first verified by opening a TLS connection to it (the
- * handle is admitted when that succeeds); until then, the one message that triggered the check may be dropped.
+ * handle is admitted when that succeeds). Direct application messages from that id wait meanwhile in a small bounded
+ * queue ({@link rice.pastry.DeferredDeliveries}): they are delivered in order once the id is verified and dropped if
+ * the check fails or times out.
  * Routing towards an id, and the originator named in a routed message, are not covered: see {@code README.md}.
  */
 public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
@@ -97,11 +99,13 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
     if (verifying.add(id)) {
       pn.probe(handle, verified -> {
         verifying.remove(id);
-        if (verified.booleanValue() && bindStrategy.isAuthenticated(id)) {
+        boolean authenticated = verified.booleanValue() && bindStrategy.isAuthenticated(id);
+        if (authenticated) {
           // the admission that was deferred; each gate asks again and now says yes
           pn.getLeafSet().put(handle);
           pn.getRoutingTable().put(handle);
         }
+        pn.identityResolved(id, authenticated);
       });
     }
     return false;

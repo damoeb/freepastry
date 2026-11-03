@@ -491,9 +491,16 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     logger.trace("[{}] deliver {} from {}", thePastryNode, msg, msg.getSenderId());
 
     if (!thePastryNode.acceptsIdentity(msg.getSender())) {
-      logger.info("Dropping {} from {}: its id is not authenticated", msg, msg.getSender());
+      // the check has been started; the message is delivered when it succeeds, dropped when it fails or times out
+      if (!thePastryNode.deferUntilAuthenticated(msg.getSender(), () -> deliverToApplication(msg))) {
+        logger.info("Dropping {} from {}: its id is not authenticated and too many messages wait", msg, msg.getSender());
+      }
       return;
     }
+    deliverToApplication(msg);
+  }
+
+  private void deliverToApplication(rice.pastry.messaging.Message msg) {
 
     if (msg instanceof PastryEndpointMessage pastryEndpointMessage) {
       // null for now, when RouteMessage stuff is completed, then it will be different!
