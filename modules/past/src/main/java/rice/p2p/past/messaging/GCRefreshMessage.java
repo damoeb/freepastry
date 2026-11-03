@@ -147,7 +147,10 @@ public final class GCRefreshMessage extends ContinuationMessage {
 
     keys = new GCId[WireLengths.readInt(buf, 2)];
     for (int i = 0; i < keys.length; i++) {
-      keys[i] = (GCId)endpoint.readId(buf, buf.readShort());
+      if (!(endpoint.readId(buf, buf.readShort()) instanceof GCId gcId)) {
+        throw new IOException("Not a GCId in a refresh message");
+      }
+      keys[i] = gcId;
     }
   }
 }
