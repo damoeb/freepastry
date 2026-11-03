@@ -55,6 +55,7 @@ import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteSet;
 import rice.pastry.routing.RoutingTable;
 import rice.pastry.socket.SocketPastryNodeFactory;
+import rice.pastry.transport.BogusNodeHandle;
 import rice.selector.TimerTask;
 
 /**
@@ -327,6 +328,11 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
    * @param target the node to rejoin through
    */
   public void rejoin(NodeHandle target) {
+    if (target instanceof BogusNodeHandle bogus) {
+      // a bogus handle only carries addresses and cannot be coalesced or sent to; boot through those addresses instead
+      pastryNode.<InetSocketAddress>getBootstrapper().boot(bogus.getAddress());
+      return;
+    }
     JoinRequest jr = new JoinRequest(pastryNode.getLocalHandle(), pastryNode
         .getRoutingTable().baseBitLength());
 
