@@ -355,30 +355,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     } else {
       logger.info("INSERT WITHOUT AGGREGATION: {} version={} size={} class={}", obj.getId(), theVersionF, theSize, obj.getClass().getName());
 
-      Continuation<Boolean[], Exception> c = new Continuation<Boolean[], Exception>() {
-        boolean otherSucceeded = false;
-        boolean otherFailed = false;
-
-        @Override
-        public void receiveResult(Boolean[] o) {
-          logger.debug("INSERT {} receiveResult({}), otherSucc={} otherFail={}", obj.getId(), o, otherSucceeded, otherFailed);
-          if (otherSucceeded) {
-            if (!otherFailed) {
-              logger.debug("--reporting Success");
-              command.receiveResult(new Boolean[] { Boolean.valueOf(true) });
-            }
-          } else {
-            otherSucceeded = true;
-          }
-        }
-        @Override
-        public void receiveException(Exception e) {
-          logger.debug("INSERT {} receiveException({}), otherSucc={} otherFail={}", obj.getId(), e, otherSucceeded, otherFailed);
-          logger.debug("--reporting Failure");
-          command.receiveException(e);
-          otherFailed = true;
-        }
-      };
+      Continuation<Boolean[], Exception> c = new InsertJoin(command);
 
       if (objectStore instanceof GCPast gcPast)
         gcPast.insert(obj, lifetime, c);
