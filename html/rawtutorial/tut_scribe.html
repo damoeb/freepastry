@@ -349,79 +349,18 @@ Build the project once with <code>./mvnw -B package -DskipTests</code>, which wr
   <li>The number of nodes to launch.</li>
 </ol>
 
-Your output will resemble:
+Run it with:
 
 <pre>
 <span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.scribe.ScribeTutorial 9001 10.9.8.7 9001 10</span>
-<span class="output">Finished creating new node SocketNodeHandle (&lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189])
-myTopic = [TOPIC &lt;0x19A8F5..&gt;]
-Finished creating new node SocketNodeHandle (&lt;0x8904D9..&gt;/FOO/10.9.8.7:9002 [4410881318286179245])
-myTopic = [TOPIC &lt;0x19A8F5..&gt;]
-Finished creating new node SocketNodeHandle (&lt;0x281817..&gt;/FOO/10.9.8.7:9003 [1144941711194723161])
+</pre>
 
-...
+<p>The program prints one <code>Finished creating new node</code> line for each node it creates, then the topic (<code>myTopic = [TOPIC ...]</code>). After that, each node prints a <code>MyScribeClient.deliver(topic, content)</code> line for every message that is broadcast to the group, and a <code>MyScribeClient.anycast(topic, content):false</code> line for every node the anycast visits that does not accept it; the final anycast line ends in <code>:true</code> on the node that accepts it. The node handles, topic id and counts in these lines differ from run to run, so this page does not show a captured sample.</p>
 
-&lt;0x281817..&gt;
-  &lt;0x8904D9..&gt;
-  &lt;0x061BB8..&gt;
-  &lt;0x85DA64..&gt;
-  &lt;0x489BCB..&gt;
-  &lt;0x0A9FCC..&gt;
-  &lt;0x39CE29..&gt;
-  &lt;0xA20DF8..&gt;
-  &lt;0x7D350E..&gt;
-  &lt;0xCF76F1..&gt;
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] broadcasting 0
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] anycasting 1
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #1 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #1 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):true
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x8904D9..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0xA20DF8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0xCF76F1..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x0A9FCC..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x7D350E..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x85DA64..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x061BB8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] broadcasting 2
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] anycasting 3
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #3 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #3 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):true
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x8904D9..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0xA20DF8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0xCF76F1..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x0A9FCC..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x7D350E..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x85DA64..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x061BB8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] broadcasting 4
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] anycasting 5
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x8904D9..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0xA20DF8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0xCF76F1..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x0A9FCC..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x7D350E..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x85DA64..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x061BB8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x8904D9..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):true
-</span></pre>
 
-Note that the tree is only 1 level deep.<br/>
-Note how each publish message is delivered to each node in the group.<br/>
-Note that anycast is called on different nodes until a node returns true.<br/>  
+When you run it, look for the following.<br/>
+Each publish message is delivered to each node in the group.<br/>
+Anycast is called on different nodes until a node returns true.<br/>  
 
 <h3>Congratulations!  You have built and run your first scribe application!<br>
 

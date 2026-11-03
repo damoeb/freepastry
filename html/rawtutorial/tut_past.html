@@ -254,41 +254,20 @@ This is the last operation, so both paths call <code>env.destroy()</code> to shu
 
 <p/>Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  Past needs no jars beyond it.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.
 
-When you run the code, your output will resemble:
+When you run the code, it prints, in this order:
 
 <pre>
 <span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.past.PastTutorial 9001 10.9.8.7 9001 5</span>
-<span class="output">Finished creating new node SocketNodeHandle (&lt;0x22D2E1..&gt;/FOO/10.9.8.7:9001 [6702844014892124116])
-Finished creating new node SocketNodeHandle (&lt;0x3EDF4C..&gt;/FOO/10.9.8.7:9002 [-4218714042288854790])
-Finished creating new node SocketNodeHandle (&lt;0x16C2C6..&gt;/FOO/10.9.8.7:9003 [419583566816935501])
-Finished creating new node SocketNodeHandle (&lt;0xED50E1..&gt;/FOO/10.9.8.7:9004 [-7110190430495110085])
-Finished creating new node SocketNodeHandle (&lt;0x4AE14A..&gt;/FOO/10.9.8.7:9005 [-7392240638718374041])
-Storing 5 keys
-Inserting MyPastContent [test1382830848] at node [SNH: &lt;0x22D2E1..&gt; -&gt; &lt;0x22D2E1..&gt;/FOO/10.9.8.7:9001 [6702844014892124116]]
-Inserting MyPastContent [test-618483902] at node [SNH: &lt;0xED50E1..&gt; -&gt; &lt;0xED50E1..&gt;/FOO/10.9.8.7:9004 [-7110190430495110085]]
-Inserting MyPastContent [test482928483] at node [SNH: &lt;0x22D2E1..&gt; -&gt; &lt;0x22D2E1..&gt;/FOO/10.9.8.7:9001 [6702844014892124116]]
-Inserting MyPastContent [test-919775810] at node [SNH: &lt;0x4AE14A..&gt; -&gt; &lt;0x4AE14A..&gt;/FOO/10.9.8.7:9005 [-7392240638718374041]]
-Inserting MyPastContent [test1099145466] at node [SNH: &lt;0x3EDF4C..&gt; -&gt; &lt;0x3EDF4C..&gt;/FOO/10.9.8.7:9002 [-4218714042288854790]]
-MyPastContent [test1382830848] successfully stored at 1 locations.
-MyPastContent [test-618483902] successfully stored at 1 locations.
-MyPastContent [test482928483] successfully stored at 1 locations.
-MyPastContent [test-919775810] successfully stored at 1 locations.
-MyPastContent [test1099145466] successfully stored at 1 locations.
-Looking up the 5 keys
-Looking up &lt;0x9515FC..&gt; at node [SNH: &lt;0x16C2C6..&gt; -&gt; &lt;0x16C2C6..&gt;/FOO/10.9.8.7:9003 [419583566816935501]]
-Looking up &lt;0xB987B7..&gt; at node [SNH: &lt;0x16C2C6..&gt; -&gt; &lt;0x16C2C6..&gt;/FOO/10.9.8.7:9003 [419583566816935501]]
-Looking up &lt;0x999A32..&gt; at node [SNH: &lt;0x3EDF4C..&gt; -&gt; &lt;0x3EDF4C..&gt;/FOO/10.9.8.7:9002 [-4218714042288854790]]
-Looking up &lt;0xC9B06E..&gt; at node [SNH: &lt;0x3EDF4C..&gt; -&gt; &lt;0x3EDF4C..&gt;/FOO/10.9.8.7:9002 [-4218714042288854790]]
-Looking up &lt;0xC2EF27..&gt; at node [SNH: &lt;0x3EDF4C..&gt; -&gt; &lt;0x3EDF4C..&gt;/FOO/10.9.8.7:9002 [-4218714042288854790]]
-Successfully looked up MyPastContent [test1099145466] for key &lt;0xC2EF27..&gt;.
-Successfully looked up MyPastContent [test-618483902] for key &lt;0xB987B7..&gt;.
-Successfully looked up MyPastContent [test482928483] for key &lt;0x999A32..&gt;.
-Successfully looked up MyPastContent [test-919775810] for key &lt;0xC9B06E..&gt;.
-Successfully looked up MyPastContent [test1382830848] for key &lt;0x9515FC..&gt;.
-Looking up a bogus key
-Looking up bogus key &lt;0x216ACE..&gt; at node [SNH: &lt;0xED50E1..&gt; -&gt; &lt;0xED50E1..&gt;/FOO/10.9.8.7:9004 [-7110190430495110085]]
-Successfully looked up null for key &lt;0x216ACE..&gt;.  Notice that the result is null.
-</span></pre>
+</pre>
+
+<ol>
+  <li>One <code>Finished creating new node</code> line per node.</li>
+  <li><code>Storing 5 keys</code>, then for each key an <code>Inserting MyPastContent [...] at node ...</code> line followed by a <code>MyPastContent [...] successfully stored at N locations.</code> line once the insert completes.</li>
+  <li><code>Looking up the 5 keys</code>, then for each key a <code>Looking up &lt;id&gt; at node ...</code> line followed by <code>Successfully looked up MyPastContent [...] for key &lt;id&gt;.</code></li>
+  <li><code>Looking up a bogus key</code>, a <code>Looking up bogus key ...</code> line, and finally <code>Successfully looked up null for key ....  Notice that the result is null.</code></li>
+</ol>
+The lines of the insert and lookup phases can appear in any order, and the node handles, ids and the number of storage locations depend on the run, so this page does not show a captured sample. If something fails, the tutorial prints <code>Error storing ...</code> or <code>Error looking up ...</code> instead.
+
 
 
 
