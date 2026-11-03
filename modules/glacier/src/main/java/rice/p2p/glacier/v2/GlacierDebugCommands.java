@@ -460,11 +460,16 @@ final class GlacierDebugCommands {
           int totalChecks = 1, totalFailures = 0;
           @Override
           public void receiveResult(Object o) {
-            FragmentAndManifest fam = (FragmentAndManifest) o;
-            boolean success = fam.getManifest().validatesFragment(fam.getFragment(), currentKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance));
-            if (!success)
+            if (o instanceof FragmentAndManifest fam) {
+              boolean success = fam.getManifest().validatesFragment(fam.getFragment(), currentKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance));
+              if (!success)
+                totalFailures ++;
+              result.append(currentKey.toStringFull()+" "+ (success ? "OK" : "FAIL") + "\n");
+            } else {
+              /* gone since the scan, or not a fragment at all: count it as damaged instead of stalling the walk */
               totalFailures ++;
-            result.append(currentKey.toStringFull()+" "+ (success ? "OK" : "FAIL") + "\n");
+              result.append(currentKey.toStringFull()+" FAIL (" + ((o == null) ? "missing" : "not a fragment") + ")\n");
+            }
             advance();
           }
           @Override

@@ -2,12 +2,15 @@ package rice.p2p.glacier.v2;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import rice.environment.Environment;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.glacier.ErasureCodec;
+import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.FragmentKeyFactory;
+import rice.p2p.glacier.VersionKey;
 import rice.p2p.multiring.MultiringIdFactory;
 import rice.p2p.multiring.MultiringNode;
 import rice.pastry.PastryNode;
@@ -38,6 +41,8 @@ class GlacierImplTest {
 
   private Environment env;
   private GlacierImpl testObj;
+  private StorageManager fragmentStorage;
+  private IdFactory ringIdFactory;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -46,8 +51,9 @@ class GlacierImplTest {
     PastryNode pastryNode = new DirectPastryNodeFactory(new RandomNodeIdFactory(env), simulator, env).newNode();
     MultiringNode node = new MultiringNode(new PastryIdFactory(env).buildId("ring"), pastryNode);
     MultiringIdFactory ringFactory = (MultiringIdFactory) node.getIdFactory();
+    ringIdFactory = ringFactory;
     IdFactory fragmentKeyFactory = new FragmentKeyFactory(ringFactory);
-    StorageManager fragmentStorage = new StorageManagerImpl(fragmentKeyFactory, new MemoryStorage(fragmentKeyFactory), new EmptyCache(fragmentKeyFactory));
+    fragmentStorage = new StorageManagerImpl(fragmentKeyFactory, new MemoryStorage(fragmentKeyFactory), new EmptyCache(fragmentKeyFactory));
     StorageManager neighborStorage = new StorageManagerImpl(ringFactory, new MemoryStorage(ringFactory), new EmptyCache(ringFactory));
     GlacierPolicy policy = new GlacierDefaultPolicy(new ErasureCodec(NUM_FRAGMENTS, NUM_SURVIVORS, env), INSTANCE, env);
 
@@ -95,5 +101,17 @@ class GlacierImplTest {
     assertEquals(0, testObj.getTrashSize());
     assertEquals(1, testObj.getReplicationFactor());
     assertEquals(INSTANCE, testObj.getInstance());
+  }
+
+  @Test
+  @DisplayName("validate counts a stored object that is not a fragment as damaged instead of waiting for the timeout")
+  void validateReportsAnObjectThatIsNotAFragment() {
+    FragmentKey key = new FragmentKey(new VersionKey(ringIdFactory.buildRandomId(env.getRandomSource()), 0), 0);
+    fragmentStorage.store(key, null, "not a fragment", new rice.Continuation.ListenerContinuation<Object, Exception>("store", env));
+
+    String actual = testObj.handleDebugCommand("g validate");
+
+    assertTrue(actual.startsWith("validate=FAIL, 1/1 fragments damaged"), actual);
+    assertTrue(actual.contains(" FAIL (not a fragment)"), actual);
   }
 }
