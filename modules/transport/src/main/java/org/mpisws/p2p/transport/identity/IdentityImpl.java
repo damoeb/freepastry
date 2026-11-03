@@ -454,6 +454,17 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                               ret.setSubCancellable(() -> {
                                 throw new IllegalStateException("Can't cancel, already delivered. ret:"+ret+" sock:"+socket);
                               }); // can't cancel any more
+                              if (bindStrategy != null && options != null && !(options.containsKey(DONT_VERIFY) && ((Boolean)options.get(DONT_VERIFY)).booleanValue())) {
+                                // the handshake is done, so the socket's options may now carry the peer's certificate
+                                // subject: let the strategy check the destination against it (an outgoing connection
+                                // authenticates the peer just as an incoming one does)
+                                UpperIdentifier dest = getIntendedDest(options);
+                                if (dest != null && !bindStrategy.accept(dest, i, socket.getOptions())) {
+                                  socket.close();
+                                  deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
+                                  return;
+                                }
+                              }
                               deliverSocketToMe.receiveResult(ret, socket);
                             }
                           }
