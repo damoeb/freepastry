@@ -70,7 +70,7 @@ public final class LeafSetResponse extends PRawMessage implements PNSMessage {
     case 0:
       return new LeafSetResponse(LeafSet.build(buf, nhf), dest);
     }
-    throw new IllegalStateException("Unknown version:"+version);
+    throw new IOException("Unknown version: "+version);
   }
 
   public LeafSet getLeafset() {

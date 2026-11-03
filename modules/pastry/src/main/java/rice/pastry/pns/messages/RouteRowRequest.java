@@ -58,7 +58,7 @@ public final class RouteRowRequest extends PRawMessage implements PNSMessage {
     byte version = buf.readByte();
     if (version == 0)
       return new RouteRowRequest(sender, buf.readShort(), dest);
-    throw new IllegalStateException("Unknown version:"+version);
+    throw new IOException("Unknown version: "+version);
   }
 
 

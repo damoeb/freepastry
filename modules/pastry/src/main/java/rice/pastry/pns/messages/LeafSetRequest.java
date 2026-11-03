@@ -55,7 +55,7 @@ public final class LeafSetRequest extends PRawMessage implements PNSMessage {
     byte version = buf.readByte();
     if (version == 0)
       return new LeafSetRequest(sender, dest);
-    throw new IllegalStateException("Unknown version:"+version);
+    throw new IOException("Unknown version: "+version);
   }
 
   @Override
