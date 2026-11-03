@@ -55,6 +55,16 @@ public final class NodeIdCertificate {
     return SUBJECT_PREFIX + id.toStringFull();
   }
 
+  /** @return true if the common name (without {@code CN=}) is a node id: {@code Id.IdBitLength / 4} hex digits */
+  public static boolean isNodeId(String commonName) {
+    try {
+      parseId(SUBJECT_PREFIX + commonName);
+      return true;
+    } catch (CertificateException e) {
+      return false;
+    }
+  }
+
   /**
    * @param subject the common name of a certificate, as reported by {@code SSLTransportLayer.OPTION_CERT_SUBJECT}
    *     (without {@code CN=}), or null if the connection carries no certificate
@@ -93,7 +103,10 @@ public final class NodeIdCertificate {
    * The node id in the subject, without checking who signed the certificate.
    */
   static Id idOf(X509Certificate cert) throws CertificateException {
-    String subject = cert.getSubjectX500Principal().getName();
+    return parseId(cert.getSubjectX500Principal().getName());
+  }
+
+  private static Id parseId(String subject) throws CertificateException {
     int hexLength = Id.IdBitLength / 4;
     if (!subject.startsWith(SUBJECT_PREFIX) || subject.length() != SUBJECT_PREFIX.length() + hexLength) {
       throw new CertificateException("Certificate subject '" + subject + "' is not CN=<" + hexLength + " hex digits>");

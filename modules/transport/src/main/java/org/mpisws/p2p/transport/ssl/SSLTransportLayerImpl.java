@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.Map;
+import java.util.function.Predicate;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -80,6 +81,8 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
 
   private int clientAuth;
 
+  private final Predicate<String> subjectValidator;
+
   public SSLTransportLayerImpl(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, Environment env) throws IOException {
     this(tl,keyStore,trustStore,CLIENT_AUTH_REQUIRED,env);
   }
@@ -91,6 +94,15 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
    * @param clientAuth CLIENT_AUTH_NONE or CLIENT_AUTH_REQUIRED, used on the server side
    */
   public SSLTransportLayerImpl(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, int clientAuth, Environment env) throws IOException {
+    this(tl, keyStore, trustStore, clientAuth, subject -> true, env);
+  }
+
+  /**
+   * @param subjectValidator strict mode: a handshake fails unless the peer certificate's common name passes
+   *     this test (certified node ids pass one that requires the CN to be a node id); the default accepts any CN
+   */
+  public SSLTransportLayerImpl(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, int clientAuth, Predicate<String> subjectValidator, Environment env) throws IOException {
+    this.subjectValidator = subjectValidator;
     if (clientAuth != CLIENT_AUTH_NONE && clientAuth != CLIENT_AUTH_REQUIRED) throw new IllegalArgumentException("clientAuth type:"+clientAuth+" not supported.");
 
     this.environment = env;
@@ -222,6 +234,11 @@ public class SSLTransportLayerImpl<Identifier, MessageType> implements SSLTransp
       P2PSocket<Identifier> s,
       Continuation<SSLSocketManager<Identifier>, Exception> c, boolean server, boolean useClientAuth) {
     return new SSLSocketManager<Identifier>(sslTL,s,c,server,useClientAuth);
+  }
+
+  /** Tests the common name of a peer certificate; a handshake with a peer whose CN fails it is aborted. */
+  public Predicate<String> getSubjectValidator() {
+    return subjectValidator;
   }
 
   public SSLContext getContext() {

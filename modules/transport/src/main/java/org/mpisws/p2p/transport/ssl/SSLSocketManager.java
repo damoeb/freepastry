@@ -310,6 +310,10 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
           name = peerCert.getSubjectX500Principal().getName(X500Principal.RFC1779);
           if (name.startsWith("CN=")) {
             name = name.substring(3);
+            if (!sslTL.getSubjectValidator().test(name)) {
+              fail(new IllegalArgumentException("Certificate CN is not acceptable: "+name+" "+this));
+              return false;
+            }
             options = OptionsFactory.addOption(socket.getOptions(), SSLTransportLayer.OPTION_CERT_SUBJECT, name);
           } else {
             fail(new IllegalArgumentException("CN must start with CN= "+name+" "+this));

@@ -52,6 +52,7 @@ import org.mpisws.p2p.transport.identity.BindStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
+import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
@@ -61,6 +62,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.socket.CertifiedIdBindStrategy;
+import rice.pastry.standard.NodeIdCertificate;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.TransportLayerNodeHandle;
 import rice.pastry.standard.CertifiedNodeIdFactory;
@@ -111,7 +113,7 @@ public class DistTutorial {
 
         try {
           // return our layer
-          return new SSLTransportLayerImpl<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(sourceRoutingTransportLayer,store,store,pn.getEnvironment());
+          return new SSLTransportLayerImpl<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(sourceRoutingTransportLayer,store,store,SSLTransportLayer.CLIENT_AUTH_REQUIRED,NodeIdCertificate::isNodeId,pn.getEnvironment());
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
