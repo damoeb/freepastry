@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -170,6 +172,9 @@ public class PastryNode implements
   private TransportLayer<NodeHandle, RawMessage> tl;
 
   private ProximityProvider<NodeHandle> proxProvider;
+
+  /** certified mode: decides which node ids count as authenticated; null accepts every id */
+  private @Nullable Predicate<NodeHandle> identityPolicy;
 
   /**
    * Constructor, with NodeId. Need to set the node's ID before this node is
@@ -470,6 +475,45 @@ public class PastryNode implements
         l[i].pastryNodeJoinFailed(this, joinFailedException);
       }
     }
+  }
+
+  /**
+   * Certified mode: sets the test that tells whether a node handle's id is authenticated. The routing table and the
+   * leaf set admit only such handles, and application messages sent directly to this node are delivered only if
+   * their sender passes. The test is called on the selector thread. Null (the default) accepts every id.
+   */
+  public void setIdentityPolicy(@Nullable Predicate<NodeHandle> policy) {
+    identityPolicy = policy;
+    getLeafSet().setAdmission(policy);
+    getRoutingTable().setAdmission(policy);
+  }
+
+  /** @return false in certified mode if the handle's id is not authenticated (yet) */
+  public boolean acceptsIdentity(@Nullable NodeHandle handle) {
+    return handle == null || identityPolicy == null || identityPolicy.test(handle);
+  }
+
+  /**
+   * Opens a connection to the node and closes it as soon as it is established. With a TLS layer and a bind
+   * strategy that checks the peer's certificate, this is what authenticates the node's id.
+   *
+   * @param onDone called on the selector thread with true if the connection was established (the peer's certificate
+   *     was accepted) and with false if it was not
+   */
+  public void probe(NodeHandle handle, Consumer<Boolean> onDone) {
+    tl.openSocket(handle, new SocketCallback<NodeHandle>() {
+      @Override
+      public void receiveResult(SocketRequestHandle<NodeHandle> cancellable, P2PSocket<NodeHandle> sock) {
+        sock.close();
+        onDone.accept(Boolean.TRUE);
+      }
+
+      @Override
+      public void receiveException(SocketRequestHandle<NodeHandle> s, Exception ex) {
+        logger.debug("probe of {} failed", handle, ex);
+        onDone.accept(Boolean.FALSE);
+      }
+    }, null);
   }
 
   /**

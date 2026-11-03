@@ -490,6 +490,11 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public final void messageForAppl(rice.pastry.messaging.Message msg) {
     logger.trace("[{}] deliver {} from {}", thePastryNode, msg, msg.getSenderId());
 
+    if (!thePastryNode.acceptsIdentity(msg.getSender())) {
+      logger.info("Dropping {} from {}: its id is not authenticated", msg, msg.getSender());
+      return;
+    }
+
     if (msg instanceof PastryEndpointMessage pastryEndpointMessage) {
       // null for now, when RouteMessage stuff is completed, then it will be different!
       application.deliver(null, pastryEndpointMessage.getMessage());

@@ -45,6 +45,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Predicate;
+
+import org.jspecify.annotations.Nullable;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -77,6 +80,9 @@ public class LeafSet implements Iterable<NodeHandle> {
 
   // can get backup entries from this when we remove
   RoutingTable routingTable;
+
+  /** certified mode: only handles it accepts become members; null admits every handle */
+  private @Nullable Predicate<NodeHandle> admission;
 
   private LeafSet(LeafSet that) {
     this(that, true);
@@ -115,6 +121,14 @@ public class LeafSet implements Iterable<NodeHandle> {
   }
 
   /**
+   * @param admission decides which handles may become members (it is asked for every handle that would be added);
+   *     null admits every handle
+   */
+  public void setAdmission(@Nullable Predicate<NodeHandle> admission) {
+    this.admission = admission;
+  }
+
+  /**
    * Puts a NodeHandle into the set.
    *
    * @param handle the handle to put.
@@ -129,6 +143,7 @@ public class LeafSet implements Iterable<NodeHandle> {
     Id nid = handle.getNodeId();
     if (nid.equals(baseId)) return false;
     if (member(handle)) return false;
+    if (admission != null && !admission.test(handle)) return false;
 
     @SuppressWarnings("ShortCircuitBoolean") // both sets must get the handle
     boolean res = cwSet.put(handle, suppressNotification) | ccwSet.put(handle, suppressNotification);

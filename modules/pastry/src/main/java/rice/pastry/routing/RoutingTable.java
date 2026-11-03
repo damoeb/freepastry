@@ -41,6 +41,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
+
+import org.jspecify.annotations.Nullable;
 
 import org.slf4j.Logger;
 import rice.pastry.Id;
@@ -87,6 +90,9 @@ public class RoutingTable implements NodeSetEventSource {
   private final byte idBaseBitLength;
 
   private Id myNodeId;
+
+  /** certified mode: only handles it accepts enter the table; null admits every handle */
+  private @Nullable Predicate<NodeHandle> admission;
 
   private final NodeHandle myNodeHandle;
 
@@ -418,6 +424,13 @@ public class RoutingTable implements NodeSetEventSource {
   }
 
   /**
+   * @param admission decides which handles may enter the table; null admits every handle
+   */
+  public synchronized void setAdmission(@Nullable Predicate<NodeHandle> admission) {
+    this.admission = admission;
+  }
+
+  /**
    * Puts a handle into the routing table.
    *
    * @param handle the handle to put.
@@ -427,6 +440,7 @@ public class RoutingTable implements NodeSetEventSource {
     assert pn.getEnvironment().getSelectorManager().isSelectorThread() : "the routing table is modified on the selector thread only";
     logger.trace("RT: put({})", handle);
     Id nid = handle.getNodeId();
+    if (admission != null && !nid.equals(myNodeId) && !admission.test(handle)) return false;
     RouteSet ns = makeBestEntry(nid);
 
     if (ns != null) {
