@@ -161,7 +161,7 @@ public record GCId(Id id, long expiration) implements Id {
     if (! (o instanceof GCId gcId))
       return false;
 
-    return (gcId.id.equals(id) && (gcId.expiration == expiration));
+    return gcId.id.equals(id);
   }
 
   /**
