@@ -34,7 +34,7 @@ Changes:
   There is only one change to the code, the network topology, plus a command line argument to specify the file name (it defaults to <code>GNPINPUT</code>):
   
 <pre>
-    NetworkSimulator&lt;DirectNodeHandle,RawMessage&gt; simulator = new GenericNetwork&lt;DirectNodeHandle,RawMessage&gt;(env, new File(fileName));
+    NetworkSimulator&lt;DirectNodeHandle,RawMessage&gt; simulator = new GenericNetwork&lt;DirectNodeHandle,RawMessage&gt;(env, Path.of(fileName));
 </pre>  
 
 <p>The format of this file is a matrix of floats representing the table of latency values.  It should be N lines with N floats on each line representing N latencies.</p>  
@@ -49,10 +49,10 @@ Changes:
       simulator.setMaxSpeed(curNode+1);
 </pre>
 
-<p/>Build and run this code as in the <a href="tut_simulator.html">previous tutorial</a>, but this time provide a matrix file. The tutorial directory includes <a href="GNPINPUT">this file</a>, which must be copied to the working directory to execute this tutorial.
+<p/>Build and run this code as in the <a href="tut_simulator.html">previous tutorial</a>, but this time provide a matrix file. The tutorial directory includes <a href="GNPINPUT">this file</a> (<code>html/rawtutorial/GNPINPUT</code> in the source tree). The program opens the file name you pass as the second argument relative to the directory you start Java from (it only falls back to the bare name <code>GNPINPUT</code> if you pass none), so either run from <code>html/rawtutorial</code> or give the path from where you are, as below.
 
 <pre>
-<span class="input">java -cp modules/all/target/freepastry-@freepastry_version@-jar-with-dependencies.jar rice.tutorial.gtitm.DirectTutorial 10 GNPINPUT</span>
+<span class="input">java -cp modules/all/target/freepastry-@freepastry_version@-jar-with-dependencies.jar rice.tutorial.gtitm.DirectTutorial 10 html/rawtutorial/GNPINPUT</span>
 <span class="output">Finished creating new node Pastry node <0x7B5ABF..>
 Finished creating new node Pastry node <0xFFA2A6..>
 Finished creating new node Pastry node <0x74A71D..>
