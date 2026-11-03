@@ -76,6 +76,13 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
   private final SelectorManager selectorManager;
   private RendezvousTransportLayer<RendezvousSocketNodeHandle> tl;
 
+  private static RendezvousSocketNodeHandle readRendezvousHandle(PastryNode pn, InputBuffer buf) throws IOException {
+    NodeHandle handle = pn.readNodeHandle(buf);
+    if (handle instanceof RendezvousSocketNodeHandle rendezvousHandle) {
+      return rendezvousHandle;
+    }
+    throw new IOException("Not a rendezvous node handle: " + handle);
+  }
 
   public RendezvousApp(PastryNode pn) {
     super(pn,null,0,null);
@@ -100,7 +107,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         case PILOT_FORWARD:
           version = buf.readByte();
           if (version == 0) { // version 0
-            RendezvousSocketNodeHandle target = (RendezvousSocketNodeHandle)thePastryNode.readNodeHandle(buf);
+            RendezvousSocketNodeHandle target = readRendezvousHandle(thePastryNode, buf);
             ByteBufferMsg subMsg = (ByteBufferMsg)deserialize(buf, RendezvousMessageType.BYTE_BUFFER.id(), priority, sender);
             return new PilotForwardMsg(getAddress(), subMsg, target);
           } else {
@@ -109,8 +116,8 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         case OPEN_CHANNEL:
           version = buf.readByte();
           if (version == 0) { // version 0
-            RendezvousSocketNodeHandle rendezvous = (RendezvousSocketNodeHandle)thePastryNode.readNodeHandle(buf);
-            RendezvousSocketNodeHandle source = (RendezvousSocketNodeHandle)thePastryNode.readNodeHandle(buf);
+            RendezvousSocketNodeHandle rendezvous = readRendezvousHandle(thePastryNode, buf);
+            RendezvousSocketNodeHandle source = readRendezvousHandle(thePastryNode, buf);
             int uid = buf.readInt();
             return new OpenChannelMsg(getAddress(), rendezvous, source, uid);
           } else {
