@@ -66,6 +66,7 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.OverrideLiveness;
 import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
+import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.InsufficientBytesException;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
@@ -236,7 +237,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
    */
   protected boolean addBinding(UpperIdentifier u, @Nullable LowerIdentifier l, @Nullable Map<String, Object> options) {
     if (!environment.getSelectorManager().isSelectorThread()) throw new RuntimeException("Must be called on selector thread.");
-    if (bindStrategy != null && options != null) {
+    // also for wire-deserialized handles (null options): the strategy decides what it accepts without options
+    if (bindStrategy != null) {
       if (!bindStrategy.accept(u, l, options)) return false;
     }
     MiddleIdentifier m = serializer.translateDown(u);
@@ -661,7 +663,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
      * Head the message with the expected identifier
      */
     @Override
-    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
     public MessageRequestHandle<LowerIdentifier, ByteBuffer> sendMessage(
         final LowerIdentifier i,
         ByteBuffer m,
@@ -669,8 +670,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         final @Nullable Map<String, Object> options) {
 
       if (logger.isTraceEnabled()) {
-        byte[] b = new byte[m.remaining()];
-        System.arraycopy(m.array(), m.position(), b, 0, b.length);
+        byte[] b = ByteBuffers.peekRemaining(m);
         logger.trace("sendMessage("+i+","+m+")"+Arrays.toString(b));
       } else {
         logger.debug("sendMessage({},{})", i, m);
@@ -757,7 +757,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
 
     @Override
-    @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
     public void messageReceived(LowerIdentifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
       @Nullable Map<String, Object> newOptions = OptionsFactory.copyOptions(options);
 
@@ -784,10 +783,10 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           // fall through: a message for me is read like one without an id
 
         case NO_ID:
-          @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-          SimpleInputBuffer sib = new SimpleInputBuffer(m.array(),m.position());
+          byte[] array = ByteBuffers.arrayForRead(m);
+          SimpleInputBuffer sib = new SimpleInputBuffer(array, ByteBuffers.arrayPosition(m));
           UpperIdentifier from = serializer.deserialize(sib, i);
-          m.position(m.array().length - sib.bytesRemaining());
+          ByteBuffers.setArrayPosition(m, array.length - sib.bytesRemaining());
 
           if (addBinding(from, i, options)) {
 
@@ -795,7 +794,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           } else {
             logger.atWarn().log(() -> "Warning.  Received message from stale identifier:"+
                 from+". Current identifier is "+bindings.get(serializer.translateUp(i))+" lower:"+i+" Probably a delayed message, dropping.");
-            errorHandler.receivedUnexpectedData(i, m.array(), m.position(), newOptions);
+            errorHandler.receivedUnexpectedData(i, array, ByteBuffers.arrayPosition(m), newOptions);
             return;
           }
 
@@ -804,8 +803,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
           // it's for me, no problem
           if (logger.isTraceEnabled()) {
-            byte[] b = new byte[m.remaining()];
-            System.arraycopy(m.array(), m.position(), b, 0, b.length);
+            byte[] b = ByteBuffers.peekRemaining(m);
             logger.trace("received message for me from:"+from+"("+from+"("+i+")) "+Arrays.toString(b));
           }
           callback.messageReceived(i, m, newOptions);
@@ -814,8 +812,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           // it's an error, read it in
           UpperIdentifier oldDest = bindings.get(serializer.translateUp(i));
 
-          @SuppressWarnings("ByteBufferBackingArray") // assumes arrayOffset() == 0, true for the wrap/allocate buffers this stack creates
-          UpperIdentifier newDest = serializer.deserialize(new SimpleInputBuffer(m.array(),m.position()), i);
+          UpperIdentifier newDest = serializer.deserialize(new SimpleInputBuffer(ByteBuffers.arrayForRead(m), ByteBuffers.arrayPosition(m)), i);
           logger.info("received INCORRECT_IDENTITY:{} old:{} new:{}", i, oldDest, newDest);
 
           if (addBinding(newDest, i, options)) { // should call setDeadForever
