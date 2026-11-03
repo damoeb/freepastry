@@ -296,6 +296,7 @@ final class GlacierNeighborhood {
             @Override
             public void receiveResult(Object o) {
               logger.debug("CNE unstore successful: {}, returned {}", thisNeighbor, o);
+              determineResponsibleRange();
             }
             @Override
             public void receiveException(Exception e) {
