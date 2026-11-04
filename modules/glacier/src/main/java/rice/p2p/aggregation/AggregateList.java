@@ -109,19 +109,15 @@ public class AggregateList {
   }
 
   public void recoverLog() {
-    BufferedReader logFile = null;
     long expectedSerial = -1;
     int entriesReplayed = 0;
 
-    try {
-      logFile = new BufferedReader(new InputStreamReader(Files.newInputStream(Path.of(logFileName)), StandardCharsets.UTF_8));
+    try (BufferedReader logFile = new BufferedReader(new InputStreamReader(Files.newInputStream(Path.of(logFileName)), StandardCharsets.UTF_8))) {
 
       while (true) {
         String line = readLineSkipComments(logFile);
-        if (line == null) {
-          logFile.close();
+        if (line == null)
           break;
-        }
 
         if (!line.startsWith("$") || !line.endsWith("@"))
           throw new AggregationException("Malformed log entry (expected $...@): "+line);
