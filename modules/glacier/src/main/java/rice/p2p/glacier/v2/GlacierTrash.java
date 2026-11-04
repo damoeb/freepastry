@@ -50,7 +50,7 @@ import rice.persistence.StorageManager;
  * Deletes fragments from the fragment storage. When a trash storage is set, deleted fragments are
  * moved there first, and fragments that must be recovered are looked up there before asking other nodes.
  */
-final class GlacierTrash {
+class GlacierTrash {
   private final StorageManager fragmentStorage;
   private final Logger logger;
   private StorageManager trashStorage;

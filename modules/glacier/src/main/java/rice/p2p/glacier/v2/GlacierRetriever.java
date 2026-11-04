@@ -387,7 +387,8 @@ final class GlacierRetriever {
       }
       @Override
       public void receiveException(Exception e) {
-        logger.atWarn().log(() -> "Exception while checking for "+key.toStringFull()+" in trash storage -- ignoring");
+        logger.atWarn().log(() -> "Exception while checking for "+key.toStringFull()+" in trash storage -- fetching normally");
+        scheduler.addContinuation(new PrimaryFragmentFetch(key, manifest, tag, c));
       }
     });
   }
