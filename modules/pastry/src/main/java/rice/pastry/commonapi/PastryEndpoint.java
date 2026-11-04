@@ -486,21 +486,18 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
   // Upcall to Application support
 
+  /**
+   * Delivers a message that is not wrapped in a route message. Only this node sends such messages to an endpoint:
+   * the ones scheduled with {@link #scheduleMessage}. None arrives over the network: the transport reads a frame
+   * for this endpoint's address with the application's deserializer ({@link #getDeserializer()}), so it yields the
+   * application's own message, which is not a {@link PastryEndpointMessage}: it fails the cast to a pastry message
+   * in {@code PastryNode.messageReceived}, or, should the application's message be a pastry message, is dropped
+   * below as unknown. Nothing from another node reaches the application through here, which is why there is no
+   * identity check; the one for messages from other nodes is in {@link #receiveMessage}.
+   */
   @Override
   public final void messageForAppl(rice.pastry.messaging.Message msg) {
     logger.trace("[{}] deliver {} from {}", thePastryNode, msg, msg.getSenderId());
-
-    if (!thePastryNode.acceptsIdentity(msg.getSender())) {
-      // the check has been started; the message is delivered when it succeeds, dropped when it fails or times out
-      if (!thePastryNode.deferUntilAuthenticated(msg.getSender(), () -> deliverToApplication(msg))) {
-        logger.info("Dropping {} from {}: its id is not authenticated and too many messages wait", msg, msg.getSender());
-      }
-      return;
-    }
-    deliverToApplication(msg);
-  }
-
-  private void deliverToApplication(rice.pastry.messaging.Message msg) {
 
     if (msg instanceof PastryEndpointMessage pastryEndpointMessage) {
       // null for now, when RouteMessage stuff is completed, then it will be different!
@@ -574,7 +571,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     } else {
 
       // if the message is not a RouteMessage, then it is for the local node and
-      // was sent with a PastryAppl.routeMsgDirect(); we deliver it for backward compatibility
+      // was scheduled with scheduleMessage(); see messageForAppl()
       messageForAppl(msg);
     }
   }
