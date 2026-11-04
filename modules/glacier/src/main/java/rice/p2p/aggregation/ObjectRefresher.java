@@ -137,10 +137,15 @@ final class ObjectRefresher {
         @Override
         public void receiveResult(Object[] o) {
           if (o != null) {
-            Object[] subresult = (Object[]) o;
-            for (int i=0; i<result.length; i++)
-              if ((result[i] instanceof Boolean) && !(subresult[i] instanceof Boolean))
-                result[i] = subresult[i];
+            for (int i=0; i<result.length; i++) {
+              if (!(result[i] instanceof Boolean))
+                continue;
+
+              if (i >= o.length)
+                result[i] = new AggregationException("Object store returned "+o.length+" results for "+result.length+" ids");
+              else if (!(o[i] instanceof Boolean))
+                result[i] = o[i];
+            }
           } else {
             Exception e = new AggregationException("Object store returns unexpected result: "+Arrays.toString(o));
             for (int i=0; i<result.length; i++)
