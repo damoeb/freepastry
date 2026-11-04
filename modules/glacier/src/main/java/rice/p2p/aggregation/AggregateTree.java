@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -169,6 +170,8 @@ final class AggregateTree {
     private final List<Id> keysPostponed = Collections.synchronizedList(new ArrayList<Id>());
     private final List<Id> keysDone = Collections.synchronizedList(new ArrayList<Id>());
     private final Continuation<? super Boolean, Exception> command;
+    // a lookup that completes on the calling thread finishes the run inside the loop that started it
+    private final AtomicBoolean finished = new AtomicBoolean();
 
     Rebuild(Continuation<? super Boolean, Exception> command) {
       this.command = command;
@@ -176,7 +179,11 @@ final class AggregateTree {
 
     void fetch(final Id fromKey) {
       keysInProgress.add(fromKey);
+      startLookup(fromKey);
+    }
 
+    /** Starts the lookup of a key that is already in {@code keysInProgress}. */
+    private void startLookup(final Id fromKey) {
       logger.atInfo().log(() -> "Rebuild: Fetching handles for aggregate " + fromKey.toStringFull());
       aggregateStore.lookupHandles(fromKey, MAX_HANDLES, new Continuation<PastContentHandle[], Exception>() {
         @Override
@@ -254,6 +261,8 @@ final class AggregateTree {
 
       Id[] pointers = aggr.getPointers();
       int numAdded = 0;
+      // register all lookups before starting any, so one that completes at once cannot see the run as done
+      List<Id> toStart = new ArrayList<>();
       if (pointers != null) {
         for (Id pointer : pointers) {
           if (pointer != null) {
@@ -261,21 +270,24 @@ final class AggregateTree {
             if (!keysDone.contains(thisPointer) && !keysPostponed.contains(thisPointer) && !keysInProgress.contains(thisPointer)) {
               if (keysInProgress.size() >= config.getReconstructionMaxConcurrentLookups())
                 keysPostponed.add(thisPointer);
-              else
-                fetch(thisPointer);
+              else {
+                keysInProgress.add(thisPointer);
+                toStart.add(thisPointer);
+              }
 
               numAdded ++;
             }
           }
         }
       }
+      toStart.forEach(this::startLookup);
 
       logger.debug("Rebuild: Added {} keys, now {} in progress, {} postponed and {} done", numAdded, keysInProgress.size(), keysPostponed.size(), keysDone.size());
 
       if (!keysInProgress.isEmpty() || !keysPostponed.isEmpty()) {
         logger.info("Rebuild: {} keys in progress, {} postponed, {} done", keysInProgress.size(), keysPostponed.size(), keysDone.size());
         resumePostponed();
-      } else {
+      } else if (finished.compareAndSet(false, true)) {
         aggregateList.writeToDisk();
         rebuildInProgress = false;
         logger.info("Rebuild: Completed; {} aggregates checked", keysDone.size());
@@ -331,7 +343,7 @@ final class AggregateTree {
       keysInProgress.remove(fromKey);
       keysDone.add(fromKey);
 
-      if (keysInProgress.isEmpty() && keysPostponed.isEmpty()) {
+      if (keysInProgress.isEmpty() && keysPostponed.isEmpty() && finished.compareAndSet(false, true)) {
         rebuildInProgress = false;
         if (aggregateList.isEmpty()) {
           command.receiveException(new AggregationException("Cannot read root aggregate! -- retry later"));
