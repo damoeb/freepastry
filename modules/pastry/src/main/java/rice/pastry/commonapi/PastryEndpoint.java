@@ -524,6 +524,22 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   /**
    * Called by pastry to deliver a message to this client.  Not to be overridden.
    *
+   * <p>Certified mode (the node has an identity policy, {@link PastryNode#setIdentityPolicy}): a route message
+   * that arrived from another node reaches the application ({@link Application#forward}, then
+   * {@link Application#deliver} or the next hop) only if the id of its previous hop
+   * ({@link rice.pastry.routing.RouteMessage#getReceivedFrom()}) is authenticated. Until it is, the message waits
+   * in the node's bounded queue ({@link PastryNode#deferUntilAuthenticated}); it goes on, in order, when the check
+   * succeeds and is dropped when the check fails or times out. The gate is before {@code forward}, not just before
+   * {@code deliver}: what is authenticated is the hop the message came from, which is known on receipt, so the
+   * application sees nothing an unverified hop sent, and this node relays nothing for it either. Messages created
+   * on this node are not gated.
+   *
+   * <p>Only the previous hop is authenticated. The originator named in the message (the sender of the wrapped
+   * message, or whatever the payload claims) is not: any authenticated node can route a message that names
+   * another node as its source. An application that needs to know who sent a message must sign it.
+   *
+   * <p>Without an identity policy nothing is checked.
+   *
    * @param msg the message that is arriving.
    */
   @Override
@@ -533,8 +549,6 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     logger.trace("[{}] recv {}", thePastryNode, msg);
 
     if (msg instanceof rice.pastry.routing.RouteMessage rm) {
-      try {
-
       // if the message has a destinationHandle, it should be for me, and it should always be delivered
       NodeHandle destinationHandle = rm.getDestinationHandle();
       if (deliverWhenNotReady() ||
@@ -548,8 +562,29 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
         return;
       }
 
+      rice.pastry.NodeHandle hop = rm.getReceivedFrom();
+      if (hop != null && (thePastryNode.isAwaitingAuthentication(hop) || !thePastryNode.acceptsIdentity(hop))) {
+        // the check has been started; the message goes on when it succeeds, and is dropped when it fails or times out
+        if (!thePastryNode.deferUntilAuthenticated(hop, () -> forwardOrDeliver(rm))) {
+          logger.info("Dropping {} from {}: its id is not authenticated and too many messages wait", rm, hop);
+        }
+        return;
+      }
+      forwardOrDeliver(rm);
+    } else {
+
+      // if the message is not a RouteMessage, then it is for the local node and
+      // was sent with a PastryAppl.routeMsgDirect(); we deliver it for backward compatibility
+      messageForAppl(msg);
+    }
+  }
+
+  /** hands a route message to the application, then delivers it here or routes it on */
+  @SuppressWarnings("ReferenceEquality") // the local node handle is a single instance
+  private void forwardOrDeliver(rice.pastry.routing.RouteMessage rm) {
+    try {
       // call application
-      logger.trace("[{}] forward {}", thePastryNode, msg);
+      logger.trace("[{}] forward {}", thePastryNode, rm);
       if (application.forward(rm)) {
         if (rm.getNextHop() != null) {
           rice.pastry.NodeHandle nextHop = rm.getNextHop();
@@ -576,14 +611,8 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
         // forward consumed the message
         rm.sendSuccess(thePastryNode.getLocalHandle());
       }
-      } catch (IOException ioe) {
-        logger.atError().setCause(ioe).log(() -> this.toString());
-      }
-    } else {
-
-      // if the message is not a RouteMessage, then it is for the local node and
-      // was sent with a PastryAppl.routeMsgDirect(); we deliver it for backward compatibility
-      messageForAppl(msg);
+    } catch (IOException ioe) {
+      logger.atError().setCause(ioe).log(() -> this.toString());
     }
   }
 

@@ -6,7 +6,6 @@ import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.ALICE
 import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.BOB;
 import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.NO_PASSWORD;
 import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.awaitReady;
-import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.awaitTrue;
 import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.ca;
 import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.freePort;
 import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.store;
@@ -15,16 +14,18 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.pki.x509.CAToolImpl;
-import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
@@ -33,23 +34,62 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.pastry.DeferredDeliveries;
 import rice.pastry.PastryNode;
-import rice.pastry.commonapi.PastryEndpoint;
-import rice.pastry.commonapi.PastryEndpointMessage;
 import rice.pastry.socket.CertifiedSocketPastryNodeFactory;
 
 /**
- * End to end, on loopback with real sockets and TLS: a direct application message that reaches a node before
- * the sender's id is verified is queued and delivered, in order, once the verification ends.
+ * End to end, on loopback with real sockets and TLS: a routed application message whose previous hop is not
+ * authenticated yet is held back from the application. It is delivered, in order, once the TLS check of the hop
+ * succeeds, and never if the check fails.
  */
 class CertifiedDeferredDeliveryTest {
 
   static final short TYPE = 77;
   static final int MESSAGES = 5;
-  static final int DELIVERY_SECONDS = 15;
+  static final int MARKER = 99;
+  static final int WAIT_SECONDS = 5;
 
   final List<Environment> environments = new ArrayList<>();
   final List<PastryNode> nodes = new ArrayList<>();
+
+  CertifiedSocketPastryNodeFactory factoryA;
+  PastryNode a;
+  PastryNode b;
+  Receiver receiverA;
+  Receiver receiverB;
+  Predicate<rice.pastry.NodeHandle> realPolicyOfA;
+
+  @BeforeEach
+  void setUp() throws Exception {
+    CAToolImpl ca = ca();
+    int port = freePort();
+    factoryA = new CertifiedSocketPastryNodeFactory(store(ca, ALICE), NO_PASSWORD, port, environment());
+    a = factoryA.newNode();
+    nodes.add(a);
+    receiverA = new Receiver(a);
+    realPolicyOfA = identityPolicy(a);
+    InetSocketAddress addressA = new InetSocketAddress(factoryA.getBindAddress(), port);
+    a.boot(addressA);
+    awaitReady(a);
+
+    CertifiedSocketPastryNodeFactory factoryB = new CertifiedSocketPastryNodeFactory(store(ca, BOB), NO_PASSWORD, freePort(), environment());
+    b = factoryB.newNode();
+    nodes.add(b);
+    receiverB = new Receiver(b);
+    b.boot(addressA);
+    awaitReady(b);
+    await(() -> b.getLeafSet().member(ALICE) && a.getLeafSet().member(BOB), "A and B have each other in their leaf sets");
+
+    // B has met A over TLS, so A knows B's id. Forget that: A now has B only as an id from the wire, as if it had
+    // heard of B from a third node, and has to verify it again. And hold the check back (A's policy refuses B
+    // without starting it) so that B's messages surely arrive while B is unverified.
+    CertifiedDeferredDeliveryTest.forget(factoryA, BOB);
+    onSelector(a, () -> {
+      a.setIdentityPolicy(handle -> !handle.getNodeId().equals(BOB) && realPolicyOfA.test(handle));
+      return null;
+    });
+  }
 
   @AfterEach
   void tearDown() {
@@ -58,83 +98,75 @@ class CertifiedDeferredDeliveryTest {
   }
 
   @Test
-  @DisplayName("direct messages sent the moment a node joins reach the application of a peer that has not verified it yet, in order")
-  void messagesFromAnUnverifiedPeerAreDeliveredInOrder() throws Exception {
-    CAToolImpl ca = ca();
-    int port = freePort();
-    CertifiedSocketPastryNodeFactory factoryA = new CertifiedSocketPastryNodeFactory(store(ca, ALICE), NO_PASSWORD, port, environment());
-    PastryNode a = factoryA.newNode();
-    nodes.add(a);
-    Receiver receiverA = new Receiver(a);
-    readDirectMessagesWithTheEndpoint(a, receiverA);
-    AtomicInteger heldBack = countRefusals(a, factoryA, MESSAGES);
-    InetSocketAddress addressA = new InetSocketAddress(factoryA.getBindAddress(), port);
-    a.boot(addressA);
-    awaitReady(a);
+  @DisplayName("routed messages whose previous hop is not verified yet reach the application once the hop's certificate is checked, in order")
+  void messagesFromAnUnverifiedHopAreDeliveredInOrderAfterTheCheck() throws Exception {
+    routeFromBToA(0, 1, 2, 3, 4);
+    await(() -> waiting(a) == MESSAGES || !receiverA.received.isEmpty(), "B's messages wait at A or reached A's application");
+    assertEquals(List.of(), receiverA.received, "numbers A's application got before B was verified");
 
-    CertifiedSocketPastryNodeFactory factoryB = new CertifiedSocketPastryNodeFactory(store(ca, BOB), NO_PASSWORD, freePort(), environment());
-    PastryNode b = factoryB.newNode();
-    nodes.add(b);
-    Receiver receiverB = new Receiver(b);
-    b.boot(addressA);
-
-    // B has met A over TLS, so A knows B's id. Forget that: A now has B only as an id from the wire, as if it had
-    // heard of B from a third node, and has to verify it while B's messages arrive.
-    awaitTrue(() -> b.getLeafSet().member(ALICE));
-    forget(factoryA, BOB);
-    NodeHandle handleOfA = b.getLeafSet().asList().stream().filter(h -> h.getNodeId().equals(ALICE)).findFirst().orElseThrow();
-    // a direct message (not a routed one): this is the kind the receiving endpoint checks the sender of
-    b.getEnvironment().getSelectorManager().invoke(() -> {
-      for (int i = 0; i < MESSAGES; i++) {
-        b.send(rice.pastry.NodeHandle.class.cast(handleOfA),
-            new PastryEndpointMessage(((PastryEndpoint) receiverB.endpoint).getAddress(), new Numbered(i), b.getLocalHandle()), null, null);
-      }
+    // let the real check run: the policy starts a TLS connection to B, whose certificate matches its id
+    onSelector(a, () -> {
+      a.setIdentityPolicy(realPolicyOfA);
+      return a.acceptsIdentity(a.getLeafSet().asList().stream().filter(h -> h.getNodeId().equals(BOB)).findFirst().orElseThrow());
     });
 
-    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(DELIVERY_SECONDS);
-    while (receiverA.received.size() < MESSAGES && System.nanoTime() < deadline) {
-      Thread.sleep(50);
-    }
-    assertEquals(List.of(0, 1, 2, 3, 4), receiverA.received, "numbers of the messages A's application got, A refused " + heldBack.get() + " times, B authenticated: " + factoryA.getCertifiedIdBindStrategy().isAuthenticated(BOB));
+    await(() -> receiverA.received.size() >= MESSAGES, "A's application got B's messages");
+    assertEquals(List.of(0, 1, 2, 3, 4), receiverA.received, "numbers of the messages A's application got");
     assertTrue(factoryA.getCertifiedIdBindStrategy().isAuthenticated(BOB));
-    assertTrue(heldBack.get() > 0, "the messages arrived while B was unverified");
+    assertEquals(0, waiting(a));
   }
 
-  /**
-   * Counts how often the node's identity policy says "not authenticated yet" and, at the refusal number
-   * {@code authenticateAt}, completes the TLS check (A sees a certificate for B whose name matches), as if the
-   * handshake of the verification connection ended at that moment. This is the seam that makes the unverified
-   * window deterministic: the TLS check of the real node ends only after the messages have been seen.
-   */
-  static AtomicInteger countRefusals(PastryNode node, CertifiedSocketPastryNodeFactory factory, int authenticateAt) throws ReflectiveOperationException {
-    AtomicInteger refusals = new AtomicInteger();
+  @Test
+  @DisplayName("routed messages whose previous hop fails the check never reach the application")
+  void messagesFromAHopThatFailsTheCheckAreNeverDelivered() throws Exception {
+    routeFromBToA(0, 1, 2, 3, 4);
+    await(() -> waiting(a) == MESSAGES || !receiverA.received.isEmpty(), "B's messages wait at A or reached A's application");
+    assertEquals(List.of(), receiverA.received, "numbers A's application got although B was never verified");
+
+    // the check of B ends in failure, as when the certificate does not match or the connection is refused
+    onSelector(a, () -> {
+      a.identityResolved(BOB, false);
+      return null;
+    });
+    assertEquals(0, waiting(a));
+
+    // let B be verified now and send one more: once it arrives, anything still in flight from before would have too
+    onSelector(a, () -> {
+      a.setIdentityPolicy(realPolicyOfA);
+      return null;
+    });
+    routeFromBToA(MARKER);
+    await(() -> receiverA.received.contains(MARKER), "A's application got the message sent after B was verified");
+    assertEquals(List.of(MARKER), receiverA.received, "numbers of the messages A's application got");
+  }
+
+  /** B's application routes messages with these numbers to A's id; A is B's only neighbour, so it is one hop */
+  void routeFromBToA(int... numbers) throws Exception {
+    onSelector(b, () -> {
+      for (int number : numbers) {
+        receiverB.endpoint.route(ALICE, new Numbered(number), null);
+      }
+      return null;
+    });
+  }
+
+  /** @return the number of messages the node holds back until a previous hop is verified */
+  static int waiting(PastryNode node) {
+    try {
+      java.lang.reflect.Field field = PastryNode.class.getDeclaredField("deferred");
+      field.setAccessible(true);
+      DeferredDeliveries deferred = (DeferredDeliveries) field.get(node);
+      return onSelector(node, deferred::size);
+    } catch (Exception e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  static Predicate<rice.pastry.NodeHandle> identityPolicy(PastryNode node) throws ReflectiveOperationException {
     java.lang.reflect.Field field = PastryNode.class.getDeclaredField("identityPolicy");
     field.setAccessible(true);
-    @SuppressWarnings("unchecked")
-    java.util.function.Predicate<rice.pastry.NodeHandle> policy = (java.util.function.Predicate<rice.pastry.NodeHandle>) field.get(node);
-    node.setIdentityPolicy(handle -> {
-      boolean accepted = policy.test(handle);
-      if (!accepted && refusals.incrementAndGet() == authenticateAt) {
-        factory.getCertifiedIdBindStrategy().accept(SSLTest.handleWithId(BOB), null, Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, BOB.toStringFull()));
-      }
-      return accepted;
-    });
-    return refusals;
-  }
-
-  /**
-   * {@code PastryEndpoint.register()} hands the transport the application's own deserializer for the endpoint's
-   * address, so a frame with a plain endpoint message (not wrapped in a route message) would not come out as a
-   * pastry message. Register the endpoint's own deserializer instead, which is what such a frame needs to reach
-   * {@code PastryEndpoint.messageForAppl}.
-   */
-  static void readDirectMessagesWithTheEndpoint(PastryNode node, Receiver receiver) throws ReflectiveOperationException {
-    java.lang.reflect.Field own = rice.pastry.client.PastryAppl.class.getDeclaredField("deserializer");
-    own.setAccessible(true);
-    var endpointDeserializer = (rice.p2p.commonapi.rawserialization.MessageDeserializer) own.get(receiver.endpoint);
-    java.lang.reflect.Field transport = rice.pastry.messaging.MessageDispatch.class.getDeclaredField("deserializer");
-    transport.setAccessible(true);
-    ((rice.pastry.transport.Deserializer) transport.get(node.getMessageDispatch())).setDeserializer(((PastryEndpoint) receiver.endpoint).getAddress(), endpointDeserializer);
+    return (Predicate<rice.pastry.NodeHandle>) field.get(node);
   }
 
   /** puts the id back to "learned over the wire, no certificate seen": A has to verify B again */
@@ -148,6 +180,26 @@ class CertifiedDeferredDeliveryTest {
         ((java.util.Map<rice.pastry.Id, Boolean>) field.get(strategy)).remove(id);
       }
     }
+  }
+
+  static <T> T onSelector(PastryNode node, Callable<T> task) throws Exception {
+    CompletableFuture<T> result = new CompletableFuture<>();
+    node.getEnvironment().getSelectorManager().invoke(() -> {
+      try {
+        result.complete(task.call());
+      } catch (Exception | Error e) {
+        result.completeExceptionally(e);
+      }
+    });
+    return result.get(WAIT_SECONDS, TimeUnit.SECONDS);
+  }
+
+  static void await(BooleanSupplier condition, String what) throws InterruptedException {
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT_SECONDS);
+    while (!condition.getAsBoolean() && System.nanoTime() < deadline) {
+      Thread.sleep(20);
+    }
+    assertTrue(condition.getAsBoolean(), what);
   }
 
   Environment environment() {

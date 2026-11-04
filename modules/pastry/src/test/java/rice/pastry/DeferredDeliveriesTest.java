@@ -41,6 +41,20 @@ class DeferredDeliveriesTest {
   }
 
   @Test
+  @DisplayName("a peer counts as waiting from its first deferred message until its check ends")
+  void waitsUntilResolved() {
+    assertFalse(target.isWaiting(BOB));
+    target.defer(BOB, message("1"));
+
+    assertTrue(target.isWaiting(BOB));
+    assertFalse(target.isWaiting(CAROL));
+
+    target.resolve(BOB, true);
+
+    assertFalse(target.isWaiting(BOB));
+  }
+
+  @Test
   @DisplayName("messages from an unverified peer are dropped after a mismatching certificate")
   void dropsWhenVerificationFails() {
     target.defer(BOB, message("1"));

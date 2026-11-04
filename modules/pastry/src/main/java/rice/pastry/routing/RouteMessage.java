@@ -39,6 +39,8 @@ package rice.pastry.routing;
 import java.io.IOException;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
@@ -68,6 +70,9 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
   private byte version;
 
   private NodeHandle prevNode;
+
+  /** the node the transport received this message from; null if the message was created on this node */
+  private @Nullable NodeHandle receivedFrom;
 
   private SendOptions opts;
 
@@ -170,6 +175,18 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
 
   public void setPrevNode(NodeHandle n) {
     prevNode = n;
+  }
+
+  /**
+   * The previous hop as the transport saw it: the node whose connection this message arrived on. Unlike
+   * {@link #getPrevNode()}, which the router overwrites with the local handle before it hands the message to an
+   * application, this stays as received. In certified mode it is the node whose id {@code PastryEndpoint} checks.
+   * The sender named inside the wrapped message is something else: the originator's claim, not authenticated.
+   *
+   * @return the node this message was received from, or null if it was created on this node
+   */
+  public @Nullable NodeHandle getReceivedFrom() {
+    return receivedFrom;
   }
 
   public NodeHandle getNextHop() {
@@ -340,6 +357,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     internalPriority = priority;
     internalType = buf.readShort();
     prevNode = prev;
+    receivedFrom = prev;
     serializedMsg = buf;
     this.destinationHandle = destinationHandle;
     this.pn = pn;

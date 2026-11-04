@@ -488,8 +488,9 @@ public class PastryNode implements
 
   /**
    * Certified mode: sets the test that tells whether a node handle's id is authenticated. The routing table and the
-   * leaf set admit only such handles, and application messages sent directly to this node are delivered only if
-   * their sender passes. The test is called on the selector thread. Null (the default) accepts every id.
+   * leaf set admit only such handles, and a {@code PastryEndpoint} hands a routed message to its application only
+   * if the previous hop passes (the originator named in the message is not checked). The test is called on the
+   * selector thread. Null (the default) accepts every id.
    */
   public void setIdentityPolicy(@Nullable Predicate<NodeHandle> policy) {
     identityPolicy = policy;
@@ -498,13 +499,21 @@ public class PastryNode implements
   }
 
   /**
-   * Certified mode: keeps a message from a sender that is not authenticated yet until its id is verified
+   * Certified mode: keeps a message from a previous hop that is not authenticated yet until its id is verified
    * ({@link #identityResolved}); the bounds and the timeout are those of {@link DeferredDeliveries}.
    *
    * @return false if the message was dropped because a bound is reached
    */
-  public boolean deferUntilAuthenticated(NodeHandle sender, Runnable delivery) {
-    return deferred.defer(sender.getNodeId(), delivery);
+  public boolean deferUntilAuthenticated(NodeHandle hop, Runnable delivery) {
+    return deferred.defer(hop.getNodeId(), delivery);
+  }
+
+  /**
+   * @return true while messages from this node wait for the check of its id; a later message must queue behind
+   *     them even if the id has been authenticated meanwhile, so that they stay in order
+   */
+  public boolean isAwaitingAuthentication(NodeHandle hop) {
+    return deferred.isWaiting(hop.getNodeId());
   }
 
   /** Certified mode: the check of the id ended; delivers the messages that waited for it, or drops them. */

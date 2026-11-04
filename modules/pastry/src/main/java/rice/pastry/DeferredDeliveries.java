@@ -87,6 +87,11 @@ public class DeferredDeliveries {
     }
   }
 
+  /** @return true while messages of this peer wait for its check to end */
+  public boolean isWaiting(Id peer) {
+    return pending.containsKey(peer);
+  }
+
   /** @return the number of messages waiting in all */
   public int size() {
     return total;
