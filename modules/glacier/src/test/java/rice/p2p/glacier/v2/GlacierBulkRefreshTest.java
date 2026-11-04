@@ -14,9 +14,12 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.glacier.v2.messaging.GlacierRefreshCompleteMessage;
+import rice.p2p.glacier.v2.messaging.GlacierRefreshPatchMessage;
 import rice.pastry.commonapi.PastryIdFactory;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GlacierBulkRefreshTest {
@@ -95,5 +98,17 @@ class GlacierBulkRefreshTest {
 
     assertTrue(refresh.hasTerminated(), "the refresh should have given up");
     assertEquals(1, answers.size(), "the refresh was answered again when it gave up");
+  }
+
+  @Test
+  void aRefreshPatchIsAnsweredWhenAFragmentVanishesBeforeItCanBeFetched() {
+    VersionKey versionKey = new VersionKey(factory.buildId("object"), 1);
+    GlacierRefreshPatchMessage patch = new GlacierRefreshPatchMessage(7, new VersionKey[] {versionKey}, new long[] {env.getTimeSource().currentTimeMillis() + 5000}, new byte[][] {new byte[0]}, GlacierFakes.nodeHandle(factory.buildId("sender")), factory.buildId("local"), GlacierTags.REFRESH);
+
+    assertDoesNotThrow(() -> testObj.handlePatch(patch));
+
+    assertEquals(1, routed.size(), "the patch was not answered");
+    GlacierRefreshCompleteMessage answer = assertInstanceOf(GlacierRefreshCompleteMessage.class, routed.get(0));
+    assertEquals(0, answer.getUpdates(0));
   }
 }
