@@ -27,6 +27,7 @@ import rice.selector.SelectorManager;
 class EntityManagerConcurrentSendTest {
   private static final int THREADS = 8;
   private static final int PER_THREAD = 500;
+  private static final int ROUNDS = 10;
   private static final int MAX_MSG_SIZE = 10;
   private static final int MAX_BIG_MSG_SIZE = 1024;
 
@@ -80,20 +81,23 @@ class EntityManagerConcurrentSendTest {
   @Test
   @DisplayName("concurrent off-thread sends get distinct, gap-free sequence numbers")
   void concurrentSendsKeepSequenceNumbersUnique() throws Exception {
-    EntityManager<String> target = target();
+    // a single racy round loses a sequence number only most of the time; repeat on fresh managers
+    for (int round = 0; round < ROUNDS; round++) {
+      EntityManager<String> target = target();
 
-    List<MessageRequestHandle<String, ByteBuffer>> handles = sendFromThreads(target, MAX_MSG_SIZE);
+      List<MessageRequestHandle<String, ByteBuffer>> handles = sendFromThreads(target, MAX_MSG_SIZE);
 
-    Set<Integer> seqs = new HashSet<>();
-    for (MessageRequestHandle<String, ByteBuffer> h : handles) {
-      seqs.add(((MessageWrapper<?>) h).seq);
+      Set<Integer> seqs = new HashSet<>();
+      for (MessageRequestHandle<String, ByteBuffer> h : handles) {
+        seqs.add(((MessageWrapper<?>) h).seq);
+      }
+      int total = THREADS * PER_THREAD;
+      assertEquals(total, handles.size(), "round " + round);
+      assertEquals(total, seqs.size(), "round " + round);
+      assertEquals(Integer.MIN_VALUE, seqs.stream().mapToInt(Integer::intValue).min().getAsInt());
+      assertEquals(Integer.MIN_VALUE + total - 1, seqs.stream().mapToInt(Integer::intValue).max().getAsInt());
+      assertEquals(total, target.queue.size(), "round " + round);
     }
-    int total = THREADS * PER_THREAD;
-    assertEquals(total, handles.size());
-    assertEquals(total, seqs.size());
-    assertEquals(Integer.MIN_VALUE, seqs.stream().mapToInt(Integer::intValue).min().getAsInt());
-    assertEquals(Integer.MIN_VALUE + total - 1, seqs.stream().mapToInt(Integer::intValue).max().getAsInt());
-    assertEquals(total, target.queue.size());
   }
 
   @Test
