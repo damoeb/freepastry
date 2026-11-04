@@ -280,6 +280,31 @@ public class SSLTest {
   }
 
   @Test
+  void clientWithoutClientAuthTrustsServerSignedByItsConfiguredCa() throws Exception {
+    // bob's configured trust store holds the test CA, which the JVM default trust store does not know
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), null), null, SSLTransportLayer.CLIENT_AUTH_NONE);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, null, store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_NONE);
+    acceptOn(alice);
+
+    P2PSocket<InetSocketAddress> bobSocket = sendPayload(bob, new InetSocketAddress(addr, alicePort)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+    assertEquals(PAYLOAD, aliceRead.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    assertEquals("alice", bobSocket.getOptions().get(SSLTransportLayer.OPTION_CERT_SUBJECT));
+  }
+
+  @Test
+  void clientWithoutClientAuthRejectsServerNotSignedByItsConfiguredCa() throws Exception {
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(true), null), null, SSLTransportLayer.CLIENT_AUTH_NONE);
+    SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, null, store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_NONE);
+    acceptOn(alice);
+
+    Exception e = assertThrows(Exception.class, () -> sendPayload(bob, new InetSocketAddress(addr, alicePort)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+
+    assertFalse(e instanceof java.util.concurrent.TimeoutException, "handshake should fail, not hang: " + e);
+    assertFalse(aliceRead.isDone() && !aliceRead.isCompletedExceptionally(), "alice must not receive data");
+  }
+
+  @Test
   void clientRejectsServerCertificateFromUntrustedCa() throws Exception {
     SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(true), ca(false)), store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
     SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store("bob", ca(false), null), store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED);
