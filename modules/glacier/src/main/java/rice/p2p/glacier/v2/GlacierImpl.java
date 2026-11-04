@@ -108,7 +108,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
     this.handoffProtocol = new GlacierHandoffProtocol(config, instance, policy, router, locator, neighborhood, trash, fragmentStorage, environment, logger);
     this.neighborProtocol = new GlacierNeighborProtocol(config, endpoint, router, neighborhood, neighborStorage, factory, environment, logger);
     this.maintenance = new GlacierMaintenance(config, numFragments, locator, neighborhood, trash, retriever, fragmentStorage, environment, logger);
-    GlacierRequestHandler requestHandler = new GlacierRequestHandler(config, numFragments, numSurvivors, instance, policy, router, locator, neighborhood, retriever, fragmentStorage, environment, logger);
+    GlacierRequestHandler requestHandler = new GlacierRequestHandler(numFragments, numSurvivors, instance, policy, router, locator, neighborhood, retriever, fragmentStorage, environment, logger);
     this.dispatcher = new GlacierMessageDispatcher(scheduler, trafficShaper, requestHandler, neighborProtocol, syncProtocol, bulkRefresh, handoffProtocol, logger);
     this.debugCommands = new GlacierDebugCommands(config, numFragments, numSurvivors, instance, factory, scheduler, router, locator, neighborhood, trafficShaper, syncProtocol, retriever, inserter, fragmentStorage, neighborStorage, environment, logger);
 

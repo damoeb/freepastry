@@ -283,8 +283,6 @@ p2p_glacier_manifestRequestTimeout = 10000
 p2p_glacier_manifestRequestInitialBurst = 3
 p2p_glacier_manifestRequestRetryBurst = 5
 p2p_glacier_manifestAggregationFactor = 5
-#3 MINUTES
-p2p_glacier_overallRestoreTimeout = 180000 
 p2p_glacier_handoffDelayAfterJoin = 45000
 #4 MINUTES
 p2p_glacier_handoffInterval = 240000 

@@ -48,7 +48,10 @@ public abstract class GlacierContinuation {
 
   abstract public void timeoutExpired();
 
-  abstract public long getTimeout();
+  /** When the scheduler calls {@link #timeoutExpired()}; continuations that are never scheduled need not override this. */
+  public long getTimeout() {
+    return Long.MAX_VALUE;
+  }
 
   public void init() {
   }

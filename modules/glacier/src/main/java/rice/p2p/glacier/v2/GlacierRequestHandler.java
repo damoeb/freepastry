@@ -55,7 +55,6 @@ import rice.persistence.StorageManager;
  * manifests they send for insertion, refresh and sync.
  */
 final class GlacierRequestHandler {
-  private final GlacierConfig config;
   private final int numFragments;
   private final int numSurvivors;
   private final String instance;
@@ -68,8 +67,7 @@ final class GlacierRequestHandler {
   private final Environment environment;
   private final Logger logger;
 
-  GlacierRequestHandler(GlacierConfig config, int numFragments, int numSurvivors, String instance, GlacierPolicy policy, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierRetriever retriever, StorageManager fragmentStorage, Environment environment, Logger logger) {
-    this.config = config;
+  GlacierRequestHandler(int numFragments, int numSurvivors, String instance, GlacierPolicy policy, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierRetriever retriever, StorageManager fragmentStorage, Environment environment, Logger logger) {
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;
     this.instance = instance;
@@ -346,7 +344,6 @@ final class GlacierRequestHandler {
    * and stores it.
    */
   private void fetchSyncedFragment(final FragmentKey thisKey, final Manifest thisManifest) {
-    final long tStart = environment.getTimeSource().currentTimeMillis();
     retriever.rateLimitedRetrieveFragment(thisKey, thisManifest, GlacierTags.SYNC_FETCH, new GlacierContinuation() {
       @Override
       public String toString() {
@@ -393,10 +390,6 @@ final class GlacierRequestHandler {
       public void timeoutExpired() {
         logger.warn("Timeout while fetching synced fragment {} -- aborted", thisKey);
         terminate();
-      }
-      @Override
-      public long getTimeout() {
-        return tStart + config.overallRestoreTimeout();
       }
     });
   }

@@ -62,7 +62,7 @@ class GlacierRequestHandlerTest {
 
     // the fragment is not in the local store, so a manifest-only message makes the node fetch it
     var fragmentStorage = GlacierFakes.storage((proxy, method, args) -> method.getName().equals("exists") ? Boolean.FALSE : null);
-    testObj = new GlacierRequestHandler(config, NUM_FRAGMENTS, 2, "test", policy, router, locator, neighborhood, retriever, fragmentStorage, env, LOGGER);
+    testObj = new GlacierRequestHandler(NUM_FRAGMENTS, 2, "test", policy, router, locator, neighborhood, retriever, fragmentStorage, env, LOGGER);
 
     key = new FragmentKey(new VersionKey(factory.buildId("object"), 1), 0);
     manifest = new Manifest(new byte[0], new byte[NUM_FRAGMENTS][0], env.getTimeSource().currentTimeMillis() + 1000000);

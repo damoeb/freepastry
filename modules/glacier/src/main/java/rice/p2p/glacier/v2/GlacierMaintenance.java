@@ -278,7 +278,6 @@ final class GlacierMaintenance {
    * Fetches one missing fragment through the traffic shaper, and stores it with the existing manifest.
    */
   private void recoverFragment(final FragmentKey thisKey, final Manifest thisManifest) {
-    final long tStart = environment.getTimeSource().currentTimeMillis();
     retriever.rateLimitedRetrieveFragment(thisKey, thisManifest, GlacierTags.LOCAL_SCAN, new GlacierContinuation() {
       @Override
       public String toString() {
@@ -316,10 +315,6 @@ final class GlacierMaintenance {
       public void timeoutExpired() {
         logger.warn("Local scan: Timeout while fetching synced fragment {} -- aborted", thisKey);
         terminate();
-      }
-      @Override
-      public long getTimeout() {
-        return tStart + config.overallRestoreTimeout();
       }
     });
   }
