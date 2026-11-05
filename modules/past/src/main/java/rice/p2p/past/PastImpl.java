@@ -1183,9 +1183,35 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         } else {
           logger.trace("inserting replica of id {}", id);
 
-          if (! (o instanceof PastContent))
-            logger.warn("ERROR! Not PastContent {} {}", o.getClass().getName(), o);
-          storage.getStorage().store(((PastContent) o).getId(), null, (PastContent) o, parent);
+          // the peer that answered is not trusted: store only what was asked for, never another id's object
+          if (!(o instanceof PastContent content)) {
+            logger.warn("Dropping fetched replica of id {}: not PastContent but {}", id, o.getClass().getName());
+            parent.receiveResult(Boolean.valueOf(false));
+          } else if (!id.equals(content.getId())) {
+            logger.warn("Dropping fetched replica of id {}: it carries the id {}", id, content.getId());
+            parent.receiveResult(Boolean.valueOf(false));
+          } else {
+            storeReplica(id, content, parent);
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Stores a replica fetched for the id, letting the content check it against what is stored locally, as an
+   * insert does. A refusal drops the replica.
+   */
+  private void storeReplica(final Id id, final PastContent content, final Continuation<? super Boolean, Exception> command) {
+    storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+      @Override
+      public void receiveResult(Object existing) {
+        try {
+          PastContent checked = content.checkInsert(id, (PastContent) existing);
+          storage.getStorage().store(id, null, checked, parent);
+        } catch (PastException e) {
+          logger.warn("Dropping fetched replica of id {}: {}", id, e.getMessage());
+          parent.receiveResult(Boolean.valueOf(false));
         }
       }
     });

@@ -40,6 +40,7 @@ import java.io.IOException;
 
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -58,6 +59,16 @@ public class DistPastTestContent extends ContentHashPastContent {
     super(idf.buildId(content));
     this.content = content;
     this.timestamp = env.getTimeSource().currentTimeMillis();
+  }
+
+  /**
+   * Builds content under an id of the caller's choosing, which need not be the hash of the content. Lets a test
+   * play a peer that forges content-hash objects.
+   */
+  public DistPastTestContent(Id id, String content, long timestamp) {
+    super(id);
+    this.content = content;
+    this.timestamp = timestamp;
   }
 
   /**

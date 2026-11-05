@@ -625,7 +625,12 @@ public class GCPastImpl extends PastImpl implements GCPast {
             logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, getInstance());
             parent.receiveResult(Boolean.valueOf(false));
           } else {
-            GCPastContent content = (GCPastContent) o;
+            // the peer that answered is not trusted: store only what was asked for
+            if (!(o instanceof GCPastContent content) || !gcid.id().equals(content.getId())) {
+              logger.warn("Dropping fetched replica of id {}: not GCPastContent for that id: {}", id, o);
+              parent.receiveResult(Boolean.valueOf(false));
+              return;
+            }
             logger.trace("inserting replica of id {}", id);
 
             storage.getStorage().store(gcid.id(), content.getMetadata(gcid.expiration()), content, parent);
