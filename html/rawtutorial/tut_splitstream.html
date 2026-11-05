@@ -225,15 +225,28 @@ All we are doing here is printing output to stdout.
 
 
 <a name="Run"></a><h3>Run the code.</h3>
-Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  Now, let's run the code using the <code>-direct</code> flag and 10 nodes.
+Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  Now, let's run the code on real sockets with 10 nodes on this machine: the local bind port, the bootstrap host and port (<code>127.0.0.1</code> maps to the first node's own bind address), and the number of nodes.
 
 Run it with:
 
 <pre>
-<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.splitstream.SplitStreamTutorial -direct 10</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.splitstream.SplitStreamTutorial 9001 127.0.0.1 9001 10</span>
 </pre>
 
-<p>The program prints one <code>Finished creating new node</code> line per node. Each node then prints one line per stripe it receives, of the form <code>&lt;nodeId&gt; deliver(Stripe [StripeId &lt;id&gt;]):seq:N stripe:K &lt;data&gt;)</code>, where the data bytes start with the sequence number and the stripe number. If a node cannot join a stripe it prints <code>joinFailed(...)</code>. The node and stripe ids and the data bytes differ from run to run, so this page does not show a captured sample.</p>
+<p>The program prints one <code>Finished creating new node</code> line per node, one <code>publishing</code> line for every stripe the publishing node sends, and one line per stripe a node receives, of the form <code>&lt;nodeId&gt; deliver(Stripe [StripeId &lt;id&gt;]):seq:N stripe:K &lt;data&gt;)</code>. The data bytes start with the sequence number and the stripe number. If a node cannot join a stripe it prints <code>joinFailed(...)</code>. The program keeps publishing until you stop it with Ctrl-C. The node and stripe ids and the data bytes differ from run to run; the output starts like this (trimmed):</p>
+
+<pre>
+<span class="output">Finished creating new node PastryNode[SNH: &lt;0x4368FA..&gt;/myhost/192.168.88.204:9001]
+Finished creating new node PastryNode[SNH: &lt;0xE7A2AA..&gt;/myhost/192.168.88.204:9002]
+...
+Finished creating new node PastryNode[SNH: &lt;0x8826E7..&gt;/myhost/192.168.88.204:9010]
+Node [SNH: &lt;0x4368FA..&gt;/myhost/192.168.88.204:9001] publishing 0 0,0,56,74,-122,27,43,39,30,-95
+Node [SNH: &lt;0x4368FA..&gt;/myhost/192.168.88.204:9001] publishing 0 0,1,-60,67,-107,-7,-66,91,44,-83
+...
+&lt;0x4368FA..&gt; deliver(Stripe [StripeId &lt;0x42AFC2..&gt;]):seq:0 stripe:4 0,4,69,17,-35,-7,20,0,42,-107)
+&lt;0xD8A16A..&gt; deliver(Stripe [StripeId &lt;0x42AFC2..&gt;]):seq:0 stripe:4 0,4,69,17,-35,-7,20,0,42,-107)
+...
+</span></pre>
 
 
 Note that the order of delivery of the individual stripes is not preserved. Compare the data of a delivered stripe with what the publishing node printed (<code>publishing ...</code>) to see that it is identical to what was published.

@@ -257,7 +257,7 @@ This is the last operation, so both paths call <code>env.destroy()</code> to shu
 When you run the code, it prints, in this order:
 
 <pre>
-<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.past.PastTutorial 9001 10.9.8.7 9001 5</span>
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.past.PastTutorial 9001 127.0.0.1 9001 5</span>
 </pre>
 
 <ol>
@@ -266,7 +266,30 @@ When you run the code, it prints, in this order:
   <li><code>Looking up the 5 keys</code>, then for each key a <code>Looking up &lt;id&gt; at node ...</code> line followed by <code>Successfully looked up MyPastContent [...] for key &lt;id&gt;.</code></li>
   <li><code>Looking up a bogus key</code>, a <code>Looking up bogus key ...</code> line, and finally <code>Successfully looked up null for key ....  Notice that the result is null.</code></li>
 </ol>
-The lines of the insert and lookup phases can appear in any order, and the node handles, ids and the number of storage locations depend on the run, so this page does not show a captured sample. If something fails, the tutorial prints <code>Error storing ...</code> or <code>Error looking up ...</code> instead.
+The first node boots from itself (the boot address <code>127.0.0.1</code> maps to its own bind address) and thereby starts a new ring; the other nodes join through it. A typical run with five nodes prints the following (node ids, handles and keys differ from run to run, and repeated lines are trimmed here):
+
+<pre>
+<span class="output">Finished creating new node PastryNode[SNH: &lt;0xE91D10..&gt;/myhost/192.168.88.204:9001]
+Finished creating new node PastryNode[SNH: &lt;0x9FE93A..&gt;/myhost/192.168.88.204:9002]
+...
+Finished creating new node PastryNode[SNH: &lt;0x0E47B9..&gt;/myhost/192.168.88.204:9005]
+Storing 5 keys
+Inserting MyPastContent [test1281080307] at node [SNH: &lt;0xE91D10..&gt;/myhost/192.168.88.204:9001]
+Inserting MyPastContent [test-1465686915] at node [SNH: &lt;0x9FE93A..&gt;/myhost/192.168.88.204:9002]
+...
+MyPastContent [test1281080307] successfully stored at 1 locations.
+MyPastContent [test-1465686915] successfully stored at 1 locations.
+...
+Looking up the 5 keys
+Looking up &lt;0xF8248C..&gt; at node [SNH: &lt;0xE91D10..&gt;/myhost/192.168.88.204:9001]
+Successfully looked up MyPastContent [test1281080307] for key &lt;0xF8248C..&gt;.
+...
+Looking up a bogus key
+Looking up bogus key &lt;0x49BF4E..&gt; at node [SNH: &lt;0xE91D10..&gt;/myhost/192.168.88.204:9001]
+Successfully looked up null for key &lt;0x49BF4E..&gt;.  Notice that the result is null.
+</span></pre>
+
+The lines of the insert and lookup phases can appear in any order.  Each object is stored at 1 location because the tutorial uses a replication factor of 0, independent of the number of nodes.  If something fails, the tutorial prints <code>Error storing ...</code> or <code>Error looking up ...</code> instead.
 
 
 
