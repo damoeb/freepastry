@@ -143,6 +143,7 @@ public final class GCRefreshMessage extends ContinuationMessage {
       for (int i = 0; i < arrayLength; i++) {
         array[i] = Boolean.valueOf(buf.readBoolean());
       }
+      response = array;
     }
 
     keys = new GCId[WireLengths.readInt(buf, 2)];
