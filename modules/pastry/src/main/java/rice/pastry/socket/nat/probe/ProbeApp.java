@@ -138,13 +138,20 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
     }, null);
   }
 
+  /**
+   * The external addresses of the leaf set members that a new node can contact directly, which it may ask to probe
+   * its own address. A rendezvous handle says whether its node is firewalled; a plain socket handle comes from a ring
+   * without NAT traversal, where every node is contacted directly.
+   */
   @Override
   public Collection<InetSocketAddress> getExternalAddresses() {
     ArrayList<InetSocketAddress> ret = new ArrayList<InetSocketAddress>();
     for (NodeHandle nh : thePastryNode.getLeafSet()) {
-      RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)nh;
-      if (rsnh.canContactDirect()) {
-        ret.add(rsnh.getInetSocketAddress());
+      if (nh instanceof RendezvousSocketNodeHandle rsnh && !rsnh.canContactDirect()) {
+        continue;
+      }
+      if (nh instanceof SocketNodeHandle snh) {
+        ret.add(snh.getInetSocketAddress());
       }
     }
 
