@@ -1,0 +1,335 @@
+package org.mpisws.p2p.filetransfer;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import rice.Continuation;
+import rice.environment.Environment;
+import rice.p2p.commonapi.appsocket.AppSocket;
+import rice.p2p.commonapi.appsocket.AppSocketReceiver;
+
+/**
+ * Sends messages and files from one {@link FileTransferImpl} to another over an in-memory socket pair: what the sender
+ * writes (message and file headers, chunk headers, chunks) is all the receiver sees, as on a socket between two
+ * nodes. Everything runs on the environment's selector thread, as it does in a node.
+ */
+class FileTransferWireRoundTripTest {
+  private static final int CHUNK = 8;
+  private static final int CHUNKS_IN_FLIGHT = 2;
+  private static final long TIMEOUT_SECONDS = 20;
+
+  private final Environment env = Environment.directEnvironment(1);
+
+  @TempDir
+  Path dir;
+
+  @AfterEach
+  void tearDown() {
+    env.destroy();
+  }
+
+  /** One end of an in-memory socket; read and write interest are tracked separately, as a selector does. */
+  private final class PipeAppSocket implements AppSocket {
+    private PipeAppSocket peer;
+    private ByteBuffer incoming = ByteBuffer.allocate(0);
+    private boolean closed;
+    private AppSocketReceiver readReceiver;
+    private AppSocketReceiver writeReceiver;
+
+    @Override
+    public synchronized long read(ByteBuffer dst) {
+      if (!incoming.hasRemaining()) {
+        return peer.closed ? -1 : 0;
+      }
+      int n = Math.min(dst.remaining(), incoming.remaining());
+      for (int i = 0; i < n; i++) {
+        dst.put(incoming.get());
+      }
+      return n;
+    }
+
+    @Override
+    public long write(ByteBuffer src) {
+      int n = src.remaining();
+      peer.append(src);
+      env.getSelectorManager().invoke(peer::fire);
+      return n;
+    }
+
+    private synchronized void append(ByteBuffer src) {
+      ByteBuffer grown = ByteBuffer.allocate(incoming.remaining() + src.remaining());
+      grown.put(incoming).put(src).flip();
+      incoming = grown;
+    }
+
+    @Override
+    public synchronized void register(boolean wantToRead, boolean wantToWrite, int timeout,
+        AppSocketReceiver receiver) {
+      if (wantToRead) {
+        readReceiver = receiver;
+      }
+      if (wantToWrite) {
+        writeReceiver = receiver;
+      }
+      env.getSelectorManager().invoke(this::fire);
+    }
+
+    private void fire() {
+      AppSocketReceiver reader = null;
+      AppSocketReceiver writer = null;
+      synchronized (this) {
+        if (closed) {
+          return;
+        }
+        if (readReceiver != null && (incoming.hasRemaining() || peer.closed)) {
+          reader = readReceiver;
+          readReceiver = null;
+        }
+        if (writeReceiver != null) {
+          writer = writeReceiver;
+          writeReceiver = null;
+        }
+      }
+      try {
+        if (reader != null) {
+          reader.receiveSelectResult(this, true, false);
+        }
+        if (writer != null) {
+          writer.receiveSelectResult(this, false, true);
+        }
+      } catch (IOException | RuntimeException e) {
+        AppSocketReceiver failed = reader != null ? reader : writer;
+        failed.receiveException(this, e);
+      }
+    }
+
+    @Override
+    public void shutdownOutput() {
+      close();
+    }
+
+    @Override
+    public void close() {
+      closed = true;
+    }
+  }
+
+  /** What the receiving side delivered, in order. */
+  private static final class Inbox implements FileTransferCallback {
+    final LinkedBlockingQueue<Object> events = new LinkedBlockingQueue<>();
+
+    @Override
+    public void messageReceived(ByteBuffer bb) {
+      byte[] bytes = new byte[bb.remaining()];
+      bb.get(bytes);
+      events.add(bytes);
+    }
+
+    @Override
+    public void fileReceived(Path f, ByteBuffer metadata) {
+      byte[] meta = new byte[metadata.remaining()];
+      metadata.get(meta);
+      events.add(new ReceivedFile(f, meta));
+    }
+
+    @Override
+    public void receiveException(Exception ioe) {
+      events.add(ioe);
+    }
+
+    Object next() throws InterruptedException {
+      Object event = events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      assertNotNull(event, "nothing arrived at the receiver");
+      return event;
+    }
+  }
+
+  private static final class ReceivedFile {
+    private final Path file;
+    private final byte[] metadata;
+
+    ReceivedFile(Path file, byte[] metadata) {
+      this.file = file;
+      this.metadata = metadata;
+    }
+
+    Path file() {
+      return file;
+    }
+
+    byte[] metadata() {
+      return metadata;
+    }
+  }
+
+  private record Pair(FileTransferImpl sender, Inbox inbox, FileTransferImpl receiver) {
+  }
+
+  private Pair pair(int senderChunk, int receiverChunk) {
+    PipeAppSocket a = new PipeAppSocket();
+    PipeAppSocket b = new PipeAppSocket();
+    a.peer = b;
+    b.peer = a;
+    Inbox inbox = new Inbox();
+    FileTransferImpl sender = new FileTransferImpl(a, new Inbox(), null, env, null, senderChunk, CHUNKS_IN_FLIGHT);
+    FileTransferImpl receiver = new FileTransferImpl(b, inbox, new TempFileAllocationStrategy("ft", null, dir), env,
+        null, receiverChunk, CHUNKS_IN_FLIGHT);
+    return new Pair(sender, inbox, receiver);
+  }
+
+  private static byte[] payload(int length, int seed) {
+    byte[] b = new byte[length];
+    for (int i = 0; i < length; i++) {
+      b[i] = (byte) (seed + i * 31);
+    }
+    return b;
+  }
+
+  private static <T> Continuation<T, Exception> into(CompletableFuture<T> future) {
+    return new Continuation<>() {
+      @Override
+      public void receiveResult(T result) {
+        future.complete(result);
+      }
+
+      @Override
+      public void receiveException(Exception exception) {
+        future.completeExceptionally(exception);
+      }
+    };
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, CHUNK - 1, CHUNK, CHUNK + 1, 10 * CHUNK + 3, 100_000})
+  @DisplayName("A message arrives as sent: smaller than, as large as and larger than one chunk")
+  void messageArrivesAsSent(int size) throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    CompletableFuture<BBReceipt> sent = new CompletableFuture<>();
+
+    pair.sender.sendMsg(ByteBuffer.wrap(payload(size, 3)), (byte) 0, into(sent));
+
+    assertArrayEquals(payload(size, 3), (byte[]) pair.inbox.next());
+    sent.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+  }
+
+  @Test
+  @DisplayName("Messages sent one after the other arrive in that order, a small one after a chunked one")
+  void messagesArriveInOrder() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    int[] sizes = {50, 1, CHUNK, 3 * CHUNK, 2};
+
+    for (int i = 0; i < sizes.length; i++) {
+      pair.sender.sendMsg(ByteBuffer.wrap(payload(sizes[i], i)), (byte) 0, null);
+    }
+
+    Object[] received = new Object[sizes.length];
+    for (int i = 0; i < sizes.length; i++) {
+      received[i] = pair.inbox.next();
+    }
+    for (int i = 0; i < sizes.length; i++) {
+      assertArrayEquals(payload(sizes[i], i), (byte[]) received[i], "message " + i);
+    }
+  }
+
+  @DisplayName("A message whose sender uses larger chunks than the receiver arrives as sent")
+  @ParameterizedTest
+  @ValueSource(ints = {CHUNK * 2, CHUNK * 8, 1024})
+  void messageWithALargerSenderChunk(int senderChunk) throws Exception {
+    Pair pair = pair(senderChunk, CHUNK);
+
+    pair.sender.sendMsg(ByteBuffer.wrap(payload(5000, 1)), (byte) 0, null);
+
+    assertArrayEquals(payload(5000, 1), (byte[]) pair.inbox.next());
+  }
+
+  private Path file(String name, byte[] content) throws IOException {
+    return Files.write(dir.resolve(name), content);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, CHUNK - 1, CHUNK, CHUNK + 1, 10 * CHUNK + 3, 5000})
+  @DisplayName("A file arrives as sent with its metadata: smaller than, as large as and larger than one chunk")
+  void fileArrivesAsSent(int size) throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    Path source = file("source", payload(size, 7));
+    byte[] metadata = "name ä中.txt".getBytes(StandardCharsets.UTF_8);
+
+    pair.sender.sendFile(source, ByteBuffer.wrap(metadata), (byte) 0, null);
+
+    ReceivedFile received = (ReceivedFile) pair.inbox.next();
+    assertArrayEquals(metadata, received.metadata());
+    assertArrayEquals(payload(size, 7), Files.readAllBytes(received.file()));
+  }
+
+  @Test
+  @DisplayName("A file with empty metadata arrives as sent")
+  void fileWithoutMetadata() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+
+    pair.sender.sendFile(file("source", payload(30, 7)), ByteBuffer.allocate(0), (byte) 0, null);
+
+    ReceivedFile received = (ReceivedFile) pair.inbox.next();
+    assertArrayEquals(new byte[0], received.metadata());
+    assertArrayEquals(payload(30, 7), Files.readAllBytes(received.file()));
+  }
+
+  @Test
+  @DisplayName("A part of a file arrives at the same offset in the received file")
+  void partOfAFileArrivesAtItsOffset() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    byte[] content = payload(100, 9);
+
+    pair.sender.sendFile(file("source", content), ByteBuffer.allocate(0), (byte) 0, 10, 50, null);
+
+    ReceivedFile received = (ReceivedFile) pair.inbox.next();
+    byte[] stored = Files.readAllBytes(received.file());
+    assertEquals(60, stored.length);
+    assertArrayEquals(Arrays.copyOfRange(content, 10, 60), Arrays.copyOfRange(stored, 10, 60));
+  }
+
+  @Test
+  @DisplayName("Messages and files sent together all arrive intact")
+  void messagesAndFilesTogether() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    pair.sender.sendMsg(ByteBuffer.wrap(payload(40, 1)), (byte) 0, null);
+    pair.sender.sendFile(file("f1", payload(100, 2)), ByteBuffer.wrap(new byte[] {1}), (byte) 0, null);
+    pair.sender.sendMsg(ByteBuffer.wrap(payload(3, 3)), (byte) 0, null);
+    pair.sender.sendFile(file("f2", payload(17, 4)), ByteBuffer.wrap(new byte[] {2}), (byte) 0, null);
+
+    List<byte[]> messages = new ArrayList<>();
+    List<ReceivedFile> files = new ArrayList<>();
+    for (int i = 0; i < 4; i++) {
+      Object event = pair.inbox.next();
+      if (event instanceof byte[] message) {
+        messages.add(message);
+      } else {
+        files.add((ReceivedFile) event);
+      }
+    }
+
+    assertEquals(2, messages.size());
+    assertEquals(2, files.size());
+    for (ReceivedFile file : files) {
+      byte[] expected = file.metadata()[0] == 1 ? payload(100, 2) : payload(17, 4);
+      assertArrayEquals(expected, Files.readAllBytes(file.file()));
+    }
+  }
+}
