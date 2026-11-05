@@ -39,6 +39,7 @@ package org.mpisws.p2p.transport.wire;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -163,7 +164,13 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
           try {
             // unregister interest in connecting to this socket
             if (channel.finishConnect()) {
-              key = tcp.wire.getEnvironment().getSelectorManager().register(channel, SocketManager.this, key.interestOps() & ~SelectionKey.OP_CONNECT);
+              try {
+                key = tcp.wire.getEnvironment().getSelectorManager().register(channel, SocketManager.this, key.interestOps() & ~SelectionKey.OP_CONNECT);
+              } catch (CancelledKeyException closing) {
+                // close() on another thread (TCPLayer.destroy() closes all sockets on the caller's) cancelled the key
+                // and is about to close the channel: fail like a connect on a closed channel
+                throw new ClosedChannelException("Socket " + addr + " was closed while connecting.");
+              }
               delivered = true;
               logger.debug("delivering2 {}", SocketManager.this);
               tcp.wire.broadcastChannelOpened(addr, SocketManager.this.options, true);
@@ -261,7 +268,28 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     if (writer != null) {
       flag |= SelectionKey.OP_WRITE;
     }
-    key.interestOps(flag);
+    setInterest(key, flag);
+  }
+
+  /**
+   * Sets the interest of this socket's key, unless the key is cancelled already: close() may run on any thread
+   * (TCPLayer.destroy() closes all sockets on the caller's), also while the selector thread handles the key. The
+   * socket is closed then, and close() tells the reader and writer.
+   */
+  private static void setInterest(SelectionKey key, int ops) {
+    try {
+      key.interestOps(ops);
+    } catch (CancelledKeyException closed) {
+      // closed meanwhile, there is no interest left to set
+    }
+  }
+
+  private static void dropInterest(SelectionKey key, int op) {
+    try {
+      key.interestOps(key.interestOps() & ~op);
+    } catch (CancelledKeyException closed) {
+      // closed meanwhile, see setInterest()
+    }
   }
 
   /**
@@ -274,7 +302,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     P2PSocketReceiver<InetSocketAddress> temp = null;
     synchronized(this) {
       if (reader == null) {
-        key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
+        dropInterest(key, SelectionKey.OP_READ);
         return;
       }
       temp = reader;
@@ -298,7 +326,7 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
     P2PSocketReceiver<InetSocketAddress> temp = null;
     synchronized(this) {
       if (writer == null) {
-        key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
+        dropInterest(key, SelectionKey.OP_WRITE);
         return;
       }
       temp = writer;
