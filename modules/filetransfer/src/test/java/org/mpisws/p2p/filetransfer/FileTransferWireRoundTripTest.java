@@ -302,6 +302,20 @@ class FileTransferWireRoundTripTest {
   }
 
   @Test
+  @DisplayName("An empty file arrives as an empty file and the sender is told it is sent")
+  void emptyFileArrives() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    CompletableFuture<FileReceipt> sent = new CompletableFuture<>();
+
+    pair.sender.sendFile(file("source", new byte[0]), ByteBuffer.wrap(new byte[] {1}), (byte) 0, into(sent));
+
+    ReceivedFile received = (ReceivedFile) pair.inbox.next();
+    assertArrayEquals(new byte[] {1}, received.metadata());
+    assertEquals(0, Files.size(received.file()));
+    sent.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+  }
+
+  @Test
   @DisplayName("A part of a file arrives at the same offset in the received file")
   void partOfAFileArrivesAtItsOffset() throws Exception {
     Pair pair = pair(CHUNK, CHUNK);

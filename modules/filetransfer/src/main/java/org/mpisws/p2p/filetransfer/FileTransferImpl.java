@@ -745,6 +745,11 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       // called on the selector, no worries about cancelled, it will work out
       if (cancelled) return;
 
+      if (length == 0) {
+        // there is no chunk to read, the header was all of it
+        scheduleClose();
+        return;
+      }
       scheduleNewFileReaderIfNecessary();
     }
 
@@ -1238,6 +1243,10 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     FileDataReader fdr = new FileDataReader(uid, metadata, f, offset, length);
     incomingData.put(uid,fdr);
     notifyListenersReceiveFileProgress(fdr, 0, length);
+    // the sender writes a chunk only for a file that has bytes, so nothing else would complete an empty one
+    if (length == 0) {
+      fdr.complete();
+    }
   }
 
   interface DataReader extends Reader, Receipt {
