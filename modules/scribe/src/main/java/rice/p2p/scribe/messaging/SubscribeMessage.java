@@ -170,7 +170,9 @@ public final class SubscribeMessage extends AnycastMessage {
     subscriber = endpoint.readNodeHandle(buf);
 
 
-    int numTopics = WireLengths.readInt(buf, 2);
+    int numTopics = buf.readInt();
+    // the first topic is not written again, see serialize()
+    WireLengths.check(buf, numTopics < 1 ? numTopics : numTopics - 1L, 2);
     topics = new ArrayList<Topic>(numTopics);
 
     // the first topic is the super's topic

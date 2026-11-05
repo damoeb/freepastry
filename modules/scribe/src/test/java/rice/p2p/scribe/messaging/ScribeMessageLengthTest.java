@@ -1,9 +1,11 @@
 package rice.p2p.scribe.messaging;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -102,6 +104,21 @@ class ScribeMessageLengthTest {
     out.writeInt(Integer.MAX_VALUE);
 
     assertThrows(IOException.class, () -> SubscribeMessage.buildSM(in(out), ENDPOINT, null));
+  }
+
+  @Test
+  @DisplayName("a subscribe message for one topic reads back: that topic is not repeated after the count")
+  void subscribeReadsASingleTopic() throws IOException {
+    SimpleOutputBuffer out = out();
+    out.writeBoolean(false); // no source
+    out.writeShort((short) 0); // the topic's id type
+    out.writeInt(0); // nodes to visit
+    out.writeInt(0); // nodes visited
+    out.writeBoolean(false); // no content
+    out.writeInt(0); // message id
+    out.writeInt(1); // topics, the first one is the topic above
+
+    assertEquals(1, SubscribeMessage.buildSM(in(out), ENDPOINT, null).getTopics().size());
   }
 
   @Test
