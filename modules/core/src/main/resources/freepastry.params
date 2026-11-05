@@ -185,6 +185,19 @@ p2p_splitStream_stripe_max_failed_subscription_retry_delay = 1000
 #multiring
 p2p_multiring_base = 2
 
+#filetransfer
+# upper bounds on what a remote peer may announce to a FileTransfer; a peer that exceeds one is dropped (socket closed)
+# largest single message, in bytes (held in memory while it arrives)
+p2p_filetransfer_max_message_size = 16777216
+# total bytes of incoming messages that may be in flight on one socket at the same time
+p2p_filetransfer_max_message_bytes_in_flight = 67108864
+# largest file (offset is at most the length), in bytes; 4 GiB
+p2p_filetransfer_max_file_size = 4294967296
+# longest file metadata ("name"), in bytes
+p2p_filetransfer_max_name_size = 4096
+# largest chunk of a file the receiver accepts, in bytes (never below its own chunk size)
+p2p_filetransfer_max_chunk_size = 1048576
+
 #past
 p2p_past_messageTimeout = 30000
 p2p_past_successfulInsertThreshold = 0.5

@@ -52,6 +52,7 @@ import org.mpisws.p2p.transport.ClosedChannelException;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
+import rice.environment.params.Parameters;
 import rice.environment.processing.Processor;
 import rice.environment.processing.WorkRequest;
 import rice.p2p.commonapi.appsocket.AppSocket;
@@ -104,6 +105,24 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
   int NUM_OUTSTANDING_CHUNKS_TO_WRITE_TO_NETWORK = 10;
 
+  /** Parameter names and defaults of the bounds on what a remote peer may announce. */
+  static final String PARAM_MAX_MESSAGE_SIZE = "p2p_filetransfer_max_message_size";
+  static final String PARAM_MAX_FILE_SIZE = "p2p_filetransfer_max_file_size";
+  static final String PARAM_MAX_NAME_SIZE = "p2p_filetransfer_max_name_size";
+  static final String PARAM_MAX_CHUNK_SIZE = "p2p_filetransfer_max_chunk_size";
+  static final String PARAM_MAX_MESSAGE_BYTES_IN_FLIGHT = "p2p_filetransfer_max_message_bytes_in_flight";
+  static final int DEFAULT_MAX_MESSAGE_SIZE = 16 * 1024 * 1024;
+  static final long DEFAULT_MAX_FILE_SIZE = 4L * 1024 * 1024 * 1024;
+  static final int DEFAULT_MAX_NAME_SIZE = 4096;
+  static final int DEFAULT_MAX_CHUNK_SIZE = 1024 * 1024;
+  static final long DEFAULT_MAX_MESSAGE_BYTES_IN_FLIGHT = 64L * 1024 * 1024;
+
+  private final int maxMessageSize;
+  private final long maxFileSize;
+  private final int maxNameSize;
+  private final int maxChunkSize;
+  private final long maxMessageBytesInFlight;
+
   private final SelectorManager selectorManager;
   private final Logger logger;
 
@@ -143,6 +162,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     this.processor = p;
     if (this.processor == null) this.processor = env.getProcessor();
     this.environment = env;
+    Parameters params = env.getParameters();
+    this.maxMessageSize = params.contains(PARAM_MAX_MESSAGE_SIZE) ? params.getInt(PARAM_MAX_MESSAGE_SIZE) : DEFAULT_MAX_MESSAGE_SIZE;
+    this.maxFileSize = params.contains(PARAM_MAX_FILE_SIZE) ? params.getLong(PARAM_MAX_FILE_SIZE) : DEFAULT_MAX_FILE_SIZE;
+    this.maxNameSize = params.contains(PARAM_MAX_NAME_SIZE) ? params.getInt(PARAM_MAX_NAME_SIZE) : DEFAULT_MAX_NAME_SIZE;
+    // a chunk is at least as large as this node's own chunk size
+    this.maxChunkSize = Math.max(CHUNK_SIZE, params.contains(PARAM_MAX_CHUNK_SIZE) ? params.getInt(PARAM_MAX_CHUNK_SIZE) : DEFAULT_MAX_CHUNK_SIZE);
+    this.maxMessageBytesInFlight = params.contains(PARAM_MAX_MESSAGE_BYTES_IN_FLIGHT) ? params.getLong(PARAM_MAX_MESSAGE_BYTES_IN_FLIGHT) : DEFAULT_MAX_MESSAGE_BYTES_IN_FLIGHT;
 
     socket.register(true, false, -1, this);
   }
@@ -987,9 +1013,18 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         // always be reading
         registerToReadIfPossible();
       } catch (IOException ioe) {
-        receiveException(socket, ioe);
+        failAndClose(ioe);
+      } catch (RuntimeException e) {
+        // whatever the peer sent, it must not escape as an unchecked exception on the selector thread
+        failAndClose(new IOException("Protocol error: " + e, e));
       }
     }
+  }
+
+  /** The peer broke the protocol or the socket failed: tell the user, drop everything, and close the socket. */
+  private void failAndClose(IOException ioe) {
+    receiveException(socket, ioe);
+    socket.close();
   }
 
   protected void incrementFileChunksInMemory() {
@@ -1146,6 +1181,10 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       int nameSize = MathUtils.byteArrayToInt(bytes,16);
       buf.clear();
 
+      if (length < 0 || length > maxFileSize) throw new IOException("Protocol error: file " + uid + " announces " + length + " bytes, at most " + maxFileSize + " are accepted");
+      if (offset < 0 || offset > length) throw new IOException("Protocol error: file " + uid + " announces offset " + offset + " in a file of " + length + " bytes");
+      if (nameSize < 0 || nameSize > maxNameSize) throw new IOException("Protocol error: file " + uid + " announces a name of " + nameSize + " bytes, at most " + maxNameSize + " are accepted");
+      if (incomingData.containsKey(uid)) throw new IOException("Protocol error: file " + uid + " is announced twice");
 
       fileNameReader.initialize(uid,offset,length,nameSize);
       reader = fileNameReader;
@@ -1219,15 +1258,21 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       buf.clear();
 
       DataReader dataReader = incomingData.get(uid);
-      if (dataReader ==  null) throw new IllegalStateException("No record of uid "+uid);
+      if (dataReader ==  null) throw new IOException("Protocol error: chunk for unknown uid "+uid);
       return dataReader.read(socket, size);
     }
   }
 
 
   Map<Integer, DataReader> incomingData = new HashMap<Integer, DataReader>();
-  public void addIncomingMessage(int uid, int size) {
-    if (incomingData.containsKey(uid)) throw new IllegalArgumentException("DataReader with uid "+uid+" already exists! "+incomingData.get(uid)+" "+size);
+  public void addIncomingMessage(int uid, int size) throws IOException {
+    if (incomingData.containsKey(uid)) throw new IOException("Protocol error: message "+uid+" is announced twice");
+    if (size < 0 || size > maxMessageSize) throw new IOException("Protocol error: message " + uid + " announces " + size + " bytes, at most " + maxMessageSize + " are accepted");
+    long inFlight = size;
+    for (DataReader r : incomingData.values()) {
+      if (r instanceof BBDataReader bb) inFlight += bb.bytes.length;
+    }
+    if (inFlight > maxMessageBytesInFlight) throw new IOException("Protocol error: message " + uid + " would bring the incoming messages to " + inFlight + " bytes, at most " + maxMessageBytesInFlight + " are accepted");
     BBDataReader bbdr = new BBDataReader(uid, size);
     incomingData.put(uid,bbdr);
     notifyListenersReceiveMsgProgress(bbdr, 0, size);
@@ -1238,8 +1283,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   public void addIncomingFile(int uid, byte[] metadata, long offset, long length) throws IOException {
+    // check before the allocater creates a temp file
+    if (incomingData.containsKey(uid)) throw new IOException("Protocol error: file "+uid+" is announced twice");
     Path f = fileAllocater.getFile(ByteBuffer.wrap(metadata), offset, length);
-    if (incomingData.containsKey(uid)) throw new IllegalArgumentException("DataReader with uid "+uid+" already exists! "+incomingData.get(uid)+" "+metadata.length);
     FileDataReader fdr = new FileDataReader(uid, metadata, f, offset, length);
     incomingData.put(uid,fdr);
     notifyListenersReceiveFileProgress(fdr, 0, length);
@@ -1276,6 +1322,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     @Override
     public boolean read(AppSocket socket, int numToRead) throws IOException {
       if (curReader.hasRemaining()) throw new IllegalStateException("curReader has "+curReader.remaining()+" bytes remaining. "+numToRead);
+      if (numToRead < 0 || numToRead > bytes.length - curReader.position()) {
+        throw new IOException("Protocol error: chunk of " + numToRead + " bytes for a message with " + (bytes.length - curReader.position()) + " bytes to come");
+      }
       curReader.limit(curReader.position()+numToRead);
       reader = this;
       return read(socket);
@@ -1358,6 +1407,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     long length;
 
     long ptr;
+    /** Bytes of chunks accepted so far, only touched on the selector thread. */
+    long received;
     private final Object ptrLock = new Object();
 
     boolean requestedCancel = false;
@@ -1389,9 +1440,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     @Override
     public boolean read(AppSocket socket, int numToRead) throws IOException {
       if (curReader.position() != 0) throw new IllegalStateException("curReader has "+curReader.remaining()+" bytes remaining. "+numToRead);
-      if (numToRead < 0 || numToRead > length) {
-        throw new IOException("Chunk of " + numToRead + " bytes in a file of " + length + " bytes");
+      if (numToRead < 0 || numToRead > length || numToRead > maxChunkSize) {
+        throw new IOException("Chunk of " + numToRead + " bytes in a file of " + length + " bytes, chunks of at most " + maxChunkSize + " are accepted");
       }
+      if (received + numToRead > length) {
+        throw new IOException("Chunk of " + numToRead + " bytes after " + received + " bytes of a file of " + length + " bytes");
+      }
+      received += numToRead;
       if (numToRead > bytes.length) {
         // the sender's chunk size is its own setting, the chunk is as large as it says
         bytes = new byte[numToRead];

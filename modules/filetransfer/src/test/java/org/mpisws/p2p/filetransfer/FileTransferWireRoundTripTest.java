@@ -3,6 +3,7 @@ package org.mpisws.p2p.filetransfer;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -50,7 +51,7 @@ class FileTransferWireRoundTripTest {
   private final class PipeAppSocket implements AppSocket {
     private PipeAppSocket peer;
     private ByteBuffer incoming = ByteBuffer.allocate(0);
-    private boolean closed;
+    private volatile boolean closed;
     private AppSocketReceiver readReceiver;
     private AppSocketReceiver writeReceiver;
 
@@ -183,7 +184,8 @@ class FileTransferWireRoundTripTest {
     }
   }
 
-  private record Pair(FileTransferImpl sender, Inbox inbox, FileTransferImpl receiver) {
+  private record Pair(FileTransferImpl sender, Inbox inbox, FileTransferImpl receiver, PipeAppSocket senderSocket,
+      PipeAppSocket receiverSocket) {
   }
 
   private Pair pair(int senderChunk, int receiverChunk) {
@@ -195,7 +197,7 @@ class FileTransferWireRoundTripTest {
     FileTransferImpl sender = new FileTransferImpl(a, new Inbox(), null, env, null, senderChunk, CHUNKS_IN_FLIGHT);
     FileTransferImpl receiver = new FileTransferImpl(b, inbox, new TempFileAllocationStrategy("ft", null, dir), env,
         null, receiverChunk, CHUNKS_IN_FLIGHT);
-    return new Pair(sender, inbox, receiver);
+    return new Pair(sender, inbox, receiver, a, b);
   }
 
   private static byte[] payload(int length, int seed) {
@@ -368,6 +370,126 @@ class FileTransferWireRoundTripTest {
     for (ReceivedFile file : files) {
       byte[] expected = file.metadata()[0] == 1 ? payload(100, 2) : payload(17, 4);
       assertArrayEquals(expected, Files.readAllBytes(file.file()));
+    }
+  }
+
+  private static ByteBuffer frame(byte type, int uid, int... ints) {
+    ByteBuffer b = ByteBuffer.allocate(5 + ints.length * 4);
+    b.put(type).putInt(uid);
+    for (int i : ints) {
+      b.putInt(i);
+    }
+    b.flip();
+    return b;
+  }
+
+  private static ByteBuffer fileHeader(int uid, long offset, long length, int nameSize, int nameBytes) {
+    ByteBuffer b = ByteBuffer.allocate(5 + 20 + nameBytes);
+    b.put(FileTransferImpl.MSG_FILE_HEADER).putInt(uid).putLong(offset).putLong(length).putInt(nameSize);
+    b.put(new byte[nameBytes]);
+    b.flip();
+    return b;
+  }
+
+  private void assertRejected(Pair pair, ByteBuffer hostile) throws Exception {
+    pair.senderSocket.write(hostile);
+    Object event = pair.inbox.events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    assertNotNull(event, "the receiver neither delivered nor failed");
+    assertTrue(event instanceof IOException, "expected an IOException but got " + event);
+    assertTrue(pair.receiverSocket.closed, "the receiver must close the socket of a peer that breaks the protocol");
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {-1, Integer.MIN_VALUE, Integer.MAX_VALUE, 16 * 1024 * 1024 + 1})
+  @DisplayName("A message header with a negative or oversized length is a protocol error that closes the socket")
+  void messageHeaderWithBadSize(int size) throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+
+    assertRejected(pair, frame(FileTransferImpl.MSG_BB_HEADER, 1, size));
+  }
+
+  @Test
+  @DisplayName("A second message header with a uid already in use is a protocol error that closes the socket")
+  void duplicateMessageUid() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    pair.senderSocket.write(frame(FileTransferImpl.MSG_BB_HEADER, 7, 10));
+
+    assertRejected(pair, frame(FileTransferImpl.MSG_BB_HEADER, 7, 10));
+  }
+
+  @Test
+  @DisplayName("A message chunk larger than the message is a protocol error that closes the socket")
+  void chunkLargerThanMessage() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    pair.senderSocket.write(frame(FileTransferImpl.MSG_BB_HEADER, 7, 10));
+
+    assertRejected(pair, frame(FileTransferImpl.MSG_CHUNK, 7, 11));
+  }
+
+  @Test
+  @DisplayName("A chunk for a uid nobody announced is a protocol error that closes the socket")
+  void chunkForUnknownUid() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+
+    assertRejected(pair, frame(FileTransferImpl.MSG_CHUNK, 9, 4));
+  }
+
+  @Test
+  @DisplayName("Messages that together exceed the bytes allowed in flight are a protocol error that closes the socket")
+  void tooManyBytesInFlight() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    for (int uid = 0; uid < 4; uid++) {
+      pair.senderSocket.write(frame(FileTransferImpl.MSG_BB_HEADER, uid, 16 * 1024 * 1024));
+    }
+
+    assertRejected(pair, frame(FileTransferImpl.MSG_BB_HEADER, 4, 16 * 1024 * 1024));
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {-1, Long.MIN_VALUE, Long.MAX_VALUE, 5_000_000_000L})
+  @DisplayName("A file header with a negative or oversized length is a protocol error that closes the socket")
+  void fileHeaderWithBadLength(long length) throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+
+    assertRejected(pair, fileHeader(1, 0, length, 0, 0));
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {-1, Long.MIN_VALUE, 11, Long.MAX_VALUE})
+  @DisplayName("A file header with a negative offset or one beyond the file length is a protocol error")
+  void fileHeaderWithBadOffset(long offset) throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+
+    assertRejected(pair, fileHeader(1, offset, 10, 0, 0));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {-1, Integer.MIN_VALUE, Integer.MAX_VALUE, 4097})
+  @DisplayName("A file header with a negative or oversized name length is a protocol error")
+  void fileHeaderWithBadNameSize(int nameSize) throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+
+    assertRejected(pair, fileHeader(1, 0, 10, nameSize, 0));
+  }
+
+  @Test
+  @DisplayName("A duplicate file uid is a protocol error that closes the socket and creates no second temp file")
+  void duplicateFileUid() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    pair.senderSocket.write(fileHeader(3, 0, 10, 1, 1));
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+    while (tempFiles() < 1 && System.nanoTime() < deadline) {
+      Thread.sleep(10);
+    }
+    long before = tempFiles();
+
+    assertRejected(pair, fileHeader(3, 0, 10, 1, 1));
+    assertEquals(before, tempFiles());
+  }
+
+  private long tempFiles() throws IOException {
+    try (var s = Files.list(dir)) {
+      return s.count();
     }
   }
 }
