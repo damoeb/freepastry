@@ -248,8 +248,11 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
   protected void handleJoinRequest(final JoinRequest jr) {
     if (jr.accepted() == false) {
       respondToJoiner(jr);
-    } else { // this is the node that initiated the join request in the first
-              // place
+    } else if (joinEvent == null || thePastryNode.isReady()) {
+      // We are not joining (any more): a late answer to a retransmitted request, or a forged one. Completing the
+      // join again would let any peer push its leaf set and routing table rows into a ready node.
+      logger.info("Ignoring accepted JoinRequest {}, this node is not joining", jr);
+    } else { // this is the node that initiated the join request in the first place
       completeJoin(jr);
     }
   }
@@ -345,6 +348,10 @@ public class StandardJoinProtocol extends PastryAppl implements JoinProtocol {
 
     for (int i = jr.lastRow(); i < n; i++) {
       RouteSet row[] = jr.getRow(i);
+      if (row == null) {
+        // a hop on the path had no such row (or a peer left it out), as in the loop above
+        continue;
+      }
 
       BroadcastRouteRow brr = new BroadcastRouteRow(localHandle, row);
 

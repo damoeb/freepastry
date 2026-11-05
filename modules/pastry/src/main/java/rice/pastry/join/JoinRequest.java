@@ -273,6 +273,10 @@ public class JoinRequest extends PRawMessage {
 
         rowCount = buf.readShort();
         int numRows = Id.IdBitLength / rtBaseBitLength;
+        if (rowCount < 0 || rowCount > numRows) {
+          // every hop pushes rows below rowCount, and the joiner broadcasts the rows from rowCount on
+          throw new IOException("Invalid row count " + rowCount + " for " + numRows + " rows");
+        }
         int numCols = 1 << rtBaseBitLength;
         for (int i=0; i<numRows; i++) {
           RouteSet[] thisRow;
