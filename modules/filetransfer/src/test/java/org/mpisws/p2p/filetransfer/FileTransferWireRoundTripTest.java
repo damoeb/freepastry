@@ -231,6 +231,16 @@ class FileTransferWireRoundTripTest {
   }
 
   @Test
+  @DisplayName("A message without bytes arrives as an empty message")
+  void emptyMessageArrives() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+
+    pair.sender.sendMsg(ByteBuffer.allocate(0), (byte) 0, null);
+
+    assertArrayEquals(new byte[0], (byte[]) pair.inbox.next());
+  }
+
+  @Test
   @DisplayName("Messages sent one after the other arrive in that order, a small one after a chunked one")
   void messagesArriveInOrder() throws Exception {
     Pair pair = pair(CHUNK, CHUNK);

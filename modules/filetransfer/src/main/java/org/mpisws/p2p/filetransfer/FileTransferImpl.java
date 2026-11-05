@@ -1226,6 +1226,10 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     BBDataReader bbdr = new BBDataReader(uid, size);
     incomingData.put(uid,bbdr);
     notifyListenersReceiveMsgProgress(bbdr, 0, size);
+    // the sender writes a chunk only for a message that has bytes, so nothing else would complete an empty one
+    if (size == 0) {
+      bbdr.complete();
+    }
   }
 
   public void addIncomingFile(int uid, byte[] metadata, long offset, long length) throws IOException {
