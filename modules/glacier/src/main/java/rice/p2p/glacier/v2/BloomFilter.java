@@ -92,7 +92,8 @@ public class BloomFilter {
       cache = (cache<<8) + data[i] + ((data[i]<0) ? 256 : 0);
       if ((++ctr == 7) || (i==(data.length-1))) {
         for (int j=0; j<hashParams.length; j++)
-          hash[j] = (int) (hash[j] + cache % hashParams[j]);
+          // reduced at every step (the same remainder as at the end), so that a long key cannot overflow the sum
+          hash[j] = (int) ((hash[j] + cache % hashParams[j]) % hashParams[j]);
         ctr = 0;
         cache = 0;
       }
@@ -138,6 +139,13 @@ public class BloomFilter {
       hashParams[i] = buf.readInt();
     }
     bitfield = WireLengths.readBytes(buf);
+    // each hash is a remainder modulo its parameter and indexes a bit: 0 divides by zero, more than the bits overruns
+    long bits = (long) bitfield.length * 8;
+    for (int hashParam : hashParams) {
+      if (hashParam <= 0 || hashParam > bits) {
+        throw new IOException("Hash parameter " + hashParam + " outside 1.." + bits);
+      }
+    }
   }
 
   public void serialize(OutputBuffer buf) throws IOException {
