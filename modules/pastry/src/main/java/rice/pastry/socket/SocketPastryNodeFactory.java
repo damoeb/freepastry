@@ -1138,7 +1138,15 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
      * selecting.
      */
     final FutureContinuation<PastryNode, IOException> result = new FutureContinuation<PastryNode, IOException>();
-    Runnable r = () -> newNodeSelector(nodeId, pAddress, result, null);
+    Runnable r = () -> {
+      try {
+        newNodeSelector(nodeId, pAddress, result, null);
+      } catch (RuntimeException | Error e) {
+        // newNodeSelector rethrows these without completing the result, and the caller below waits for it
+        result.future().completeExceptionally(e);
+        throw e;
+      }
+    };
     if (environment.getSelectorManager().isSelectorThread()) {
       r.run();
     } else {
@@ -1150,6 +1158,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       Thread.currentThread().interrupt();
       throw new RuntimeException(ie);
     } catch (ExecutionException ee) {
+      if (ee.getCause() instanceof Error error) throw error;
       Exception e = FutureContinuation.toException(ee);
       if (e instanceof IOException ioException) throw ioException;
       if (e instanceof RuntimeException runtimeException) throw runtimeException;
