@@ -62,5 +62,12 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>freepastry-glacier</artifactId>
         </dependency>
+        <!-- WireRoundTrip: the tutorials' messages through a socket node's bytes -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>freepastry-pastry</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
