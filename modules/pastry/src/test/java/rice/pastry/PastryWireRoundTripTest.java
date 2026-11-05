@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -118,7 +119,7 @@ class PastryWireRoundTripTest {
   }
 
   @ParameterizedTest(name = "base {0} bits")
-  @ValueSource(bytes = {1, 2, 3, 4, 5, 6})
+  @ValueSource(bytes = {1, 2, 3, 4, 5, 6, 7, 8})
   @DisplayName("a join request round-trips for every supported routing table base")
   void joinRequestBases(byte base) throws IOException {
     JoinRequest jr = new JoinRequest(a, base, 5L);
@@ -155,6 +156,29 @@ class PastryWireRoundTripTest {
     assertEquals(COLUMNS, copy.getRow().length);
     assertNull(copy.getRow()[0]);
     assertEquals(2, copy.getRow()[8].size());
+  }
+
+  @ParameterizedTest(name = "base {0} bits")
+  @ValueSource(ints = {1, 2, 3, 4, 5, 6})
+  @DisplayName("a full route row round-trips for every routing table base up to 6 bits")
+  void broadcastRouteRowBases(int base) throws IOException {
+    hopRouteRow(base);
+  }
+
+  @ParameterizedTest(name = "base {0} bits")
+  @ValueSource(ints = {7, 8})
+  @Disabled("BroadcastRouteRow writes its column count as a signed byte: 128 columns read as -128, 256 as 0."
+      + " Fixing it changes the wire format (an unsigned or wider count), which needs a decision")
+  @DisplayName("a full route row round-trips for the bases of 7 and 8 bits a join request accepts")
+  void broadcastRouteRowWideBases(int base) throws IOException {
+    hopRouteRow(base);
+  }
+
+  private static void hopRouteRow(int base) throws IOException {
+    RouteSet[] row = new RouteSet[1 << base];
+    row[row.length - 1] = routeSet(0, row.length - 1, a);
+
+    assertEquals(row.length, local.hop(new BroadcastRouteRow(a, row), a).getRow().length);
   }
 
   @Test
