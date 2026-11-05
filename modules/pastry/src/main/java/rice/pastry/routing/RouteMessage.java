@@ -189,6 +189,17 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     return receivedFrom;
   }
 
+  /**
+   * Records the node this message arrived from, for a transport that hands over the message object itself instead
+   * of bytes to build it from (the direct simulator): there the same object travels from hop to hop, so each
+   * receipt overwrites the hop of the one before.
+   *
+   * @param hop the node the message was received from
+   */
+  public void setReceivedFrom(NodeHandle hop) {
+    receivedFrom = hop;
+  }
+
   public NodeHandle getNextHop() {
     return nextHop;
   }

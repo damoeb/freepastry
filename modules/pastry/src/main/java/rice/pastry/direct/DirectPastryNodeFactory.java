@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.direct.DirectTransportLayer;
 import org.mpisws.p2p.transport.proximity.ProximityListener;
@@ -62,6 +63,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.boot.Bootstrapper;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.LeafSetProtocol;
+import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RoutingTable;
 import rice.pastry.standard.ConsistentJoinConfig;
 import rice.pastry.standard.ProximityNeighborSelector;
@@ -262,7 +264,17 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, NodeRecord nr) {
     DirectNodeHandle local = (DirectNodeHandle)pn.getLocalHandle();
     DirectTransportLayer<DirectNodeHandle, RawMessage> tl = new DirectTransportLayer<DirectNodeHandle, RawMessage>(
-        local, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pn.getEnvironment());
+        local, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pn.getEnvironment()) {
+      @Override
+      public void incomingMessage(DirectNodeHandle i, RawMessage m, @Nullable Map<String, Object> options) throws IOException {
+        // the simulator passes the sender's object, not bytes, so the wire constructor that records the hop never
+        // runs; record it here, as a message that came over a socket has it
+        if (m instanceof RouteMessage rm) {
+          rm.setReceivedFrom(i);
+        }
+        super.incomingMessage(i, m, options);
+      }
+    };
     simulator.registerNode(local, tl, nr);
 
     return tl;
