@@ -48,6 +48,8 @@
         <surefire.groups></surefire.groups>
         <surefire.excludedGroups>integration</surefire.excludedGroups>
         <surefire.forkTimeout>300</surefire.forkTimeout>
+        <!-- default timeout of each JUnit test and lifecycle method; the slowest default-build test class (SSLTest) takes ~35 s in all -->
+        <junit.timeout>120 s</junit.timeout>
         <!-- ./mvnw test -Dtest=SomeTest runs across all modules; the modules without SomeTest must not fail -->
         <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
         <bouncycastle.version>1.86</bouncycastle.version>
@@ -377,6 +379,16 @@
                         <!-- Long simulations and real-network tests are tagged "integration" and run with -Pintegration -->
                         <groups>${surefire.groups}</groups>
                         <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                        <!--
+                          A test or lifecycle method that runs longer than junit.timeout fails with a thread dump of
+                          the fork, instead of blocking the fork until forkedProcessTimeoutInSeconds kills it silently.
+                        -->
+                        <properties>
+                            <configurationParameters>
+                                junit.jupiter.execution.timeout.default = ${junit.timeout}
+                                junit.jupiter.execution.timeout.threaddump.enabled = true
+                            </configurationParameters>
+                        </properties>
                     </configuration>
                 </plugin>
 
@@ -482,6 +494,7 @@
                 <!-- "none()" matches untagged tests, which this profile leaves to the default build -->
                 <surefire.excludedGroups>none()</surefire.excludedGroups>
                 <surefire.forkTimeout>1800</surefire.forkTimeout>
+                <junit.timeout>1200 s</junit.timeout>
             </properties>
         </profile>
     </profiles>
