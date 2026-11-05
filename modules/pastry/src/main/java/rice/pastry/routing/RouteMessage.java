@@ -418,6 +418,9 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
 //                      ...  flexible size
 //    +                                                               +
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      if (rawInternalMsg == null) {
+        throw new IOException("Cannot serialize " + this + ": its message " + internalMsg + " is not a raw message");
+      }
       NodeHandle sender = rawInternalMsg.getSender();
       boolean hasSender = (sender != null);
       if (hasSender) {
@@ -469,6 +472,8 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     }
 
     internalMsg = (Message)md.deserialize(serializedMsg, internalType, internalPriority, internalSender);
+    // serialize() writes the message from here on, when it is routed on to the next hop
+    rawInternalMsg = internalMsg instanceof PRawMessage raw ? raw : null;
 
     // the serializedMsg is now dirty, because the unwrapper may change the internal message
     serializedMsg = null;
