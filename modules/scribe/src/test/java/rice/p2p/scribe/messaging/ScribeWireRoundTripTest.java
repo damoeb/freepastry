@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,7 +12,6 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -203,17 +203,9 @@ class ScribeWireRoundTripTest {
   }
 
   @Test
-  @Disabled("serialize() writes initialRequestor without a null flag, so an AnycastMessage built with a null source "
-      + "throws a NullPointerException; ScribeImpl always passes the local handle, and a null flag changes the wire "
-      + "format (AnycastMessage.java serializeHelper)")
-  @DisplayName("AnycastMessage without a source")
-  void anycastNullSource() throws IOException {
-    AnycastMessage m = new AnycastMessage(null, T1, new TestContent("x"));
-
-    AnycastMessage copy = WireRoundTrip.roundTrip(m, deserializer, self);
-
-    assertNull(copy.getSource());
-    assertNull(copy.getInitialRequestor());
+  @DisplayName("AnycastMessage rejects a null source")
+  void anycastNullSource() {
+    assertThrows(NullPointerException.class, () -> new AnycastMessage(null, T1, new TestContent("x")));
   }
 
   @Test

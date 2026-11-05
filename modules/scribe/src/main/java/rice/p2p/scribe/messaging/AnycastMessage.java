@@ -40,6 +40,7 @@ package rice.p2p.scribe.messaging;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Objects;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.NodeHandle;
@@ -83,7 +84,7 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
    * @param content The content
    */
   public AnycastMessage(NodeHandle source, Topic topic, ScribeContent content) {
-    super(source, topic);
+    super(Objects.requireNonNull(source, "an anycast message needs a source"), topic);
     this.initialRequestor = source;
     this.content = content;
     this.visited = new ArrayList<NodeHandle>();
