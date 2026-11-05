@@ -838,6 +838,20 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       }
     }
 
+    /**
+     * A loopback boot address cannot be reached when this node listens on a non-loopback address, so it is mapped to
+     * this node's own bind address with the boot address's port. Other boot addresses are returned unchanged.
+     */
+    InetSocketAddress mapLoopbackBoot(InetSocketAddress boot, InetSocketAddress own) {
+      InetAddress bootAddress = boot.getAddress();
+      InetAddress ownAddress = own.getAddress();
+      if (bootAddress == null || ownAddress == null) return boot;
+      if (!bootAddress.isLoopbackAddress() || ownAddress.isLoopbackAddress() || ownAddress.isAnyLocalAddress()) return boot;
+      InetSocketAddress mapped = new InetSocketAddress(ownAddress, boot.getPort());
+      logger.info("boot address {} is loopback but this node is bound to {}, booting to {} instead", boot, own, mapped);
+      return mapped;
+    }
+
     protected void bootAsBootstrap() {
       pn.doneNode(Collections.EMPTY_LIST);
     }
@@ -873,14 +887,14 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
      */
     protected void bootOnSelector(Collection<InetSocketAddress> bootaddresses_temp) {
       logger.debug("boot({})", bootaddresses_temp);
+      final InetSocketAddress ownAddress = ((SocketNodeHandle)pn.getLocalHandle()).getAddress().getInnermostAddress();
       final Collection<InetSocketAddress> bootaddresses;
       if (bootaddresses_temp == null) {
         bootaddresses = Collections.EMPTY_LIST;
       } else {
-        bootaddresses = bootaddresses_temp;
+        bootaddresses = bootaddresses_temp.stream().map(a -> mapLoopbackBoot(a, ownAddress)).toList();
       }
 
-      final InetSocketAddress ownAddress = ((SocketNodeHandle)pn.getLocalHandle()).getAddress().getInnermostAddress();
       final boolean seed = socketConfig.seed() || bootaddresses.isEmpty() || bootaddresses.stream().anyMatch(a -> isSelf(a, ownAddress));
 
       if (bootaddresses.isEmpty() ||

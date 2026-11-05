@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class SocketPastryNodeFactoryTest {
 
@@ -107,6 +108,39 @@ class SocketPastryNodeFactoryTest {
     CountDownLatch selectorRuns = new CountDownLatch(1);
     env.getSelectorManager().invoke(selectorRuns::countDown);
     assertTrue(selectorRuns.await(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void secondNodeBootedToLoopbackReachesFirstNodeBoundToTheLocalAddress() throws Exception {
+    InetAddress bind = InetAddress.getLocalHost();
+    assumeFalse(bind.isLoopbackAddress(), "no non-loopback local address");
+    int firstPort;
+    int secondPort;
+    try (ServerSocket a = new ServerSocket(0, 1, bind); ServerSocket b = new ServerSocket(0, 1, bind)) {
+      firstPort = a.getLocalPort();
+      secondPort = b.getLocalPort();
+    }
+    PastryNode first = new SocketPastryNodeFactory(new RandomNodeIdFactory(env), bind, firstPort, env).newNode();
+    PastryNode second = new SocketPastryNodeFactory(new RandomNodeIdFactory(env), bind, secondPort, env).newNode();
+    CompletableFuture<Boolean> firstReady = readyFuture(first);
+    CompletableFuture<Boolean> secondReady = readyFuture(second);
+
+    first.boot(new InetSocketAddress(InetAddress.getLoopbackAddress(), firstPort));
+    assertTrue(firstReady.get(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    second.boot(new InetSocketAddress(InetAddress.getLoopbackAddress(), firstPort));
+
+    assertTrue(secondReady.get(30, TimeUnit.SECONDS));
+  }
+
+  private static CompletableFuture<Boolean> readyFuture(PastryNode node) {
+    CompletableFuture<Boolean> ready = new CompletableFuture<Boolean>();
+    node.addPastryNodeListener(new PastryNodeListener() {
+      @Override
+      public void pastryNodeReady(PastryNode n, boolean isReady) {
+        if (isReady) ready.complete(true);
+      }
+    });
+    return ready;
   }
 
   @Test
