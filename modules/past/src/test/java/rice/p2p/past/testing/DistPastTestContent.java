@@ -81,6 +81,11 @@ public class DistPastTestContent extends ContentHashPastContent {
   }
 
   @Override
+  public Id computeContentHash(IdFactory factory) {
+    return factory.buildId(content);
+  }
+
+  @Override
   public short getType() {
     return TYPE;
   }

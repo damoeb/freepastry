@@ -38,11 +38,17 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
 
 /**
  * An abstract class for content-hash objects stored in Past.
  *
  * Provided as a convenience.
+ *
+ * A content-hash object is stored under an id derived from its payload, so that anyone holding the id can check what
+ * a node hands back. That only works if the check is made: subclasses say how the id follows from the payload by
+ * implementing {@link #computeContentHash(IdFactory)}, and {@link PastImpl} refuses to insert, cache or return an
+ * object whose id is not what that method computes.
  *
  * @version $Id: ContentHashPastContent.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Peter Druschel
@@ -56,6 +62,25 @@ public abstract class ContentHashPastContent implements PastContent {
 
   public ContentHashPastContent(Id myId) {
     this.myId = myId;
+  }
+
+  /**
+   * Recomputes from the payload the id this object has to be stored under, normally by hashing the payload, for
+   * example {@code factory.buildId(payload)}. Must not use {@link #getId()}: the id is what is being checked.
+   *
+   * @param factory the id factory of the node doing the check
+   * @return the id the payload hashes to
+   */
+  public abstract Id computeContentHash(IdFactory factory);
+
+  /**
+   * Tells whether the id of this object is the hash of its payload.
+   *
+   * @param factory the id factory of the node doing the check
+   * @return true if {@link #getId()} equals {@link #computeContentHash(IdFactory)}
+   */
+  public final boolean verifyContentHash(IdFactory factory) {
+    return myId != null && myId.equals(computeContentHash(factory));
   }
 
   /**
@@ -79,7 +104,8 @@ public abstract class ContentHashPastContent implements PastContent {
       throw new PastException("ContentHashPastContent: can't insert, object already exists");
     }
 
-    // only allow correct content hash key
+    // only allow the key the object claims; that it is the hash of the payload is checked by Past, which has the
+    // id factory (see verifyContentHash)
     if (!id.equals(getId())) {
       throw new PastException("ContentHashPastContent: can't insert, content hash incorrect");
     }

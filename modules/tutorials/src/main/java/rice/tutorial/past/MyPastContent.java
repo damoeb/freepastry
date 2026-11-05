@@ -43,6 +43,7 @@ import java.io.IOException;
 
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.past.ContentHashPastContent;
@@ -77,6 +78,14 @@ public class MyPastContent extends ContentHashPastContent {
   public MyPastContent(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(endpoint.readId(buf, buf.readShort()));
     content = buf.readUTF();
+  }
+
+  /**
+   * The id has to be the hash of the content, which Past checks on every insert and lookup.
+   */
+  @Override
+  public Id computeContentHash(IdFactory factory) {
+    return factory.buildId(content);
   }
 
   @Override

@@ -54,6 +54,7 @@ import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.Message;
@@ -68,6 +69,7 @@ import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.past.PastPolicy.DefaultPastPolicy;
 import rice.p2p.past.messaging.ContinuationMessage;
 import rice.p2p.past.messaging.FetchHandleMessage;
+import rice.p2p.past.gc.GCId;
 import rice.p2p.past.messaging.FetchMessage;
 import rice.p2p.past.messaging.GCCollectMessage;
 import rice.p2p.past.messaging.GCRefreshMessage;
@@ -123,6 +125,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
   // the storage manager used by this Past
   protected StorageManager storage;
+
+  /** Builds the ids that content-hash objects are checked against. */
+  private final IdFactory idFactory;
 
   // The trash can, or where objects should go once removed.  If null, they are deleted
   protected StorageManager trash;
@@ -250,6 +255,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   public PastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, StorageManager trash, SocketStrategy strategy) {
     this.environment = node.getEnvironment();
+    this.idFactory = node.getIdFactory();
     logger = environment.getLogManager().getLogger(getClass(), instance);
     PastConfig config = PastConfig.fromParameters(environment.getParameters());
     MESSAGE_TIMEOUT = config.messageTimeout();
@@ -648,6 +654,29 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   }
 
   /**
+   * Tells whether an object that came from a node we do not trust may be believed. Only content-hash objects can
+   * be told: their payload has to hash to their id, and that id has to be the requested one.
+   *
+   * @param requested the id the object was asked for, or null if not known
+   * @param content the object, or null
+   * @return false if the object is a content-hash object that is not what it claims to be
+   */
+  protected boolean isAuthentic(Id requested, PastContent content) {
+    if (content instanceof ContentHashPastContent hashed) {
+      if (!hashed.verifyContentHash(idFactory)) {
+        logger.warn("Rejecting content-hash object {}: its payload does not hash to its id", hashed.getId());
+        return false;
+      }
+      Id wanted = requested instanceof GCId gcid ? gcid.id() : requested;
+      if (wanted != null && !wanted.equals(hashed.getId())) {
+        logger.warn("Rejecting content-hash object {}: {} was asked for", hashed.getId(), wanted);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * Method which inserts the given object into the cache
    *
    * @param content The content to cache
@@ -656,7 +685,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   public void cache(final PastContent content, final Continuation<? super Boolean, Exception> command) {
     logger.trace("Inserting PastContent object {} into cache", content);
 
-    if ((content != null) && ! content.isMutable())
+    if ((content != null) && ! content.isMutable() && isAuthentic(null, content))
       storage.cache(content.getId(), null, content, command);
     else
       command.receiveResult(Boolean.valueOf(true));
@@ -806,7 +835,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     storage.getObject(id, new StandardContinuation<Object, PastContent, Exception>(command) {
       @Override
       public void receiveResult(Object o) {
-        if (o != null) {
+        if (o != null && isAuthentic(id, (PastContent) o)) {
           command.receiveResult((PastContent) o);
         } else {
           // send the request across the wire, and see if the result is null or not
@@ -816,7 +845,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
               // if we have an object, we return it
               // otherwise, we must check all replicas in order to make sure that
               // the object doesn't exist anywhere
-              if (o != null) {
+              if (o != null && isAuthentic(id, o)) {
                 // lastly, try and cache object locally for future use
                 if (cache) {
                   cache(o, new SimpleContinuation()  {
@@ -973,8 +1002,19 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     logger.atTrace().log(() -> "Fetching object under id " + handle.getId().toStringFull() +  " on " + handle.getNodeHandle());
 
     NodeHandle han = handle.getNodeHandle();
+    // the node that holds the object may be forging it
+    Continuation<PastContent, Exception> checked = new StandardContinuation<PastContent, PastContent, Exception>(command) {
+      @Override
+      public void receiveResult(PastContent content) {
+        if (isAuthentic(handle.getId(), content)) {
+          parent.receiveResult(content);
+        } else {
+          parent.receiveException(new PastException("Fetched object is not the one requested: " + handle.getId()));
+        }
+      }
+    };
     sendRequest(han, new FetchMessage(getUID(), handle, getLocalNodeHandle(), han.getId()),
-                new NamedContinuation<PastContent, Exception>("FetchMessage to " + handle.getNodeHandle() + " for " + handle.getId(), command));
+                new NamedContinuation<PastContent, Exception>("FetchMessage to " + handle.getNodeHandle() + " for " + handle.getId(), checked));
   }
 
   /**
@@ -1068,8 +1108,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
       switch (msg) {
         case InsertMessage imsg -> {
 
-          // make sure the policy allows the insert
-          if (policy.allowInsert(imsg.getContent())) {
+          if (!isAuthentic(null, imsg.getContent())) {
+            getResponseContinuation(msg).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
+          } else if (policy.allowInsert(imsg.getContent())) {
             inserts++;
             final Id msgid = imsg.getContent().getId();
 

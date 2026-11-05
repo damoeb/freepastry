@@ -407,8 +407,9 @@ public class GCPastImpl extends PastImpl implements GCPast {
         case GCInsertMessage imsg -> {
           inserts++;
 
-          // make sure the policy allows the insert
-          if (policy.allowInsert(imsg.getContent())) {
+          if (!isAuthentic(null, imsg.getContent())) {
+            getResponseContinuation(msg).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
+          } else if (policy.allowInsert(imsg.getContent())) {
             Id theId = imsg.getContent().getId();
             if (theId == null) {
               logger.error("Error: null Id from {} from {} in {}", imsg.getContent(), imsg, this);
