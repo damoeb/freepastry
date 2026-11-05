@@ -39,6 +39,30 @@ package org.mpisws.p2p.transport.identity;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Decides which upper identifiers {@link IdentityImpl} binds to a lower one, and which received messages it passes
+ * up as coming from them.
+ */
 public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
+  /**
+   * @param u the upper identifier offered for the lower one
+   * @param l the lower identifier, or null when the upper one was learned without a connection (for example
+   *     deserialized from a message)
+   * @param options the options of the connection or message it came with, or null
+   * @return false to refuse the binding
+   */
   public boolean accept(UpperIdentifier u, @Nullable LowerIdentifier l, @Nullable Map<String, Object> options);
+
+  /**
+   * Whether a received message may go up to the layers above with {@code from} as its sender. The identity layer
+   * asks this for every message, whatever channel it came over: a message read from a socket carries that
+   * socket's options, a datagram the options of the datagram.
+   *
+   * @param from the sender the identity layer read from the message's channel or header
+   * @param options the options the message arrived with
+   * @return false to drop the message; true by default
+   */
+  default boolean acceptsMessage(UpperIdentifier from, @Nullable Map<String, Object> options) {
+    return true;
+  }
 }

@@ -1035,6 +1035,11 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         return;
       }
 
+      if (bindStrategy != null && !bindStrategy.acceptsMessage(from, options)) {
+        logger.info("messageReceived() dropping a message from {} via {}: the bind strategy does not accept it from that channel", from, i);
+        return;
+      }
+
       if (sanityChecker.isSane(from, i)) {
         callback.messageReceived(from, m, options);
       } else {

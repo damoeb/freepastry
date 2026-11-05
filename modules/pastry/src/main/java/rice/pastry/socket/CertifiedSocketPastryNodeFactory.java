@@ -9,12 +9,15 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.mpisws.p2p.transport.TransportLayer;
+import org.mpisws.p2p.transport.commonapi.OptionsAdder;
 import org.mpisws.p2p.transport.identity.BindStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl;
+import org.mpisws.p2p.transport.util.OptionsFactory;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import rice.environment.Environment;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
@@ -35,6 +38,9 @@ import rice.pastry.standard.NodeIdCertificate;
  * handle is admitted when that succeeds). Direct application messages from that id wait meanwhile in a small bounded
  * queue ({@link rice.pastry.DeferredDeliveries}): they are delivered in order once the id is verified and dropped if
  * the check fails or times out.
+ * Datagrams carry no certificate: a received one never reaches Pastry or an application, and a message that asks
+ * to be sent as a datagram goes over TLS instead. Only the layers below the identity layer (liveness pings and
+ * pongs, network-info probes) still use UDP.
  * Routing towards an id, and the originator named in a routed message, are not covered: see {@code README.md}.
  */
 public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
@@ -81,6 +87,17 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
   @Override
   protected BindStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>, SourceRoute<MultiInetSocketAddress>> getBindStrategy() {
     return bindStrategy;
+  }
+
+  /**
+   * Sends every message from Pastry and its applications over TLS, also one that asks for a datagram
+   * ({@link WireTransportLayer#OPTION_TRANSPORT_TYPE}): a datagram carries no certificate, so the receiving node
+   * would drop it ({@link CertifiedIdBindStrategy#acceptsMessage}).
+   */
+  @Override
+  protected OptionsAdder getOptionsAdder(PastryNode pn) {
+    OptionsAdder adder = super.getOptionsAdder(pn);
+    return (options, message) -> OptionsFactory.removeOption(adder.addOptions(options, message), WireTransportLayer.OPTION_TRANSPORT_TYPE);
   }
 
   @Override
