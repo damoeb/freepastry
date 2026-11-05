@@ -122,7 +122,7 @@ public final class BroadcastRouteRow extends PRawMessage implements RouteSetProt
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
     fromNode.serialize(buf);
-    buf.writeByte((byte) row.length);
+    buf.writeShort((short) row.length);
     for (RouteSet routeSet : row) {
       if (routeSet != null) {
         buf.writeBoolean(true);
@@ -140,7 +140,7 @@ public final class BroadcastRouteRow extends PRawMessage implements RouteSetProt
     switch(version) {
       case 0:
         fromNode = nhf.readNodeHandle(buf);
-        row = new RouteSet[WireLengths.readByte(buf, 1)];
+        row = new RouteSet[WireLengths.readShort(buf, 1)];
         for (int i=0; i<row.length; i++)
           if (buf.readBoolean()) {
             row[i] = new RouteSet(buf, nhf, localNode);
