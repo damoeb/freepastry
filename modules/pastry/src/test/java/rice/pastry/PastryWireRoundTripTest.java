@@ -2,6 +2,8 @@ package rice.pastry;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
@@ -26,6 +28,7 @@ import rice.pastry.pns.messages.RouteRowRequest;
 import rice.pastry.pns.messages.RouteRowResponse;
 import rice.pastry.routing.BroadcastRouteRow;
 import rice.pastry.routing.RequestRouteRow;
+import rice.pastry.messaging.Message;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteSet;
 import rice.pastry.standard.ConsistentJoinMsg;
@@ -104,8 +107,22 @@ class PastryWireRoundTripTest {
     RouteMessage routed = local.hop(new RouteMessage(Id.build("9000"), jr, (byte) 1), a);
     JoinRequest unwrapped = (JoinRequest) routed.unwrap(local.deserializer(jr.getDestination()));
     assertArrayEquals(WireRoundTrip.bytes(jr), WireRoundTrip.bytes(unwrapped));
-    assertArrayEquals(SocketNode.withoutPriority(local.wire(new RouteMessage(Id.build("9000"), jr, (byte) 1))),
-        SocketNode.withoutPriority(local.wire(routed)));
+    assertArrayEquals(local.wire(new RouteMessage(Id.build("9000"), jr, (byte) 1)), local.wire(routed));
+  }
+
+  @Test
+  @DisplayName("a hop that unwraps a routed message sends it on with the priority it was sent with")
+  void unwrapKeepsPriority() throws IOException {
+    JoinRequest jr = new JoinRequest(a, (byte) 4, 1234L);
+    RouteMessage sent = new RouteMessage(Id.build("9000"), jr, (byte) 1);
+    assertEquals(jr.getPriority(), sent.getPriority());
+    assertNotEquals(Message.DEFAULT_PRIORITY_LEVEL, sent.getPriority());
+
+    RouteMessage atHop = assertInstanceOf(RouteMessage.class, local.read(local.wire(sent), a));
+    Message unwrapped = atHop.unwrap(local.deserializer(jr.getDestination()));
+
+    assertEquals(jr.getPriority(), unwrapped.getPriority());
+    assertEquals(jr.getPriority(), atHop.getPriority());
   }
 
   @Test

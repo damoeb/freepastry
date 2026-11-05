@@ -196,8 +196,9 @@ public final class WireRoundTrip {
     }
 
     /**
-     * The transport's bytes with the priority byte (after the int address) cleared. A message read from the wire, and
-     * a route message whose message a hop has read, take the default priority, not the one they were sent with.
+     * The transport's bytes with the priority byte (after the int address) cleared. A message that is read from the
+     * wire and sent on directly takes the default priority; a route message keeps the priority of the message it
+     * carries, also after a hop unwraps it.
      */
     public static byte[] withoutPriority(byte[] wire) {
       byte[] copy = wire.clone();
@@ -236,8 +237,7 @@ public final class WireRoundTrip {
       assertEquals(message.getClass(), unwrapped.getClass());
       assertArrayEquals(bytes(message), bytes((RawMessage) unwrapped), () -> "the unwrapped copy of " + message);
       byte[] second = wire(atHop);
-      assertArrayEquals(withoutPriority(first), withoutPriority(second),
-          () -> "the hop sends " + message + " on as the same bytes");
+      assertArrayEquals(first, second, () -> "the hop sends " + message + " on as the same bytes");
 
       RouteMessage atNext = assertInstanceOf(RouteMessage.class, read(second, prev));
       return (M) atNext.getMessage(endpoint.getDeserializer());

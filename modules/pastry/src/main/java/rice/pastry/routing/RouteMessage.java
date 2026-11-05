@@ -472,6 +472,8 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     }
 
     internalMsg = (Message)md.deserialize(serializedMsg, internalType, internalPriority, internalSender);
+    // the deserializers build the message at its default priority; forwarding must keep the one it was sent with
+    internalMsg.setPriority(internalPriority);
     // serialize() writes the message from here on, when it is routed on to the next hop
     rawInternalMsg = internalMsg instanceof PRawMessage raw ? raw : null;
 
