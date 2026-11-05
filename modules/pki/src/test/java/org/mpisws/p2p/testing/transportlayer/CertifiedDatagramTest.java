@@ -42,7 +42,9 @@ import rice.pastry.commonapi.PastryEndpoint;
 import rice.pastry.commonapi.PastryEndpointMessage;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.socket.CertifiedSocketPastryNodeFactory;
+import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketPastryNodeFactory;
+import rice.pastry.standard.RandomNodeIdFactory;
 
 /**
  * End to end, on loopback with real sockets and TLS: datagrams are outside TLS, so in certified mode nothing that
@@ -106,6 +108,24 @@ class CertifiedDatagramTest {
     sendDatagram(m, 13);
 
     assertNever(() -> receiverA.received.contains(13), "A's application got the forged message");
+    assertEquals(List.of(), receiverA.received, "numbers A's application got");
+  }
+
+  @Test
+  @DisplayName("a datagram that claims an authenticated node's address with a newer epoch does not kill that node")
+  void aForgedDatagramWithANewerEpochDoesNotEvictAnAuthenticatedNode() throws Exception {
+    NodeHandle realB = handleOf(a, BOB);
+    // M claims B's address (it binds a socket of its own, but the stack's headers say B's address) and, created
+    // after B, has the newer epoch; the id is a fresh one, the node change rule only looks at address and epoch
+    Thread.sleep(5);
+    PastryNode m = attacker(new RandomNodeIdFactory(a.getEnvironment()).generateNodeId(), addressB);
+    assertTrue(((SocketNodeHandle) m.getLocalHandle()).getEpoch() > ((SocketNodeHandle) realB).getEpoch());
+
+    sendDatagram(m, 14);
+
+    assertNever(() -> realB.getLiveness() >= NodeHandle.LIVENESS_DEAD, "A marked the real B dead");
+    assertTrue(a.getLeafSet().member(BOB), "B is still in A's leaf set");
+    assertEquals(realB, handleOf(a, BOB), "B's handle in A's leaf set");
     assertEquals(List.of(), receiverA.received, "numbers A's application got");
   }
 

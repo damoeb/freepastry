@@ -65,4 +65,27 @@ public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
   default boolean acceptsMessage(UpperIdentifier from, @Nullable Map<String, Object> options) {
     return true;
   }
+
+  /** What {@link IdentityImpl} does when a lower identifier that is bound to one upper identifier is offered another. */
+  enum Replacement {
+    /** the new one replaces the old one, which is marked dead for good */
+    REPLACE,
+    /** the old one stays bound, the new one is refused (and not marked dead) */
+    KEEP,
+    /** the {@link NodeChangeStrategy} decides; the one it rejects is marked dead for good */
+    ASK_NODE_CHANGE_STRATEGY
+  }
+
+  /**
+   * Decides whether {@code u} may replace {@code old} as the upper identifier of the same lower identifier. It is
+   * asked after {@link #accept} has accepted {@code u} with the same options.
+   *
+   * @param old the upper identifier bound now
+   * @param u the upper identifier offered instead
+   * @param options the options of the connection or message {@code u} came with, or null
+   * @return {@link Replacement#ASK_NODE_CHANGE_STRATEGY} by default
+   */
+  default Replacement replace(UpperIdentifier old, UpperIdentifier u, @Nullable Map<String, Object> options) {
+    return Replacement.ASK_NODE_CHANGE_STRATEGY;
+  }
 }

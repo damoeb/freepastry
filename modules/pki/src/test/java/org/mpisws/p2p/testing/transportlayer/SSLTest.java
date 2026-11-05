@@ -66,6 +66,7 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayerCallback;
+import org.mpisws.p2p.transport.identity.BindStrategy;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
@@ -422,6 +423,37 @@ public class SSLTest {
   }
 
   static final Id BOB = Id.build("1234567890ABCDEF1234567890ABCDEF12345678");
+
+  @Test
+  @DisplayName("only a certificate changes the binding of an authenticated id, and a certificate beats an unverified binding")
+  void onlyACertificateReplacesTheBindingOfAnAuthenticatedId() {
+    CertifiedIdBindStrategy strategy = new CertifiedIdBindStrategy();
+    Id other = Id.build("FEDCBA0987654321FEDCBA0987654321FEDCBA09");
+    TransportLayerNodeHandle<MultiInetSocketAddress> bob = handleWithId(BOB);
+    TransportLayerNodeHandle<MultiInetSocketAddress> claimant = handleWithId(other);
+    Map<String, Object> claimantsCertificate = Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, other.toStringFull());
+
+    assertEquals(BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY, strategy.replace(bob, claimant, null), "neither verified: the epochs decide");
+    assertEquals(BindStrategy.Replacement.REPLACE, strategy.replace(bob, claimant, claimantsCertificate), "certified over unverified");
+
+    strategy.accept(bob, null, Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, BOB.toStringFull()));
+
+    assertEquals(BindStrategy.Replacement.KEEP, strategy.replace(bob, claimant, null), "a datagram or a handle from the wire");
+    assertEquals(BindStrategy.Replacement.KEEP, strategy.replace(bob, claimant, Map.of()), "no certificate subject");
+    assertEquals(BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY, strategy.replace(bob, claimant, claimantsCertificate), "both certified: the epochs decide");
+  }
+
+  @Test
+  @DisplayName("a received message goes up only if it came with a certificate for its sender")
+  void onlyMessagesWithTheSendersCertificateGoUp() {
+    CertifiedIdBindStrategy strategy = new CertifiedIdBindStrategy();
+    strategy.accept(handleWithId(BOB), null, Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, BOB.toStringFull()));
+
+    assertTrue(strategy.acceptsMessage(handleWithId(BOB), Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, BOB.toStringFull())));
+    assertFalse(strategy.acceptsMessage(handleWithId(BOB), Map.of()), "a datagram, although the id is authenticated");
+    assertFalse(strategy.acceptsMessage(handleWithId(BOB), null));
+    assertFalse(strategy.acceptsMessage(handleWithId(BOB), Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, "FEDCBA0987654321FEDCBA0987654321FEDCBA09")));
+  }
 
   @Test
   @DisplayName("a binding learned over the wire is unverified, not authenticated")

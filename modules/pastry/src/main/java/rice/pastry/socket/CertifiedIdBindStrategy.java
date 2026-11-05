@@ -28,7 +28,8 @@ import rice.pastry.standard.NodeIdCertificate;
  * stays authenticated, as the certificate proved it.</li>
  * </ul>
  * Received messages are passed up only from the channel that authenticates their sender ({@link #acceptsMessage}):
- * a TLS connection whose certificate is the sender's. Datagrams never are.
+ * a TLS connection whose certificate is the sender's. Datagrams never are. And only a certificate changes the
+ * binding of an authenticated id ({@link #replace}).
  * Return it from {@code SocketPastryNodeFactory.getBindStrategy()} when the factory inserts the SSL layer, with
  * {@code SSLTransportLayer.CLIENT_AUTH_REQUIRED} (otherwise connecting peers carry no certificate) and a
  * subject validator that only lets node ids pass ({@link NodeIdCertificate#isNodeId}); see
@@ -82,8 +83,35 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
    */
   @Override
   public boolean acceptsMessage(TransportLayerNodeHandle<MultiInetSocketAddress> from, @Nullable Map<String, Object> options) {
+    return certifies(from, options);
+  }
+
+  /**
+   * An authenticated node's binding is changed only by a certificate. The identity layer binds each address to
+   * one handle, and a handle with the same address and a newer epoch used to replace it and mark the old one dead
+   * for good. Without a certificate (a datagram's header, a handle deserialized from a message) that is anyone's
+   * claim, so:
+   * <ul>
+   * <li>offered without a certificate, a handle never replaces one whose id is authenticated
+   * ({@link Replacement#KEEP});</li>
+   * <li>offered with its certificate, it replaces one whose id is not authenticated, whatever their epochs (an
+   * unverified handle cannot block the certified one);</li>
+   * <li>otherwise the epochs decide, as without certificates.</li>
+   * </ul>
+   */
+  @Override
+  public Replacement replace(TransportLayerNodeHandle<MultiInetSocketAddress> old, TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable Map<String, Object> options) {
+    boolean oldAuthenticated = isAuthenticated(old.getNodeId());
+    if (!certifies(u, options)) {
+      return oldAuthenticated ? Replacement.KEEP : Replacement.ASK_NODE_CHANGE_STRATEGY;
+    }
+    return oldAuthenticated ? Replacement.ASK_NODE_CHANGE_STRATEGY : Replacement.REPLACE;
+  }
+
+  /** @return true if the options carry a certificate subject that is this handle's id */
+  private static boolean certifies(TransportLayerNodeHandle<MultiInetSocketAddress> handle, @Nullable Map<String, Object> options) {
     Object subject = options == null ? null : options.get(SSLTransportLayer.OPTION_CERT_SUBJECT);
-    return subject != null && NodeIdCertificate.matches(from.getNodeId(), subject);
+    return subject != null && NodeIdCertificate.matches(handle.getNodeId(), subject);
   }
 
   /** @return true if a TLS certificate whose common name is this id has been presented */

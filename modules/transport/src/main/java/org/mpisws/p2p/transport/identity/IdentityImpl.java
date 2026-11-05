@@ -266,7 +266,22 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         }
 
         // they are different
-        if (destinationChanged(old, u, l, options)) {
+        BindStrategy.Replacement replacement = bindStrategy == null
+            ? BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY
+            : bindStrategy.replace(old, u, options);
+        if (replacement == BindStrategy.Replacement.KEEP) {
+          logger.info("addBinding({},{}): the bind strategy keeps {}", u, l, old);
+          return false;
+        }
+        boolean replace;
+        if (replacement == BindStrategy.Replacement.REPLACE) {
+          logger.info("addBinding({},{}): the bind strategy replaces {}", u, l, old);
+          setDeadForever(l, old, options);
+          replace = true;
+        } else {
+          replace = destinationChanged(old, u, l, options);
+        }
+        if (replace) {
           bindings.put(m, u);
           logger.debug("addBinding({},{}) old {} is dead", u, l, old);
           if (l == null) {
@@ -440,7 +455,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
                               logger.info("openSocket({},{}) answer = FAILURE", i, deliverSocketToMe);
                               UpperIdentifier newDest = serializer.deserialize(new SocketInputBuffer(socket, localIdentifier.length), i);
 
-                              if (addBinding(newDest, i, options)) {
+                              // the socket's options: they may carry the peer's certificate, which vouches for newDest
+                              if (addBinding(newDest, i, socket.getOptions())) {
                               } else {
                                 // This is really bad if we get here, because someone responded to us who is dead, maybe a big network lag could cause this?
                                 socket.close();
