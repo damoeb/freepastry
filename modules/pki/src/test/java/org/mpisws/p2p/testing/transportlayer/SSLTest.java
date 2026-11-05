@@ -153,8 +153,12 @@ public class SSLTest {
 
   @AfterEach
   void tearDown() {
-    for (SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> tl : layers) tl.destroy();
-    rootEnv.destroy();
+    try {
+      for (SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> tl : layers) tl.destroy();
+    } finally {
+      // a failing destroy must not leave the selector thread of the environment running
+      rootEnv.destroy();
+    }
   }
 
   SSLTransportLayerImpl<InetSocketAddress, ByteBuffer> layer(String name, int port, KeyStore keys, KeyStore trust, int clientAuth) throws IOException {
