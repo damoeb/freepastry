@@ -187,6 +187,10 @@ public abstract class PastryAppl
   /**
    * Called by pastry to deliver a message to this client.
    *
+   * <p>While the node is not ready, a route message that arrived from another node is dropped unless
+   * {@link #deliverWhenNotReady()} or the message is addressed to this node by its destination handle. Messages
+   * created on this node are always handed on.
+   *
    * @param msg the message that is arriving.
    */
   @SuppressWarnings("ReferenceEquality") // the local node handle is a single instance
@@ -199,7 +203,7 @@ public abstract class PastryAppl
         NodeHandle destinationHandle = rm.getDestinationHandle();
         if (deliverWhenNotReady() ||
             thePastryNode.isReady() ||
-            rm.getPrevNode() == thePastryNode.getLocalHandle() ||
+            rm.getReceivedFrom() == null || // created on this node (the router has overwritten prevNode by now)
             (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
           // continue to enrouteMessage()
         } else {

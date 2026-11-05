@@ -521,6 +521,10 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   /**
    * Called by pastry to deliver a message to this client.  Not to be overridden.
    *
+   * <p>While the node is not ready, a route message that arrived from another node is dropped unless this endpoint
+   * does not ask for consistent routing ({@link #deliverWhenNotReady()}) or the message is addressed to this node
+   * by its destination handle. Messages created on this node are always handed on.
+   *
    * <p>Certified mode (the node has an identity policy, {@link PastryNode#setIdentityPolicy}): a route message
    * that arrived from another node reaches the application ({@link Application#forward}, then
    * {@link Application#deliver} or the next hop) only if the id of its previous hop
@@ -550,7 +554,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       NodeHandle destinationHandle = rm.getDestinationHandle();
       if (deliverWhenNotReady() ||
           thePastryNode.isReady() ||
-          rm.getPrevNode() == thePastryNode.getLocalHandle() ||
+          rm.getReceivedFrom() == null || // created on this node (the router has overwritten prevNode by now)
           (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
         // continue to receiveMessage()
       } else {
