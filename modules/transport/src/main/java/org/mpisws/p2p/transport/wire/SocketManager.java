@@ -199,14 +199,18 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
         logger.debug("Closing " + this +" r:"+reader+" w:"+writer);
       }
 
-      if (key != null) {
-        key.cancel();
-        key.attach(null);
+      // the selector thread and a thread destroying the transport layer may close at the same time: only one may
+      SelectionKey closing;
+      synchronized (this) {
+        closing = key;
         key = null;
-      } else {
+      }
+      if (closing == null) {
         // we were already closed
         return;
       }
+      closing.cancel();
+      closing.attach(null);
 
       if (channel != null) {
         channel.close();
