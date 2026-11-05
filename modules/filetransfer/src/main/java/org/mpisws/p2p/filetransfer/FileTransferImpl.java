@@ -1389,6 +1389,14 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     @Override
     public boolean read(AppSocket socket, int numToRead) throws IOException {
       if (curReader.position() != 0) throw new IllegalStateException("curReader has "+curReader.remaining()+" bytes remaining. "+numToRead);
+      if (numToRead < 0 || numToRead > length) {
+        throw new IOException("Chunk of " + numToRead + " bytes in a file of " + length + " bytes");
+      }
+      if (numToRead > bytes.length) {
+        // the sender's chunk size is its own setting, the chunk is as large as it says
+        bytes = new byte[numToRead];
+        curReader = ByteBuffer.wrap(bytes);
+      }
       curReader.limit(numToRead);
       reader = this;
       return read(socket);

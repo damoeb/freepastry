@@ -158,6 +158,9 @@ class FileTransferWireRoundTripTest {
     Object next() throws InterruptedException {
       Object event = events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
       assertNotNull(event, "nothing arrived at the receiver");
+      if (event instanceof Throwable failure) {
+        throw new AssertionError("the receiver failed", failure);
+      }
       return event;
     }
   }
@@ -327,6 +330,17 @@ class FileTransferWireRoundTripTest {
     byte[] stored = Files.readAllBytes(received.file());
     assertEquals(60, stored.length);
     assertArrayEquals(Arrays.copyOfRange(content, 10, 60), Arrays.copyOfRange(stored, 10, 60));
+  }
+
+  @Test
+  @DisplayName("A file with a sender chunk larger than the receiver's arrives as sent")
+  void fileWithALargerSenderChunk() throws Exception {
+    Pair pair = pair(CHUNK * 4, CHUNK);
+
+    pair.sender.sendFile(file("source", payload(1000, 2)), ByteBuffer.allocate(0), (byte) 0, null);
+
+    ReceivedFile received = (ReceivedFile) pair.inbox.next();
+    assertArrayEquals(payload(1000, 2), Files.readAllBytes(received.file()));
   }
 
   @Test
