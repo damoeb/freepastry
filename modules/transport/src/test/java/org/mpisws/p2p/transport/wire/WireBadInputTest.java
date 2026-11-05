@@ -1,11 +1,18 @@
 package org.mpisws.p2p.transport.wire;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +27,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.testing.transportlayer.FreePorts;
 import org.mpisws.p2p.transport.ErrorHandler;
+import org.mpisws.p2p.transport.P2PSocket;
+import org.mpisws.p2p.transport.P2PSocketReceiver;
+import org.mpisws.p2p.transport.SocketCallback;
+import org.mpisws.p2p.transport.SocketRequestHandle;
+import org.mpisws.p2p.transport.TransportLayerCallback;
 import rice.environment.Environment;
 
 /**
@@ -72,6 +84,101 @@ class WireBadInputTest {
     assertEquals(List.of(), reported);
     assertEquals(List.of(), handled);
     assertTrue(env.getSelectorManager().isAlive(), "the selector thread still runs");
+  }
+
+  @Test
+  @DisplayName("a datagram whose reader throws is dropped, and the next datagram is still read")
+  void datagramWhoseReaderThrows() throws Exception {
+    InetAddress localhost = InetAddress.getLoopbackAddress();
+    InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
+    WireTransportLayerImpl wire = new WireTransportLayerImpl(address, env, errorHandler);
+    CompletableFuture<byte[]> good = new CompletableFuture<>();
+    wire.setCallback(new TransportLayerCallback<>() {
+      @Override
+      public void messageReceived(InetSocketAddress i, ByteBuffer m, @Nullable Map<String, Object> options) {
+        byte[] bytes = new byte[m.remaining()];
+        m.get(bytes);
+        if (bytes[0] == 'x') {
+          throw new IllegalStateException("a reader that a crafted datagram makes throw");
+        }
+        good.complete(bytes);
+      }
+
+      @Override
+      public void incomingSocket(P2PSocket<InetSocketAddress> s) {
+      }
+    });
+
+    try (DatagramSocket peer = new DatagramSocket(0, localhost)) {
+      peer.send(new DatagramPacket(new byte[] {'x'}, 1, address));
+      peer.send(new DatagramPacket(new byte[] {'o', 'k'}, 2, address));
+
+      try {
+        assertEquals("ok", new String(good.get(TIMEOUT_SECONDS, TimeUnit.SECONDS), java.nio.charset.StandardCharsets.US_ASCII));
+      } catch (TimeoutException e) {
+        throw new AssertionError("the second datagram never arrived, reported to the environment: " + reported, e);
+      }
+    }
+    awaitSelectorLoop();
+    assertEquals(List.of(), reported);
+    assertTrue(env.getSelectorManager().isAlive(), "the selector thread still runs");
+    assertEquals(1, handled.size(), () -> "handled: " + handled);
+    assertInstanceOf(IllegalStateException.class, handled.get(0));
+  }
+
+  @Test
+  @DisplayName("a socket whose reader throws is closed, and the selector stays alive")
+  void socketWhoseReaderThrows() throws Exception {
+    InetAddress localhost = InetAddress.getLoopbackAddress();
+    WireTransportLayerImpl wire = new WireTransportLayerImpl(
+        new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, errorHandler);
+    TCPLayer tcp = (TCPLayer) field(WireTransportLayerImpl.class, "tcp").get(wire);
+    CompletableFuture<Exception> toldReader = new CompletableFuture<>();
+
+    try (ServerSocket server = new ServerSocket(0, 1, localhost)) {
+      server.setSoTimeout((int) TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+      InetSocketAddress serverAddress = (InetSocketAddress) server.getLocalSocketAddress();
+      env.getSelectorManager().invoke(() -> {
+        try {
+          new SocketManager(tcp, serverAddress, new SocketCallback<InetSocketAddress>() {
+            @Override
+            public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
+              sock.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
+                @Override
+                public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) {
+                  throw new IllegalStateException("a reader that crafted bytes make throw");
+                }
+
+                @Override
+                public void receiveException(P2PSocket<InetSocketAddress> socket, Exception ioe) {
+                  toldReader.complete(ioe);
+                }
+              });
+            }
+
+            @Override
+            public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception ex) {
+              toldReader.completeExceptionally(ex);
+            }
+          }, null);
+        } catch (IOException e) {
+          toldReader.completeExceptionally(e);
+        }
+      });
+      try (Socket accepted = server.accept()) {
+        accepted.setSoTimeout((int) TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+        accepted.getOutputStream().write(1);
+        accepted.getOutputStream().flush();
+
+        assertEquals(-1, accepted.getInputStream().read(), "the node closes the socket");
+      }
+    }
+    assertInstanceOf(IOException.class, toldReader.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    awaitSelectorLoop();
+    assertEquals(List.of(), reported);
+    assertTrue(env.getSelectorManager().isAlive(), "the selector thread still runs");
+    assertEquals(1, handled.size(), () -> "handled: " + handled);
+    assertInstanceOf(IllegalStateException.class, handled.get(0));
   }
 
   /** Lets the selector thread finish its current loop, so that whatever it reports has been reported. */

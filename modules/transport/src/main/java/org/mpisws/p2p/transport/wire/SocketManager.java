@@ -311,8 +311,28 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       temp.receiveSelectResult(this, true, false);
     } catch (IOException ioe) {
       temp.receiveException(this, ioe);
+    } catch (RuntimeException e) {
+      receiverFailed(temp, e);
     }
     tcp.wire.getEnvironment().getSelectorManager().modifyKey(key);
+  }
+
+  /**
+   * A receiver threw an unchecked exception while handling this socket. Every layer above parses what the peer sent
+   * in its receiver, so a malformed stream that one of them does not reject cleanly must cost this socket, not the
+   * selector thread: an exception that escapes to the selector reaches the ExceptionStrategy, which by default
+   * destroys the environment and every node in it. The exception may also be a local bug, so it is logged with its
+   * stack trace and reported to the error handler. Errors (OutOfMemoryError and the like) still propagate.
+   */
+  private void receiverFailed(P2PSocketReceiver<InetSocketAddress> receiver, RuntimeException e) {
+    logger.warn("Closing {}: its receiver {} threw", this, receiver, e);
+    tcp.wire.getErrorHandler().receivedException(addr, e);
+    close();
+    try {
+      receiver.receiveException(this, new IOException("Socket closed because its receiver threw " + e, e));
+    } catch (RuntimeException again) {
+      logger.warn("Receiver {} of {} threw again when told that the socket closed", receiver, this, again);
+    }
   }
 
   /**
@@ -335,6 +355,8 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
       temp.receiveSelectResult(this, false, true);
     } catch (IOException ioe) {
       temp.receiveException(this, ioe);
+    } catch (RuntimeException e) {
+      receiverFailed(temp, e);
     }
     tcp.wire.getEnvironment().getSelectorManager().modifyKey(key);
   }

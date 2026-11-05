@@ -206,7 +206,17 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
         readBuffer.flip();
 
         if (readBuffer.remaining() > 0) {
-          readHeader(address);
+          try {
+            readHeader(address);
+          } catch (IOException e) {
+            // this datagram was malformed: drop it, and read the next one
+            wire.getErrorHandler().receivedException(address, e);
+          } catch (RuntimeException e) {
+            // A layer above did not reject this datagram cleanly, or has a bug. Either way it must cost this datagram,
+            // not the selector thread, whose exceptions destroy the environment and every node in it.
+            logger.warn("Dropping a datagram from {}: reading it threw", address, e);
+            wire.getErrorHandler().receivedException(address, e);
+          }
           readBuffer.clear();
         } else {
           logger.info("(PM) Read from datagram channel, but no bytes were there - not bad, but weird.");
