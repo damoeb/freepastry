@@ -316,6 +316,9 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   @Override
   public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
     assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
+    if (!m.hasRemaining()) {
+      throw new IOException("Empty liveness message from " + i);
+    }
     byte hdr = m.get();
     switch(hdr) {
     case HDR_NORMAL:
@@ -324,13 +327,13 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       return;
     case HDR_PING:
       logger.trace("messageReceived({}, PING)", i);
-      pong(i, m.getLong(), options);      // it's important to the rendezvous layer to reuse the options
+      pong(i, readTimeStamp(i, m), options);      // it's important to the rendezvous layer to reuse the options
       notifyPingListenersPing(i);
       return;
     case HDR_PONG:
       logger.trace("messageReceived({}, PONG)", i);
       EntityManager manager = getManager(i);
-      long sendTime = m.getLong();
+      long sendTime = readTimeStamp(i, m);
       int rtt = (int)(time.currentTimeMillis()-sendTime);
       if (rtt >= 0) {
         manager.updateRTO(rtt);
@@ -349,6 +352,14 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     default:
       errorHandler.receivedUnexpectedData(i, ByteBuffers.arrayForRead(m), ByteBuffers.arrayStart(m), null);
     }
+  }
+
+  /** Reads the time stamp of a ping or pong, which a peer may have cut short. */
+  private static long readTimeStamp(Object from, ByteBuffer m) throws IOException {
+    if (m.remaining() < Long.BYTES) {
+      throw new IOException("Ping or pong from " + from + " has " + m.remaining() + " bytes, not a time stamp");
+    }
+    return m.getLong();
   }
 
   @Override
