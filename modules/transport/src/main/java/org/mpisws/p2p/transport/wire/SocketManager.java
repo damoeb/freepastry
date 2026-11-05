@@ -41,7 +41,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Map;
@@ -86,14 +85,14 @@ public class SocketManager extends SelectionKeyHandler implements P2PSocket<Inet
    * is received, the manager makes sure that a socket for this handle is not
    * already open, and then proceeds as normal.
    *
-   * @param serverKey The server accepting key for the channel
+   * @param channel the channel that the server socket accepted
    * @throws IOException if the connection cannot be accepted
    */
-  public SocketManager(TCPLayer tcp, SelectionKey serverKey) throws IOException {
+  public SocketManager(TCPLayer tcp, SocketChannel channel) throws IOException {
     this.tcp = tcp;
     logger = tcp.logger;
 
-    channel = (SocketChannel) ((ServerSocketChannel) serverKey.channel()).accept();
+    this.channel = channel;
     channel.socket().setSendBufferSize(tcp.SOCKET_BUFFER_SIZE);
     channel.socket().setReceiveBufferSize(tcp.SOCKET_BUFFER_SIZE);
     channel.socket().setTcpNoDelay(tcp.isTcpNoDelay());

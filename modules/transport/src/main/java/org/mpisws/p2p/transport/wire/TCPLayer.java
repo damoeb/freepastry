@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -167,7 +168,19 @@ public class TCPLayer extends SelectionKeyHandler {
   public void accept(SelectionKey key) {
     assert wire.getEnvironment().getSelectorManager().isSelectorThread() : "selection keys are handled on the selector thread";
     try {
-      SocketManager sm = new SocketManager(this, key);
+      SocketChannel channel = ((ServerSocketChannel) key.channel()).accept();
+      if (channel == null) {
+        // the connection went away (for instance the client reset it) between select() and accept()
+        logger.debug("accept() found no pending connection");
+        return;
+      }
+      SocketManager sm;
+      try {
+        sm = new SocketManager(this, channel);
+      } catch (IOException e) {
+        channel.close();
+        throw e;
+      }
       synchronized (sockets) {
         sockets.add(sm);
       }
