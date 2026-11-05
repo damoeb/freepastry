@@ -84,6 +84,7 @@ public class WireSourceRouteFactory implements SourceRouteFactory<InetSocketAddr
 
       path.add(new InetSocketAddress(addr, Short.toUnsignedInt(port)));
     }
+    SourceRoutes.requireDistinctHops(path);
     return new WireSourceRoute(path);
   }
 

@@ -74,6 +74,9 @@ public class MultiAddressSourceRouteFactory implements SourceRouteFactory<MultiI
       throw new IOException("Invalid number of hops in source route: " + numInPath + " (max: " + maxNumHops + ")");
     }
     if (numInPath == 2) {
+      if (lastHop.equals(local)) {
+        throw new IOException("Source route from the local node to itself: " + local);
+      }
       return new MultiAddressSourceRoute(lastHop, local);
     }
 
@@ -81,6 +84,7 @@ public class MultiAddressSourceRouteFactory implements SourceRouteFactory<MultiI
     for (int i = 0; i < numInPath; i++) {
       path.add(MultiInetSocketAddress.build(buf));
     }
+    SourceRoutes.requireDistinctHops(path);
     return new MultiAddressSourceRoute(path);
   }
 

@@ -64,6 +64,33 @@ class SourceRouteFactoryTest {
   }
 
   @Test
+  void wireFactoryRejectsARouteThatRepeatsAHop() throws IOException {
+    List<InetSocketAddress> h = hops(3);
+    WireSourceRouteFactory target = new WireSourceRouteFactory(MAX_HOPS + 2);
+    List<List<InetSocketAddress>> repeating = List.of(
+        List.of(h.get(0), h.get(1), h.get(1), h.get(2)),
+        List.of(h.get(0), h.get(1), h.get(2), h.get(1), h.get(2)),
+        List.of(h.get(0), h.get(0)));
+
+    for (List<InetSocketAddress> route : repeating) {
+      byte[] wire = serialized(target.getSourceRoute(route));
+      assertThrows(IOException.class, () -> target.build(new SimpleInputBuffer(wire), null, null));
+    }
+  }
+
+  @Test
+  void wireFactoryAcceptsDirectRelayedAndReversedRoutes() throws IOException {
+    WireSourceRouteFactory target = new WireSourceRouteFactory();
+    for (int n = 1; n <= 3; n++) {
+      SourceRoute<InetSocketAddress> route = target.getSourceRoute(hops(n));
+      for (SourceRoute<InetSocketAddress> r : List.of(route, target.reverse(route))) {
+        SourceRoute<InetSocketAddress> read = target.build(new SimpleInputBuffer(serialized(r)), null, null);
+        assertEquals(r, read);
+      }
+    }
+  }
+
+  @Test
   void multiAddressFactoryRejectsMoreHopsThanAllowed() {
     MultiAddressSourceRouteFactory target = new MultiAddressSourceRouteFactory(MAX_HOPS);
 
