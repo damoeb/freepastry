@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ManifestTest {
@@ -69,6 +70,19 @@ class ManifestTest {
     assertNull(actual.getSignature());
     assertEquals(7, actual.getExpiration());
     assertArrayEquals(manifest.getFragmentHash(0), actual.getFragmentHash(0));
+  }
+
+  @Test
+  @DisplayName("a manifest without fragment hashes, which serialize() cannot write, is rejected when read")
+  void rejectsAManifestWithoutFragmentHashes() throws IOException {
+    SimpleOutputBuffer out = new SimpleOutputBuffer();
+    out.writeLong(7); // expiration
+    out.writeInt(0); // object hash length
+    out.writeInt(0); // fragment hashes
+    out.writeInt(HashUtils.LENGTH); // fragment hash length
+    out.writeInt(-1); // no signature
+
+    assertThrows(IOException.class, () -> new Manifest(new SimpleInputBuffer(out.getBytes())));
   }
 
   @Test

@@ -179,6 +179,10 @@ public class Manifest {
     expirationDate = buf.readLong();
     int objectHashLength = WireLengths.check(buf, buf.readInt(), 0);
     int fragmentHashLength = WireLengths.check(buf, buf.readInt(), 0);
+    if (fragmentHashLength == 0) {
+      // serialize() takes the hash length from the first fragment hash, so it cannot write a manifest without one
+      throw new IOException("A manifest without fragment hashes");
+    }
     int fragmentHashSubLength = WireLengths.check(buf, buf.readInt(), 0);
     int rawSignatureLength = buf.readInt();
     boolean hasSignature = rawSignatureLength != NO_SIGNATURE;
@@ -186,7 +190,7 @@ public class Manifest {
     // checked as a long, the product of two ints can overflow
     long fragmentHashBytes = (long) fragmentHashLength * fragmentHashSubLength;
     // rows of no bytes cost nothing on the wire, but an array each
-    if (fragmentHashBytes > Integer.MAX_VALUE || (fragmentHashSubLength == 0 && fragmentHashLength != 0)) {
+    if (fragmentHashBytes > Integer.MAX_VALUE || fragmentHashSubLength == 0) {
       throw new IOException("Fragment hashes of " + fragmentHashLength + "x" + fragmentHashSubLength + " bytes are too big");
     }
     WireLengths.check(buf, objectHashLength + fragmentHashBytes + signatureLength, 1);
