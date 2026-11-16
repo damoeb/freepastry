@@ -452,7 +452,7 @@ public class PRRegressionTest {
     }
 
     @Override
-    public PeerReviewCallback<HandleImpl, IdImpl> getReplayInstance(Verifier<HandleImpl> v) {
+    public PeerReviewCallback<HandleImpl, IdImpl> getReplayInstance(Verifier<HandleImpl, IdImpl> v) {
       BogusApp ret = new BogusApp(playerTable.get(v.getLocalIdentifier()),v,v.getEnvironment());
       return ret;
     }

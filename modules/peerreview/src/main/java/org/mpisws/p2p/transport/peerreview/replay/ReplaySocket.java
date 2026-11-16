@@ -51,7 +51,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
 
   private final Identifier identifier;
   private final int socketId;
-  private final VerifierImpl<Identifier, ?> verifier;
+  private final Verifier<Identifier, ?> verifier;
   boolean closed = false;
   boolean outputShutdown = false;
   Map<String, Object> options;
@@ -59,7 +59,7 @@ public class ReplaySocket<Identifier extends RawSerializable> implements P2PSock
   /**
    * TODO: Make extensible by putting into a factory.
    */
-  public ReplaySocket(Identifier identifier, int socketId, VerifierImpl<Identifier, ?> verifier, Map<String, Object> options) {
+  public ReplaySocket(Identifier identifier, int socketId, Verifier<Identifier, ?> verifier, Map<String, Object> options) {
     this.identifier = identifier;
     this.socketId = socketId;
     this.verifier = verifier;

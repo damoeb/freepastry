@@ -42,7 +42,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /* Here we keep state about audits for which (a) we have not received a
 response yet, or (b) we are currently replaying the log */
-public class ActiveAuditInfo<Handle, Identifier extends RawSerializable> {
+public class ActiveAuditInfo<Handle extends RawSerializable, Identifier extends RawSerializable> {
   private final Handle target;
   private final boolean shouldBeReplayed;
   private boolean isReplaying;
@@ -53,7 +53,7 @@ public class ActiveAuditInfo<Handle, Identifier extends RawSerializable> {
   public ActiveAuditInfo(Handle target, boolean shouldBeReplayed,
       boolean isReplaying, long currentTimeout,
       ChallengeMessage<Identifier> request, long evidenceSeq,
-      Verifier<Handle> verifier) {
+      Verifier<Handle, Identifier> verifier) {
     this.target = target;
     this.shouldBeReplayed = shouldBeReplayed;
     this.isReplaying = isReplaying;
@@ -62,7 +62,7 @@ public class ActiveAuditInfo<Handle, Identifier extends RawSerializable> {
     this.evidenceSeq = evidenceSeq;
   }
 
-  public void startReplay(Verifier<Handle> verifier) {
+  public void startReplay(Verifier<Handle, Identifier> verifier) {
     this.isReplaying = true;
   }
 

@@ -45,13 +45,14 @@ import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import rice.Destructable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 /**
  * Callback interface that all PeerReview-enabled applications must implement.
  * During normal operation, PeerReview uses this interface to checkpoint the
  * application, and to inquire about the witness set of another node.
  */
-public interface PeerReviewCallback<Handle, Identifier> extends Destructable, IdentityTransportCallback<Handle, Identifier>,
+public interface PeerReviewCallback<Handle extends RawSerializable, Identifier extends RawSerializable> extends Destructable, IdentityTransportCallback<Handle, Identifier>,
       StatusChangeListener<Identifier> {
   public void init();
   void storeCheckpoint(OutputBuffer buffer) throws IOException;
@@ -61,5 +62,5 @@ public interface PeerReviewCallback<Handle, Identifier> extends Destructable, Id
   boolean loadCheckpoint(InputBuffer buffer) throws IOException;
   void getWitnesses(Identifier subject, WitnessListener<Handle, Identifier> callback);
   public Collection<Handle> getMyWitnessedNodes();
-  PeerReviewCallback<Handle, Identifier> getReplayInstance(Verifier<Handle> v);
+  PeerReviewCallback<Handle, Identifier> getReplayInstance(Verifier<Handle, Identifier> v);
 }

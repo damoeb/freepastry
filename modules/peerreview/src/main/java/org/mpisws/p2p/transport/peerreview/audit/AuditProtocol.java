@@ -542,7 +542,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
 
       /* Create a Verifier instance and get a Replay instance from the application */
 
-      Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, subjectHandle, lastCheckpointIdx, fromSeq/SEQS_PER_MILLI, snippet.getExtInfo());
+      Verifier<Handle, Identifier> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, subjectHandle, lastCheckpointIdx, fromSeq/SEQS_PER_MILLI, snippet.getExtInfo());
       PeerReviewCallback<Handle, Identifier> replayApp = peerreview.getApp().getReplayInstance(verifier);
       if (replayApp == null) throw new RuntimeException("Application returned NULL when getReplayInstance() was called");
 

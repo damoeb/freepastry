@@ -362,7 +362,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
            subjectHistory.appendSnippetToHistory(pn.getSnippet());
 
            // TODO: pass the extInfo of the proof to the verifier (null for now; inherited from the C++ PeerReview port)
-           Verifier<Handle> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, pn.getMyHandle(), 1, pn.getSnippet().getFirstSeq()/SEQS_PER_MILLI, null);
+           Verifier<Handle, Identifier> verifier = peerreview.getVerifierFactory().getVerifier(subjectHistory, pn.getMyHandle(), 1, pn.getSnippet().getFirstSeq()/SEQS_PER_MILLI, null);
            PeerReviewCallback<Handle, Identifier> replayApp = peerreview.getApp().getReplayInstance(verifier);
            verifier.setApplication(replayApp);
 

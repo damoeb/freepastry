@@ -42,5 +42,5 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 public interface VerifierFactory<Handle extends RawSerializable, Identifier extends RawSerializable> {
-  public Verifier<Handle> getVerifier(SecureHistory history, Handle localHandle, long firstEntryToReplay, long initialTime, Object extInfo) throws IOException;
+  public Verifier<Handle, Identifier> getVerifier(SecureHistory history, Handle localHandle, long firstEntryToReplay, long initialTime, Object extInfo) throws IOException;
 }

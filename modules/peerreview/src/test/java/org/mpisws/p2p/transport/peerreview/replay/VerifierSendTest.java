@@ -30,9 +30,9 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SENDSIGN;
 
 /**
- * Replays a SEND against the SEND entry in the log, using the production {@link VerifierImpl}.
+ * Replays a SEND against the SEND entry in the log, using the production {@link Verifier}.
  */
-public class VerifierImplSendTest {
+public class VerifierSendTest {
 
   record Node(int id) implements RawSerializable {
     @Override
@@ -120,11 +120,11 @@ public class VerifierImplSendTest {
   }
 
   /** The history starts with an INIT entry, which would make the verifier skip the SEND; replay from the entry after it. */
-  VerifierImpl<Node, Node> verifier() throws IOException {
-    return new VerifierImpl<>(peerreview, env, history, LOCAL, FIRST_SEND_ENTRY, null);
+  Verifier<Node, Node> verifier() throws IOException {
+    return new Verifier<>(peerreview, env, history, LOCAL, FIRST_SEND_ENTRY, null);
   }
 
-  void send(VerifierImpl<Node, Node> verifier, ByteBuffer message, int relevantLen) {
+  void send(Verifier<Node, Node> verifier, ByteBuffer message, int relevantLen) {
     Map<String, Object> options = relevantLen < 0 ? null : Map.of(PeerReview.RELEVANT_LENGTH, relevantLen);
     verifier.sendMessage(TARGET, message, null, options);
   }
@@ -153,7 +153,7 @@ public class VerifierImplSendTest {
   @Test
   public void hashedSendMatchesTheSameMessage() throws IOException {
     appendHashedSend(sendEntry(TARGET, MESSAGE, MESSAGE.length));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, ByteBuffer.wrap(MESSAGE), -1);
 
@@ -163,7 +163,7 @@ public class VerifierImplSendTest {
   @Test
   public void hashedSendDetectsADifferentMessage() throws IOException {
     appendHashedSend(sendEntry(TARGET, MESSAGE, MESSAGE.length));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, ByteBuffer.wrap(withFirstByteChanged()), -1);
 
@@ -173,7 +173,7 @@ public class VerifierImplSendTest {
   @Test
   public void hashedPartlyRelevantSendMatchesTheSameMessage() throws IOException {
     appendHashedSend(sendEntry(TARGET, MESSAGE, RELEVANT));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, ByteBuffer.wrap(MESSAGE), RELEVANT);
 
@@ -183,7 +183,7 @@ public class VerifierImplSendTest {
   @Test
   public void hashedPartlyRelevantSendDetectsADifferentIrrelevantPart() throws IOException {
     appendHashedSend(sendEntry(TARGET, MESSAGE, RELEVANT));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, ByteBuffer.wrap(withLastByteChanged()), RELEVANT);
 
@@ -193,7 +193,7 @@ public class VerifierImplSendTest {
   @Test
   public void loggedPartlyRelevantSendMatchesTheSameMessage() throws IOException {
     appendLoggedSend(sendEntry(TARGET, MESSAGE, RELEVANT));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, ByteBuffer.wrap(MESSAGE), RELEVANT);
 
@@ -203,7 +203,7 @@ public class VerifierImplSendTest {
   @Test
   public void loggedPartlyRelevantSendDetectsADifferentRelevantPart() throws IOException {
     appendLoggedSend(sendEntry(TARGET, MESSAGE, RELEVANT));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, ByteBuffer.wrap(withFirstByteChanged()), RELEVANT);
 
@@ -213,7 +213,7 @@ public class VerifierImplSendTest {
   @Test
   public void loggedPartlyRelevantSendDetectsADifferentIrrelevantPart() throws IOException {
     appendLoggedSend(sendEntry(TARGET, MESSAGE, RELEVANT));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, ByteBuffer.wrap(withLastByteChanged()), RELEVANT);
 
@@ -223,7 +223,7 @@ public class VerifierImplSendTest {
   @Test
   public void hashedSendMatchesTheSameMessageWithAnArrayOffset() throws IOException {
     appendHashedSend(sendEntry(TARGET, MESSAGE, MESSAGE.length));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, sliced(MESSAGE), -1);
 
@@ -233,7 +233,7 @@ public class VerifierImplSendTest {
   @Test
   public void hashedPartlyRelevantSendMatchesTheSameMessageWithAnArrayOffset() throws IOException {
     appendHashedSend(sendEntry(TARGET, MESSAGE, RELEVANT));
-    VerifierImpl<Node, Node> verifier = verifier();
+    Verifier<Node, Node> verifier = verifier();
 
     send(verifier, sliced(MESSAGE), RELEVANT);
 
