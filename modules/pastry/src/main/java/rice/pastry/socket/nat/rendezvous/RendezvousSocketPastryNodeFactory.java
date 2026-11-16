@@ -89,7 +89,7 @@ import rice.pastry.routing.RoutingTable;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketNodeHandleFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.socket.SocketPastryNodeFactory.TLBootstrapper;
+import rice.pastry.socket.TLBootstrapper;
 import rice.pastry.socket.TransportLayerNodeHandle;
 import rice.pastry.standard.ProximityNeighborSelector;
 import rice.pastry.standard.StandardRouter;
@@ -479,7 +479,8 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     };
     pn.addPastryNodeListener(obs);
 
-    TLBootstrapper bootstrapper = new TLBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTL(), (SocketNodeHandleFactory)handleFactory, pns) {
+    TLBootstrapper bootstrapper = new TLBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTL(), (SocketNodeHandleFactory)handleFactory, pns,
+        socketConfig.seed(), environment.getSelectorManager()) {
 
       @Override
       protected void checkLiveness(final SocketNodeHandle h, Map<String, Object> options) {
