@@ -143,7 +143,7 @@ The node factories read three parameters:
 - `pastry_factory_selectorPerNode` (default `false`): each node gets its own selector thread. By default all nodes share one selector thread.
 - `pastry_factory_processorPerNode` (default `false`): each node gets its own processor. By default they share one.
 
-The cloning is done in `SocketPastryNodeFactory.cloneEnvironment()`. `DirectPastryNodeFactory.newNode(Id)` only clones the log manager.
+The cloning is done in `NodeEnvironments`, which `SocketPastryNodeFactory.cloneEnvironment()` calls. `DirectPastryNodeFactory.newNode(Id)` only clones the log manager.
 
 ### The simulator
 

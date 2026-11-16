@@ -99,11 +99,7 @@ import rice.Continuation;
 import rice.FutureContinuation;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
-import rice.environment.logging.Slf4jLogManager;
-import rice.environment.processing.Processor;
-import rice.environment.processing.simple.SimpleProcessor;
 import rice.environment.random.RandomSource;
-import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -128,7 +124,6 @@ import rice.pastry.transport.LeafSetNHStrategy;
 import rice.pastry.transport.NodeHandleAdapter;
 import rice.pastry.transport.TLDeserializer;
 import rice.pastry.transport.TransportPastryNodeFactory;
-import rice.selector.SelectorManager;
 
 /**
  * Pastry node factory for Socket-linked nodes.
@@ -177,6 +172,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
    */
   protected final SocketFactoryConfig socketConfig;
 
+  private final NodeEnvironments nodeEnvironments;
+
 
   public SocketPastryNodeFactory(NodeIdFactory nf, int startPort, Environment env) throws IOException {
     this(nf, null, startPort, env);
@@ -202,6 +199,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     nidFactory = nf;
     port = startPort;
     socketConfig = SocketFactoryConfig.fromParameters(env.getParameters());
+    nodeEnvironments = new NodeEnvironments(factoryConfig, this::cloneRandomSource);
 
     localAddress = bindAddress;
     if (localAddress == null) {
@@ -946,93 +944,29 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     } catch (IOException ioe) {
       if (!delivered) {
         if (pn != null) pn.destroy();
-        if (environment != null) releaseClonedEnvironment(this.environment, environment);
+        if (environment != null) NodeEnvironments.releaseClonedEnvironment(this.environment, environment);
       }
       deliverResultToMe.receiveException(ioe);
     } catch (RuntimeException | Error e) {
       if (!delivered) {
         if (pn != null) pn.destroy();
-        if (environment != null) releaseClonedEnvironment(this.environment, environment);
+        if (environment != null) NodeEnvironments.releaseClonedEnvironment(this.environment, environment);
       }
       throw e;
     }
   }
 
   /**
-   * Undoes {@link #cloneEnvironment} for a node that was never handed out: unhooks the clone from the root
-   * environment and stops the selector and processor the clone created for itself. The root's own selector
-   * and processor, which the clone shares unless the factory is configured to give every node its own,
-   * stay running, so the clone is not destroyed as a whole.
+   * Gives a new node its own environment, or the factory's, as {@code pastry_factory_multipleNodes} asks.
    */
-  @SuppressWarnings("ReferenceEquality") // shared instances are meant
-  void releaseClonedEnvironment(Environment rootEnvironment, Environment cloned) {
-    if (cloned == rootEnvironment) return;
-    rootEnvironment.removeDestructable(cloned);
-    if (cloned.getSelectorManager() != rootEnvironment.getSelectorManager()) {
-      cloned.getSelectorManager().destroy();
-    }
-    if (cloned.getProcessor() != rootEnvironment.getProcessor()) {
-      cloned.getProcessor().destroy();
-    }
-  }
-
-
   protected Environment cloneEnvironment(Environment rootEnvironment, Id nodeId) {
-    Environment ret = rootEnvironment;
-    if (factoryConfig.multipleNodes()) {
-
-      // new logManager
-      LogManager lman = cloneLogManager(rootEnvironment, nodeId);
-
-      // new selector
-      SelectorManager sman = cloneSelectorManager(rootEnvironment, nodeId, lman);
-
-      // new processor
-      Processor proc = cloneProcessor(rootEnvironment, nodeId, lman);
-
-      // new random source
-      RandomSource rand = cloneRandomSource(rootEnvironment, nodeId, lman);
-
-      // build the environment
-      ret = new Environment(sman, proc, rand, rootEnvironment.getTimeSource(), lman,
-          rootEnvironment.getParameters(), rootEnvironment.getExceptionStrategy());
-
-      // gain shared fate with the rootEnvironment
-      rootEnvironment.addDestructable(ret);
-    }
-    return ret;
+    return nodeEnvironments.cloneEnvironment(rootEnvironment, nodeId);
   }
 
-  protected LogManager cloneLogManager(Environment rootEnvironment, Id nodeId) {
-    LogManager lman = rootEnvironment.getLogManager();
-    if (lman instanceof Slf4jLogManager slm) {
-      lman = slm.clone("0x" + nodeId.toStringBare());
-    }
-    return lman;
-  }
-
-
-  protected SelectorManager cloneSelectorManager(Environment rootEnvironment, Id nodeId, LogManager lman) {
-    SelectorManager sman = rootEnvironment.getSelectorManager();
-    if (factoryConfig.selectorPerNode()) {
-      sman = new SelectorManager(nodeId.toString() + " Selector",
-          rootEnvironment.getTimeSource(), lman, rootEnvironment.getRandomSource());
-    }
-    return sman;
-  }
-
-  protected Processor cloneProcessor(Environment rootEnvironment, Id nodeId, LogManager lman) {
-    Processor proc = rootEnvironment.getProcessor();
-    if (factoryConfig.processorPerNode()) {
-      proc = new SimpleProcessor(nodeId.toString() + " Processor");
-    }
-
-    return proc;
-  }
-
+  /**
+   * The random source of a node's own environment; by default seeded from the root environment's.
+   */
   protected RandomSource cloneRandomSource(Environment rootEnvironment, Id nodeId, LogManager lman) {
-    long randSeed = rootEnvironment.getRandomSource().nextLong();
-    return new SimpleRandomSource(randSeed, lman);
+    return NodeEnvironments.seededFrom(rootEnvironment, lman);
   }
-
 }
