@@ -305,8 +305,6 @@ Everything on the wire is raw-serialized; there is no Java serialization. The en
 - Content is raw in the same way: `PastContent`, `PastContentHandle` and `ScribeContent` declare `getType()` and `serialize(OutputBuffer)` and are read back by the application's `PastContentDeserializer`, `PastContentHandleDeserializer` and `ScribeContentDeserializer`. PAST starts with `PastContentDeserializer.NONE` and `PastContentHandleDeserializer.CONTENT_HASH`.
 - A PAST response that a `ContinuationMessage` subclass cannot write raw is an error. An exception travels as its class name and message and arrives as a `rice.p2p.past.PastRemoteException`.
 
-The files outside `rice.persistence` are raw too: `RingCertificate` writes certificates and key pairs, in small versioned binary formats; key pairs are encoded with `SecurityUtils.encodeKeyPair()` and encrypted with `SecurityUtils.encryptWithPassword()`.
-
 ## Cryptography
 
 `rice.p2p.util.SecurityUtils` and `rice.p2p.util.HashUtils` hold the primitives, from the JDK providers; Bouncy Castle is passed explicitly (`SecurityUtils.BOUNCY_CASTLE`) where the JDK has no equivalent, such as X.509 certificate generation, and is never registered as a JVM-wide provider:
@@ -315,7 +313,7 @@ The files outside `rice.persistence` are raw too: `RingCertificate` writes certi
 - Symmetric encryption: AES-256-GCM (`encryptSymmetric()`/`decryptSymmetric()`). GCM is authenticated: a wrong key or any change to the data makes decryption throw a `SecurityException`.
 - MACs: HMAC-SHA256 (`hmac()`).
 - Asymmetric encryption: RSA-OAEP with SHA-256 for the hash and MGF1. Signatures: SHA256withRSA.
-- Password-encrypted files (`encryptWithPassword()`/`decryptWithPassword()`): a random salt, then AES-256-GCM under a key PBKDF2-HMAC-SHA256 derives from the password. The CA key pair (`ca.keypair.enc`, read by `RingCertificate`) and the ring key pairs (`RingCertificate.readKeyPair()`) are stored this way.
+- Password-encrypted files (`encryptWithPassword()`/`decryptWithPassword()`): a random salt, then AES-256-GCM under a key PBKDF2-HMAC-SHA256 derives from the password.
 
 ### Trust model
 
@@ -398,7 +396,6 @@ The implementations:
 - `MultiringNode(Id ringId, Node node)` wraps a node so that ids become `RingId`s (a ring id plus an id), and endpoints become `MultiringEndpoint`s.
 - A host that is a member of several rings joins its `MultiringNode`s into a `MultiringNodeCollection`.
 - Each `MultiringNode` runs its own Scribe instance ("Multiring"). A node that also belongs to another ring subscribes to the topic `RingId.build(ringId, otherRingId)`. Messages for another ring are anycast, as a `RingMessage`, to that topic, so a member of both rings carries them across.
-- `RingCertificate` describes a ring.
 
 **Where the code of the big classes lives.** `GlacierImpl`, `ScribeImpl`, `AggregationImpl`, `PersistentStorage` and `PriorityTransportLayerImpl` are facades: each keeps its public API and delegates to package-private collaborators in its own package. Examples are `GlacierInserter`, `GlacierRetriever` and `GlacierSyncProtocol`; `SubscriptionManager`, `Publisher`, `AnycastHandler` and `TreeRepair`; `AggregateFlusher`, `AggregateConsolidator` and `ObjectRetriever`; `ObjectFiles`, `StorageRecovery` and `MetadataIndex`; and `EntityManager` with `PrimarySocketOpener`. Look there for the logic behind a public method.
 

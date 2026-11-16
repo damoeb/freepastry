@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
-import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -26,10 +25,8 @@ import org.junit.jupiter.api.io.TempDir;
 import rice.p2p.util.SecurityUtils;
 
 /**
- * The password-encrypted key pair files: the ring key pair that {@link RingCertificate#readKeyPair(String, String)}
- * reads, and the CA key pair ({@code ca.keypair.enc}) that
- * {@code RingCertificate.main} loads. Both files hold {@link SecurityUtils#encodeKeyPair(KeyPair)} encrypted with
- * {@link SecurityUtils#encryptWithPassword(byte[], char[])}, preceded by its length and gzipped.
+ * The password-encrypted key pair file ({@code ca.keypair.enc}): {@link SecurityUtils#encodeKeyPair(KeyPair)}
+ * encrypted with {@link SecurityUtils#encryptWithPassword(byte[], char[])}, preceded by its length and gzipped.
  */
 class PasswordEncryptedKeyPairFileTest {
 
@@ -83,45 +80,6 @@ class PasswordEncryptedKeyPairFileTest {
   }
 
   @Nested
-  @DisplayName("ring key pair file read by RingCertificate.readKeyPair")
-  class RingKeyPair {
-
-    private String ring;
-    private Path file;
-
-    @BeforeEach
-    void locateFile() {
-      // readKeyPair lower-cases the ring name, which here is a path prefix inside the temp directory
-      ring = dir.resolve("testring").toString();
-      file = Path.of(ring.toLowerCase(Locale.ROOT) + ".ringkeypair.enc");
-    }
-
-    @Test
-    void readsBackTheKeyPairWrittenWithThePassword() throws IOException {
-      writeKeyPairFile(file, pair, PASSWORD);
-
-      KeyPair actual = RingCertificate.readKeyPair(ring, PASSWORD);
-
-      assertSameKeyPair(pair, actual);
-    }
-
-    @Test
-    void rejectsTheWrongPassword() throws IOException {
-      writeKeyPairFile(file, pair, PASSWORD);
-
-      assertThrows(SecurityException.class, () -> RingCertificate.readKeyPair(ring, WRONG_PASSWORD));
-    }
-
-    @Test
-    void rejectsATamperedFile() throws IOException {
-      writeKeyPairFile(file, pair, PASSWORD);
-      tamper(file);
-
-      assertThrows(SecurityException.class, () -> RingCertificate.readKeyPair(ring, PASSWORD));
-    }
-  }
-
-  @Nested
   @DisplayName("CA key pair file ca.keypair.enc")
   class CaKeyPair {
 
@@ -132,7 +90,7 @@ class PasswordEncryptedKeyPairFileTest {
       file = dir.resolve("ca.keypair.enc");
     }
 
-    /** Loads the file the way RingCertificate.main does. */
+    /** Loads the file: gunzip, then decrypt, then decode. */
     private KeyPair load(String password) throws IOException {
       return SecurityUtils.decodeKeyPair(SecurityUtils.decryptWithPassword(readGzippedBytes(file), password.toCharArray()));
     }

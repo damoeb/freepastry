@@ -67,7 +67,6 @@ import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.direct.NetworkSimulator;
 import rice.pastry.direct.SphereNetwork;
-import rice.pastry.dist.DistPastryNodeFactory;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
@@ -145,6 +144,7 @@ public class MultiringRegrTest {
 
   // the direct protocol
   public static final int PROTOCOL_DIRECT = -138;
+  public static final int PROTOCOL_SOCKET = 2;
 
   // the possible network simulation models
   public static final int SIMULATOR_SPHERE = -1;
@@ -163,7 +163,7 @@ public class MultiringRegrTest {
   public static int BOOTSTRAP_PORT = 5009;
 
   // the procotol to use when creating nodes
-  public static int PROTOCOL = DistPastryNodeFactory.PROTOCOL_DEFAULT;
+  public static int PROTOCOL = PROTOCOL_SOCKET;
 
   // the simulator to use in the case of direct
   public static int SIMULATOR = SIMULATOR_SPHERE;
@@ -204,10 +204,7 @@ public class MultiringRegrTest {
       }
       factory = new DirectPastryNodeFactory(new RandomNodeIdFactory(environment), simulator, env);
     } else {
-      factory = DistPastryNodeFactory.getFactory(new RandomNodeIdFactory(environment),
-                                                 PROTOCOL,
-                                                 PORT,
-                                                 env);
+      factory = new SocketPastryNodeFactory(new RandomNodeIdFactory(environment), PORT, env);
     }
 
     NUM_GATEWAY_NODES = NUM_GLOBAL_NODES / NUM_ORGANIZATIONS;
@@ -684,7 +681,7 @@ public class MultiringRegrTest {
         String s = args[i+1];
 
           if (s.equalsIgnoreCase("socket"))
-          PROTOCOL = DistPastryNodeFactory.PROTOCOL_SOCKET;
+          PROTOCOL = PROTOCOL_SOCKET;
         else if (s.equalsIgnoreCase("direct"))
           PROTOCOL = PROTOCOL_DIRECT;
         else

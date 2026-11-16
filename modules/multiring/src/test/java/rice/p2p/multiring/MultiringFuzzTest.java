@@ -2,10 +2,7 @@ package rice.p2p.multiring;
 
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import rice.environment.Environment;
@@ -21,8 +18,8 @@ import rice.pastry.testing.StubHandleNodes;
 import rice.testing.fuzz.FuzzSupport;
 
 /**
- * Fuzzes what a multiring node reads from the wire: ring ids, node handles, the ring message that wraps another
- * application's message, and the ring certificates a ring publishes. The invariant: a value or an {@link IOException},
+ * Fuzzes what a multiring node reads from the wire: ring ids, node handles, and the ring message that wraps another
+ * application's message. The invariant: a value or an {@link IOException},
  * nothing else.
  */
 class MultiringFuzzTest {
@@ -69,19 +66,5 @@ class MultiringFuzzTest {
   void ringMessage(FuzzedDataProvider data) {
     java.util.Map<String, Endpoint> endpoints = java.util.Map.of(endpoint.getInstance(), endpoint);
     FuzzSupport.read(data, buf -> new RingMessage(buf, endpoint, endpoints));
-  }
-
-  @FuzzTest(maxDuration = "30s")
-  void ringCertificate(FuzzedDataProvider data) {
-    // a certificate is gzipped: compress the fuzz input, so that it reaches the fields behind the gzip header
-    try {
-      ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-      try (GZIPOutputStream gzip = new GZIPOutputStream(bytes)) {
-        gzip.write(data.consumeRemainingAsBytes());
-      }
-      RingCertificate.readFromStream(new ByteArrayInputStream(bytes.toByteArray()));
-    } catch (IOException expected) {
-      // the accepted way to reject malformed input
-    }
   }
 }
