@@ -50,6 +50,7 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
+import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.p2p.util.MathUtils;
 
@@ -167,18 +168,15 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
 
   }
 
-  class PendingMessage implements MessageRequestHandle<Identifier, ByteBuffer>, P2PSocketReceiver<Identifier> {
-    ByteBuffer msg;
-    @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
-    @Nullable Map<String, Object> options;
-    ByteBuffer sizeBuffer;
+  class PendingMessage extends MessageRequestHandleImpl<Identifier, ByteBuffer> implements P2PSocketReceiver<Identifier> {
+    final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
+    final ByteBuffer sizeBuffer;
 
     boolean started = false;
 
     public PendingMessage(ByteBuffer msg, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,@Nullable Map<String, Object> options) {
-      this.msg = msg;
+      super(i, msg, options);
       this.deliverAckToMe = deliverAckToMe;
-      this.options = options;
       this.sizeBuffer = ByteBuffer.wrap(MathUtils.intToByteArray(msg.remaining()));
     }
 
@@ -193,21 +191,9 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
       receiveSelectResult(Objects.requireNonNull(socket, "messages are sent once the socket is open"), false, true);
     }
 
-    @Override
-    public Identifier getIdentifier() {
-      return i;
-    }
-
-    @Override
-    public ByteBuffer getMessage() {
-      return msg;
-    }
-
-    @Override
-    public @Nullable Map<String, Object> getOptions() {
-      return options;
-    }
-
+    /**
+     * Takes the message out of the queue, unless it has started writing.
+     */
     @Override
     public boolean cancel() {
       if (!started) {
@@ -241,15 +227,15 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
           return;
         }
       }
-      if (msg.hasRemaining()) {
-        long ret = socket.write(msg);
+      if (getMessage().hasRemaining()) {
+        long ret = socket.write(getMessage());
         if (ret == -1) {
           socket.close();
           receiveException(socket, new org.mpisws.p2p.transport.ClosedChannelException("Remote node closed channel: "+socket));
           return;
         }
-        logger.trace("BIG message wrote: {} of {}", ret, msg.capacity());
-        if (msg.hasRemaining()) {
+        logger.trace("BIG message wrote: {} of {}", ret, getMessage().capacity());
+        if (getMessage().hasRemaining()) {
           socket.register(false, true, this);
         } else {
           // done
