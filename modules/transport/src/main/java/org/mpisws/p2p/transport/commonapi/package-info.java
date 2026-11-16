@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * The top of the transport stack. {@link org.mpisws.p2p.transport.commonapi.CommonAPITransportLayerImpl}
+ * The top of the transport stack. {@link org.mpisws.p2p.transport.commonapi.CommonAPITransportLayer}
  * serializes {@code RawMessage}s to bytes for the layers below (using a
  * {@link org.mpisws.p2p.transport.commonapi.RawMessageDeserializer}) and deserializes incoming bytes
  * before passing them up to the {@code PastryNode}. {@link org.mpisws.p2p.transport.commonapi.OptionsAdder}

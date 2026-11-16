@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayerImpl;
+import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayerListener;
@@ -106,14 +106,14 @@ public class DistTutorial {
         public void wrote(int bytes, MultiInetSocketAddress i,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           int address = 0;
-          Integer addressI = (Integer)options.get(CommonAPITransportLayerImpl.MSG_ADDR);
+          Integer addressI = (Integer)options.get(CommonAPITransportLayer.MSG_ADDR);
           if (addressI != null) {
             address = addressI.intValue();
           }
-          String messageClass = (String)options.get(CommonAPITransportLayerImpl.MSG_CLASS);
-          String toString = (String)options.get(CommonAPITransportLayerImpl.MSG_STRING);
+          String messageClass = (String)options.get(CommonAPITransportLayer.MSG_CLASS);
+          String toString = (String)options.get(CommonAPITransportLayer.MSG_STRING);
           short type = 0;
-          Short typeS = (Short)options.get(CommonAPITransportLayerImpl.MSG_TYPE);
+          Short typeS = (Short)options.get(CommonAPITransportLayer.MSG_TYPE);
           if (typeS != null) {
             type = typeS.shortValue();
           }
@@ -131,14 +131,14 @@ public class DistTutorial {
         public void enqueued(int bytes, MultiInetSocketAddress i,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           int address = 0;
-          Integer addressI = (Integer)options.get(CommonAPITransportLayerImpl.MSG_ADDR);
+          Integer addressI = (Integer)options.get(CommonAPITransportLayer.MSG_ADDR);
           if (addressI != null) {
             address = addressI.intValue();
           }
-          String messageClass = (String)options.get(CommonAPITransportLayerImpl.MSG_CLASS);
-          String toString = (String)options.get(CommonAPITransportLayerImpl.MSG_STRING);
+          String messageClass = (String)options.get(CommonAPITransportLayer.MSG_CLASS);
+          String toString = (String)options.get(CommonAPITransportLayer.MSG_STRING);
           short type = 0;
-          Short typeS = (Short)options.get(CommonAPITransportLayerImpl.MSG_TYPE);
+          Short typeS = (Short)options.get(CommonAPITransportLayer.MSG_TYPE);
           if (typeS != null) {
             type = typeS.shortValue();
           }
@@ -149,14 +149,14 @@ public class DistTutorial {
         public void dropped(int bytes, MultiInetSocketAddress i,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           int address = 0;
-          Integer addressI = (Integer)options.get(CommonAPITransportLayerImpl.MSG_ADDR);
+          Integer addressI = (Integer)options.get(CommonAPITransportLayer.MSG_ADDR);
           if (addressI != null) {
             address = addressI.intValue();
           }
-          String messageClass = (String)options.get(CommonAPITransportLayerImpl.MSG_CLASS);
-          String toString = (String)options.get(CommonAPITransportLayerImpl.MSG_STRING);
+          String messageClass = (String)options.get(CommonAPITransportLayer.MSG_CLASS);
+          String toString = (String)options.get(CommonAPITransportLayer.MSG_STRING);
           short type = 0;
-          Short typeS = (Short)options.get(CommonAPITransportLayerImpl.MSG_TYPE);
+          Short typeS = (Short)options.get(CommonAPITransportLayer.MSG_TYPE);
           if (typeS != null) {
             type = typeS.shortValue();
           }

@@ -51,7 +51,7 @@ import java.util.concurrent.ExecutionException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayer;
-import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayerImpl;
+import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayer;
 import org.mpisws.p2p.transport.commonapi.IdFactory;
 import org.mpisws.p2p.transport.commonapi.OptionsAdder;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
@@ -705,7 +705,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
 
     CommonAPITransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>> commonAPItl =
-    new CommonAPITransportLayerImpl<TransportLayerNodeHandle<MultiInetSocketAddress>>(
+    new CommonAPITransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>>(
         upperIdentity,
         idFactory,
         deserializer,
@@ -758,18 +758,18 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       if (m instanceof PastryEndpointMessage) {
         PastryEndpointMessage pem = (PastryEndpointMessage)m;
         m = pem.getMessage();
-        options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_ADDR, pem.getDestination());
+        options = OptionsFactory.addOption(options, CommonAPITransportLayer.MSG_ADDR, pem.getDestination());
       }
       if (m instanceof rice.pastry.messaging.Message) {
         rice.pastry.messaging.Message pm = (rice.pastry.messaging.Message)m;
-        options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_ADDR, pm.getDestination());
+        options = OptionsFactory.addOption(options, CommonAPITransportLayer.MSG_ADDR, pm.getDestination());
       }
       if (m instanceof RawMessage) {
         RawMessage rm = (RawMessage)m;
-        options = OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_TYPE, rm.getType());
+        options = OptionsFactory.addOption(options, CommonAPITransportLayer.MSG_TYPE, rm.getType());
       }
 
-      return OptionsFactory.addOption(options, CommonAPITransportLayerImpl.MSG_STRING, m.toString(), CommonAPITransportLayerImpl.MSG_CLASS, m.getClass().getName());
+      return OptionsFactory.addOption(options, CommonAPITransportLayer.MSG_STRING, m.toString(), CommonAPITransportLayer.MSG_CLASS, m.getClass().getName());
     };
   }
 

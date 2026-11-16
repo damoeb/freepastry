@@ -197,7 +197,7 @@ Some layers also provide side interfaces: `LivenessProvider` (alive, suspected, 
 | 9 | source route manager (`getSourceRouteManagerLayer`) | `sourceroute.manager.SourceRouteManager` | `MultiInetSocketAddress` | Uses the direct route while it is alive, otherwise tries relay routes from a `SourceRouteStrategy`. Provides liveness and proximity per address. |
 | 10 | priority (`getPriorityTransportLayer`) | `priority.PriorityTransportLayerImpl` | same | See below. |
 | 11 | upper identity (`getUpperIdentityLayer`) | `identity.IdentityImpl` (upper half) | `TransportLayerNodeHandle<MultiInetSocketAddress>` | Cancels pending traffic and reports "dead forever" when the node behind an address changes. |
-| 12 | common API (`getCommonAPITransportLayer`) | `commonapi.CommonAPITransportLayerImpl` | same, message type `RawMessage` | Serializes `RawMessage`s to bytes and back, using `rice.pastry.transport.TLDeserializer`. |
+| 12 | common API (`getCommonAPITransportLayer`) | `commonapi.CommonAPITransportLayer` | same, message type `RawMessage` | Serializes `RawMessage`s to bytes and back, using `rice.pastry.transport.TLDeserializer`. |
 | — | adapter | `rice.pastry.transport.NodeHandleAdapter` | `NodeHandle` | Combines the top layer with its liveness and proximity providers and hands them to `PastryNode.setSocketElements()`. |
 
 The priority layer (`PriorityTransportLayerImpl`) works like this:
@@ -220,7 +220,7 @@ Subclasses swap or insert layers by overriding these protected factory methods:
 flowchart BT
   W["1 WireTransportLayerImpl (TCP+UDP, InetSocketAddress)"] --> M["2 MagicNumberTransportLayer"] --> LS["3 LimitSocketsTransportLayer"] --> NI["4 NetworkInfoTransportLayer"]
   NI --> MA["5 MultiInetAddressTransportLayerImpl (MultiInetSocketAddress)"] --> SR["6 SourceRouteTransportLayerImpl (SourceRoute)"] --> LI["7 lower identity"] --> LV["8 LivenessTransportLayer"]
-  LV --> SRM["9 SourceRouteManager (MultiInetSocketAddress)"] --> PR["10 PriorityTransportLayerImpl"] --> UI["11 upper identity (TransportLayerNodeHandle)"] --> CA["12 CommonAPITransportLayerImpl (RawMessage)"]
+  LV --> SRM["9 SourceRouteManager (MultiInetSocketAddress)"] --> PR["10 PriorityTransportLayerImpl"] --> UI["11 upper identity (TransportLayerNodeHandle)"] --> CA["12 CommonAPITransportLayer (RawMessage)"]
   CA --> NHA["NodeHandleAdapter"] --> PN["PastryNode"]
 ```
 

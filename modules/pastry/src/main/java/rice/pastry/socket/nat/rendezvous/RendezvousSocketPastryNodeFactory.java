@@ -230,7 +230,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
       new RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle>(
         mtl,
         IdentityImpl.NODE_HANDLE_FROM_INDEX,
-//        CommonAPITransportLayerImpl.DESTINATION_IDENTITY,
+//        CommonAPITransportLayer.DESTINATION_IDENTITY,
         (RendezvousSocketNodeHandle)pn.getLocalHandle(),
         getContactDeserializer(pn),
         getRendezvousGenerator(pn),
