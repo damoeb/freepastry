@@ -38,9 +38,56 @@ package org.mpisws.p2p.transport.peerreview.replay;
 
 import java.io.IOException;
 
+import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
+import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
+import rice.environment.Environment;
+import rice.environment.logging.LogManager;
+import rice.environment.logging.Slf4jLogManager;
+import rice.environment.params.Parameters;
+import rice.environment.params.simple.SimpleParameters;
+import rice.environment.processing.Processor;
+import rice.environment.processing.sim.SimProcessor;
+import rice.environment.random.RandomSource;
+import rice.environment.random.simple.SimpleRandomSource;
+import rice.environment.time.simulated.DirectTimeSource;
+import rice.selector.SelectorManager;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-public interface VerifierFactory<Handle extends RawSerializable, Identifier extends RawSerializable> {
-  public Verifier<Handle, Identifier> getVerifier(SecureHistory history, Handle localHandle, long firstEntryToReplay, long initialTime, Object extInfo) throws IOException;
+public class VerifierFactory<Handle extends RawSerializable, Identifier extends RawSerializable> {
+
+  PeerReview<Handle, Identifier> peerreview;
+
+  public VerifierFactory(PeerReview<Handle, Identifier> peerreview) {
+    this.peerreview = peerreview;
+  }
+
+  public Verifier<Handle, Identifier> getVerifier(SecureHistory history,
+      Handle localHandle, long firstEntryToReplay, long initialTime,
+      Object extInfo) throws IOException {
+    Environment env = generateEnvironment(localHandle.toString(), 0, 0,peerreview.getEnvironment().getLogManager());
+    Verifier<Handle, Identifier> ret = new Verifier<Handle, Identifier>(peerreview,env,history,localHandle,firstEntryToReplay,extInfo);
+    ((ReplaySM)env.getSelectorManager()).setVerifier(ret);
+    return ret;
+  }
+
+  public static Environment generateEnvironment(String name, long startTime, long randSeed, LogManager lm2) {
+    Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
+    DirectTimeSource dts = new DirectTimeSource(startTime);
+
+    LogManager lm;
+    if (lm2 instanceof Slf4jLogManager clm) {
+      lm = clm.clone(clm.getPrefix()+"-"+name);
+    } else {
+      lm = Environment.generateDefaultLogManager();
+    }
+    RandomSource rs = new SimpleRandomSource(randSeed, lm);
+    dts.setLogManager(lm);
+    SelectorManager selector = new ReplaySM("Replay "+name, dts, lm);
+    dts.setSelectorManager(selector);
+    Processor proc = new SimProcessor(selector);
+    return new Environment(selector,proc,rs,dts,lm,
+        params, Environment.generateDefaultExceptionStrategy(lm));
+  }
+
 }

@@ -91,7 +91,7 @@ import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.peerreview.message.ResponseMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactory;
-import org.mpisws.p2p.transport.peerreview.replay.VerifierFactoryImpl;
+import org.mpisws.p2p.transport.peerreview.replay.VerifierFactory;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordSM;
 import org.mpisws.p2p.transport.peerreview.statement.StatementProtocol;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
@@ -594,7 +594,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     this.statementProtocol = new StatementProtocol<Handle, Identifier>(this, challengeProtocol, infoStore, transport);
 
     this.evidenceTool = new EvidenceTool<Handle, Identifier>(this, handleSerializer, idSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
-    this.verifierFactory = new VerifierFactoryImpl<Handle, Identifier>(this);
+    this.verifierFactory = new VerifierFactory<Handle, Identifier>(this);
 
     initialized = true;
 

@@ -72,7 +72,7 @@ public class VerifierSendTest {
   @SuppressWarnings("unchecked")
   public void setUp() throws Exception {
     logEnv = new Environment();
-    env = VerifierFactoryImpl.generateEnvironment("test", 0, 0, null);
+    env = VerifierFactory.generateEnvironment("test", 0, 0, null);
     hashProv = new SHA256HashProvider();
     history = new SecureHistoryFactory(hashProv, logEnv).create(new File(dir, "log").getPath(), 0, hashProv.getEmptyHash());
     IdentifierExtractor<Node, Node> extractor = h -> h;
