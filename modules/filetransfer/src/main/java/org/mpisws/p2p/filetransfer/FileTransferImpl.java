@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
+import org.mpisws.p2p.transport.util.BoundedPriorityWriteQueue;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
@@ -59,7 +60,6 @@ import rice.environment.processing.WorkRequest;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.util.MathUtils;
-import rice.p2p.util.SortedLinkedList;
 import rice.selector.SelectorManager;
 
 /**
@@ -157,9 +157,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     this.callback = callback;
     this.fileAllocater = fileAllocater;
     if (this.fileAllocater == null) this.fileAllocater = new TempFileAllocationStrategy();
-    this.queue = new SortedLinkedList<MessageWrapper>();
     this.selectorManager = env.getSelectorManager();
     this.logger = env.getLogManager().getLogger(FileTransferImpl.class, null);
+    this.queue = new BoundedPriorityWriteQueue<MessageWrapper>(MAX_QUEUE_SIZE, MessageWrapper::drop, logger);
     this.processor = p;
     if (this.processor == null) this.processor = env.getProcessor();
     this.environment = env;
@@ -200,7 +200,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     Iterable<MessageWrapper> dropMe;
     synchronized(queue) {
       failed = true;
-      dropMe = new ArrayList<MessageWrapper>(queue);
+      dropMe = queue.waiting();
     }
     for (MessageWrapper foo : dropMe) {
       foo.drop();
@@ -215,21 +215,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
   int seq = Integer.MIN_VALUE;
   private final Object uidLock = new Object();
-  final SortedLinkedList<MessageWrapper> queue; // messages we want to send
-  MessageWrapper messageThatIsBeingWritten = null;
+  final BoundedPriorityWriteQueue<MessageWrapper> queue; // messages we want to send, and the one being written
   boolean registered = false;
 
   private void enqueue(MessageWrapper ret) {
     synchronized(queue) {
       if (failed) return;
       queue.add(ret);
-
-      // drop the lowest priority message if the queue is overflowing
-      while (queue.size() > MAX_QUEUE_SIZE) {
-        MessageWrapper w = queue.removeLast();
-        logger.info("Dropping {} because queue is full. MAX_QUEUE_SIZE:{}", w, MAX_QUEUE_SIZE);
-        w.drop();
-      }
     }
 
     if (selectorManager.isSelectorThread()) {
@@ -260,37 +252,18 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   /**
-   * Returns the messageThatIsBeingWritten, polls the queue if it is null
-   */
-  private MessageWrapper poll() {
-    synchronized(queue) {
-      if (messageThatIsBeingWritten == null) {
-        messageThatIsBeingWritten = queue.poll();
-        logger.trace("{}.poll() set messageThatIsBeingWritten = {}", this, messageThatIsBeingWritten);
-      }
-      if (queue.size() >= (MAX_QUEUE_SIZE-1) && logger.isInfoEnabled()) {
-        logger.info(this+"polling from full queue ("+queue.size()+") (this is a good thing) "+messageThatIsBeingWritten);
-      }
-      return messageThatIsBeingWritten;
-    }
-  }
-
-  /**
    * True if we have a message to send
    */
   private boolean haveMessageToSend() {
-    synchronized(queue) {
-      if (messageThatIsBeingWritten == null && queue.isEmpty()) return false;
-      return true;
-    }
+    return !queue.isEmpty();
   }
 
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
   protected boolean complete(MessageWrapper wrapper) {
     logger.trace("{}.complete({})", this, wrapper);
-    if (wrapper != messageThatIsBeingWritten) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+messageThatIsBeingWritten);
+    if (wrapper != queue.inFlight()) throw new IllegalArgumentException("Wrapper:"+wrapper+" messageThatIsBeingWritten:"+queue.inFlight());
 
-    messageThatIsBeingWritten = null;
+    queue.clearInFlight();
 
     // notify deliverAckToMe
     wrapper.complete();
@@ -890,7 +863,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
 
     public boolean cancel() {
-      if (this.equals(messageThatIsBeingWritten)) {
+      if (this.equals(queue.inFlight())) {
         if (!started) {
           // TODO: can still cancel the message, but have to have special behavior when the socket calls us back
           return true;
@@ -898,9 +871,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
           return false;
         }
       }
-      synchronized(queue) {
-        return queue.remove(this);
-      }
+      return queue.remove(this);
     }
 
     /**
@@ -935,7 +906,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
       if (receipt.isCancelled() && !started) {
         logger.trace("{}.rsr({}) cancelled", this, socket);
-        messageThatIsBeingWritten = null;
+        queue.clearInFlight();
         return true;
       } else {
         started = true;
@@ -989,9 +960,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       try {
         registered = false;
         logger.trace("receivedSelectResult({},{},{}", socket, canRead, canWrite);
-        MessageWrapper current = poll();
+        MessageWrapper current = queue.poll();
         while (current != null && current.receiveSelectResult(socket)) {
-          current = poll();
+          current = queue.poll();
         }
         scheduleToWriteIfNeeded();
       } catch (IOException ioe) {
