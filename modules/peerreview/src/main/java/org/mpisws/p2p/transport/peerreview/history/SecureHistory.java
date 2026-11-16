@@ -38,34 +38,173 @@ package org.mpisws.p2p.transport.peerreview.history;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
+import org.mpisws.p2p.transport.peerreview.audit.SnippetEntry;
+import org.slf4j.Logger;
+import rice.p2p.util.RandomAccessFileIOBuffer;
 
-public interface SecureHistory {
-  public long getNumEntries();
-  public long getBaseSeq();
-  public long getLastSeq();
+/**
+ * The following class implements PeerReview's log. A log entry consists of
+ * a sequence number, a type, and a string of bytes. On disk, the log is
+ * stored as two files: An index file and a data file.
+ *
+ * @author Jeff Hoye
+ * @author Andreas Haeberlen
+ */
+public class SecureHistory {
+
+  protected Logger logger;
+
+  private final HashProvider hashProv;
+  private boolean pointerAtEnd;
+  protected IndexEntry topEntry;
+  private final long baseSeq;
+  private long nextSeq;
+  protected long numEntries;
+  protected RandomAccessFileIOBuffer indexFile;
+  protected RandomAccessFileIOBuffer dataFile;
+  private final boolean readOnly;
+
+  protected IndexEntryFactory indexFactory;
+
+  public SecureHistory(RandomAccessFileIOBuffer indexFile, RandomAccessFileIOBuffer dataFile, boolean readOnly, HashProvider hashProv, IndexEntryFactory indexFactory, Logger logger) throws IOException {
+    assert(indexFile != null && dataFile != null);
+
+    this.logger = logger;
+    if (logger == null) throw new IllegalArgumentException("logger is null");
+    this.indexFactory = indexFactory;
+
+    // read the first entry
+    indexFile.seek(0);
+    IndexEntry firstEntry = indexFactory.build(indexFile);
+    baseSeq = firstEntry.seq;
+
+    // read the last entry (topEntry)
+    indexFile.seek(indexFile.length()-indexFactory.getSerializedSize());
+    topEntry = indexFactory.build(indexFile);
+
+    numEntries = (int)(indexFile.length()/indexFactory.getSerializedSize());
+
+    dataFile.seek(dataFile.length());
+    nextSeq = topEntry.seq+1;
+    pointerAtEnd = true;
+
+    this.indexFile = indexFile;
+    this.dataFile = dataFile;
+    this.readOnly = readOnly;
+    this.hashProv = hashProv;
+  }
+
+  public long getBaseSeq() {
+    return baseSeq;
+  }
+
+  public long getLastSeq() {
+    return topEntry.seq;
+  }
+
+  public long getNumEntries() {
+    return numEntries;
+  }
 
   /**
    *  Returns the node hash and the sequence number of the most recent log entry
    */
-  public HashSeq getTopLevelEntry();
+  public HashSeq getTopLevelEntry() {
+    return new HashSeq(topEntry.nodeHash, topEntry.seq);
+  }
 
   /**
    * Appends a new entry to the log. If 'storeFullEntry' is false, only the hash of the
    * entry is stored. If 'header' is not NULL, the log entry is formed by concatenating
    * 'header' and 'entry'; otherwise, only 'entry' is used.
-   *
-   * Takes an ordered list of ByteBuffers to append
    */
-  public void appendEntry(short type, boolean storeFullEntry, ByteBuffer ... entry) throws IOException;
+  public void appendEntry(short type, boolean storeFullEntry, ByteBuffer ... entry) throws IOException {
+    assert(indexFile != null && dataFile != null);
+    logger.atTrace().log(() -> "appendEntry("+type+","+storeFullEntry+","+entry.length+","+entry[0].remaining()+"):"+nextSeq);
+    // Sanity check (for debugging)
+
+    if (readOnly) throw new IllegalStateException("Cannot append entry to readonly history");
+
+
+    // As an optimization, the log 'remembers' the last entry that was read or written.
+    // However, this means that the file pointers do not necessarily point to the
+    // end of the index and data files. If they don't, we must reset them.
+
+    if (!pointerAtEnd) {
+      indexFile.seek(indexFile.length());
+      dataFile.seek(dataFile.length());
+      pointerAtEnd = true;
+    }
+
+    IndexEntry e = new IndexEntry(nextSeq++);
+
+    // Calculate the content hash */
+
+    e.contentHash = hashProv.hash(entry);
+
+    // Calculate the node hash. Note that this also covers the sequence number and
+    // the entry type.
+
+    e.nodeHash = hashProv.hash(e.seq, type, topEntry.nodeHash, e.contentHash);
+
+    // Write the entry to the data file
+
+    e.type = type;
+    e.fileIndex = dataFile.getFilePointer();
+    if (storeFullEntry) {
+      e.sizeInFile = 0;
+      for (ByteBuffer ent : entry) {
+        e.sizeInFile += ent.remaining();
+        dataFile.write(ent.array(), ent.arrayOffset()+ent.position(), ent.remaining());
+      }
+    } else {
+      e.sizeInFile = -1;
+    }
+
+    // Optionally, the index file entries can be padded to a multiple of 16 bytes,
+    // so they're easier to read in a hexdump.
+
+    // Write the entry to the index file
+
+    topEntry = e;
+    topEntry.serialize(indexFile);
+    numEntries++;
+  }
 
   /**
    * Append a new hashed entry to the log. Unlike appendEntry(), this only keeps
    * the content type, sequence number, and hash values. No entry is made in
    * the data file.
    */
-  public void appendHash(short type, byte[] hash) throws IOException;
+  public void appendHash(short type, byte[] hash) throws IOException {
+    assert(indexFile != null && dataFile != null);
+
+    // Sanity check (for debugging)
+    if (readOnly) throw new IllegalStateException("Cannot append entry to readonly history");
+
+    if (!pointerAtEnd) {
+      indexFile.seek(indexFile.length());
+      dataFile.seek(dataFile.length());
+      pointerAtEnd = true;
+    }
+
+    IndexEntry e = new IndexEntry(nextSeq++);
+
+    e.contentHash = hash;
+
+    e.nodeHash = hashProv.hash(e.seq, type, topEntry.nodeHash, e.contentHash);
+    e.type = type;
+    e.fileIndex = -1;
+    e.sizeInFile = -1;
+
+    // Write an entry to the index file
+    topEntry = e;
+    topEntry.serialize(indexFile);
+    numEntries++;
+  }
 
   /**
    * Sets the next sequence number to be used. The PeerReview library typically
@@ -73,15 +212,81 @@ public interface SecureHistory {
    * and Y a sequence number. The sequence numbers need not be contiguous
    * (and usually aren't)
    */
-  public boolean setNextSeq(long nextSeq);
+  public boolean setNextSeq(long nextSeq) {
+    if (nextSeq < this.nextSeq) return false;
+
+    this.nextSeq = nextSeq;
+    return true;
+  }
 
   /**
    * The destructor.  Closes the file handles.
    */
-  public void close() throws IOException;
+  public void close() throws IOException {
+    assert(indexFile != null && dataFile != null);
+    if (logger.isDebugEnabled()) logger.debug("{}.close()", this, new Exception("Stack Trace"));
+    indexFile.close();
+    dataFile.close();
 
+    indexFile = null;
+    dataFile = null;
+  }
 
-  public long findSeq(long seq) throws IOException;
+  public long findSeq(long seq) throws IOException {
+    return findSeqOrHigher(seq, false);
+  }
+
+  /**
+   * Look up a given sequence number, or the first sequence number that is
+   * not lower than a given number. The return value is the number of
+   * the corresponding record in the index file, or -1 if no matching
+   * record was found.
+   */
+  public long findSeqOrHigher(long seq, boolean allowHigher) throws IOException {
+    assert(indexFile != null && dataFile != null);
+
+    // Some special cases where we know the answer without looking
+
+    if (seq > topEntry.seq)
+      return -1;
+
+    if (allowHigher && (seq < baseSeq))
+      return 0;
+
+    if (seq == topEntry.seq)
+      return numEntries - 1;
+
+    // Otherwise, do a binary search
+
+    pointerAtEnd = false;
+
+    indexFile.seek(indexFile.length());
+    long rbegin = 1;
+    long rend = (indexFile.getFilePointer() / (long)indexFactory.getSerializedSize()) - 1;
+
+    while (rbegin != rend) {
+      assert(rend >= rbegin);
+
+      long pivot = (rbegin+rend)/2;
+      indexFile.seek(pivot*indexFactory.getSerializedSize());
+
+      IndexEntry ie = indexFactory.build(indexFile);
+      if (ie.seq >= seq)
+        rend = pivot;
+      else
+        rbegin = pivot+1;
+    }
+
+    if (allowHigher)
+      return rbegin;
+
+    indexFile.seek(rbegin * indexFactory.getSerializedSize());
+    IndexEntry ie = indexFactory.build(indexFile);
+    if (ie.seq != seq)
+      return -1;
+
+    return rbegin;
+  }
 
   /**
    * Serialize a given range of entries, and write the result to the specified file.
@@ -96,37 +301,182 @@ public interface SecureHistory {
    *           0xFF: 64-bit sequence number follows
    *           Otherwise:  Round down to nearest multiple of 1000, then add specified
    *               value times 1000
-   *     6. repeat 2-5 as often as necessary; 5 is omitted on last entry.4
+   *     6. repeat 2-5 as often as necessary; 5 is omitted on last entry.
    * Note that the idxFrom and idxTo arguments are record numbers, NOT sequence numbers.
    * Use findSeqOrHigher() to get these if only sequence numbers are known.
    */
-  public LogSnippet serializeRange(long idxFrom, long idxTo, HashPolicy hashPolicy) throws IOException;
+  public LogSnippet serializeRange(long idxFrom, long idxTo, HashPolicy hashPolicy) throws IOException {
+    assert((0 < idxFrom) && (idxFrom <= idxTo) && (idxTo < numEntries));
+
+    IndexEntry ie;
+
+    // Write base hash value
+
+    pointerAtEnd = false;
+    indexFile.seek((idxFrom-1) * indexFactory.getSerializedSize());
+    ie = indexFactory.build(indexFile);
+    byte[] baseHash = ie.nodeHash;
+    ArrayList<SnippetEntry> entryList = new ArrayList<SnippetEntry>();
+
+    // Go through entries one by one
+    long previousSeq = -1;
+    for (long idx=idxFrom; idx<=idxTo; idx++) {
+      // Read index entry
+
+      ie = indexFactory.build(indexFile);
+      if (ie == null)
+        throw new IOException("History read error");
+
+      // we're going to write directly to outfile, in the c++ impl it used header[]/bytesInHeader
+
+      assert((previousSeq == -1) || (ie.seq > previousSeq));
+
+      // If entry is not hashed, read contents from the data file
+      byte[] buffer = null;
+      if (ie.sizeInFile > 0) {
+        buffer = new byte[(int)ie.sizeInFile]; // grumble...  This needs to be long eventually...
+        assert(ie.fileIndex >= 0);
+        dataFile.seek(ie.fileIndex);
+        dataFile.readFully(buffer);
+      }
+
+      // The entry is hashed if (a) it is already hashed in the log file,
+      // or (b) the hash policy tells us to.
+      boolean hashIt = (ie.sizeInFile<0) || (hashPolicy != null && hashPolicy.hashEntry(ie.type, buffer));
+
+      // Encode the size of the entry
+
+      if (hashIt) {
+        buffer = ie.contentHash;
+      }
+
+      SnippetEntry entry = new SnippetEntry((byte)ie.type, ie.seq, hashIt, buffer);
+      entryList.add(entry);
+    }
+
+    LogSnippet ret = new LogSnippet(baseHash,entryList);
+    return ret;
+  }
 
   /**
    *  Retrieve information about a given record
    *
    *  @param idx the index you are interested in
    */
-  public IndexEntry statEntry(long idx) throws IOException;
+  public IndexEntry statEntry(long idx) throws IOException {
+    if ((idx < 0) || (idx >= numEntries))
+      return null;
+
+    IndexEntry ie;
+
+    pointerAtEnd = false;
+    indexFile.seek((long)idx*indexFactory.getSerializedSize());
+    ie = indexFactory.build(indexFile);
+
+    return ie;
+  }
 
   /**
    *  Get the content of a log entry, specified by its record number
    */
-  public byte[] getEntry(long idx, int maxSizeToRead) throws IOException;
-  public byte[] getEntry(IndexEntry ie, int maxSizeToRead) throws IOException;
+  public byte[] getEntry(long idx, int maxSizeToRead) throws IOException {
+    return getEntry(statEntry(idx), maxSizeToRead);
+  }
+
+  public byte[] getEntry(IndexEntry ie, int maxSizeToRead) throws IOException {
+    if (ie == null) return null;
+
+    if (ie.sizeInFile < 0) return null;
+
+    try {
+      dataFile.seek(ie.fileIndex);
+    } catch (IOException ioe) {
+      logger.warn("fileIndex:{} {}", ie.fileIndex, ie);
+      throw ioe;
+    }
+    int bytesToRead = (maxSizeToRead>=ie.sizeInFile) ? ie.sizeInFile : maxSizeToRead;
+
+    byte[] ret = new byte[bytesToRead];
+    dataFile.readFully(ret);
+
+    return ret;
+  }
 
   /**
    * If the log already contains an entry in 'hashed' form and we learn the actual
    * contents later, this function is called.
    */
-  public boolean upgradeHashedEntry(int idx, ByteBuffer entry) throws IOException;
+  public boolean upgradeHashedEntry(int idx, ByteBuffer entry) throws IOException {
+    if (readOnly)
+      throw new IllegalStateException("Cannot upgrade hashed entry in readonly history");
+
+    if ((idx<0) || (idx>=numEntries))
+      return false;
+
+    pointerAtEnd = false;
+
+    indexFile.seek((long)idx*indexFactory.getSerializedSize());
+
+    IndexEntry ie = indexFactory.build(indexFile);
+
+    if (ie == null)
+      return false;
+
+    if (ie.sizeInFile >= 0)
+      return false;
+
+    dataFile.seek(dataFile.length());
+
+    ie.fileIndex = dataFile.getFilePointer();
+    ie.sizeInFile = entry.remaining();
+
+    dataFile.write(entry.array(), entry.arrayOffset()+entry.position(), entry.remaining());
+
+    indexFile.seek((long)idx*indexFactory.getSerializedSize());
+    ie.serialize(indexFile);
+
+    return true;
+  }
 
   /**
    * Find the most recent entry whose type is in the specified set. Useful e.g. for
    * locating the last CHECKPOINT or INIT entry.
    */
-  public long findLastEntry(short[] types, long maxSeq) throws IOException;
+  public long findLastEntry(short[] types, long maxSeq) throws IOException {
+    long maxIdx = findSeqOrHigher(Math.min(maxSeq, topEntry.seq), true);
+    long currentIdx = maxIdx;
 
-  public void appendSnippetToHistory(LogSnippet snippet) throws IOException;
+    while (currentIdx >= 0) {
+      IndexEntry ie = statEntry(currentIdx);
+
+      if (ie == null) throw new IllegalStateException("Cannot stat history entry #"+currentIdx+" (num="+numEntries+")");
+
+      for (int i=0; i<types.length; i++)
+        if (ie.type == types[i])
+          return currentIdx;
+
+      currentIdx--;
+    }
+    return -1;
+  }
+
+  public void appendSnippetToHistory(LogSnippet snippet) throws IOException {
+    for (SnippetEntry sEntry : snippet.getEntries()) {
+
+      if (sEntry.getSeq() > getLastSeq()) {
+        if (!setNextSeq(sEntry.getSeq()))
+          throw new RuntimeException("Audit: Cannot set history sequence number?!?");
+
+        if (!sEntry.isHash()) {
+          appendEntry(sEntry.getType(), true, ByteBuffer.wrap(sEntry.getContent()));
+        } else {
+          appendHash(sEntry.getType(), sEntry.getContent());
+        }
+      } else {
+      }
+
+    }
+  }
+
 
 }

@@ -48,7 +48,7 @@ import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryImpl;
+import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.slf4j.Logger;
 import rice.environment.Environment;
@@ -87,7 +87,7 @@ public class PRInconsistent1 extends PRRegressionTest {
           return new SecureHistoryFactoryImpl(transport, env) {
 
             @Override
-            protected SecureHistoryImpl makeSecureHistory(RandomAccessFileIOBuffer indexFile, RandomAccessFileIOBuffer dataFile, boolean readOnly, HashProvider hashProv, IndexEntryFactory indexFactory, Logger logger) throws IOException {
+            protected SecureHistory makeSecureHistory(RandomAccessFileIOBuffer indexFile, RandomAccessFileIOBuffer dataFile, boolean readOnly, HashProvider hashProv, IndexEntryFactory indexFactory, Logger logger) throws IOException {
               final ForkingSecureHistory foo = new ForkingSecureHistory(indexFile, dataFile, readOnly, hashProv, indexFactory, logger) {
                 int acks = 0;
 
@@ -121,7 +121,7 @@ public class PRInconsistent1 extends PRRegressionTest {
     }
   }
 
-  public static class ForkingSecureHistory extends SecureHistoryImpl {
+  public static class ForkingSecureHistory extends SecureHistory {
 
     public ForkingSecureHistory(RandomAccessFileIOBuffer indexFile,
         RandomAccessFileIOBuffer dataFile, boolean readOnly,

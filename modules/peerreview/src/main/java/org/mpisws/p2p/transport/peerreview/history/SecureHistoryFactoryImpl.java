@@ -97,13 +97,13 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
 
     entry.serialize(indexFile);
 
-    SecureHistoryImpl history = makeSecureHistory(indexFile, dataFile, false, hashProv, this, environment.getLogManager().getLogger(SecureHistoryImpl.class, name));
+    SecureHistory history = makeSecureHistory(indexFile, dataFile, false, hashProv, this, environment.getLogManager().getLogger(SecureHistory.class, name));
 
     return history;
   }
 
-  protected SecureHistoryImpl makeSecureHistory(RandomAccessFileIOBuffer indexFile, RandomAccessFileIOBuffer dataFile, boolean readOnly, HashProvider hashProv, IndexEntryFactory indexFactory, Logger logger) throws IOException {
-    return new SecureHistoryImpl(indexFile, dataFile, readOnly, hashProv, indexFactory, logger);
+  protected SecureHistory makeSecureHistory(RandomAccessFileIOBuffer indexFile, RandomAccessFileIOBuffer dataFile, boolean readOnly, HashProvider hashProv, IndexEntryFactory indexFactory, Logger logger) throws IOException {
+    return new SecureHistory(indexFile, dataFile, readOnly, hashProv, indexFactory, logger);
   }
 
   /**
@@ -149,7 +149,7 @@ public class SecureHistoryFactoryImpl implements SecureHistoryFactory, IndexEntr
       throw ioe;
     }
 
-    return makeSecureHistory(indexFile, dataFile, readOnly, hashProv, this, environment.getLogManager().getLogger(SecureHistoryImpl.class, name));
+    return makeSecureHistory(indexFile, dataFile, readOnly, hashProv, this, environment.getLogManager().getLogger(SecureHistory.class, name));
   }
 
   @Override
