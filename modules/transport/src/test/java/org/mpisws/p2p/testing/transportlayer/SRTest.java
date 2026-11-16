@@ -48,7 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl;
+import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
@@ -124,7 +124,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
     return
       new SourceRouteTransportLayerImpl<MultiInetSocketAddress>(srFactory,
-        new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr_a),
+        new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
           new MagicNumberTransportLayer<InetSocketAddress>(
             new WireTransportLayerImpl(addr_a,env_a, null),
           env_a, null,GOOD_HDR, 2000),

@@ -54,7 +54,7 @@ import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.liveness.Pinger;
-import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl;
+import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
@@ -141,7 +141,7 @@ public class LivenessTest extends SRTest {
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
     SourceRouteTransportLayer<MultiInetSocketAddress> srtl =
         new SourceRouteTransportLayerImpl<MultiInetSocketAddress>(srFactory,
-          new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr_a),
+          new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
             new MagicNumberTransportLayer<InetSocketAddress>(
               new WireTransportLayerImpl(addr_a,env_a, null),
             env_a, null,GOOD_HDR, 2000),

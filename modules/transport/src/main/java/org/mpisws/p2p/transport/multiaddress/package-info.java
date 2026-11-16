@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 /**
  * Addressing for nodes behind NATs. {@link org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress}
  * is the list of addresses of a node, from the outermost (public) to the innermost (local bind)
- * address; {@link org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl} adds it to
+ * address; {@link org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer} adds it to
  * traffic and uses an {@link org.mpisws.p2p.transport.multiaddress.AddressStrategy} to pick the address
  * that is reachable from the local node.
  */

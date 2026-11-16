@@ -70,7 +70,7 @@ import org.mpisws.p2p.transport.liveness.OverrideLiveness;
 import org.mpisws.p2p.transport.liveness.Pinger;
 import org.mpisws.p2p.transport.multiaddress.AddressStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
-import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl;
+import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.multiaddress.SimpleAddressStrategy;
 import org.mpisws.p2p.transport.networkinfo.NetworkInfoTransportLayer;
@@ -460,7 +460,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       MultiInetSocketAddress localAddress) {
     AddressStrategy adrStrat = new SimpleAddressStrategy();
     pn.getVars().put(MULTI_ADDRESS_STRATEGY, adrStrat);
-    return new MultiInetAddressTransportLayerImpl(localAddress, mntl, pn.getEnvironment(), null, adrStrat);
+    return new MultiInetAddressTransportLayer(localAddress, mntl, pn.getEnvironment(), null, adrStrat);
   }
 
   protected TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getSourceRouteTransportLayer(

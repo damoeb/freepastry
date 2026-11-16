@@ -44,7 +44,7 @@ import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl;
+import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
@@ -81,7 +81,7 @@ public class EpochTest extends TLTest<MultiInetSocketAddress>{
     env.addDestructable(env_a);
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
     return
-        new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr_a),
+        new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
           new MagicNumberTransportLayer<InetSocketAddress>(
             new WireTransportLayerImpl(addr_a,env_a, null),
           env_a, null,GOOD_HDR, 2000),

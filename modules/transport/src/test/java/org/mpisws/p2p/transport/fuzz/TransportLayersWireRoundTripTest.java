@@ -26,7 +26,7 @@ import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl;
+import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.networkinfo.ConnectivityResult;
 import org.mpisws.p2p.transport.networkinfo.NetworkInfoTransportLayer;
@@ -317,8 +317,8 @@ class TransportLayersWireRoundTripTest {
 
   // ---- multiaddress
 
-  private MultiInetAddressTransportLayerImpl multi(InetSocketAddress... local) {
-    return new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(local), net.lower(local[0]),
+  private MultiInetAddressTransportLayer multi(InetSocketAddress... local) {
+    return new MultiInetAddressTransportLayer(new MultiInetSocketAddress(local), net.lower(local[0]),
         env, null, null);
   }
 
@@ -332,8 +332,8 @@ class TransportLayersWireRoundTripTest {
       aAddresses[i] = addr(1 + i * 10, 9001);
       bAddresses[i] = i % 2 == 0 ? addr(2 + i * 10, 9002) : addr6(2 + i * 10, 9002);
     }
-    MultiInetAddressTransportLayerImpl a = multi(aAddresses);
-    MultiInetAddressTransportLayerImpl b = multi(bAddresses);
+    MultiInetAddressTransportLayer a = multi(aAddresses);
+    MultiInetAddressTransportLayer b = multi(bAddresses);
     Recorder<MultiInetSocketAddress> received = new Recorder<>();
     b.setCallback(received);
 
@@ -347,8 +347,8 @@ class TransportLayersWireRoundTripTest {
 
   @Test
   void multiInetAddressSocket() throws IOException {
-    MultiInetAddressTransportLayerImpl a = multi(addr(1, 9001), addr(11, 9001));
-    MultiInetAddressTransportLayerImpl b = multi(addr(2, 9002));
+    MultiInetAddressTransportLayer a = multi(addr(1, 9001), addr(11, 9001));
+    MultiInetAddressTransportLayer b = multi(addr(2, 9002));
     Recorder<MultiInetSocketAddress> received = new Recorder<>();
     b.setCallback(received);
     List<P2PSocket<MultiInetSocketAddress>> opened = new ArrayList<>();

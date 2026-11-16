@@ -62,7 +62,7 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.TransportLayerListener;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
-import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl;
+import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
@@ -117,7 +117,7 @@ public class PriorityMissingCallbackTest {
 
   private PriorityTransportLayerImpl<MultiInetSocketAddress> buildTL(InetSocketAddress addr) throws IOException {
     LivenessTransportLayer<MultiInetSocketAddress> ltli = new LivenessTransportLayer<MultiInetSocketAddress>(
-        new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr),
+        new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr),
           new WireTransportLayerImpl(addr, env, null), env, null, null),
         env, null, 5000);
     return new PriorityTransportLayerImpl<MultiInetSocketAddress>(ltli, ltli,

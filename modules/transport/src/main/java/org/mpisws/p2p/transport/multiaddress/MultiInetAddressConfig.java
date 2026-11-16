@@ -5,7 +5,7 @@ import static rice.environment.params.ConfigChecks.positive;
 import rice.environment.params.Parameters;
 
 /**
- * The tuning parameters of a {@link MultiInetAddressTransportLayerImpl}.
+ * The tuning parameters of a {@link MultiInetAddressTransportLayer}.
  *
  * @param maxNumAddresses {@code transport_epoch_max_num_addresses}: the most addresses a remote node may
  *        announce for itself; a peer announcing more is rejected
