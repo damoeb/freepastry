@@ -42,6 +42,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -838,83 +839,78 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         if (o != null && isAuthentic(id, (PastContent) o)) {
           command.receiveResult((PastContent) o);
         } else {
-          // send the request across the wire, and see if the result is null or not
-          sendRequest(id, new LookupMessage(getUID(), id, getLocalNodeHandle(), id), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, this) {
-            @Override
-            public void receiveResult(final PastContent o) {
-              // if we have an object, we return it
-              // otherwise, we must check all replicas in order to make sure that
-              // the object doesn't exist anywhere
-              if (o != null && isAuthentic(id, o)) {
-                // lastly, try and cache object locally for future use
-                if (cache) {
-                  cache(o, new SimpleContinuation()  {
-                    @Override
-                    public void receiveResult(Object object) {
-                      command.receiveResult(o);
-                    }
-                    @Override
-                    public void receiveException(Exception e) {
-                      logger.warn("Caching after lookup failed, continuing", e);
-                      command.receiveResult(o);
-                    }
-                  });
-                } else {
-                  command.receiveResult(o);
-                }
-              } else {
-                lookupHandles(id, replicationFactor+1, new Continuation<PastContentHandle[], Exception>() {
-                  @Override
-                  public void receiveResult(PastContentHandle[] handles) {
-
-                    for (PastContentHandle handle : handles) {
-                      if (handle != null) {
-                        fetch(handle, new StandardContinuation<PastContent, PastContent, Exception>(parent) {
-                          @Override
-                          public void receiveResult(final PastContent o) {
-                            // lastly, try and cache object locally for future use
-                            if (cache) {
-                              cache(o, new SimpleContinuation()  {
-                                @Override
-                                public void receiveResult(Object object) {
-                                  command.receiveResult(o);
-                                }
-                                @Override
-                                public void receiveException(Exception e) {
-                                  logger.warn("Caching after lookup failed, continuing", e);
-                                  command.receiveResult(o);
-                                }
-                              });
-                            } else {
-                              command.receiveResult(o);
-                            }
-                          }
-                        });
-
-                        return;
-                      }
-                    }
-
-                    // there were no replicas of the object
-                    command.receiveResult(null);
-                  }
-
-                  @Override
-                  public void receiveException(Exception e) {
-                    command.receiveException(e);
-                  }
-                });
-              }
-            }
-
-            @Override
-            public void receiveException(Exception e) {
-              // If the lookup message failed , we then try to fetch all of the handles, just
-              // in case.  This may fail too, but at least we tried.
-              receiveResult(null);
-            }
-          });
+          lookupViaMessage(id, cache, command);
         }
+      }
+    });
+  }
+
+  /**
+   * Second step of a lookup: asks the node the key routes to. If that node has no authentic object, or the message
+   * failed, all replicas are tried, just in case; this may fail too, but at least we tried.
+   */
+  private void lookupViaMessage(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
+    sendRequest(id, new LookupMessage(getUID(), id, getLocalNodeHandle(), id), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, command) {
+      @Override
+      public void receiveResult(final PastContent o) {
+        if (o != null && isAuthentic(id, o)) {
+          cacheAndReply(o, cache, command);
+        } else {
+          lookupViaReplicas(id, cache, command);
+        }
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        receiveResult(null);
+      }
+    });
+  }
+
+  /**
+   * Last step of a lookup: the first replica that has a handle is fetched, and the lookup answers null if there is
+   * none, which means the object doesn't exist anywhere.
+   */
+  private void lookupViaReplicas(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
+    lookupHandles(id, replicationFactor + 1, new StandardContinuation<PastContentHandle[], PastContent, Exception>(command) {
+      @Override
+      public void receiveResult(PastContentHandle[] handles) {
+        for (PastContentHandle handle : handles) {
+          if (handle != null) {
+            fetch(handle, new StandardContinuation<PastContent, PastContent, Exception>(command) {
+              @Override
+              public void receiveResult(final PastContent o) {
+                cacheAndReply(o, cache, command);
+              }
+            });
+
+            return;
+          }
+        }
+
+        // there were no replicas of the object
+        command.receiveResult(null);
+      }
+    });
+  }
+
+  /** Tries to cache a looked-up object locally for future use, and answers with it whether or not caching worked. */
+  private void cacheAndReply(final PastContent o, final boolean cache, final Continuation<? super PastContent, Exception> command) {
+    if (!cache) {
+      command.receiveResult(o);
+      return;
+    }
+
+    cache(o, new SimpleContinuation() {
+      @Override
+      public void receiveResult(Object object) {
+        command.receiveResult(o);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        logger.warn("Caching after lookup failed, continuing", e);
+        command.receiveResult(o);
       }
     });
   }
@@ -1106,42 +1102,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
       logger.info("Received message {} with destination {}", message, id);
 
       switch (msg) {
-        case InsertMessage imsg -> {
-
-          if (!isAuthentic(null, imsg.getContent())) {
-            getResponseContinuation(msg).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
-          } else if (policy.allowInsert(imsg.getContent())) {
-            inserts++;
-            final Id msgid = imsg.getContent().getId();
-
-            lockManager.lock(msgid, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
-
-              @Override
-              public void receiveResult(Object result) {
-                storage.getObject(msgid, new StandardContinuation<Object, Object, Exception>(parent) {
-                  @Override
-                  public void receiveResult(Object o) {
-                    try {
-                      // allow the object to check the insert, and then insert the data
-                      PastContent content = imsg.getContent().checkInsert(msgid, (PastContent) o);
-                      storage.store(msgid, null, content, new StandardContinuation<Boolean, Object, Exception>(parent) {
-                        @Override
-                        public void receiveResult(Boolean result) {
-                          getResponseContinuation(msg).receiveResult(result);
-                          lockManager.unlock(msgid);
-                        }
-                      });
-                    } catch (PastException e) {
-                      parent.receiveException(e);
-                    }
-                  }
-                });
-              }
-            });
-          } else {
-            getResponseContinuation(msg).receiveResult(Boolean.valueOf(false));
-          }
-        }
+        case InsertMessage imsg -> deliverInsert(imsg);
         case LookupMessage lmsg -> {
           // if the data is here, we send the reply; the requester caches it (see lookup())
           storage.getObject(lmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
@@ -1186,6 +1147,59 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           logger.error("ERROR - Received message {}of unknown type.", msg);
       }
     }
+  }
+
+  /**
+   * Handles an insert at the destination node: the payload must be authentic and the policy must allow the insert,
+   * before {@link #storeInsert(InsertMessage)} stores it.
+   */
+  protected void deliverInsert(InsertMessage imsg) {
+    if (!isAuthentic(null, imsg.getContent())) {
+      getResponseContinuation(imsg).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
+    } else if (policy.allowInsert(imsg.getContent())) {
+      storeInsert(imsg);
+    } else {
+      getResponseContinuation(imsg).receiveResult(Boolean.valueOf(false));
+    }
+  }
+
+  /** Stores an authentic, allowed insert under the lock of its id. Subclasses override this for another store step. */
+  protected void storeInsert(final InsertMessage imsg) {
+    inserts++;
+    final Id msgid = imsg.getContent().getId();
+
+    lockManager.lock(msgid, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(imsg)) {
+      @Override
+      public void receiveResult(Object result) {
+        checkAndStore(imsg, content -> null, new StandardContinuation<Boolean, Object, Exception>(parent) {
+          @Override
+          public void receiveResult(Boolean result) {
+            getResponseContinuation(imsg).receiveResult(result);
+            lockManager.unlock(msgid);
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Lets the inserted object check the insert against what is stored, and then stores what it returns, with the
+   * metadata that the function derives from it; a refusal by the object goes to the continuation as an exception.
+   */
+  protected void checkAndStore(final InsertMessage imsg, final Function<PastContent, Object> metadata, Continuation<? super Boolean, Exception> command) {
+    final Id id = imsg.getContent().getId();
+
+    storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+      @Override
+      public void receiveResult(Object o) {
+        try {
+          PastContent content = imsg.getContent().checkInsert(id, (PastContent) o);
+          storage.store(id, metadata.apply(content), content, parent);
+        } catch (PastException e) {
+          parent.receiveException(e);
+        }
+      }
+    });
   }
 
   /**

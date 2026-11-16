@@ -63,7 +63,6 @@ import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.past.ObjectNotFoundException;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.PastException;
 import rice.p2p.past.PastImpl;
 import rice.p2p.past.PastPolicy;
 import rice.p2p.past.RefreshFailedException;
@@ -71,6 +70,7 @@ import rice.p2p.past.messaging.GCCollectMessage;
 import rice.p2p.past.messaging.GCInsertMessage;
 import rice.p2p.past.messaging.GCLookupHandlesMessage;
 import rice.p2p.past.messaging.GCRefreshMessage;
+import rice.p2p.past.messaging.InsertMessage;
 import rice.p2p.past.messaging.PastMessageType;
 import rice.p2p.past.messaging.FetchHandleMessage;
 import rice.p2p.past.messaging.PastMessage;
@@ -389,6 +389,17 @@ public class GCPastImpl extends PastImpl implements GCPast {
     }
   }
 
+  /** Stores an authentic, allowed insert, without the lock of PastImpl, with the expiration of the insert as metadata. */
+  @Override
+  protected void storeInsert(InsertMessage imsg) {
+    Id theId = imsg.getContent().getId();
+    if (theId == null) {
+      logger.error("Error: null Id from {} from {} in {}", imsg.getContent(), imsg, this);
+    }
+    long expiration = ((GCInsertMessage) imsg).getExpiration();
+    checkAndStore(imsg, content -> ((GCPastContent) content).getMetadata(expiration), getResponseContinuation(imsg));
+  }
+
   /**
    * This method is called on the application at the destination node
    * for the given id.
@@ -406,29 +417,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
       switch (msg) {
         case GCInsertMessage imsg -> {
           inserts++;
-
-          if (!isAuthentic(null, imsg.getContent())) {
-            getResponseContinuation(msg).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
-          } else if (policy.allowInsert(imsg.getContent())) {
-            Id theId = imsg.getContent().getId();
-            if (theId == null) {
-              logger.error("Error: null Id from {} from {} in {}", imsg.getContent(), imsg, this);
-            }
-            storage.getObject(theId, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
-              @Override
-              public void receiveResult(Object o) {
-                try {
-                  // allow the object to check the insert, and then insert the data
-                  GCPastContent content = (GCPastContent) imsg.getContent().checkInsert(imsg.getContent().getId(), (PastContent) o);
-                  storage.store(content.getId(), content.getMetadata(imsg.getExpiration()), content, parent);
-                } catch (PastException e) {
-                  parent.receiveException(e);
-                }
-              }
-            });
-          } else {
-            getResponseContinuation(msg).receiveResult(Boolean.valueOf(false));
-          }
+          deliverInsert(imsg);
         }
         case GCRefreshMessage rmsg -> {
           final Iterator<GCId> i = Arrays.asList(rmsg.getKeys()).iterator();
@@ -462,12 +451,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
                       receiveResult(true);
                     }
                   } else {
-                    storage.getObject(id.id(), new StandardContinuation<Object, Object, Exception>(this) {
-                      @Override
-                      public void receiveResult(Object o) {
-                        storage.setMetadata(id.id(), ((GCPastContent) o).getMetadata(id.expiration()), parent);
-                      }
-                    });
+                    setMissingMetadata(id.id(), id.expiration(), this);
                   }
                 } else {
                   /* but first check and see if it's in the trash, so we can uncollect it */
@@ -606,13 +590,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
       GCPastMetadata metadata = (GCPastMetadata) storage.getMetadata(gcid.id());
 
       if (metadata == null) {
-        storage.getObject(gcid.id(), new StandardContinuation<Object, Boolean, Exception>(command) {
-          @Override
-          public void receiveResult(Object o) {
-            GCPastContent content = (GCPastContent) o;
-            storage.setMetadata(content.getId(), content.getMetadata(gcid.expiration()), parent);
-          }
-        });
+        setMissingMetadata(gcid.id(), gcid.expiration(), command);
       } else if (metadata.expiration() < gcid.expiration()) {
         storage.setMetadata(gcid.id(), metadata.setExpiration(gcid.expiration()), command);
       } else {
@@ -688,6 +666,16 @@ public class GCPastImpl extends PastImpl implements GCPast {
     } else {
       super.existsInOverlay(id, command);
     }
+  }
+
+  /** Gives an object that was stored without metadata the metadata of the given expiration. */
+  private void setMissingMetadata(Id id, long expiration, Continuation<? super Boolean, Exception> command) {
+    storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+      @Override
+      public void receiveResult(Object o) {
+        storage.setMetadata(id, ((GCPastContent) o).getMetadata(expiration), parent);
+      }
+    });
   }
 
   @Override
