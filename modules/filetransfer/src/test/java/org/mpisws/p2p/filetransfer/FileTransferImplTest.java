@@ -163,4 +163,30 @@ class FileTransferImplTest {
 
     assertFalse(processor.blockingIO.isEmpty());
   }
+
+  @Test
+  void aFullQueueDropsTheLowestPriorityNewestMessage() {
+    FileTransferImpl transfer = new FileTransferImpl(new IdleSocket(), null, null, env, new RecordingProcessor(), CHUNK_SIZE, CHUNKS_TO_WRITE);
+    List<Integer> failed = new ArrayList<Integer>();
+    int cap = transfer.MAX_QUEUE_SIZE;
+
+    // nothing is written on an idle socket, so every message stays queued
+    for (int i = 0; i <= cap + 1; i++) {
+      final int index = i;
+      byte priority = (byte) (i == cap + 1 ? 0 : 1);
+      transfer.sendMsg(ByteBuffer.allocate(1), priority, new Continuation<BBReceipt, Exception>() {
+        @Override
+        public void receiveResult(BBReceipt result) {
+        }
+
+        @Override
+        public void receiveException(Exception exception) {
+          failed.add(index);
+        }
+      });
+    }
+
+    // the one over the cap goes first, then the newest of the lower priority makes room for the higher one
+    assertEquals(List.of(cap, cap - 1), failed);
+  }
 }
