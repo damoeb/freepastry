@@ -14,7 +14,7 @@ import org.mpisws.p2p.transport.peerreview.IdentifierExtractor;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
+import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.environment.Environment;
@@ -74,7 +74,7 @@ public class VerifierImplSendTest {
     logEnv = new Environment();
     env = VerifierFactoryImpl.generateEnvironment("test", 0, 0, null);
     hashProv = new SHA256HashProvider();
-    history = new SecureHistoryFactoryImpl(hashProv, logEnv).create(new File(dir, "log").getPath(), 0, hashProv.getEmptyHash());
+    history = new SecureHistoryFactory(hashProv, logEnv).create(new File(dir, "log").getPath(), 0, hashProv.getEmptyHash());
     IdentifierExtractor<Node, Node> extractor = h -> h;
     peerreview = (PeerReview<Node, Node>) Proxy.newProxyInstance(getClass().getClassLoader(),
         new Class<?>[] {PeerReview.class}, (proxy, method, args) -> switch (method.getName()) {

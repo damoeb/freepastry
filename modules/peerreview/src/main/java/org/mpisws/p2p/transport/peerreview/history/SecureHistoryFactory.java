@@ -37,8 +37,26 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.history;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-public interface SecureHistoryFactory {
+import org.slf4j.Logger;
+import rice.environment.Environment;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
+import rice.p2p.util.RandomAccessFileIOBuffer;
+
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
+
+public class SecureHistoryFactory implements IndexEntryFactory {
+  Environment environment;
+
+  HashProvider hashProv;
+
+  public SecureHistoryFactory(HashProvider hashProv, Environment env) {
+    this.hashProv = hashProv;
+    this.environment = env;
+  }
 
   /**
    * Creates a new history (aka log). Histories are stored as two files: The 'index' file has a
@@ -47,7 +65,117 @@ public interface SecureHistoryFactory {
    * bytes for each entry. Note that the caller must specify the node hash and the sequence
    * number of the first log entry, which forms the base of the hash chain.
    */
-  SecureHistory create(String name, long baseSeq, byte[] baseHash) throws IOException;
-  SecureHistory createTemp(long baseSeq, byte[] baseHash) throws IOException;
-  SecureHistory open(String name, String mode) throws IOException;
+  public SecureHistory create(String name, long baseSeq, byte[] baseHash) throws IOException {
+    RandomAccessFileIOBuffer indexFile, dataFile;
+
+    if (name == null) {
+      name = "peerReview."+environment.getTimeSource().currentTimeMillis()+"."+environment.getRandomSource().nextInt();
+    }
+    String indexName = name+".index";
+    String dataName = name+".data";
+
+    Path f = Path.of(indexName);
+    if (Files.exists(f)) {
+      throw new RuntimeException("File "+f+" already exists.");
+    }
+    f = Path.of(dataName);
+    if (Files.exists(f)) {
+      throw new RuntimeException("File "+f+" already exists.");
+    }
+
+    indexFile = new RandomAccessFileIOBuffer(indexName, "rw"); // may be rw
+
+    try {
+      dataFile = new RandomAccessFileIOBuffer(dataName, "rw"); // may be rw
+    } catch (IOException ioe) {
+      indexFile.close();
+      throw ioe;
+    }
+
+    IndexEntry entry = new IndexEntry(baseSeq, 0L,EVT_INIT,-1, hashProv.getEmptyHash(), baseHash);
+
+    entry.serialize(indexFile);
+
+    SecureHistory history = makeSecureHistory(indexFile, dataFile, false, hashProv, this, environment.getLogManager().getLogger(SecureHistory.class, name));
+
+    return history;
+  }
+
+  protected SecureHistory makeSecureHistory(RandomAccessFileIOBuffer indexFile, RandomAccessFileIOBuffer dataFile, boolean readOnly, HashProvider hashProv, IndexEntryFactory indexFactory, Logger logger) throws IOException {
+    return new SecureHistory(indexFile, dataFile, readOnly, hashProv, indexFactory, logger);
+  }
+
+  /**
+   *  Opens an existing history (aka log). The 'mode' can either be 'r' (read-only) or
+   *  'w' (read/write).
+   */
+
+  public SecureHistory open(String name, String mode) throws IOException {
+    boolean readOnly = false;
+
+    if (mode.equals("r")) {
+      readOnly = true;
+    } else if (!mode.equals("w")) {
+      return null;
+    }
+
+    String fileMode;
+    if (readOnly) {
+      fileMode = "r";
+    } else {
+      fileMode = "rw"; // may be "rw"
+    }
+
+    Path f = Path.of(name+".index");
+    if (!Files.exists(f)) {
+      return null;
+    }
+
+    Path f2 = Path.of(name+".data");
+    if (!Files.exists(f2)) {
+      return null;
+    }
+
+
+    RandomAccessFileIOBuffer indexFile = new RandomAccessFileIOBuffer(name+".index",fileMode);
+
+    RandomAccessFileIOBuffer dataFile;
+    try {
+      dataFile = new RandomAccessFileIOBuffer(name+".data",fileMode);
+    } catch (IOException ioe) {
+      indexFile.close();
+      throw ioe;
+    }
+
+    return makeSecureHistory(indexFile, dataFile, readOnly, hashProv, this, environment.getLogManager().getLogger(SecureHistory.class, name));
+  }
+
+  @Override
+  public IndexEntry build(InputBuffer buf) throws IOException {
+    long seq = buf.readLong();
+    long fileIndex = buf.readLong();
+    int sizeInFile = buf.readInt();
+    short type = buf.readShort();
+    byte[] contentHash = WireLengths.readBytes(buf, hashProv.getHashSizeBytes());
+    byte[] nodeHash = WireLengths.readBytes(buf, hashProv.getHashSizeBytes());
+    return new IndexEntry(seq, fileIndex, type, sizeInFile, contentHash, nodeHash);
+  }
+
+  @Override
+  public int getSerializedSize() {
+    return 8+8+4+2+hashProv.getHashSizeBytes()*2;
+  }
+
+  public SecureHistory createTemp(long baseSeq, byte[] baseHash)
+      throws IOException {
+    // temporary histories go to the temp directory, not the working directory, and are deleted when the JVM exits
+    String name = Path.of(System.getProperty("java.io.tmpdir"),
+        "peerReview."+environment.getTimeSource().currentTimeMillis()+"."+environment.getRandomSource().nextInt()).toString();
+    SecureHistory result = create(name, baseSeq, baseHash);
+    // NIO has no deleteOnExit, so this stays on java.io.File
+    Path.of(name+".index").toFile().deleteOnExit();
+    Path.of(name+".data").toFile().deleteOnExit();
+    return result;
+  }
+
 }

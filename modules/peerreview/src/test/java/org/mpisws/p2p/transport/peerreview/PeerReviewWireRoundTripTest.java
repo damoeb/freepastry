@@ -28,7 +28,7 @@ import org.mpisws.p2p.transport.peerreview.evidence.ProofInconsistent;
 import org.mpisws.p2p.transport.peerreview.evidence.ProofNonconformant;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
+import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.logentry.EvtAck;
 import org.mpisws.p2p.transport.peerreview.history.logentry.EvtInit;
@@ -502,7 +502,7 @@ class PeerReviewWireRoundTripTest {
 
   @Test
   void indexEntry() throws IOException {
-    SecureHistoryFactoryImpl factory = new SecureHistoryFactoryImpl(HASHER, null);
+    SecureHistoryFactory factory = new SecureHistoryFactory(HASHER, null);
     for (int size : new int[] {-1, 0, 1, Integer.MAX_VALUE}) {
       IndexEntry e = new IndexEntry(Long.MAX_VALUE, 1234567890123L, (short) -2, size, fill(HASH, 1), fill(HASH, 2));
 

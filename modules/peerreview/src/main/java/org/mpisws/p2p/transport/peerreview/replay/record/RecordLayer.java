@@ -50,7 +50,7 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
+import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.stub.NullHashProvider;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -113,7 +113,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     this.identifierSerializer = serializer;
 
     NullHashProvider nhp = new NullHashProvider();
-    SecureHistoryFactoryImpl shf = new SecureHistoryFactoryImpl(nhp, env);
+    SecureHistoryFactory shf = new SecureHistoryFactory(nhp, env);
 
     this.tl = tl;
     this.tl.setCallback(this);

@@ -79,7 +79,7 @@ import org.mpisws.p2p.transport.peerreview.StatusConstants;
 import org.mpisws.p2p.transport.peerreview.WitnessListener;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
+import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransportLayerImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.IdStrTranslator;
@@ -631,7 +631,7 @@ public class PRRegressionTest {
     Tuple<X509Certificate, KeyPair> ca = CATool.generateNewCA("CommitmentTest", Instant.now().plus(Duration.ofDays(1)));
     caTool = new CATool(ca.a(), ca.b());
     hasher = new SHA256HashProvider();
-    historyFactory = new SecureHistoryFactoryImpl(hasher,env);
+    historyFactory = new SecureHistoryFactory(hasher,env);
   }
 
   public void buildPlayers(Environment env) throws Exception {

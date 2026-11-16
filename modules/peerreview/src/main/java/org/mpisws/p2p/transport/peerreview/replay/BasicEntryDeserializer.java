@@ -41,7 +41,7 @@ import java.io.IOException;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
+import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.reader.EntryDeserializer;
 import org.mpisws.p2p.transport.peerreview.history.reader.LogReader;
 import org.mpisws.p2p.transport.peerreview.history.stub.NullHashProvider;
@@ -114,7 +114,7 @@ public class BasicEntryDeserializer implements EntryDeserializer {
     HashProvider hashProv = new NullHashProvider();
 
     int ctr = 0;
-    LogReader reader = new LogReader(name, new SecureHistoryFactoryImpl(hashProv, env), deserializer);
+    LogReader reader = new LogReader(name, new SecureHistoryFactory(hashProv, env), deserializer);
     while ((line = reader.readEntry()) != null) {
       System.out.println("#"+ctr+" "+line);
       ctr++;

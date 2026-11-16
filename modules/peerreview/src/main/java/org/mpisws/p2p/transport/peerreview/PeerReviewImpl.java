@@ -72,7 +72,7 @@ import org.mpisws.p2p.transport.peerreview.evidence.ProofInconsistent;
 import org.mpisws.p2p.transport.peerreview.history.HashSeq;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
+import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceSerializer;
@@ -212,7 +212,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
 
   protected SecureHistoryFactory getSecureHistoryFactory(IdentityTransport<Handle, Identifier> transport, Environment env) {
-    return new SecureHistoryFactoryImpl(transport, env);
+    return new SecureHistoryFactory(transport, env);
   }
 
 

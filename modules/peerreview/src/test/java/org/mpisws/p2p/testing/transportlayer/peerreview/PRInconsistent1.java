@@ -47,7 +47,7 @@ import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
-import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactoryImpl;
+import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.slf4j.Logger;
@@ -84,7 +84,7 @@ public class PRInconsistent1 extends PRRegressionTest {
 
         @Override
         protected SecureHistoryFactory getSecureHistoryFactory(IdentityTransport<HandleImpl, IdImpl> transport, final Environment env) {
-          return new SecureHistoryFactoryImpl(transport, env) {
+          return new SecureHistoryFactory(transport, env) {
 
             @Override
             protected SecureHistory makeSecureHistory(RandomAccessFileIOBuffer indexFile, RandomAccessFileIOBuffer dataFile, boolean readOnly, HashProvider hashProv, IndexEntryFactory indexFactory, Logger logger) throws IOException {
