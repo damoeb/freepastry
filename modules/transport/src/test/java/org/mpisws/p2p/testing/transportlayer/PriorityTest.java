@@ -53,7 +53,7 @@ import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
-import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl;
+import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.priority.QueueOverflowException;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
@@ -95,7 +95,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
     ProximityProvider<MultiInetSocketAddress> prox = new MinRTTProximityProvider<MultiInetSocketAddress>(ltli, env_a);
 
 
-    return new PriorityTransportLayerImpl<MultiInetSocketAddress>(ltli, ltli, prox,
+    return new PriorityTransportLayer<MultiInetSocketAddress>(ltli, ltli, prox,
            env_a, 1024, 30, null);
   }
 

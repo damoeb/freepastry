@@ -64,7 +64,7 @@ import org.mpisws.p2p.transport.TransportLayerListener;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl;
+import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import rice.environment.Environment;
@@ -76,7 +76,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * A TCP message (or a passthrough socket) that reaches a PriorityTransportLayerImpl before the layer above set
+ * A TCP message (or a passthrough socket) that reaches a PriorityTransportLayer before the layer above set
  * its callback must be dropped, instead of throwing a NullPointerException on the selector thread (which by default
  * destroys the whole Environment).
  */
@@ -86,7 +86,7 @@ public class PriorityMissingCallbackTest {
 
   Environment env;
   final List<Throwable> selectorExceptions = Collections.synchronizedList(new ArrayList<Throwable>());
-  PriorityTransportLayerImpl<MultiInetSocketAddress> alice, bob;
+  PriorityTransportLayer<MultiInetSocketAddress> alice, bob;
   MultiInetSocketAddress bobAddr;
 
   @BeforeEach
@@ -115,12 +115,12 @@ public class PriorityMissingCallbackTest {
     env.getSelectorManager().join(WAIT_MILLIS);
   }
 
-  private PriorityTransportLayerImpl<MultiInetSocketAddress> buildTL(InetSocketAddress addr) throws IOException {
+  private PriorityTransportLayer<MultiInetSocketAddress> buildTL(InetSocketAddress addr) throws IOException {
     LivenessTransportLayer<MultiInetSocketAddress> ltli = new LivenessTransportLayer<MultiInetSocketAddress>(
         new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr),
           new WireTransportLayerImpl(addr, env, null), env, null, null),
         env, null, 5000);
-    return new PriorityTransportLayerImpl<MultiInetSocketAddress>(ltli, ltli,
+    return new PriorityTransportLayer<MultiInetSocketAddress>(ltli, ltli,
         new MinRTTProximityProvider<MultiInetSocketAddress>(ltli, env), env, 1024, 30, null);
   }
 

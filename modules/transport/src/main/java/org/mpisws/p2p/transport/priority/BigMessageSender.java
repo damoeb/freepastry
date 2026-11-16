@@ -84,7 +84,7 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
     this.logger = logger;
     this.pendingBigMessages = pendingBigMessages;
     this.i = i;
-    header = ByteBuffer.wrap(PriorityTransportLayerImpl.BIG_MSG_SOCKET);
+    header = ByteBuffer.wrap(PriorityTransportLayer.BIG_MSG_SOCKET);
   }
 
   public void start(@Nullable Map<String,Object> options) {

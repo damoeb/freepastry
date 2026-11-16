@@ -195,12 +195,12 @@ Some layers also provide side interfaces: `LivenessProvider` (alive, suspected, 
 | 7 | lower identity (`getLowerIdentityLayer`) | `identity.IdentityImpl` (lower half) | same | Prefixes the destination's identity and rejects traffic meant for a previous incarnation of the address. |
 | 8 | liveness (`getLivenessTransportLayer`) | `liveness.LivenessTransportLayer` | same | Pings, RTT estimation, liveness events. |
 | 9 | source route manager (`getSourceRouteManagerLayer`) | `sourceroute.manager.SourceRouteManager` | `MultiInetSocketAddress` | Uses the direct route while it is alive, otherwise tries relay routes from a `SourceRouteStrategy`. Provides liveness and proximity per address. |
-| 10 | priority (`getPriorityTransportLayer`) | `priority.PriorityTransportLayerImpl` | same | See below. |
+| 10 | priority (`getPriorityTransportLayer`) | `priority.PriorityTransportLayer` | same | See below. |
 | 11 | upper identity (`getUpperIdentityLayer`) | `identity.IdentityImpl` (upper half) | `TransportLayerNodeHandle<MultiInetSocketAddress>` | Cancels pending traffic and reports "dead forever" when the node behind an address changes. |
 | 12 | common API (`getCommonAPITransportLayer`) | `commonapi.CommonAPITransportLayer` | same, message type `RawMessage` | Serializes `RawMessage`s to bytes and back, using `rice.pastry.transport.TLDeserializer`. |
 | — | adapter | `rice.pastry.transport.NodeHandleAdapter` | `NodeHandle` | Combines the top layer with its liveness and proximity providers and hands them to `PastryNode.setSocketElements()`. |
 
-The priority layer (`PriorityTransportLayerImpl`) works like this:
+The priority layer (`PriorityTransportLayer`) works like this:
 
 - Messages that carry the `TRANSPORT_TYPE_DATAGRAM` option go straight down to UDP.
 - All other messages go into a per-destination priority queue over one primary TCP socket. Lower `Message.getPriority()` values are sent first.
@@ -220,7 +220,7 @@ Subclasses swap or insert layers by overriding these protected factory methods:
 flowchart BT
   W["1 WireTransportLayerImpl (TCP+UDP, InetSocketAddress)"] --> M["2 MagicNumberTransportLayer"] --> LS["3 LimitSocketsTransportLayer"] --> NI["4 NetworkInfoTransportLayer"]
   NI --> MA["5 MultiInetAddressTransportLayer (MultiInetSocketAddress)"] --> SR["6 SourceRouteTransportLayerImpl (SourceRoute)"] --> LI["7 lower identity"] --> LV["8 LivenessTransportLayer"]
-  LV --> SRM["9 SourceRouteManager (MultiInetSocketAddress)"] --> PR["10 PriorityTransportLayerImpl"] --> UI["11 upper identity (TransportLayerNodeHandle)"] --> CA["12 CommonAPITransportLayer (RawMessage)"]
+  LV --> SRM["9 SourceRouteManager (MultiInetSocketAddress)"] --> PR["10 PriorityTransportLayer"] --> UI["11 upper identity (TransportLayerNodeHandle)"] --> CA["12 CommonAPITransportLayer (RawMessage)"]
   CA --> NHA["NodeHandleAdapter"] --> PN["PastryNode"]
 ```
 
@@ -395,7 +395,7 @@ The implementations:
 - A host that is a member of several rings joins its `MultiringNode`s into a `MultiringNodeCollection`.
 - Each `MultiringNode` runs its own Scribe instance ("Multiring"). A node that also belongs to another ring subscribes to the topic `RingId.build(ringId, otherRingId)`. Messages for another ring are anycast, as a `RingMessage`, to that topic, so a member of both rings carries them across.
 
-**Where the code of the big classes lives.** `GlacierImpl`, `ScribeImpl`, `AggregationImpl`, `PersistentStorage` and `PriorityTransportLayerImpl` are facades: each keeps its public API and delegates to package-private collaborators in its own package. Examples are `GlacierInserter`, `GlacierRetriever` and `GlacierSyncProtocol`; `SubscriptionManager`, `Publisher`, `AnycastHandler` and `TreeRepair`; `AggregateFlusher`, `AggregateConsolidator` and `ObjectRetriever`; `ObjectFiles`, `StorageRecovery` and `MetadataIndex`; and `EntityManager` with `PrimarySocketOpener`. Look there for the logic behind a public method.
+**Where the code of the big classes lives.** `GlacierImpl`, `ScribeImpl`, `AggregationImpl`, `PersistentStorage` and `PriorityTransportLayer` are facades: each keeps its public API and delegates to package-private collaborators in its own package. Examples are `GlacierInserter`, `GlacierRetriever` and `GlacierSyncProtocol`; `SubscriptionManager`, `Publisher`, `AnycastHandler` and `TreeRepair`; `AggregateFlusher`, `AggregateConsolidator` and `ObjectRetriever`; `ObjectFiles`, `StorageRecovery` and `MetadataIndex`; and `EntityManager` with `PrimarySocketOpener`. Look there for the logic behind a public method.
 
 ## Where to go next
 

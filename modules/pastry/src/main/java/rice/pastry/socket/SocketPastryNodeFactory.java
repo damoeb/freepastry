@@ -78,7 +78,7 @@ import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.priority.PriorityConfig;
 import org.mpisws.p2p.transport.sourceroute.factory.SourceRouteConfig;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
-import org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl;
+import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
@@ -650,7 +650,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected PriorityTransportLayer<MultiInetSocketAddress> getPriorityTransportLayer(TransportLayer<MultiInetSocketAddress, ByteBuffer> trans, LivenessProvider<MultiInetSocketAddress> liveness, ProximityProvider<MultiInetSocketAddress> prox, PastryNode pn) {
     Environment environment = pn.getEnvironment();
     PriorityTransportLayer<MultiInetSocketAddress> priorityTL =
-      new PriorityTransportLayerImpl<MultiInetSocketAddress>(
+      new PriorityTransportLayer<MultiInetSocketAddress>(
           trans,
           liveness,
           prox,

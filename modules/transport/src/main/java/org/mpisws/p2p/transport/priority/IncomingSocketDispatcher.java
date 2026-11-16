@@ -93,14 +93,14 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
 
   private void dispatch(byte val) throws IOException {
     switch(val) {
-    case PriorityTransportLayerImpl.PASSTHROUGH_SOCKET_B:
+    case PriorityTransportLayer.PASSTHROUGH_SOCKET_B:
       ctx.callback.get().incomingSocket(s);
       break;
-    case PriorityTransportLayerImpl.PRIMARY_SOCKET_B:
+    case PriorityTransportLayer.PRIMARY_SOCKET_B:
       ctx.logger.debug("Opened Primary Socket from {}", s.getIdentifier());
       ctx.entityManagers.apply(s.getIdentifier()).primarySocketAvailable(s, null);
       break;
-    case PriorityTransportLayerImpl.BIG_MSG_SOCKET_B:
+    case PriorityTransportLayer.BIG_MSG_SOCKET_B:
       ctx.logger.debug("Opened BIG Message Socket from {}", s.getIdentifier());
       ctx.entityManagers.apply(s.getIdentifier()).handleBigMsgSocket(s);
       break;

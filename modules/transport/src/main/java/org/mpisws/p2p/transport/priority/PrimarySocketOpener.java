@@ -47,7 +47,7 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
 /**
  * Opens our side of the primary socket to a node: once the layer below delivers the socket, writes the
- * {@link PriorityTransportLayerImpl#PRIMARY_SOCKET} header and hands the socket to the node's
+ * {@link PriorityTransportLayer#PRIMARY_SOCKET} header and hands the socket to the node's
  * {@link EntityManager}. Failures go to the EntityManager too, which then retries or gives up.
  */
 final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier> {
@@ -88,7 +88,7 @@ final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier
    * Writes the primary socket header, then hands the socket over.
    */
   private final class HeaderWriter implements P2PSocketReceiver<Identifier> {
-    ByteBuffer writeMe = ByteBuffer.wrap(PriorityTransportLayerImpl.PRIMARY_SOCKET);
+    ByteBuffer writeMe = ByteBuffer.wrap(PriorityTransportLayer.PRIMARY_SOCKET);
 
     @Override
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {

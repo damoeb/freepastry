@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * {@link org.mpisws.p2p.transport.priority.PriorityTransportLayerImpl} multiplexes messages to a node
+ * {@link org.mpisws.p2p.transport.priority.PriorityTransportLayer} multiplexes messages to a node
  * over one primary TCP socket, queued by priority (lower value first); when the queue is full the
  * lowest-priority message is dropped. Messages above the size limit get a socket of their own, and
  * messages with the datagram transport option go straight to UDP. Pending messages fail when the

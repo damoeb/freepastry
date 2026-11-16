@@ -41,7 +41,7 @@ import static rice.environment.params.ConfigChecks.positive;
 import rice.environment.params.Parameters;
 
 /**
- * The tuning parameters of a {@link PriorityTransportLayerImpl}.
+ * The tuning parameters of a {@link PriorityTransportLayer}.
  *
  * @param maxMsgSize {@code pastry_socket_writer_max_msg_size}: the largest message, in bytes, that is
  *        queued on the primary socket; larger ones are sent on their own socket, up to the big message

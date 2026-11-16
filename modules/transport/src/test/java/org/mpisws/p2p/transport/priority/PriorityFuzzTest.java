@@ -50,8 +50,8 @@ class PriorityFuzzTest {
   @FuzzTest(maxDuration = "30s")
   void incomingSocketDispatcher(FuzzedDataProvider data) {
     byte[] bytes = data.consumeRemainingAsBytes();
-    if (bytes.length > 0 && (bytes[0] == PriorityTransportLayerImpl.PRIMARY_SOCKET_B
-        || bytes[0] == PriorityTransportLayerImpl.BIG_MSG_SOCKET_B)) {
+    if (bytes.length > 0 && (bytes[0] == PriorityTransportLayer.PRIMARY_SOCKET_B
+        || bytes[0] == PriorityTransportLayer.BIG_MSG_SOCKET_B)) {
       // these hand the socket to an EntityManager, which needs the selector thread; the readers are fuzzed on their own
       return;
     }

@@ -47,7 +47,7 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 
 /**
  * Opens a socket for the layer above: once the layer below delivers it, writes the
- * {@link PriorityTransportLayerImpl#PASSTHROUGH_SOCKET} header and hands the socket up.
+ * {@link PriorityTransportLayer#PASSTHROUGH_SOCKET} header and hands the socket up.
  */
 final class PassthroughSocketOpener<Identifier> implements SocketCallback<Identifier> {
 
@@ -85,7 +85,7 @@ final class PassthroughSocketOpener<Identifier> implements SocketCallback<Identi
    * Writes the passthrough header, then hands the socket up.
    */
   private final class HeaderWriter implements P2PSocketReceiver<Identifier> {
-    private final ByteBuffer header = ByteBuffer.wrap(PriorityTransportLayerImpl.PASSTHROUGH_SOCKET);
+    private final ByteBuffer header = ByteBuffer.wrap(PriorityTransportLayer.PASSTHROUGH_SOCKET);
 
     @Override
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {

@@ -43,7 +43,7 @@ class IncomingSocketDispatcherTest {
 
   @Test
   void aPassthroughHeaderIsHandedToTheLayerAbove() throws Exception {
-    FakeSocket socket = new FakeSocket(PriorityTransportLayerImpl.PASSTHROUGH_SOCKET_B);
+    FakeSocket socket = new FakeSocket(PriorityTransportLayer.PASSTHROUGH_SOCKET_B);
 
     dispatcher(socket).receiveSelectResult(socket, true, false);
 

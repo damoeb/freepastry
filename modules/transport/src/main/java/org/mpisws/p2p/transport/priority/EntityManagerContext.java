@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 import rice.selector.SelectorManager;
 
 /**
- * What an {@link EntityManager} needs from its {@link PriorityTransportLayerImpl}: the layer below, the
+ * What an {@link EntityManager} needs from its {@link PriorityTransportLayer}: the layer below, the
  * liveness and proximity providers, the size limits, and the layer's mutable settings (callback, error
  * handler, destroyed flag), which are read through suppliers because they may change after the manager
  * was built.

@@ -44,7 +44,7 @@ import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.TransportLayerListener;
 
 /**
- * The statistics listeners of a {@link PriorityTransportLayerImpl}: they hear of every message read,
+ * The statistics listeners of a {@link PriorityTransportLayer}: they hear of every message read,
  * written, enqueued and dropped. Listeners are notified on a copy of the list, so they may unregister
  * from within a callback.
  */

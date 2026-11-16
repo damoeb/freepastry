@@ -71,7 +71,7 @@ class BigMessageWireRoundTripTest {
       public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
         ByteBuffer header = ByteBuffer.allocate(1);
         s.read(header);
-        assertEquals(PriorityTransportLayerImpl.BIG_MSG_SOCKET_B, header.get(0));
+        assertEquals(PriorityTransportLayer.BIG_MSG_SOCKET_B, header.get(0));
         s.register(true, false, new BigMessageReader<>(ctx));
       }
     });
