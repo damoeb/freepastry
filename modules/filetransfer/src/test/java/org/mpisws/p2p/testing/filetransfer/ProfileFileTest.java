@@ -64,7 +64,7 @@ import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 import org.mpisws.p2p.transport.simpleidentity.SimpleIdentityTransportLayer;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
@@ -105,7 +105,7 @@ public class ProfileFileTest {
 
     // this node will receive a file
     InetSocketAddress addr1 = new InetSocketAddress(local, 9001);
-    WireTransportLayer wtl1 = new WireTransportLayerImpl(addr1,env,errorHandler);
+    WireTransportLayer wtl1 = new WireTransportLayer(addr1,env,errorHandler);
     SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> idtl1 = new SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer>(wtl1,new InetSocketAddressSerializer(), null ,env,errorHandler);
     LivenessTransportLayer<InetSocketAddress> ltl1 = new LivenessTransportLayer<InetSocketAddress>(idtl1,env,errorHandler,300000);
     ltl1.addLivenessListener((i, val, options) -> logger.info("Node1: livenessChanged({},{},{})", i, val, options));
@@ -209,7 +209,7 @@ public class ProfileFileTest {
 
     // this node will send a file
     InetSocketAddress addr2 = new InetSocketAddress(local, 9002);
-    WireTransportLayer wtl2 = new WireTransportLayerImpl(addr2,env,errorHandler);
+    WireTransportLayer wtl2 = new WireTransportLayer(addr2,env,errorHandler);
     SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> idtl2 = new SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer>(wtl2,new InetSocketAddressSerializer(), null ,env,errorHandler);
     LivenessTransportLayer<InetSocketAddress> ltl2 = new LivenessTransportLayer<InetSocketAddress>(idtl2,env,errorHandler,300000);
 

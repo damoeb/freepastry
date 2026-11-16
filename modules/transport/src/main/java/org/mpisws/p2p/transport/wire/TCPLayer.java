@@ -57,14 +57,14 @@ public class TCPLayer extends SelectionKeyHandler {
   public final int SOCKET_BUFFER_SIZE;
   private final boolean TCP_NO_DELAY;
 
-  WireTransportLayerImpl wire;
+  WireTransportLayer wire;
 
   // the key to accept from
   private @Nullable SelectionKey key;
 
   Logger logger;
 
-  public TCPLayer(WireTransportLayerImpl wire, boolean enableServer) throws IOException {
+  public TCPLayer(WireTransportLayer wire, boolean enableServer) throws IOException {
     this.wire = wire;
     this.logger = wire.getEnvironment().getLogManager().getLogger(TCPLayer.class, null);
 

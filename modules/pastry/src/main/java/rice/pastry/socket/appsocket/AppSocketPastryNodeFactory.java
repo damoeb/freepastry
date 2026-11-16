@@ -62,7 +62,7 @@ import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.wire.SocketManager;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Cancellable;
@@ -107,13 +107,13 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
     TransportLayer<InetSocketAddress, ByteBuffer>,
     TransportLayerCallback<InetSocketAddress, ByteBuffer> {
 
-    private final WireTransportLayerImpl wtl;
+    private final WireTransportLayer wtl;
     /**
      * Indexed by the option "STORE_SOCKET"
      */
     private TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
 
-    public AppSocketFactoryLayer(WireTransportLayerImpl wtl) {
+    public AppSocketFactoryLayer(WireTransportLayer wtl) {
       this.wtl = wtl;
       this.wtl.setCallback(this);
     }
@@ -206,7 +206,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
     }
 
     public TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(
-        WireTransportLayerImpl wtl) {
+        WireTransportLayer wtl) {
       return new AppSocketFactoryLayer(wtl);
     }
 
@@ -369,12 +369,12 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
 
   /**
-   * This code tells the WireTransportLayerImpl not to create a server-socket if we are using the BogusTLPastryNode
+   * This code tells the WireTransportLayer not to create a server-socket if we are using the BogusTLPastryNode
    */
   @Override
   protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {
     Environment environment = pn.getEnvironment();
-    WireTransportLayerImpl wtl = new WireTransportLayerImpl(innermostAddress,environment, null, !(pn instanceof BogusTLPastryNode));
+    WireTransportLayer wtl = new WireTransportLayer(innermostAddress,environment, null, !(pn instanceof BogusTLPastryNode));
 
     if (pn instanceof BogusTLPastryNode bogusTlPastryNode) {
       return bogusTlPastryNode.getWireTransportLayer(wtl);

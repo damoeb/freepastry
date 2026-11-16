@@ -186,7 +186,7 @@ Some layers also provide side interfaces: `LivenessProvider` (alive, suspected, 
 
 | # | Layer (factory method) | Class | Identifier | What it adds |
 |---|---|---|---|---|
-| 1 | wire (`getWireTransportLayer`) | `wire.WireTransportLayerImpl` | `InetSocketAddress` | Binds TCP and UDP. `sendMessage` sends a UDP datagram, `openSocket` opens a TCP connection. |
+| 1 | wire (`getWireTransportLayer`) | `wire.WireTransportLayer` | `InetSocketAddress` | Binds TCP and UDP. `sendMessage` sends a UDP datagram, `openSocket` opens a TCP connection. |
 | 2 | magic number (`getMagicNumberTransportLayer`) | `wire.magicnumber.MagicNumberTransportLayer` | same | Prefixes `PASTRY_MAGIC_NUMBER` (`0x27 0x40 0x75 0x3A`) and drops traffic without it (5 s header timeout). |
 | 3 | limit sockets (`getLimitSocketsTransportLayer`) | `limitsockets.LimitSocketsTransportLayer` | same | Closes the least recently used socket beyond `pastry_socket_scm_max_open_sockets`. |
 | 4 | network info (`getIpServiceTransportLayer`) | `networkinfo.NetworkInfoTransportLayer` | same | Answers "what is my external IP?" and "what is your id?" for bootstrapping and NAT probing. |
@@ -218,7 +218,7 @@ Subclasses swap or insert layers by overriding these protected factory methods:
 
 ```mermaid
 flowchart BT
-  W["1 WireTransportLayerImpl (TCP+UDP, InetSocketAddress)"] --> M["2 MagicNumberTransportLayer"] --> LS["3 LimitSocketsTransportLayer"] --> NI["4 NetworkInfoTransportLayer"]
+  W["1 WireTransportLayer (TCP+UDP, InetSocketAddress)"] --> M["2 MagicNumberTransportLayer"] --> LS["3 LimitSocketsTransportLayer"] --> NI["4 NetworkInfoTransportLayer"]
   NI --> MA["5 MultiInetAddressTransportLayer (MultiInetSocketAddress)"] --> SR["6 SourceRouteTransportLayer (SourceRoute)"] --> LI["7 lower identity"] --> LV["8 LivenessTransportLayer"]
   LV --> SRM["9 SourceRouteManager (MultiInetSocketAddress)"] --> PR["10 PriorityTransportLayer"] --> UI["11 upper identity (TransportLayerNodeHandle)"] --> CA["12 CommonAPITransportLayer (RawMessage)"]
   CA --> NHA["NodeHandleAdapter"] --> PN["PastryNode"]

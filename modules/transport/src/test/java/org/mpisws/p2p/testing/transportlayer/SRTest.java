@@ -56,7 +56,7 @@ import org.mpisws.p2p.transport.sourceroute.SourceRouteTap;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 import rice.environment.Environment;
 import rice.environment.logging.Slf4jLogManager;
@@ -126,7 +126,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
       new SourceRouteTransportLayer<MultiInetSocketAddress>(srFactory,
         new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
           new MagicNumberTransportLayer<InetSocketAddress>(
-            new WireTransportLayerImpl(addr_a,env_a, null),
+            new WireTransportLayer(addr_a,env_a, null),
           env_a, null,GOOD_HDR, 2000),
         env_a, null, null),
       null, env_a, null);

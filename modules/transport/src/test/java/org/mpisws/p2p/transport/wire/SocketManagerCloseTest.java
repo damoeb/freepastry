@@ -31,7 +31,7 @@ import rice.selector.SelectionKeyHandler;
 
 /**
  * A socket is closed by one thread while another uses it: the selector thread closes it on a failed handshake or a
- * read error, and WireTransportLayerImpl.destroy() closes all sockets on the caller's thread, also those whose key
+ * read error, and WireTransportLayer.destroy() closes all sockets on the caller's thread, also those whose key
  * the selector thread is handling at that very moment.
  */
 class SocketManagerCloseTest {
@@ -51,7 +51,7 @@ class SocketManagerCloseTest {
   void concurrentClosesOfOneSocketDoNotFail() throws Exception {
     InetAddress localhost = InetAddress.getLoopbackAddress();
     InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(address, env, null);
+    WireTransportLayer wire = new WireTransportLayer(address, env, null);
     TCPLayer tcp = tcpOf(wire);
     List<Throwable> failures = new CopyOnWriteArrayList<Throwable>();
 
@@ -85,7 +85,7 @@ class SocketManagerCloseTest {
   void closeWhileConnectingLeavesSelectorAlive() throws Exception {
     List<Throwable> reported = recordReportedExceptions();
     InetAddress localhost = InetAddress.getLoopbackAddress();
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, null);
+    WireTransportLayer wire = new WireTransportLayer(new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, null);
     TCPLayer tcp = tcpOf(wire);
     CompletableFuture<Exception> connectFailure = new CompletableFuture<Exception>();
     CompletableFuture<Void> handled = new CompletableFuture<Void>();
@@ -135,7 +135,7 @@ class SocketManagerCloseTest {
     List<Throwable> reported = recordReportedExceptions();
     InetAddress localhost = InetAddress.getLoopbackAddress();
     InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(address, env, null);
+    WireTransportLayer wire = new WireTransportLayer(address, env, null);
     SocketManager socket = openSocket(tcpOf(wire), address);
     CompletableFuture<Void> handled = new CompletableFuture<Void>();
 
@@ -212,8 +212,8 @@ class SocketManagerCloseTest {
     return (SelectionKey) field.get(socket);
   }
 
-  private static TCPLayer tcpOf(WireTransportLayerImpl wire) throws ReflectiveOperationException {
-    Field field = WireTransportLayerImpl.class.getDeclaredField("tcp");
+  private static TCPLayer tcpOf(WireTransportLayer wire) throws ReflectiveOperationException {
+    Field field = WireTransportLayer.class.getDeclaredField("tcp");
     field.setAccessible(true);
     return (TCPLayer) field.get(wire);
   }

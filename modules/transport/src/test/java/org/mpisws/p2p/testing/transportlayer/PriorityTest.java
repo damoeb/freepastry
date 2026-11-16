@@ -58,7 +58,7 @@ import org.mpisws.p2p.transport.priority.QueueOverflowException;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import rice.environment.Environment;
 import rice.environment.logging.Slf4jLogManager;
 
@@ -88,7 +88,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
 
     LivenessTransportLayer<MultiInetSocketAddress> ltli = new LivenessTransportLayer<MultiInetSocketAddress>(
         new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
-          new WireTransportLayerImpl(addr_a,env_a, null),
+          new WireTransportLayer(addr_a,env_a, null),
         env_a, null, null),
       env_a, null, 5000);
 

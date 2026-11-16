@@ -72,9 +72,9 @@ class WireBadInputTest {
   @DisplayName("an accept that finds no pending connection leaves the selector alive")
   void acceptWithoutPendingConnection() throws Exception {
     InetAddress localhost = InetAddress.getLoopbackAddress();
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(
+    WireTransportLayer wire = new WireTransportLayer(
         new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, errorHandler);
-    TCPLayer tcp = (TCPLayer) field(WireTransportLayerImpl.class, "tcp").get(wire);
+    TCPLayer tcp = (TCPLayer) field(WireTransportLayer.class, "tcp").get(wire);
     SelectionKey serverKey = (SelectionKey) field(TCPLayer.class, "key").get(tcp);
 
     // the client reset its connection between select() and accept(): accept() finds nothing and returns null
@@ -91,7 +91,7 @@ class WireBadInputTest {
   void datagramWhoseReaderThrows() throws Exception {
     InetAddress localhost = InetAddress.getLoopbackAddress();
     InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(address, env, errorHandler);
+    WireTransportLayer wire = new WireTransportLayer(address, env, errorHandler);
     CompletableFuture<byte[]> good = new CompletableFuture<>();
     wire.setCallback(new TransportLayerCallback<>() {
       @Override
@@ -130,9 +130,9 @@ class WireBadInputTest {
   @DisplayName("a socket whose reader throws is closed, and the selector stays alive")
   void socketWhoseReaderThrows() throws Exception {
     InetAddress localhost = InetAddress.getLoopbackAddress();
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(
+    WireTransportLayer wire = new WireTransportLayer(
         new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, errorHandler);
-    TCPLayer tcp = (TCPLayer) field(WireTransportLayerImpl.class, "tcp").get(wire);
+    TCPLayer tcp = (TCPLayer) field(WireTransportLayer.class, "tcp").get(wire);
     CompletableFuture<Exception> toldReader = new CompletableFuture<>();
 
     try (ServerSocket server = new ServerSocket(0, 1, localhost)) {

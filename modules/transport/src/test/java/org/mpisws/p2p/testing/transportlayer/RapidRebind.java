@@ -42,7 +42,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import rice.environment.Environment;
 
 public class RapidRebind {
@@ -50,11 +50,11 @@ public class RapidRebind {
   public static void main(String[] args) throws IOException {
     Environment env = new Environment();
     InetSocketAddress isa = new InetSocketAddress(InetAddress.getLocalHost(),9001);
-    WireTransportLayer wtl = new WireTransportLayerImpl(isa,env,null);
+    WireTransportLayer wtl = new WireTransportLayer(isa,env,null);
 
     boolean bindException = false;
     try {
-      new WireTransportLayerImpl(isa,env,null); // the port is still bound, so this must fail
+      new WireTransportLayer(isa,env,null); // the port is still bound, so this must fail
     } catch (BindException be) {
       bindException = true;
     }
@@ -65,7 +65,7 @@ public class RapidRebind {
 
     wtl.destroy();
 
-    new WireTransportLayerImpl(isa,env,null); // the port is free again
+    new WireTransportLayer(isa,env,null); // the port is free again
 
     System.out.println("Test Succeded.");
 

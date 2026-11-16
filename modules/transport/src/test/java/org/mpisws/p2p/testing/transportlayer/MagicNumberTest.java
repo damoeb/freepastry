@@ -57,7 +57,7 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.exception.StalledSocketException;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 import rice.environment.Environment;
@@ -93,16 +93,16 @@ public class MagicNumberTest extends WireTest {
     InetAddress addr = InetAddress.getLocalHost();
     int[] ports = FreePorts.freePorts(addr, 4);
     alice = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayerImpl(new InetSocketAddress(addr,ports[0]),env, null)
+        new WireTransportLayer(new InetSocketAddress(addr,ports[0]),env, null)
         ,env, null,GOOD_HDR, 2000);
     bob = new MagicNumberTransportLayer<InetSocketAddress>(
-      new WireTransportLayerImpl(new InetSocketAddress(addr,ports[1]),env, null)
+      new WireTransportLayer(new InetSocketAddress(addr,ports[1]),env, null)
       ,env, null, GOOD_HDR, 2000);
     carol = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayerImpl(new InetSocketAddress(addr,ports[2]),env, null)
+        new WireTransportLayer(new InetSocketAddress(addr,ports[2]),env, null)
         ,env, null,BAD_HDR, 2000);
     dave = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayerImpl(new InetSocketAddress(addr,ports[3]),env, null)
+        new WireTransportLayer(new InetSocketAddress(addr,ports[3]),env, null)
         ,env, null,NO_HDR, 2000);
     otherTLs.add(carol);
     otherTLs.add(dave);

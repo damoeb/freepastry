@@ -69,7 +69,7 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.identity.BindStrategy;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -168,7 +168,7 @@ public class SSLTest {
 
   SSLTransportLayer<InetSocketAddress, ByteBuffer> layer(String name, int port, KeyStore keys, KeyStore trust, int clientAuth, Predicate<String> subjectValidator) throws IOException {
     Environment env = rootEnv.cloneEnvironment(name);
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(new InetSocketAddress(addr, port), env, null);
+    WireTransportLayer wire = new WireTransportLayer(new InetSocketAddress(addr, port), env, null);
     SSLTransportLayer<InetSocketAddress, ByteBuffer> ret = new SSLTransportLayer<InetSocketAddress, ByteBuffer>(wire, keys, trust, clientAuth, subjectValidator, env);
     layers.add(ret);
     environments.put(ret, env);

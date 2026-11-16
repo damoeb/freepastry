@@ -45,7 +45,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import rice.environment.Environment;
 import rice.environment.logging.Slf4jLogManager;
 
@@ -73,7 +73,7 @@ public class WireTest extends TLTest<InetSocketAddress> {
         env.getExceptionStrategy());
     env.addDestructable(env_a);
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
-    return new WireTransportLayerImpl(addr_a,env_a, null);
+    return new WireTransportLayer(addr_a,env_a, null);
   }
 
   @Test

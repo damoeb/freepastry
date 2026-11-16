@@ -26,7 +26,7 @@ class UDPLayerEnvelopeCancelTest {
   void cancelTakesThePendingMessagesLock() throws Exception {
     InetAddress localhost = InetAddress.getLoopbackAddress();
     InetSocketAddress bind = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(bind, env, null, false, false);
+    WireTransportLayer wire = new WireTransportLayer(bind, env, null, false, false);
     UDPLayerImpl udp = new UDPLayerImpl(wire);
     try {
       InetSocketAddress destination = new InetSocketAddress(localhost, FreePorts.freePort(localhost));

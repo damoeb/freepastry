@@ -84,13 +84,13 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   final List<Envelope> pendingMsgs;
 
-  WireTransportLayerImpl wire;
+  WireTransportLayer wire;
 
   @SuppressWarnings("NullAway.Init") // set by openServerSocket(), called from the constructor
   ByteBuffer readBuffer;
 
   @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
-  public UDPLayerImpl(WireTransportLayerImpl wire) throws IOException {
+  public UDPLayerImpl(WireTransportLayer wire) throws IOException {
     this.wire = wire;
 
     this.logger = wire.getEnvironment().getLogManager().getLogger(UDPLayer.class, null);

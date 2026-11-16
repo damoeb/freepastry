@@ -47,7 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Finds ports for tests that bind a WireTransportLayerImpl. That layer binds UDP (without SO_REUSEADDR) and TCP to the
+ * Finds ports for tests that bind a WireTransportLayer. That layer binds UDP (without SO_REUSEADDR) and TCP to the
  * same port and uses it as its identifier, so it cannot bind port 0; and a port that {@code new ServerSocket(0)}
  * reports free for TCP may still be taken for UDP.
  */

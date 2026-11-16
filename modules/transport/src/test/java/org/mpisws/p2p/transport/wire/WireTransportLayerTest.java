@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-class WireTransportLayerImplTest {
+class WireTransportLayerTest {
 
   private static final long TIMEOUT_SECONDS = 10;
 
@@ -32,7 +32,7 @@ class WireTransportLayerImplTest {
   @Test
   void acceptSocketsWithoutTcpServerDoesNothing() throws Exception {
     InetAddress localhost = InetAddress.getLoopbackAddress();
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, null, false);
+    WireTransportLayer wire = new WireTransportLayer(new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, null, false);
     CompletableFuture<Throwable> thrown = new CompletableFuture<Throwable>();
 
     // on the selector thread, acceptSockets() runs at once, so a failure surfaces here
@@ -52,7 +52,7 @@ class WireTransportLayerImplTest {
   @Test
   void cancelTakesAnUnsentDatagramOutOfTheQueueOnce() throws Exception {
     InetAddress localhost = InetAddress.getLoopbackAddress();
-    WireTransportLayerImpl wire = new WireTransportLayerImpl(new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, null, false, true);
+    WireTransportLayer wire = new WireTransportLayer(new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, null, false, true);
     InetSocketAddress destination = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
     ByteBuffer message = ByteBuffer.allocate(3);
     Map<String, Object> options = Map.of("k", "v");

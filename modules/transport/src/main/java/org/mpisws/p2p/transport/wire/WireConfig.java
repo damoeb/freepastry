@@ -41,7 +41,7 @@ import static rice.environment.params.ConfigChecks.positive;
 import rice.environment.params.Parameters;
 
 /**
- * The tuning parameters of a {@link WireTransportLayerImpl} and its {@link TCPLayer} and
+ * The tuning parameters of a {@link WireTransportLayer} and its {@link TCPLayer} and
  * {@link UDPLayerImpl}.
  *
  * @param forceBindAddress {@code wire_forceBindAddress}, optional, default false: bind outgoing

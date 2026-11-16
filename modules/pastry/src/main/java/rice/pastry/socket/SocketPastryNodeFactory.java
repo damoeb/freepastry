@@ -92,7 +92,7 @@ import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.SimpleSourceRouteStrategy;
 import org.mpisws.p2p.transport.util.OptionsFactory;
-import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -393,7 +393,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {
     Environment environment = pn.getEnvironment();
-    WireTransportLayerImpl wtl = new WireTransportLayerImpl(innermostAddress,environment, null);
+    WireTransportLayer wtl = new WireTransportLayer(innermostAddress,environment, null);
     return wtl;
   }
 

@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * The bottom layer of the socket stack. {@link org.mpisws.p2p.transport.wire.WireTransportLayerImpl}
+ * The bottom layer of the socket stack. {@link org.mpisws.p2p.transport.wire.WireTransportLayer}
  * binds a TCP server socket and a UDP channel to an {@code InetSocketAddress}: {@code sendMessage()}
  * sends a UDP datagram and {@code openSocket()} a TCP connection. {@link org.mpisws.p2p.transport.wire.TCPLayer}
  * and {@link org.mpisws.p2p.transport.wire.UDPLayerImpl} are {@code SelectionKeyHandler}s, so all IO
