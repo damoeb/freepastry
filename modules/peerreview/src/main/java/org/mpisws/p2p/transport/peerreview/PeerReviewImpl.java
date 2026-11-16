@@ -64,7 +64,7 @@ import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
 import org.mpisws.p2p.transport.peerreview.commitment.CommitmentProtocol;
-import org.mpisws.p2p.transport.peerreview.commitment.CommitmentProtocolImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.CommitmentProtocol;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceSerializerImpl;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceTransferProtocol;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceTransferProtocolImpl;
@@ -587,7 +587,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
     /* Remaining protocols */
     this.evidenceTransferProtocol = new EvidenceTransferProtocolImpl<Handle, Identifier>(this,transport,infoStore);
-    this.commitmentProtocol = new CommitmentProtocolImpl<Handle, Identifier>(this,transport,infoStore,authOutStore,history, timeToleranceMillis);
+    this.commitmentProtocol = new CommitmentProtocol<Handle, Identifier>(this,transport,infoStore,authOutStore,history, timeToleranceMillis);
     this.authPushProtocol = new AuthenticatorPushProtocol<Handle, Identifier>(this, authInStore, authOutStore, authPendingStore, transport, infoStore, evidenceTransferProtocol, env);
     this.auditProtocol = new AuditProtocol<Handle, Identifier>(this, history, infoStore, authInStore, transport, authOutStore, evidenceTransferProtocol, authCacheStore);
     this.challengeProtocol = new ChallengeResponseProtocol<Handle, Identifier>(this, transport, infoStore, history, authOutStore, auditProtocol, commitmentProtocol);
