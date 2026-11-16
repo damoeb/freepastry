@@ -100,7 +100,7 @@ An exception thrown by a task or invocation goes to `environment.getExceptionStr
 
 - There is no general guarantee that the rest of the API is thread-safe. Most getters (`getLeafSet()`, `getRoutingTable()`, `Endpoint.replicaSet()`, `localLookup()`) read selector-owned state without locking.
 - `TLBootstrapper.boot()` is commonly called from `main` (as in `rice.tutorial.lesson3.DistTutorial`), and its code comment says it "can be called on any thread". It does not move itself onto the selector thread, though: it relies on the layers it calls (`checkLiveness`, `schedule`, `invoke`).
-- If you need a consistent view of node state from another thread, run the code on the selector with `invoke()` or `Continuation.ExternalContinuationRunnable`.
+- If you need a consistent view of node state from another thread, run the code on the selector with `SelectorManager.invoke()`, and use a `FutureContinuation` to wait for an asynchronous result.
 
 One more caveat: `PastryNode.send()` to the **local** handle calls `receiveMessage()` synchronously on the caller's thread. Only sends to remote nodes are moved onto the selector thread. `receiveMessage()` is `synchronized` on the node.
 
@@ -290,9 +290,8 @@ Every operation that can take time is asynchronous and reports through `rice.Con
 - `ListenerContinuation` logs and ignores. Its Javadoc says it is for testing only.
 - `NamedContinuation` wraps another continuation with a name, for logging.
 - `MultiContinuation` collects N results: `getSubContinuation(i)` returns one continuation per sub-operation, and `isDone()` and `getResult()` can be overridden. It is used for fan-out to replicas.
-- `ExternalContinuationRunnable` and `ExternalRunnable` run code on the selector thread and block the calling thread until it completes (`invoke(env)`).
 
-`rice.Executable<R, E>` is the task type for the `Processor`. `rice.p2p.commonapi.Cancellable` is returned by most asynchronous calls. `rice.FutureContinuation` is a new bridge between `Continuation` and `CompletableFuture`; as of this writing it is not yet used by the libraries themselves.
+`rice.Executable<R, E>` is the task type for the `Processor`. `rice.p2p.commonapi.Cancellable` is returned by most asynchronous calls. `rice.FutureContinuation` bridges `Continuation` and `CompletableFuture`; use it to wait for an asynchronous result from outside the selector thread.
 
 Continuations are normally called back on the selector thread, but not always asynchronously. Some implementations call the continuation before the request method has returned, for example `MemoryStorage`, `DirectPastryNodeFactory.getLeafSet()`, and transport requests that fail at once.
 
