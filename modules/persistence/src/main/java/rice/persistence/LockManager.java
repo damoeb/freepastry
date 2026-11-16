@@ -36,12 +36,70 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.persistence;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.slf4j.Logger;
 import rice.Continuation;
+import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 
 @SuppressWarnings("unchecked")
-public interface LockManager {
-  public void lock(Id id, Continuation<?, ?> c);
+public class LockManager {
 
-  public void unlock(Id id);
+  // map: Id -> List<Continuation>
+  private HashMap<Id, List<Continuation<?, ?>>> locks;
+
+  // guards locks; private, so that code holding a reference to this object can't contend for it
+  private final Object locksLock = new Object();
+
+  private final Logger logger;
+
+  public LockManager(Environment env) {
+    this.locks = new HashMap<Id, List<Continuation<?, ?>>>();
+    this.logger =  env.getLogManager().getLogger(StorageManagerImpl.class,null);
+  }
+
+
+  public void lock(Id id, Continuation<?, ?> c) {
+    Continuation<?, ?> torun = null;
+    logger.debug("locking on id {} for continuation {}", id, c);
+    synchronized (locksLock) {
+      if (locks.containsKey(id)) {
+        List<Continuation<?, ?>> locklist = locks.get(id);
+        logger.trace("locking on id {}; blocked on {} earlier continuations", id, locklist.size());
+        if (locklist.size() > 10) logger.info("locking on id {}; {} continuations in queue.  That seems large", id, locklist.size());
+        locklist.add(c);
+      } else {
+        locks.put(id, new ArrayList<Continuation<?, ?>>());
+        logger.trace("locking on id {}; no contention so running {}", id, c);
+        torun = c;
+      }
+    }
+    if (torun != null)
+      torun.receiveResult(null);
+  }
+
+  public void unlock(Id id) {
+    Continuation<?, ?> torun = null;
+    logger.debug("unlocking on id {}", id);
+    synchronized (locksLock) {
+      if (locks.containsKey(id)) {
+        if (locks.get(id).isEmpty()) {
+          logger.trace("unlocking on id {}; last out the door -- removing lock ", id);
+          locks.remove(id);
+        } else {
+          Continuation<?, ?> next = locks.get(id).remove(0);
+          logger.trace("unlocking on id {}; starting next continuation {}", id, next);
+          torun = next;
+        }
+      } else {
+        logger.warn("unlocking on id {}; no lock currently held!!", id);
+      }
+    }
+    if (torun != null)
+      torun.receiveResult(null);
+  }
+
 }

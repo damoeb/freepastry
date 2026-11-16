@@ -337,7 +337,7 @@ The implementations:
 - `PersistentStorage` stores data on disk under a root directory, with a size limit. It writes one file per object in a versioned binary format (`ObjectFileFormat`), keeps a metadata index persisted in per-directory `metadata.cache` files (`MetadataIndex`), and recovers after crashes. The values are written by the `StorageSerializer` it is built with: `PastStorageSerializer`, `GlacierStorageSerializer` or `AggregationStorageSerializer`, which use the raw serialization of the wire. Files of the old Java-serialized XML format are not read. It does all disk IO through `Processor.processBlockingIO()` and delivers results on the selector thread. Its Javadoc lists restrictions on key `toString()`s, for example no `.` or `!`.
 - `MemoryStorage` is a hash table, not durable. It calls continuations synchronously.
 - `LRUCache` (backed by a `Storage`) and `EmptyCache`.
-- `LockManager`/`LockManagerImpl` serialize operations per id.
+- `LockManager`/`LockManager` serialize operations per id.
 
 ## Applications
 

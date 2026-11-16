@@ -93,7 +93,7 @@ import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.persistence.Cache;
 import rice.persistence.LockManager;
-import rice.persistence.LockManagerImpl;
+import rice.persistence.LockManager;
 import rice.persistence.StorageManager;
 
 /**
@@ -280,7 +280,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
     this.replicaManager = buildReplicationManager(node, instance);
 
-    this.lockManager = new LockManagerImpl(environment);
+    this.lockManager = new LockManager(environment);
 
     this.endpoint.accept(new AppSocketReceiver() {
 
