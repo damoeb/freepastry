@@ -37,22 +37,16 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.liveness;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
-import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
-import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
@@ -61,7 +55,6 @@ import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
-import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
@@ -84,8 +77,8 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   /** How long an identifier's liveness state is kept after its last use. */
   private static final int MANAGER_HARD_LINK_MILLIS = 300000;
   /** An idle socket's liveness is first checked after this many RTOs, then every IDLE_CHECK_PERIOD_MILLIS. */
-  private static final int IDLE_CHECK_RTO_MULTIPLIER = 4;
-  private static final int IDLE_CHECK_PERIOD_MILLIS = 30000;
+  static final int IDLE_CHECK_RTO_MULTIPLIER = 4;
+  static final int IDLE_CHECK_PERIOD_MILLIS = 30000;
 
   // how long to wait for a ping response to come back before declaring lost
   public final int PING_DELAY;
@@ -97,9 +90,9 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   public final int NUM_PING_TRIES;
 
   // the minimum amount of time between check dead checks on dead routes
-  private final long CHECK_DEAD_THROTTLE;
+  final long CHECK_DEAD_THROTTLE;
 
-  private final int DEFAULT_RTO;
+  final int DEFAULT_RTO;
 
   /**
    * RTO helper see RFC 1122 for a detailed description of RTO calculation
@@ -122,9 +115,9 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
 
 
   private final TransportLayer<Identifier, ByteBuffer> tl;
-  private final Logger logger;
-  private final Environment environment;
-  private final TimeSource time;
+  final Logger logger;
+  final Environment environment;
+  final TimeSource time;
   protected Timer timer;
   private final RandomSource random;
 
@@ -138,12 +131,12 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   /**
    * Holds only pending DeadCheckers
    */
-  final Map<Identifier, EntityManager> managers;
+  final Map<Identifier, LivenessTracker<Identifier>> managers;
 
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
 
-  private ErrorHandler<Identifier> errorHandler;
+  ErrorHandler<Identifier> errorHandler;
 
   public LivenessTransportLayerImpl(TransportLayer<Identifier, ByteBuffer> tl, Environment env, ErrorHandler<Identifier> errorHandler, int checkDeadThrottle) {
     this(tl, env, errorHandler, LivenessConfig.fromParameters(env.getParameters()).withCheckDeadThrottle(checkDeadThrottle));
@@ -158,7 +151,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     random = env.getRandomSource();
     this.livenessListeners = new CopyOnWriteArrayList<LivenessListener<Identifier>>();
     this.pingListeners = new CopyOnWriteArrayList<PingListener<Identifier>>();
-      this.managers = new TimerWeakHashMap<Identifier, EntityManager>(env.getSelectorManager(), MANAGER_HARD_LINK_MILLIS);
+      this.managers = new TimerWeakHashMap<Identifier, LivenessTracker<Identifier>>(env.getSelectorManager(), MANAGER_HARD_LINK_MILLIS);
     PING_DELAY = config.pingDelay();
     PING_JITTER = config.pingJitter();
     NUM_PING_TRIES = config.numPingTries();
@@ -187,28 +180,28 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     return getManager(i).checkLiveness(options);
   }
 
-  public P2PSocket<Identifier> getLSocket(P2PSocket<Identifier> s, EntityManager manager) {
-    LSocket sock = new LSocket(manager, s, manager.identifier.get());
+  public P2PSocket<Identifier> getLSocket(P2PSocket<Identifier> s, LivenessTracker<Identifier> manager) {
+    LSocket<Identifier> sock = new LSocket<>(this, manager, s, manager.identifier.get());
     synchronized(manager.sockets) {
       manager.sockets.add(sock);
     }
     return sock;
   }
 
-  public EntityManager getManager(Identifier i) {
+  public LivenessTracker<Identifier> getManager(Identifier i) {
     synchronized(managers) {
-      EntityManager manager = managers.get(i);
+      LivenessTracker<Identifier> manager = managers.get(i);
       if (manager == null) {
-        manager = new EntityManager(i);
+        manager = new LivenessTracker<>(this, i);
         managers.put(i,manager);
       }
       return manager;
     }
   }
 
-  public @Nullable EntityManager deleteManager(Identifier i) {
+  public @Nullable LivenessTracker<Identifier> deleteManager(Identifier i) {
     synchronized(managers) {
-      EntityManager manager = managers.remove(i);
+      LivenessTracker<Identifier> manager = managers.remove(i);
       if (manager != null) {
         if (manager.getPending() != null) manager.getPending().cancel();
       }
@@ -282,7 +275,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     final MessageRequestHandleImpl<Identifier, ByteBuffer> handle =
       new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
 
-    EntityManager mgr = getManager(i);
+    LivenessTracker<Identifier> mgr = getManager(i);
     if ((mgr != null) && (mgr.liveness >= LIVENESS_DEAD)) {
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(handle, new NodeIsFaultyException(i, m));
       return handle;
@@ -333,7 +326,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
       return;
     case HDR_PONG:
       logger.trace("messageReceived({}, PONG)", i);
-      EntityManager manager = getManager(i);
+      LivenessTracker<Identifier> manager = getManager(i);
       long sendTime = readTimeStamp(i, m);
       int rtt = (int)(time.currentTimeMillis()-sendTime);
       if (rtt >= 0) {
@@ -451,7 +444,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     tl.destroy();
     livenessListeners.clear();
     pingListeners.clear();
-    for (EntityManager em : managers.values()) {
+    for (LivenessTracker<Identifier> em : managers.values()) {
       em.destroy();
     }
     managers.clear();
@@ -459,7 +452,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
 
   @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    EntityManager m = getManager(s.getIdentifier());
+    LivenessTracker<Identifier> m = getManager(s.getIdentifier());
     if (m.liveness > LIVENESS_SUSPECTED) {
       m.updated = 0L;
       m.checkLiveness(s.getOptions());
@@ -480,7 +473,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     return livenessListeners.remove(name);
   }
 
-  private void notifyLivenessListeners(Identifier i, int liveness, @Nullable Map<String, Object> options) {
+  void notifyLivenessListeners(Identifier i, int liveness, @Nullable Map<String, Object> options) {
     if (destroyed) return;
     logger.trace("notifyLivenessListeners({},{})", i, liveness);
     for (LivenessListener<Identifier> listener : livenessListeners) {
@@ -530,7 +523,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     private final int numTries;
 
     // the path to check
-    private final EntityManager manager;
+    private final LivenessTracker<Identifier> manager;
 
     // for debugging
     long startTime; // the start time
@@ -546,7 +539,7 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
      * @param initialDelay the expected round-trip time (the current RTO), for logging
      * @param options the options passed to ping() and to the liveness notifications
      */
-    public DeadChecker(EntityManager manager, int numTries, int initialDelay, @Nullable Map<String, Object> options) {
+    public DeadChecker(LivenessTracker<Identifier> manager, int numTries, int initialDelay, @Nullable Map<String, Object> options) {
       logger.atDebug().log(() -> "DeadChecker@"+System.identityHashCode(this)+" CHECKING DEATH OF PATH " + manager.identifier.get()+" rto:"+initialDelay+" options:"+options);
 
       this.manager = manager;
@@ -622,360 +615,10 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     }
   }
 
-  /**
-   * Internal class which is charged with managing the liveness of a remote
-   * identifier
-   */
-  public class EntityManager {
-
-    /**
-     * Retransmission Time Out
-     */
-    int RTO = DEFAULT_RTO;
-
-    /**
-     * Average RTT
-     */
-    double RTT = 0;
-
-    /**
-     * Standard deviation RTT
-     */
-    double standardD = RTO/4.0;  // RFC1122 recommends choose value to target RTO = 3 seconds
-
-
-    // the remote route of this manager
-    private final WeakReference<Identifier> identifier;
-
-    // the current liveness of this route
-    private int liveness;
-
-    // the last time the liveness information was updated
-    private long updated;
-
-    // whether or not a check dead is currently being carried out on this route
-    private @Nullable DeadChecker pendingDeadchecker;
-
-    private final Set<LSocket> sockets;
-
-    /**
-     * Constructor - builds a manager for the given identifier
-     *
-     * @param identifier the remote entity, held weakly
-     */
-    public EntityManager(Identifier identifier) {
-      if (identifier == null) throw new IllegalArgumentException("identifier is null");
-      this.identifier = new WeakReference<Identifier>(identifier);
-      this.liveness = LIVENESS_SUSPECTED;
-
-      this.pendingDeadchecker = null;
-      this.updated = 0L;
-      sockets = new HashSet<LSocket>();
-    }
-
-    public @Nullable DeadChecker getPending() {
-      return pendingDeadchecker;
-    }
-    public void setPending(@Nullable DeadChecker d) {
-      pendingDeadchecker = d;
-    }
-
-    public void removeSocket(LSocket socket) {
-      synchronized(sockets) {
-        sockets.remove(socket);
-      }
-    }
-
-    public int rto() {
-      return (int)RTO;
-    }
-
-    /**
-     * This method should be called when this route is declared
-     * alive.
-     */
-    protected void markAlive(@Nullable Map<String, Object> options) {
-      boolean notify = false;
-      if (liveness != LIVENESS_ALIVE) notify = true;
-      this.liveness = LIVENESS_ALIVE;
-      if (notify) {
-        Identifier temp = identifier.get();
-        if (temp != null) {
-          notifyLivenessListeners(temp, liveness, options);
-        }
-      }
-    }
-
-    /**
-     * This method should be called when this route is declared
-     * suspected.
-     */
-    protected void markSuspected(@Nullable Map<String, Object> options) {
-      // note, can only go from alive -> suspected, can't go from dead->suspected
-      if (liveness > LIVENESS_SUSPECTED) return;
-
-      boolean notify = false;
-      if (liveness != LIVENESS_SUSPECTED) notify = true;
-      this.liveness = LIVENESS_SUSPECTED;
-      if (notify) {
-        logger.debug("{}.markSuspected() notify = true", this);
-        Identifier temp = identifier.get();
-        if (temp != null) {
-          notifyLivenessListeners(temp, liveness, options);
-        }
-      }
-    }
-
-    /**
-     * This method should be called when this route is declared
-     * dead.
-     */
-    protected void markDead(@Nullable Map<String, Object> options) {
-      boolean notify = false;
-      if (liveness < LIVENESS_DEAD) notify = true;
-      logger.trace("{}.markDead() notify:{}", this, notify);
-      markDeadHelper(LIVENESS_DEAD, options, notify);
-    }
-
-    protected void markDeadForever(@Nullable Map<String, Object> options) {
-      boolean notify = false;
-      if (liveness < LIVENESS_DEAD_FOREVER) notify = true;
-      logger.trace("{}.markDeadForever() notify:{}", this, notify);
-      markDeadHelper(LIVENESS_DEAD_FOREVER, options, notify);
-    }
-
-    protected void markDeadHelper(int liveness, @Nullable Map<String, Object> options, boolean notify) {
-      this.liveness = liveness;
-      if (getPending() != null) {
-        getPending().cancel(); // sets to null too
-      }
-
-      // it's very important to notify before closing the sockets,
-      // otherwise the higher layers may fight you here by trying to open
-      // sockets that this layer is closing
-      if (notify) {
-        Identifier temp = identifier.get();
-        if (temp != null) {
-          notifyLivenessListeners(temp, liveness, options);
-        } else {
-          logger.warn("markDeadHelper({},{},{}) temp == null!  Can't notify listeners!", liveness, options, notify);
-        }
-      }
-
-      ArrayList<LSocket> temp;
-      synchronized(sockets) {
-        // the close() operation can cause a ConcurrentModificationException
-        temp = new ArrayList<LSocket>(sockets);
-        sockets.clear();
-      }
-      for (LSocket sock : temp) {
-        logger.info("closing {}", sock);
-        sock.close();
-      }
-    }
-
-
-    /**
-     * Adds a new round trip time datapoint to our RTT estimate, and
-     * updates RTO and standardD accordingly.
-     *
-     * @param m new RTT
-     */
-    private void updateRTO(long m) {
-      if (m < 0) throw new IllegalArgumentException("rtt must be >= 0, was:"+m);
-
-      // rfc 1122
-      double err = m-RTT;
-      double absErr = err;
-      if (absErr < 0) {
-        absErr *= -1;
-      }
-      RTT = RTT+gainG*err;
-      standardD = standardD + gainH*(absErr-standardD);
-      RTO = (int)(RTT+(4.0*standardD));
-      if (RTO > RTO_UBOUND) {
-        RTO = RTO_UBOUND;
-      }
-      if (RTO < RTO_LBOUND) {
-        RTO = RTO_LBOUND;
-      }
-    }
-
-    /**
-     * Method which checks to see this route is dead.  If this address has
-     * been checked within the past CHECK_DEAD_THROTTLE millis, then
-     * this method does not actually do a check.
-     *
-     * @return true if there will be an update (either a ping, or a change in liveness)
-     */
-    protected boolean checkLiveness(final @Nullable Map<String, Object> options) {
-      logger.trace("{}.checkLiveness()", this);
-
-      boolean ret = false;
-      int rto = DEFAULT_RTO;
-      synchronized (this) {
-        if (this.getPending() != null) {
-          if (this.liveness < LIVENESS_DEAD) {
-            return true;
-          } else {
-            return false; // probably won't change
-          }
-        }
-
-        long now = time.currentTimeMillis();
-        if ((this.liveness < LIVENESS_DEAD) ||
-            (this.updated < now - CHECK_DEAD_THROTTLE)) {
-          this.updated = now;
-          rto = rto();
-          this.setPending(new DeadChecker(this, NUM_PING_TRIES, rto, options));
-          ret = true;
-        } else {
-          logger.atTrace().log(() -> this+".checkLiveness() not checking "+identifier.get()+" checked to recently, can't check for "+((updated+CHECK_DEAD_THROTTLE)-now)+" millis.");
-        }
-      }
-      if (ret) {
-        final int theRTO = rto;
-
-        Runnable r = new Runnable() {
-          @Override
-          public void run() {
-            if (getPending() == null) return;  // could have been set to null in the meantime
-            timer.schedule(getPending(), theRTO);
-            Identifier temp = identifier.get();
-            if (temp != null) {
-              ping(temp, options);
-            }
-          }
-
-          @Override
-          public String toString() {
-            return EntityManager.this.toString();
-          }
-        };
-        if (environment.getSelectorManager().isSelectorThread()) {
-          r.run();
-        } else {
-          environment.getSelectorManager().invoke(r);
-        }
-      }
-
-      if (this.liveness >= LIVENESS_DEAD) return false; // probably won't change
-
-      return ret;
-    }
-
-    @Override
-    public String toString() {
-      Identifier temp = identifier.get();
-      if (temp == null) return "null";
-      return temp.toString();
-    }
-
-    public void destroy() {
-      if (getPending() != null) getPending().cancel();
-    }
-  }
-
-  /**
-   * The purpose of this class is to checkliveness on a stalled socket that we are waiting to write on.
-   *
-   * the livenessCheckerTimer is set every time we want to write, and killed every time we do write
-   *
-   * TODO: think about exactly what we want to use for the delay on the timer, currently using rto*4
-   *
-   * @author Jeff Hoye
-   */
-  class LSocket extends SocketWrapperSocket<Identifier, Identifier> {
-    EntityManager manager;
-
-    /**
-     * This is for memory management, so that we don't collect the identifier in the EntityManager
-     * while we still have open sockets.
-     */
-    Identifier hardRef;
-
-    /**
-     * set every time we want to write, and killed every time we do write
-     */
-    @Nullable TimerTask livenessCheckerTimer;
-
-    boolean closed = false;
-
-    public LSocket(EntityManager manager, P2PSocket<Identifier> socket, @Nullable Identifier hardRef) {
-      super(socket.getIdentifier(), socket, LivenessTransportLayerImpl.this.logger, LivenessTransportLayerImpl.this.errorHandler, socket.getOptions());
-      if (hardRef == null) throw new IllegalArgumentException("hardRef == null "+manager+" "+socket);
-      this.manager = manager;
-      this.hardRef = hardRef;
-    }
-
-    // done with call to close
-
-    @Override
-    public void register(boolean wantToRead, boolean wantToWrite, final P2PSocketReceiver<Identifier> receiver) {
-      if (closed) {
-        receiver.receiveException(this, new ClosedChannelException("Socket "+this+" is already closed."));
-        return;
-      }
-      if (wantToWrite) startLivenessCheckerTimer();
-      super.register(wantToRead, wantToWrite, receiver);
-    }
-
-    @Override
-    public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
-      EntityManager m = getManager(socket.getIdentifier());
-      if (m.liveness > LIVENESS_SUSPECTED) {
-        m.updated = 0L;
-        m.checkLiveness(socket.getOptions());
-      }
-      if (canWrite) {
-        stopLivenessCheckerTimer();
-      }
-      super.receiveSelectResult(socket, canRead, canWrite);
-    }
-
-
-    public void startLivenessCheckerTimer() {
-      // it's already going to check
-      synchronized(LSocket.this) {
-        if (livenessCheckerTimer != null) return;
-        livenessCheckerTimer = new TimerTask(){
-          @Override
-          @SuppressWarnings("ReferenceEquality") // the same instance is meant
-          public void run() {
-            synchronized(LSocket.this) {
-              if (livenessCheckerTimer == this) livenessCheckerTimer = null;
-            }
-            manager.checkLiveness(options);
-          }
-        };
-      } // sync
-      logger.atTrace().log(() -> "Checking liveness on "+manager.identifier.get()+" in "+manager.rto()+" millis if we don't write.");
-      timer.schedule(livenessCheckerTimer, (long) manager.rto()*IDLE_CHECK_RTO_MULTIPLIER, IDLE_CHECK_PERIOD_MILLIS);
-    }
-
-    public void stopLivenessCheckerTimer() {
-      synchronized(LSocket.this) {
-        if (livenessCheckerTimer != null) livenessCheckerTimer.cancel();
-        livenessCheckerTimer = null;
-      }
-    }
-
-    @Override
-    public void close() {
-      closed = true;
-      manager.removeSocket(this);
-      super.close();
-    }
-
-    @Override
-    public String toString() {
-      return "LSocket{"+socket+"}";
-    }
-  }
 
   @Override
   public void setLiveness(Identifier i, int liveness, @Nullable Map<String, Object> options) {
-    EntityManager man = getManager(i);
+    LivenessTracker<Identifier> man = getManager(i);
     switch(liveness) {
     case LIVENESS_ALIVE:
       man.markAlive(options);
