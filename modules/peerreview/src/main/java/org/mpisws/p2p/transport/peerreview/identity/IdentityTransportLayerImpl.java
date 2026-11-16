@@ -52,7 +52,7 @@ import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.table.TableStore;
-import org.mpisws.p2p.transport.table.TableTransprotLayerImpl;
+import org.mpisws.p2p.transport.table.TableTransportLayer;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.Continuation;
@@ -75,7 +75,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_
  *
  */
 public class IdentityTransportLayerImpl<Identifier, I> extends
-     TableTransprotLayerImpl<Identifier, I, X509Certificate>
+     TableTransportLayer<Identifier, I, X509Certificate>
      implements IdentityTransport<Identifier, I> {
 
   /**

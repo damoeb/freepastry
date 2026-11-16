@@ -34,7 +34,7 @@ import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 import org.mpisws.p2p.transport.simpleidentity.SimpleIdentityTransportLayer;
 import org.mpisws.p2p.transport.table.TableStore;
-import org.mpisws.p2p.transport.table.TableTransprotLayerImpl;
+import org.mpisws.p2p.transport.table.TableTransportLayer;
 import org.mpisws.p2p.transport.table.UnknownValueException;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.Continuation;
@@ -460,9 +460,9 @@ class TransportLayersWireRoundTripTest {
     MapStore clientStore = new MapStore();
     MapStore serverStore = new MapStore();
     serverStore.put(Long.MIN_VALUE, payload(size));
-    TableTransprotLayerImpl<InetSocketAddress, Long, byte[]> client = new TableTransprotLayerImpl<>(KEYS, VALUES,
+    TableTransportLayer<InetSocketAddress, Long, byte[]> client = new TableTransportLayer<>(KEYS, VALUES,
         clientStore, net.lower(addr(1, 9001)), env);
-    TableTransprotLayerImpl<InetSocketAddress, Long, byte[]> server = new TableTransprotLayerImpl<>(KEYS, VALUES,
+    TableTransportLayer<InetSocketAddress, Long, byte[]> server = new TableTransportLayer<>(KEYS, VALUES,
         serverStore, net.lower(addr(2, 9002)), env);
     net.lower(addr(1, 9001)).setCallback(client);
     net.lower(addr(2, 9002)).setCallback(server);
@@ -489,9 +489,9 @@ class TransportLayersWireRoundTripTest {
 
   @Test
   void tableAnswersAnUnknownKey() throws IOException {
-    TableTransprotLayerImpl<InetSocketAddress, Long, byte[]> client = new TableTransprotLayerImpl<>(KEYS, VALUES,
+    TableTransportLayer<InetSocketAddress, Long, byte[]> client = new TableTransportLayer<>(KEYS, VALUES,
         new MapStore(), net.lower(addr(1, 9001)), env);
-    TableTransprotLayerImpl<InetSocketAddress, Long, byte[]> server = new TableTransprotLayerImpl<>(KEYS, VALUES,
+    TableTransportLayer<InetSocketAddress, Long, byte[]> server = new TableTransportLayer<>(KEYS, VALUES,
         new MapStore(), net.lower(addr(2, 9002)), env);
     net.lower(addr(1, 9001)).setCallback(client);
     net.lower(addr(2, 9002)).setCallback(server);
@@ -517,9 +517,9 @@ class TransportLayersWireRoundTripTest {
   @Test
   @DisplayName("Table layer: a socket opened through it passes through to the peer's callback")
   void tablePassesSocketsThrough() throws IOException {
-    TableTransprotLayerImpl<InetSocketAddress, Long, byte[]> client = new TableTransprotLayerImpl<>(KEYS, VALUES,
+    TableTransportLayer<InetSocketAddress, Long, byte[]> client = new TableTransportLayer<>(KEYS, VALUES,
         new MapStore(), net.lower(addr(1, 9001)), env);
-    TableTransprotLayerImpl<InetSocketAddress, Long, byte[]> server = new TableTransprotLayerImpl<>(KEYS, VALUES,
+    TableTransportLayer<InetSocketAddress, Long, byte[]> server = new TableTransportLayer<>(KEYS, VALUES,
         new MapStore(), net.lower(addr(2, 9002)), env);
     net.lower(addr(1, 9001)).setCallback(client);
     net.lower(addr(2, 9002)).setCallback(server);
