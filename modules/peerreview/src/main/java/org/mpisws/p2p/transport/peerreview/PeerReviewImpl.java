@@ -53,7 +53,7 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.peerreview.audit.AuditProtocol;
 import org.mpisws.p2p.transport.peerreview.audit.AuditProtocol;
 import org.mpisws.p2p.transport.peerreview.audit.EvidenceTool;
-import org.mpisws.p2p.transport.peerreview.audit.EvidenceToolImpl;
+import org.mpisws.p2p.transport.peerreview.audit.EvidenceTool;
 import org.mpisws.p2p.transport.peerreview.authpush.AuthenticatorPushProtocol;
 import org.mpisws.p2p.transport.peerreview.authpush.AuthenticatorPushProtocol;
 import org.mpisws.p2p.transport.peerreview.challenge.ChallengeResponseProtocol;
@@ -593,7 +593,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     this.challengeProtocol = new ChallengeResponseProtocol<Handle, Identifier>(this, transport, infoStore, history, authOutStore, auditProtocol, commitmentProtocol);
     this.statementProtocol = new StatementProtocolImpl<Handle, Identifier>(this, challengeProtocol, infoStore, transport);
 
-    this.evidenceTool = new EvidenceToolImpl<Handle, Identifier>(this, handleSerializer, idSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
+    this.evidenceTool = new EvidenceTool<Handle, Identifier>(this, handleSerializer, idSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
     this.verifierFactory = new VerifierFactoryImpl<Handle, Identifier>(this);
 
     initialized = true;
