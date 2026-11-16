@@ -60,7 +60,7 @@ import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
-import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl;
+import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
@@ -140,7 +140,7 @@ public class LivenessTest extends SRTest {
     env.addDestructable(env_a);
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
     SourceRouteTransportLayer<MultiInetSocketAddress> srtl =
-        new SourceRouteTransportLayerImpl<MultiInetSocketAddress>(srFactory,
+        new SourceRouteTransportLayer<MultiInetSocketAddress>(srFactory,
           new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
             new MagicNumberTransportLayer<InetSocketAddress>(
               new WireTransportLayerImpl(addr_a,env_a, null),

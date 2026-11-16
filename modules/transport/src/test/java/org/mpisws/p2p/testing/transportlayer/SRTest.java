@@ -54,7 +54,7 @@ import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTap;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
-import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl;
+import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
@@ -123,7 +123,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     env.addDestructable(env_a);
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
     return
-      new SourceRouteTransportLayerImpl<MultiInetSocketAddress>(srFactory,
+      new SourceRouteTransportLayer<MultiInetSocketAddress>(srFactory,
         new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
           new MagicNumberTransportLayer<InetSocketAddress>(
             new WireTransportLayerImpl(addr_a,env_a, null),

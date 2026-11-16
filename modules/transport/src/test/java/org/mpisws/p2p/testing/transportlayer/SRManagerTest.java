@@ -65,7 +65,7 @@ import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
-import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl;
+import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
@@ -183,7 +183,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
 
     // don't allow direct connections from alice <-> bob
     SourceRouteTransportLayer<MultiInetSocketAddress> srtl =
-        new SourceRouteTransportLayerImpl<MultiInetSocketAddress>(
+        new SourceRouteTransportLayer<MultiInetSocketAddress>(
             srFactory,
             myEpochLayer,
             null, env_a, null) {

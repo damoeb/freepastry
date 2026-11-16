@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * Source routing. {@link org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl} sends
+ * Source routing. {@link org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer} sends
  * messages and sockets along an explicit {@link org.mpisws.p2p.transport.sourceroute.SourceRoute} of
  * intermediate nodes, which forward them, so that a node can be reached through a third node when the
  * direct path fails. It does not choose routes; that is the job of the {@code manager} subpackage.

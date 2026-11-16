@@ -109,8 +109,8 @@ class SourceRouteLoopTest {
     for (InetSocketAddress n : nodes) {
       QueueLayer q = new QueueLayer(n);
       layers.add(q);
-      SourceRouteTransportLayerImpl<InetSocketAddress> impl =
-          new SourceRouteTransportLayerImpl<>(factory, q, null, env, null);
+      SourceRouteTransportLayer<InetSocketAddress> impl =
+          new SourceRouteTransportLayer<>(factory, q, null, env, null);
       impl.setCallback(new TransportLayerCallback<>() {
         @Override
         public void messageReceived(SourceRoute<InetSocketAddress> i, ByteBuffer m, @Nullable Map<String, Object> o) {
