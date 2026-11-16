@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.TransportLayer;
@@ -89,7 +90,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   private final NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   private final Collection<NodeHandleFactoryListener<? super NodeHandle>> listeners =
-    new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>();
+    new CopyOnWriteArrayList<NodeHandleFactoryListener<? super NodeHandle>>();
 
   private static final int SIMULATED_MAX_TIME_TO_BE_SCHEDULED = 120000;
 
@@ -194,11 +195,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
        * Notify the listeners that this new handle has come along.
        */
       void notifyListeners(NodeHandle nh) {
-        Collection<NodeHandleFactoryListener<? super NodeHandle>> temp = listeners;
-        synchronized (listeners) {
-          temp = new ArrayList<NodeHandleFactoryListener<? super NodeHandle>>(listeners);
-        }
-        for (NodeHandleFactoryListener<? super NodeHandle> foo:temp) {
+        for (NodeHandleFactoryListener<? super NodeHandle> foo : listeners) {
           foo.nodeHandleFound(nh);
         }
       }
@@ -206,18 +203,14 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       @Override
       public void addNodeHandleFactoryListener(
           NodeHandleFactoryListener<? super NodeHandle> listener) {
-        synchronized(listeners) {
-          listeners.add(listener);
-        }
+        listeners.add(listener);
       }
 
 
       @Override
       public void removeNodeHandleFactoryListener(
           NodeHandleFactoryListener<? super NodeHandle> listener) {
-        synchronized(listeners) {
-          listeners.remove(listener);
-        }
+        listeners.remove(listener);
       }
     };
   }

@@ -37,10 +37,10 @@ advised of the possibility of such damage.
 package rice.pastry.socket;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -54,7 +54,7 @@ import rice.pastry.PastryNode;
 public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHandle>, Serializer<SocketNodeHandle> {
   protected PastryNode pn;
   private final Map<SocketNodeHandle, SocketNodeHandle> handleSet;
-  private final Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> listeners = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>();
+  private final Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> listeners = new CopyOnWriteArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>();
 
   public SocketNodeHandleFactory(PastryNode pn) {
     this.pn = pn;
@@ -97,11 +97,7 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
    * Notify the listeners that this new handle has come along.
    */
   protected void notifyListeners(SocketNodeHandle nh) {
-    Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> temp = listeners;
-    synchronized (listeners) {
-      temp = new ArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>(listeners);
-    }
-    for (NodeHandleFactoryListener<? super SocketNodeHandle> foo:temp) {
+    for (NodeHandleFactoryListener<? super SocketNodeHandle> foo : listeners) {
       foo.nodeHandleFound(nh);
     }
   }
@@ -110,18 +106,14 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   @Override
   public void addNodeHandleFactoryListener(
       NodeHandleFactoryListener<? super SocketNodeHandle> listener) {
-    synchronized(listeners) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
 
   @Override
   public void removeNodeHandleFactoryListener(
       NodeHandleFactoryListener<? super SocketNodeHandle> listener) {
-    synchronized(listeners) {
-      listeners.remove(listener);
-    }
+    listeners.remove(listener);
   }
 
 

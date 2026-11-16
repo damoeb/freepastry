@@ -36,8 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.direct;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.mpisws.p2p.transport.direct.DirectTransportLayer;
 import org.mpisws.p2p.transport.direct.GenericNetworkSimulator;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
@@ -114,47 +113,27 @@ public class NetworkSimulatorImpl<Identifier, MessageType> implements NetworkSim
 
 
   /************** SimulatorListeners handling *******************/
-  final List<GenericSimulatorListener<Identifier, MessageType>> listeners = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>();
+  final CopyOnWriteArrayList<GenericSimulatorListener<Identifier, MessageType>> listeners = new CopyOnWriteArrayList<GenericSimulatorListener<Identifier, MessageType>>();
   @Override
   public boolean addSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl) {
-    synchronized(listeners) {
-      if (listeners.contains(sl)) return false;
-      listeners.add(sl);
-      return true;
-    }
+    return listeners.addIfAbsent(sl);
   }
 
   @Override
   public boolean removeSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl) {
-    synchronized(listeners) {
-      return listeners.remove(sl);
-    }
+    return listeners.remove(sl);
   }
 
   @Override
   public void notifySimulatorListenersSent(MessageType m, Identifier from, Identifier to, int delay) {
-    List<GenericSimulatorListener<Identifier, MessageType>> temp;
-
-    // so we aren't holding a lock while iterating/calling
-    synchronized(listeners) {
-       temp = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>(listeners);
-    }
-
-    for(GenericSimulatorListener<Identifier, MessageType> listener : temp) {
+    for (GenericSimulatorListener<Identifier, MessageType> listener : listeners) {
       listener.messageSent(m, from, to, delay);
     }
   }
 
   @Override
   public void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to) {
-    List<GenericSimulatorListener<Identifier, MessageType>> temp;
-
-    // so we aren't holding a lock while iterating/calling
-    synchronized(listeners) {
-       temp = new ArrayList<GenericSimulatorListener<Identifier, MessageType>>(listeners);
-    }
-
-    for(GenericSimulatorListener<Identifier, MessageType> listener : temp) {
+    for (GenericSimulatorListener<Identifier, MessageType> listener : listeners) {
       listener.messageReceived(m, from, to);
     }
   }

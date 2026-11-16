@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -443,7 +444,7 @@ public class PastryNode implements
   /**
    * Registered listeners.  Notified in reverse order of registration.
    */
-  private final ArrayList<PastryNodeListener> pastryNodeListeners = new ArrayList<PastryNodeListener>();
+  private final CopyOnWriteArrayList<PastryNodeListener> pastryNodeListeners = new CopyOnWriteArrayList<PastryNodeListener>();
 
   /**
    * Register to be notified when the node becomes ready (or not) or fails to join.
@@ -453,9 +454,7 @@ public class PastryNode implements
    */
   public void addPastryNodeListener(PastryNodeListener listener) {
     if (listener == null) throw new NullPointerException();
-    synchronized (pastryNodeListeners) {
-      if (!pastryNodeListeners.contains(listener)) pastryNodeListeners.add(listener);
-    }
+    pastryNodeListeners.addIfAbsent(listener);
   }
 
   /**
@@ -464,19 +463,14 @@ public class PastryNode implements
    * @param listener the listener
    */
   public void removePastryNodeListener(PastryNodeListener listener) {
-    synchronized (pastryNodeListeners) {
-      pastryNodeListeners.remove(listener);
-    }
+    pastryNodeListeners.remove(listener);
   }
 
   /**
    * @param event Boolean (ready) or JoinFailedException
    */
   private void notifyPastryNodeListeners(Object event) {
-    PastryNodeListener[] l;
-    synchronized (pastryNodeListeners) {
-      l = pastryNodeListeners.toArray(new PastryNodeListener[pastryNodeListeners.size()]);
-    }
+    PastryNodeListener[] l = pastryNodeListeners.toArray(new PastryNodeListener[0]);
     for (int i = l.length-1; i >= 0; i--) {
       if (event instanceof Boolean b) {
         l[i].pastryNodeReady(this, b.booleanValue());
@@ -1218,28 +1212,20 @@ public class PastryNode implements
     notifyLivenessListeners((NodeHandle)i, val, options);
   }
 
-  final Collection<LivenessListener<NodeHandle>> livenessListeners = new ArrayList<LivenessListener<NodeHandle>>();
+  final Collection<LivenessListener<NodeHandle>> livenessListeners = new CopyOnWriteArrayList<LivenessListener<NodeHandle>>();
   @Override
   public void addLivenessListener(LivenessListener<NodeHandle> name) {
-    synchronized(livenessListeners) {
-      livenessListeners.add(name);
-    }
+    livenessListeners.add(name);
   }
 
   @Override
   public boolean removeLivenessListener(LivenessListener<NodeHandle> name) {
-    synchronized(livenessListeners) {
-      return livenessListeners.remove(name);
-    }
+    return livenessListeners.remove(name);
   }
 
   protected void notifyLivenessListeners(NodeHandle i, int val, Map<String, Object> options) {
     logger.debug("notifyLivenessListeners({},{})", i, val);
-    ArrayList<LivenessListener<NodeHandle>> temp;
-    synchronized(livenessListeners) {
-      temp = new ArrayList<LivenessListener<NodeHandle>>(livenessListeners);
-    }
-    for (LivenessListener<NodeHandle> ll : temp) {
+    for (LivenessListener<NodeHandle> ll : livenessListeners) {
       ll.livenessChanged(i, val, options);
     }
   }

@@ -39,11 +39,11 @@ advised of the possibility of such damage.
  */
 package rice.pastry.direct;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.mpisws.p2p.transport.direct.Delivery;
 import org.mpisws.p2p.transport.direct.DirectTransportLayer;
@@ -213,28 +213,20 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     return t.record;
   }
 
-  final List<LivenessListener<Identifier>> livenessListeners = new ArrayList<LivenessListener<Identifier>>();
+  final List<LivenessListener<Identifier>> livenessListeners = new CopyOnWriteArrayList<LivenessListener<Identifier>>();
   @Override
   public void addLivenessListener(LivenessListener<Identifier> name) {
-    synchronized(livenessListeners) {
-      livenessListeners.add(name);
-    }
+    livenessListeners.add(name);
   }
 
   @Override
   public boolean removeLivenessListener(LivenessListener<Identifier> name) {
-    synchronized(livenessListeners) {
-      return livenessListeners.remove(name);
-    }
+    return livenessListeners.remove(name);
   }
 
   private void notifyLivenessListeners(Identifier i, int liveness, Map<String, Object> options) {
     logger.atTrace().log(() -> "notifyLivenessListeners("+i+","+liveness+"):"+livenessListeners.get(0));
-    List<LivenessListener<Identifier>> temp;
-    synchronized(livenessListeners) {
-      temp = new ArrayList<LivenessListener<Identifier>>(livenessListeners);
-    }
-    for (LivenessListener<Identifier> listener : temp) {
+    for (LivenessListener<Identifier> listener : livenessListeners) {
       listener.livenessChanged(i, liveness, options);
     }
   }

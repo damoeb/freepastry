@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
 import org.slf4j.Logger;
@@ -298,25 +299,19 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     return true;
   }
 
-  final ArrayList<FileTransferListener> listeners = new ArrayList<FileTransferListener>();
+  final List<FileTransferListener> listeners = new CopyOnWriteArrayList<FileTransferListener>();
   @Override
   public void addListener(FileTransferListener listener) {
-    synchronized(listeners) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
   @Override
   public void removeListener(FileTransferListener listener) {
-    synchronized(listeners) {
-      listeners.remove(listener);
-    }
+    listeners.remove(listener);
   }
 
   public Iterable<FileTransferListener> getListeners() {
-    synchronized(listeners) {
-      return new ArrayList<FileTransferListener>(listeners);
-    }
+    return listeners;
   }
 
   protected void notifyListenersSendMsgProgress(BBReceipt receipt,
