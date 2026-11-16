@@ -27,7 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mpisws.p2p.pki.x509.CAToolImpl;
+import org.mpisws.p2p.pki.x509.CATool;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
@@ -70,7 +70,7 @@ class CertifiedDatagramTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    CAToolImpl ca = ca();
+    CATool ca = ca();
     int port = freePort();
     CertifiedSocketPastryNodeFactory factoryA = new CertifiedSocketPastryNodeFactory(store(ca, ALICE), NO_PASSWORD, port, environment());
     a = factoryA.newNode();

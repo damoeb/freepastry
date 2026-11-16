@@ -45,7 +45,7 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
 
-import org.mpisws.p2p.pki.x509.CAToolImpl;
+import org.mpisws.p2p.pki.x509.CATool;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.pastry.NodeHandle;
@@ -78,8 +78,8 @@ public class DistTutorial {
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 
     // create the keystore
-    // written by "CAToolImpl -store" (PKCS12, blank password)
-    final KeyStore store = KeyStore.getInstance(CAToolImpl.DEFAULT_KEYSTORE_TYPE);
+    // written by "CATool -store" (PKCS12, blank password)
+    final KeyStore store = KeyStore.getInstance(CATool.DEFAULT_KEYSTORE_TYPE);
     try (InputStream fis = Files.newInputStream(keyStoreFile)) {
       store.load(fis, "".toCharArray());
     }

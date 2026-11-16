@@ -52,7 +52,7 @@ public class LoadStore {
     }
 
     // store it
-    KeyStore store = KeyStore.getInstance(org.mpisws.p2p.pki.x509.CAToolImpl.DEFAULT_KEYSTORE_TYPE);
+    KeyStore store = KeyStore.getInstance(org.mpisws.p2p.pki.x509.CATool.DEFAULT_KEYSTORE_TYPE);
     store.load(new FileInputStream("ca-store"), pw);
 
     Enumeration<String> e = store.aliases();

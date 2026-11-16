@@ -52,9 +52,9 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
   private final Set<Id> verifying = new HashSet<>();
 
   /**
-   * @param store a PKCS12 key store as written by {@code CAToolImpl -store}: the node's key and certificate, and the
+   * @param store a PKCS12 key store as written by {@code CATool -store}: the node's key and certificate, and the
    *     CA certificate as the trust anchor; it is both the key store and the trust store of the TLS layer
-   * @param keyPassword the password of the node's key (blank for {@code CAToolImpl -store})
+   * @param keyPassword the password of the node's key (blank for {@code CATool -store})
    * @throws GeneralSecurityException if the certificate is not valid for the CA now, or does not belong to the node's key
    */
   public CertifiedSocketPastryNodeFactory(KeyStore store, char[] keyPassword, int startPort, Environment env) throws IOException, GeneralSecurityException {

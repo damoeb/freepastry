@@ -14,7 +14,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mpisws.p2p.pki.x509.CAToolImpl;
+import org.mpisws.p2p.pki.x509.CATool;
 import rice.environment.Environment;
 import rice.pastry.Id;
 import rice.pastry.standard.CertifiedNodeIdFactory;
@@ -34,7 +34,7 @@ public class CertifiedNodeIdTest {
   static final char[] NO_PASSWORD = "".toCharArray();
 
   Environment env;
-  CAToolImpl ca;
+  CATool ca;
   KeyPair nodeKeys;
   Id id;
 
@@ -42,7 +42,7 @@ public class CertifiedNodeIdTest {
   void setUp() throws Exception {
     env = Environment.directEnvironment(1);
     ca = newCa("MyCA");
-    nodeKeys = CAToolImpl.generateKeyPair();
+    nodeKeys = CATool.generateKeyPair();
     id = new RandomNodeIdFactory(env).generateNodeId();
   }
 
@@ -51,11 +51,11 @@ public class CertifiedNodeIdTest {
     env.destroy();
   }
 
-  static CAToolImpl newCa(String cn) throws Exception {
-    KeyPair pair = CAToolImpl.generateKeyPair();
+  static CATool newCa(String cn) throws Exception {
+    KeyPair pair = CATool.generateKeyPair();
     Instant now = Instant.now();
-    X509Certificate cert = CAToolImpl.generateNewCA(cn, now.minus(Duration.ofMinutes(1)), now.plus(Duration.ofDays(1)), 1, pair, CAToolImpl.DEFAULT_SIGNATURE_ALGORITHM);
-    return new CAToolImpl(cert, pair);
+    X509Certificate cert = CATool.generateNewCA(cn, now.minus(Duration.ofMinutes(1)), now.plus(Duration.ofDays(1)), 1, pair, CATool.DEFAULT_SIGNATURE_ALGORITHM);
+    return new CATool(cert, pair);
   }
 
   CertifiedNodeIdFactory factory(X509Certificate nodeCert, X509Certificate trusted) {
@@ -77,7 +77,7 @@ public class CertifiedNodeIdTest {
   @Test
   void factoryLoadsTheNodeStoreWrittenByTheCaTool() throws Exception {
     X509Certificate cert = ca.signNodeId(id, nodeKeys.getPublic());
-    KeyStore store = KeyStore.getInstance(CAToolImpl.DEFAULT_KEYSTORE_TYPE);
+    KeyStore store = KeyStore.getInstance(CATool.DEFAULT_KEYSTORE_TYPE);
     store.load(null, null);
     store.setKeyEntry(NodeIdCertificate.NODE_KEY_ALIAS, nodeKeys.getPrivate(), NO_PASSWORD, new Certificate[] {cert});
     store.setCertificateEntry(NodeIdCertificate.CA_CERT_ALIAS, ca.getCertificate());
@@ -163,7 +163,7 @@ public class CertifiedNodeIdTest {
   @Test
   void nodeThatDoesNotHoldTheCertificateKeyCannotUseTheId() throws Exception {
     X509Certificate cert = ca.signNodeId(id, nodeKeys.getPublic());
-    KeyPair other = CAToolImpl.generateKeyPair();
+    KeyPair other = CATool.generateKeyPair();
 
     CertifiedNodeIdFactory factory = new CertifiedNodeIdFactory(cert, other.getPrivate(), ca.getCertificate(), env);
 

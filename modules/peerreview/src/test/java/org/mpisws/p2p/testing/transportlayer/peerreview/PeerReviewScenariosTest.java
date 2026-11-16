@@ -6,7 +6,7 @@ import java.security.interfaces.RSAPublicKey;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.mpisws.p2p.pki.x509.CAToolImpl;
+import org.mpisws.p2p.pki.x509.CATool;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransportLayerImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag("integration")
 public class PeerReviewScenariosTest {
 
-  /** Signature size of the 2048-bit RSA keys of {@link CAToolImpl#generateKeyPair()} */
-  private static final int SIGNATURE_SIZE = CAToolImpl.DEFAULT_KEY_SIZE / 8;
+  /** Signature size of the 2048-bit RSA keys of {@link CATool#generateKeyPair()} */
+  private static final int SIGNATURE_SIZE = CATool.DEFAULT_KEY_SIZE / 8;
 
   @Test
   public void correctNodesStayTrusted(@TempDir Path dir) throws Exception {
@@ -52,6 +52,6 @@ public class PeerReviewScenariosTest {
       assertEquals(SIGNATURE_SIZE, tl.getSignatureSizeBytes());
     }
     for (PRRegressionTest.Player player : scenario.playerTable.values())
-      assertEquals(CAToolImpl.DEFAULT_KEY_SIZE, ((RSAPublicKey) player.cert.getPublicKey()).getModulus().bitLength());
+      assertEquals(CATool.DEFAULT_KEY_SIZE, ((RSAPublicKey) player.cert.getPublicKey()).getModulus().bitLength());
   }
 }

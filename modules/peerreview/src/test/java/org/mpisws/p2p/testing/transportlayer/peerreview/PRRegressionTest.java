@@ -60,7 +60,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.mpisws.p2p.pki.x509.CATool;
-import org.mpisws.p2p.pki.x509.CAToolImpl;
+import org.mpisws.p2p.pki.x509.CATool;
 import org.mpisws.p2p.pki.x509.X509Serializer;
 import org.mpisws.p2p.pki.x509.X509SerializerImpl;
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -515,7 +515,7 @@ public class PRRegressionTest {
       playerTable.put(localHandle, this);
 
       // every node must use the same key size: the signature size is derived from the local certificate's key
-      pair = CAToolImpl.generateKeyPair();
+      pair = CATool.generateKeyPair();
       cert = caTool.sign(localHandle.name,pair.getPublic());
 
       t1 = getTL();
@@ -627,9 +627,9 @@ public class PRRegressionTest {
   }
 
   public void buildCryptoMaterial(Environment env) throws Exception {
-    // an in-memory CA, valid for a day (CAToolImpl.getCATool() would keep it in a key store file in the working directory)
-    Tuple<X509Certificate, KeyPair> ca = CAToolImpl.generateNewCA("CommitmentTest", Instant.now().plus(Duration.ofDays(1)));
-    caTool = new CAToolImpl(ca.a(), ca.b());
+    // an in-memory CA, valid for a day (CATool.getCATool() would keep it in a key store file in the working directory)
+    Tuple<X509Certificate, KeyPair> ca = CATool.generateNewCA("CommitmentTest", Instant.now().plus(Duration.ofDays(1)));
+    caTool = new CATool(ca.a(), ca.b());
     hasher = new SHA256HashProvider();
     historyFactory = new SecureHistoryFactoryImpl(hasher,env);
   }

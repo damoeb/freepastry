@@ -64,7 +64,7 @@ import rice.pastry.NodeIdFactory;
  * is returned on every call and every restart. See {@link NodeIdCertificate} for the whole design,
  * including how peers check the id.
  * <p>
- * The key store is the one {@code org.mpisws.p2p.pki.x509.CAToolImpl} writes with {@code -store}: the
+ * The key store is the one {@code org.mpisws.p2p.pki.x509.CATool} writes with {@code -store}: the
  * node's private key and certificate under {@link NodeIdCertificate#NODE_KEY_ALIAS}, the CA certificate
  * under {@link NodeIdCertificate#CA_CERT_ALIAS}.
  *
@@ -113,8 +113,8 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
   }
 
   /**
-   * @param file a PKCS12 key store, as written by {@code CAToolImpl -store}
-   * @param password the store and key password (blank for {@code CAToolImpl -store})
+   * @param file a PKCS12 key store, as written by {@code CATool -store}
+   * @param password the store and key password (blank for {@code CATool -store})
    */
   public static CertifiedNodeIdFactory load(Path file, char[] password, String keyStoreType, Environment env) throws IOException, GeneralSecurityException {
     KeyStore store = KeyStore.getInstance(keyStoreType);

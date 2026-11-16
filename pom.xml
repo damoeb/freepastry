@@ -89,7 +89,7 @@
                 <artifactId>bcprov-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
-            <!-- Bouncy Castle certificate builders, used by the PKI tooling (CAToolImpl) -->
+            <!-- Bouncy Castle certificate builders, used by the PKI tooling (CATool) -->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
