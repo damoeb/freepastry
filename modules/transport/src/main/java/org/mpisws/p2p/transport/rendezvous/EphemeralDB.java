@@ -36,20 +36,85 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.rendezvous;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import rice.environment.Environment;
+import rice.environment.time.TimeSource;
 
 /**
  * Keeps track of tags, ephemeral identifiers, timestamps, highIdentifiers
  *
  * @author Jeff Hoye
  */
-public interface EphemeralDB<Identifier, HighIdentifier> {
+public class EphemeralDB<Identifier, HighIdentifier> {
   public static final long NO_TAG = Long.MIN_VALUE;
 
+  /** Default time after which an unused ephemeral port is forgotten: 2 hours. */
+  public static final long DEFAULT_STALE_PORT_MILLIS = 2*60*60*1000;
+
   /**
-   * Get the existing tag, or make a new one if needed
+   * Time where a NAT will have reset the port to a new forwarding
+   *
+   * in millis
+   *
+   * Default 2 hours
    */
-  public long getTagForEphemeral(Identifier addr);
+  private long STALE_PORT_TIME = DEFAULT_STALE_PORT_MILLIS;
+
+  TimeSource time;
+  Logger logger;
+
+  private long nextTag = NO_TAG+1;
+  private final Map<HighIdentifier, Long> highToTag = new HashMap<HighIdentifier, Long>();
+  private final Map<Identifier, Long> ephemeralToTag = new HashMap<Identifier, Long>();
+  /** an ephemeral address and when it was last used */
+  private record Ephemeral<I>(I addr, long lastUsed) {}
+
+  /**
+   * maps tag to ephemeral and timestamp
+   */
+  private final Map<Long, Ephemeral<Identifier>> tagToEphemeral = new HashMap<Long, Ephemeral<Identifier>>();
+
+  /**
+   *
+   * @param stalePortTime how long until we should forget about the port binding
+   */
+  public EphemeralDB(Environment env, long stalePortTime) {
+    time = env.getTimeSource();
+    this.logger = env.getLogManager().getLogger(EphemeralDB.class, null);
+    this.STALE_PORT_TIME = stalePortTime;
+  }
+
+
+  /**
+   * Tell the DB that the high identifier points to this tag
+   */
+  public void mapHighToTag(HighIdentifier high, long tag) {
+    logger.debug("mapHighToTag({},{})", high, tag);
+    highToTag.put(high, tag);
+  }
+
+  /**
+   * Get the valid Identifier for this highIdentifier
+   * @return null if there isn't a valid one
+   */
+  public @Nullable Identifier getEphemeral(HighIdentifier high) {
+    Long tag = highToTag.get(high);
+    if (tag == null) {
+      logger.debug("getEphemeral({}):null", high);
+      return null;
+    }
+    Identifier ret = getEphemeral(tag, null);
+    if (ret == null) {
+      highToTag.remove(high);
+    }
+    logger.debug("getEphemeral({}):{}", high, ret);
+    return ret;
+  }
 
   /**
    * Return a current valid Identifier for the tag, otherwise, return the default identifier
@@ -58,17 +123,55 @@ public interface EphemeralDB<Identifier, HighIdentifier> {
    *
    * @param i the default identifier
    */
-  public @Nullable Identifier getEphemeral(long tag, @Nullable Identifier i);
+  public @Nullable Identifier getEphemeral(long tag, @Nullable Identifier i) {
+    Ephemeral<Identifier> ret = tagToEphemeral.get(tag);
+    if (ret == null) {
+      logger.debug("getEphemeral({},{}):{}", tag, i, i);
+      return i;
+    }
+    if (ret.lastUsed() < time.currentTimeMillis()-STALE_PORT_TIME) {
+      clear(tag);
+      logger.debug("getEphemeral({},{}):{}", tag, i, i);
+      return i;
+    }
+    logger.atDebug().log(() -> "getEphemeral("+tag+","+i+"):"+ret.addr());
+    return ret.addr();
+  }
 
   /**
-   * Tell the DB that the high identifier points to this tag
+   * Get the existing tag, or make a new one if needed
    */
-  public void mapHighToTag(HighIdentifier high, long tag);
+  public long getTagForEphemeral(Identifier addr) {
+    long now = time.currentTimeMillis();
+    Long tag = ephemeralToTag.get(addr);
+    if (tag == null) {
+      // it doesn't exist
+    } else {
+      Ephemeral<Identifier> ret = Objects.requireNonNull(tagToEphemeral.get(tag), "both maps hold the same tags");
+      if (ret.lastUsed() < now-STALE_PORT_TIME) {
+        // it's stale
+        clear(tag);
+      } else {
+        // update timestamp
+        tagToEphemeral.put(tag, new Ephemeral<Identifier>(ret.addr(), now));
+        logger.debug("getTagForEphemeral({}):{}", addr, tag);
+        return tag;
+      }
+    }
 
-  /**
-   * Get the valid Identifier for this highIdentifier
-   * @return null if there isn't a valid one
-   */
-  public @Nullable Identifier getEphemeral(HighIdentifier high);
+    // if we're here, we need to create a new one
+    tag = nextTag++;
+    Ephemeral<Identifier> ret = new Ephemeral<Identifier>(addr, now);
+    ephemeralToTag.put(addr, tag);
+    tagToEphemeral.put(tag,ret);
+    logger.debug("getTagForEphemeral({}):{}", addr, tag);
+    return tag;
+  }
+
+  protected void clear(long tag) {
+    logger.debug("clear({})", tag);
+    Ephemeral<Identifier> ret = tagToEphemeral.remove(tag);
+    if (ret != null) ephemeralToTag.remove(ret.addr());
+  }
 
 }

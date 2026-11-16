@@ -187,7 +187,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     this.rendezvousStrategy = rendezvousStrategy;
     this.responseStrategy = responseStrategy;
     this.contactDirectStrategy = contactDirectStrategy;
-    this.ephemeralDB = new EphemeralDBImpl<Identifier, HighIdentifier>(env,EphemeralDBImpl.DEFAULT_STALE_PORT_MILLIS); // TODO: make this a configurable parameter
+    this.ephemeralDB = new EphemeralDB<Identifier, HighIdentifier>(env,EphemeralDB.DEFAULT_STALE_PORT_MILLIS); // TODO: make this a configurable parameter
     this.logger = env.getLogManager().getLogger(RendezvousTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
 
