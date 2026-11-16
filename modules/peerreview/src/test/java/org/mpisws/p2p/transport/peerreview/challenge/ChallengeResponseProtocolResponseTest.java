@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 /**
  * Tests how a RESPONSE is handled.
  */
-public class ChallengeResponseProtocolImplResponseTest {
+public class ChallengeResponseProtocolResponseTest {
 
   /** Serves as both the handle and the identifier. */
   static class Id implements RawSerializable {
@@ -73,12 +73,12 @@ public class ChallengeResponseProtocolImplResponseTest {
   }
 
   Environment env;
-  ChallengeResponseProtocolImpl<Id, Id> protocol;
+  ChallengeResponseProtocol<Id, Id> protocol;
 
   /** A stub of the interface whose methods all return null, 0 or false. */
   @SuppressWarnings("unchecked")
   static <T> T stub(Class<T> type) {
-    return (T) Proxy.newProxyInstance(ChallengeResponseProtocolImplResponseTest.class.getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
+    return (T) Proxy.newProxyInstance(ChallengeResponseProtocolResponseTest.class.getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
       Class<?> ret = method.getReturnType();
       if (ret == boolean.class) return false;
       if (ret == int.class) return 0;
@@ -96,7 +96,7 @@ public class ChallengeResponseProtocolImplResponseTest {
     PeerReviewImpl<Id, Id> peerreview = new PeerReviewImpl<Id, Id>(transport, env, null, null, h -> h, null);
     // the info store has no evidence at all
     PeerInfoStore<Id, Id> infoStore = stub(PeerInfoStore.class);
-    protocol = new ChallengeResponseProtocolImpl<Id, Id>(peerreview, transport, infoStore, null, null, null, null);
+    protocol = new ChallengeResponseProtocol<Id, Id>(peerreview, transport, infoStore, null, null, null, null);
   }
 
   @AfterEach
