@@ -36,68 +36,46 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.identity;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
-import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
-import org.mpisws.p2p.transport.P2PSocket;
-import org.mpisws.p2p.transport.P2PSocketReceiver;
-import org.mpisws.p2p.transport.SocketCallback;
-import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
-import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.OverrideLiveness;
-import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
-import org.mpisws.p2p.transport.util.ByteBuffers;
-import org.mpisws.p2p.transport.util.DefaultErrorHandler;
-import org.mpisws.p2p.transport.util.InsufficientBytesException;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.OptionsFactory;
-import org.mpisws.p2p.transport.util.SocketInputBuffer;
-import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
-import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.util.rawserialization.SimpleInputBuffer;
-import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
-import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD_FOREVER;
 
 public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> {
-  private final byte[] localIdentifier;
+  final byte[] localIdentifier;
 
-  private @Nullable LowerIdentityImpl lower;
-  private @Nullable UpperIdentityImpl upper;
+  private @Nullable LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> lower;
+  private @Nullable UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> upper;
 
   private final Map<UpperIdentifier, Set<IdentityMessageHandle>> pendingMessages;
-  private final Set<UpperIdentifier> deadForever;  // TODO: make TimerWeakHashSet
+  final Set<UpperIdentifier> deadForever;  // TODO: make TimerWeakHashSet
 
-  private final Environment environment;
+  final Environment environment;
   private final Logger logger;
 
-  private final IdentitySerializer<UpperIdentifier, MiddleIdentifier, LowerIdentifier> serializer;
+  final IdentitySerializer<UpperIdentifier, MiddleIdentifier, LowerIdentifier> serializer;
   private final NodeChangeStrategy<UpperIdentifier> nodeChangeStrategy;
-  private final SanityChecker<UpperIdentifier, MiddleIdentifier> sanityChecker;
+  final SanityChecker<UpperIdentifier, MiddleIdentifier> sanityChecker;
 
   /**
    * Multiple UpperIdentifiers claim the same binding to the
@@ -110,7 +88,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
    * Note, that it's possible to have the UpperIdentifier in multiple places if it
    * has multiple paths (such as source routing)
    */
-  private final Map<MiddleIdentifier, UpperIdentifier> bindings;  // this one may be difficult as the Upper has a ref to the lower
+  final Map<MiddleIdentifier, UpperIdentifier> bindings;  // this one may be difficult as the Upper has a ref to the lower
 
   public static final byte SUCCESS = 1;
   public static final byte FAILURE = 0;
@@ -122,7 +100,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
   public static final String NODE_HANDLE_FROM_INDEX = "identity.node_handle_to_index";
   public static final String DONT_VERIFY = "identity.dont_verify_dest";
 
-  private final BindStrategy<UpperIdentifier, LowerIdentifier> bindStrategy;
+  final BindStrategy<UpperIdentifier, LowerIdentifier> bindStrategy;
 
   public IdentityImpl(
       byte[] localIdentifier,
@@ -212,12 +190,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     upper().clearState(i);
   }
 
-  private UpperIdentityImpl upper() {
+  private UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> upper() {
     return Objects.requireNonNull(upper, "initUpperLayer() was not called");
   }
 
   /** The upper identifier stored in the options, for log messages. */
-  private static @Nullable Object index(@Nullable Map<String, Object> options) {
+  static @Nullable Object index(@Nullable Map<String, Object> options) {
     return options == null ? null : options.get(NODE_HANDLE_FROM_INDEX);
   }
 
@@ -330,7 +308,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
   }
 
   public void initLowerLayer(TransportLayer<LowerIdentifier, ByteBuffer> tl, ErrorHandler<LowerIdentifier> handler) {
-    lower = new LowerIdentityImpl(tl, handler);
+    lower = new LowerIdentityImpl<>(this, tl, handler);
   }
 
   public @Nullable LowerIdentity<LowerIdentifier, ByteBuffer> getLowerIdentity() {
@@ -338,553 +316,6 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
   }
 
 
-  class LowerIdentityImpl implements LowerIdentity<LowerIdentifier, ByteBuffer>, TransportLayerCallback<LowerIdentifier, ByteBuffer> {
-    TransportLayer<LowerIdentifier, ByteBuffer> tl;
-    @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
-    TransportLayerCallback<LowerIdentifier, ByteBuffer> callback;
-    ErrorHandler<LowerIdentifier> errorHandler;
-    Logger logger;
-
-    public LowerIdentityImpl(
-        TransportLayer<LowerIdentifier, ByteBuffer> tl,
-        ErrorHandler<LowerIdentifier> handler) {
-      this.tl = tl;
-      logger = environment.getLogManager().getLogger(IdentityImpl.class, "lower");
-      if (handler != null) {
-        this.errorHandler = handler;
-      } else {
-        this.errorHandler = new DefaultErrorHandler<LowerIdentifier>(logger);
-      }
-
-      tl.setCallback(this);
-    }
-
-    @Override
-    public SocketRequestHandle<LowerIdentifier> openSocket(
-        final LowerIdentifier i,
-        final SocketCallback<LowerIdentifier> deliverSocketToMe,
-        final @Nullable Map<String, Object> options) {
-      logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
-
-      // what happens if they cancel after the socket has been received by a lower layer, but is still reading the header?
-      // May need to re-think this SRHI at all the layers
-      final SocketRequestHandleImpl<LowerIdentifier> ret = new SocketRequestHandleImpl<LowerIdentifier>(i, options, logger);
-      SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      try {
-        if ((options == null) || (options.containsKey(DONT_VERIFY) && ((Boolean)options.get(DONT_VERIFY)).booleanValue())) {
-          // don't send TO
-          sob.writeByte(0);
-        } else {
-          // send TO
-          sob.writeByte(1);
-          final UpperIdentifier dest = getIntendedDest(options);
-
-          if (dest == null) {
-            deliverSocketToMe.receiveException(ret, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+options.get(NODE_HANDLE_FROM_INDEX)));
-            return ret;
-          }
-
-          if (addBinding(dest, i, options)) {
-            // no problem, sending message
-          } else {
-            deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
-            return ret;
-          }
-
-          serializer.serialize(sob, dest);
-        }
-
-        // write FROM
-        sob.write(localIdentifier);
-      } catch (IOException ioe) {
-        deliverSocketToMe.receiveException(ret, ioe);
-        return ret;
-      }
-      final ByteBuffer buf;
-      buf = sob.getByteBuffer();
-      ret.setSubCancellable(tl.openSocket(i,
-          new SocketCallback<LowerIdentifier>(){
-
-            @Override
-            public void receiveResult(SocketRequestHandle<LowerIdentifier> cancellable, final P2PSocket<LowerIdentifier> sock) {
-              ret.setSubCancellable(() -> {
-                sock.close();
-                return true;
-              });
-              try {
-                new P2PSocketReceiver<LowerIdentifier>() {
-
-                  @Override
-                  public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
-                    if (canRead) throw new IOException("Never asked to read!");
-                    if (!canWrite) throw new IOException("Can't write!");
-                    if (socket.write(buf) < 0)  {
-                      deliverSocketToMe.receiveException(ret, new ClosedChannelException("Remote node closed socket while opening.  Try again."));
-                      return;
-                    }
-                    if (buf.hasRemaining()) {
-                      socket.register(false, true, this);
-                    } else {
-                      // wait for the response
-                      socket.register(true, false, new P2PSocketReceiver<LowerIdentifier>() {
-                        ByteBuffer responseBuffer = ByteBuffer.allocate(1);
-
-                        @Override
-                        public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
-                          deliverSocketToMe.receiveException(ret, ioe);
-                        }
-
-                        @Override
-                        public void receiveSelectResult(final P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
-                          if (!canRead) throw new IOException("Can't read!");
-                          if (canWrite) throw new IOException("Never asked to write!");
-                          if (socket.read(responseBuffer) == -1) {
-                            // socket unexpectedly closed
-                            socket.close();
-                            deliverSocketToMe.receiveException(ret, new ClosedChannelException("Remote node closed socket while opening.  Try again."));
-                            return;
-                          }
-
-                          if (responseBuffer.remaining() > 0) {
-                            socket.register(true, false, this);
-                          } else {
-                            byte answer = responseBuffer.array()[0];
-                            if (answer == FAILURE) {
-                              // wrong address, read more
-                              logger.info("openSocket({},{}) answer = FAILURE", i, deliverSocketToMe);
-                              UpperIdentifier newDest = serializer.deserialize(new SocketInputBuffer(socket, localIdentifier.length), i);
-
-                              // the socket's options: they may carry the peer's certificate, which vouches for newDest
-                              if (addBinding(newDest, i, socket.getOptions())) {
-                              } else {
-                                // This is really bad if we get here, because someone responded to us who is dead, maybe a big network lag could cause this?
-                                socket.close();
-                                deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
-                              }
-
-                              // need to do this so the bootstrapper knows the proper identity
-                              // done in addBinding now
-                              deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
-                            } else {
-                              ret.setSubCancellable(() -> {
-                                throw new IllegalStateException("Can't cancel, already delivered. ret:"+ret+" sock:"+socket);
-                              }); // can't cancel any more
-                              if (bindStrategy != null && options != null && !(options.containsKey(DONT_VERIFY) && ((Boolean)options.get(DONT_VERIFY)).booleanValue())) {
-                                // the handshake is done, so the socket's options may now carry the peer's certificate
-                                // subject: let the strategy check the destination against it (an outgoing connection
-                                // authenticates the peer just as an incoming one does)
-                                UpperIdentifier dest = getIntendedDest(options);
-                                if (dest != null && !bindStrategy.accept(dest, i, socket.getOptions())) {
-                                  socket.close();
-                                  deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
-                                  return;
-                                }
-                              }
-                              deliverSocketToMe.receiveResult(ret, socket);
-                            }
-                          }
-                        }
-                      });
-                    }
-                  }
-
-                  @Override
-                  public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
-                    deliverSocketToMe.receiveException(ret, ioe);
-                  }
-                }.receiveSelectResult(sock, false, true);
-              } catch (IOException ioe) {
-                deliverSocketToMe.receiveException(ret, ioe);
-              }
-            }
-
-            @Override
-            public void receiveException(SocketRequestHandle<LowerIdentifier> s, Exception ex) {
-              deliverSocketToMe.receiveException(ret, ex);
-            }
-
-          },
-          options));
-      return ret;
-    }
-
-    @Override
-    public void incomingSocket(P2PSocket<LowerIdentifier> s) throws IOException {
-      logger.debug("incomingSocket({})", s);
-
-      // see if it wants to verify us
-      new P2PSocketReceiver<LowerIdentifier>() {
-        ByteBuffer buf = ByteBuffer.allocate(1);
-
-        @Override
-        public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
-          errorHandler.receivedException(socket.getIdentifier(), ioe);
-        }
-
-        @Override
-        public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
-          if (socket.read(buf) < 0) {
-            // socket closed
-            if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), new IOException("Socket closed while incoming."));
-            return;
-          }
-          if (buf.hasRemaining()) {
-            // need to read more
-            socket.register(true, false, this);
-            return;
-          }
-
-          buf.clear();
-          byte wantsToVerifyB = buf.get();
-          final boolean wantsToVerify = (wantsToVerifyB == (byte)1);
-
-          new P2PSocketReceiver<LowerIdentifier>() {
-            ByteBuffer buf = ByteBuffer.allocate(localIdentifier.length);
-
-            @Override
-            public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
-              errorHandler.receivedException(socket.getIdentifier(), ioe);
-            }
-
-            @Override
-            public void receiveSelectResult(final P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
-              if (canWrite) throw new IOException("Never asked to write!");
-              if (!canRead) throw new IOException("Can't read!");
-              if (wantsToVerify) {
-                  // the node is sending who he thinks he is talking to
-
-                // read the TO field
-                if (socket.read(buf) < 0) {
-                  // socket closed
-                  if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), new IOException("Socket closed while incoming."));
-                  return;
-                }
-
-                if (buf.hasRemaining()) {
-                  // need to read more
-                  socket.register(true, false, this);
-                  return;
-                }
-
-                if (!Arrays.equals(buf.array(), localIdentifier)) {
-                  logger.atInfo().log(() -> "incomingSocket() FAILURE expected "+
-                        Arrays.toString(buf.array())+" me:"+
-                        Arrays.toString(localIdentifier));
-
-                  // not expecting me, send failure
-                  byte[] result = new byte[1+localIdentifier.length];
-                  result[0] = FAILURE;
-                  System.arraycopy(localIdentifier, 0, result, 1, localIdentifier.length);
-                  final ByteBuffer writeMe = ByteBuffer.wrap(result);
-                  new P2PSocketReceiver<LowerIdentifier>() {
-                    @Override
-                    public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
-                      errorHandler.receivedException(socket.getIdentifier(), ioe);
-                    }
-
-                    @Override
-                    public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
-                      if (canRead) throw new IOException("Not expecting to read.");
-                      if (!canWrite) throw new IOException("Expecting to write.");
-
-                      if (socket.write(writeMe) == -1) {
-                        // socket closed
-                        if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), new ClosedChannelException("Error on incoming socket."));
-                        return;
-                      }
-
-                      if (buf.hasRemaining()) {
-                        // need to read more
-                        socket.register(false, true, this);
-                        return;
-                      }
-                    }
-                  }.receiveSelectResult(socket, false, true); // write failure
-                  return;
-                }
-              } else {
-                // doesn't want to verify
-                logger.info("Connection from {} didn't want to verify our identity.", socket.getIdentifier());
-              }
-              // either he doesn't want to verify, or the TO was me,
-              // now read the FROM, and add the proper index into the options
-              final SocketInputBuffer sib = new SocketInputBuffer(socket, 1024);
-              new P2PSocketReceiver<LowerIdentifier>() {
-                @Override
-                public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
-                  errorHandler.receivedException(socket.getIdentifier(), ioe);
-                }
-
-                @Override
-                public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
-                  if (canWrite) throw new IOException("Never asked to write!");
-                  if (!canRead) throw new IOException("Can't read!");
-
-                  final @Nullable Map<String, Object> newOptions = OptionsFactory.copyOptions(socket.getOptions());
-
-                  UpperIdentifier from;
-                  try {
-                    // add to intendedDest, add option index
-                    from = serializer.deserialize(sib, socket.getIdentifier());
-                    newOptions.put(NODE_HANDLE_FROM_INDEX, from);
-                  } catch (InsufficientBytesException ibe) {
-                    socket.register(true, false, this);
-                    return;
-                  }
-
-                  // once we are here, we have succeeded in deserializing the NodeHanlde, and added it to the new options
-                  if (addBinding(from, socket.getIdentifier(), socket.getOptions())) {
-                    // no problem, sending message
-                  } else {
-                    // this is bad, a previous instance is trying to open a socket
-                    logger.atWarn().log(() -> "Serious error.  There was an attempt to open a socket from a supposedly stale identifier:"+
-                          from+". Current identifier is "+bindings.get(serializer.translateUp(socket.getIdentifier()))+" lower:"+socket.getIdentifier());
-                    socket.close();
-                    return;
-                  }
-
-
-                  // now write Success
-                  byte[] result = {SUCCESS};
-                  final ByteBuffer writeMe = ByteBuffer.wrap(result);
-                  new P2PSocketReceiver<LowerIdentifier>() {
-                    @Override
-                    public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
-                      if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), ioe);
-                    }
-
-                    @Override
-                    public void receiveSelectResult(P2PSocket<LowerIdentifier> socket, boolean canRead, boolean canWrite) throws IOException {
-                      if (canRead) throw new IOException("Not expecting to read.");
-                      if (!canWrite) throw new IOException("Expecting to write.");
-
-                      if (socket.write(writeMe) == -1) {
-                        // socket closed
-                        if (logger.isInfoEnabled()) errorHandler.receivedException(socket.getIdentifier(), new ClosedChannelException("Error on incoming socket."));
-                        return;
-                      }
-
-                      if (writeMe.hasRemaining()) {
-                        // need to read more
-                        socket.register(false, true, this);
-                        return;
-                      }
-
-                      // done writing pass up socket with the newOptions
-                      final P2PSocket<LowerIdentifier> returnMe = new SocketWrapperSocket<LowerIdentifier, LowerIdentifier>(
-                          socket.getIdentifier(), socket, logger, errorHandler, newOptions);
-                      callback.incomingSocket(returnMe);
-                    }
-                  }.receiveSelectResult(socket, false, true); // write SUCCESS
-
-                }
-              }.receiveSelectResult(socket, true, false);  // read the FROM
-            }
-          }.receiveSelectResult(socket, true, false); // read the TO (if wantsToVerify)
-        }
-      }.receiveSelectResult(s, true, false); // read wantsToVerify
-    }
-
-    /**
-     * Head the message with the expected identifier
-     */
-    @Override
-    public MessageRequestHandle<LowerIdentifier, ByteBuffer> sendMessage(
-        final LowerIdentifier i,
-        ByteBuffer m,
-        final @Nullable MessageCallback<LowerIdentifier, ByteBuffer> deliverAckToMe,
-        final @Nullable Map<String, Object> options) {
-
-      if (logger.isTraceEnabled()) {
-        byte[] b = ByteBuffers.peekRemaining(m);
-        logger.trace("sendMessage("+i+","+m+")"+Arrays.toString(b));
-      } else {
-        logger.debug("sendMessage({},{})", i, m);
-      }
-
-      // what happens if they cancel after the socket has been received by a lower layer, but is still reading the header?
-      // May need to re-think this SRHI at all the layers
-      final MessageRequestHandleImpl<LowerIdentifier, ByteBuffer> ret =
-        new MessageRequestHandleImpl<LowerIdentifier, ByteBuffer>(i, m, options);
-
-      byte[] msgWithHeader;
-      if (options != null && options.containsKey(NODE_HANDLE_FROM_INDEX)) {
-        // don't include an id
-        msgWithHeader = new byte[1+localIdentifier.length+m.remaining()];
-        msgWithHeader[0] = NO_ID;
-
-        System.arraycopy(localIdentifier, 0, msgWithHeader, 1, localIdentifier.length); // write the FROM
-        m.get(msgWithHeader, 1+localIdentifier.length, m.remaining()); // write the message
-
-      } else {
-        // don't include an id
-        UpperIdentifier dest = getIntendedDest(options);
-
-        if (dest == null) {
-          if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+index(options)));
-          return ret;
-        }
-
-        if (addBinding(dest, i, options)) {
-          // no problem, sending message
-        } else {
-          if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new NodeIsFaultyException(i, m));
-          return ret;
-        }
-
-        byte[] destBytes;
-        try {
-          SimpleOutputBuffer sob = new SimpleOutputBuffer((int)(localIdentifier.length*2.5)); // good estimate
-          serializer.serialize(sob, dest);
-          destBytes = sob.getBytes();
-        } catch (IOException ioe) {
-          if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, ioe);
-          return ret;
-        }
-
-        // build a new ByteBuffer with the header
-        msgWithHeader = new byte[1+destBytes.length+localIdentifier.length+m.remaining()];
-        msgWithHeader[0] = NORMAL; // write the TYPE
-        System.arraycopy(destBytes, 0, msgWithHeader, 1, destBytes.length); // write the TO
-        System.arraycopy(localIdentifier, 0, msgWithHeader, 1+destBytes.length, localIdentifier.length); // write the FROM
-        m.get(msgWithHeader, 1+destBytes.length+localIdentifier.length, m.remaining()); // write the message
-      }
-
-
-      final ByteBuffer buf = ByteBuffer.wrap(msgWithHeader);
-
-      ret.setSubCancellable(tl.sendMessage(i, buf,
-          new MessageCallback<LowerIdentifier, ByteBuffer>(){
-
-            @Override
-            @SuppressWarnings("ReferenceEquality") // the same instance is meant
-            public void ack(MessageRequestHandle<LowerIdentifier, ByteBuffer> msg) {
-              if (ret.getSubCancellable() != null && msg != ret.getSubCancellable())
-                throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+
-                    msg+" sub:"+ret.getSubCancellable());
-              if (deliverAckToMe != null) deliverAckToMe.ack(ret);
-            }
-
-            @Override
-            @SuppressWarnings("ReferenceEquality") // the same instance is meant
-            public void sendFailed(MessageRequestHandle<LowerIdentifier, ByteBuffer> msg, Exception ex) {
-              if (ret.getSubCancellable() != null && msg != ret.getSubCancellable())
-                throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+
-                    msg+" sub:"+ret.getSubCancellable());
-              if (deliverAckToMe == null) {
-                errorHandler.receivedException(i, ex);
-              } else {
-                deliverAckToMe.sendFailed(ret, ex);
-              }
-            }
-
-          }, options));
-      return ret;
-    }
-
-    @Override
-    public void messageReceived(LowerIdentifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
-      @Nullable Map<String, Object> newOptions = OptionsFactory.copyOptions(options);
-
-      if (!m.hasRemaining()) {
-        throw new IOException("Empty message from " + i);
-      }
-      byte msgType = m.get();
-      logger.debug("messageReceived({},{}):{}", i, m, msgType);
-      switch(msgType) {
-        case NORMAL:
-          // this is a normal message, make sure it's for me
-          if (m.remaining() < localIdentifier.length) {
-            throw new IOException("Message from " + i + " is too short for the destination identity: " + m.remaining() + " bytes");
-          }
-          byte[] dest = new byte[localIdentifier.length];
-          m.get(dest);
-          if (!Arrays.equals(dest, localIdentifier)) {
-            // send back an error
-            logger.atInfo().log(() -> "received message for wrong node from:"+i+
-                " intended:"+Arrays.toString(dest)+
-                " me:"+Arrays.toString(localIdentifier));
-
-            byte[] errorMessage = new byte[1+localIdentifier.length];
-            errorMessage[0] = INCORRECT_IDENTITY;
-            System.arraycopy(localIdentifier, 0, errorMessage, 1, localIdentifier.length);
-            ByteBuffer buf = ByteBuffer.wrap(errorMessage);
-            tl.sendMessage(i, buf, null, options);   // it's important to the rendezvous layer to reuse the options
-            return;
-          }
-          // fall through: a message for me is read like one without an id
-
-        case NO_ID:
-          byte[] array = ByteBuffers.arrayForRead(m);
-          SimpleInputBuffer sib = new SimpleInputBuffer(array, ByteBuffers.arrayPosition(m));
-          UpperIdentifier from = serializer.deserialize(sib, i);
-          ByteBuffers.setArrayPosition(m, array.length - sib.bytesRemaining());
-
-          if (addBinding(from, i, options)) {
-
-            // need to do this so the bootstrapper knows the proper identity
-          } else {
-            logger.atWarn().log(() -> "Warning.  Received message from stale identifier:"+
-                from+". Current identifier is "+bindings.get(serializer.translateUp(i))+" lower:"+i+" Probably a delayed message, dropping.");
-            errorHandler.receivedUnexpectedData(i, array, ByteBuffers.arrayPosition(m), newOptions);
-            return;
-          }
-
-          newOptions.put(NODE_HANDLE_FROM_INDEX, from);
-          // continue to read the rest of the message
-
-          // it's for me, no problem
-          if (logger.isTraceEnabled()) {
-            byte[] b = ByteBuffers.peekRemaining(m);
-            logger.trace("received message for me from:"+from+"("+from+"("+i+")) "+Arrays.toString(b));
-          }
-          callback.messageReceived(i, m, newOptions);
-          break;
-        case INCORRECT_IDENTITY:
-          // it's an error, read it in
-          UpperIdentifier oldDest = bindings.get(serializer.translateUp(i));
-
-          UpperIdentifier newDest = serializer.deserialize(new SimpleInputBuffer(ByteBuffers.arrayForRead(m), ByteBuffers.arrayPosition(m)), i);
-          logger.info("received INCORRECT_IDENTITY:{} old:{} new:{}", i, oldDest, newDest);
-
-          if (addBinding(newDest, i, options)) { // should call setDeadForever
-
-            // need to do this so the bootstrapper knows the proper identity
-          }
-      }
-    }
-
-    @Override
-    public void acceptMessages(boolean b) {
-      tl.acceptMessages(b);
-    }
-
-    @Override
-    public void acceptSockets(boolean b) {
-      tl.acceptMessages(b);
-    }
-
-    @Override
-    public LowerIdentifier getLocalIdentifier() {
-      return tl.getLocalIdentifier();
-    }
-
-    @Override
-    public void setCallback(TransportLayerCallback<LowerIdentifier, ByteBuffer> callback) {
-      this.callback = callback;
-    }
-
-    @Override
-    public void setErrorHandler(ErrorHandler<LowerIdentifier> handler) {
-      this.errorHandler = handler;
-    }
-
-    @Override
-    public void destroy() {
-      logger.info("destroy()");
-      tl.destroy();
-    }
-  }
 
   public @Nullable UpperIdentity<UpperIdentifier, UpperMsgType> getUpperIdentity() {
     return upper;
@@ -895,316 +326,12 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       ProximityProvider<MiddleIdentifier> prox,
       OverrideLiveness<LowerIdentifier> overrideLiveness) {
     if (upper != null) throw new IllegalStateException("upper already initialized:"+upper);
-    upper = new UpperIdentityImpl(localIdentifier, tl, live, prox);
+    upper = new UpperIdentityImpl<>(this, localIdentifier, tl, live, prox);
 
     setOverrideLiveness(overrideLiveness);
   }
 
 
-  class UpperIdentityImpl implements
-      UpperIdentity<UpperIdentifier, UpperMsgType>,
-      TransportLayerCallback<MiddleIdentifier, UpperMsgType>,
-      LivenessListener<MiddleIdentifier>,
-      ProximityListener<MiddleIdentifier> {
-    TransportLayer<MiddleIdentifier, UpperMsgType> tl;
-    ProximityProvider<MiddleIdentifier> prox;
-
-    @SuppressWarnings("NullAway.Init") // set by setErrorHandler() before the layer is used
-    private ErrorHandler<UpperIdentifier> errorHandler;
-    @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
-    private TransportLayerCallback<UpperIdentifier, UpperMsgType> callback;
-    Logger logger;
-    private LivenessProvider<MiddleIdentifier> livenessProvider;
-    private UpperIdentifier localIdentifier;
-
-    public UpperIdentityImpl(
-        UpperIdentifier local,
-        TransportLayer<MiddleIdentifier, UpperMsgType> tl,
-        LivenessProvider<MiddleIdentifier> live,
-        ProximityProvider<MiddleIdentifier> prox) {
-      this.localIdentifier = local;
-      this.tl = tl;
-      this.livenessProvider = live;
-      this.prox = prox;
-      logger = environment.getLogManager().getLogger(IdentityImpl.class, "upper");
-
-      tl.setCallback(this);
-      livenessProvider.addLivenessListener(this);
-      prox.addProximityListener(this);
-    }
-
-    @Override
-    public void clearState(UpperIdentifier i) {
-      livenessProvider.clearState(serializer.translateDown(i));
-    }
-
-    @Override
-    public SocketRequestHandle<UpperIdentifier> openSocket(
-        final UpperIdentifier i,
-        final SocketCallback<UpperIdentifier> deliverSocketToMe,
-        final @Nullable Map<String, Object> options) {
-      logger.debug("openSocket({},{},{})", i, deliverSocketToMe, options);
-
-      final SocketRequestHandleImpl<UpperIdentifier> handle =
-        new SocketRequestHandleImpl<UpperIdentifier>(i, options, logger);
-
-      MiddleIdentifier middle = serializer.translateDown(i);
-
-      if (addBinding(i, null, options)) {
-        // no problem, sending message
-      } else {
-        deliverSocketToMe.receiveException(handle, new NodeIsFaultyException(i));
-        return handle;
-      }
-
-      @Nullable Map<String, Object> newOptions = OptionsFactory.copyOptions(options);
-      newOptions.put(NODE_HANDLE_FROM_INDEX, i);
-
-
-      handle.setSubCancellable(tl.openSocket(middle, new SocketCallback<MiddleIdentifier>(){
-        @Override
-        public void receiveException(SocketRequestHandle<MiddleIdentifier> s, Exception ex) {
-          deliverSocketToMe.receiveException(handle, ex);
-        }
-        @Override
-        public void receiveResult(SocketRequestHandle<MiddleIdentifier> cancellable, P2PSocket<MiddleIdentifier> sock) {
-          deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<UpperIdentifier, MiddleIdentifier>(i,sock,logger,errorHandler,options));
-        }
-      }, newOptions));
-      return handle;
-    }
-
-    /**
-     * Synchronization by selector thread.  Make sure setDeadForever() is only called on selector, otherwise the
-     * next layer down could get stuck trying to send to dead-forever node.
-     */
-    @Override
-    public MessageRequestHandle<UpperIdentifier, UpperMsgType> sendMessage(
-        UpperIdentifier i,
-        UpperMsgType m,
-        @Nullable MessageCallback<UpperIdentifier, UpperMsgType> deliverAckToMe,
-        @Nullable Map<String, Object> options) {
-      if (!environment.getSelectorManager().isSelectorThread()) throw new RuntimeException("Must be called on selector thread.");
-      logger.debug("sendMessage({},{},{})", i, m, options);
-
-      // how to synchronized this properly?  It's too bad that we have to hold the lock for the calls into the lower levels.
-      // an alternative would be to re-synchronized and check again, and immediately cancel the message
-      if (deadForever.contains(i)) {
-        MessageRequestHandle<UpperIdentifier, UpperMsgType> mrh =
-          new MessageRequestHandleImpl<UpperIdentifier, UpperMsgType>(i, m, options);
-        if (deliverAckToMe != null) deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(i, m));
-        return mrh;
-      }
-
-      IdentityMessageHandle ret;
-
-      MiddleIdentifier middle = serializer.translateDown(i);
-      if (addBinding(i, null, options)) {
-        // no problem, sending message
-      } else {
-        MessageRequestHandle<UpperIdentifier, UpperMsgType> mrh =
-          new MessageRequestHandleImpl<UpperIdentifier, UpperMsgType>(i, m, options);
-        if (deliverAckToMe != null) deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(i, m));
-        return mrh;
-      }
-
-        options = OptionsFactory.copyOptions(options);
-        options.put(NODE_HANDLE_FROM_INDEX, i);
-        ret = new IdentityMessageHandle(i, m, options, deliverAckToMe);
-        addPendingMessage(i, ret);
-
-      // the synchronization problem is here, if it goes dead now, then this message won't
-      // be cancelled... TODO: get this correct, it's probably currently broken, maybe
-      // need cancelled bit in ret so that it knows it's cancelled.
-      ret.setSubCancellable(tl.sendMessage(middle, m, ret, options));
-      return ret;
-    }
-
-    @Override
-    public void incomingSocket(P2PSocket<MiddleIdentifier> s) throws IOException {
-      logger.debug("incomingSocket({})", s);
-      final UpperIdentifier from = getIntendedDest(s.getOptions());
-
-      if (from == null) {
-        errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+s.getIdentifier()+" index="+index(s.getOptions())));
-        s.close();
-        return;
-      }
-
-
-      if (sanityChecker.isSane(from, s.getIdentifier())) {
-        callback.incomingSocket(new SocketWrapperSocket<UpperIdentifier, MiddleIdentifier>(from, s, logger, errorHandler, s.getOptions()));
-      } else {
-        logger.warn("incomingSocket() Sanity checker did not match {} to {} options:{}", from, s.getIdentifier(), s.getOptions(), new Exception("Stack Trace"));
-        s.close();
-      }
-    }
-
-    @Override
-    public void messageReceived(MiddleIdentifier i, UpperMsgType m, @Nullable Map<String, Object> options) throws IOException {
-      logger.debug("messageReceived({},{},{})", i, m, options);
-      final UpperIdentifier from = getIntendedDest(options);
-
-      if (from == null) {
-        errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+index(options)+" dropping message"+m));
-        return;
-      }
-
-      if (bindStrategy != null && !bindStrategy.acceptsMessage(from, options)) {
-        logger.info("messageReceived() dropping a message from {} via {}: the bind strategy does not accept it from that channel", from, i);
-        return;
-      }
-
-      if (sanityChecker.isSane(from, i)) {
-        callback.messageReceived(from, m, options);
-      } else {
-        logger.warn("messageReceived() Sanity checker did not match {} to {} options:{}", from, i, options, new Exception("Stack Trace"));
-      }
-    }
-
-
-    @Override
-    public boolean checkLiveness(UpperIdentifier i, @Nullable Map<String, Object> options) {
-      logger.debug("checkLiveness({},{})", i, options);
-      if (deadForever.contains(i)) return false;
-
-      options = OptionsFactory.copyOptions(options);
-      options.put(NODE_HANDLE_FROM_INDEX, i);
-      return livenessProvider.checkLiveness(serializer.translateDown(i), options);
-    }
-
-    final List<LivenessListener<UpperIdentifier>> livenessListeners = new CopyOnWriteArrayList<LivenessListener<UpperIdentifier>>();
-    @Override
-    public void addLivenessListener(LivenessListener<UpperIdentifier> name) {
-      livenessListeners.add(name);
-    }
-
-    @Override
-    public boolean removeLivenessListener(LivenessListener<UpperIdentifier> name) {
-      return livenessListeners.remove(name);
-    }
-
-    @Override
-    public int getLiveness(UpperIdentifier i, @Nullable Map<String, Object> options) {
-      logger.trace("getLiveness({},{})", i, options);
-      if (deadForever.contains(i)) return LIVENESS_DEAD_FOREVER;
-      options = OptionsFactory.copyOptions(options);
-      options.put(NODE_HANDLE_FROM_INDEX, i);
-
-      return livenessProvider.getLiveness(serializer.translateDown(i), options);
-    }
-
-    @Override
-    public void livenessChanged(MiddleIdentifier i, int val, @Nullable Map<String, Object> options) {
-      if (deadForever.contains(i)) {
-        if (val < LIVENESS_DEAD) {
-          logger.error("Node {} came back from the dead!  It's a miracle! {} Ignoring.", i, val);
-        }
-        return;
-      }
-
-      UpperIdentifier upper = getIntendedDest(options);
-        if (upper == null) {
-          logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for index "+index(options)+" collected suppressing livenessChanged()");
-          return;
-        }
-      setLiveness(upper, val, options);
-    }
-
-    /**
-     * This is a guard so we don't notify about changes in liveness too many times.
-     */
-    protected void setLiveness(UpperIdentifier i, int val, @Nullable Map<String, Object> options) {
-      // handle the first time
-      int oldLiveness = -55;
-      if (liveness.containsKey(i)) {
-        oldLiveness = liveness.get(i);
-      }
-
-      if (val != oldLiveness) {
-        liveness.put(i, val);
-        notifyLivenessListeners(i, val, options);
-      }
-    }
-
-    // todo, make this a timer weak hash map
-    private final Map<UpperIdentifier, Integer> liveness = new HashMap<UpperIdentifier, Integer>();
-
-    protected void notifyLivenessListeners(UpperIdentifier i, int liveness, @Nullable Map<String, Object> options) {
-      logger.trace("notifyLivenessListeners({},{})", i, liveness);
-      for (LivenessListener<UpperIdentifier> listener : livenessListeners) {
-        listener.livenessChanged(i, liveness, options);
-      }
-    }
-
-    final Collection<ProximityListener<UpperIdentifier>> proxListeners =
-      new CopyOnWriteArrayList<ProximityListener<UpperIdentifier>>();
-    @Override
-    public void addProximityListener(ProximityListener<UpperIdentifier> name) {
-      proxListeners.add(name);
-    }
-
-    @Override
-    public boolean removeProximityListener(ProximityListener<UpperIdentifier> name) {
-      return proxListeners.remove(name);
-    }
-
-    @Override
-    public int proximity(UpperIdentifier i, @Nullable Map<String, Object> options) {
-      logger.trace("proximity({})", i);
-      if (deadForever.contains(i)) return Integer.MAX_VALUE;
-      return prox.proximity(serializer.translateDown(i), OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, i));
-    }
-
-    @Override
-    public void proximityChanged(MiddleIdentifier i, int newProx, @Nullable Map<String, Object> options) {
-      UpperIdentifier upper = getIntendedDest(options);
-      if (upper == null) {
-        logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for "+index(options)+" collected suppressing proximityChanged()");
-        return;
-      }
-
-      notifyProximityListeners(upper, newProx, options);
-    }
-
-    private void notifyProximityListeners(UpperIdentifier i, int newProx, @Nullable Map<String, Object> options) {
-      logger.trace("notifyProximityListeners({},{})", i, newProx);
-      for (ProximityListener<UpperIdentifier> listener : proxListeners) {
-        listener.proximityChanged(i, newProx, options);
-      }
-    }
-
-    @Override
-    public void acceptMessages(boolean b) {
-      tl.acceptMessages(b);
-    }
-
-    @Override
-    public void acceptSockets(boolean b) {
-      tl.acceptSockets(b);
-    }
-
-    @Override
-    public UpperIdentifier getLocalIdentifier() {
-      return localIdentifier;
-    }
-
-    @Override
-    public void setCallback(TransportLayerCallback<UpperIdentifier, UpperMsgType> callback) {
-      this.callback = callback;
-    }
-
-    @Override
-    public void setErrorHandler(ErrorHandler<UpperIdentifier> handler) {
-      this.errorHandler = handler;
-    }
-
-    @Override
-    public void destroy() {
-      logger.info("destroy()");
-      tl.destroy();
-    }
-  }
 
   class IdentityMessageHandle extends MessageRequestHandleImpl<UpperIdentifier, UpperMsgType> implements MessageCallback<MiddleIdentifier, UpperMsgType> {
 
