@@ -323,7 +323,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
      */
     @Override
     public boolean cancel() {
-      return pendingMsgs.remove(this);
+      synchronized (pendingMsgs) {
+        return pendingMsgs.remove(this);
+      }
     }
   }
 
