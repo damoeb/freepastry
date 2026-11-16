@@ -13,14 +13,14 @@ import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
- * Writes certificates with {@link X509SerializerImpl}, reads them back from the bytes, writes the copy and reads it
+ * Writes certificates with {@link X509Serializer}, reads them back from the bytes, writes the copy and reads it
  * again, as a node that receives a certificate and passes it on does.
  */
 class X509WireRoundTripTest {
   @TempDir
   Path dir;
 
-  private static byte[] serialized(X509SerializerImpl serializer, X509Certificate cert) throws IOException {
+  private static byte[] serialized(X509Serializer serializer, X509Certificate cert) throws IOException {
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     serializer.serialize(cert, out);
     return out.getBytes();
@@ -28,7 +28,7 @@ class X509WireRoundTripTest {
 
   @Test
   void aNodeCertificateAndTheCaCertificateRoundTrip() throws Exception {
-    X509SerializerImpl serializer = new X509SerializerImpl();
+    X509Serializer serializer = new X509Serializer();
     CATool ca = CATool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
     X509Certificate node = ca.sign("node", CATool.generateKeyPair().getPublic());
 
@@ -48,7 +48,7 @@ class X509WireRoundTripTest {
 
   @Test
   void aCertificateIsReadWithoutTheBytesThatFollow() throws Exception {
-    X509SerializerImpl serializer = new X509SerializerImpl();
+    X509Serializer serializer = new X509Serializer();
     CATool ca = CATool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
     X509Certificate first = ca.sign("first", CATool.generateKeyPair().getPublic());
     X509Certificate second = ca.sign("second", CATool.generateKeyPair().getPublic());

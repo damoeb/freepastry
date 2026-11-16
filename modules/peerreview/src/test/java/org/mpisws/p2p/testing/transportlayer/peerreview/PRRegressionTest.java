@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit;
 import org.mpisws.p2p.pki.x509.CATool;
 import org.mpisws.p2p.pki.x509.CATool;
 import org.mpisws.p2p.pki.x509.X509Serializer;
-import org.mpisws.p2p.pki.x509.X509SerializerImpl;
+import org.mpisws.p2p.pki.x509.X509Serializer;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -556,7 +556,7 @@ public class PRRegressionTest {
 
     public MyIdTL getIdTransport() throws Exception {
       return new MyIdTL(
-          new IdSerializer(), new X509SerializerImpl(),this.localHandle.id,
+          new IdSerializer(), new X509Serializer(),this.localHandle.id,
           cert,pair.getPrivate(),t1,new SHA256HashProvider(),env) {
       };
     }

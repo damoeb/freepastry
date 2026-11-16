@@ -12,11 +12,11 @@ import rice.testing.fuzz.FuzzSupport;
  * {@link java.io.IOException}, nothing else.
  */
 class PkiFuzzTest {
-  private static X509SerializerImpl target;
+  private static X509Serializer target;
 
   @BeforeAll
   static void setUp() throws CertificateException, NoSuchProviderException {
-    target = new X509SerializerImpl();
+    target = new X509Serializer();
   }
 
   @FuzzTest(maxDuration = "30s")

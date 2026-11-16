@@ -7,14 +7,14 @@ import org.junit.jupiter.api.Test;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
-class X509SerializerImplTest {
+class X509SerializerTest {
 
   @Test
   void rejectsACertificateLongerThanTheMessage() throws Exception {
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     out.writeInt(Integer.MAX_VALUE);
     SimpleInputBuffer buf = new SimpleInputBuffer(out.getBytes());
-    X509SerializerImpl target = new X509SerializerImpl();
+    X509Serializer target = new X509Serializer();
 
     assertThrows(IOException.class, () -> target.deserialize(buf));
   }
@@ -24,7 +24,7 @@ class X509SerializerImplTest {
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     out.writeInt(-1);
     SimpleInputBuffer buf = new SimpleInputBuffer(out.getBytes());
-    X509SerializerImpl target = new X509SerializerImpl();
+    X509Serializer target = new X509Serializer();
 
     assertThrows(IOException.class, () -> target.deserialize(buf));
   }

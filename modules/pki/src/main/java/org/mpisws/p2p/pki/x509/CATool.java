@@ -330,7 +330,7 @@ public class CATool {
       System.out.println("Cert Type:"+cert.getType()+" len:"+cert.getEncoded().length);
 
       // serialize/deserialize
-      X509Serializer serializer = new X509SerializerImpl();
+      X509Serializer serializer = new X509Serializer();
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       serializer.serialize(caTool.getCertificate(), sob);
 

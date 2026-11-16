@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.pki.x509.CATool;
-import org.mpisws.p2p.pki.x509.X509SerializerImpl;
+import org.mpisws.p2p.pki.x509.X509Serializer;
 import rice.p2p.util.SecurityUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,7 +23,7 @@ public class ProviderOrderTest {
     List<Provider> before = Arrays.asList(Security.getProviders());
 
     SecurityUtils.encryptSymmetric(new byte[] {1}, SecurityUtils.generateKeySymmetric());
-    new X509SerializerImpl();
+    new X509Serializer();
     CATool.generateKeyPair();
 
     assertEquals(before, Arrays.asList(Security.getProviders()));
