@@ -37,13 +37,8 @@ advised of the possibility of such damage.
 
 package rice.p2p.util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.BitSet;
-import java.util.Random;
 
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
@@ -204,95 +199,6 @@ public class BloomFilter {
       }
       if (i < numBits-1 && i%8 == 7) {
         curByte = buf.readByte();
-      }
-    }
-  }
-
-  /**
-   * Test serialize/deserialize
-   */
-  public static void main(String[] args) throws IOException {
-    Random rng = new Random();
-    for (int i = 0; i < 135; i++) {
-      BloomFilter a = new BloomFilter(1, i);
-
-      for (int j = 0; j < i/2; j++) {
-        int flip = rng.nextInt(i);
-        a.set.flip(flip);
-      }
-      System.out.println("a:"+a.set);
-      final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      OutputBuffer obuf = new OutputBuffer() {
-        DataOutputStream dos = new DataOutputStream(baos);
-        @Override
-        public void writeInt(int v) throws IOException {
-          dos.writeInt(v);
-        }
-        @Override
-        public void writeByte(byte v) throws IOException {
-          dos.writeByte(v);
-        }
-        @Override
-        public int bytesRemaining() {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public void writeUTF(String str) throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public void writeShort(short v) throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public void writeLong(long v) throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public void writeFloat(float v) throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public void writeDouble(double v) throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public void writeChar(char v) throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public void writeBoolean(boolean v) throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {throw new RuntimeException("Not Implemented.");}
-      };
-
-      a.serialize(obuf);
-
-      final ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-      InputBuffer buf = new InputBuffer() {
-        DataInputStream dis = new DataInputStream(bais);
-        @Override
-        public int readInt() throws IOException {
-          return dis.readInt();
-        }
-        @Override
-        public byte readByte() throws IOException {
-          return dis.readByte();
-        }
-        @Override
-        public int bytesRemaining() {return UNKNOWN;}
-        @Override
-        public String readUTF() throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public short readShort() throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public long readLong() throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public float readFloat() throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public double readDouble() throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public char readChar() throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public boolean readBoolean() throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public int read(byte[] b) throws IOException {throw new RuntimeException("Not Implemented.");}
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {throw new RuntimeException("Not Implemented.");}
-      };
-
-      BloomFilter b = new BloomFilter(buf);
-
-      if (!b.set.equals(a.set)) {
-        System.out.println(i+"a:"+a.set);
-        System.out.println(i+"b:"+b.set);
-        System.out.println();
       }
     }
   }
