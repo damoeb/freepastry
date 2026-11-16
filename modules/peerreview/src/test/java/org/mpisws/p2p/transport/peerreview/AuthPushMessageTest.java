@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializerImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.message.AuthPushMessage;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -38,7 +38,7 @@ class AuthPushMessageTest {
     }
   };
 
-  private static final AuthenticatorSerializerImpl AUTHENTICATORS = new AuthenticatorSerializerImpl(HASH_SIZE,
+  private static final AuthenticatorSerializer AUTHENTICATORS = new AuthenticatorSerializer(HASH_SIZE,
       SIGNATURE_SIZE);
 
   private static AuthPushMessage<TestId> build(SimpleOutputBuffer out) throws IOException {

@@ -60,7 +60,7 @@ import org.mpisws.p2p.transport.peerreview.challenge.ChallengeResponseProtocol;
 import org.mpisws.p2p.transport.peerreview.challenge.ChallengeResponseProtocolImpl;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
-import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializerImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStoreImpl;
 import org.mpisws.p2p.transport.peerreview.commitment.CommitmentProtocol;
@@ -204,7 +204,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     this.handleSerializer = handleSerializer;
     this.identifierExtractor = identifierExtractor;
 
-    this.authenticatorSerialilzer = new AuthenticatorSerializerImpl(transport.getHashSizeBytes(),transport.getSignatureSizeBytes());
+    this.authenticatorSerialilzer = new AuthenticatorSerializer(transport.getHashSizeBytes(),transport.getSignatureSizeBytes());
     this.evidenceSerializer = new EvidenceSerializerImpl<Handle, Identifier>(handleSerializer,
         idSerializer,transport.getHashSizeBytes(),transport.getSignatureSizeBytes());
     this.historyFactory = getSecureHistoryFactory(transport, env);

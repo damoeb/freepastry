@@ -61,7 +61,7 @@ import org.mpisws.p2p.transport.peerreview.PeerReviewCallback;
 import org.mpisws.p2p.transport.peerreview.audit.EvidenceTool;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
-import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializerImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStoreImpl;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
@@ -91,7 +91,7 @@ public class AuthenticatorStoreTest {
   public void addAndFlushAuthenticators() throws Exception {
     Environment env = new Environment();
     try {
-    PeerReview<MyInetSocketAddress, MyInetSocketAddress> pr = new TestPeerReview(env, new AuthenticatorSerializerImpl(HASH_LEN, SIGN_LEN));
+    PeerReview<MyInetSocketAddress, MyInetSocketAddress> pr = new TestPeerReview(env, new AuthenticatorSerializer(HASH_LEN, SIGN_LEN));
     TestAuthenticatorStore store = new TestAuthenticatorStore(pr,false);
 
     MyInetSocketAddress id = new MyInetSocketAddress(InetAddress.getLocalHost(), 6789);

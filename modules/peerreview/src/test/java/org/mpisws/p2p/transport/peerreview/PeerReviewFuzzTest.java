@@ -5,7 +5,7 @@ import com.code_intelligence.jazzer.junit.FuzzTest;
 import java.io.IOException;
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
-import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializerImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.evidence.AuditResponse;
 import org.mpisws.p2p.transport.peerreview.evidence.ChallengeAudit;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceSerializerImpl;
@@ -53,7 +53,7 @@ class PeerReviewFuzzTest {
     }
   };
 
-  private static final AuthenticatorSerializerImpl AUTHENTICATORS = new AuthenticatorSerializerImpl(HASH_SIZE,
+  private static final AuthenticatorSerializer AUTHENTICATORS = new AuthenticatorSerializer(HASH_SIZE,
       SIGNATURE_SIZE);
   private static final EvidenceSerializerImpl<TestId, TestId> EVIDENCE = new EvidenceSerializerImpl<>(ID_SERIALIZER,
       ID_SERIALIZER, HASH_SIZE, SIGNATURE_SIZE);

@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mpisws.p2p.transport.peerreview.audit.LogSnippet;
 import org.mpisws.p2p.transport.peerreview.audit.SnippetEntry;
 import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
-import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializerImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.evidence.AuditResponse;
 import org.mpisws.p2p.transport.peerreview.evidence.ChallengeAudit;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceSerializerImpl;
@@ -88,7 +88,7 @@ class PeerReviewWireRoundTripTest {
     }
   };
 
-  private static final AuthenticatorSerializerImpl AUTHENTICATORS = new AuthenticatorSerializerImpl(HASH, SIG);
+  private static final AuthenticatorSerializer AUTHENTICATORS = new AuthenticatorSerializer(HASH, SIG);
   private static final EvidenceSerializerImpl<TestId, TestId> EVIDENCE = new EvidenceSerializerImpl<>(IDS, IDS, HASH,
       SIG);
   private static final HashProvider HASHER = new SHA256HashProvider();

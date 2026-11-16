@@ -40,13 +40,22 @@ import java.io.IOException;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 
-
 /**
  * Reads and writes Authenticators.
  * @author Jeff Hoye
  */
-public interface AuthenticatorSerializer {
+public class AuthenticatorSerializer {
 
-  public Authenticator deserialize(InputBuffer buf) throws IOException;
+  int hashLength;
+  int signatureLength;
+
+  public AuthenticatorSerializer(int hashLength, int signatureLength) {
+    this.hashLength = hashLength;
+    this.signatureLength = signatureLength;
+  }
+
+  public Authenticator deserialize(InputBuffer buf) throws IOException {
+    return new Authenticator(buf,hashLength,signatureLength);
+  }
 
 }

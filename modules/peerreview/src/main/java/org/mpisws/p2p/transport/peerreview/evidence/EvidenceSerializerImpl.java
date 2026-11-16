@@ -38,7 +38,7 @@ package org.mpisws.p2p.transport.peerreview.evidence;
 
 import java.io.IOException;
 
-import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializerImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceSerializer;
 import org.mpisws.p2p.transport.peerreview.message.AckMessage;
@@ -57,7 +57,7 @@ public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier e
   private final int signatureSize;
   private final Serializer<Handle> handleSerializer;
   private final Serializer<Identifier> idSerializer;
-  private final AuthenticatorSerializerImpl authSerializer;
+  private final AuthenticatorSerializer authSerializer;
 
   public EvidenceSerializerImpl(Serializer<Handle> handleSerializer, Serializer<Identifier> idSerializer, int hashSize, int signatureSize) {
     super();
@@ -65,7 +65,7 @@ public class EvidenceSerializerImpl<Handle extends RawSerializable, Identifier e
     this.idSerializer = idSerializer;
       this.hashSize = hashSize;
     this.signatureSize = signatureSize;
-    this.authSerializer = new AuthenticatorSerializerImpl(hashSize,signatureSize);
+    this.authSerializer = new AuthenticatorSerializer(hashSize,signatureSize);
   }
 
   @Override
