@@ -68,7 +68,6 @@ import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Cancellable;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
@@ -376,14 +375,12 @@ public class SourceRouteManagerImpl<Identifier> implements
       routes.add(best);
     }
 
-    class PendingSocket implements SocketRequestHandle<Identifier>, SocketCallback<SourceRoute<Identifier>> {
-      private SocketCallback<Identifier> deliverSocketToMe;
-      private @Nullable Map<String, Object> options;
-      private @Nullable Cancellable cancellable;
+    class PendingSocket extends SocketRequestHandleImpl<Identifier> implements SocketCallback<SourceRoute<Identifier>> {
+      private final SocketCallback<Identifier> deliverSocketToMe;
 
       public PendingSocket(SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
+        super(address, options, logger);
         this.deliverSocketToMe = deliverSocketToMe;
-        this.options = options;
       }
 
       @Override
@@ -401,58 +398,35 @@ public class SourceRouteManagerImpl<Identifier> implements
         receiveException(null, ex);
       }
 
+      /**
+       * Leaves the queue while waiting for a route, afterwards cancels the lower open.
+       */
       @Override
       public boolean cancel() {
-        if (cancellable == null) {
+        if (getSubCancellable() == null) {
           return pendingSockets.remove(this);
         }
-        return cancellable.cancel();
-      }
-
-      @Override
-      public Identifier getIdentifier() {
-        return address;
-      }
-
-      @Override
-      public @Nullable Map<String, Object> getOptions() {
-        return options;
+        return super.cancel();
       }
     }
 
-    class PendingMessage implements MessageRequestHandle<Identifier, ByteBuffer>, MessageCallback<SourceRoute<Identifier>, ByteBuffer> {
-      private ByteBuffer message;
-      private @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
-      private @Nullable Map<String, Object> options;
-      private @Nullable Cancellable cancellable;
+    class PendingMessage extends MessageRequestHandleImpl<Identifier, ByteBuffer> implements MessageCallback<SourceRoute<Identifier>, ByteBuffer> {
+      private final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe;
 
       public PendingMessage(ByteBuffer message, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> options) {
-        this.message = message;
+        super(address, message, options);
         this.deliverAckToMe = deliverAckToMe;
-        this.options = options;
       }
 
+      /**
+       * Leaves the queue while waiting for a route, afterwards cancels the lower send.
+       */
       @Override
       public boolean cancel() {
-        if (cancellable == null) {
+        if (getSubCancellable() == null) {
           return pendingMessages.remove(this);
         }
-        return cancellable.cancel();
-      }
-
-      @Override
-      public @Nullable Map<String, Object> getOptions() {
-        return options;
-      }
-
-      @Override
-      public Identifier getIdentifier() {
-        return address;
-      }
-
-      @Override
-      public ByteBuffer getMessage() {
-        return message;
+        return super.cancel();
       }
 
       @Override
@@ -819,13 +793,13 @@ public class SourceRouteManagerImpl<Identifier> implements
       // we can now send any pending messages
       while (!pendingMessages.isEmpty()) {
         PendingMessage pm = pendingMessages.removeFirst();
-        pm.cancellable = tl.sendMessage(best, pm.message, pm, pm.options);
+        pm.setSubCancellable(tl.sendMessage(best, pm.getMessage(), pm, pm.getOptions()));
       }
 
       // we can now send any pending messages
       while (!pendingSockets.isEmpty()) {
         PendingSocket pas = pendingSockets.removeFirst();
-        pas.cancellable = tl.openSocket(best, pas, pas.options);
+        pas.setSubCancellable(tl.openSocket(best, pas, pas.getOptions()));
       }
 
       if (pendingMessages.isEmpty() && pendingSockets.isEmpty()) hardLinks.remove(this);
