@@ -46,7 +46,8 @@ package rice.persistence;
  * @version $Id: LRUCache.java 4654 2009-01-08 16:33:07Z jeffh $
  */
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.SortedMap;
 
 import org.slf4j.Logger;
@@ -72,8 +73,8 @@ public class LRUCache implements Cache {
   // the back-end storage used by this cache
   private final Storage storage;
 
-  // the list of keys, in MRU -> LRU order
-  private final LinkedList<Id> order;
+  // the keys, eldest (least recently used) first; access order, so a touch moves a key to the end; guarded by itself
+  private final Map<Id, Boolean> order = new LinkedHashMap<>(16, 0.75f, true);
 
   private final Environment environment;
 
@@ -89,14 +90,30 @@ public class LRUCache implements Cache {
     this.storage = storage;
     this.maximumSize = maximumSize;
 
-    // LinkedList, not ArrayDeque: a null key is accepted (and tested), which ArrayDeque rejects
-    @SuppressWarnings("JdkObsolete")
-    LinkedList<Id> list = new LinkedList<Id>();
-    this.order = list;
     Iterator<Id> i = storage.scan().getIterator();
 
     while (i.hasNext())
-      order.addLast(i.next());
+      touch(i.next());
+  }
+
+  /** Marks the id as the most recently used one; a null id is accepted. */
+  private void touch(Id id) {
+    synchronized (order) {
+      order.put(id, Boolean.TRUE);
+    }
+  }
+
+  private void forget(Id id) {
+    synchronized (order) {
+      order.remove(id);
+    }
+  }
+
+  /** The least recently used id, or null if the cache tracks none. */
+  private Id eldest() {
+    synchronized (order) {
+      return order.isEmpty() ? null : order.keySet().iterator().next();
+    }
   }
 
   /**
@@ -113,10 +130,8 @@ public class LRUCache implements Cache {
       @Override
       public void receiveResult(Boolean o) {
         if (Boolean.TRUE.equals(o)) {
-          synchronized (order) {
-            order.remove(oldId);
-            order.addFirst(newId);
-          }
+          forget(oldId);
+          touch(newId);
         }
         parent.receiveResult(o);
       }
@@ -145,10 +160,7 @@ public class LRUCache implements Cache {
     final int size = getSize(obj);
 
     if (exists(id)) {
-      synchronized (order) {
-        order.remove(id);
-        order.addFirst(id);
-      }
+      touch(id);
 
       c.receiveResult(Boolean.valueOf(true));
       return;
@@ -163,9 +175,7 @@ public class LRUCache implements Cache {
     final Continuation<Boolean, Exception> store = new Continuation<Boolean, Exception>() {
       @Override
       public void receiveResult(Boolean o) {
-        synchronized (order) {
-          order.addFirst(id);
-        }
+        touch(id);
 
         storage.store(id, metadata, obj, c);
       }
@@ -197,9 +207,7 @@ public class LRUCache implements Cache {
    */
   @Override
   public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
-    synchronized (order) {
-      order.remove(id);
-    }
+    forget(id);
 
     storage.unstore(id, c);
   }
@@ -228,10 +236,7 @@ public class LRUCache implements Cache {
       return;
     }
 
-    synchronized (order) {
-      order.remove(id);
-      order.addFirst(id);
-    }
+    touch(id);
 
     storage.getObject(id, c);
   }
@@ -412,10 +417,7 @@ public class LRUCache implements Cache {
       @Override
       public void receiveResult(Boolean o) {
         if (storage.getTotalSize() > size) {
-          Id last;
-          synchronized (order) {
-            last = order.isEmpty() ? null : order.getLast();
-          }
+          Id last = eldest();
           if (last == null) {
             parent.receiveException(new IllegalStateException("Cache exceeds its size limit, but holds no evictable objects"));
             return;
