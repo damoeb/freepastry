@@ -67,7 +67,7 @@ import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
-import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManagerImpl;
+import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
 import org.mpisws.p2p.transport.wire.WireTransportLayerImpl;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
@@ -213,7 +213,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
       bob_pinger = temp;
     }
 
-    return new SourceRouteManagerImpl<MultiInetSocketAddress>(srFactory, temp, temp, prox, env_a,
+    return new SourceRouteManager<MultiInetSocketAddress>(srFactory, temp, temp, prox, env_a,
         new TestSRS(temp.getLocalIdentifier().getLastHop()));
   }
 

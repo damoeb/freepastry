@@ -7,17 +7,17 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import rice.environment.params.simple.SimpleParameters;
 
-class SourceRouteManagerImplTest {
+class SourceRouteManagerTest {
 
   @Test
   void limitKeepsAtMostTheConfiguredNumberOfRoutes() {
-    assertEquals(List.of(1, 2), List.copyOf(SourceRouteManagerImpl.limit(List.of(1, 2, 3, 4), 2)));
-    assertEquals(List.of(1, 2), List.copyOf(SourceRouteManagerImpl.limit(List.of(1, 2), 8)));
+    assertEquals(List.of(1, 2), List.copyOf(SourceRouteManager.limit(List.of(1, 2, 3, 4), 2)));
+    assertEquals(List.of(1, 2), List.copyOf(SourceRouteManager.limit(List.of(1, 2), 8)));
   }
 
   @Test
   void zeroAttemptsDisablesSourceRouting() {
-    assertEquals(0, SourceRouteManagerImpl.limit(List.of(1, 2, 3), 0).size());
+    assertEquals(0, SourceRouteManager.limit(List.of(1, 2, 3), 0).size());
   }
 
   @Test

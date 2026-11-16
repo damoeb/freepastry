@@ -87,7 +87,7 @@ import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayerImpl;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager;
-import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManagerImpl;
+import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.SimpleSourceRouteStrategy;
@@ -607,7 +607,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>> prox =
       new MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>>(pinger, environment);
     final SourceRouteManager<MultiInetSocketAddress> srm =
-      new SourceRouteManagerImpl<MultiInetSocketAddress>(esrFactory,ltl,livenessProvider,prox,environment,srStrategy);
+      new SourceRouteManager<MultiInetSocketAddress>(esrFactory,ltl,livenessProvider,prox,environment,srStrategy);
     return new TransLivenessProximity<MultiInetSocketAddress, ByteBuffer>(){
         @Override
         public TransportLayer<MultiInetSocketAddress, ByteBuffer> getTransportLayer() {

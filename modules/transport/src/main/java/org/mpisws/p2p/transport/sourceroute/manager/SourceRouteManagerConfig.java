@@ -41,7 +41,7 @@ import static rice.environment.params.ConfigChecks.nonNegative;
 import rice.environment.params.Parameters;
 
 /**
- * The tuning parameters of a {@link SourceRouteManagerImpl}.
+ * The tuning parameters of a {@link SourceRouteManager}.
  *
  * @param numSourceRouteAttempts {@code pastry_socket_srm_num_source_route_attempts}: the number of
  *        source routes tried when the direct route fails; 0 disables source routing

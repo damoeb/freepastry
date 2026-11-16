@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * {@link org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManagerImpl} turns the source-route
+ * {@link org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager} turns the source-route
  * layer back into a layer addressed by plain identifiers: it uses the direct route while it is alive
  * and asks a {@link org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy} for alternative
  * routes through other nodes when it is not. It also provides liveness and proximity for the
