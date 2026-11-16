@@ -47,7 +47,7 @@ import rice.pastry.direct.proximitygenerators.SphereNetworkProximityGenerator;
  * @author Y. Charlie Hu
  * @author Rongmei Zhang
  */
-public class SphereNetwork<Identifier, MessageType> extends NetworkSimulatorImpl<Identifier, MessageType> {
+public class SphereNetwork<Identifier, MessageType> extends NetworkSimulator<Identifier, MessageType> {
 
   /**
    * Constructor.

@@ -44,7 +44,7 @@ import rice.pastry.direct.proximitygenerators.GenericProximityGenerator;
 
 // This topology will read in a topology-distance matrix and the corresponding
 // coordinates from input files
-public class GenericNetwork<Identifier, MessageType> extends NetworkSimulatorImpl<Identifier, MessageType> {
+public class GenericNetwork<Identifier, MessageType> extends NetworkSimulator<Identifier, MessageType> {
 
   public GenericNetwork(Environment env) throws IOException {
     this(env, (Path)null);

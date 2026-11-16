@@ -36,9 +36,13 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.direct;
 
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.mpisws.p2p.transport.direct.DirectTransportLayer;
 import org.mpisws.p2p.transport.direct.GenericNetworkSimulator;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
+import rice.environment.Environment;
+import rice.environment.random.RandomSource;
+import rice.environment.random.simple.SimpleRandomSource;
 
 /**
  * Interface to an object which is simulating the network.
@@ -47,61 +51,38 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
  *
  * @author Andrew Ladd
  */
+public class NetworkSimulator<Identifier, MessageType> {
+  private final BasicNetworkSimulator<Identifier, MessageType> simulator;
+  private final RandomSource random;
+  private final ProximityGenerator generator;
+  private final LivenessProvider<Identifier> livenessProvider;
 
-public interface NetworkSimulator<Identifier, MessageType> {
-
-
-  /**
-   * Checks to see if a node id is alive.
-   *
-   * @param nh a node.
-   *
-   * @return true if alive, false otherwise.
-   */
-
-  public boolean isAlive(Identifier nh);
-
-  /**
-   * Determines rtt between two nodes.
-   *
-   * @param a a node id.
-   * @param b another node id.
-   *
-   * @return proximity of b to a.
-   */
-  public float proximity(Identifier a, Identifier b);
-
-  /**
-   * Determines delivery time from a to b.
-   *
-   * @param a a node id.
-   * @param b another node id.
-   *
-   * @return proximity of b to a.
-   */
-  public float networkDelay(Identifier a, Identifier b);
-
-  public void setTestRecord(TestRecord tr);
-
-  public TestRecord getTestRecord();
+  // TODO: add a listener to the top-level transport layer to notify simulator listeners
+  public NetworkSimulator(Environment env, ProximityGenerator generator) {
+    NetworkSimulatorConfig config = NetworkSimulatorConfig.fromParameters(env.getParameters());
+    if (config.useOwnRandom()) {
+      if (config.randomSeed().isPresent()) {
+        this.random = new SimpleRandomSource(config.randomSeed().getAsLong(), env.getLogManager(),
+            "direct");
+      } else {
+        this.random = new SimpleRandomSource(env.getLogManager(), "direct");
+      }
+    } else {
+      this.random = env.getRandomSource();
+    }
+    generator.setRandom(random);
+    this.generator = generator;
+    simulator = new BasicNetworkSimulator<Identifier, MessageType>(env, random, this, config);
+    livenessProvider = simulator;
+  }
 
   /**
-   * Returns the closest Node in proximity.
-   *
-   * @param nh the node to find the closest node to
-   * @return the closest live, ready node
-   */
-  public DirectNodeHandle getClosest(DirectNodeHandle nh);
-
-  /**
-   * Generates a random node record
+   * unlimited maxSpeed
    *
    */
-  public NodeRecord generateNodeRecord();
-
-  public void start();
-
-  public void stop();
+  public void setFullSpeed() {
+    simulator.setFullSpeed();
+  }
 
   /**
    * The max rate of the simulator compared to realtime.
@@ -125,13 +106,56 @@ public interface NetworkSimulator<Identifier, MessageType> {
    * zero or less will cause no bound on the simulation speed
    *
    */
-  public void setMaxSpeed(float rate);
+  public void setMaxSpeed(float rate) {
+    simulator.setMaxSpeed(rate);
+  }
+
+  public void start() {
+    simulator.start();
+  }
+
+  public void stop() {
+    simulator.stop();
+  }
+
+  // ************************* What is this? **********************
+  private TestRecord testRecord;
+  /**
+   * get TestRecord
+   *
+   * @return the returned TestRecord
+   */
+  public TestRecord getTestRecord() {
+    return testRecord;
+  }
 
   /**
-   * unlimited maxSpeed
+   * set TestRecord
    *
+   * @param tr input TestRecord
    */
-  public void setFullSpeed();
+  public void setTestRecord(TestRecord tr) {
+    testRecord = tr;
+  }
+
+
+  /************** SimulatorListeners handling *******************/
+  final CopyOnWriteArrayList<GenericSimulatorListener<Identifier, MessageType>> listeners = new CopyOnWriteArrayList<GenericSimulatorListener<Identifier, MessageType>>();
+  /**
+   *
+   * @return true if added, false if already a listener
+   */
+  public boolean addSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl) {
+    return listeners.addIfAbsent(sl);
+  }
+
+  /**
+   *
+   * @return true if removed, false if not already a listener
+   */
+  public boolean removeSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl) {
+    return listeners.remove(sl);
+  }
 
   /**
    * Call this when a message is sent.
@@ -140,7 +164,11 @@ public interface NetworkSimulator<Identifier, MessageType> {
    * @param to the destination
    * @param delay the network proximity (when the message will be received)
    */
-  public void notifySimulatorListenersSent(MessageType m, Identifier from, Identifier to, int delay);
+  public void notifySimulatorListenersSent(MessageType m, Identifier from, Identifier to, int delay) {
+    for (GenericSimulatorListener<Identifier, MessageType> listener : listeners) {
+      listener.messageSent(m, from, to, delay);
+    }
+  }
 
   /**
    * Call this when a message is received.
@@ -148,25 +176,78 @@ public interface NetworkSimulator<Identifier, MessageType> {
    * @param from the source
    * @param to the destination
    */
-  public void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to);
+  public void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to) {
+    for (GenericSimulatorListener<Identifier, MessageType> listener : listeners) {
+      listener.messageReceived(m, from, to);
+    }
+  }
 
   /**
+   * Generates a random node record
    *
-   * @return true if added, false if already a listener
    */
-  public boolean addSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl);
+  public NodeRecord generateNodeRecord() {
+    return generator.generateNodeRecord();
+  }
 
   /**
+   * Returns the closest Node in proximity.
    *
-   * @return true if removed, false if not already a listener
+   * @param nh the node to find the closest node to
+   * @return the closest live, ready node
    */
-  public boolean removeSimulatorListener(GenericSimulatorListener<Identifier, MessageType> sl);
+  public DirectNodeHandle getClosest(DirectNodeHandle nh) {
+    return null;
+  }
 
-  public NodeRecord getNodeRecord(DirectNodeHandle handle);
+  /**
+   * Checks to see if a node id is alive.
+   *
+   * @param nh a node.
+   *
+   * @return true if alive, false otherwise.
+   */
+  public boolean isAlive(Identifier nh) {
+    return simulator.isAlive(nh);
+  }
 
-  public LivenessProvider<Identifier> getLivenessProvider();
+  /**
+   * Determines delivery time from a to b.
+   *
+   * @param a a node id.
+   * @param b another node id.
+   *
+   * @return proximity of b to a.
+   */
+  public float networkDelay(Identifier a, Identifier b) {
+    return simulator.networkDelay(a, b);
+  }
 
-  public GenericNetworkSimulator<Identifier, MessageType> getGenericSimulator();
+  /**
+   * Determines rtt between two nodes.
+   *
+   * @param a a node id.
+   * @param b another node id.
+   *
+   * @return proximity of b to a.
+   */
+  public float proximity(Identifier a, Identifier b) {
+    return simulator.proximity(a, b);
+  }
 
-  public void registerNode(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord nr);
+  public NodeRecord getNodeRecord(DirectNodeHandle handle) {
+    return simulator.getNodeRecord(handle);
+  }
+
+  public LivenessProvider<Identifier> getLivenessProvider() {
+    return livenessProvider;
+  }
+
+  public GenericNetworkSimulator<Identifier, MessageType> getGenericSimulator() {
+    return simulator;
+  }
+
+  public void registerNode(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord nr) {
+    simulator.registerIdentifier(i, dtl, nr);
+  }
 }

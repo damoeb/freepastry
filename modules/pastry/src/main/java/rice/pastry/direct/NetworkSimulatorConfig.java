@@ -44,7 +44,7 @@ import rice.environment.EnvironmentConfig;
 import rice.environment.params.Parameters;
 
 /**
- * The parameters of the direct (simulated) network: {@link NetworkSimulatorImpl},
+ * The parameters of the direct (simulated) network: {@link NetworkSimulator},
  * {@link BasicNetworkSimulator}, the built-in topologies and {@link DirectPastryNodeFactory}.
  *
  * @param useOwnRandom {@code pastry_direct_use_own_random}, optional, default false: give the

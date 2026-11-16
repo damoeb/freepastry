@@ -47,7 +47,7 @@ import rice.pastry.direct.proximitygenerators.EuclideanProximityGenerator;
  * @author Andrew Ladd
  * @author Rongmei Zhang
  */
-public class EuclideanNetwork<Identifier, MessageType> extends NetworkSimulatorImpl<Identifier, MessageType> {
+public class EuclideanNetwork<Identifier, MessageType> extends NetworkSimulator<Identifier, MessageType> {
 
   /**
    * Constructor.
