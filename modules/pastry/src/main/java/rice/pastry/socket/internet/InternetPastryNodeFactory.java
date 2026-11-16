@@ -60,7 +60,7 @@ import rice.pastry.socket.nat.CantFindFirewallException;
 import rice.pastry.socket.nat.NATHandler;
 import rice.pastry.socket.nat.StubNATHandler;
 import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifier;
-import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifierImpl;
+import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifier;
 import rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory;
 import rice.selector.TimerTask;
 
@@ -153,7 +153,7 @@ public class InternetPastryNodeFactory extends
       this.externalAddresses[0] = socketConfig.externalAddress().getAddress();
     }
 
-    this.connectivityVerifier = new ConnectivityVerifierImpl(this);
+    this.connectivityVerifier = new ConnectivityVerifier(this);
 
     // sets/verifies externalAddress
     findExternalAddressIfNecessary(this.getBindAddress()); // blocking call

@@ -46,7 +46,7 @@ import rice.environment.Environment;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifier;
-import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifierImpl;
+import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifier;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 public class WhatIsMyIP {
@@ -71,7 +71,7 @@ public class WhatIsMyIP {
     // construct the PastryNodeFactory, this is how we use rice.pastry.socket
     SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
 
-    ConnectivityVerifier verifier = new ConnectivityVerifierImpl(factory);
+    ConnectivityVerifier verifier = new ConnectivityVerifier(factory);
 
     verifier.findExternalAddress(factory.getNextInetSocketAddress(), Collections.singleton(bootaddress), new Continuation<InetAddress, IOException>() {
 
