@@ -70,7 +70,6 @@ import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.direct.GenericNetwork;
 import rice.pastry.direct.NetworkSimulator;
 import rice.pastry.direct.SphereNetwork;
-import rice.pastry.dist.DistPastryNodeFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
@@ -196,8 +195,7 @@ public abstract class CommonAPITest {
     }
 
     if (factory == null) {
-      factory = DistPastryNodeFactory.getFactory(idFactory,
-          DistPastryNodeFactory.PROTOCOL_SOCKET,PORT,env);
+      factory = new SocketPastryNodeFactory(idFactory, PORT, env);
     }
 
     nodes = new Node[NUM_NODES+1];
