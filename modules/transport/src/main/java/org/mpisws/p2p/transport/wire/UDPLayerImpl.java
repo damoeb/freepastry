@@ -52,6 +52,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
+import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.selector.SelectionKeyHandler;
 
@@ -255,9 +256,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
           write = i.next();
           try {
 
-            int len = write.msg.remaining();
-            logger.debug("writing {} to {}", len, write.destination);
-            if (channel.send(write.msg, write.destination) == len) {
+            int len = write.getMessage().remaining();
+            logger.debug("writing {} to {}", len, write.getIdentifier());
+            if (channel.send(write.getMessage(), write.getIdentifier()) == len) {
               if (write.continuation != null) write.continuation.ack(write);
               i.remove();
             } else {
@@ -265,7 +266,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
             }
           } catch (IOException e) {
             if (write.continuation == null) {
-              wire.getErrorHandler().receivedException(write.destination, e);
+              wire.getErrorHandler().receivedException(write.getIdentifier(), e);
             } else {
               write.continuation.sendFailed(write, e);
             }
@@ -275,7 +276,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
         }
       }
     } catch (Exception e) {
-      logger.warn("ERROR (datagrammanager:write) to {}", write == null ? null : write.destination, e);
+      logger.warn("ERROR (datagrammanager:write) to {}", write == null ? null : write.getIdentifier(), e);
     } finally {
       if (pendingMsgs.isEmpty())
         key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
@@ -300,51 +301,29 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
    *
    * @author amislove
    */
-  public class Envelope implements MessageRequestHandle<InetSocketAddress, ByteBuffer> {
-    private final InetSocketAddress destination;
-    /**
-     * The message sans header.
-     */
-    private final ByteBuffer msg;
+  public class Envelope extends MessageRequestHandleImpl<InetSocketAddress, ByteBuffer> {
     private final @Nullable MessageCallback<InetSocketAddress, ByteBuffer> continuation;
-    @Nullable Map<String, Object> options;
 
     /**
      * Constructor for Envelope.
      *
+     * @param msg the message sans header
      * @param deliverAckToMe notified when the datagram was written to the wire
      */
     public Envelope(InetSocketAddress destination,
         ByteBuffer msg,
         @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
         @Nullable Map<String, Object> options) {
-      this.destination = destination;
-      this.msg = msg;
+      super(destination, msg, options);
       this.continuation = deliverAckToMe;
-      this.options = options;
     }
 
+    /**
+     * Takes the datagram out of the queue, if it was not written yet.
+     */
     @Override
     public boolean cancel() {
-      if (pendingMsgs.remove(this)) {
-        return true;
-      }
-      return false;
-    }
-
-    @Override
-    public InetSocketAddress getIdentifier() {
-      return destination;
-    }
-
-    @Override
-    public ByteBuffer getMessage() {
-      return msg;
-    }
-
-    @Override
-    public @Nullable Map<String, Object> getOptions() {
-      return options;
+      return pendingMsgs.remove(this);
     }
   }
 
