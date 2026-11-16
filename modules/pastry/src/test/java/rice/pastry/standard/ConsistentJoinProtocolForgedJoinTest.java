@@ -16,7 +16,7 @@ import rice.pastry.testing.WireRoundTrip.SocketNode;
  * The rows of an accepted join request come from the hops on the path, and the joiner broadcasts them: a row that a
  * hop did not have (or a peer left out) is missing.
  */
-class StandardJoinProtocolForgedJoinTest {
+class ConsistentJoinProtocolForgedJoinTest {
   private Environment env;
   private SocketNode local;
 
@@ -35,7 +35,7 @@ class StandardJoinProtocolForgedJoinTest {
   @DisplayName("broadcasting the rows of a join request skips a missing row")
   void broadcastRowsSkipsAMissingRow() throws IOException {
     NodeHandle acceptor = local.handle("8000");
-    StandardJoinProtocol protocol = new StandardJoinProtocol(local.node, local.local(), local.node.getRoutingTable(),
+    ConsistentJoinProtocol protocol = new ConsistentJoinProtocol(local.node, local.local(), local.node.getRoutingTable(),
         local.node.getLeafSet(), null);
     JoinRequest jr = new JoinRequest(local.local(), (byte) 4, 1L);
     jr.pushRow(null);

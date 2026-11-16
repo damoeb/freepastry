@@ -34,9 +34,6 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Apr 13, 2005
- */
 package rice.pastry.standard;
 
 import java.io.IOException;
@@ -49,10 +46,13 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.mpisws.p2p.transport.liveness.LivenessTypes;
+import rice.Continuation;
 import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.util.TimerWeakHashMap;
+import rice.pastry.ExponentialBackoffScheduledMessage;
+import rice.pastry.Id;
 import rice.pastry.JoinFailedException;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeSetEventSource;
@@ -60,16 +60,38 @@ import rice.pastry.NodeSetListener;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeListener;
 import rice.pastry.ReadyStrategy;
+import rice.pastry.ScheduledMessage;
+import rice.pastry.client.PastryAppl;
+import rice.pastry.join.InitiateJoin;
+import rice.pastry.join.JoinAddress;
 import rice.pastry.join.JoinMessageType;
+import rice.pastry.join.JoinProtocol;
+import rice.pastry.join.JoinRequest;
+import rice.pastry.leafset.BroadcastLeafSet;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PMessageDeserializer;
+import rice.pastry.routing.BroadcastRouteRow;
+import rice.pastry.routing.RouteMessage;
+import rice.pastry.routing.RouteMessageNotification;
+import rice.pastry.routing.RouteSet;
 import rice.pastry.routing.RoutingTable;
+import rice.pastry.transport.PMessageNotification;
+import rice.pastry.transport.PMessageReceipt;
 import rice.selector.LoopObserver;
 import rice.selector.TimerTask;
 
-
 /**
- * Does not setReady until contacting entire leafset which gossips new members.
+ * The join protocol. It routes a join request to the joiner's id, then does not go ready until it
+ * contacted its entire leafset, which gossips new members.
+ *
+ * The join:
+ * initiateJoin() causes InitiateJoinMsg to be sent periodically on the joiner
+ * causes handleInitiateJoin() constructs a RouteMessage(JoinRequest) and sends it to the bootstrap
+ * causes handleIntermediateHop() on each node along the route
+ * causes respondToJoiner() on last hop
+ * causes completeJoin() on joiner
+ * causes setReady(), which probes the leafset with ConsistentJoinMsgs before the node goes ready
  *
  * Provides consistency as long as checkLiveness() never incorrectly reports a node faulty.
  *
@@ -78,9 +100,24 @@ import rice.selector.TimerTask;
  *
  * Another difference is that we are unwilling to pull nodes from our leafset without checkingLiveness() ourself.
  *
+ * @author Peter Druschel
+ * @author Andrew Ladd
+ * @author Rongmei Zhang
+ * @author Y. Charlie Hu
  * @author Jeff Hoye
  */
-public class ConsistentJoinProtocol extends StandardJoinProtocol implements NodeHandleListener, PastryNodeListener, NodeSetListener, LoopObserver /*, ReadyStrategy */{
+public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, NodeHandleListener, PastryNodeListener, NodeSetListener, LoopObserver {
+  /** The join message is resent after 2 s, doubling up to 60 s. */
+  private static final long JOIN_RETRY_INITIAL_MILLIS = 2000;
+  private static final double JOIN_RETRY_BACKOFF_FACTOR = 2;
+  private static final long JOIN_RETRY_MAX_MILLIS = 60000;
+
+  protected NodeHandle localHandle;
+
+  private final RoutingTable routeTable;
+
+  protected final LeafSet leafSet;
+
   /** Listener priority on the node handles we wait to hear from. */
   private static final int NODE_HANDLE_LISTENER_PRIORITY = 40;
   /** How long a node that answered our join is remembered. */
@@ -161,17 +198,23 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
    */
   public final int RETRY_INTERVAL;
 
-  public static class CJPDeserializer extends SJPDeserializer {
+  /**
+   * Reads the messages of the join protocol. A subclass with message types of its own extends it.
+   */
+  public static class CJPDeserializer extends PMessageDeserializer {
     public CJPDeserializer(PastryNode pn) {
       super(pn);
     }
 
     @Override
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-      if (JoinMessageType.find(type) == JoinMessageType.CONSISTENT_JOIN) {
-        return new ConsistentJoinMsg(buf,pn,(NodeHandle)sender);
-      }
-      return super.deserialize(buf, type, priority, sender);
+      return switch (JoinMessageType.find(type)) {
+        case JOIN_REQUEST -> new JoinRequest(buf,pn, (NodeHandle)sender, pn);
+        case CONSISTENT_JOIN -> new ConsistentJoinMsg(buf,pn,(NodeHandle)sender);
+        // read by the subclass's deserializer
+        case RENDEZVOUS_JOIN_REQUEST -> null;
+        case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());
+      };
     }
   }
 
@@ -197,7 +240,10 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   public ConsistentJoinProtocol(PastryNode ln, NodeHandle lh,
       RoutingTable rt, LeafSet ls, ReadyStrategy nextReadyStrategy,
       MessageDeserializer md, ConsistentJoinConfig config) {
-    super(ln, lh, rt, ls, md != null ? md : new CJPDeserializer(ln));
+    super(ln, null, JoinAddress.getCode(), md != null ? md : new CJPDeserializer(ln));
+    localHandle = lh;
+    routeTable = rt;
+    leafSet = ls;
     gotResponse = new TimerWeakHashMap<NodeHandle, Object>(ln.getEnvironment().getSelectorManager().getTimer(), GOT_RESPONSE_HARD_LINK_MILLIS);
     failed = new HashMap<NodeHandle, FailedTime>();
     observing = new HashSet<NodeHandle>();
@@ -243,11 +289,186 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   }
 
   /**
-   * This is where we start out, when the StandardJoinProtocol would call
-   * setReady();
+   * Get address.
+   *
+   * @return gets the address.
    */
   @Override
-  protected void setReady() {
+  public int getAddress() {
+    return JoinAddress.getCode();
+  }
+
+  /** Retransmits the join request while this node is joining; {@code null} otherwise. */
+  private ScheduledMessage joinEvent;
+
+  @Override
+  public void initiateJoin(Collection<NodeHandle> bootstrap) {
+    logger.info("initiateJoin({})", bootstrap);
+    if (bootstrap == null || bootstrap.isEmpty()) {
+      // no bootstrap node, so ready immediately
+      thePastryNode.setReady();
+    } else {
+      // schedule (re-)transmission of the join message at an exponential backoff
+      joinEvent = new ExponentialBackoffScheduledMessage(
+          thePastryNode, new InitiateJoin(bootstrap),
+          thePastryNode.getEnvironment().getSelectorManager().getTimer(),
+          0, JOIN_RETRY_INITIAL_MILLIS, JOIN_RETRY_BACKOFF_FACTOR, JOIN_RETRY_MAX_MILLIS);
+    }
+  }
+
+  private void handleInitiateJoin(InitiateJoin ij) {
+    final NodeHandle nh = ij.getHandle();
+
+    if (nh == null) {
+      logger.error("ERROR: Cannot join ring.  All bootstraps are faulty.{}", ij);
+      thePastryNode.joinFailed(new JoinFailedException("Cannot join ring.  All bootstraps are faulty."+ij));
+    } else {
+      logger.info("InitiateJoin attempting to join:{} liveness:{}", nh, nh.getLiveness());
+        getJoinRequest(nh, new Continuation<JoinRequest, Exception>() {
+
+          @Override
+          public void receiveResult(JoinRequest jr) {
+            RouteMessage rm = new RouteMessage(localHandle.getNodeId(), jr, null, null,
+                thePastryNode.getConfig().routeMsgVersion());
+
+            rm.getOptions().setRerouteIfSuspected(false);
+            rm.setPrevNode(localHandle);
+            thePastryNode.send(nh, rm, null, getOptions(jr, options));
+          }
+
+          @Override
+          public void receiveException(Exception exception) {
+
+          }
+
+        });
+
+    }
+  }
+
+  protected void getJoinRequest(NodeHandle bootstrap, Continuation<JoinRequest, Exception> deliverJRToMe) {
+    JoinRequest jr = new JoinRequest(localHandle, thePastryNode
+        .getRoutingTable().baseBitLength(), thePastryNode.getEnvironment().getTimeSource().currentTimeMillis());
+    deliverJRToMe.receiveResult(jr);
+  }
+
+  private void handleIntermediateHop(RouteMessage rm) {
+    try {
+      JoinRequest jr = (JoinRequest) rm.unwrap(deserializer);
+
+      Id localId = localHandle.getNodeId();
+      NodeHandle jh = jr.getHandle();
+      Id nid = jh.getNodeId();
+
+      if (!jh.equals(localHandle)) {
+        int base = thePastryNode.getRoutingTable().baseBitLength();
+
+        int msdd = localId.indexOfMSDD(nid, base);
+        int last = jr.lastRow();
+
+        for (int i = last - 1; msdd > 0 && i >= msdd; i--) {
+          RouteSet[] row = routeTable.getRow(i);
+
+          jr.pushRow(row);
+        }
+
+        rm.setRouteMessageNotification(new RouteMessageNotification(){
+          @Override
+          public void sendSuccess(RouteMessage message, NodeHandle nextHop) {
+            logger.info("sendSuccess({}):{}", message, nextHop);
+          }
+
+          @Override
+          public void sendFailed(RouteMessage message, Exception e) {
+            logger.info("sendFailed({}) ", message, e);
+          }
+        });
+
+        rm.setTLOptions(getOptions(jr, rm.getTLOptions()));
+
+        logger.info("Routing {}", rm);
+        thePastryNode.getRouter().route(rm);
+      }
+    } catch (IOException ioe) {
+      logger.error("ConsistentJoinProtocol.handleIntermediateHop()", ioe);
+    }
+  }
+
+  private void handleJoinRequest(final JoinRequest jr) {
+    if (jr.accepted() == false) {
+      respondToJoiner(jr);
+    } else if (joinEvent == null || thePastryNode.isReady()) {
+      // We are not joining (any more): a late answer to a retransmitted request, or a forged one. Completing the
+      // join again would let any peer push its leaf set and routing table rows into a ready node.
+      logger.info("Ignoring accepted JoinRequest {}, this node is not joining", jr);
+    } else { // this is the node that initiated the join request in the first place
+      completeJoin(jr);
+    }
+  }
+
+  private void respondToJoiner(final JoinRequest jr) {
+    NodeHandle joiner = jr.getHandle();
+
+    // this is the terminal node on the request path
+    if (thePastryNode.isReady()) {
+      logger.info("acceptJoin {}", jr);
+      jr.acceptJoin(localHandle, leafSet);
+      thePastryNode.send(joiner,jr,new PMessageNotification(){
+        @Override
+        public void sent(PMessageReceipt msg) {
+          logger.info("acceptJoin.sent({}):{}", msg, jr);
+        }
+        @Override
+        public void sendFailed(PMessageReceipt msg, Exception reason2) {
+          Throwable reason = reason2;
+          if (logger.isInfoEnabled()) {
+            logger.info("acceptJoin.sendFailed("+msg+"):"+jr, reason);
+            while (reason.getCause() != null) {
+              reason = reason.getCause();
+              logger.info("because", reason);
+            }
+          }
+        }
+      }, getOptions(jr, options));
+    } else {
+      logger.info("NOTE: Dropping incoming JoinRequest {} because local node is not ready!", jr);
+    }
+  }
+
+  /**
+   * The transport options for sending {@code jr}; a subclass can add to {@code existing}.
+   */
+  protected Map<String, Object> getOptions(JoinRequest jr, Map<String, Object> existing) {
+    return existing;
+  }
+
+  /** called on the joiner */
+  private void completeJoin(JoinRequest jr) {
+    NodeHandle jh = jr.getJoinHandle(); // the node we joined to.
+
+    if (jh.getId().equals(localHandle.getId()) && !jh.equals(localHandle)) {
+      logger.warn("NodeId collision, unable to join: {}:{}", localHandle, jh);
+    } else if (jh.getLiveness() < NodeHandle.LIVENESS_DEAD) { // the join handle is alive
+      routeTable.put(jh);
+      // add the num. closest node to the routing table
+
+      // now update the local leaf set
+      BroadcastLeafSet bls = new BroadcastLeafSet(jh, jr.getLeafSet(),
+          BroadcastLeafSet.JoinInitial, 0);
+      thePastryNode.receiveMessage(bls);
+
+      // update local RT, then broadcast rows to our peers
+      broadcastRows(jr);
+
+      // we have now successfully joined the ring, set the local node ready
+      setReady();
+    }
+  }
+
+  /**
+   * Called once the join completed: probes the leaf set, and goes ready when all of it answered.
+   */
+  private void setReady() {
     if (joinEvent != null) {
       logger.info("cancelling {}", joinEvent);
       joinEvent.cancel();
@@ -360,92 +581,105 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
   }
 
   /**
-   * Handle the CJM as in the MSR-TR
+   * Receives a message from the outside world.
+   *
+   * @param msg the message that was received.
    */
   @Override
   public void receiveMessage(Message msg) {
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "join messages are received on the selector thread";
     logger.trace("CJP: receiveMessage({})", msg);
     if (msg instanceof ConsistentJoinMsg cjm) {
-      // identify node j, the sender of the message
-      NodeHandle j = cjm.ls.get(0);
-
-      if (j.getLiveness() > LivenessTypes.LIVENESS_SUSPECTED) {
-        logger.info("got message from dead node:{}", msg);
-        j.checkLiveness(); // we got a message from a dead node...
-      }
-
-      // failed_i := failed_i - {j}
-      failed.remove(j);
-
-      // L_i.add(j);
-      addToLeafSet(j);
-
-      // for each n in L_i and failed do {probe}
-      // rather than removing everyone in the remote failedset,
-      // checkLiveness on them all
-      for (NodeHandle nh : cjm.failed) {
-        if (leafSet.member(nh)) {
-          if (nh.getLiveness() == NodeHandle.LIVENESS_DEAD) {
-            // if we already found them dead, don't bother
-            // hopefully this is redundant with the leafset protocol
-
-            // Note, can't remove from leafset, this is to only be done by the LeafSetProtocol
-          } else {
-            logger.debug("CJP: checking liveness2 on {}", nh);
-            nh.checkLiveness();
-          }
-        }
-      }
-
-      // we don't do the L_i.remove() because we don't trust this info
-
-      // L' stuff
-      // this is so we don't probe too many dudez.  For example:
-      // my leafset is not complete, so I will add anybody, but then keep
-      // getting closer and closer, each time knocking out the next guy
-      LeafSet lprime = leafSet.copy();
-      for (int i=-cjm.ls.ccwSize(); i<=cjm.ls.cwSize(); i++) {
-        NodeHandle nh = cjm.ls.get(i);
-        if (!failed.containsKey(nh) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-          lprime.put(nh);
-        }
-      }
-
-      HashSet<NodeHandle> addThese = new HashSet<NodeHandle>();
-      for (int i=-lprime.ccwSize(); i<=lprime.cwSize(); i++) {
-        if (i != 0) {
-          NodeHandle nh = lprime.get(i);
-          if (!leafSet.member(nh)) {
-            addThese.add(nh);
-          }
-        }
-      }
-
-      for (NodeHandle nh : addThese) {
-        // he's not a member, but he could be
-        if (!failed.containsKey(nh) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-          addToLeafSet(nh);
-          // probe
-          sendTheMessage(nh, false);
-        }
-      }
-
-      if (cjm.request) {
-        // send reply
-        sendTheMessage(j, true);
-      }
-        // done_probing:
-
-        // mark that he knows about us
-        gotResponse.put(j, new Object());
-        if (tryingToGoReady)
-          doneProbing();
+      handleConsistentJoinMsg(cjm);
     } else if (msg instanceof RequestFromEveryoneMsg) {
       requestFromEveryoneWeHaventHeardFrom();
-    } else {
-      super.receiveMessage(msg);
+    } else if (msg instanceof JoinRequest jr) {
+      handleJoinRequest(jr);
+    } else if (msg instanceof RouteMessage rm) { // a join request message at an intermediate node
+      handleIntermediateHop(rm);
+    } else if (msg instanceof InitiateJoin ij) { // request from the local node to join
+      handleInitiateJoin(ij);
     }
+  }
+
+  /**
+   * Handle the CJM as in the MSR-TR
+   */
+  private void handleConsistentJoinMsg(ConsistentJoinMsg cjm) {
+    // identify node j, the sender of the message
+    NodeHandle j = cjm.ls.get(0);
+
+    if (j.getLiveness() > LivenessTypes.LIVENESS_SUSPECTED) {
+      logger.info("got message from dead node:{}", cjm);
+      j.checkLiveness(); // we got a message from a dead node...
+    }
+
+    // failed_i := failed_i - {j}
+    failed.remove(j);
+
+    // L_i.add(j);
+    addToLeafSet(j);
+
+    // for each n in L_i and failed do {probe}
+    // rather than removing everyone in the remote failedset,
+    // checkLiveness on them all
+    for (NodeHandle nh : cjm.failed) {
+      if (leafSet.member(nh)) {
+        if (nh.getLiveness() == NodeHandle.LIVENESS_DEAD) {
+          // if we already found them dead, don't bother
+          // hopefully this is redundant with the leafset protocol
+
+          // Note, can't remove from leafset, this is to only be done by the LeafSetProtocol
+        } else {
+          logger.debug("CJP: checking liveness2 on {}", nh);
+          nh.checkLiveness();
+        }
+      }
+    }
+
+    // we don't do the L_i.remove() because we don't trust this info
+
+    // L' stuff
+    // this is so we don't probe too many dudez.  For example:
+    // my leafset is not complete, so I will add anybody, but then keep
+    // getting closer and closer, each time knocking out the next guy
+    LeafSet lprime = leafSet.copy();
+    for (int i=-cjm.ls.ccwSize(); i<=cjm.ls.cwSize(); i++) {
+      NodeHandle nh = cjm.ls.get(i);
+      if (!failed.containsKey(nh) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {
+        lprime.put(nh);
+      }
+    }
+
+    HashSet<NodeHandle> addThese = new HashSet<NodeHandle>();
+    for (int i=-lprime.ccwSize(); i<=lprime.cwSize(); i++) {
+      if (i != 0) {
+        NodeHandle nh = lprime.get(i);
+        if (!leafSet.member(nh)) {
+          addThese.add(nh);
+        }
+      }
+    }
+
+    for (NodeHandle nh : addThese) {
+      // he's not a member, but he could be
+      if (!failed.containsKey(nh) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {
+        addToLeafSet(nh);
+        // probe
+        sendTheMessage(nh, false);
+      }
+    }
+
+    if (cjm.request) {
+      // send reply
+      sendTheMessage(j, true);
+    }
+    // done_probing:
+
+    // mark that he knows about us
+    gotResponse.put(j, new Object());
+    if (tryingToGoReady)
+      doneProbing();
   }
 
   ReadyStrategy nextReadyStrategy;
@@ -653,5 +887,66 @@ public class ConsistentJoinProtocol extends StandardJoinProtocol implements Node
     }
     observing.clear();
     observing = null;
+  }
+  /**
+   * Broadcasts the route table rows.
+   *
+   * @param jr the join row.
+   */
+
+  public void broadcastRows(JoinRequest jr) {
+    int n = jr.numRows();
+
+    // send the rows to the RouteSetProtocol on the local node
+    for (int i = jr.lastRow(); i < n; i++) {
+      RouteSet row[] = jr.getRow(i);
+
+      if (row != null) {
+        BroadcastRouteRow brr = new BroadcastRouteRow(localHandle, row);
+
+        thePastryNode.receiveMessage(brr);
+      }
+    }
+
+    // now broadcast the rows to our peers in each row
+
+    for (int i = jr.lastRow(); i < n; i++) {
+      RouteSet row[] = jr.getRow(i);
+      if (row == null) {
+        // a hop on the path had no such row (or a peer left it out), as in the loop above
+        continue;
+      }
+
+      BroadcastRouteRow brr = new BroadcastRouteRow(localHandle, row);
+
+      for (RouteSet routeSet : row) {
+        RouteSet rs = routeSet;
+        if (rs == null)
+          continue;
+
+        // send to closest nodes only
+
+        NodeHandle nh = rs.closestNode();
+        if (nh != null)
+          thePastryNode.send(nh,brr, null, options);
+      }
+    }
+  }
+
+  /**
+   * Should not be called because we are overriding the receiveMessage()
+   * interface anyway.
+   */
+  @Override
+  public void messageForAppl(Message msg) {
+    throw new RuntimeException("Should not be called.");
+  }
+
+  /**
+   * We always want to receive messages.
+   */
+  @Override
+  public boolean deliverWhenNotReady() {
+    return true;
   }
 }

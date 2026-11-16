@@ -44,8 +44,8 @@ class UnknownMessageTypeTest {
   }
 
   @Test
-  void standardJoinDeserializerRejectsAnUnknownType() {
-    assertRejected(new StandardJoinProtocol.SJPDeserializer(node));
+  void joinDeserializerRejectsAnUnknownType() {
+    assertRejected(new ConsistentJoinProtocol.CJPDeserializer(node));
   }
 
   @Test

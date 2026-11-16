@@ -250,8 +250,8 @@ The two concrete factories differ like this:
 - **The join and ready logic**:
   - `PastryNode.boot()` calls the `Bootstrapper`, which eventually calls `doneNode(bootHandles)`.
   - `doneNode()` schedules leaf set maintenance every `pastry_leafSetMaintFreq` seconds (60) and route set maintenance every `pastry_routeSetMaintFreq` seconds (900), then calls `JoinProtocol.initiateJoin()`.
-  - `StandardJoinProtocol` routes a `JoinRequest` to the joiner's id. Every hop adds its routing table row, and the root replies with its leaf set (see the class Javadoc).
-  - `ConsistentJoinProtocol` adds a rule: the node becomes ready only after its whole leaf set has confirmed it (based on MSR-TR-2003-94).
+  - `ConsistentJoinProtocol` routes a `JoinRequest` to the joiner's id. Every hop adds its routing table row, and the root replies with its leaf set (see the class Javadoc).
+  - It also adds a rule: the node becomes ready only after its whole leaf set has confirmed it (based on MSR-TR-2003-94).
   - `PeriodicLeafSetProtocol` keeps the leaf set alive with `BroadcastLeafSet` and `RequestLeafSet` exchanges and leases (`pastry_protocol_periodicLeafSet_lease_period`, 30 s). As the `ReadyStrategy`, it can mark the node not ready again if its leases lapse.
   - `StandardRouteSetProtocol` periodically exchanges `RequestRouteRow` and `BroadcastRouteRow` messages.
   - Readiness changes go to `PastryNodeListener`s, and to `PastryAppl.notifyReady()` the first time only.

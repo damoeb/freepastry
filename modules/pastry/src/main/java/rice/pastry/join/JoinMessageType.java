@@ -41,7 +41,7 @@ import rice.p2p.commonapi.rawserialization.MessageTypeId;
 import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 
 /**
- * The type ids of the join protocols, which share one scope: the join address, read by the deserializers of StandardJoinProtocol, ConsistentJoinProtocol and RendezvousJoinProtocol, each extending the one before. Id 3 is unused.
+ * The type ids of the join protocols, which share one scope: the join address, read by the deserializers of ConsistentJoinProtocol and RendezvousJoinProtocol, which extends it. Id 3 is unused.
  */
 public enum JoinMessageType implements MessageTypeId {
   /** {@link JoinRequest} */

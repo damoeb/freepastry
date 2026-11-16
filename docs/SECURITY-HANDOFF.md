@@ -45,7 +45,7 @@ None of these has been reproduced yet; each needs a failing test before its fix.
 | Finding | Severity | Risk | Suggested fix |
 | --- | --- | --- | --- |
 | Admission checks the id only (`CertifiedSocketPastryNodeFactory.isAuthenticatedOrVerify`) | Medium | An authenticated insider can advertise another trusted node's id at its own address; the handle is admitted without a probe | Admit per (id, address, epoch), probing the handle's address |
-| Join-window trust (`StandardJoinProtocol`) | Medium | A node that is still joining trusts any accepted JoinRequest | Needs authentication of the accepting node, not a bounds check |
+| Join-window trust (`ConsistentJoinProtocol`) | Medium | A node that is still joining trusts any accepted JoinRequest | Needs authentication of the accepting node, not a bounds check |
 | Open relay (`SourceRouteTransportLayerImpl`, NetworkInfo probes) | Medium | Nodes forward source-routed traffic to any IP:port, incl. loopback and internal networks; ping reflection about 1:1 | Forward only to live Pastry peers and to addresses that pass an address policy |
 | Unbounded tables (`IdentityImpl.bindings`, liveness `managers`) | Medium | Spoofed identities and routes grow the heap until OOM; a forged PONG marks routes alive | Cap and expire; create liveness managers only for routes this node started |
 | Big-message preallocation (`BigMessageReader.java:87`) | Medium | 300 idle sockets announcing 4 MB pin about 1.2 GB | Grow the buffer as data arrives; global in-flight budget |
