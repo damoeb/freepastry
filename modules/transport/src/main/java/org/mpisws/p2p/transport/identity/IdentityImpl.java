@@ -1223,70 +1223,47 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     }
   }
 
-  class IdentityMessageHandle implements MessageRequestHandle<UpperIdentifier, UpperMsgType>, MessageCallback<MiddleIdentifier, UpperMsgType> {
+  class IdentityMessageHandle extends MessageRequestHandleImpl<UpperIdentifier, UpperMsgType> implements MessageCallback<MiddleIdentifier, UpperMsgType> {
 
-    private @Nullable Cancellable subCancellable;
-    private UpperIdentifier identifier;
-    private UpperMsgType message;
-    private @Nullable Map<String, Object> options;
-    private @Nullable MessageCallback<UpperIdentifier, UpperMsgType> deliverAckToMe;
+    private final @Nullable MessageCallback<UpperIdentifier, UpperMsgType> deliverAckToMe;
 
     public IdentityMessageHandle(
         UpperIdentifier identifier,
         UpperMsgType message, @Nullable Map<String, Object> options,
         @Nullable MessageCallback<UpperIdentifier, UpperMsgType> deliverAckToMe) {
-      this.identifier = identifier;
-      this.message = message;
-      this.options = options;
+      super(identifier, message, options);
       this.deliverAckToMe = deliverAckToMe;
-    }
-
-    @Override
-    public UpperIdentifier getIdentifier() {
-      return identifier;
-    }
-
-    @Override
-    public UpperMsgType getMessage() {
-      return message;
-    }
-
-    @Override
-    public @Nullable Map<String, Object> getOptions() {
-      return options;
     }
 
     void deadForever() {
       cancel();
-      if (deliverAckToMe != null) deliverAckToMe.sendFailed(this, new NodeIsFaultyException(identifier,message));
+      if (deliverAckToMe != null) deliverAckToMe.sendFailed(this, new NodeIsFaultyException(getIdentifier(),getMessage()));
     }
 
+    /**
+     * Forgets the pending message, then cancels the lower send.
+     */
     @Override
     public boolean cancel() {
-      removePendingMessage(identifier, this);
-      if (subCancellable == null) return false;
-      return subCancellable.cancel();
-    }
-
-    public void setSubCancellable(@Nullable Cancellable cancellable) {
-      this.subCancellable = cancellable;
+      removePendingMessage(getIdentifier(), this);
+      return super.cancel();
     }
 
     @Override
     public void ack(MessageRequestHandle<MiddleIdentifier, UpperMsgType> msg) {
-      removePendingMessage(identifier, this);
+      removePendingMessage(getIdentifier(), this);
       if (deliverAckToMe != null) deliverAckToMe.ack(this);
     }
 
     @Override
     public void sendFailed(MessageRequestHandle<MiddleIdentifier, UpperMsgType> msg, Exception reason) {
-      removePendingMessage(identifier, this);
+      removePendingMessage(getIdentifier(), this);
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(this, reason);
     }
 
     @Override
     public String toString() {
-      return "IdMsgHdl{"+message+"}->"+identifier;
+      return "IdMsgHdl{"+getMessage()+"}->"+getIdentifier();
     }
   }
 }
