@@ -62,7 +62,7 @@ import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
-import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStoreImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
 import org.mpisws.p2p.transport.peerreview.commitment.CommitmentProtocol;
 import org.mpisws.p2p.transport.peerreview.commitment.CommitmentProtocolImpl;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceSerializerImpl;
@@ -573,16 +573,16 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
     /* Initialize authenticator store */
 
-    authInStore = new AuthenticatorStoreImpl<Identifier>(this);
+    authInStore = new AuthenticatorStore<Identifier>(this);
     authInStore.setFilename(dir.resolve("authenticators.in"));
 
-    authOutStore = new AuthenticatorStoreImpl<Identifier>(this);
+    authOutStore = new AuthenticatorStore<Identifier>(this);
     authOutStore.setFilename(dir.resolve("authenticators.out"));
 
-    authPendingStore = new AuthenticatorStoreImpl<Identifier>(this, true);
+    authPendingStore = new AuthenticatorStore<Identifier>(this, true);
     authPendingStore.setFilename(dir.resolve("authenticators.pending"));
 
-    authCacheStore = new AuthenticatorStoreImpl<Identifier>(this, true);
+    authCacheStore = new AuthenticatorStore<Identifier>(this, true);
     authCacheStore.setFilename(dir.resolve("authenticators.cache"));
 
     /* Remaining protocols */

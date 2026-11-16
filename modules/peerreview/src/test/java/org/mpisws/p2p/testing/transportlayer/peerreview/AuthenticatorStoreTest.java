@@ -63,7 +63,7 @@ import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorSerializer;
 import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
-import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStoreImpl;
+import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.identity.UnknownCertificateException;
@@ -426,7 +426,7 @@ public class AuthenticatorStoreTest {
     }
   }
 
-  class TestAuthenticatorStore extends AuthenticatorStoreImpl<MyInetSocketAddress> {
+  class TestAuthenticatorStore extends AuthenticatorStore<MyInetSocketAddress> {
 
     public TestAuthenticatorStore(PeerReview<?, MyInetSocketAddress> peerreview,
         boolean allowDuplicateSeqs) {
