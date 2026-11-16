@@ -38,28 +38,28 @@ package org.mpisws.p2p.transport.peerreview.audit;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.peerreview.IdentifierExtractor;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
-import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceTransferProtocol;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
-import org.mpisws.p2p.transport.peerreview.message.AuthResponse;
-import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType;
+import org.mpisws.p2p.transport.peerreview.message.AuthRequest;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /**
- * Tests that an AUTHRESP widens the range of the ongoing investigation of its subject.
+ * Tests that an investigation which times out asks the witnesses again.
  */
-public class AuditProtocolImplAuthResponseTest {
+public class AuditProtocolInvestigationTest {
 
   /** Serves as both the handle and the identifier. */
   static class Id implements RawSerializable {
@@ -86,10 +86,12 @@ public class AuditProtocolImplAuthResponseTest {
   }
 
   Environment env;
-  AuditProtocolImpl<Id, Id> audit;
+  AuditProtocol<Id, Id> audit;
+  /** the messages sent to the witnesses */
+  final List<Object> toWitnesses = new ArrayList<Object>();
 
-  /** A stub of the interface: getEnvironment(), getTime() and getIdentifierExtractor() work, the rest is a no-op. */
-  @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals", "ReferenceEquality"}) // the caller picks the generic interface type; a stub has no type arguments to check, and equals() is proxy identity
+  /** A stub of the interface: getEnvironment(), getTime(), getIdentifierExtractor() and sendMessageToWitnesses() work, the rest returns null, 0 or false. */
+  @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"}) // the caller picks the generic interface type; a stub has no type arguments to check
   <T> T stub(Class<?> type) {
     return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
       switch (method.getName()) {
@@ -99,26 +101,17 @@ public class AuditProtocolImplAuthResponseTest {
           return env.getTimeSource().currentTimeMillis();
         case "getIdentifierExtractor":
           return (IdentifierExtractor<Id, Id>) h -> h;
-        case "hashCode":
-          return System.identityHashCode(proxy);
-        case "equals":
-          return proxy == args[0];
+        case "sendMessageToWitnesses":
+          toWitnesses.add(args[1]);
+          return null;
         default:
-          return defaultValue(method.getReturnType());
+          Class<?> ret = method.getReturnType();
+          if (ret == boolean.class) return false;
+          if (ret == int.class) return 0;
+          if (ret == long.class) return 0L;
+          return null;
       }
     });
-  }
-
-  static Object defaultValue(Class<?> type) {
-    if (type == boolean.class) return false;
-    if (type == long.class) return 0L;
-    if (type == int.class) return 0;
-    if (type == short.class) return (short)0;
-    if (type == byte.class) return (byte)0;
-    if (type == double.class) return 0d;
-    if (type == float.class) return 0f;
-    if (type == char.class) return (char)0;
-    return null;
   }
 
   @BeforeEach
@@ -127,7 +120,7 @@ public class AuditProtocolImplAuthResponseTest {
     PeerReview<Id, Id> peerreview = stub(PeerReview.class);
     IdentityTransport<Id, Id> transport = stub(IdentityTransport.class);
     EvidenceTransferProtocol<Id, Id> evidenceTransfer = stub(EvidenceTransferProtocol.class);
-    audit = new AuditProtocolImpl<Id, Id>(peerreview, null, null, null, transport, null, evidenceTransfer, null);
+    audit = new AuditProtocol<Id, Id>(peerreview, null, null, null, transport, null, evidenceTransfer, null);
   }
 
   @AfterEach
@@ -135,31 +128,15 @@ public class AuditProtocolImplAuthResponseTest {
     env.destroy();
   }
 
-  static Authenticator auth(long seq) {
-    return new Authenticator(seq, new byte[] {1}, new byte[] {2});
-  }
-
   @Test
-  public void authResponseHasItsOwnType() {
-    assertEquals(PeerReviewMessageType.AUTHRESP.id(), new AuthResponse<Id>(new Id(1), auth(1), auth(2)).getType());
-  }
-
-  @Test
-  public void authResponseUpdatesTheInvestigation() {
+  public void timedOutInvestigationAsksTheWitnessesAgain() {
     Id subject = new Id(7);
-    audit.investigate(subject, 0);
-    Authenticator from = auth(10);
-    Authenticator to = auth(20);
+    // no authenticators yet, and the timeout has passed
+    audit.activeInvestigation.put(subject, new ActiveInvestigationInfo<Id>(subject, 100, 0, null, null));
 
-    audit.handleIncomingDatagram(new Id(8), new AuthResponse<Id>(subject, from, to));
+    audit.makeProgressOnInvestigations();
 
-    ActiveInvestigationInfo<Id> investigation = audit.activeInvestigation.get(subject);
-    assertSame(from, investigation.getAuthFrom());
-    assertSame(to, investigation.getAuthTo());
-
-    // a later response only widens the range
-    audit.handleIncomingDatagram(new Id(9), new AuthResponse<Id>(subject, auth(15), auth(30)));
-    assertSame(from, investigation.getAuthFrom());
-    assertEquals(30, investigation.getAuthTo().getSeq());
+    assertEquals(1, toWitnesses.size());
+    assertInstanceOf(AuthRequest.class, toWitnesses.get(0));
   }
 }

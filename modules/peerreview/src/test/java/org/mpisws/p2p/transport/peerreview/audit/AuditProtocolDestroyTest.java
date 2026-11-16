@@ -13,11 +13,11 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Tests that a destroyed AuditProtocol schedules nothing more. */
-public class AuditProtocolImplDestroyTest {
+public class AuditProtocolDestroyTest {
 
   @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals", "ReferenceEquality"}) // a stub has no type arguments to check, and equals() is proxy identity
   static <T> T stub(Class<?> type, Environment env, AtomicInteger calls) {
-    return (T) Proxy.newProxyInstance(AuditProtocolImplDestroyTest.class.getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
+    return (T) Proxy.newProxyInstance(AuditProtocolDestroyTest.class.getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
       switch (method.getName()) {
         case "getEnvironment":
           return env;
@@ -40,8 +40,8 @@ public class AuditProtocolImplDestroyTest {
       PeerReview<RawSerializable, RawSerializable> peerreview = stub(PeerReview.class, env, calls);
       IdentityTransport<RawSerializable, RawSerializable> transport = stub(IdentityTransport.class, env, calls);
       EvidenceTransferProtocol<RawSerializable, RawSerializable> evidenceTransfer = stub(EvidenceTransferProtocol.class, env, calls);
-      AuditProtocolImpl<RawSerializable, RawSerializable> audit =
-          new AuditProtocolImpl<RawSerializable, RawSerializable>(peerreview, null, null, null, transport, null, evidenceTransfer, null);
+      AuditProtocol<RawSerializable, RawSerializable> audit =
+          new AuditProtocol<RawSerializable, RawSerializable>(peerreview, null, null, null, transport, null, evidenceTransfer, null);
       audit.destroy();
       int before = calls.get();
 
