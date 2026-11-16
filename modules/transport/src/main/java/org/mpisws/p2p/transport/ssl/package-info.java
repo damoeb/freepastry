@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * TLS for sockets. {@link org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl} wraps the sockets of the
+ * TLS for sockets. {@link org.mpisws.p2p.transport.ssl.SSLTransportLayer} wraps the sockets of the
  * layer below in an {@code SSLEngine} ({@link org.mpisws.p2p.transport.ssl.SSLSocketManager}); UDP
  * messages are not encrypted. Keys and certificates come from a {@code KeyStore}; see
  * {@code org.mpisws.p2p.pki.x509} for creating them.

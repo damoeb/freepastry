@@ -27,7 +27,7 @@ import rice.pastry.Id;
  * result is the node id, so a node cannot choose its own id.</li>
  * <li>Node side: {@code CertifiedNodeIdFactory} verifies the certificate, and that the private key
  * belongs to it, before it hands out the id.</li>
- * <li>Peer side: {@code SSLTransportLayerImpl} with client authentication required validates the peer's
+ * <li>Peer side: {@code SSLTransportLayer} with client authentication required validates the peer's
  * chain against the trust store and reports the subject as {@code SSLTransportLayer.OPTION_CERT_SUBJECT};
  * {@code CertifiedIdBindStrategy} accepts a node handle only if its id equals that subject
  * ({@link #matches}). On a mismatch the binding is refused and a warning is logged.</li>

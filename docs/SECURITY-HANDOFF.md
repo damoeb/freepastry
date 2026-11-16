@@ -51,7 +51,7 @@ None of these has been reproduced yet; each needs a failing test before its fix.
 | Big-message preallocation (`BigMessageReader.java:87`) | Medium | 300 idle sockets announcing 4 MB pin about 1.2 GB | Grow the buffer as data arrives; global in-flight budget |
 | Glacier default signature (`GlacierDefaultPolicy.java:66-74`) | Medium | The "signature" is the key's own bytes, so manifests are forgeable: fragment squatting, endless lifetime | Ship a real signing policy; make the stub opt-in |
 | GC refresh accepts any expiration (`GCPastImpl.java:451-490`) | Medium | Anyone can keep objects alive forever and restore trashed ones; disk never reclaimed | Cap the lease; authorize refreshes |
-| CA tool and key stores (`CATool`, `SSLTransportLayerImpl.java:116`) | Medium | Empty CA password without `-p`; `-p` shows in `ps`; node keys always blank-password; files written 0644 | Refuse empty password, read from console or env; pass keyPassword through; create files 0600 |
+| CA tool and key stores (`CATool`, `SSLTransportLayer.java:116`) | Medium | Empty CA password without `-p`; `-p` shows in `ps`; node keys always blank-password; files written 0644 | Refuse empty password, read from console or env; pass keyPassword through; create files 0600 |
 | Handshake slowloris | Low | No deadline after the magic number; half-open sockets evict real peers via LimitSockets | Handshake deadline up to the priority layer; per-IP cap |
 | Smaller items | Low | Probe reflection via forged ids; node certificates lack basicConstraints/keyUsage; `IdentityTransportLayerImpl.verify` throws RuntimeException; predictable PeerReview temp file; Maven wrapper without checksum; `user.params` in CWD merged over defaults | See the review file, section Low |
 

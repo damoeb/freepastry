@@ -73,7 +73,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   private final P2PSocket<Identifier> socket;
 
   private final SSLEngine engine;
-  private final SSLTransportLayerImpl<Identifier, ?> sslTL;
+  private final SSLTransportLayer<Identifier, ?> sslTL;
 
   private final Logger logger;
 
@@ -107,7 +107,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
    * Called on incoming side
    */
   @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
-  public SSLSocketManager(SSLTransportLayerImpl<Identifier, ?> sslTL,
+  public SSLSocketManager(SSLTransportLayer<Identifier, ?> sslTL,
       P2PSocket<Identifier> s,
       Continuation<SSLSocketManager<Identifier>, Exception> c, boolean server, boolean useClientAuth) {
     this.server = server;

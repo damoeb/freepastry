@@ -15,7 +15,7 @@ import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
-import org.mpisws.p2p.transport.ssl.SSLTransportLayerImpl;
+import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import rice.environment.Environment;
@@ -71,7 +71,7 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
   protected TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getSourceRouteTransportLayer(
       TransportLayer<MultiInetSocketAddress, ByteBuffer> etl, PastryNode pn, MultiAddressSourceRouteFactory esrFactory) {
     try {
-      return new SSLTransportLayerImpl<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(
+      return new SSLTransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(
           super.getSourceRouteTransportLayer(etl, pn, esrFactory), store, store,
           SSLTransportLayer.CLIENT_AUTH_REQUIRED, getSubjectValidator(), pn.getEnvironment());
     } catch (IOException e) {

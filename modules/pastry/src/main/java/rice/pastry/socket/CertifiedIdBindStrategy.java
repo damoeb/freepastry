@@ -15,7 +15,7 @@ import rice.pastry.standard.NodeIdCertificate;
 
 /**
  * Binds a node handle to its node id only as far as a TLS certificate vouches for it. The certificate's
- * common name is reported by {@code SSLTransportLayerImpl} in the socket options as
+ * common name is reported by {@code SSLTransportLayer} in the socket options as
  * {@link SSLTransportLayer#OPTION_CERT_SUBJECT}. Every id is in one of three states:
  * <ul>
  * <li><b>unverified</b> (pending): the id was only learned over the wire (a handle from routing state, or a
