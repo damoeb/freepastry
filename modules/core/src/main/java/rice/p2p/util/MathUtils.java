@@ -36,7 +36,6 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.util;
 
-import java.util.HexFormat;
 
 import rice.environment.random.RandomSource;
 
@@ -87,16 +86,6 @@ public class MathUtils {
    */
   public static int randomInt(RandomSource random) {
     return random.nextInt();
-  }
-
-  /**
-   * Utility method which converts a byte[] to a hexadecimal string of characters, in lower case
-   *
-   * @param text The array to convert
-   * @return A string representation
-   */
-  public static String toHex(byte[] text) {
-    return HexFormat.of().formatHex(text);
   }
 
   /**

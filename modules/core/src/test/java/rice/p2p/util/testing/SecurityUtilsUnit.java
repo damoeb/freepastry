@@ -40,11 +40,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
 
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.SecurityUtils;
 
 public class SecurityUtilsUnit {
@@ -77,21 +75,6 @@ public class SecurityUtilsUnit {
 
     String testString = "test";
     byte[] testStringByte = testString.getBytes(StandardCharsets.UTF_8);
-
-    System.out.print("    Testing hashing\t\t\t\t\t");
-    byte[] testStringHash = SecurityUtils.hash(testStringByte);
-
-    if ((testStringHash != null) && (testStringHash.length == 32)) {
-      System.out.println("[ PASSED ]");
-    } else {
-      System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + testString);
-      System.out.println("    Output:\t" + Arrays.toString(testStringHash));
-
-      if (testStringHash != null) {
-        System.out.println("    Length:\t" + testStringHash.length);
-      }
-    }
 
     System.out.print("    Testing symmetric encryption\t\t\t");
 
@@ -150,55 +133,6 @@ public class SecurityUtilsUnit {
       System.out.println("    Dec Len:\t" + testStringDecrypted.length);
     }
 
-    System.out.print("    Testing hmac algorithm\t\t\t\t");
-
-    String hmacText = "<1896.697170952@postoffice.reston.mci.net>";
-    String hmacKey = "tanstaaftanstaaf";
-    byte[] hmac = SecurityUtils.hmac(hmacKey.getBytes(StandardCharsets.UTF_8), hmacText.getBytes(StandardCharsets.UTF_8));
-    // HMAC-SHA256
-    byte[] hmacResult = new byte[] {(byte) 0xf0, (byte) 0x01, (byte) 0x1b, (byte) 0xbf,
-      (byte) 0x7c, (byte) 0x16, (byte) 0x18, (byte) 0xef,
-      (byte) 0x90, (byte) 0xe3, (byte) 0xf1, (byte) 0x81,
-      (byte) 0x48, (byte) 0xe5, (byte) 0xed, (byte) 0xa4,
-      (byte) 0xe1, (byte) 0x56, (byte) 0x31, (byte) 0xc9,
-      (byte) 0xc3, (byte) 0x8e, (byte) 0xbe, (byte) 0xf0,
-      (byte) 0x62, (byte) 0xbf, (byte) 0x71, (byte) 0x43,
-      (byte) 0xff, (byte) 0x72, (byte) 0xe9, (byte) 0x44};
-
-    if (Arrays.equals(hmac, hmacResult)) {
-      System.out.println("[ PASSED ]");
-    } else {
-      System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + hmacText);
-      System.out.println("    Key: \t" + hmacKey);
-      System.out.println("    Res Len:\t" + hmac.length);
-      System.out.println("    Real Len:\t" + hmacResult.length);
-    }
-
-    System.out.print("    Testing hmac algorithm again\t\t\t");
-
-    String hmacText2 = "<1080369447214@The-Edge.local>";
-    String hmacKey2 = "monkey";
-    byte[] hmac2 = SecurityUtils.hmac(hmacKey2.getBytes(StandardCharsets.UTF_8), hmacText2.getBytes(StandardCharsets.UTF_8));
-    byte[] hmacResult2 = new byte[] {(byte) 0x3f, (byte) 0x63, (byte) 0x7a, (byte) 0xb2,
-      (byte) 0x9c, (byte) 0xf2, (byte) 0x57, (byte) 0x3d,
-      (byte) 0x93, (byte) 0x9f, (byte) 0x94, (byte) 0xbf,
-      (byte) 0x77, (byte) 0x50, (byte) 0x2c, (byte) 0x04,
-      (byte) 0x33, (byte) 0x0d, (byte) 0x08, (byte) 0xb8,
-      (byte) 0x4f, (byte) 0xa2, (byte) 0x72, (byte) 0xaf,
-      (byte) 0x85, (byte) 0x2f, (byte) 0x92, (byte) 0xcc,
-      (byte) 0x30, (byte) 0x1e, (byte) 0x17, (byte) 0x42};
-
-    if (Arrays.equals(hmac2, hmacResult2)) {
-      System.out.println("[ PASSED ]");
-    } else {
-      System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + hmacText2);
-      System.out.println("    Key: \t" + hmacKey2);
-      System.out.println("    Res Len:\t" + hmac2.length);
-      System.out.println("    Real Len:\t" + hmacResult2.length);
-    }
-
     System.out.print("    Testing asymmetic symmetric key encryption\t\t");
 
     byte[] keySym = SecurityUtils.generateKeySymmetric();
@@ -206,9 +140,9 @@ public class SecurityUtilsUnit {
     if (Arrays.equals(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic()),
                       SecurityUtils.encryptAsymmetric(keySym, pair2.getPublic()))) {
       System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + MathUtils.toHex(keySym));
-      System.out.println("    Output 1: \t" + MathUtils.toHex(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic())));
-      System.out.println("    Output 2: \t" + MathUtils.toHex(SecurityUtils.encryptAsymmetric(keySym, pair2.getPublic())));
+      System.out.println("    Input: \t" + java.util.HexFormat.of().formatHex(keySym));
+      System.out.println("    Output 1: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic())));
+      System.out.println("    Output 2: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.encryptAsymmetric(keySym, pair2.getPublic())));
     } else {
       System.out.println("[ PASSED ]");
     }
@@ -219,22 +153,10 @@ public class SecurityUtilsUnit {
 
     if (! Arrays.equals(k.getEncoded(), pair.getPublic().getEncoded())) {
       System.out.println("[ FAILED ]");
-      System.out.println("  Output 1: \t" + MathUtils.toHex(SecurityUtils.encryptAsymmetric(keySym, k)));
-      System.out.println("     Res 1: \t" + MathUtils.toHex(SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(keySym, k), pair.getPrivate())));
-      System.out.println("  Output 2: \t" + MathUtils.toHex(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic())));
-      System.out.println("     Res 2: \t" + MathUtils.toHex(SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic()), pair.getPrivate())));
-    } else {
-      System.out.println("[ PASSED ]");
-    }
-
-    System.out.print("    Testing asymmetic private writing\t\t\t");
-
-    PrivateKey k2 = SecurityUtils.decodePrivateKey(SecurityUtils.encodePrivateKey(pair.getPrivate()));
-
-    if (! Arrays.equals(SecurityUtils.sign(keySym, k2), SecurityUtils.sign(keySym, pair.getPrivate()))) {
-      System.out.println("[ FAILED ]");
-      System.out.println("  Output 1: \t" + MathUtils.toHex(k2.getEncoded()));
-      System.out.println("  Output 2: \t" + MathUtils.toHex(pair.getPrivate().getEncoded()));
+      System.out.println("  Output 1: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.encryptAsymmetric(keySym, k)));
+      System.out.println("     Res 1: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(keySym, k), pair.getPrivate())));
+      System.out.println("  Output 2: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic())));
+      System.out.println("     Res 2: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic()), pair.getPrivate())));
     } else {
       System.out.println("[ PASSED ]");
     }

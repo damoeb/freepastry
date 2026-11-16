@@ -51,7 +51,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
-import rice.p2p.util.tuples.Tuple3;
+import org.mpisws.p2p.transport.bandwidthmeasure.BandwidthMeasuringTransportLayer.BandwidthUsed;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryEndpoint;
@@ -132,10 +132,10 @@ public class BandwidthMeasuringTLTest implements Application {
 
           @Override
           public void run() {
-            Map<InetSocketAddress, Tuple3<Integer, Integer, Boolean>> map = ret2.getBandwidthUsed();
+            Map<InetSocketAddress, BandwidthUsed> map = ret2.getBandwidthUsed();
             for (InetSocketAddress addr : map.keySet()) {
-              Tuple3<Integer, Integer, Boolean> t = map.get(addr);
-              System.out.println("Bandwidth for "+addr+" d:"+t.a()+" u:"+t.b()+" saturated:"+t.c());
+              BandwidthUsed t = map.get(addr);
+              System.out.println("Bandwidth for "+addr+" d:"+t.down()+" u:"+t.up()+" saturated:"+t.saturated());
             }
           }
         }, 3000, 3000);

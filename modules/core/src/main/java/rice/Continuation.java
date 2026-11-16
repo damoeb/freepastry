@@ -37,9 +37,7 @@ advised of the possibility of such damage.
 
 package rice;
 
-import java.util.concurrent.CountDownLatch;
 
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.environment.Environment;
@@ -181,62 +179,6 @@ public interface Continuation<R, E extends Exception> {
     @Override
     public void receiveException(Exception result) {
       LOG.warn("Received exception in SimpleContinuation {}", getClass().getName(), result);
-    }
-  }
-
-  /**
-   * This class provides a continuation which is designed to be used from
-   * an external thread.  Applications should construct this continuation pass it
-   * in to the appropriate method, and then call sleep().  Once the thread is woken
-   * up, the user should check exceptionThrown() to determine if an error was
-   * caused, and then call getException() or getResult() as appropriate.
-   */
-  public static class ExternalContinuation<R, E extends Exception> implements Continuation<R, E> {
-
-    private volatile @Nullable Exception exception;
-    private volatile @Nullable R result;
-    private final CountDownLatch done = new CountDownLatch(1);
-
-    @Override
-    public void receiveResult(R o) {
-      result = o;
-      done.countDown();
-    }
-
-    @Override
-    public void receiveException(E e) {
-      fail(e);
-    }
-
-    private void fail(Exception e) {
-      exception = e;
-      done.countDown();
-    }
-
-    public @Nullable R getResult() {
-      if (exception != null) {
-        throw new IllegalArgumentException("Exception was thrown in ExternalContinuation, but getResult() called!");
-      }
-
-      return result;
-    }
-
-    public @Nullable Exception getException() {
-      return exception;
-    }
-
-    public void sleep() {
-      try {
-        done.await();
-      } catch (InterruptedException e) {
-        exception = e;
-        // keep the interrupt visible to the caller
-        Thread.currentThread().interrupt();
-      }
-    }
-
-    public boolean exceptionThrown() {
-      return (exception != null);
     }
   }
 

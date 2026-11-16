@@ -50,13 +50,11 @@ import java.security.Signature;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.MGF1ParameterSpec;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
-import javax.crypto.Mac;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.OAEPParameterSpec;
@@ -151,11 +149,6 @@ public class SecurityUtils {
   public final static int PASSWORD_SALT_LENGTH = 16;
 
   /**
-   * The name of the hmac function (RFC 2104 HMAC over SHA-256).
-   */
-  public final static String HMAC_ALGORITHM = "HmacSHA256";
-
-  /**
    * BouncyCastle, for the features the JDK lacks (e.g. X.509 certificate generation).  It is deliberately not
    * registered with {@link java.security.Security}: callers hand this instance to the JCA/BC APIs explicitly, so
    * the JVM's provider order is never changed.
@@ -203,78 +196,6 @@ public class SecurityUtils {
    * Make the constructor private so no SecurityUtils is ever created.
    */
   private SecurityUtils() {
-  }
-
-  /**
-   * Encodes an asymmetric key pair: the length of the encoded public key, the public key as
-   * {@link #encodePublicKey(PublicKey)} writes it, and the private key as {@link #encodePrivateKey(PrivateKey)}
-   * writes it.
-   *
-   * @param pair The key pair
-   * @return The encoded key pair
-   */
-  public static byte[] encodeKeyPair(KeyPair pair) {
-    byte[] pub = encodePublicKey(pair.getPublic());
-    byte[] priv = encodePrivateKey(pair.getPrivate());
-    byte[] length = MathUtils.intToByteArray(pub.length);
-
-    byte[] result = new byte[length.length + pub.length + priv.length];
-    System.arraycopy(length, 0, result, 0, length.length);
-    System.arraycopy(pub, 0, result, length.length, pub.length);
-    System.arraycopy(priv, 0, result, length.length + pub.length, priv.length);
-
-    return result;
-  }
-
-  /**
-   * Decodes a key pair written by {@link #encodeKeyPair(KeyPair)}.
-   *
-   * @param data The encoded key pair
-   * @return The key pair
-   * @throws SecurityException If the data is not an encoded key pair
-   */
-  public static KeyPair decodeKeyPair(byte[] data) throws SecurityException {
-    byte[] len = new byte[4];
-    System.arraycopy(data, 0, len, 0, len.length);
-    int length = MathUtils.byteArrayToInt(len);
-    if ((length < 0) || (length > data.length - len.length)) {
-      throw new SecurityException("Not an encoded key pair");
-    }
-
-    byte[] pub = new byte[length];
-    System.arraycopy(data, len.length, pub, 0, length);
-    byte[] priv = new byte[data.length - len.length - length];
-    System.arraycopy(data, len.length + length, priv, 0, priv.length);
-
-    return new KeyPair(decodePublicKey(pub), decodePrivateKey(priv));
-  }
-
-  /**
-   * Utility method for determining the content hash of a byte[], see {@link HashUtils#hash(byte[]...)}.
-   *
-   * @param input The input
-   * @return The 32-byte SHA-256 hash value
-   */
-  public static byte[] hash(byte[] input) {
-    return HashUtils.hash(input);
-  }
-
-  /**
-   * Utility method for determining the HMAC-SHA256 of a byte[] under a key.
-   *
-   * @param key The key, of any non-zero length
-   * @param text The text
-   * @return The 32-byte hmac value
-   * @throws SecurityException If the hmacing does not happen properly
-   */
-  public static byte[] hmac(byte[] key, byte[] text) throws SecurityException {
-    try {
-      Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-      mac.init(new SecretKeySpec(key, HMAC_ALGORITHM));
-      return mac.doFinal(text);
-    } catch (GeneralSecurityException | IllegalArgumentException e) {
-      throw new SecurityException("Could not compute the hmac: " + e, e);
-    }
   }
 
   /**
@@ -578,33 +499,6 @@ public class SecurityUtils {
     try {
       synchronized (factoryAsymmetric) {
         return factoryAsymmetric.generatePublic(rpks);
-      }
-    } catch (InvalidKeySpecException e) {
-      throw new SecurityException("InvalidKeySpecException while decoding key: " + e);
-    }
-  }
-
-  /**
-   * Utility method which will encode a private key as PKCS#8, which keeps the CRT parameters (decoded keys decrypt
-   * and sign about four times faster with them).
-   *
-   * @param key The key to encode
-   * @return An encoded private key
-   */
-  public static byte[] encodePrivateKey(PrivateKey key) {
-    return key.getEncoded();
-  }
-
-  /**
-   * Utility method which will decode a key previously encoded with {@link #encodePrivateKey(PrivateKey)}
-   *
-   * @param data The previously encoded key
-   * @return The key
-   */
-  public static PrivateKey decodePrivateKey(byte[] data) throws SecurityException {
-    try {
-      synchronized (factoryAsymmetric) {
-        return factoryAsymmetric.generatePrivate(new PKCS8EncodedKeySpec(data));
       }
     } catch (InvalidKeySpecException e) {
       throw new SecurityException("InvalidKeySpecException while decoding key: " + e);

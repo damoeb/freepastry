@@ -43,7 +43,6 @@ import java.util.Arrays;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 public class Authenticator implements Comparable<Authenticator> {
@@ -139,7 +138,7 @@ public class Authenticator implements Comparable<Authenticator> {
 
   @Override
   public String toString() {
-    return seq+" "+MathUtils.toHex(hash)+" "+MathUtils.toHex(signature);
+    return seq+" "+java.util.HexFormat.of().formatHex(hash)+" "+java.util.HexFormat.of().formatHex(signature);
   }
 
   public byte[] getHash() {

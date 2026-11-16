@@ -98,7 +98,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
 
   @Override
   public String toString() {
-    return "UDM:"+topSeq+","+senderHandle+","+MathUtils.toHex(hTopMinusOne)+","+MathUtils.toHex(signature)+","+relevantLen+","+payload.length;
+    return "UDM:"+topSeq+","+senderHandle+","+java.util.HexFormat.of().formatHex(hTopMinusOne)+","+java.util.HexFormat.of().formatHex(signature)+","+relevantLen+","+payload.length;
   }
 
   @Override

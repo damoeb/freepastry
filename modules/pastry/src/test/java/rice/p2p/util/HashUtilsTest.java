@@ -55,7 +55,6 @@ public class HashUtilsTest {
   public void contentHashIsSha256() {
     assertEquals(32, HashUtils.LENGTH);
     assertArrayEquals(SHA256_ABC, HashUtils.hash(ABC));
-    assertArrayEquals(SHA256_ABC, SecurityUtils.hash(ABC));
   }
 
   @Test

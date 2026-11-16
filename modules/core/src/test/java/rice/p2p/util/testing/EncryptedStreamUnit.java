@@ -48,7 +48,6 @@ import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.util.EncryptedInputStream;
 import rice.p2p.util.EncryptedOutputStream;
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.SecurityUtils;
 
 public class EncryptedStreamUnit {
@@ -97,8 +96,8 @@ public class EncryptedStreamUnit {
       System.out.println("[ PASSED ]");
     } else {
       System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + MathUtils.toHex(bytes));
-      System.out.println("    Output:\t" + MathUtils.toHex(read));
+      System.out.println("    Input: \t" + java.util.HexFormat.of().formatHex(bytes));
+      System.out.println("    Output:\t" + java.util.HexFormat.of().formatHex(read));
     }
 
     System.out.print("    Testing Multiple Encryption\t\t\t\t");
@@ -122,10 +121,10 @@ public class EncryptedStreamUnit {
       System.out.println("[ PASSED ]");
     } else {
       System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + MathUtils.toHex(bytes)
-          + MathUtils.toHex(bytes));
-      System.out.println("    Output:\t" + MathUtils.toHex(read)
-          + MathUtils.toHex(read2));
+      System.out.println("    Input: \t" + java.util.HexFormat.of().formatHex(bytes)
+          + java.util.HexFormat.of().formatHex(bytes));
+      System.out.println("    Output:\t" + java.util.HexFormat.of().formatHex(read)
+          + java.util.HexFormat.of().formatHex(read2));
     }
 
     System.out.print("    Testing Long Encryption\t\t\t\t");
@@ -149,8 +148,8 @@ public class EncryptedStreamUnit {
       System.out.println("[ PASSED ]");
     } else {
       System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + MathUtils.toHex(bytes));
-      System.out.println("    Output:\t" + MathUtils.toHex(read));
+      System.out.println("    Input: \t" + java.util.HexFormat.of().formatHex(bytes));
+      System.out.println("    Output:\t" + java.util.HexFormat.of().formatHex(read));
     }
 
     System.out.print("    Testing Incorrect Decryption\t\t\t");
@@ -173,8 +172,8 @@ public class EncryptedStreamUnit {
       dis.readFully(read);
 
       System.out.println("[ FAILED ]");
-      System.out.println("    Input: \t" + MathUtils.toHex(bytes));
-      System.out.println("    Output:\t" + MathUtils.toHex(read));
+      System.out.println("    Input: \t" + java.util.HexFormat.of().formatHex(bytes));
+      System.out.println("    Output:\t" + java.util.HexFormat.of().formatHex(read));
     } catch (SecurityException e) {
       System.out.println("[ PASSED ]");
     }
@@ -205,8 +204,8 @@ public class EncryptedStreamUnit {
       if (!Arrays.equals(read, tmp)) {
         System.out.println("[ FAILED ]");
         System.out.println("    Iteration: \t" + c);
-        System.out.println("    Input: \t" + MathUtils.toHex(tmp));
-        System.out.println("    Output:\t" + MathUtils.toHex(read));
+        System.out.println("    Input: \t" + java.util.HexFormat.of().formatHex(tmp));
+        System.out.println("    Output:\t" + java.util.HexFormat.of().formatHex(read));
         break;
       }
 
@@ -242,8 +241,8 @@ public class EncryptedStreamUnit {
       if (!Arrays.equals(read, data[j])) {
         System.out.println("[ FAILED ]");
         System.out.println("    Iteration: \t" + c);
-        System.out.println("    Input: \t" + MathUtils.toHex(data[j]));
-        System.out.println("    Output:\t" + MathUtils.toHex(read));
+        System.out.println("    Input: \t" + java.util.HexFormat.of().formatHex(data[j]));
+        System.out.println("    Output:\t" + java.util.HexFormat.of().formatHex(read));
         break;
       }
     }

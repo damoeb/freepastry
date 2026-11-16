@@ -133,7 +133,7 @@ An application's own threads (`main`, a GUI) typically:
 - wait for the node with `PastryNode.awaitReadyOrJoinFailed(timeout, unit)`, usually in a loop that also checks `joinFailed()` (as in the tutorials; it returns once the node is ready or its join has failed, or after the timeout),
 - call `Endpoint.route()`.
 
-To call into FreePastry and wait for the answer, use `Continuation.ExternalContinuation` (`sleep()` until the result arrives) or `ExternalContinuationRunnable.invoke(env)`, which runs your code on the selector and blocks the caller until it completes.
+To call into FreePastry and wait for the answer, use `FutureContinuation.call(...)` and wait on the `CompletableFuture` it returns.
 
 ### Several nodes in one JVM
 
@@ -290,7 +290,6 @@ Every operation that can take time is asynchronous and reports through `rice.Con
 - `ListenerContinuation` logs and ignores. Its Javadoc says it is for testing only.
 - `NamedContinuation` wraps another continuation with a name, for logging.
 - `MultiContinuation` collects N results: `getSubContinuation(i)` returns one continuation per sub-operation, and `isDone()` and `getResult()` can be overridden. It is used for fan-out to replicas.
-- `ExternalContinuation` lets a non-selector thread wait for a result: pass it in, call `sleep()`, then check `exceptionThrown()`, `getResult()` and `getException()`.
 - `ExternalContinuationRunnable` and `ExternalRunnable` run code on the selector thread and block the calling thread until it completes (`invoke(env)`).
 
 `rice.Executable<R, E>` is the task type for the `Processor`. `rice.p2p.commonapi.Cancellable` is returned by most asynchronous calls. `rice.FutureContinuation` is a new bridge between `Continuation` and `CompletableFuture`; as of this writing it is not yet used by the libraries themselves.

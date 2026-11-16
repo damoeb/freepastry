@@ -59,7 +59,6 @@ import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.util.tuples.Tuple;
-import rice.p2p.util.tuples.Tuple3;
 import rice.selector.TimerTask;
 
 /**
@@ -165,16 +164,26 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   }
 
   /**
+   * The bandwidth an Identifier used.
+   *
+   * @param down downstream bytes/sec
+   * @param up upstream bytes/sec
+   * @param saturated if the upstream was saturated
+   */
+  public record BandwidthUsed(int down, int up, boolean saturated) {
+  }
+
+  /**
    * For all Identifiers that used any bandwidth since the measurementPeriod, returns:
    * downstream bytes/sec, upstream bytes/sec, if the upstream was saturated
    */
-  public Map<Identifier, Tuple3<Integer, Integer, Boolean>> getBandwidthUsed() {
+  public Map<Identifier, BandwidthUsed> getBandwidthUsed() {
     synchronized(measured) {
-      HashMap<Identifier, Tuple3<Integer, Integer, Boolean>> ret = new HashMap<Identifier, Tuple3<Integer, Integer, Boolean>>();
+      HashMap<Identifier, BandwidthUsed> ret = new HashMap<Identifier, BandwidthUsed>();
       for (Identifier i : measured.keySet()) {
         Tuple<int[], Collection<MySocket>> t = measured.get(i);
         int[] vals = t.a();
-        ret.put(i,new Tuple3<Integer, Integer, Boolean>(vals[LAST_DOWN], vals[LAST_UP], (vals[LAST_SATURATED] == SATURATED)?true:false));
+        ret.put(i,new BandwidthUsed(vals[LAST_DOWN], vals[LAST_UP], vals[LAST_SATURATED] == SATURATED));
       }
       return ret;
     }

@@ -37,8 +37,7 @@ advised of the possibility of such damage.
 /**
  * Root of the FreePastry API: the asynchronous callback types used throughout the code base.
  * {@link rice.Continuation} receives the result or exception of an asynchronous call and has helpers
- * such as {@code StandardContinuation}, {@code MultiContinuation} and {@code ExternalContinuation}
- * (the latter blocks a non-selector thread until the result arrives). {@link rice.Executable} is a
+ * such as {@code StandardContinuation} and {@code MultiContinuation}. {@link rice.Executable} is a
  * task with a result that is run off the selector thread by the
  * {@link rice.environment.processing.Processor}, and {@link rice.Destructable} is implemented by
  * everything that must be released when a node or environment is destroyed.

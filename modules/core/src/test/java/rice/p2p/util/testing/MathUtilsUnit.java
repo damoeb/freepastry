@@ -60,7 +60,7 @@ public class MathUtilsUnit {
     System.out.print("    Testing hexadecimal conversion\t\t\t");
 
     byte[] testHexBytes = new byte[] {(byte) 0xa7, (byte) 0xb3, (byte) 0x00, (byte) 0x12, (byte) 0x4e};
-    String result = MathUtils.toHex(testHexBytes);
+    String result = java.util.HexFormat.of().formatHex(testHexBytes);
 
     if (result.equals("a7b300124e")) {
       System.out.println("[ PASSED ]");
