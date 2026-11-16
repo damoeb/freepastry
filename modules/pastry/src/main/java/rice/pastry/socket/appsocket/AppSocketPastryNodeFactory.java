@@ -54,11 +54,8 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.identity.IdentityImpl;
-import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
-import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.liveness.OverrideLiveness;
-import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.liveness.Pinger;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
@@ -394,6 +391,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
       final TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl,
       PastryNode pn) {
     if (pn instanceof BogusTLPastryNode) {
+      final NoOpLiveness<SourceRoute<MultiInetSocketAddress>> noOp = new NoOpLiveness<>();
       return new TransLiveness<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(){
         @Override
         public TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getTransportLayer() {
@@ -401,75 +399,19 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         }
         @Override
         public LivenessProvider<SourceRoute<MultiInetSocketAddress>> getLivenessProvider() {
-          return new LivenessProvider<SourceRoute<MultiInetSocketAddress>>(){
-
-            @Override
-            public void addLivenessListener(
-                LivenessListener<SourceRoute<MultiInetSocketAddress>> name) {
-
-            }
-
-            @Override
-            public boolean checkLiveness(SourceRoute<MultiInetSocketAddress> i,
-                Map<String, Object> options) {
-              return false;
-            }
-
-            @Override
-            public void clearState(SourceRoute<MultiInetSocketAddress> i) {
-
-            }
-
-            @Override
-            public int getLiveness(SourceRoute<MultiInetSocketAddress> i,
-                Map<String, Object> options) {
-              return LivenessTypes.LIVENESS_ALIVE;
-            }
-
-            @Override
-            public boolean removeLivenessListener(
-                LivenessListener<SourceRoute<MultiInetSocketAddress>> name) {
-              return false;
-            }};
+          return noOp;
         }
         @Override
         public OverrideLiveness<SourceRoute<MultiInetSocketAddress>> getOverrideLiveness() {
-          return new OverrideLiveness<SourceRoute<MultiInetSocketAddress>>(){
-
-            @Override
-            public void setLiveness(SourceRoute<MultiInetSocketAddress> i,
-                int liveness, Map<String, Object> options) {
-
-            }};
+          return noOp;
         }
         @Override
         public Pinger<SourceRoute<MultiInetSocketAddress>> getPinger() {
-          return new Pinger<SourceRoute<MultiInetSocketAddress>>(){
-
-            @Override
-            public void addPingListener(
-                PingListener<SourceRoute<MultiInetSocketAddress>> name) {
-
-            }
-
-            @Override
-            public boolean ping(SourceRoute<MultiInetSocketAddress> i,
-                Map<String, Object> options) {
-              return false;
-            }
-
-            @Override
-            public boolean removePingListener(
-                PingListener<SourceRoute<MultiInetSocketAddress>> name) {
-              return false;
-            }};
+          return noOp;
         }
       };
     }
 
     return super.getLivenessTransportLayer(tl, pn);
   }
-
-
-
 }
