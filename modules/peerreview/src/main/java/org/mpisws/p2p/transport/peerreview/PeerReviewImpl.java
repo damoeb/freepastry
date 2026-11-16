@@ -93,7 +93,7 @@ import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactory;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactoryImpl;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordSM;
-import org.mpisws.p2p.transport.peerreview.statement.StatementProtocolImpl;
+import org.mpisws.p2p.transport.peerreview.statement.StatementProtocol;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.Serializer;
 import org.slf4j.Logger;
@@ -165,7 +165,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   private AuthenticatorPushProtocol<Handle, Identifier> authPushProtocol;
   private AuditProtocol<Handle, Identifier> auditProtocol;
   private ChallengeResponseProtocol<Handle, Identifier> challengeProtocol;
-  private StatementProtocolImpl<Handle, Identifier> statementProtocol;
+  private StatementProtocol<Handle, Identifier> statementProtocol;
 
   long nextEvidenceSeq = 0L;
   private TimerTask maintenanceTask;
@@ -591,7 +591,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     this.authPushProtocol = new AuthenticatorPushProtocol<Handle, Identifier>(this, authInStore, authOutStore, authPendingStore, transport, infoStore, evidenceTransferProtocol, env);
     this.auditProtocol = new AuditProtocol<Handle, Identifier>(this, history, infoStore, authInStore, transport, authOutStore, evidenceTransferProtocol, authCacheStore);
     this.challengeProtocol = new ChallengeResponseProtocol<Handle, Identifier>(this, transport, infoStore, history, authOutStore, auditProtocol, commitmentProtocol);
-    this.statementProtocol = new StatementProtocolImpl<Handle, Identifier>(this, challengeProtocol, infoStore, transport);
+    this.statementProtocol = new StatementProtocol<Handle, Identifier>(this, challengeProtocol, infoStore, transport);
 
     this.evidenceTool = new EvidenceTool<Handle, Identifier>(this, handleSerializer, idSerializer, transport.getHashSizeBytes(), transport.getSignatureSizeBytes());
     this.verifierFactory = new VerifierFactoryImpl<Handle, Identifier>(this);
