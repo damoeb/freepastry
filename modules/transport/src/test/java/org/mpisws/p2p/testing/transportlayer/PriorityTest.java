@@ -49,7 +49,7 @@ import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
-import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
+import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.multiaddress.MultiInetAddressTransportLayerImpl;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
@@ -86,7 +86,7 @@ public class PriorityTest extends TLTest<MultiInetSocketAddress> {
     env.addDestructable(env_a);
     InetSocketAddress addr_a = new InetSocketAddress(addr,port);
 
-    LivenessTransportLayerImpl<MultiInetSocketAddress> ltli = new LivenessTransportLayerImpl<MultiInetSocketAddress>(
+    LivenessTransportLayer<MultiInetSocketAddress> ltli = new LivenessTransportLayer<MultiInetSocketAddress>(
         new MultiInetAddressTransportLayerImpl(new MultiInetSocketAddress(addr_a),
           new WireTransportLayerImpl(addr_a,env_a, null),
         env_a, null, null),

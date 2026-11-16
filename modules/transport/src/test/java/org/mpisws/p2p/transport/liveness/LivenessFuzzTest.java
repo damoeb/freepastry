@@ -30,7 +30,7 @@ class LivenessFuzzTest {
   private static final long TIMEOUT_SECONDS = 10;
 
   private static Environment env;
-  private static LivenessTransportLayerImpl<InetSocketAddress> target;
+  private static LivenessTransportLayer<InetSocketAddress> target;
 
   @BeforeAll
   @SuppressWarnings({"unchecked", "ReferenceEquality"})
@@ -45,7 +45,7 @@ class LivenessFuzzTest {
               case "toString" -> "lower";
               default -> null;
             });
-    target = new LivenessTransportLayerImpl<>(lower, env, null, 0);
+    target = new LivenessTransportLayer<>(lower, env, null, 0);
     target.setCallback(new TransportLayerCallback<>() {
       @Override
       public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) {
@@ -101,12 +101,12 @@ class LivenessFuzzTest {
   @Test
   @DisplayName("a ping whose time stamp is cut short is rejected with an IOException")
   void rejectsATruncatedPing() {
-    assertThrows(IOException.class, () -> receive(new byte[] {LivenessTransportLayerImpl.HDR_PING, 1, 2, 3}));
+    assertThrows(IOException.class, () -> receive(new byte[] {LivenessTransportLayer.HDR_PING, 1, 2, 3}));
   }
 
   @Test
   @DisplayName("a pong without a time stamp is rejected with an IOException")
   void rejectsAPongWithoutTimeStamp() {
-    assertThrows(IOException.class, () -> receive(new byte[] {LivenessTransportLayerImpl.HDR_PONG}));
+    assertThrows(IOException.class, () -> receive(new byte[] {LivenessTransportLayer.HDR_PONG}));
   }
 }

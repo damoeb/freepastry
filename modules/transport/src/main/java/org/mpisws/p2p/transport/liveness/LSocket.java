@@ -56,7 +56,7 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
  * @author Jeff Hoye
  */
 class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
-  final LivenessTransportLayerImpl<Identifier> layer;
+  final LivenessTransportLayer<Identifier> layer;
   LivenessTracker<Identifier> manager;
 
   /**
@@ -72,7 +72,7 @@ class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
 
   boolean closed = false;
 
-  public LSocket(LivenessTransportLayerImpl<Identifier> layer, LivenessTracker<Identifier> manager, P2PSocket<Identifier> socket, @Nullable Identifier hardRef) {
+  public LSocket(LivenessTransportLayer<Identifier> layer, LivenessTracker<Identifier> manager, P2PSocket<Identifier> socket, @Nullable Identifier hardRef) {
     super(socket.getIdentifier(), socket, layer.logger, layer.errorHandler, socket.getOptions());
     this.layer = layer;
     if (hardRef == null) throw new IllegalArgumentException("hardRef == null "+manager+" "+socket);
@@ -122,7 +122,7 @@ class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
       };
     } // sync
     logger.atTrace().log(() -> "Checking liveness on "+manager.identifier.get()+" in "+manager.rto()+" millis if we don't write.");
-    layer.timer.schedule(livenessCheckerTimer, (long) manager.rto()*LivenessTransportLayerImpl.IDLE_CHECK_RTO_MULTIPLIER, LivenessTransportLayerImpl.IDLE_CHECK_PERIOD_MILLIS);
+    layer.timer.schedule(livenessCheckerTimer, (long) manager.rto()*LivenessTransportLayer.IDLE_CHECK_RTO_MULTIPLIER, LivenessTransportLayer.IDLE_CHECK_PERIOD_MILLIS);
   }
 
   public void stopLivenessCheckerTimer() {

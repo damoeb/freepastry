@@ -35,7 +35,7 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * Liveness detection. {@link org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl} pings
+ * Liveness detection. {@link org.mpisws.p2p.transport.liveness.LivenessTransportLayer} pings
  * remote nodes, estimates round-trip times, and reports nodes as alive, suspected or dead to
  * {@link org.mpisws.p2p.transport.liveness.LivenessListener}s through the
  * {@link org.mpisws.p2p.transport.liveness.LivenessProvider} interface; {@code checkLiveness()}

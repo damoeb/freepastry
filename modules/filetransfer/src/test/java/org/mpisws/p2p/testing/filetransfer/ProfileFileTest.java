@@ -59,7 +59,7 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
-import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
+import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 import org.mpisws.p2p.transport.simpleidentity.SimpleIdentityTransportLayer;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
@@ -107,10 +107,10 @@ public class ProfileFileTest {
     InetSocketAddress addr1 = new InetSocketAddress(local, 9001);
     WireTransportLayer wtl1 = new WireTransportLayerImpl(addr1,env,errorHandler);
     SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> idtl1 = new SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer>(wtl1,new InetSocketAddressSerializer(), null ,env,errorHandler);
-    LivenessTransportLayer<InetSocketAddress, ByteBuffer> ltl1 = new LivenessTransportLayerImpl<InetSocketAddress>(idtl1,env,errorHandler,300000);
+    LivenessTransportLayer<InetSocketAddress> ltl1 = new LivenessTransportLayer<InetSocketAddress>(idtl1,env,errorHandler,300000);
     ltl1.addLivenessListener((i, val, options) -> logger.info("Node1: livenessChanged({},{},{})", i, val, options));
 
-    LivenessTransportLayer<InetSocketAddress, ByteBuffer> etl1 = ltl1;
+    LivenessTransportLayer<InetSocketAddress> etl1 = ltl1;
 
     etl1.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
 
@@ -211,13 +211,13 @@ public class ProfileFileTest {
     InetSocketAddress addr2 = new InetSocketAddress(local, 9002);
     WireTransportLayer wtl2 = new WireTransportLayerImpl(addr2,env,errorHandler);
     SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> idtl2 = new SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer>(wtl2,new InetSocketAddressSerializer(), null ,env,errorHandler);
-    LivenessTransportLayer<InetSocketAddress, ByteBuffer> ltl2 = new LivenessTransportLayerImpl<InetSocketAddress>(idtl2,env,errorHandler,300000);
+    LivenessTransportLayer<InetSocketAddress> ltl2 = new LivenessTransportLayer<InetSocketAddress>(idtl2,env,errorHandler,300000);
 
     // check liveness on addr1
     ltl2.addLivenessListener((i, val, options) -> logger.info("Node2: livenessChanged({},{},{})", i, val, options));
     ltl2.checkLiveness(addr1, null);
 
-    LivenessTransportLayer<InetSocketAddress, ByteBuffer> etl2 = ltl2;
+    LivenessTransportLayer<InetSocketAddress> etl2 = ltl2;
 
     etl2.openSocket(addr1, new SocketCallback<InetSocketAddress>() {
 

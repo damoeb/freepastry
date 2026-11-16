@@ -42,7 +42,7 @@ import static rice.environment.params.ConfigChecks.positive;
 import rice.environment.params.Parameters;
 
 /**
- * The tuning parameters of a {@link LivenessTransportLayerImpl}. All times are in milliseconds.
+ * The tuning parameters of a {@link LivenessTransportLayer}. All times are in milliseconds.
  *
  * @param pingDelay {@code pastry_socket_scm_ping_delay}: the base delay between ping retries; doubles
  *        with every try

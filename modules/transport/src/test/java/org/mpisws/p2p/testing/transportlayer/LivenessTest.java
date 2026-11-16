@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
-import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
+import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.liveness.PingListener;
 import org.mpisws.p2p.transport.liveness.Pinger;
@@ -151,7 +151,7 @@ public class LivenessTest extends SRTest {
     return new TestLivenessTransportLayerImpl(srtl,env_a, null);
   }
 
-  static class TestLivenessTransportLayerImpl extends LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>> {
+  static class TestLivenessTransportLayerImpl extends LivenessTransportLayer<SourceRoute<MultiInetSocketAddress>> {
     public TestLivenessTransportLayerImpl(TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl, Environment env, ErrorHandler<SourceRoute<MultiInetSocketAddress>> errorHandler) {
       super(tl, env, errorHandler, 5000);
     }

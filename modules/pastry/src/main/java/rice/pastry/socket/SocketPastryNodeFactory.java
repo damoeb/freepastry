@@ -65,7 +65,7 @@ import org.mpisws.p2p.transport.identity.UpperIdentity;
 import org.mpisws.p2p.transport.limitsockets.LimitSocketsTransportLayer;
 import org.mpisws.p2p.transport.liveness.LivenessConfig;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
-import org.mpisws.p2p.transport.liveness.LivenessTransportLayerImpl;
+import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
 import org.mpisws.p2p.transport.liveness.OverrideLiveness;
 import org.mpisws.p2p.transport.liveness.Pinger;
 import org.mpisws.p2p.transport.multiaddress.AddressStrategy;
@@ -570,8 +570,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl,
       PastryNode pn) {
     Environment environment = pn.getEnvironment();
-    final LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>> ltl =
-      new LivenessTransportLayerImpl<SourceRoute<MultiInetSocketAddress>>(tl,environment, null,
+    final LivenessTransportLayer<SourceRoute<MultiInetSocketAddress>> ltl =
+      new LivenessTransportLayer<SourceRoute<MultiInetSocketAddress>>(tl,environment, null,
           LivenessConfig.fromParameters(environment.getParameters()));
 
     return new TransLiveness<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(){

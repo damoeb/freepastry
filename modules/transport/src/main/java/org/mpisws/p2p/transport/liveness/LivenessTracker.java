@@ -54,7 +54,7 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
  * identifier
  */
 public class LivenessTracker<Identifier> {
-  final LivenessTransportLayerImpl<Identifier> layer;
+  final LivenessTransportLayer<Identifier> layer;
   private final Logger logger;
 
 
@@ -84,7 +84,7 @@ public class LivenessTracker<Identifier> {
   long updated;
 
   // whether or not a check dead is currently being carried out on this route
-  private LivenessTransportLayerImpl<Identifier>.@Nullable DeadChecker pendingDeadchecker;
+  private LivenessTransportLayer<Identifier>.@Nullable DeadChecker pendingDeadchecker;
 
   final Set<LSocket<Identifier>> sockets;
 
@@ -93,7 +93,7 @@ public class LivenessTracker<Identifier> {
    *
    * @param identifier the remote entity, held weakly
    */
-  public LivenessTracker(LivenessTransportLayerImpl<Identifier> layer, Identifier identifier) {
+  public LivenessTracker(LivenessTransportLayer<Identifier> layer, Identifier identifier) {
     this.layer = layer;
     this.logger = layer.logger;
     this.RTO = layer.DEFAULT_RTO;
@@ -107,10 +107,10 @@ public class LivenessTracker<Identifier> {
     sockets = new HashSet<LSocket<Identifier>>();
   }
 
-  public LivenessTransportLayerImpl<Identifier>.@Nullable DeadChecker getPending() {
+  public LivenessTransportLayer<Identifier>.@Nullable DeadChecker getPending() {
     return pendingDeadchecker;
   }
-  public void setPending(LivenessTransportLayerImpl<Identifier>.@Nullable DeadChecker d) {
+  public void setPending(LivenessTransportLayer<Identifier>.@Nullable DeadChecker d) {
     pendingDeadchecker = d;
   }
 
