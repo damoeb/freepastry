@@ -85,8 +85,6 @@ public class Recorder implements MyEvents {
    */
   ArrayList<MyScribeClient> apps = new ArrayList<MyScribeClient>();
 
-  final Map<Id, Long> storedRandSeed = new HashMap<Id, Long>();
-
   final Map<Node, RecordLayer<InetSocketAddress>> recorders = new HashMap<Node, RecordLayer<InetSocketAddress>>();
 
   /**
@@ -103,8 +101,6 @@ public class Recorder implements MyEvents {
    */
   public Recorder(int bindport, final InetSocketAddress bootaddress,
       int numNodes, Environment env) throws Exception {
-
-    final Parameters params = env.getParameters();
 
     // Generate the NodeIds Randomly
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
@@ -123,8 +119,6 @@ public class Recorder implements MyEvents {
       protected RandomSource cloneRandomSource(Environment rootEnvironment, Id nodeId, LogManager lman) {
         long randSeed = rootEnvironment.getRandomSource().nextLong();
         logger.debug("RandSeed for {} {}", nodeId, randSeed);
-
-        storedRandSeed.put(nodeId, randSeed);
 
         return new SimpleRandomSource(randSeed, lman);
       }
@@ -218,28 +212,6 @@ public class Recorder implements MyEvents {
 
     System.out.println("done recording");
     Thread.sleep(1000);
-
-    int playbackCtr = 0;
-    Iterator<MyScribeClient> mscI = apps.iterator();
-    while(playbackCtr < params.getInt("org.mpisws.p2p.testing.transportlayer.replay.num_playbacks") && mscI.hasNext()) {
-      app = mscI.next();
-      Endpoint endpoint = app.endpoint;
-
-      System.out.println("playing back "+app.node);
-
-
-      if (params.getBoolean("org.mpisws.p2p.testing.transportlayer.replay.Recorder_printlog"))
-        printLog("0x"+endpoint.getId().toStringFull().substring(0,6), new Environment());
-
-      SocketNodeHandle snh = (SocketNodeHandle)endpoint.getLocalNodeHandle();
-      try {
-        Replayer.replayNode((rice.pastry.Id)snh.getId(), snh.getInetSocketAddress(), bootaddress, snh.getEpoch(), storedRandSeed.get(snh.getId()));
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-      }
-      System.out.println("finished playing "+app.node);
-      playbackCtr++;
-    }
   }
 
   public abstract static class AppInvokation implements Runnable {
