@@ -136,6 +136,10 @@ class FileTransferWireRoundTripTest {
   /** What the receiving side delivered, in order. */
   private static final class Inbox implements FileTransferCallback {
     final LinkedBlockingQueue<Object> events = new LinkedBlockingQueue<>();
+    /** The socket whose state is sampled at the moment a failure is reported. */
+    volatile PipeAppSocket watched;
+    /** Whether the watched socket was already closed when the failure was reported. */
+    volatile boolean closedWhenFailureReported;
 
     @Override
     public void messageReceived(ByteBuffer bb) {
@@ -153,6 +157,8 @@ class FileTransferWireRoundTripTest {
 
     @Override
     public void receiveException(Exception ioe) {
+      PipeAppSocket socket = watched;
+      closedWhenFailureReported = socket != null && socket.closed;
       events.add(ioe);
     }
 
@@ -194,6 +200,7 @@ class FileTransferWireRoundTripTest {
     a.peer = b;
     b.peer = a;
     Inbox inbox = new Inbox();
+    inbox.watched = b;
     FileTransferImpl sender = new FileTransferImpl(a, new Inbox(), null, env, null, senderChunk, CHUNKS_IN_FLIGHT);
     FileTransferImpl receiver = new FileTransferImpl(b, inbox, new TempFileAllocationStrategy("ft", null, dir), env,
         null, receiverChunk, CHUNKS_IN_FLIGHT);
@@ -396,6 +403,8 @@ class FileTransferWireRoundTripTest {
     Object event = pair.inbox.events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     assertNotNull(event, "the receiver neither delivered nor failed");
     assertTrue(event instanceof IOException, "expected an IOException but got " + event);
+    assertTrue(pair.inbox.closedWhenFailureReported,
+        "the receiver must close the socket of a peer that breaks the protocol before it reports the failure");
     assertTrue(pair.receiverSocket.closed, "the receiver must close the socket of a peer that breaks the protocol");
   }
 

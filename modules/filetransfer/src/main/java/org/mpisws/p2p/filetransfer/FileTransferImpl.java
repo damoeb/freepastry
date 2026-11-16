@@ -987,10 +987,16 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
   }
 
-  /** The peer broke the protocol or the socket failed: tell the user, drop everything, and close the socket. */
+  /**
+   * The peer broke the protocol or the socket failed: close the socket, then tell the user and drop everything. The
+   * socket is closed first so that whoever is told of the failure never sees a socket that is still open.
+   */
   private void failAndClose(IOException ioe) {
-    receiveException(socket, ioe);
-    socket.close();
+    try {
+      socket.close();
+    } finally {
+      receiveException(socket, ioe);
+    }
   }
 
   protected void incrementFileChunksInMemory() {
