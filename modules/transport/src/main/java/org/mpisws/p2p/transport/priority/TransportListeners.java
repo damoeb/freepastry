@@ -36,8 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.priority;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.TransportLayerListener;
@@ -52,32 +53,24 @@ final class TransportListeners<Identifier> {
   /**
    * Note that listeners contains a superset of plisteners
    */
-  private final ArrayList<TransportLayerListener<Identifier>> listeners = new ArrayList<TransportLayerListener<Identifier>>();
-  private final ArrayList<PriorityTransportLayerListener<Identifier>> plisteners = new ArrayList<PriorityTransportLayerListener<Identifier>>();
+  private final List<TransportLayerListener<Identifier>> listeners = new CopyOnWriteArrayList<TransportLayerListener<Identifier>>();
+  private final List<PriorityTransportLayerListener<Identifier>> plisteners = new CopyOnWriteArrayList<PriorityTransportLayerListener<Identifier>>();
 
   void addTransportLayerListener(TransportLayerListener<Identifier> listener) {
-    synchronized(listeners) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
   void removeTransportLayerListener(TransportLayerListener<Identifier> listener) {
-    synchronized(listeners) {
-      listeners.remove(listener);
-    }
+    listeners.remove(listener);
   }
 
   void addPriorityTransportLayerListener(PriorityTransportLayerListener<Identifier> listener) {
-    synchronized(plisteners) {
-      plisteners.add(listener);
-    }
+    plisteners.add(listener);
     addTransportLayerListener(listener);
   }
 
   void removePriorityTransportLayerListener(PriorityTransportLayerListener<Identifier> listener) {
-    synchronized(plisteners) {
-      plisteners.remove(listener);
-    }
+    plisteners.remove(listener);
     removeTransportLayerListener(listener);
   }
 
@@ -85,12 +78,7 @@ final class TransportListeners<Identifier> {
       @Nullable Map<String, Object> options) {
 
     if (listeners.isEmpty()) return;
-    ArrayList<TransportLayerListener<Identifier>> temp;
-
-    synchronized(listeners) {
-      temp = new ArrayList<TransportLayerListener<Identifier>>(listeners);
-    }
-    for (TransportLayerListener<Identifier> l : temp) {
+    for (TransportLayerListener<Identifier> l : listeners) {
       l.read(size, source, options, true, true);
     }
   }
@@ -98,12 +86,7 @@ final class TransportListeners<Identifier> {
   void notifyWrote(int size, Identifier dest,
       @Nullable Map<String, Object> options) {
     if (listeners.isEmpty()) return;
-    ArrayList<TransportLayerListener<Identifier>> temp;
-
-    synchronized(listeners) {
-      temp = new ArrayList<TransportLayerListener<Identifier>>(listeners);
-    }
-    for (TransportLayerListener<Identifier> l : temp) {
+    for (TransportLayerListener<Identifier> l : listeners) {
       l.wrote(size, dest, options, true, true);
     }
   }
@@ -111,12 +94,7 @@ final class TransportListeners<Identifier> {
   void notifyEnqueued(int size, Identifier dest,
       @Nullable Map<String, Object> options) {
     if (plisteners.isEmpty()) return;
-    ArrayList<PriorityTransportLayerListener<Identifier>> temp;
-
-    synchronized(plisteners) {
-      temp = new ArrayList<PriorityTransportLayerListener<Identifier>>(plisteners);
-    }
-    for (PriorityTransportLayerListener<Identifier> l : temp) {
+    for (PriorityTransportLayerListener<Identifier> l : plisteners) {
       l.enqueued(size, dest, options, true, true);
     }
   }
@@ -124,12 +102,7 @@ final class TransportListeners<Identifier> {
   void notifyDropped(int size, Identifier dest,
       @Nullable Map<String, Object> options) {
     if (plisteners.isEmpty()) return;
-    ArrayList<PriorityTransportLayerListener<Identifier>> temp;
-
-    synchronized(plisteners) {
-      temp = new ArrayList<PriorityTransportLayerListener<Identifier>>(plisteners);
-    }
-    for (PriorityTransportLayerListener<Identifier> l : temp) {
+    for (PriorityTransportLayerListener<Identifier> l : plisteners) {
       l.dropped(size, dest, options, true, true);
     }
   }

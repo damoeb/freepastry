@@ -39,9 +39,9 @@ package org.mpisws.p2p.transport.wire;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -211,54 +211,41 @@ public class WireTransportLayerImpl implements WireTransportLayer, SocketOpening
   }
 
   final Collection<TransportLayerListener<InetSocketAddress>> listeners =
-    new ArrayList<TransportLayerListener<InetSocketAddress>>();
+    new CopyOnWriteArrayList<TransportLayerListener<InetSocketAddress>>();
   public void addTransportLayerListener(
       TransportLayerListener<InetSocketAddress> listener) {
-    synchronized(listeners) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
   public void removeTransportLayerListener(
       TransportLayerListener<InetSocketAddress> listener) {
-    synchronized(listeners) {
-      listeners.remove(listener);
-    }
+    listeners.remove(listener);
   }
 
 
   final Collection<SocketCountListener<InetSocketAddress>> slisteners =
-    new ArrayList<SocketCountListener<InetSocketAddress>>();
+    new CopyOnWriteArrayList<SocketCountListener<InetSocketAddress>>();
 
   @Override
   public void addSocketCountListener(
       SocketCountListener<InetSocketAddress> listener) {
-    synchronized(slisteners) {
-      slisteners.add(listener);
-    }
+    slisteners.add(listener);
   }
 
   @Override
   public void removeSocketCountListener(
       SocketCountListener<InetSocketAddress> listener) {
-    synchronized(slisteners) {
-      slisteners.remove(listener);
-    }
+    slisteners.remove(listener);
   }
 
-  protected Iterable<SocketCountListener<InetSocketAddress>> getSlisteners() {
-    synchronized(slisteners) {
-      return new ArrayList<SocketCountListener<InetSocketAddress>>(slisteners);
-    }
-  }
 
   public void broadcastChannelOpened(InetSocketAddress addr, @Nullable Map<String, Object> options, boolean outgoing) {
-    for (SocketCountListener<InetSocketAddress> listener : getSlisteners())
+    for (SocketCountListener<InetSocketAddress> listener : slisteners)
       listener.socketOpened(addr, options, outgoing);
   }
 
   public void broadcastChannelClosed(InetSocketAddress addr, @Nullable Map<String, Object> options) {
-    for (SocketCountListener<InetSocketAddress> listener : getSlisteners())
+    for (SocketCountListener<InetSocketAddress> listener : slisteners)
       listener.socketClosed(addr, options);
   }
 

@@ -38,9 +38,10 @@ package org.mpisws.p2p.transport.wire.magicnumber;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -342,41 +343,29 @@ public class MagicNumberTransportLayer<Identifier> implements
   }
 
   // ******************************** TransportLayerListeners *******************************
-  final ArrayList<TransportLayerListener<Identifier>> listeners = new ArrayList<TransportLayerListener<Identifier>>();
+  final List<TransportLayerListener<Identifier>> listeners = new CopyOnWriteArrayList<TransportLayerListener<Identifier>>();
   @Override
   public void addTransportLayerListener(
       TransportLayerListener<Identifier> listener) {
-    synchronized(listeners) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
   @Override
   public void removeTransportLayerListener(
       TransportLayerListener<Identifier> listener) {
-    synchronized(listeners) {
-      listeners.remove(listener);
-    }
+    listeners.remove(listener);
   }
 
   public void notifyListenersRead(int bytesRead, Identifier identifier,
       @Nullable Map<String, Object> options, boolean passthrough, boolean socket) {
-    Iterable<TransportLayerListener<Identifier>> i;
-    synchronized(listeners) {
-      i = new ArrayList<TransportLayerListener<Identifier>>(listeners);
-    }
-    for (TransportLayerListener<Identifier> l : i) {
+    for (TransportLayerListener<Identifier> l : listeners) {
       l.read(bytesRead, identifier, options, passthrough, socket);
     }
   }
 
   public void notifyListenersWrite(int bytesRead, Identifier identifier,
       @Nullable Map<String, Object> options, boolean passthrough, boolean socket) {
-    Iterable<TransportLayerListener<Identifier>> i;
-    synchronized(listeners) {
-      i = new ArrayList<TransportLayerListener<Identifier>>(listeners);
-    }
-    for (TransportLayerListener<Identifier> l : i) {
+    for (TransportLayerListener<Identifier> l : listeners) {
       l.wrote(bytesRead, identifier, options, passthrough, socket);
     }
   }

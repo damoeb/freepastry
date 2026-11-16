@@ -36,10 +36,10 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.proximity;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.liveness.PingListener;
@@ -165,27 +165,19 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     }
   }
 
-  final Collection<ProximityListener<Identifier>> listeners = new ArrayList<ProximityListener<Identifier>>();
+  final Collection<ProximityListener<Identifier>> listeners = new CopyOnWriteArrayList<ProximityListener<Identifier>>();
   @Override
   public void addProximityListener(ProximityListener<Identifier> listener) {
-    synchronized(listeners) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
   @Override
   public boolean removeProximityListener(ProximityListener<Identifier> listener) {
-    synchronized(listeners) {
-      return listeners.remove(listener);
-    }
+    return listeners.remove(listener);
   }
 
   public void notifyProximityListeners(Identifier i, int prox, @Nullable Map<String, Object> options) {
-    Collection<ProximityListener<Identifier>> temp;
-    synchronized(listeners) {
-      temp = new ArrayList<ProximityListener<Identifier>>(listeners);
-    }
-    for (ProximityListener<Identifier> p : temp) {
+    for (ProximityListener<Identifier> p : listeners) {
       p.proximityChanged(i, prox, options);
     }
   }

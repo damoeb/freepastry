@@ -46,6 +46,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -135,7 +136,7 @@ public class SourceRouteManagerImpl<Identifier> implements
     addressManagers = new HashMap<Identifier, AddressManager>();
     this.config = SourceRouteManagerConfig.fromParameters(environment.getParameters());
     hardLinks = new HashSet<AddressManager>();
-    livenessListeners = new ArrayList<LivenessListener<Identifier>>();
+    livenessListeners = new CopyOnWriteArrayList<LivenessListener<Identifier>>();
   }
 
   /**
@@ -902,25 +903,17 @@ public class SourceRouteManagerImpl<Identifier> implements
 
   @Override
   public void addLivenessListener(LivenessListener<Identifier> name) {
-    synchronized(livenessListeners) {
-      livenessListeners.add(name);
-    }
+    livenessListeners.add(name);
   }
 
   @Override
   public boolean removeLivenessListener(LivenessListener<Identifier> name) {
-    synchronized(livenessListeners) {
-      return livenessListeners.remove(name);
-    }
+    return livenessListeners.remove(name);
   }
 
   private void notifyLivenessListeners(Identifier i, int liveness, @Nullable Map<String, Object> options) {
     logger.trace("notifyLivenessListeners({},{})", i, liveness);
-    List<LivenessListener<Identifier>> temp;
-    synchronized(livenessListeners) {
-      temp = new ArrayList<LivenessListener<Identifier>>(livenessListeners);
-    }
-    for (LivenessListener<Identifier> listener : temp) {
+    for (LivenessListener<Identifier> listener : livenessListeners) {
       listener.livenessChanged(i, liveness, options);
     }
   }
@@ -941,19 +934,15 @@ public class SourceRouteManagerImpl<Identifier> implements
     getAddressManager(i.getLastHop()).livenessChanged(i,val, options);
   }
 
-  final Collection<ProximityListener<Identifier>> listeners = new ArrayList<ProximityListener<Identifier>>();
+  final Collection<ProximityListener<Identifier>> listeners = new CopyOnWriteArrayList<ProximityListener<Identifier>>();
   @Override
   public void addProximityListener(ProximityListener<Identifier> listener) {
-    synchronized(listeners) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
   @Override
   public boolean removeProximityListener(ProximityListener<Identifier> listener) {
-    synchronized(listeners) {
-      return listeners.remove(listener);
-    }
+    return listeners.remove(listener);
   }
 
   @Override
@@ -962,11 +951,7 @@ public class SourceRouteManagerImpl<Identifier> implements
   }
 
   public void notifyProximityListeners(Identifier i, int prox, @Nullable Map<String, Object> options) {
-    Collection<ProximityListener<Identifier>> temp;
-    synchronized(listeners) {
-      temp = new ArrayList<ProximityListener<Identifier>>(listeners);
-    }
-    for (ProximityListener<Identifier> p : temp) {
+    for (ProximityListener<Identifier> p : listeners) {
       p.proximityChanged(i, prox, options);
     }
   }

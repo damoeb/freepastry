@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
@@ -155,8 +156,8 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
     this.time = env.getTimeSource();
     this.timer = env.getSelectorManager().getTimer();
     random = env.getRandomSource();
-    this.livenessListeners = new ArrayList<LivenessListener<Identifier>>();
-    this.pingListeners = new ArrayList<PingListener<Identifier>>();
+    this.livenessListeners = new CopyOnWriteArrayList<LivenessListener<Identifier>>();
+    this.pingListeners = new CopyOnWriteArrayList<PingListener<Identifier>>();
       this.managers = new TimerWeakHashMap<Identifier, EntityManager>(env.getSelectorManager(), MANAGER_HARD_LINK_MILLIS);
     PING_DELAY = config.pingDelay();
     PING_JITTER = config.pingJitter();
@@ -470,28 +471,19 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   @Override
   public void addLivenessListener(LivenessListener<Identifier> name) {
     if (destroyed) return;
-    synchronized(livenessListeners) {
-      livenessListeners.add(name);
-    }
+    livenessListeners.add(name);
   }
 
   @Override
   public boolean removeLivenessListener(LivenessListener<Identifier> name) {
     if (destroyed) return true;
-    synchronized(livenessListeners) {
-      return livenessListeners.remove(name);
-    }
+    return livenessListeners.remove(name);
   }
 
   private void notifyLivenessListeners(Identifier i, int liveness, @Nullable Map<String, Object> options) {
     if (destroyed) return;
     logger.trace("notifyLivenessListeners({},{})", i, liveness);
-    List<LivenessListener<Identifier>> temp;
-
-    synchronized(livenessListeners) {
-      temp = new ArrayList<LivenessListener<Identifier>>(livenessListeners);
-    }
-    for (LivenessListener<Identifier> listener : temp) {
+    for (LivenessListener<Identifier> listener : livenessListeners) {
       listener.livenessChanged(i, liveness, options);
     }
   }
@@ -500,38 +492,26 @@ public class LivenessTransportLayerImpl<Identifier> implements LivenessTransport
   @Override
   public void addPingListener(PingListener<Identifier> name) {
     if (destroyed) return;
-    synchronized(pingListeners) {
-      pingListeners.add(name);
-    }
+    pingListeners.add(name);
   }
 
   @Override
   public boolean removePingListener(PingListener<Identifier> name) {
     if (destroyed) return true;
-    synchronized(pingListeners) {
-      return pingListeners.remove(name);
-    }
+    return pingListeners.remove(name);
   }
 
   private void notifyPingListenersPing(Identifier i) {
     // the lower layer may still deliver a message (e.g. a queued datagram) after we were destroyed
     if (destroyed) return;
-    List<PingListener<Identifier>> temp;
-    synchronized(pingListeners) {
-      temp = new ArrayList<PingListener<Identifier>>(pingListeners);
-    }
-    for (PingListener<Identifier> listener : temp) {
+    for (PingListener<Identifier> listener : pingListeners) {
       listener.pingReceived(i, null);
     }
   }
 
   private void notifyPingListenersPong(Identifier i, int rtt, @Nullable Map<String, Object> options) {
     if (destroyed) return;
-    List<PingListener<Identifier>> temp;
-    synchronized(pingListeners) {
-      temp = new ArrayList<PingListener<Identifier>>(pingListeners);
-    }
-    for (PingListener<Identifier> listener : temp) {
+    for (PingListener<Identifier> listener : pingListeners) {
       listener.pingResponse(i, rtt, options);
     }
   }

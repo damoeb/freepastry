@@ -38,7 +38,6 @@ package org.mpisws.p2p.transport.identity;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
@@ -76,7 +76,6 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Cancellable;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
@@ -1074,19 +1073,15 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       return livenessProvider.checkLiveness(serializer.translateDown(i), options);
     }
 
-    final List<LivenessListener<UpperIdentifier>> livenessListeners = new ArrayList<LivenessListener<UpperIdentifier>>();
+    final List<LivenessListener<UpperIdentifier>> livenessListeners = new CopyOnWriteArrayList<LivenessListener<UpperIdentifier>>();
     @Override
     public void addLivenessListener(LivenessListener<UpperIdentifier> name) {
-      synchronized(livenessListeners) {
-        livenessListeners.add(name);
-      }
+      livenessListeners.add(name);
     }
 
     @Override
     public boolean removeLivenessListener(LivenessListener<UpperIdentifier> name) {
-      synchronized(livenessListeners) {
-        return livenessListeners.remove(name);
-      }
+      return livenessListeners.remove(name);
     }
 
     @Override
@@ -1137,29 +1132,21 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
     protected void notifyLivenessListeners(UpperIdentifier i, int liveness, @Nullable Map<String, Object> options) {
       logger.trace("notifyLivenessListeners({},{})", i, liveness);
-      List<LivenessListener<UpperIdentifier>> temp;
-      synchronized(livenessListeners) {
-        temp = new ArrayList<LivenessListener<UpperIdentifier>>(livenessListeners);
-      }
-      for (LivenessListener<UpperIdentifier> listener : temp) {
+      for (LivenessListener<UpperIdentifier> listener : livenessListeners) {
         listener.livenessChanged(i, liveness, options);
       }
     }
 
     final Collection<ProximityListener<UpperIdentifier>> proxListeners =
-      new ArrayList<ProximityListener<UpperIdentifier>>();
+      new CopyOnWriteArrayList<ProximityListener<UpperIdentifier>>();
     @Override
     public void addProximityListener(ProximityListener<UpperIdentifier> name) {
-      synchronized(proxListeners) {
-        proxListeners.add(name);
-      }
+      proxListeners.add(name);
     }
 
     @Override
     public boolean removeProximityListener(ProximityListener<UpperIdentifier> name) {
-      synchronized(proxListeners) {
-        return proxListeners.remove(name);
-      }
+      return proxListeners.remove(name);
     }
 
     @Override
@@ -1182,11 +1169,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
     private void notifyProximityListeners(UpperIdentifier i, int newProx, @Nullable Map<String, Object> options) {
       logger.trace("notifyProximityListeners({},{})", i, newProx);
-      List<ProximityListener<UpperIdentifier>> temp;
-      synchronized(proxListeners) {
-        temp = new ArrayList<ProximityListener<UpperIdentifier>>(proxListeners);
-      }
-      for (ProximityListener<UpperIdentifier> listener : temp) {
+      for (ProximityListener<UpperIdentifier> listener : proxListeners) {
         listener.proximityChanged(i, newProx, options);
       }
     }

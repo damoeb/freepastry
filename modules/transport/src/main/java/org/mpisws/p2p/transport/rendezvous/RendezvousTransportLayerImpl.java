@@ -42,8 +42,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ClosedChannelException;
@@ -1031,34 +1033,28 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     new HashMap<HighIdentifier, OutgoingPilot>();
 
   // listener
-  final ArrayList<OutgoingPilotListener<HighIdentifier>> opListeners = new ArrayList<OutgoingPilotListener<HighIdentifier>>();
+  final List<OutgoingPilotListener<HighIdentifier>> opListeners = new CopyOnWriteArrayList<OutgoingPilotListener<HighIdentifier>>();
   protected void notifyOutgoingPilotAdded(HighIdentifier i) {
     // avoid cme
-    ArrayList<OutgoingPilotListener<HighIdentifier>> temp = new ArrayList<OutgoingPilotListener<HighIdentifier>>(opListeners);
-    for (OutgoingPilotListener<HighIdentifier> l : temp) {
+    for (OutgoingPilotListener<HighIdentifier> l : opListeners) {
       l.pilotOpening(i);
     }
   }
   protected void notifyOutgoingPilotRemoved(HighIdentifier i) {
     // avoid cme
-    ArrayList<OutgoingPilotListener<HighIdentifier>> temp = new ArrayList<OutgoingPilotListener<HighIdentifier>>(opListeners);
-    for (OutgoingPilotListener<HighIdentifier> l : temp) {
+    for (OutgoingPilotListener<HighIdentifier> l : opListeners) {
       l.pilotClosed(i);
     }
   }
 
   @Override
   public void addOutgoingPilotListener(OutgoingPilotListener<HighIdentifier> listener) {
-    synchronized(opListeners) {
-      opListeners.add(listener);
-    }
+    opListeners.add(listener);
   }
 
   @Override
   public void removeOutgoingPilotListener(OutgoingPilotListener<HighIdentifier> listener) {
-    synchronized(opListeners) {
-      opListeners.remove(listener);
-    }
+    opListeners.remove(listener);
   }
 
   /**
@@ -1330,34 +1326,28 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   Map<HighIdentifier, IncomingPilot> incomingPilots = new HashMap<HighIdentifier, IncomingPilot>();
 
   // listener
-  final ArrayList<IncomingPilotListener<HighIdentifier>> ipListeners = new ArrayList<IncomingPilotListener<HighIdentifier>>();
+  final List<IncomingPilotListener<HighIdentifier>> ipListeners = new CopyOnWriteArrayList<IncomingPilotListener<HighIdentifier>>();
   protected void notifyIncomingPilotAdded(HighIdentifier i) {
     // avoid cme
-    ArrayList<IncomingPilotListener<HighIdentifier>> temp = new ArrayList<IncomingPilotListener<HighIdentifier>>(ipListeners);
-    for (IncomingPilotListener<HighIdentifier> l : temp) {
+    for (IncomingPilotListener<HighIdentifier> l : ipListeners) {
       l.pilotOpening(i);
     }
   }
   protected void notifyIncomingPilotRemoved(HighIdentifier i) {
     // avoid cme
-    ArrayList<IncomingPilotListener<HighIdentifier>> temp = new ArrayList<IncomingPilotListener<HighIdentifier>>(ipListeners);
-    for (IncomingPilotListener<HighIdentifier> l : temp) {
+    for (IncomingPilotListener<HighIdentifier> l : ipListeners) {
       l.pilotClosed(i);
     }
   }
 
   @Override
   public void addIncomingPilotListener(IncomingPilotListener<HighIdentifier> listener) {
-    synchronized(ipListeners) {
-      ipListeners.add(listener);
-    }
+    ipListeners.add(listener);
   }
 
   @Override
   public void removeIncomingPilotListener(IncomingPilotListener<HighIdentifier> listener) {
-    synchronized(ipListeners) {
-      ipListeners.remove(listener);
-    }
+    ipListeners.remove(listener);
   }
 
   class IncomingPilot extends AbstractPilot {
