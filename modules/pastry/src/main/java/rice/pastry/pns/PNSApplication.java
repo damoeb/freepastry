@@ -42,7 +42,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
@@ -57,7 +56,6 @@ import rice.p2p.commonapi.exception.TimeoutException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.util.AttachableCancellable;
-import rice.p2p.util.tuples.Tuple;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
@@ -81,10 +79,10 @@ import rice.selector.TimerTask;
  *
  * Flow:
  *   call getLeafSet(...)
- *     addToWaitingForLeafSet()
+ *     waitingForLeafSet.add()
  *
  *   cancellable.cancel()
- *     removeFromWaitingForLeafSet()
+ *     waitingForLeafSet.remove()
  *
  *
  * @author Jeff Hoye
@@ -145,16 +143,8 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       }
 
       case LeafSetResponse response -> {
-        synchronized (waitingForLeafSet) {
-          LeafSet ls = response.getLeafset();
-          Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>> waiters = waitingForLeafSet.remove(ls.get(0));
-          if (waiters != null) {
-            for (Tuple<Continuation<LeafSet, Exception>, Cancellable> w : waiters) {
-              w.b().cancel();
-              w.a().receiveResult(ls);
-            }
-          }
-        }
+        LeafSet ls = response.getLeafset();
+        waitingForLeafSet.complete(ls.get(0), ls);
       }
 
       case RouteRowRequest req -> {
@@ -166,30 +156,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       }
 
       case RouteRowResponse response -> {
-        synchronized (waitingForRouteRow) {
-          Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] waiters = waitingForRouteRow.get(response.getSender());
-          if (waiters != null) {
-            if (waiters[response.getIndex()] != null) {
-              for (Tuple<Continuation<RouteSet[], Exception>, Cancellable> w : new ArrayList<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>(waiters[response.getIndex()])) {
-                w.b().cancel();
-                w.a().receiveResult(response.getRow());
-              }
-              waiters[response.getIndex()].clear();
-              waiters[response.getIndex()] = null;
-
-              // remove the entry if all rows empty
-              boolean deleteIt = true;
-              for (int i = 0; i < depth; i++) {
-                if (waiters[i] != null) {
-                  deleteIt = false;
-                  break;
-                }
-              }
-
-              if (deleteIt) waitingForRouteRow.remove(response.getSender());
-            }
-          }
-        }
+        waitingForRouteRow.complete(new RouteRowKey(response.getSender(), response.getIndex()), response.getRow());
       }
     }
   }
@@ -300,7 +267,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     final AttachableCancellable cancellable = new AttachableCancellable(){
       @Override
       public boolean cancel() {
-        removeFromWaitingForLeafSet(handle, c);
+        waitingForLeafSet.remove(handle, c);
         super.cancel();
 
         // it was cancelled if it was removed from the list, and if not then it was already cancelled
@@ -316,7 +283,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       }
     };
 
-    addToWaitingForLeafSet(handle, c, task);
+    waitingForLeafSet.add(handle, c, task);
     cancellable.attach(task);
 
     cancellable.attach(thePastryNode.send(handle, new LeafSetRequest(this.getNodeHandle(), this.getAddress()), new PMessageNotification() {
@@ -333,41 +300,8 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     return cancellable;
   }
 
-  final Map<NodeHandle, Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>>> waitingForLeafSet =
-    new HashMap<NodeHandle, Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>>>();
-
-  protected void addToWaitingForLeafSet(NodeHandle handle, Continuation<LeafSet, Exception> c, Cancellable cancelMeWhenSuccess) {
-    synchronized (waitingForLeafSet) {
-      Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>> waiters = waitingForLeafSet.get(handle);
-      if (waiters == null) {
-        waiters = new ArrayList<Tuple<Continuation<LeafSet,Exception>,Cancellable>>();
-        waitingForLeafSet.put(handle, waiters);
-      }
-      waiters.add(new Tuple<Continuation<LeafSet, Exception>, Cancellable>(c,cancelMeWhenSuccess));
-    }
-  }
-
-  protected boolean removeFromWaitingForLeafSet(NodeHandle handle, Continuation<LeafSet, Exception> c) {
-    synchronized (waitingForLeafSet) {
-      Collection<Tuple<Continuation<LeafSet, Exception>, Cancellable>> waiters = waitingForLeafSet.get(handle);
-      if (waiters == null) return false;
-
-      // look for and remove c in waiters
-      boolean ret = false;
-      Iterator<Tuple<Continuation<LeafSet, Exception>, Cancellable>> i = waiters.iterator();
-      while(i.hasNext()) {
-        Tuple<Continuation<LeafSet, Exception>, Cancellable> foo = i.next();
-        if (foo.a().equals(c)) {
-          ret = true;
-          foo.b().cancel();
-          i.remove();
-        }
-      }
-
-      if (waiters.isEmpty()) waitingForLeafSet.remove(handle);
-      return ret;
-    }
-  }
+  /** the getLeafSet requests waiting for an answer, by the node asked */
+  private final PendingRequests<NodeHandle, LeafSet> waitingForLeafSet = new PendingRequests<>();
 
   /**
    * Non-blocking version.
@@ -381,7 +315,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     final AttachableCancellable cancellable = new AttachableCancellable(){
       @Override
       public boolean cancel() {
-        removeFromWaitingForRouteRow(handle, row, c);
+        waitingForRouteRow.remove(new RouteRowKey(handle, row), c);
         super.cancel();
 
         // it was cancelled if it was removed from the list, and if not then it was already cancelled
@@ -397,7 +331,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       }
     };
 
-    addToWaitingForRouteRow(handle, row, c, task);
+    waitingForRouteRow.add(new RouteRowKey(handle, row), c, task);
     cancellable.attach(task);
 
     cancellable.attach(thePastryNode.send(handle, new RouteRowRequest(this.getNodeHandle(), row, this.getAddress()), new PMessageNotification() {
@@ -414,63 +348,11 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     return cancellable;
   }
 
-  final Map<NodeHandle, Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[]> waitingForRouteRow =
-    new HashMap<NodeHandle, Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[]>();
+  /** a route row request: the node asked and the row */
+  private record RouteRowKey(NodeHandle handle, int row) {}
 
-  protected void addToWaitingForRouteRow(NodeHandle handle, int row, Continuation<RouteSet[], Exception> c, Cancellable cancelMeWhenSuccess) {
-    synchronized (waitingForRouteRow) {
-      Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] waiters = waitingForRouteRow.get(handle);
-      if (waiters == null) {
-        @SuppressWarnings("unchecked")
-        Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] newWaiters =
-          (Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[])new Collection<?>[depth];
-        waiters = newWaiters;
-
-        waitingForRouteRow.put(handle, waiters);
-      }
-      if (waiters[row] == null) {
-        waiters[row] = new ArrayList<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>();
-      }
-      waiters[row].add(new Tuple<Continuation<RouteSet[], Exception>, Cancellable>(c, cancelMeWhenSuccess));
-    }
-  }
-
-  protected boolean removeFromWaitingForRouteRow(NodeHandle handle, int row, Continuation<RouteSet[], Exception> c) {
-    synchronized (waitingForRouteRow) {
-      Collection<Tuple<Continuation<RouteSet[], Exception>, Cancellable>>[] waiters = waitingForRouteRow.get(handle);
-      if (waiters == null) return false;
-      if (waiters[row] == null) return false;
-      boolean ret = false;
-      Iterator<Tuple<Continuation<RouteSet[], Exception>, Cancellable>> it = waiters[row].iterator();
-      while(it.hasNext()) {
-        Tuple<Continuation<RouteSet[], Exception>, Cancellable> foo = it.next();
-        if (foo.a().equals(c)) {
-          ret = true;
-          foo.b().cancel();
-          it.remove();
-        }
-      }
-
-      // remove the row if empty
-      if (waiters[row].isEmpty()) {
-        waiters[row] = null;
-      }
-
-      // remove the entry if all rows empty
-      boolean deleteIt = true;
-      for (int i = 0; i < depth; i++) {
-        if (waiters[i] != null) {
-          deleteIt = false;
-          break;
-        }
-      }
-
-      if (deleteIt) waitingForRouteRow.remove(handle);
-
-      return ret;
-    }
-  }
-
+  /** the getRouteRow requests waiting for an answer */
+  private final PendingRequests<RouteRowKey, RouteSet[]> waitingForRouteRow = new PendingRequests<>();
 
   /**
    * Non-blocking version, no timeout.
