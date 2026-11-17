@@ -257,15 +257,26 @@ public class PRRegressionTest {
 
     TransportLayerCallback<HandleImpl, ByteBuffer> callback;
 
+    /**
+     * Delivers the message as a timer task due now, not as an invocation. The RecordSM runs pending
+     * invocations at the time of a due timer but before that timer, while the replay runs every timer due
+     * at or before a logged event first; a message delivered by invocation while one of the app's timers
+     * was due would thus be replayed in the wrong order, and the auditor would expose a correct node. A
+     * real transport reads its messages in the select phase, after the due timers.
+     */
     private void receiveMessage(final HandleImpl i, final ByteBuffer m) {
-      env.getSelectorManager().invoke(() -> {
-        try {
-          callback.messageReceived(i, m, null);
-        } catch (IOException ioe) {
-          logger.warn("Error delivering a message to {}", localIdentifier, ioe);
-          fail("Error delivering a message to "+localIdentifier+": "+ioe);
+      // schedule on the selector thread, whose simulated clock does not move under us
+      env.getSelectorManager().invoke(() -> env.getSelectorManager().schedule(new TimerTask() {
+        @Override
+        public void run() {
+          try {
+            callback.messageReceived(i, m, null);
+          } catch (IOException ioe) {
+            logger.warn("Error delivering a message to {}", localIdentifier, ioe);
+            fail("Error delivering a message to "+localIdentifier+": "+ioe);
+          }
         }
-      });
+      }, 0));
     }
 
     @Override
