@@ -29,6 +29,7 @@ import rice.selector.SelectorManager;
 import rice.selector.TimerTask;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_CHECKPOINT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_INIT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
@@ -99,6 +100,10 @@ public class RecordReplayOrderTest {
     void messageReceived(Node from) {
       received++;
       sendFromTimer(from, REPLY_MESSAGE, 0);
+    }
+
+    void storeCheckpoint(OutputBuffer buf) throws IOException {
+      buf.writeInt(received);
     }
 
     void sendFromTimer(Node target, byte kind, int delay) {
@@ -188,6 +193,26 @@ public class RecordReplayOrderTest {
     recorded.init();
   }
 
+  /**
+   * Like PeerReviewImpl's checkpoint task: a timer that only the record has, and that logs a CHECKPOINT of the
+   * state machine. PeerReviewImpl schedules it before callback.init(), so it runs first among the timers due in
+   * the same millisecond.
+   */
+  void scheduleCheckpoint(int delay) {
+    recordSM.schedule(new TimerTask() {
+      @Override
+      public void run() {
+        try {
+          SimpleOutputBuffer buf = new SimpleOutputBuffer();
+          recorded.storeCheckpoint(buf);
+          log(EVT_CHECKPOINT, buf.getBytes());
+        } catch (IOException ioe) {
+          throw new IllegalStateException(ioe);
+        }
+      }
+    }, delay);
+  }
+
   /** Another thread delivers a message by invoke(), as an in-memory transport or a processor callback does. */
   void deliverFromAnotherThread(byte[] message) throws InterruptedException {
     Thread network = new Thread(() -> recordSM.invoke(() -> receive(PEER, message)));
@@ -220,6 +245,10 @@ public class RecordReplayOrderTest {
           new Class<?>[] {PeerReviewCallback.class}, (proxy, method, args) -> switch (method.getName()) {
             case "init" -> {
               replayed.init();
+              yield null;
+            }
+            case "storeCheckpoint" -> {
+              replayed.storeCheckpoint((OutputBuffer) args[0]);
               yield null;
             }
             case "messageReceived" -> {
@@ -271,6 +300,26 @@ public class RecordReplayOrderTest {
     deliverFromAnotherThread(new byte[] {7});
 
     loopAt(START + 5);
+    loopAt(MESSAGE_ARRIVES);
+
+    assertReplayAgrees();
+  }
+
+  @Test
+  public void checkpointDueWithATimerReplays() throws Exception {
+    scheduleCheckpoint(SEND_DELAY);
+    recordInit();
+
+    loopAt(MESSAGE_ARRIVES);
+
+    assertReplayAgrees();
+  }
+
+  @Test
+  public void checkpointAfterATimerDueAtTheSameTimeReplays() throws Exception {
+    recordInit();
+    scheduleCheckpoint(SEND_DELAY);
+
     loopAt(MESSAGE_ARRIVES);
 
     assertReplayAgrees();
