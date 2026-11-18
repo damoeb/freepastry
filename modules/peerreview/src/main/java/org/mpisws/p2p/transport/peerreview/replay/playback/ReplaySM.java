@@ -36,12 +36,11 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.replay.playback;
 
+import org.mpisws.p2p.transport.peerreview.replay.DeterministicSM;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.time.simulated.DirectTimeSource;
-import rice.selector.SelectorManager;
-import rice.selector.TimerTask;
 
 /**
  * There are normally 3 kinds of events:
@@ -54,13 +53,11 @@ import rice.selector.TimerTask;
  * @author Jeff Hoye
  *
  */
-public class ReplaySM extends SelectorManager {
+public class ReplaySM extends DeterministicSM {
   Verifier<?, ?> verifier;
-  DirectTimeSource simTime;
 
   public ReplaySM(String instance, DirectTimeSource timeSource, LogManager log) {
     super(instance, timeSource, log, null);
-    this.simTime = timeSource;
     setSelect(false);
   }
 
@@ -78,56 +75,13 @@ public class ReplaySM extends SelectorManager {
     environment = env;
   }
 
-  @Override
-  protected synchronized void addTask(TimerTask task) {
-    long now = timeSource.currentTimeMillis();
-    if ((task.scheduledExecutionTime() < now) && (timeSource instanceof DirectTimeSource)) {
-      logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Can't schedule a task in the past. "+task+" now:"+now+" task.execTime:"+task.scheduledExecutionTime());
-      throw new RuntimeException("Can't schedule a task in the past.");
-    }
-    super.addTask(task);
-  }
-
   public boolean makeProgress() {
     // Handle any pending timers. Note that we have to be sure to call them in the exact same
-    // order as in the main code; otherwise there can be subtle bugs and side-effects.
+    // order as in the main code (RecordSM); otherwise there can be subtle bugs and side-effects.
     logger.trace("executeDueTasks()");
 
     if (isSuccess()) return false;
-    boolean timerProgress = true;
-    long now = verifier.getNextEventTime();
-    while (timerProgress) {
-      now = verifier.getNextEventTime();
-      if (now == -1) return false;
-
-      TimerTask next = null;
-
-      synchronized (this) {
-        if (timerQueue.size() > 0) {
-          next = (TimerTask) timerQueue.peek();
-          if (next.scheduledExecutionTime() <= now) {
-            timerQueue.poll(); // remove the event
-            simTime.setTime(next.scheduledExecutionTime()); // set the time
-          } else {
-            timerProgress = false;
-          }
-        } else {
-          timerProgress = false;
-        }
-      }
-
-      if (timerProgress) {
-        super.doInvocations();
-        logger.debug("executing task {}", next);
-        if (next.execute(simTime)) { // execute the event
-          synchronized(this) {
-            timerQueue.add(next); // if the event needs to be rescheduled, add it back on
-          }
-        }
-      }
-    }
-    simTime.setTime(now); // so we always make some progress
-    super.doInvocations();
+    if (!advanceTo(verifier::getNextEventTime)) return false;
 
     return verifier.makeProgress();
   }
@@ -139,11 +93,5 @@ public class ReplaySM extends SelectorManager {
       environment.destroy();
     }
     return ret;
-  }
-
-
-  @Override
-  protected void doInvocations() {
-    // do nothing, this is called in executeDueTasks
   }
 }

@@ -36,78 +36,110 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.replay.record;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+
+import org.mpisws.p2p.transport.peerreview.replay.DeterministicSM;
 import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
-import rice.selector.SelectorManager;
-import rice.selector.TimerTask;
 
 /**
  * This is the SelectorManager for PeerReview.  The invariant here is that we use a simTime that isn't updated near as
  * frequently as the real clock.  This makes the events more discrete for replay.
+ * <p>
+ * An invocation from another thread (e.g. a message delivered by an in-memory transport, or a processor's result)
+ * is an input to the node, like a message read in the select phase: the replay delivers its logged event after
+ * every timer due at or before that event. Such an invocation therefore runs only after the due timers, at the
+ * current time, each one as its own step of {@link #advanceTo}. The invocations of the selector thread itself run in
+ * the rounds of {@link #advanceTo}, as in the replay.
  *
  * @author Jeff Hoye
  *
  */
-public class RecordSM extends SelectorManager {
-  DirectTimeSource simTime;
+public class RecordSM extends DeterministicSM {
   TimeSource realTime;
 
   public RecordSM(String instance, TimeSource realTime, DirectTimeSource simTime, LogManager log, RandomSource rs) {
     super(instance, simTime, log, rs);
     this.realTime = realTime;
-    this.simTime = simTime;
   }
 
+  /** An invocation from another thread: an input to the node. */
+  private record Input(Runnable task) implements Runnable {
+    @Override
+    public void run() {
+      task.run();
+    }
+  }
 
   @Override
-  protected synchronized void addTask(TimerTask task) {
-    long now = timeSource.currentTimeMillis();
-    if ((task.scheduledExecutionTime() < now) && (timeSource instanceof DirectTimeSource)) {
-      logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Can't schedule a task in the past. "+task+" now:"+now+" task.execTime:"+task.scheduledExecutionTime());
-      throw new RuntimeException("Can't schedule a task in the past.");
-    }
-    super.addTask(task);
+  public synchronized void invoke(Runnable d) {
+    Objects.requireNonNull(d);
+    super.invoke(isSelectorThread() ? d : new Input(d));
   }
 
   @Override
   protected void executeDueTasks() {
     long now = realTime.currentTimeMillis();
+    do {
+      advanceTo(() -> now);
+    } while (runNextInput());
+  }
 
-    boolean done = false;
-    while (!done) {
-      TimerTask next = null;
-      synchronized (this) {
-        if (timerQueue.size() > 0) {
-          next = (TimerTask) timerQueue.peek();
-          if (next.scheduledExecutionTime() <= now) {
-            timerQueue.poll(); // remove the event
-            simTime.setTime(next.scheduledExecutionTime()); // set the time
-          } else {
-            done = true;
-          }
-        } else {
-          done = true;
-        }
-      } // sync
-
-      if (!done) {
-        super.doInvocations();
-        logger.debug("executing task {}", next);
-        if (next.execute(simTime)) { // execute the event
-          synchronized(this) {
-            timerQueue.add(next); // if the event needs to be rescheduled, add it back on
-          }
+  /**
+   * Runs the oldest pending invocation from another thread.
+   *
+   * @return false if there was none
+   */
+  private boolean runNextInput() {
+    Runnable input = null;
+    synchronized (this) {
+      for (Iterator<Runnable> i = pendingInvocations().iterator(); i.hasNext();) {
+        Runnable r = i.next();
+        if (r instanceof Input) {
+          i.remove();
+          input = r;
+          break;
         }
       }
     }
-    simTime.setTime(now); // so we always make some progress
-    super.doInvocations();
+    if (input == null) return false;
+    logger.debug("running input {}", input);
+    input.run();
+    return true;
   }
 
+  /**
+   * A round of the invocations of the selector thread; the inputs wait for {@link #runNextInput()}.
+   */
   @Override
-  protected void doInvocations() {
-    // do nothing, this is called in executeDueTasks
+  protected void runInvocations() {
+    List<Runnable> inputs = new ArrayList<Runnable>();
+    synchronized (this) {
+      for (Iterator<Runnable> i = pendingInvocations().iterator(); i.hasNext();) {
+        Runnable r = i.next();
+        if (r instanceof Input) {
+          inputs.add(r);
+          i.remove();
+        }
+      }
+    }
+    try {
+      super.runInvocations();
+    } finally {
+      if (!inputs.isEmpty()) {
+        synchronized (this) {
+          // ahead of the inputs that arrived meanwhile
+          List<Runnable> pending = pendingInvocations();
+          int first = 0;
+          while (first < pending.size() && !(pending.get(first) instanceof Input)) first++;
+          pending.addAll(first, inputs);
+        }
+      }
+    }
   }
 }
