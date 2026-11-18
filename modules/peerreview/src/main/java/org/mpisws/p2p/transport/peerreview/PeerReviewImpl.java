@@ -620,6 +620,8 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       }
     },DEFAULT_AUTH_PUSH_INTERVAL_MILLIS, DEFAULT_AUTH_PUSH_INTERVAL_MILLIS);
 
+    // schedule before callback.init(): the replay expects a CHECKPOINT before the app's timers due at its time
+    // (see Verifier.isNextEventBeforeTimersAtItsTime())
     checkpointTask = env.getSelectorManager().schedule(new TimerTask() {
       @Override
       public void run() {

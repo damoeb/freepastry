@@ -81,7 +81,7 @@ public class ReplaySM extends DeterministicSM {
     logger.trace("executeDueTasks()");
 
     if (isSuccess()) return false;
-    if (!advanceTo(verifier::getNextEventTime)) return false;
+    if (!advanceTo(verifier::getNextEventTime, verifier::isNextEventBeforeTimersAtItsTime)) return false;
 
     return verifier.makeProgress();
   }

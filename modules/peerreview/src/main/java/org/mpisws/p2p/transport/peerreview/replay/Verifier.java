@@ -617,6 +617,16 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
     return next.getSeq()/SEQS_PER_MILLI;
   }
 
+  /**
+   * Whether the next event comes before the timers of the state machine that are due in the same millisecond.
+   * A CHECKPOINT is logged by PeerReview's checkpoint task, which only the record has. PeerReviewImpl schedules
+   * that task before the state machine's init(), and it keeps its place when it repeats, so it runs before every
+   * timer of the state machine due at the same time.
+   */
+  public boolean isNextEventBeforeTimersAtItsTime() {
+    return next != null && next.getType() == EVT_CHECKPOINT;
+  }
+
   public boolean isSuccess() {
     if (initialized && verifiedOK()) {
       if (next == null) return true;

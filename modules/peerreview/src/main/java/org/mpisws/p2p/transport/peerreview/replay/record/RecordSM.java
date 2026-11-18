@@ -86,7 +86,8 @@ public class RecordSM extends DeterministicSM {
   protected void executeDueTasks() {
     long now = realTime.currentTimeMillis();
     do {
-      advanceTo(() -> now);
+      // an input comes after every timer due at its time
+      advanceTo(() -> now, () -> false);
     } while (runNextInput());
   }
 

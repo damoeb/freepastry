@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.replay;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 import rice.environment.logging.LogManager;
@@ -47,10 +48,11 @@ import rice.selector.TimerTask;
 /**
  * The SelectorManager of a node whose log PeerReview replays: the {@link org.mpisws.p2p.transport.peerreview.replay.record.RecordSM}
  * while the node runs, and the {@link org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM} while an auditor
- * replays its log. Both run the timers and the invocations in the order of {@link #advanceTo(LongSupplier)}, before
- * each input event (a message, a socket event, ...), so the replay reproduces the order of the recording.
+ * replays its log. Both run the timers and the invocations in the order of
+ * {@link #advanceTo(LongSupplier, BooleanSupplier)}, before each input event (a message, a socket event, a
+ * checkpoint, ...), so the replay reproduces the order of the recording.
  *
- * @see #advanceTo(LongSupplier)
+ * @see #advanceTo(LongSupplier, BooleanSupplier)
  */
 public abstract class DeterministicSM extends SelectorManager {
   /** The time of a log without a next event. */
@@ -80,20 +82,27 @@ public abstract class DeterministicSM extends SelectorManager {
    * <p>
    * The replay predicts the outputs (e.g. a SEND) of the timers and invocations from the log, so it knows the time of
    * the next input event only after them: {@code eventTime} is asked again after each timer.
+   * <p>
+   * An event that a timer of the record logs itself (a CHECKPOINT) comes before the timers due in the same
+   * millisecond that the record ran after it: with {@code beforeTimersAtEventTime}, only the timers due strictly
+   * before the event's time run. A timer due at that time that the record ran first has logged its output (e.g. a
+   * SEND) before the event, and that output is the next event until the timer has run.
    *
    * @param eventTime the time of the next input event, or {@link #NO_EVENT}
+   * @param beforeTimersAtEventTime whether the next input event comes before the timers due at its time
    * @return false if there is no next event; the clock and the pending invocations are then left as they are
    */
-  protected boolean advanceTo(LongSupplier eventTime) {
+  protected boolean advanceTo(LongSupplier eventTime, BooleanSupplier beforeTimersAtEventTime) {
     long time;
     while (true) {
       time = eventTime.getAsLong();
       if (time == NO_EVENT) return false;
+      long lastDue = beforeTimersAtEventTime.getAsBoolean() ? time - 1 : time;
 
       TimerTask next;
       synchronized (this) {
         next = timerQueue.peek();
-        if (next == null || next.scheduledExecutionTime() > time) break;
+        if (next == null || next.scheduledExecutionTime() > lastDue) break;
         timerQueue.poll();
         simTime.setTime(next.scheduledExecutionTime());
       }
