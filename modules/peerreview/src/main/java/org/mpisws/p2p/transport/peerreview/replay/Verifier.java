@@ -109,6 +109,12 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
   PeerReviewCallback<Handle, Identifier> app;
   boolean foundFault;
 
+  /**
+   * The seq of the first entry replayed (the starting CHECKPOINT or INIT). SENDs logged before it are
+   * outside the replay window.
+   */
+  private final long windowStartSeq;
+
   long nextEventIndex;
   IndexEntry next;
   InputBuffer nextEvent;
@@ -151,6 +157,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
     if (next == null) {
       foundFault = true;
     }
+    this.windowStartSeq = next == null ? Long.MIN_VALUE : next.getSeq();
   }
 
   /**
@@ -296,17 +303,20 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
         logger.warn("Replay: Spurious SIGN event; marking as invalid");
         foundFault = true;
         return false;
-      case EVT_ACK : /* Skip ACKs */
-  // warning there should be an upcall here
+      case EVT_ACK : /* Acknowledge the SEND replayed with the acked seq */
         peerreview.getIdSerializer().deserialize(nextEvent); // the acking node
         long ackedSeq = nextEvent.readLong();
         VerifierMRH<Handle> foo = callbacks.remove(ackedSeq);
-        if (foo == null) {
+        if (foo != null) {
+          foo.ack();
+        } else if (ackedSeq < windowStartSeq) {
+          /* The SEND was logged before the replay window, so the replay never saw it */
+          logger.debug("Replay: ACK for seq:{} before the replay window at seq:{}; skipping", ackedSeq, windowStartSeq);
+        } else {
           logger.warn("Replay: no message to be acked for seq:{} fail.", ackedSeq);
           foundFault = true;
           return false;
         }
-        foo.ack();
         fetchNextEvent();
         break;
       case EVT_SENDSIGN : /* Skip SENDSIGN events; they are not relevant during replay */
