@@ -22,7 +22,8 @@ import rice.pastry.standard.NodeIdCertificate;
  * datagram, neither carries a certificate). The handle is accepted, so a node can route towards it and connect
  * to it, but it is not an authenticated identity: {@link #isAuthenticated} is false.</li>
  * <li><b>authenticated</b>: a TLS connection presented a certificate whose common name equals the id. This
- * promotes a pending id.</li>
+ * promotes a pending id. The handle of that connection (the id at its address and epoch) is authenticated too
+ * ({@link #isAuthenticated(TransportLayerNodeHandle)}); a handle with the same id at another address is not.</li>
  * <li><b>refused</b>: a connection presented a certificate whose common name differs from the id the peer
  * claims. The binding is not made, a warning is logged and the id loses its pending state. An authenticated id
  * stays authenticated, as the certificate proved it.</li>
@@ -46,10 +47,13 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
   private final Map<Id, Boolean> authenticated = lru();
   private final Map<Id, Boolean> pending = lru();
 
-  private static Map<Id, Boolean> lru() {
+  /** handles (id, address and epoch) whose own TLS connection presented the id's certificate */
+  private final Map<TransportLayerNodeHandle<MultiInetSocketAddress>, Boolean> authenticatedHandles = lru();
+
+  private static <K> Map<K, Boolean> lru() {
     return new LinkedHashMap<>(16, 0.75f, true) {
       @Override
-      protected boolean removeEldestEntry(Map.Entry<Id, Boolean> eldest) {
+      protected boolean removeEldestEntry(Map.Entry<K, Boolean> eldest) {
         return size() > MAX_TRACKED_IDS;
       }
     };
@@ -68,6 +72,9 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
     if (NodeIdCertificate.matches(id, subject)) {
       pending.remove(id);
       authenticated.put(id, Boolean.TRUE);
+      // the connection runs to or from this handle: an outgoing one was opened to its address and epoch, an
+      // incoming one names it as its sender
+      authenticatedHandles.put(u, Boolean.TRUE);
       return true;
     }
     pending.remove(id);
@@ -123,9 +130,18 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
     return subject != null && NodeIdCertificate.matches(handle.getNodeId(), subject);
   }
 
-  /** @return true if a TLS certificate whose common name is this id has been presented */
+  /** @return true if a TLS certificate whose common name is this id has been presented, by any address */
   public synchronized boolean isAuthenticated(Id id) {
     return authenticated.containsKey(id);
+  }
+
+  /**
+   * @return true if this very handle, its id at its address and epoch, presented its id's certificate over TLS: a
+   *     connection was opened to it, or came from it. That the id was authenticated at another address does not
+   *     count: any node can advertise a handle with another node's id at an address of its choice.
+   */
+  public synchronized boolean isAuthenticated(TransportLayerNodeHandle<?> handle) {
+    return authenticatedHandles.containsKey(handle);
   }
 
   /** @return true if the id was learned without a certificate and no matching certificate has been seen yet */

@@ -18,7 +18,7 @@ class DeferredDeliveriesTest {
   final List<Runnable> timers = new ArrayList<>();
   final List<Long> delays = new ArrayList<>();
   final List<String> delivered = new ArrayList<>();
-  final DeferredDeliveries target = new DeferredDeliveries((task, delay) -> {
+  final DeferredDeliveries<Id> target = new DeferredDeliveries<>((task, delay) -> {
     timers.add(task);
     delays.add(delay);
   });

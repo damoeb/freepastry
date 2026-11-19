@@ -178,7 +178,7 @@ public class PastryNode implements
   private @Nullable Predicate<NodeHandle> identityPolicy;
 
   /** certified mode: messages of senders whose id is being verified */
-  private final DeferredDeliveries deferred = new DeferredDeliveries((task, delay) ->
+  private final DeferredDeliveries<NodeHandle> deferred = new DeferredDeliveries<>((task, delay) ->
       getEnvironment().getSelectorManager().schedule(new rice.selector.TimerTask() {
         @Override
         public void run() {
@@ -481,10 +481,11 @@ public class PastryNode implements
   }
 
   /**
-   * Certified mode: sets the test that tells whether a node handle's id is authenticated. The routing table and the
+   * Certified mode: sets the test that tells whether a node handle (its id at its address and epoch) is
+   * authenticated. The routing table and the
    * leaf set admit only such handles, and a {@code PastryEndpoint} hands a routed message to its application only
    * if the previous hop passes (the originator named in the message is not checked). The test is called on the
-   * selector thread. Null (the default) accepts every id.
+   * selector thread. Null (the default) accepts every handle.
    */
   public void setIdentityPolicy(@Nullable Predicate<NodeHandle> policy) {
     identityPolicy = policy;
@@ -493,13 +494,13 @@ public class PastryNode implements
   }
 
   /**
-   * Certified mode: keeps a message from a previous hop that is not authenticated yet until its id is verified
+   * Certified mode: keeps a message from a previous hop that is not authenticated yet until the hop is verified
    * ({@link #identityResolved}); the bounds and the timeout are those of {@link DeferredDeliveries}.
    *
    * @return false if the message was dropped because a bound is reached
    */
   public boolean deferUntilAuthenticated(NodeHandle nextHop, Runnable delivery) {
-    return deferred.defer(nextHop.getNodeId(), delivery);
+    return deferred.defer(nextHop, delivery);
   }
 
   /**
@@ -507,17 +508,25 @@ public class PastryNode implements
    *     them even if the id has been authenticated meanwhile, so that they stay in order
    */
   public boolean isAwaitingAuthentication(NodeHandle nextHop) {
-    return deferred.isWaiting(nextHop.getNodeId());
+    return deferred.isWaiting(nextHop);
   }
 
-  /** Certified mode: the check of the id ended; delivers the messages that waited for it, or drops them. */
-  public void identityResolved(Id id, boolean authenticated) {
-    deferred.resolve(id, authenticated);
+  /** Certified mode: the check of the handle ended; delivers the messages that waited for it, or drops them. */
+  public void identityResolved(NodeHandle handle, boolean authenticated) {
+    deferred.resolve(handle, authenticated);
   }
 
-  /** @return false in certified mode if the handle's id is not authenticated (yet) */
+  /** @return false in certified mode if the handle is not authenticated (yet) */
   public boolean acceptsIdentity(@Nullable NodeHandle handle) {
     return handle == null || identityPolicy == null || identityPolicy.test(handle);
+  }
+
+  /**
+   * @return false in certified mode if the sender of a received message is unknown or not authenticated; true
+   *     without an identity policy
+   */
+  public boolean acceptsSender(@Nullable NodeHandle sender) {
+    return identityPolicy == null || (sender != null && identityPolicy.test(sender));
   }
 
   /**

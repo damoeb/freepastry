@@ -401,6 +401,11 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
       // We are not joining (any more): a late answer to a retransmitted request, or a forged one. Completing the
       // join again would let any peer push its leaf set and routing table rows into a ready node.
       logger.info("Ignoring accepted JoinRequest {}, this node is not joining", joinRequest);
+    } else if (!thePastryNode.acceptsSender(joinRequest.getSender())) {
+      // Certified mode: the answer must come over TLS from an authenticated node. The handles it brings (leaf set,
+      // routing table rows) are each verified at their own address before they are admitted. Without certificates
+      // (plain mode) the joiner trusts the answer, and the network must be trusted.
+      logger.warn("Ignoring accepted JoinRequest {} from {}, the sender is not authenticated", joinRequest, joinRequest.getSender());
     } else { // this is the node that initiated the join request in the first place
       completeJoin(joinRequest);
     }

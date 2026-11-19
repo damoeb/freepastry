@@ -195,7 +195,7 @@ class CertifiedDeferredDeliveryTest {
     try {
       java.lang.reflect.Field field = PastryNode.class.getDeclaredField("deferred");
       field.setAccessible(true);
-      DeferredDeliveries deferred = (DeferredDeliveries) field.get(node);
+      DeferredDeliveries<?> deferred = (DeferredDeliveries<?>) field.get(node);
       return onSelector(node, deferred::size);
     } catch (Exception e) {
       throw new IllegalStateException(e);

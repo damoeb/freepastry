@@ -129,6 +129,14 @@ public class LeafSet implements Iterable<NodeHandle> {
   }
 
   /**
+   * @return false if the handle would enter this half but the admission test refuses it; the test is asked only for
+   *     a handle that would enter, as it may start verifying the handle
+   */
+  private boolean admits(LeafSetHalf half, NodeHandle handle) {
+    return admission == null || !half.test(handle) || admission.test(handle);
+  }
+
+  /**
    * Puts a NodeHandle into the set.
    *
    * @param handle the handle to put.
@@ -717,8 +725,8 @@ public class LeafSet implements Iterable<NodeHandle> {
         changed = cwSet.test(currentHandle);
       }
       else {
-        // merge into our cw leaf set half
-        changed = cwSet.put(currentHandle, true);
+        // merge into our cw leaf set half, if the admission test lets the handle in
+        changed = admits(cwSet, currentHandle) && cwSet.put(currentHandle, true);
 
         if (changed) myInsertedHandles.add(currentHandle);
 
@@ -743,8 +751,8 @@ public class LeafSet implements Iterable<NodeHandle> {
         changed = ccwSet.test(nh);
       }
       else {
-        // merge into our leaf set
-        changed = ccwSet.put(nh, true);
+        // merge into our leaf set, if the admission test lets the handle in
+        changed = admits(ccwSet, nh) && ccwSet.put(nh, true);
 
         if (changed) myInsertedHandles.add(nh);
 
