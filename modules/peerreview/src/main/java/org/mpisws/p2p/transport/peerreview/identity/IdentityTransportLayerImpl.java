@@ -192,7 +192,8 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
         }
       }
     } catch (SignatureException signatureException) {
-      throw new RuntimeException(signatureException);
+      // a malformed signature (e.g. wrong length) comes from the peer: it is a failed verification, not an error
+      logger.atDebug().log(() -> "Malformed signature from "+id+": "+signatureException.getMessage());
     }
     return SIGNATURE_BAD;
   }

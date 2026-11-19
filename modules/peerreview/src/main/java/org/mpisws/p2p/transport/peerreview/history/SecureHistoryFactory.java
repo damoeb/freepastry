@@ -168,11 +168,14 @@ public class SecureHistoryFactory implements IndexEntryFactory {
 
   public SecureHistory createTemp(long baseSeq, byte[] baseHash)
       throws IOException {
-    // temporary histories go to the temp directory, not the working directory, and are deleted when the JVM exits
-    String name = Path.of(System.getProperty("java.io.tmpdir"),
-        "peerReview."+environment.getTimeSource().currentTimeMillis()+"."+environment.getRandomSource().nextInt()).toString();
-    SecureHistory result = create(name, baseSeq, baseHash);
-    // NIO has no deleteOnExit, so this stays on java.io.File
+    // temporary histories go to a new private directory (mode 0700 where POSIX) of the temp directory: a name in
+    // the shared temp directory could be guessed and pre-created or linked by another user. The directory and its
+    // files are deleted when the JVM exits.
+    Path directory = Files.createTempDirectory(Path.of(System.getProperty("java.io.tmpdir")), "peerReview.");
+    Path name = directory.resolve("history");
+    SecureHistory result = create(name.toString(), baseSeq, baseHash);
+    // NIO has no deleteOnExit, so this stays on java.io.File; the directory is registered first so it is deleted last
+    directory.toFile().deleteOnExit();
     Path.of(name+".index").toFile().deleteOnExit();
     Path.of(name+".data").toFile().deleteOnExit();
     return result;
