@@ -94,24 +94,17 @@ public class SimpleParameters implements Parameters {
    * @param orderedDefaults the names (without extension) of the default parameter
    *          files to load from the classpath, in order; later files override earlier ones
    * @param mutableConfigFileName the name (without extension) of the mutable parameter file;
-   *          if this is null, user.params is used if it exists in the working directory,
-   *          otherwise no params are saved. If this file doesn't exist,
+   *          if this is null, no file is read and no params are saved (there is no implicit
+   *          {@code user.params} in the working directory). If this file doesn't exist,
    *          you will get a warning printed to stdErr, then the file will be
    *          created if you ever store
    * @throws ParamsNotPresentException if a default file cannot be loaded
    */
   public SimpleParameters(String[] orderedDefaults, @Nullable String mutableConfigFileName) {
+    // only a file that the caller names overrides the defaults: a user.params that happens to be in the working
+    // directory is not read, as it could change reflectively loaded classes (nat_handler_class) of any program started there
     if (mutableConfigFileName != null) {
       this.configFileName = mutableConfigFileName + FILENAME_EXTENSION;
-    } else {
-      try {
-        Path path = Path.of(defaultParamsFile);
-        if (Files.exists(path)) {
-          this.configFileName = defaultParamsFile;
-        }
-      } catch (SecurityException e) {
-        LOG.warn("Cannot check for the parameter file {}", defaultParamsFile, e);
-      }
     }
     this.properties = new MyProperties();
     this.defaults = new MyProperties();

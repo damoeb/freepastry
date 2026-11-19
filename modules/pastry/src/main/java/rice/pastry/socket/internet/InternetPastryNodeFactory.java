@@ -179,7 +179,8 @@ public class InternetPastryNodeFactory extends
    */
   static FirewallPortOpener loadNatHandler(String natHandlerClassName, Environment env, InetAddress localAddress, org.slf4j.Logger logger) {
     try {
-      Class<?> loaded = Class.forName(natHandlerClassName);
+      // not initialized until it is known to be a FirewallPortOpener: a static initializer is code that runs
+      Class<?> loaded = Class.forName(natHandlerClassName, false, InternetPastryNodeFactory.class.getClassLoader());
       if (!FirewallPortOpener.class.isAssignableFrom(loaded)) {
         throw new IllegalArgumentException("nat_handler_class " + natHandlerClassName + " does not implement "
             + FirewallPortOpener.class.getName());
