@@ -110,14 +110,14 @@ public class LeafSetTest {
         rightSide = !rightSide;
         int r;
         if (rightSide) {
-          r = random.nextInt(leafset.cwSize());
+          r = random.nextInt(leafset.clockwiseSize());
           if (r != 0) {
             handle = leafset.get(r);
             System.out.println("Removing " + handle);
             leafset.remove(handle);
           }
         } else {
-          r = random.nextInt(leafset.ccwSize());
+          r = random.nextInt(leafset.counterClockwiseSize());
           if (r != 0) {
             handle = leafset.get(-r);
             System.out.println("Removing " + handle);
@@ -137,7 +137,7 @@ public class LeafSetTest {
 
     @Override
     public void nodeSetUpdate(NodeSetEventSource set, NodeHandle handle, boolean added) {
-      if (ls.overlaps() && (ls.ccwSize() != ls.cwSize())) {
+      if (ls.overlaps() && (ls.counterClockwiseSize() != ls.clockwiseSize())) {
         System.out.println("FAILURE: overlaps and different size" + ls);
       }
       if (added) {

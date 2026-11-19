@@ -221,7 +221,7 @@ public abstract class PastryAppl
         Message innerMessage = rm.unwrap(deserializer);
         if (enrouteMessage(innerMessage, rm.getTarget(), rm.getNextHop(), rm.getOptions())) {
           if (rm.getDestinationHandle() == thePastryNode.getLocalHandle()) {
-            messageForAppl(innerMessage);
+            messageForApplication(innerMessage);
           } else {
             thePastryNode.getRouter().route(rm);
           }
@@ -230,7 +230,7 @@ public abstract class PastryAppl
         throw new RuntimeException("Error deserializing message "+rm,ioe);
       }
     } else {
-      messageForAppl(msg);
+      messageForApplication(msg);
     }
   }
 
@@ -262,11 +262,11 @@ public abstract class PastryAppl
    * @param msg the message to deliver.
    * @param opt send options that describe how the message is to be routed.
    */
-  public void routeMsg(Id key, PRawMessage msg, SendOptions opt) {
+  public void routeMessage(Id key, PRawMessage msg, SendOptions opt) {
     logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     RouteMessage rm = new RouteMessage(key, msg, opt,
         thePastryNode.getConfig().routeMsgVersion());
-    rm.setTLOptions(options);
+    rm.setTransportLayerOptions(options);
     thePastryNode.getRouter().route(rm);
   }
 
@@ -305,7 +305,7 @@ public abstract class PastryAppl
    *
    * @param msg the message that is arriving.
    */
-  public abstract void messageForAppl(Message msg);
+  public abstract void messageForApplication(Message msg);
 
   /**
    * Called by pastry when a message is enroute and is passing through this node.  If this

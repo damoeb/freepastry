@@ -94,7 +94,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     NodeHandleFactory<?> handleFactory = getNodeHandleFactory(pn);
     NodeHandle localhandle = getLocalHandle(pn, handleFactory);
 
-    TLDeserializer deserializer = getTLDeserializer(handleFactory,pn);
+    TLDeserializer deserializer = getTransportLayerDeserializer(handleFactory,pn);
 
     MessageDispatch msgDisp = new MessageDispatch(pn, deserializer);
     RoutingTable routeTable = new RoutingTable(localhandle, rtMax, rtBase,
@@ -169,7 +169,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     return ConsistentJoinConfig.fromParameters(pn.getEnvironment().getParameters());
   }
 
-  protected TLDeserializer getTLDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
+  protected TLDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
     TLDeserializer deserializer = new TLDeserializer(handleFactory, pn.getEnvironment());
     return deserializer;
   }

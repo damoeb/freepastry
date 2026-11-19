@@ -286,7 +286,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    * @return the size.
    */
   public int size() {
-    return cwSize() + ccwSize();
+    return clockwiseSize() + counterClockwiseSize();
   }
 
   /**
@@ -294,14 +294,14 @@ public class LeafSet implements Iterable<NodeHandle> {
    *
    * @return the size.
    */
-  public int cwSize() { return cwSet.size(); }
+  public int clockwiseSize() { return cwSet.size(); }
 
   /**
    * Gets the current counterclockwise size.
    *
    * @return the size.
    */
-  public int ccwSize() { return ccwSet.size(); }
+  public int counterClockwiseSize() { return ccwSet.size(); }
 
   /**
    * complement - given an index of a node in the leafset, produces
@@ -316,11 +316,11 @@ public class LeafSet implements Iterable<NodeHandle> {
 
     if (inx == 0) return 0;
     if (inx < 0) {
-      if (inx < -ccwSize()) return inx;
+      if (inx < -counterClockwiseSize()) return inx;
       res = cwSet.getIndex(ccwSet.get(-inx - 1)) + 1;
     }
     else {
-      if (inx > cwSize()) return inx;
+      if (inx > clockwiseSize()) return inx;
       res = -ccwSet.getIndex(cwSet.get(inx - 1)) - 1;
     }
 
@@ -372,8 +372,8 @@ public class LeafSet implements Iterable<NodeHandle> {
    */
   public NodeSet neighborSet(int max) {
     NodeSet set;
-    int cwSize = cwSize();
-    int ccwSize = ccwSize();
+    int cwSize = clockwiseSize();
+    int ccwSize = counterClockwiseSize();
     NodeHandle cwExtreme = get(cwSize);
     NodeHandle ccwExtreme = get(-ccwSize);
     set = replicaSet(baseId,max);
@@ -564,8 +564,8 @@ public class LeafSet implements Iterable<NodeHandle> {
 
    // otherwise, we then construct the ranges which comprise the main range, and finally
    // return the overlap
-   IdRange cwRange = new IdRange(n.getNodeId(), cw.getNodeId()).ccwHalf();
-   IdRange ccwRange = new IdRange(ccw.getNodeId(), n.getNodeId()).cwHalf();
+   IdRange cwRange = new IdRange(n.getNodeId(), cw.getNodeId()).counterClockwiseHalf();
+   IdRange ccwRange = new IdRange(ccw.getNodeId(), n.getNodeId()).clockwiseHalf();
 
    return ccwRange.merge(cwRange);
   }
@@ -614,8 +614,8 @@ public class LeafSet implements Iterable<NodeHandle> {
                        boolean testOnly, Set<NodeHandle> insertedHandles) {
 
     boolean changed, result = false;
-    int cwSize = remotels.cwSize();
-    int ccwSize = remotels.ccwSize();
+    int cwSize = remotels.clockwiseSize();
+    int ccwSize = remotels.counterClockwiseSize();
 
     // this is the only way to get the notification correct
     Set<NodeHandle> myInsertedHandles = new HashSet<NodeHandle>();
@@ -642,7 +642,7 @@ public class LeafSet implements Iterable<NodeHandle> {
           int closest = remotels.mostSimilar(baseId);
           Id closestId = remotels.get(closest).getNodeId();
 
-          if (closest == -remotels.ccwSize() || closest == remotels.cwSize()) {
+          if (closest == -remotels.counterClockwiseSize() || closest == remotels.clockwiseSize()) {
             // doesn't hurt to merge it anyways
           }
 
@@ -807,7 +807,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    *
    * @param listener the listener to remove.
    */
-  public void deleteNodeSetListener(NodeSetListener listener) {
+  public void removeNodeSetListener(NodeSetListener listener) {
     cwSet.removeNodeSetListener(listener);
     ccwSet.removeNodeSetListener(listener);
   }
@@ -983,8 +983,8 @@ public class LeafSet implements Iterable<NodeHandle> {
 
     buf.writeByte((byte)theSize);
     buf.writeByte((byte)list.size());
-    buf.writeByte((byte)cwSize());
-    buf.writeByte((byte)ccwSize());
+    buf.writeByte((byte)clockwiseSize());
+    buf.writeByte((byte)counterClockwiseSize());
 
     baseHandle.serialize(buf);
 
@@ -1009,7 +1009,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    */
   public synchronized List<NodeHandle> asList() {
     List<NodeHandle> l = new ArrayList<NodeHandle>();
-    for (int i=-ccwSize(); i<=cwSize(); i++) {
+    for (int i=-counterClockwiseSize(); i<=clockwiseSize(); i++) {
       if (i != 0) {
         l.add(get(i));
       }

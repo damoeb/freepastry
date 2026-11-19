@@ -88,7 +88,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    * @param msg the message.
    */
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     if (msg instanceof BroadcastLeafSet bls) {
       // receive a leafset from another node
       int type = bls.type();
@@ -221,8 +221,8 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
   protected void broadcast(int type) {
     BroadcastLeafSet bls = new BroadcastLeafSet(thePastryNode.getLocalHandle(), leafSet, type, 0);
 
-    int cwSize = leafSet.cwSize();
-    int ccwSize = leafSet.ccwSize();
+    int cwSize = leafSet.clockwiseSize();
+    int ccwSize = leafSet.counterClockwiseSize();
     IdSet sent = new IdSet();
 
     for (int i = -ccwSize; i <= cwSize; i++) {
@@ -252,7 +252,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
     // check leaf set for dead entries
     // ccw half
-    for (int i = -leafSet.ccwSize(); i < 0; i++) {
+    for (int i = -leafSet.counterClockwiseSize(); i < 0; i++) {
       NodeHandle nh = leafSet.get(i);
       if (nh != null && !nh.ping()) {
         // remove the dead entry
@@ -262,7 +262,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     }
 
     // cw half
-    for (int i = leafSet.cwSize(); i > 0; i--) {
+    for (int i = leafSet.clockwiseSize(); i > 0; i--) {
       NodeHandle nh = leafSet.get(i);
       if (nh != null && !nh.ping()) {
         // remove the dead entry
@@ -288,8 +288,8 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
   private void requestLeafSet() {
 
     RequestLeafSet rls = new RequestLeafSet(thePastryNode.getLocalHandle(), thePastryNode.getEnvironment().getTimeSource().currentTimeMillis());
-    int cwSize = leafSet.cwSize();
-    int ccwSize = leafSet.ccwSize();
+    int cwSize = leafSet.clockwiseSize();
+    int ccwSize = leafSet.counterClockwiseSize();
     boolean allDead = true;
 
     // request from most distant live ccw entry

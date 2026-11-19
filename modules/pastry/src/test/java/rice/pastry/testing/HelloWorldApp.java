@@ -92,7 +92,7 @@ public class HelloWorldApp extends PastryAppl {
     }
     HelloMsg msg = new HelloMsg(addr, thePastryNode.getLocalHandle(), rndid,
         ++msgid);
-    routeMsg(rndid, msg, new SendOptions());
+    routeMessage(rndid, msg, new SendOptions());
   }
 
   // The remaining methods override abstract methods in the PastryAppl API.
@@ -113,7 +113,7 @@ public class HelloWorldApp extends PastryAppl {
    * @param msg Message being routed around
    */
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     if (logger.isDebugEnabled()) {
       System.out.println("Received " + msg + " at " + getNodeId());
     }

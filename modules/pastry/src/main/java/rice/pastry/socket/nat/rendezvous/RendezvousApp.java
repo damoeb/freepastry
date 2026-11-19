@@ -130,7 +130,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
   }
 
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     if (!(msg instanceof RendezvousMessage rendezvousMessage)) {
       return;
     }
@@ -145,7 +145,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       }
       case PilotForwardMsg pfm -> {
         logger.trace("Forwarding message {}", pfm);
-        thePastryNode.send(pfm.getTarget(), pfm.getBBMsg(), null, null);
+        thePastryNode.send(pfm.getTarget(), pfm.getByteBufferMessage(), null, null);
       }
       case OpenChannelMsg ocm -> {
         // we're a NATted node who needs to open a channel
@@ -221,7 +221,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       });
     }
 
-    rm.setTLOptions(options);
+    rm.setTransportLayerOptions(options);
 
     thePastryNode.getRouter().route(rm);
 
@@ -271,7 +271,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
           thePastryNode.getConfig().routeMsgVersion());
       rm.setDestinationHandle(i);
 
-      rm.setTLOptions(options);
+      rm.setTransportLayerOptions(options);
 
       logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+rm);
 
@@ -316,7 +316,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
         });
       }
 
-      rm.setTLOptions(options);
+      rm.setTransportLayerOptions(options);
 
       thePastryNode.getRouter().route(rm);
 

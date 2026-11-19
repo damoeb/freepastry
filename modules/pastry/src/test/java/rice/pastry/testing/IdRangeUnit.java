@@ -92,14 +92,14 @@ public class IdRangeUnit {
 
   public void halfTest() {
     IdRange r = createFullIdRange();
-    IdRange ccw = r.ccwHalf();
-    IdRange cw = r.cwHalf();
+    IdRange ccw = r.counterClockwiseHalf();
+    IdRange cw = r.clockwiseHalf();
 
-    if (!cw.getCW().distance(cw.getCCW()).equals(cw.getCW().longDistance(cw.getCCW()))) {
+    if (!cw.getClockwiseBound().distance(cw.getCounterClockwiseBound()).equals(cw.getClockwiseBound().longDistance(cw.getCounterClockwiseBound()))) {
       System.out.println("ALERT: cw long distance not equal");
     }
 
-    if (!ccw.getCW().distance(ccw.getCCW()).equals(ccw.getCW().longDistance(ccw.getCCW()))) {
+    if (!ccw.getClockwiseBound().distance(ccw.getCounterClockwiseBound()).equals(ccw.getClockwiseBound().longDistance(ccw.getCounterClockwiseBound()))) {
       System.out.println("ALERT: ccw long distance not equal");
     }
   }
@@ -114,14 +114,14 @@ public class IdRangeUnit {
     if (!r1.equals(r1))
       System.out.println("ALERT: equality is not reflexive." + r1);
 
-    IdRange r3 = new IdRange(r2.getCCW(), r2.getCW());
+    IdRange r3 = new IdRange(r2.getCounterClockwiseBound(), r2.getClockwiseBound());
     IdRange r31 = new IdRange(r3);
 
     if ((!r3.equals(r2) && !r2.isEmpty()) || !r3.equals(r31))
       System.out.println("ALERT: equality failed." + r2 + r3 + r31);
 
     IdRange r4 = new IdRange();
-    IdRange r5 = new IdRange(r1.getCCW(), r1.getCCW());
+    IdRange r5 = new IdRange(r1.getCounterClockwiseBound(), r1.getCounterClockwiseBound());
 
     if (r4.equals(r5))
       System.out.println("ALERT: equality failed" + r4 + r4);
@@ -291,16 +291,16 @@ public class IdRangeUnit {
 
   public void mergeTest(IdRange r1, IdRange r2) {
 
-    IdRange ccw = r1.ccwHalf();
-    IdRange cw = r1.cwHalf();
+    IdRange ccw = r1.counterClockwiseHalf();
+    IdRange cw = r1.clockwiseHalf();
 
     if (!ccw.intersect(cw).isEmpty())
       System.out.println("ALERT: ccw and cw halves intersect." + r1 + ccw + cw);
     if (!r1.equals(ccw.merge(cw)))
       System.out.println("ALERT: merge cw/ccw failure." + r1 + ccw + cw);
 
-    ccw = r2.ccwHalf();
-    cw = r2.cwHalf();
+    ccw = r2.counterClockwiseHalf();
+    cw = r2.clockwiseHalf();
 
     if (!ccw.intersect(cw).isEmpty())
       System.out.println("ALERT: ccw and cw halves intersect." + r2 + ccw + cw);
@@ -369,28 +369,28 @@ public class IdRangeUnit {
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeStartingWith(r1.getCW());
+      r2 = createIdRangeStartingWith(r1.getClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeStartingWith(r1.getCCW());
+      r2 = createIdRangeStartingWith(r1.getCounterClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeEndingIn(r1.getCW());
+      r2 = createIdRangeEndingIn(r1.getClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeEndingIn(r1.getCCW());
+      r2 = createIdRangeEndingIn(r1.getCounterClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
@@ -412,28 +412,28 @@ public class IdRangeUnit {
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeStartingWith(r1.getCW());
+      r2 = createIdRangeStartingWith(r1.getClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeStartingWith(r1.getCCW());
+      r2 = createIdRangeStartingWith(r1.getCounterClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeEndingIn(r1.getCW());
+      r2 = createIdRangeEndingIn(r1.getClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeEndingIn(r1.getCCW());
+      r2 = createIdRangeEndingIn(r1.getCounterClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
@@ -448,28 +448,28 @@ public class IdRangeUnit {
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeStartingWith(r1.getCW());
+      r2 = createIdRangeStartingWith(r1.getClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeStartingWith(r1.getCCW());
+      r2 = createIdRangeStartingWith(r1.getCounterClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeEndingIn(r1.getCW());
+      r2 = createIdRangeEndingIn(r1.getClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);
       diffSubtractTest(r1, r2);
       mergeTest(r1, r2);
 
-      r2 = createIdRangeEndingIn(r1.getCCW());
+      r2 = createIdRangeEndingIn(r1.getCounterClockwiseBound());
 
       equalityTest(r1, r2);
       mergeIntersectTest(r1, r2);

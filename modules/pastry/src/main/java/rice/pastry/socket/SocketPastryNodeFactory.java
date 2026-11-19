@@ -270,8 +270,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   protected ProbeStrategy getProbeStrategy(PastryNode pn) {
-    NetworkInfoTransportLayer ipService = (NetworkInfoTransportLayer)pn.getVars().get(IP_SERVICE);
-    MultiInetAddressTransportLayer tl = (MultiInetAddressTransportLayer)pn.getVars().get(MULTI_INET_TL);
+    NetworkInfoTransportLayer ipService = (NetworkInfoTransportLayer)pn.getAttributes().get(IP_SERVICE);
+    MultiInetAddressTransportLayer tl = (MultiInetAddressTransportLayer)pn.getAttributes().get(MULTI_INET_TL);
     ProbeApp probeApp = new ProbeApp(pn, ipService, tl.getAddressStrategy());
     probeApp.register();
     ipService.setProbeStrategy(probeApp);
@@ -283,7 +283,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   @Override
   public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
     SocketNodeHandleFactory pnhf = (SocketNodeHandleFactory)nhf;
-    MultiInetSocketAddress proxyAddress = (MultiInetSocketAddress)pn.getVars().get(PROXY_ADDRESS);
+    MultiInetSocketAddress proxyAddress = (MultiInetSocketAddress)pn.getAttributes().get(PROXY_ADDRESS);
     return pnhf.getNodeHandle(proxyAddress, pn.getEnvironment().getTimeSource().currentTimeMillis(), pn.getNodeId());
   }
 
@@ -291,11 +291,11 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   public static final String NODE_HANDLE_FACTORY = "SocketPastryNodeFactory.NODE_HANDLE_FACTORY";
   @Override
   public NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) {
-    if (pn.getVars().containsKey(NODE_HANDLE_FACTORY)) {
-      return (NodeHandleFactory<?>) pn.getVars().get(NODE_HANDLE_FACTORY);
+    if (pn.getAttributes().containsKey(NODE_HANDLE_FACTORY)) {
+      return (NodeHandleFactory<?>) pn.getAttributes().get(NODE_HANDLE_FACTORY);
     }
     NodeHandleFactory<?> ret = new SocketNodeHandleFactory(pn);
-    pn.getVars().put(NODE_HANDLE_FACTORY, ret);
+    pn.getAttributes().put(NODE_HANDLE_FACTORY, ret);
     return ret;
   }
 
@@ -335,7 +335,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
     // MultiInet layer
     TransportLayer<MultiInetSocketAddress, ByteBuffer> etl = buildMultiAddressSourceRouteTransportLayer(iptl, pn, proxyAddress);
-    pn.getVars().put(MULTI_INET_TL, etl);
+    pn.getAttributes().put(MULTI_INET_TL, etl);
 
     // SourceRoute<MultiInet> layer
     TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> srl = getSourceRouteTransportLayer(etl, pn, esrFactory);
@@ -421,7 +421,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     Environment environment = pn.getEnvironment();
     final NetworkInfoTransportLayer ipTL =
       new NetworkInfoTransportLayer(wtl,environment,null);
-    pn.getVars().put(IP_SERVICE, ipTL);
+    pn.getAttributes().put(IP_SERVICE, ipTL);
 
     // install the NodeHandle as an ID
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
@@ -460,7 +460,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       PastryNode pn,
       MultiInetSocketAddress localAddress) {
     AddressStrategy adrStrat = new SimpleAddressStrategy();
-    pn.getVars().put(MULTI_ADDRESS_STRATEGY, adrStrat);
+    pn.getAttributes().put(MULTI_ADDRESS_STRATEGY, adrStrat);
     return new MultiInetAddressTransportLayer(localAddress, mntl, pn.getEnvironment(), null, adrStrat);
   }
 
@@ -485,7 +485,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       PastryNode pn, MultiAddressSourceRouteFactory esrFactory) {
     LivenesSourceRouteForwardStrategy<MultiInetSocketAddress> liveness = new LivenesSourceRouteForwardStrategy<MultiInetSocketAddress>(esrFactory, pn.getEnvironment());
     livenesSourceRouteForwardStrategy.put(pn, liveness);
-    AddressStrategy addressStrategy = pn.getVars().get(MULTI_ADDRESS_STRATEGY) instanceof AddressStrategy as
+    AddressStrategy addressStrategy = pn.getAttributes().get(MULTI_ADDRESS_STRATEGY) instanceof AddressStrategy as
         ? as : new SimpleAddressStrategy();
     AddressPolicyForwardStrategy<MultiInetSocketAddress> policy = AddressPolicyForwardStrategy.forMultiInetSocketAddress(
         ((SocketNodeHandle) pn.getLocalHandle()).getAddress(), addressStrategy);
@@ -503,7 +503,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
 
 
-  protected IdentitySerializer<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress, SourceRoute<MultiInetSocketAddress>> getIdentiySerializer(PastryNode pn, SocketNodeHandleFactory handleFactory) {
+  protected IdentitySerializer<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress, SourceRoute<MultiInetSocketAddress>> getIdentitySerializer(PastryNode pn, SocketNodeHandleFactory handleFactory) {
     return new SPNFIdentitySerializer(pn, handleFactory);
   }
 
@@ -515,7 +515,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     SocketNodeHandle localhandle = (SocketNodeHandle)pn.getLocalHandle();
 
     IdentitySerializer<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress, SourceRoute<MultiInetSocketAddress>> serializer =
-      getIdentiySerializer(pn, handleFactory);
+      getIdentitySerializer(pn, handleFactory);
 
     SimpleOutputBuffer buf = new SimpleOutputBuffer();
     serializer.serialize(buf, localhandle);
@@ -668,7 +668,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           environment,
           PriorityConfig.fromParameters(environment.getParameters()),
           null);
-    pn.getVars().put(PRIORITY_TL, priorityTL);
+    pn.getAttributes().put(PRIORITY_TL, priorityTL);
 
     return priorityTL;
   }
@@ -763,7 +763,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       Message m = m1;
       if (m instanceof RouteMessage) {
         RouteMessage rm = (RouteMessage)m;
-        m = rm.getInternalMsg();
+        m = rm.getInternalMessage();
         if (m == null) m = rm;
       }
       if (m instanceof PastryEndpointMessage) {
@@ -791,7 +791,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       NodeHandleFactory<?> handleFactory,
       ProximityNeighborSelector pns) {
 
-    TLBootstrapper bootstrapper = new TLBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTL(), (SocketNodeHandleFactory)handleFactory, pns,
+    TLBootstrapper bootstrapper = new TLBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTransportLayer(), (SocketNodeHandleFactory)handleFactory, pns,
         socketConfig.seed(), environment.getSelectorManager());
     return bootstrapper;
   }
@@ -945,8 +945,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       environment = cloneEnvironment(this.environment, nodeId);
 
       pn = new PastryNode(nodeId, environment);
-      if (initialVars != null) pn.getVars().putAll(initialVars);
-      pn.getVars().put(PROXY_ADDRESS, proxyAddress);
+      if (initialVars != null) pn.getAttributes().putAll(initialVars);
+      pn.getAttributes().put(PROXY_ADDRESS, proxyAddress);
 
       nodeHandleHelper(pn);
 

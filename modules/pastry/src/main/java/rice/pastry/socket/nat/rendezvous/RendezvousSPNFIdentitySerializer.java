@@ -63,7 +63,7 @@ public class RendezvousSPNFIdentitySerializer extends SPNFIdentitySerializer {
   }
 
   @Override
-  protected SocketNodeHandle buildSNH(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nid) throws IOException {
+  protected SocketNodeHandle buildSocketNodeHandle(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nid) throws IOException {
     return new RendezvousSocketNodeHandle(i, epoch, nid, pn, buf.readByte());
   }
 

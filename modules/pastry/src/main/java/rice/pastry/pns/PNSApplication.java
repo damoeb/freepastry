@@ -130,7 +130,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
   }
 
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     logger.trace("messageForAppl({})", msg);
 
     if (!(msg instanceof PNSMessage pnsMessage)) {
@@ -143,7 +143,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
       }
 
       case LeafSetResponse response -> {
-        LeafSet ls = response.getLeafset();
+        LeafSet ls = response.getLeafSet();
         waitingForLeafSet.complete(ls.get(0), ls);
       }
 
@@ -609,10 +609,10 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     }
     HashSet<NodeHandle> handles = new HashSet<NodeHandle>();
 
-    for (int i = 1; i <= leafSet.cwSize() ; i++)
+    for (int i = 1; i <= leafSet.clockwiseSize() ; i++)
       handles.add(leafSet.get(i));
 
-    for (int i = -leafSet.ccwSize(); i < 0; i++)
+    for (int i = -leafSet.counterClockwiseSize(); i < 0; i++)
       handles.add(leafSet.get(i));
 
     return closestToMe(handle, handles, c);

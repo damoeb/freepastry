@@ -125,7 +125,7 @@ public class DistTutorial {
 
       // this is a typical loop to cover your leafset.  Note that if the leafset
       // overlaps, then duplicate nodes will be sent to twice
-      for (int i=-leafSet.ccwSize(); i<=leafSet.cwSize(); i++) {
+      for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
         if (i != 0) { // don't send to self
           // select the item
           NodeHandle nh = leafSet.get(i);

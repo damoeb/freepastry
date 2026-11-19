@@ -76,7 +76,7 @@ public class LeafSetPilotFinder implements
         int index = leafSet.getIndex(dest);
         int maxDist = leafSet.maxSize()/2;
 
-        for (int i=-leafSet.ccwSize(); i<=leafSet.cwSize(); i++) {
+        for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
           if (i != 0) { // don't select self
             if (Math.abs(index-i) <= maxDist) {
               RendezvousSocketNodeHandle nh = (RendezvousSocketNodeHandle)leafSet.get(i);

@@ -174,7 +174,7 @@ public class RoutingTable implements NodeSetEventSource {
    */
 
   public NodeHandle bestAlternateRoute(int minLiveness, Id key) {
-    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
+    int diffDigit = myNodeId.indexOfMostSignificantDifferingDigit(key, idBaseBitLength);
     if (diffDigit < 0)
       return null;
     int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
@@ -219,7 +219,7 @@ public class RoutingTable implements NodeSetEventSource {
    */
   public NodeSet alternateRoutes(Id key, int max) {
     NodeSet set = new NodeSet();
-    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
+    int diffDigit = myNodeId.indexOfMostSignificantDifferingDigit(key, idBaseBitLength);
     if (diffDigit < 0)
       return set;
     int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
@@ -266,7 +266,7 @@ public class RoutingTable implements NodeSetEventSource {
    * More efficient implementation, but less accurate, doesn't include lower levels of rt.
    */
   public Iterator<NodeHandle> alternateRoutesIterator(final Id key) {
-    final int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
+    final int diffDigit = myNodeId.indexOfMostSignificantDifferingDigit(key, idBaseBitLength);
     if (diffDigit < 0)
       return Collections.EMPTY_LIST.iterator(); // return an empty iterator
     final Id.Distance myDistance = myNodeId.distance(key);
@@ -392,7 +392,7 @@ public class RoutingTable implements NodeSetEventSource {
    */
 
   public RouteSet getBestEntry(Id key) {
-    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
+    int diffDigit = myNodeId.indexOfMostSignificantDifferingDigit(key, idBaseBitLength);
     if (diffDigit < 0)
       return null;
     int digit = key.getDigit(diffDigit, idBaseBitLength);
@@ -409,7 +409,7 @@ public class RoutingTable implements NodeSetEventSource {
    */
 
   private RouteSet makeBestEntry(Id key) {
-    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
+    int diffDigit = myNodeId.indexOfMostSignificantDifferingDigit(key, idBaseBitLength);
     if (diffDigit < 0)
       return null;
     int digit = key.getDigit(diffDigit, idBaseBitLength);
@@ -460,7 +460,7 @@ public class RoutingTable implements NodeSetEventSource {
   public synchronized int test(NodeHandle handle) {
     // get the location in the RT
     Id key = handle.getNodeId();
-    int diffDigit = myNodeId.indexOfMSDD(key, idBaseBitLength);
+    int diffDigit = myNodeId.indexOfMostSignificantDifferingDigit(key, idBaseBitLength);
     // it matches us
     if (diffDigit < 0) return TEST_FAIL_NO_PREFIX_MATCH;
     int digit = key.getDigit(diffDigit, idBaseBitLength);

@@ -133,8 +133,8 @@ public final class WireRoundTrip {
       }
       PastryNode node = new SocketPastryNodeFactory(() -> Id.build(id), LOOPBACK, port, env) {
         @Override
-        protected TLDeserializer getTLDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
-          tl[0] = super.getTLDeserializer(handleFactory, pn);
+        protected TLDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
+          tl[0] = super.getTransportLayerDeserializer(handleFactory, pn);
           return tl[0];
         }
       }.newNode();

@@ -93,8 +93,8 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
 
       RouterNotification notifyMe = new RouterNotification(rm, handle);
       addToPending(notifyMe, handle);
-      rm.setTLCancellable(notifyMe);
-      notifyMe.setCancellable(thePastryNode.send(handle, rm, notifyMe, rm.getTLOptions()));
+      rm.setTransportLayerCancellable(notifyMe);
+      notifyMe.setCancellable(thePastryNode.send(handle, rm, notifyMe, rm.getTransportLayerOptions()));
     } else {
       super.sendTheMessage(rm, handle);
     }
@@ -208,7 +208,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       // what to do..., rapidly reroute?
       failed = true;
       cancellable = null;
-      rm.setTLCancellable(null);
+      rm.setTransportLayerCancellable(null);
       if (reason instanceof QueueOverflowException) {
         // todo, reroute this to a node w/o a full queue
         removeFromPending(this, dest);
@@ -257,7 +257,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       logger.debug("Send success {} to:{} {}", rm, dest, msg);
       sent = true;
       cancellable = null;
-      rm.setTLCancellable(null);
+      rm.setTransportLayerCancellable(null);
       removeFromPending(this, dest);
       rm.sendSuccess(dest);
     }

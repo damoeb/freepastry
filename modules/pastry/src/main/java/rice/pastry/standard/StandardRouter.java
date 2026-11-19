@@ -185,7 +185,7 @@ public class StandardRouter extends PastryAppl implements Router {
         rm.sendFailed(new NoRouteToHostException(rm.getDestinationHandle().toString()));
         return true;
       }
-      thePastryNode.receiveMessage(rm.getInternalMsg());
+      thePastryNode.receiveMessage(rm.getInternalMessage());
       rm.sendSuccess(thePastryNode.getLocalHandle());
     } else {
       sendTheMessage(rm, handle);
@@ -195,7 +195,7 @@ public class StandardRouter extends PastryAppl implements Router {
 
   protected void sendTheMessage(final RouteMessage rm, final NodeHandle handle) {
     logger.trace("sendTheMessage({},{})", rm, handle);
-    rm.setTLCancellable(thePastryNode.send(handle, rm, new PMessageNotification(){
+    rm.setTransportLayerCancellable(thePastryNode.send(handle, rm, new PMessageNotification(){
       @Override
       public void sent(PMessageReceipt msg) {
         rm.sendSuccess(handle);
@@ -216,7 +216,7 @@ public class StandardRouter extends PastryAppl implements Router {
           }
         }
       }
-    }, rm.getTLOptions()));
+    }, rm.getTransportLayerOptions()));
   }
 
 
@@ -263,8 +263,8 @@ public class StandardRouter extends PastryAppl implements Router {
 
   @Override
   public Iterator<NodeHandle> getBestRoutingCandidates(final Id target) {
-    int cwSize = thePastryNode.getLeafSet().cwSize();
-    int ccwSize = thePastryNode.getLeafSet().ccwSize();
+    int cwSize = thePastryNode.getLeafSet().clockwiseSize();
+    int ccwSize = thePastryNode.getLeafSet().counterClockwiseSize();
 
     int lsPos = thePastryNode.getLeafSet().mostSimilar(target);
 
@@ -284,7 +284,7 @@ public class StandardRouter extends PastryAppl implements Router {
   protected Iterator<NodeHandle> getBestRoutingCandidates(final Id target, final int lsPos, boolean leafSetOnly) {
     // these are the leafset entries between me and the closest known node
     if (leafSetOnly) {
-      return getLSCollection(lsPos).iterator();
+      return getLeafSetCandidates(lsPos).iterator();
     }
 
     // try the routing table first
@@ -301,7 +301,7 @@ public class StandardRouter extends PastryAppl implements Router {
         best = thePastryNode.getRoutingTable().getBestEntry(target);
         if (best == null || best.isEmpty()) {
           rtIterator = thePastryNode.getRoutingTable().alternateRoutesIterator(target);
-          lsCollection = getLSCollection(lsPos);
+          lsCollection = getLeafSetCandidates(lsPos);
           iterator = rtIterator;
         }
         next = getNext();
@@ -323,7 +323,7 @@ public class StandardRouter extends PastryAppl implements Router {
           if (k >= best.size()) {
             // done with best, now use the rtIterator
             rtIterator = thePastryNode.getRoutingTable().alternateRoutesIterator(target);
-            lsCollection = getLSCollection(lsPos);
+            lsCollection = getLeafSetCandidates(lsPos);
             iterator = rtIterator;
           }
           return ret;
@@ -372,7 +372,7 @@ public class StandardRouter extends PastryAppl implements Router {
     };
   }
 
-  protected List<NodeHandle> getLSCollection(int lsPos) {
+  protected List<NodeHandle> getLeafSetCandidates(int lsPos) {
     ArrayList<NodeHandle> lsCollection = new ArrayList<NodeHandle>();
     if (lsPos > 0) {
       // search for someone between us who is alive
@@ -430,7 +430,7 @@ public class StandardRouter extends PastryAppl implements Router {
     if (ls.member(prevNode)) {
       // ok, it's in my leafset, so I'm in his, but make sure that it's not on the edge
       int index = ls.getIndex(prevNode);
-      if ((index == ls.cwSize()) || (index == -ls.ccwSize())) {
+      if ((index == ls.clockwiseSize()) || (index == -ls.counterClockwiseSize())) {
         // it is the edge... continue with repair
       } else {
         return;
@@ -440,11 +440,11 @@ public class StandardRouter extends PastryAppl implements Router {
     Id prevId = prevNode.getNodeId();
     Id key = msg.getTarget();
 
-    int diffDigit = prevId.indexOfMSDD(key, thePastryNode.getRoutingTable().baseBitLength());
+    int diffDigit = prevId.indexOfMostSignificantDifferingDigit(key, thePastryNode.getRoutingTable().baseBitLength());
 
     // if we both have the same prefix (in other words the previous node didn't make a prefix of progress)
     if (diffDigit >= 0 &&
-        diffDigit == thePastryNode.getNodeId().indexOfMSDD(key, thePastryNode.getRoutingTable().baseBitLength())) {
+        diffDigit == thePastryNode.getNodeId().indexOfMostSignificantDifferingDigit(key, thePastryNode.getRoutingTable().baseBitLength())) {
       synchronized(lastTimeSentRouteTablePatch) {
         if (lastTimeSentRouteTablePatch.containsKey(prevNode)) {
           long lastTime = lastTimeSentRouteTablePatch.get(prevNode);
@@ -483,7 +483,7 @@ public class StandardRouter extends PastryAppl implements Router {
   }
 
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     throw new RuntimeException("Should not be called.");
   }
 }

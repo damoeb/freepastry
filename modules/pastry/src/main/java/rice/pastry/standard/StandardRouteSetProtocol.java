@@ -113,7 +113,7 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
    */
 
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     if (!(msg instanceof RouteSetProtocolMessage routeSetMessage)) {
       throw new Error(
           "StandardRouteSetProtocol: received message is of unknown type");

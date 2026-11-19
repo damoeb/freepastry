@@ -717,7 +717,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @return the index of the msdb (0 is the least significant) / will return negative if they do
    *      not differ.
    */
-  public int indexOfMSDB(Id nid) {
+  public int indexOfMostSignificantDifferingBit(Id nid) {
     for (int i = nlen - 1; i >= 0; i--) {
       int cmp = Id[i] ^ nid.Id[i];
 
@@ -759,8 +759,8 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @return the index of the msdd (0 is the least significant) / will return negative if they do
    *      not differ.
    */
-  public int indexOfMSDD(Id nid, int base) {
-    int ind = indexOfMSDB(nid);
+  public int indexOfMostSignificantDifferingDigit(Id nid, int base) {
+    int ind = indexOfMostSignificantDifferingBit(nid);
 
     // ignore trailing LSBs if (IdBitLength % base) > 0
     ind -= IdBitLength % base;

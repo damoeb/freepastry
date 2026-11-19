@@ -254,10 +254,10 @@ public class NodeIdUnit {
     System.out.println("adist.compareTo(bdist) " + adist.compareTo(bdist));
     System.out.println("aldist.compareTo(bldist) " + aldist.compareTo(bldist));
 
-    System.out.println("msdb a and nid " + nid.indexOfMSDB(a));
-    System.out.println("msdb b and nid " + nid.indexOfMSDB(b));
+    System.out.println("msdb a and nid " + nid.indexOfMostSignificantDifferingBit(a));
+    System.out.println("msdb b and nid " + nid.indexOfMostSignificantDifferingBit(b));
 
-    if (nid.indexOfMSDB(a) == a.indexOfMSDB(nid))
+    if (nid.indexOfMostSignificantDifferingBit(a) == a.indexOfMostSignificantDifferingBit(nid))
       System.out.println("msdb is symmetric");
     else
       System.out.println("ALERT: msdb is not symmetric");
@@ -266,10 +266,10 @@ public class NodeIdUnit {
       int msdd;
 
       System.out.println("msdd a and nid (base " + (1 << i) + ") "
-          + (msdd = nid.indexOfMSDD(a, i)) + " val=" + a.getDigit(msdd, i)
+          + (msdd = nid.indexOfMostSignificantDifferingDigit(a, i)) + " val=" + a.getDigit(msdd, i)
           + "," + nid.getDigit(msdd, i));
       System.out.println("msdd b and nid (base " + (1 << i) + ") "
-          + (msdd = nid.indexOfMSDD(b, i)) + " val=" + b.getDigit(msdd, i)
+          + (msdd = nid.indexOfMostSignificantDifferingDigit(b, i)) + " val=" + b.getDigit(msdd, i)
           + "," + nid.getDigit(msdd, i));
     }
 

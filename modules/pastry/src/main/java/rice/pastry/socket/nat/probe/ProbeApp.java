@@ -76,7 +76,7 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
   }
 
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     ProbeRequestMessage prm = (ProbeRequestMessage)msg;
     handleProbeRequestMessage(prm);
   }

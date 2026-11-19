@@ -479,7 +479,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
   public static int getPrefixMatch(Id target, Id sample, int digitLength){
     int numDigits = rice.pastry.Id.IdBitLength / digitLength - 1;
 
-    return (numDigits - ((rice.pastry.Id)target).indexOfMSDD((rice.pastry.Id)sample, digitLength));
+    return (numDigits - ((rice.pastry.Id)target).indexOfMostSignificantDifferingDigit((rice.pastry.Id)sample, digitLength));
   }
 
   /**

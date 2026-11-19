@@ -103,8 +103,8 @@ class PastryWireFuzzTest {
       }
 
       @Override
-      protected TLDeserializer getTLDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
-        target = super.getTLDeserializer(handleFactory, pn);
+      protected TLDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
+        target = super.getTransportLayerDeserializer(handleFactory, pn);
         return target;
       }
     }.newNode();

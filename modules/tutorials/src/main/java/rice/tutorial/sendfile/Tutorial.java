@@ -147,7 +147,7 @@ public class Tutorial {
     LeafSet leafSet = node.getLeafSet();
 
     // pick some node in the leafset
-    int i=-leafSet.ccwSize();
+    int i=-leafSet.counterClockwiseSize();
 
     // select the item
     NodeHandle nh = leafSet.get(i);

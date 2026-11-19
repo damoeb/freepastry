@@ -78,12 +78,12 @@ public class Ping extends PastryAppl {
   }
 
   public void sendPing(Id nid) {
-    routeMsg(nid, new PingMessageNew(pingAddress, getNodeHandle(), nid),
+    routeMessage(nid, new PingMessageNew(pingAddress, getNodeHandle(), nid),
         new SendOptions());
   }
 
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
 
     PingMessageNew pMsg = (PingMessageNew) msg;
     int nHops = pMsg.getHops() - 1;

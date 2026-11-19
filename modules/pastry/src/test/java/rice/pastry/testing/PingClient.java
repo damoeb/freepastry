@@ -85,19 +85,19 @@ public class PingClient extends PastryAppl {
 
   public void sendPing(Id nid) {
     // routeMessage, sans the getAddress() in the RouteMessage constructor
-    routeMsg(nid, new PingMessage(pingAddress, getNodeId(), nid),
+    routeMessage(nid, new PingMessage(pingAddress, getNodeId(), nid),
         new SendOptions());
   }
 
   public void sendTrace(Id nid) {
     System.out.println("sending a trace from " + getNodeId() + " to " + nid);
     // sendEnrouteMessage
-    routeMsg(nid, new PingMessage(pingAddress, getNodeId(), nid),
+    routeMessage(nid, new PingMessage(pingAddress, getNodeId(), nid),
         new SendOptions());
   }
 
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     System.out.print(msg);
     System.out.println(" received");
   }

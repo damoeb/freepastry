@@ -233,7 +233,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
     pn.setLocalHandle(localhandle);
 
-    TLDeserializer deserializer = getTLDeserializer(handleFactory,pn);
+    TLDeserializer deserializer = getTransportLayerDeserializer(handleFactory,pn);
 
     final NodeHandleAdapter nha = getNodeHandleAdapter(pn, handleFactory, deserializer);
 
@@ -361,7 +361,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
       }
 
       TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> getTL() {
-        return (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)nha.getTL();
+        return (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)nha.getTransportLayer();
       }
 
     };

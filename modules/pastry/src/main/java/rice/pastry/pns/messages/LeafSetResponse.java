@@ -73,7 +73,7 @@ public final class LeafSetResponse extends PRawMessage implements PNSMessage {
     throw new IOException("Unknown version: "+version);
   }
 
-  public LeafSet getLeafset() {
+  public LeafSet getLeafSet() {
     return leafset;
   }
 }

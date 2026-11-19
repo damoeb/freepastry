@@ -218,7 +218,7 @@ class PastryWireRoundTripTest {
     int pns = StandardAddress.getAddress(PNSApplication.class, null, env);
 
     local.hop(new LeafSetRequest(a, pns), a);
-    assertEquals(4, local.hop(new LeafSetResponse(leafSet(a, b, c), pns), a).getLeafset().getUniqueCount());
+    assertEquals(4, local.hop(new LeafSetResponse(leafSet(a, b, c), pns), a).getLeafSet().getUniqueCount());
     assertEquals(5, local.hop(new RouteRowRequest(a, (short) 5, pns), a).getIndex());
     RouteRowResponse copy = local.hop(new RouteRowResponse(a, (short) 1, row(1), pns), a);
     assertEquals(COLUMNS, copy.getRow().length);

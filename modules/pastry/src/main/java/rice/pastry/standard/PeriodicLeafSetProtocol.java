@@ -165,7 +165,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     BLS_THROTTLE = config.requestLeaseThrottle();
     this.lastTimeRenewedLease = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), LEASE_PERIOD*2);
 
-    pingNeighborMessage = localNode.scheduleMsgAtFixedRate(
+    pingNeighborMessage = localNode.scheduleMessageAtFixedRate(
         new InitiatePingNeighbor(), PING_NEIGHBOR_PERIOD, PING_NEIGHBOR_PERIOD);
   }
 
@@ -330,7 +330,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     if (hasSetStrategy) {
       logger.info("PLSP.start(): Removing self as ReadyStrategy");
       hasSetStrategy = false;
-      localNode.deleteLeafSetListener(this);
+      localNode.removeLeafSetListener(this);
     }
   }
 
@@ -463,7 +463,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    * interface anyway.
    */
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     throw new RuntimeException("Should not be called.");
   }
 

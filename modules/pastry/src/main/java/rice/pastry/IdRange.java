@@ -192,7 +192,8 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
-  public Id getCCW() {
+  @Override
+  public Id getCounterClockwiseBound() {
     return ccw;
   }
 
@@ -201,7 +202,8 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return the id at the clockwise edge of the range (exclusive)
    */
-  public Id getCW() {
+  @Override
+  public Id getClockwiseBound() {
     return cw;
   }
 
@@ -352,7 +354,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return the range corresponding to the ccw half of this range
    */
-  public IdRange ccwHalf() {
+  public IdRange counterClockwiseHalf() {
     if (empty)
       return new IdRange();
     if (isFull())
@@ -367,7 +369,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return the range corresponding to the cw half of this range
    */
-  public IdRange cwHalf() {
+  public IdRange clockwiseHalf() {
     if (empty)
       return new IdRange();
     if (isFull())
@@ -400,26 +402,6 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
   @Override
   public boolean containsId(rice.p2p.commonapi.Id key) {
     return contains((Id) key);
-  }
-
-  /**
-   * get counterclockwise edge of range
-   *
-   * @return the id at the counterclockwise edge of the range (inclusive)
-   */
-  @Override
-  public rice.p2p.commonapi.Id getCounterClockwiseBound() {
-    return getCCW();
-  }
-
-  /**
-   * get clockwise edge of range
-   *
-   * @return the id at the clockwise edge of the range (exclusive)
-   */
-  @Override
-  public rice.p2p.commonapi.Id getClockwiseBound() {
-    return getCW();
   }
 
   /**

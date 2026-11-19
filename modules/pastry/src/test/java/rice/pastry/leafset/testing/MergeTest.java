@@ -148,17 +148,17 @@ public class MergeTest {
       }
 
       @Override
-      public ScheduledMessage scheduleMsgAtFixedRate(Message msg, long delay, long period) {
+      public ScheduledMessage scheduleMessageAtFixedRate(Message msg, long delay, long period) {
         return null;
       }
 
       @Override
-      public ScheduledMessage scheduleMsg(Message msg, long delay) {
+      public ScheduledMessage scheduleMessage(Message msg, long delay) {
         return null;
       }
 
       @Override
-      public ScheduledMessage scheduleMsg(Message msg, long delay, long period) {
+      public ScheduledMessage scheduleMessage(Message msg, long delay, long period) {
         return null;
       }
 

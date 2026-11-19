@@ -111,7 +111,7 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
     // if I can be contacted directly by anyone, or I can contact the bootstrap despite the fact that he's firewalled, then call super
     ContactDirectStrategy<RendezvousSocketNodeHandle> contactStrat =
       (ContactDirectStrategy<RendezvousSocketNodeHandle>)
-      thePastryNode.getVars().get(RendezvousSocketPastryNodeFactory.RENDEZVOUS_CONTACT_DIRECT_STRATEGY);
+      thePastryNode.getAttributes().get(RendezvousSocketPastryNodeFactory.RENDEZVOUS_CONTACT_DIRECT_STRATEGY);
     if (((RendezvousSocketNodeHandle)thePastryNode.getLocalHandle()).canContactDirect() || // I can be contacted directly
          (!bootstrap.canContactDirect() && contactStrat.canContactDirect(bootstrap))) { // I can contact the bootstrap even though he's firewalled
       super.getJoinRequest(bootstrap, deliverJRToMe);

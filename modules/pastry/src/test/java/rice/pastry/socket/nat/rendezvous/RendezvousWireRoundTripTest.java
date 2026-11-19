@@ -70,8 +70,8 @@ class RendezvousWireRoundTripTest {
     RendezvousApp[] apps = new RendezvousApp[1];
     node = new RendezvousSocketPastryNodeFactory(() -> Id.build("4000"), LOOPBACK, port, env, false) {
       @Override
-      protected TLDeserializer getTLDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
-        tls[0] = super.getTLDeserializer(handleFactory, pn);
+      protected TLDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
+        tls[0] = super.getTransportLayerDeserializer(handleFactory, pn);
         return tls[0];
       }
 
@@ -198,10 +198,10 @@ class RendezvousWireRoundTripTest {
     PilotForwardMsg copy = hop(msg, direct);
 
     assertEquals(direct, copy.getTarget());
-    assertEquals(firewalled, copy.getBBMsg().getOriginalSender());
-    assertArrayEquals(payload(40), remaining(copy.getBBMsg().buffer));
+    assertEquals(firewalled, copy.getByteBufferMessage().getOriginalSender());
+    assertArrayEquals(payload(40), remaining(copy.getByteBufferMessage().buffer));
     // the pilot sends the datagram it read on to the target, which reads it again
-    ByteBufferMsg atTarget = hop(copy.getBBMsg(), direct);
+    ByteBufferMsg atTarget = hop(copy.getByteBufferMessage(), direct);
     assertEquals(firewalled, atTarget.getOriginalSender());
     assertArrayEquals(payload(40), remaining(atTarget.buffer));
   }

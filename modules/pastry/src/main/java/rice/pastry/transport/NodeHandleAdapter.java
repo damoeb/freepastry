@@ -135,7 +135,7 @@ public class NodeHandleAdapter implements
     return proxProvider.removeProximityListener(listener);
   }
 
-  public TransportLayer<? extends NodeHandle, RawMessage> getTL() {
+  public TransportLayer<? extends NodeHandle, RawMessage> getTransportLayer() {
 
     return tl;
   }

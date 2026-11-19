@@ -520,18 +520,18 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
   }
 
   private Map<String, Object> options;
-  public Map<String, Object> getTLOptions() {
+  public Map<String, Object> getTransportLayerOptions() {
     return options;
   }
 
-  public void setTLOptions(Map<String, Object> options) {
+  public void setTransportLayerOptions(Map<String, Object> options) {
     this.options = options;
   }
 
   // synchronization problem...
   // This is so the RouteMessage can be cancelled
   Cancellable tlCancellable;
-  public void setTLCancellable(Cancellable c) {
+  public void setTransportLayerCancellable(Cancellable c) {
     tlCancellable = c;
   }
 
@@ -558,7 +558,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     return notifyMe != null;
   }
 
-  public Message getInternalMsg() {
+  public Message getInternalMessage() {
     return internalMsg;
   }
 

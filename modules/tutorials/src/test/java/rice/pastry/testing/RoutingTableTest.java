@@ -407,7 +407,7 @@ public class RoutingTableTest {
     }
 
     if (rtMaintTime > 0)
-      node.scheduleMsg(new InitiateRouteSetMaintenance(),rtMaintTime*1000L,rtMaintTime*1000L);
+      node.scheduleMessage(new InitiateRouteSetMaintenance(),rtMaintTime*1000L,rtMaintTime*1000L);
 
     if (printLiveness)
       System.out.println("Finished creating new node("+nodes.size()+") "+node+" at "+env.getTimeSource().currentTimeMillis());
@@ -588,8 +588,8 @@ public class RoutingTableTest {
   private NodeHandle getNextHop(RoutingTable rt, LeafSet ls, NodeHandle thatHandle, PastryNode localNode) {
     rice.pastry.Id target = (rice.pastry.Id)thatHandle.getId();
 
-    int cwSize = ls.cwSize();
-    int ccwSize = ls.ccwSize();
+    int cwSize = ls.clockwiseSize();
+    int ccwSize = ls.counterClockwiseSize();
 
     int lsPos = ls.mostSimilar(target);
 

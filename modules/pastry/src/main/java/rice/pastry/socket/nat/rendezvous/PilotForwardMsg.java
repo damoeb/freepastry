@@ -64,7 +64,7 @@ public final class PilotForwardMsg extends PRawMessage implements RendezvousMess
     msg.serialize(buf);
   }
 
-  public ByteBufferMsg getBBMsg() {
+  public ByteBufferMsg getByteBufferMessage() {
     return msg;
   }
 

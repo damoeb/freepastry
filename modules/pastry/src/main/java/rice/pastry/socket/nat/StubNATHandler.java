@@ -57,7 +57,7 @@ public class StubNATHandler implements NATHandler {
   }
 
   @Override
-  public InetAddress findFireWall(InetAddress bindAddress) throws IOException {
+  public InetAddress findFirewallAddress(InetAddress bindAddress) throws IOException {
     throw new IOException(errorString);
   }
 
@@ -67,7 +67,7 @@ public class StubNATHandler implements NATHandler {
   }
 
   @Override
-  public void openFireWallPort(int local, int external, String appName) throws IOException {
+  public void openFirewallPort(int local, int external, String appName) throws IOException {
     throw new IOException(errorString);
   }
 }

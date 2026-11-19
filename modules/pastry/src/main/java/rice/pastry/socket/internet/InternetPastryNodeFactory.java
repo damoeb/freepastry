@@ -219,7 +219,7 @@ public class InternetPastryNodeFactory extends
     if (!shouldFindExternalAddress(address)) return true;
 
     try {
-      natHandler.findFireWall(address); // warning, this is blocking...
+      natHandler.findFirewallAddress(address); // warning, this is blocking...
     } catch (CantFindFirewallException cffe) {
       logger.info("Can't find firewall, continuing. For better performance, enable UPnP.  Will try to verify if user configured a port forward rule..." + cffe);
       // ignore
@@ -447,7 +447,7 @@ public class InternetPastryNodeFactory extends
         // this could go either way... since the connectivity check will fail, it'll show up natted, but it used to be zero
         port = bindAddress.getPort();
       } else {
-        natHandler.openFireWallPort(bindAddress.getPort(), port, firewallAppName);
+        natHandler.openFirewallPort(bindAddress.getPort(), port, firewallAppName);
       }
     } catch (IOException ioe) {
       // doesn't matter, can just rendezvous

@@ -427,8 +427,8 @@ public class PastryNode implements
   public void addLeafSetListener(NodeSetListener listener) {
     leafSet.addNodeSetListener(listener);
   }
-  public void deleteLeafSetListener(NodeSetListener listener) {
-    leafSet.deleteNodeSetListener(listener);
+  public void removeLeafSetListener(NodeSetListener listener) {
+    leafSet.removeNodeSetListener(listener);
   }
 
   public void addRouteSetListener(NodeSetListener listener) {
@@ -882,7 +882,7 @@ public class PastryNode implements
   }
 
   Map<String, Object> vars = new HashMap<String, Object>();
-  public Map<String, Object> getVars() {
+  public Map<String, Object> getAttributes() {
     return vars;
   }
 
@@ -1001,7 +1001,7 @@ public class PastryNode implements
    * @param delay time in milliseconds before message is to be delivered
    * @return the scheduled event object; can be used to cancel the message
    */
-  public ScheduledMessage scheduleMsg(Message msg, long delay) {
+  public ScheduledMessage scheduleMessage(Message msg, long delay) {
     ScheduledMessage sm = new ScheduledMessage(this, msg);
     getEnvironment().getSelectorManager().getTimer().schedule(sm, delay);
     return sm;
@@ -1020,7 +1020,7 @@ public class PastryNode implements
    * @param period time in milliseconds between successive message deliveries
    * @return the scheduled event object; can be used to cancel the message
    */
-  public ScheduledMessage scheduleMsg(Message msg, long delay, long period) {
+  public ScheduledMessage scheduleMessage(Message msg, long delay, long period) {
     ScheduledMessage sm = new ScheduledMessage(this, msg);
     getEnvironment().getSelectorManager().getTimer().schedule(sm, delay, period);
     return sm;
@@ -1038,7 +1038,7 @@ public class PastryNode implements
    * @param period time in milliseconds between successive message deliveries
    * @return the scheduled event object; can be used to cancel the message
    */
-  public ScheduledMessage scheduleMsgAtFixedRate(Message msg, long delay, long period) {
+  public ScheduledMessage scheduleMessageAtFixedRate(Message msg, long delay, long period) {
     ScheduledMessage sm = new ScheduledMessage(this, msg);
     getEnvironment().getSelectorManager().getTimer().scheduleAtFixedRate(sm, delay, period);
     return sm;
@@ -1185,13 +1185,13 @@ public class PastryNode implements
     // doneNode runs on every boot, also on a rejoin, but the maintenance tasks are scheduled only once
     if (routeSetMaintFreq > 0 && !isScheduled(routeSetMaintTask)) {
       // schedule the routeset maintenance event
-      routeSetMaintTask = scheduleMsgAtFixedRate(new InitiateRouteSetMaintenance(),
+      routeSetMaintTask = scheduleMessageAtFixedRate(new InitiateRouteSetMaintenance(),
         routeSetMaintFreq * 1000L, routeSetMaintFreq * 1000L);
       logger.atInfo().log(() -> "Scheduling routeSetMaint for "+routeSetMaintFreq * 1000+","+routeSetMaintFreq * 1000);
     }
     if (leafSetMaintFreq > 0 && !isScheduled(leafSetMaintTask)) {
       // schedule the leafset maintenance event
-      leafSetMaintTask = scheduleMsgAtFixedRate(new InitiateLeafSetMaintenance(),
+      leafSetMaintTask = scheduleMessageAtFixedRate(new InitiateLeafSetMaintenance(),
         leafSetMaintFreq * 1000L, leafSetMaintFreq * 1000L);
       logger.atInfo().log(() -> "Scheduling leafSetMaint for "+leafSetMaintFreq * 1000+","+leafSetMaintFreq * 1000);
     }

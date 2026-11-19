@@ -257,7 +257,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       });
     }
 
-    rm.setTLOptions(OptionsFactory.addOption(options, PriorityTransportLayer.OPTION_PRIORITY, pm.getPriority()));
+    rm.setTransportLayerOptions(OptionsFactory.addOption(options, PriorityTransportLayer.OPTION_PRIORITY, pm.getPriority()));
 
     thePastryNode.getRouter().route(rm);
 
@@ -275,7 +275,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   @Override
   public CancellableTask scheduleMessage(Message message, long delay) {
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), message, thePastryNode.getLocalHandle());
-    return thePastryNode.scheduleMsg(pm, delay);
+    return thePastryNode.scheduleMessage(pm, delay);
   }
 
   /**
@@ -289,7 +289,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   @Override
   public CancellableTask scheduleMessage(Message message, long delay, long period) {
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), message, thePastryNode.getLocalHandle());
-    return thePastryNode.scheduleMsg(pm, delay, period);
+    return thePastryNode.scheduleMessage(pm, delay, period);
   }
 
   /**
@@ -311,7 +311,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   public CancellableTask scheduleMessageAtFixedRate(Message msg,
       long delay, long period) {
     PastryEndpointMessage pm = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
-    return thePastryNode.scheduleMsgAtFixedRate(pm, delay, period);
+    return thePastryNode.scheduleMessageAtFixedRate(pm, delay, period);
   }
 
   /**
@@ -445,7 +445,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     rice.pastry.IdRange ccw = getLeafSet().range((rice.pastry.NodeHandle) n, r, false);
     rice.pastry.IdRange cw = getLeafSet().range((rice.pastry.NodeHandle) n, r, true);
 
-    if (cw == null || ccw.contains(pKey) || pKey.isBetween(cw.getCW(), ccw.getCCW())) return ccw;
+    if (cw == null || ccw.contains(pKey) || pKey.isBetween(cw.getClockwiseBound(), ccw.getCounterClockwiseBound())) return ccw;
     else return cw;
   }
 
@@ -496,7 +496,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * identity check; the one for messages from other nodes is in {@link #receiveMessage}.
    */
   @Override
-  public final void messageForAppl(rice.pastry.messaging.Message msg) {
+  public final void messageForApplication(rice.pastry.messaging.Message msg) {
     logger.trace("[{}] deliver {} from {}", thePastryNode, msg, msg.getSenderId());
 
     if (msg instanceof PastryEndpointMessage pastryEndpointMessage) {
@@ -576,7 +576,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
       // if the message is not a RouteMessage, then it is for the local node and
       // was scheduled with scheduleMessage(); see messageForAppl()
-      messageForAppl(msg);
+      messageForApplication(msg);
     }
   }
 

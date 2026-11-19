@@ -363,7 +363,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
       if (!jh.equals(localHandle)) {
         int base = thePastryNode.getRoutingTable().baseBitLength();
 
-        int msdd = localId.indexOfMSDD(nid, base);
+        int msdd = localId.indexOfMostSignificantDifferingDigit(nid, base);
         int last = jr.lastRow();
 
         for (int i = last - 1; msdd > 0 && i >= msdd; i--) {
@@ -384,7 +384,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
           }
         });
 
-        rm.setTLOptions(getOptions(jr, rm.getTLOptions()));
+        rm.setTransportLayerOptions(getOptions(jr, rm.getTransportLayerOptions()));
 
         logger.info("Routing {}", rm);
         thePastryNode.getRouter().route(rm);
@@ -486,7 +486,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     }
 
     if (retryTask == null)
-      retryTask = thePastryNode.scheduleMsg(new RequestFromEveryoneMsg(getAddress()), RETRY_INTERVAL, RETRY_INTERVAL);
+      retryTask = thePastryNode.scheduleMessage(new RequestFromEveryoneMsg(getAddress()), RETRY_INTERVAL, RETRY_INTERVAL);
   }
 
   /**
@@ -565,9 +565,9 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
    */
   public Collection<NodeHandle> whoDoWeNeedAResponseFrom() {
     HashSet<NodeHandle> ret = new HashSet<NodeHandle>();
-    int leftIndex = leafSet.ccwSize();
+    int leftIndex = leafSet.counterClockwiseSize();
     if (leftIndex > MAX_NUM_TO_HEAR_FROM/2) leftIndex = MAX_NUM_TO_HEAR_FROM/2;
-    int rightIndex = leafSet.cwSize();
+    int rightIndex = leafSet.clockwiseSize();
     if (rightIndex > MAX_NUM_TO_HEAR_FROM/2) rightIndex = MAX_NUM_TO_HEAR_FROM/2;
     for (int i=-leftIndex; i<=rightIndex; i++) {
       if (i != 0) {
@@ -644,7 +644,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     // my leafset is not complete, so I will add anybody, but then keep
     // getting closer and closer, each time knocking out the next guy
     LeafSet lprime = leafSet.copy();
-    for (int i=-cjm.ls.ccwSize(); i<=cjm.ls.cwSize(); i++) {
+    for (int i=-cjm.ls.counterClockwiseSize(); i<=cjm.ls.clockwiseSize(); i++) {
       NodeHandle nh = cjm.ls.get(i);
       if (!failed.containsKey(nh) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {
         lprime.put(nh);
@@ -652,7 +652,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     }
 
     HashSet<NodeHandle> addThese = new HashSet<NodeHandle>();
-    for (int i=-lprime.ccwSize(); i<=lprime.cwSize(); i++) {
+    for (int i=-lprime.counterClockwiseSize(); i<=lprime.clockwiseSize(); i++) {
       if (i != 0) {
         NodeHandle nh = lprime.get(i);
         if (!leafSet.member(nh)) {
@@ -689,8 +689,8 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
    *
    */
   void doneProbing() {
-    int leftIndex = leafSet.ccwSize();
-    int rightIndex = leafSet.cwSize();
+    int leftIndex = leafSet.counterClockwiseSize();
+    int rightIndex = leafSet.clockwiseSize();
     if (leftIndex > MAX_NUM_TO_HEAR_FROM/2) leftIndex = MAX_NUM_TO_HEAR_FROM/2;
     if (rightIndex > MAX_NUM_TO_HEAR_FROM/2) rightIndex = MAX_NUM_TO_HEAR_FROM/2;
     if (leafSet.isComplete() || ((leftIndex == MAX_NUM_TO_HEAR_FROM/2) && (rightIndex == MAX_NUM_TO_HEAR_FROM/2))) {
@@ -740,11 +740,11 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
       NodeHandle right = null;
 
       synchronized(leafSet) {
-        int index = -leafSet.ccwSize();
+        int index = -leafSet.counterClockwiseSize();
         if ((index != 0) && index != -leafSet.maxSize()/2) {
           left = leafSet.get(index);
         }
-        index = leafSet.cwSize();
+        index = leafSet.clockwiseSize();
         if ((index != 0) && index != leafSet.maxSize()/2) {
           right = leafSet.get(index);
         }
@@ -938,7 +938,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
    * interface anyway.
    */
   @Override
-  public void messageForAppl(Message msg) {
+  public void messageForApplication(Message msg) {
     throw new RuntimeException("Should not be called.");
   }
 

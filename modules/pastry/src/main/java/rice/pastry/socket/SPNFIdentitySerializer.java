@@ -82,11 +82,11 @@ public class SPNFIdentitySerializer implements
     long epoch = buf.readLong();
     Id nid = Id.build(buf);
 
-    SocketNodeHandle ret = buildSNH(buf, i.getLastHop(), epoch, nid);
+    SocketNodeHandle ret = buildSocketNodeHandle(buf, i.getLastHop(), epoch, nid);
     return (TransportLayerNodeHandle<MultiInetSocketAddress>) factory.coalesce(ret);
   }
 
-  protected SocketNodeHandle buildSNH(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nid) throws IOException {
+  protected SocketNodeHandle buildSocketNodeHandle(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nid) throws IOException {
     return new SocketNodeHandle(i, epoch, nid, pn);
   }
 
