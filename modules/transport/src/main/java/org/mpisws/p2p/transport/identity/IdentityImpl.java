@@ -40,6 +40,8 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -60,6 +62,7 @@ import rice.environment.Environment;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD_FOREVER;
+import static rice.environment.params.ConfigChecks.positive;
 
 public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> {
   final byte[] localIdentifier;
@@ -68,7 +71,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
   private @Nullable UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> upper;
 
   private final Map<UpperIdentifier, Set<IdentityMessageHandle>> pendingMessages;
-  final Set<UpperIdentifier> deadForever;  // TODO: make TimerWeakHashSet
+  /** at most {@link #maxBindings}, the least recently marked forgotten first */
+  final Set<UpperIdentifier> deadForever;
 
   final Environment environment;
   private final Logger logger;
@@ -87,8 +91,18 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
    *
    * Note, that it's possible to have the UpperIdentifier in multiple places if it
    * has multiple paths (such as source routing)
+   *
+   * Least recently used first. Every datagram's identity header offers a binding, so beyond {@link #maxBindings}
+   * the least recently used ones are forgotten, except those in {@link #keptBindings} and those with pending
+   * messages. Selector thread only.
    */
   final Map<MiddleIdentifier, UpperIdentifier> bindings;  // this one may be difficult as the Upper has a ref to the lower
+
+  /** the bindings the bind strategy keeps: never forgotten while their upper identifier is bound */
+  private final Set<MiddleIdentifier> keptBindings;
+
+  /** {@code pastry_socket_identity_max_bindings}: the most bindings (and dead-forever identifiers) remembered */
+  final int maxBindings;
 
   public static final byte SUCCESS = 1;
   public static final byte FAILURE = 0;
@@ -118,10 +132,18 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     this.nodeChangeStrategy = nodeChangeStrategy;
     this.environment = environment;
 
+    this.maxBindings = positive("pastry_socket_identity_max_bindings",
+        environment.getParameters().getInt("pastry_socket_identity_max_bindings"));
     this.pendingMessages = new HashMap<UpperIdentifier, Set<IdentityMessageHandle>>();
-    this.deadForever = Collections.synchronizedSet(new HashSet<UpperIdentifier>());
+    this.deadForever = Collections.synchronizedSet(Collections.newSetFromMap(new LinkedHashMap<UpperIdentifier, Boolean>() {
+      @Override
+      protected boolean removeEldestEntry(Map.Entry<UpperIdentifier, Boolean> eldest) {
+        return size() > maxBindings;
+      }
+    }));
 
-    this.bindings = new HashMap<MiddleIdentifier, UpperIdentifier>();
+    this.bindings = new LinkedHashMap<MiddleIdentifier, UpperIdentifier>(16, 0.75f, true);
+    this.keptBindings = new HashSet<MiddleIdentifier>();
 
     serializer.addSerializerListener(handle -> {
       Runnable r = () -> {
@@ -225,6 +247,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       if (old == null) {
         logger.debug("addBinding({},{}) old is null", u, l);
         bindings.put(m, u);
+        keepIfStrategyKeeps(m, u, options);
+        forgetBindingsOverCap();
         if (l != null) {
           overrideLiveness.setLiveness(l, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
         } else {
@@ -234,6 +258,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       } else {
         if (old.equals(u)) {
           logger.trace("addBinding({},{}) old is equal", u, l);
+          keepIfStrategyKeeps(m, u, options);
           if (l != null) {
             overrideLiveness.setLiveness(l, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
           } else {
@@ -260,6 +285,8 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         }
         if (replace) {
           bindings.put(m, u);
+          keptBindings.remove(m);
+          keepIfStrategyKeeps(m, u, options);
           logger.debug("addBinding({},{}) old {} is dead", u, l, old);
           if (l == null) {
             logger.info("addBinding({},{}): l == null", u, l);
@@ -274,6 +301,35 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
           return false;
         }
       }
+  }
+
+  private void keepIfStrategyKeeps(MiddleIdentifier m, UpperIdentifier u, @Nullable Map<String, Object> options) {
+    if (bindStrategy != null && bindStrategy.keepsBinding(u, options)) {
+      keptBindings.add(m);
+    }
+  }
+
+  /**
+   * Forgets the least recently used bindings until at most {@link #maxBindings} are left, skipping those the bind
+   * strategy keeps and those with pending messages. A forgotten binding is made again by the next message from its
+   * address.
+   */
+  private void forgetBindingsOverCap() {
+    Iterator<Map.Entry<MiddleIdentifier, UpperIdentifier>> it = bindings.entrySet().iterator();
+    while (bindings.size() > maxBindings && it.hasNext()) {
+      Map.Entry<MiddleIdentifier, UpperIdentifier> binding = it.next();
+      if (keptBindings.contains(binding.getKey()) || hasPendingMessages(binding.getValue())) {
+        continue;
+      }
+      logger.debug("forgetting the binding {} -> {}", binding.getKey(), binding.getValue());
+      it.remove();
+    }
+  }
+
+  private boolean hasPendingMessages(UpperIdentifier u) {
+    synchronized(pendingMessages) {
+      return pendingMessages.containsKey(u);
+    }
   }
 
   /**

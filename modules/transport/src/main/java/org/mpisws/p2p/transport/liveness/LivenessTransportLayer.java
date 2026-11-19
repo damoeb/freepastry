@@ -38,6 +38,9 @@ package org.mpisws.p2p.transport.liveness;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -59,7 +62,6 @@ import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
-import rice.p2p.util.TimerWeakHashMap;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.selector.Timer;
 import rice.selector.TimerTask;
@@ -73,8 +75,10 @@ public class LivenessTransportLayer<Identifier>
     implements TransportLayerCallback<Identifier, ByteBuffer>, OverrideLiveness<Identifier>, TransportLayer<Identifier, ByteBuffer>, LivenessProvider<Identifier>, Pinger<Identifier> {
   /** Initial size of the buffer a ping or pong is serialized into. */
   private static final int PING_BUFFER_SIZE = 1024;
-  /** How long an identifier's liveness state is kept after its last use. */
-  private static final int MANAGER_HARD_LINK_MILLIS = 300000;
+  /** How long an idle identifier's liveness state is kept after its last use. */
+  static final int MANAGER_IDLE_MILLIS = 300000;
+  /** How many of the least recently used trackers are looked at for one that may be forgotten. */
+  private static final int MAX_TRACKERS_SCANNED = 64;
   /** An idle socket's liveness is first checked after this many RTOs, then every IDLE_CHECK_PERIOD_MILLIS. */
   static final int IDLE_CHECK_RTO_MULTIPLIER = 4;
   static final int IDLE_CHECK_PERIOD_MILLIS = 30000;
@@ -128,9 +132,13 @@ public class LivenessTransportLayer<Identifier>
   public static final byte HDR_PONG = 2;
 
   /**
-   * Holds only pending DeadCheckers
+   * The liveness tracker of each route, least recently used first. A remote sender chooses the routes its
+   * datagrams arrive on, so it holds at most {@link #maxTrackers}; guarded by itself.
    */
-  final Map<Identifier, LivenessTracker<Identifier>> managers;
+  final LinkedHashMap<Identifier, LivenessTracker<Identifier>> managers;
+
+  /** the most trackers kept in {@link #managers} */
+  final int maxTrackers;
 
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
@@ -150,7 +158,8 @@ public class LivenessTransportLayer<Identifier>
     random = env.getRandomSource();
     this.livenessListeners = new CopyOnWriteArrayList<LivenessListener<Identifier>>();
     this.pingListeners = new CopyOnWriteArrayList<PingListener<Identifier>>();
-      this.managers = new TimerWeakHashMap<Identifier, LivenessTracker<Identifier>>(env.getSelectorManager(), MANAGER_HARD_LINK_MILLIS);
+    this.managers = new LinkedHashMap<>(16, 0.75f, true);
+    this.maxTrackers = config.maxTrackers();
     PING_DELAY = config.pingDelay();
     PING_JITTER = config.pingJitter();
     NUM_PING_TRIES = config.numPingTries();
@@ -189,12 +198,42 @@ public class LivenessTransportLayer<Identifier>
 
   public LivenessTracker<Identifier> getManager(Identifier i) {
     synchronized(managers) {
+      long now = time.currentTimeMillis();
       LivenessTracker<Identifier> manager = managers.get(i);
       if (manager == null) {
         manager = new LivenessTracker<>(this, i);
         managers.put(i,manager);
+        forgetIdleTrackers(now);
       }
+      manager.lastUsed = now;
       return manager;
+    }
+  }
+
+  /**
+   * Forgets trackers, least recently used first: those idle for {@link #MANAGER_IDLE_MILLIS}, and as many as it
+   * takes to bring the table down to {@link #maxTrackers}. A tracker in use (checking its route, carrying sockets,
+   * waiting for a pong) is skipped; if none of the {@link #MAX_TRACKERS_SCANNED} least recently used ones is idle,
+   * the least recently used one goes anyway, so the table stays bounded. Called with {@link #managers} locked.
+   */
+  private void forgetIdleTrackers(long now) {
+    Iterator<LivenessTracker<Identifier>> it = managers.values().iterator();
+    int scanned = 0;
+    while (it.hasNext() && scanned < MAX_TRACKERS_SCANNED) {
+      LivenessTracker<Identifier> manager = it.next();
+      scanned++;
+      boolean full = managers.size() > maxTrackers;
+      if (!full && now - manager.lastUsed < MANAGER_IDLE_MILLIS) {
+        return; // the rest were used more recently
+      }
+      if (!manager.inUse(now)) {
+        it.remove();
+      }
+    }
+    if (managers.size() > maxTrackers) {
+      Identifier eldest = managers.keySet().iterator().next();
+      logger.warn("{} liveness trackers in use; forgetting the least recently used one, {}", managers.size(), eldest);
+      deleteManager(eldest);
     }
   }
 
@@ -212,8 +251,11 @@ public class LivenessTransportLayer<Identifier>
   public int getLiveness(Identifier i, @Nullable Map<String, Object> options) {
     logger.trace("getLiveness({},{})", i, options);
     synchronized(managers) {
-      if (managers.containsKey(i))
-        return managers.get(i).liveness;
+      LivenessTracker<Identifier> manager = managers.get(i);
+      if (manager != null) {
+        manager.lastUsed = time.currentTimeMillis();
+        return manager.liveness;
+      }
     }
     return LIVENESS_SUSPECTED;
   }
@@ -325,8 +367,16 @@ public class LivenessTransportLayer<Identifier>
       return;
     case HDR_PONG:
       logger.trace("messageReceived({}, PONG)", i);
-      LivenessTracker<Identifier> manager = getManager(i);
       long sendTime = readTimeStamp(i, m);
+      // only the pong to a ping this node sent on this route counts: anyone can send a pong
+      LivenessTracker<Identifier> manager;
+      synchronized(managers) {
+        manager = managers.get(i);
+      }
+      if (manager == null || !manager.pongReceived(sendTime)) {
+        logger.debug("messageReceived({}, PONG {}): no such ping outstanding, ignored", i, sendTime);
+        return;
+      }
       int rtt = (int)(time.currentTimeMillis()-sendTime);
       if (rtt >= 0) {
         manager.updateRTO(rtt);
@@ -372,6 +422,7 @@ public class LivenessTransportLayer<Identifier>
       sob.writeByte(HDR_PING);
       final long now = time.currentTimeMillis();
       new PingMessage(now).serialize(sob);
+      getManager(i).pingSent(now);
       tl.sendMessage(i, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
         @Override
         public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
@@ -443,10 +494,14 @@ public class LivenessTransportLayer<Identifier>
     tl.destroy();
     livenessListeners.clear();
     pingListeners.clear();
-    for (LivenessTracker<Identifier> em : managers.values()) {
+    List<LivenessTracker<Identifier>> all;
+    synchronized(managers) {
+      all = new ArrayList<>(managers.values());
+      managers.clear();
+    }
+    for (LivenessTracker<Identifier> em : all) {
       em.destroy();
     }
-    managers.clear();
   }
 
   @Override

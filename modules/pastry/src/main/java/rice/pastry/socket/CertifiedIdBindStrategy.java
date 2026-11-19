@@ -108,6 +108,15 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
     return oldAuthenticated ? Replacement.ASK_NODE_CHANGE_STRATEGY : Replacement.REPLACE;
   }
 
+  /**
+   * A binding confirmed by the node's certificate is never forgotten to make room for others: forgetting it would let
+   * a handle without a certificate (a datagram's header) take the address, which {@link #replace} prevents.
+   */
+  @Override
+  public boolean keepsBinding(TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable Map<String, Object> options) {
+    return certifies(u, options);
+  }
+
   /** @return true if the options carry a certificate subject that is this handle's id */
   private static boolean certifies(TransportLayerNodeHandle<MultiInetSocketAddress> handle, @Nullable Map<String, Object> options) {
     Object subject = options == null ? null : options.get(SSLTransportLayer.OPTION_CERT_SUBJECT);

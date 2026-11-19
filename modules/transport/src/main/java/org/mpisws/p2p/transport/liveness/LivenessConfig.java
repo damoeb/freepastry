@@ -60,6 +60,8 @@ import rice.environment.params.Parameters;
  *        timeout
  * @param gainH {@code pastry_socket_srm_gain_h}: RTO gain of the deviation (RFC 1122)
  * @param gainG {@code pastry_socket_srm_gain_g}: RTO gain of the mean (RFC 1122)
+ * @param maxTrackers {@code pastry_socket_liveness_max_trackers}: the number of routes whose liveness
+ *        is tracked; beyond it the least recently used idle trackers are forgotten
  */
 public record LivenessConfig(
     int pingDelay,
@@ -70,10 +72,11 @@ public record LivenessConfig(
     int rtoUpperBound,
     int rtoLowerBound,
     double gainH,
-    double gainG) {
+    double gainG,
+    int maxTrackers) {
 
   /**
-   * @throws IllegalArgumentException if a ping delay or timeout is not positive, or the ping tries or
+   * @throws IllegalArgumentException if a ping delay, timeout or the tracker cap is not positive, or the ping tries or
    *         the throttle are negative
    */
   public static LivenessConfig fromParameters(Parameters p) {
@@ -86,7 +89,8 @@ public record LivenessConfig(
       positive("pastry_socket_srm_rto_ubound", p.getInt("pastry_socket_srm_rto_ubound")),
       positive("pastry_socket_srm_rto_lbound", p.getInt("pastry_socket_srm_rto_lbound")),
       p.getDouble("pastry_socket_srm_gain_h"),
-      p.getDouble("pastry_socket_srm_gain_g"));
+      p.getDouble("pastry_socket_srm_gain_g"),
+      positive("pastry_socket_liveness_max_trackers", p.getInt("pastry_socket_liveness_max_trackers")));
   }
 
   /**
@@ -94,6 +98,6 @@ public record LivenessConfig(
    */
   public LivenessConfig withCheckDeadThrottle(int checkDeadThrottle) {
     return new LivenessConfig(pingDelay, pingJitter, numPingTries, checkDeadThrottle,
-        defaultRto, rtoUpperBound, rtoLowerBound, gainH, gainG);
+        defaultRto, rtoUpperBound, rtoLowerBound, gainH, gainG, maxTrackers);
   }
 }

@@ -77,6 +77,21 @@ public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
   }
 
   /**
+   * Whether the binding of {@code u}, offered or confirmed with these options, must survive when the identity layer
+   * forgets bindings to stay within its cap ({@code pastry_socket_identity_max_bindings}). Anyone can offer a
+   * binding, so the identity layer forgets the least recently used ones; a binding kept here is forgotten only when
+   * {@code u} is replaced. Keep only bindings a sender cannot offer at will, such as those confirmed by the node's
+   * certificate.
+   *
+   * @param u the upper identifier bound now
+   * @param options the options of the connection or message it was offered or confirmed with, or null
+   * @return false by default
+   */
+  default boolean keepsBinding(UpperIdentifier u, @Nullable Map<String, Object> options) {
+    return false;
+  }
+
+  /**
    * Decides whether {@code u} may replace {@code old} as the upper identifier of the same lower identifier. It is
    * asked after {@link #accept} has accepted {@code u} with the same options.
    *

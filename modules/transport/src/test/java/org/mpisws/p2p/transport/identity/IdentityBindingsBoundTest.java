@@ -1,9 +1,11 @@
 package org.mpisws.p2p.transport.identity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
@@ -22,6 +24,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 class IdentityBindingsBoundTest {
   private static final int MAX_BINDINGS = 100;
   private static final int SPOOFED_IDENTITIES = 10 * MAX_BINDINGS;
+  private static final String TRUSTED = "trusted";
+  private static final String CERTIFICATE = "certificate";
 
   private Environment env;
 
@@ -63,6 +67,19 @@ class IdentityBindingsBoundTest {
     public void removeSerializerListener(SerializerListener<String> listener) {}
   }
 
+  /** Accepts everything and, like the certified strategy, keeps a binding confirmed with a certificate. */
+  private static class KeepCertified implements BindStrategy<String, String> {
+    @Override
+    public boolean accept(String u, @Nullable String l, @Nullable Map<String, Object> options) {
+      return true;
+    }
+
+    @Override
+    public boolean keepsBinding(String u, @Nullable Map<String, Object> options) {
+      return options != null && options.containsKey(CERTIFICATE);
+    }
+  }
+
   private IdentityImpl<String, String, String, String> identity(@Nullable BindStrategy<String, String> strategy) {
     IdentityImpl<String, String, String, String> identity =
         new IdentityImpl<>(new byte[0], new StubSerializer(), (oldDest, newDest) -> false, (upper, middle) -> true, strategy, env);
@@ -97,6 +114,48 @@ class IdentityBindingsBoundTest {
     onSelector(() -> spoof(identity));
 
     assertTrue(identity.bindings.size() <= MAX_BINDINGS, "bindings: " + identity.bindings.size());
+  }
+
+  @Test
+  @DisplayName("a binding the bind strategy keeps (an authenticated node) survives a flood of spoofed identities")
+  void keptBindingSurvivesTheFlood() throws Exception {
+    var identity = identity(new KeepCertified());
+
+    onSelector(() -> {
+      identity.addBinding(TRUSTED, TRUSTED, null);
+      identity.addBinding(TRUSTED, TRUSTED, Map.of(CERTIFICATE, TRUSTED));
+      spoof(identity);
+    });
+
+    assertEquals(TRUSTED, identity.bindings.get(TRUSTED));
+    assertTrue(identity.bindings.size() <= MAX_BINDINGS, "bindings: " + identity.bindings.size());
+  }
+
+  @Test
+  @DisplayName("a binding offered without a certificate is forgotten like any other")
+  void uncertifiedBindingIsForgotten() throws Exception {
+    var identity = identity(new KeepCertified());
+
+    onSelector(() -> {
+      identity.addBinding(TRUSTED, TRUSTED, null);
+      spoof(identity);
+    });
+
+    assertNull(identity.bindings.get(TRUSTED));
+  }
+
+  @Test
+  @DisplayName("identifiers marked dead forever are bounded too")
+  void deadForeverIsBounded() throws Exception {
+    var identity = identity(null);
+
+    onSelector(() -> {
+      for (int k = 0; k < SPOOFED_IDENTITIES; k++) {
+        identity.deadForever.add("dead" + k);
+      }
+    });
+
+    assertTrue(identity.deadForever.size() <= MAX_BINDINGS, "dead forever: " + identity.deadForever.size());
   }
 
   @Test

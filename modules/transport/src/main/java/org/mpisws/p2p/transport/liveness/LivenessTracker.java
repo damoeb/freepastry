@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.liveness;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
@@ -54,6 +55,9 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
  * identifier
  */
 public class LivenessTracker<Identifier> {
+  /** How many pings sent on this route are remembered until their pong arrives. */
+  static final int MAX_OUTSTANDING_PINGS = 8;
+
   final LivenessTransportLayer<Identifier> layer;
   private final Logger logger;
 
@@ -88,6 +92,15 @@ public class LivenessTracker<Identifier> {
 
   final Set<LSocket<Identifier>> sockets;
 
+  /** when the layer last looked this tracker up; the layer forgets the least recently used idle trackers */
+  long lastUsed;
+
+  /** the time stamps of the last pings sent on this route that no pong has answered yet, oldest first */
+  private final ArrayDeque<Long> outstandingPings = new ArrayDeque<>();
+
+  /** when the last ping was sent on this route; meaningless while no ping is outstanding */
+  private long lastPingSent = 0L;
+
   /**
    * Constructor - builds a manager for the given identifier
    *
@@ -104,7 +117,43 @@ public class LivenessTracker<Identifier> {
 
     this.pendingDeadchecker = null;
     this.updated = 0L;
+    this.lastUsed = layer.time.currentTimeMillis();
     sockets = new HashSet<LSocket<Identifier>>();
+  }
+
+  /** Remembers a ping sent on this route at {@code sentTime}, so that its pong is recognised. */
+  synchronized void pingSent(long sentTime) {
+    if (outstandingPings.size() >= MAX_OUTSTANDING_PINGS) {
+      outstandingPings.removeFirst();
+    }
+    outstandingPings.addLast(sentTime);
+    lastPingSent = sentTime;
+  }
+
+  /**
+   * Matches a pong against the pings sent on this route.
+   *
+   * @param sentTime the time stamp the pong echoes
+   * @return true if a ping with this time stamp was outstanding (it no longer is); false for a pong this node
+   *     never asked for
+   */
+  synchronized boolean pongReceived(long sentTime) {
+    return outstandingPings.removeFirstOccurrence(sentTime);
+  }
+
+  /**
+   * @return true while this tracker is checking its route or carries sockets, or a ping sent less than the
+   *     maximal RTO ago may still be answered: the layer does not forget such a tracker to make room for others
+   */
+  boolean inUse(long now) {
+    synchronized (this) {
+      if (pendingDeadchecker != null || (!outstandingPings.isEmpty() && now - lastPingSent < layer.RTO_UBOUND)) {
+        return true;
+      }
+    }
+    synchronized (sockets) {
+      return !sockets.isEmpty();
+    }
   }
 
   public LivenessTransportLayer<Identifier>.@Nullable DeadChecker getPending() {

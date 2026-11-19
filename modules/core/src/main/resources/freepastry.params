@@ -95,6 +95,14 @@ pastry_socket_scm_ping_delay = 800
 pastry_socket_scm_ping_jitter = 0.1
 # how many pings until we call the node faulty
 pastry_socket_scm_num_ping_tries = 5
+# upper bound on the liveness trackers (one per route) a node keeps; any sender chooses the routes its datagrams
+# arrive on, so beyond this the least recently used trackers that are not checking a route are forgotten
+pastry_socket_liveness_max_trackers = 10000
+# upper bound on the address-to-node bindings of the identity layer; every datagram's identity header offers one, so
+# beyond this the least recently used bindings are forgotten, except those the bind strategy keeps (in certified mode,
+# a binding confirmed by the node's certificate) and those with messages waiting for them. Also bounds the node
+# handles remembered as dead forever.
+pastry_socket_identity_max_bindings = 10000
 pastry_socket_increment_port_after_construction = true
 # if you want to allow connection to 127.0.0.1, set this to true
 pastry_socket_allow_loopback = false
