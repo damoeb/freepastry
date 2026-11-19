@@ -78,19 +78,20 @@ public class DistTutorial {
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 
     // create the keystore
-    // written by "CATool -store" (PKCS12, blank password)
+    // written by "CATool -store" (PKCS12); its password is in FREEPASTRY_NODE_PASSWORD, or asked on the console
+    final char[] password = CATool.readPassword(CATool.NODE_PASSWORD_ENV, "Password of "+keyStoreFile+": ");
     final KeyStore store = KeyStore.getInstance(CATool.DEFAULT_KEYSTORE_TYPE);
     try (InputStream fis = Files.newInputStream(keyStoreFile)) {
-      store.load(fis, "".toCharArray());
+      store.load(fis, password);
     }
 
     // the node id is the one the CA put in the node's certificate; this fails if the certificate
     // is not valid for the CA in the store, or does not belong to the node's key
-    rice.pastry.Id id = CertifiedNodeIdFactory.fromKeyStore(store, "".toCharArray(), env).generateNodeId();
+    rice.pastry.Id id = CertifiedNodeIdFactory.fromKeyStore(store, password, env).generateNodeId();
 
     // construct the PastryNodeFactory: it runs mutual TLS, takes the node id from the certificate, accepts only
     // certificate common names that are node ids, and admits a node into the routing state once its certificate was seen
-    CertifiedSocketPastryNodeFactory factory = new CertifiedSocketPastryNodeFactory(store, "".toCharArray(), bindport, env);
+    CertifiedSocketPastryNodeFactory factory = new CertifiedSocketPastryNodeFactory(store, password, bindport, env);
 
     // construct a node with the id this time
     PastryNode node = factory.newNode(id);

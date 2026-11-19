@@ -46,6 +46,7 @@ import rice.pastry.standard.NodeIdCertificate;
 public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
   private final KeyStore store;
+  private final char[] keyPassword;
   private final CertifiedIdBindStrategy bindStrategy = new CertifiedIdBindStrategy();
 
   /** ids with a verification connection under way, so one is opened at a time per id (selector thread only) */
@@ -54,12 +55,13 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
   /**
    * @param store a PKCS12 key store as written by {@code CATool -store}: the node's key and certificate, and the
    *     CA certificate as the trust anchor; it is both the key store and the trust store of the TLS layer
-   * @param keyPassword the password of the node's key (blank for {@code CATool -store})
+   * @param keyPassword the password of the node's key (also handed to the TLS layer)
    * @throws GeneralSecurityException if the certificate is not valid for the CA now, or does not belong to the node's key
    */
   public CertifiedSocketPastryNodeFactory(KeyStore store, char[] keyPassword, int startPort, Environment env) throws IOException, GeneralSecurityException {
     super(CertifiedNodeIdFactory.fromKeyStore(store, keyPassword, env), startPort, env);
     this.store = store;
+    this.keyPassword = keyPassword.clone();
   }
 
   /** @return the bind strategy, which tells which ids are authenticated */
@@ -72,7 +74,7 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
       TransportLayer<MultiInetSocketAddress, ByteBuffer> etl, PastryNode pn, MultiAddressSourceRouteFactory esrFactory) {
     try {
       return new SSLTransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(
-          super.getSourceRouteTransportLayer(etl, pn, esrFactory), store, store,
+          super.getSourceRouteTransportLayer(etl, pn, esrFactory), store, keyPassword, store,
           SSLTransportLayer.CLIENT_AUTH_REQUIRED, getSubjectValidator(), pn.getEnvironment());
     } catch (IOException e) {
       throw new IllegalStateException(e);

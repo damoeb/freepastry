@@ -127,10 +127,8 @@ public class SSLTransportLayer<Identifier, MessageType>
 
     try {
       this.context = SSLContext.getInstance("TLS");
-    char[] passphrase = "".toCharArray();
-
     KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-    kmf.init(keyStore, passphrase);
+    kmf.init(keyStore, keyPassword);
 
     TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
     tmf.init(trustStore);

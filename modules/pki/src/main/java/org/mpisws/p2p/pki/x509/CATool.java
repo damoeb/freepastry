@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.pki.x509;
 
+import java.io.Console;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,6 +44,10 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.FileSystems;
+import java.util.Arrays;
+import java.util.Map;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -114,9 +119,12 @@ public class CATool {
   /**
    *
    * @param CN only used when generating a new CA
+   * @param pw the password of the CA key store and of the CA key; must not be empty
+   * @throws IllegalArgumentException if pw is empty
    */
   public static CATool getCATool(String CN, char[] pw) throws KeyStoreException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, FileNotFoundException, IOException, UnrecoverableKeyException, InvalidKeyException, IllegalStateException, SignatureException, InvalidAlgorithmParameterException {
 
+    requirePassword(pw, "CA");
     X509Certificate caCert;
     KeyPair caPair;
 
@@ -150,7 +158,7 @@ public class CATool {
       store.setKeyEntry(CA_STORE_PRIVATE, caPair.getPrivate(), pw, chain);
       store.setCertificateEntry(CA_STORE_CERT, caCert);
 
-      try (OutputStream fos = Files.newOutputStream(caStoreFile)) {
+      try (OutputStream fos = newPrivateOutputStream(caStoreFile)) {
         store.store(fos, pw);
       }
     }
@@ -260,27 +268,83 @@ public class CATool {
     return sign(CN,publicKey,expiryDate,serialNumber,cert,keyPair.getPrivate());
   }
 
+
+  /** Environment variable that holds the password of the CA store (see {@link #main}). */
+  public static final String CA_PASSWORD_ENV = "FREEPASTRY_CA_PASSWORD";
+  /** Environment variable that holds the password of a node store written with {@code -store}. */
+  public static final String NODE_PASSWORD_ENV = "FREEPASTRY_NODE_PASSWORD";
+
+  private static void requirePassword(char[] pw, String what) {
+    if (pw == null || pw.length == 0) throw new IllegalArgumentException("The "+what+" key store needs a non-empty password");
+  }
+
+  /**
+   * Opens a file for writing that only its owner can read: a new file is created with mode 0600 (POSIX) so it is
+   * never readable by others, not even briefly; an existing one is tightened to 0600 first. Where the file system
+   * has no POSIX permissions (e.g. Windows) the file is written with the platform defaults.
+   */
+  public static OutputStream newPrivateOutputStream(Path file) throws IOException {
+    if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+      if (Files.exists(file)) {
+        Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("rw-------"));
+      } else {
+        Files.createFile(file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+      }
+    }
+    return Files.newOutputStream(file);
+  }
+
+  /**
+   * Reads a password without ever taking it from the command line (visible in {@code ps}): from the environment
+   * variable, else from the console without echo.
+   *
+   * @param envVar name of the environment variable
+   * @param prompt shown on the console
+   * @throws IllegalStateException if neither is available, or the password is empty
+   */
+  public static char[] readPassword(String envVar, String prompt) {
+    return readPassword(envVar, prompt, System.getenv(), System.console());
+  }
+
+  public static char[] readPassword(String envVar, String prompt, Map<String, String> env, Console console) {
+    String value = env.get(envVar);
+    char[] pw;
+    if (value != null) {
+      pw = value.toCharArray();
+    } else if (console != null) {
+      pw = console.readPassword("%s", prompt);
+    } else {
+      throw new IllegalStateException("No password: set "+envVar+" or run on a terminal");
+    }
+    if (pw == null || pw.length == 0) throw new IllegalStateException("The password must not be empty ("+envVar+")");
+    return pw;
+  }
+
   /** also the aliases of a node store, which {@code CertifiedNodeIdFactory} reads */
   public static final String CA_STORE_PRIVATE = NodeIdCertificate.NODE_KEY_ALIAS;
   public static final String CA_STORE_CERT = NodeIdCertificate.CA_CERT_ALIAS;
 
   /**
    *
-   * -p CApassword -ca CAname -cn newCN
+   * -ca CAname -cn newCN [-store] [-test]
+   * <p>
+   * The password of the CA store comes from the environment variable {@value #CA_PASSWORD_ENV}, else it is asked
+   * on the console; it must not be empty. The old {@code -p password} option is refused: a password on the command
+   * line is visible to every user of the machine in {@code ps}. With {@code -store} the node store and its key get
+   * the password in {@value #NODE_PASSWORD_ENV} (or the console), and the file is readable by its owner only.
    * <p>
    * Without -cn the node gets a random node id as its common name, which binds the id to the
    * certificate (see {@link NodeIdCertificate}); -cn must be a node id (40 hex digits) to be usable with
    * {@code CertifiedNodeIdFactory}.
    */
   public static void main(String[] args) throws Exception {
-    char[] pw = new char[0];
     String caName = "MyCA";
     String CN = null;
     boolean test = false;
     boolean store = false;
     for (int c = 0; c < args.length; c++) {
       if (args[c].equalsIgnoreCase("-p")) {
-        pw = args[c+1].toCharArray();
+        throw new IllegalArgumentException("-p is no longer supported: a password on the command line is visible in ps. Set "+CA_PASSWORD_ENV+" or enter it on the console.");
       } else if (args[c].equalsIgnoreCase("-ca")) {
         caName = args[c+1];
       } else if (args[c].equalsIgnoreCase("-cn")) {
@@ -291,6 +355,9 @@ public class CATool {
         store = true;
       }
     }
+
+    char[] pw = readPassword(CA_PASSWORD_ENV, "Password of the CA store "+caName+"-store: ");
+    char[] nodePw = store ? readPassword(NODE_PASSWORD_ENV, "Password of the new node store: ") : null;
 
     Environment env = null;
     if (CN == null) {
@@ -310,16 +377,15 @@ public class CATool {
       clientStore.load(null, null);
 
       // store the private key under the client cert
-      clientStore.setKeyEntry(NodeIdCertificate.NODE_KEY_ALIAS,pair.getPrivate(), "".toCharArray(), new Certificate[] {cert});
+      clientStore.setKeyEntry(NodeIdCertificate.NODE_KEY_ALIAS,pair.getPrivate(), nodePw, new Certificate[] {cert});
 
       // store the CA cert
       clientStore.setCertificateEntry(NodeIdCertificate.CA_CERT_ALIAS, caTool.getCertificate());
 
       // write the clientStore to disk
       String fileName = CN+".store";
-      try (OutputStream fos = Files.newOutputStream(Path.of(fileName))) {
-        // store the clientStore under a blank password, if you want a password on the client store, do it here
-        clientStore.store(fos, "".toCharArray());
+      try (OutputStream fos = newPrivateOutputStream(Path.of(fileName))) {
+        clientStore.store(fos, nodePw);
       }
       System.out.println("Stored to "+fileName);
     }
@@ -385,6 +451,8 @@ public class CATool {
       verifier.update(msg);
       System.out.println("verified (should fail):"+verifier.verify(signature));
     }
+    Arrays.fill(pw, '\0');
+    if (nodePw != null) Arrays.fill(nodePw, '\0');
     if (env != null) env.destroy();
   }
 }

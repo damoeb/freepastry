@@ -82,4 +82,33 @@ public class CAToolTest {
     assertThrows(IllegalArgumentException.class, () -> CATool.getCATool(cn, new char[0]));
     assertFalse(new File(cn + "-store").exists());
   }
+
+  @Test
+  void existingStoreFileIsTightenedToOwnerOnly() throws Exception {
+    assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+    Path file = dir.resolve("loose");
+    Files.createFile(file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-r--r--")));
+
+    CATool.newPrivateOutputStream(file).close();
+
+    assertEquals(PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(file));
+  }
+
+  @Test
+  void passwordComesFromTheEnvironment() {
+    char[] pw = CATool.readPassword("PW", "prompt", java.util.Map.of("PW", "secret"), null);
+
+    assertEquals("secret", new String(pw));
+  }
+
+  @Test
+  void missingOrEmptyPasswordIsRefused() {
+    assertThrows(IllegalStateException.class, () -> CATool.readPassword("PW", "prompt", java.util.Map.of(), null));
+    assertThrows(IllegalStateException.class, () -> CATool.readPassword("PW", "prompt", java.util.Map.of("PW", ""), null));
+  }
+
+  @Test
+  void passwordOptionOnTheCommandLineIsRefused() {
+    assertThrows(IllegalArgumentException.class, () -> CATool.main(new String[] {"-p", "secret"}));
+  }
 }
