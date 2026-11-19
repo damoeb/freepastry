@@ -33,6 +33,26 @@ class ImmutableSortedMapTest {
   }
 
   @Test
+  void mutatorsAreRejected() {
+    assertThrows(UnsupportedOperationException.class, () -> testObj.put("z", 9));
+    assertThrows(UnsupportedOperationException.class, () -> testObj.remove("a"));
+    assertThrows(UnsupportedOperationException.class, () -> testObj.putAll(Map.of("z", 9)));
+    assertThrows(UnsupportedOperationException.class, testObj::clear);
+    assertEquals(2, backing.size());
+  }
+
+  @Test
+  void rangeViewsAreImmutableAndSorted() {
+    assertThrows(UnsupportedOperationException.class, () -> testObj.headMap("b").put("z", 9));
+    assertThrows(UnsupportedOperationException.class, () -> testObj.tailMap("b").clear());
+    assertThrows(UnsupportedOperationException.class, () -> testObj.subMap("a", "c").remove("a"));
+    assertEquals("a", testObj.firstKey());
+    assertEquals("b", testObj.lastKey());
+    assertEquals(1, testObj.headMap("b").size());
+    assertEquals(1, testObj.tailMap("b").size());
+  }
+
+  @Test
   void viewsFollowTheBackingMap() {
     backing.put("c", 3);
 
