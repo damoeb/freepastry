@@ -3,6 +3,7 @@ package rice.p2p.aggregation;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import org.junit.jupiter.api.AfterAll;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import rice.environment.Environment;
 import rice.p2p.aggregation.messaging.NonAggregate;
@@ -25,6 +27,8 @@ import rice.pastry.NodeHandle;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.WireRoundTrip;
 import rice.pastry.testing.WireRoundTrip.SocketNode;
+import rice.p2p.util.rawserialization.SimpleInputBuffer;
+import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /** Aggregates, their handles and descriptors, and the wrapper that carries a single object, through socket bytes. */
 @DisplayName("Aggregation values on the wire")
@@ -102,6 +106,38 @@ class AggregationWireRoundTripTest {
         assertArrayEquals(expected.getPayload(), actual.getPayload());
       }
       assertArrayEquals(original.getContentHash(), copy.getContentHash());
+    }
+  }
+
+  /** The counts are ints: more than Short.MAX_VALUE pointers or components must not wrap. */
+  @ParameterizedTest(name = "{0} pointers, {1} components")
+  @CsvSource({"40000,0", "0,40000", "33000,33000"})
+  void aggregateWithMoreThanAShortOfEntries(int pointers, int components) throws IOException {
+    Aggregate original = aggregate(pointers, components);
+
+    Aggregate copy = WireRoundTrip.roundTrip(original, buf -> new Aggregate(buf, endpoint, CONTENTS));
+
+    assertEquals(pointers, copy.getPointers().length);
+    assertEquals(components, copy.numComponents());
+    assertArrayEquals(original.getPointers(), copy.getPointers());
+    assertArrayEquals(original.getContentHash(), copy.getContentHash());
+  }
+
+  @ParameterizedTest(name = "count {0}")
+  @ValueSource(ints = {-1, Integer.MIN_VALUE, Integer.MAX_VALUE, 1_000_000})
+  void aggregateRejectsPointerAndComponentCountsTheBytesCannotHold(int count) throws IOException {
+    for (boolean pointers : new boolean[] {true, false}) {
+      SimpleOutputBuffer out = new SimpleOutputBuffer();
+      out.writeByte((byte) 0);
+      out.writeShort(Id.build("AAAA").getType());
+      Id.build("AAAA").serialize(out);
+      out.writeInt(pointers ? count : 0);
+      if (!pointers) {
+        out.writeInt(count);
+      }
+      SimpleInputBuffer in = new SimpleInputBuffer(out.getBytes());
+
+      assertThrows(IOException.class, () -> new Aggregate(in, endpoint, CONTENTS));
     }
   }
 

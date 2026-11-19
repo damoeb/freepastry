@@ -78,6 +78,58 @@ class SourceRouteFactoryTest {
     }
   }
 
+  private static InetSocketAddress v6(int lastByte, int port) throws IOException {
+    byte[] address = new byte[16];
+    address[0] = 0x20;
+    address[1] = 0x01;
+    address[15] = (byte) lastByte;
+    return new InetSocketAddress(InetAddress.getByAddress(address), port);
+  }
+
+  @Test
+  void wireRouteWithIpv6AndMixedHopsRoundTrips() throws IOException {
+    WireSourceRouteFactory target = new WireSourceRouteFactory();
+    List<InetSocketAddress> mixed = List.of(v6(1, 9000), hops(1).get(0), v6(2, 65535));
+    for (List<InetSocketAddress> path : List.of(List.of(v6(1, 9000)), List.of(v6(1, 9000), v6(2, 9001)), mixed)) {
+      SourceRoute<InetSocketAddress> route = target.getSourceRoute(path);
+      byte[] wire = serialized(route);
+
+      SourceRoute<InetSocketAddress> read = target.build(new SimpleInputBuffer(wire), null, null);
+
+      assertEquals(route, read);
+      assertEquals(wire.length, route.getSerializedLength());
+      SourceRoute<InetSocketAddress> reversed = target.reverse(route);
+      assertEquals(reversed, target.build(new SimpleInputBuffer(serialized(reversed)), null, null));
+    }
+  }
+
+  @Test
+  void wireFactoryRejectsAnIpv6RouteThatRepeatsAHop() throws IOException {
+    WireSourceRouteFactory target = new WireSourceRouteFactory();
+    byte[] wire = serialized(target.getSourceRoute(List.of(v6(1, 9000), v6(2, 9000), v6(1, 9000))));
+
+    assertThrows(IOException.class, () -> target.build(new SimpleInputBuffer(wire), null, null));
+  }
+
+  @Test
+  void wireFactoryRejectsAnUnknownAddressFamily() throws IOException {
+    WireSourceRouteFactory target = new WireSourceRouteFactory();
+    for (byte family : new byte[] {0, 5, 7, 16, -1}) {
+      byte[] wire = serialized(target.getSourceRoute(hops(2)));
+      wire[1] = family;
+      assertThrows(IOException.class, () -> target.build(new SimpleInputBuffer(wire), null, null));
+    }
+  }
+
+  @Test
+  void wireFactoryRejectsATruncatedHop() throws IOException {
+    WireSourceRouteFactory target = new WireSourceRouteFactory();
+    byte[] wire = serialized(target.getSourceRoute(List.of(v6(1, 9000), v6(2, 9001))));
+    byte[] truncated = java.util.Arrays.copyOf(wire, wire.length - 5);
+
+    assertThrows(IOException.class, () -> target.build(new SimpleInputBuffer(truncated), null, null));
+  }
+
   @Test
   void wireFactoryAcceptsDirectRelayedAndReversedRoutes() throws IOException {
     WireSourceRouteFactory target = new WireSourceRouteFactory();
