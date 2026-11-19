@@ -84,6 +84,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   final List<Envelope> pendingMsgs;
 
+  /** One selection reads at most this many datagrams, so that a flood cannot keep the selector thread in read(). */
+  private final int maxDatagramsPerRead;
+
   WireTransportLayer wire;
 
   @SuppressWarnings("NullAway.Init") // set by openServerSocket(), called from the constructor
@@ -96,6 +99,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     this.logger = wire.getEnvironment().getLogManager().getLogger(UDPLayer.class, null);
 
     this.pendingMsgs = new LinkedList<Envelope>();
+    this.maxDatagramsPerRead = wire.getConfig().maxDatagramsPerRead();
     openServerSocket();
   }
 
@@ -192,7 +196,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
 
   /**
-   * Reads all pending datagrams from the channel and passes them up.
+   * Reads the pending datagrams from the channel, up to {@code transport_wire_max_datagrams_per_read}, and passes them
+   * up. The key stays readable, so the selector comes back for the rest after its other work.
    *
    * @param key the selection key of the channel
    */
@@ -202,8 +207,10 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
     try {
       InetSocketAddress address = null;
+      int datagramsRead = 0;
 
-      while ((address = (InetSocketAddress) channel.receive(readBuffer)) != null) {
+      while (datagramsRead < maxDatagramsPerRead && (address = (InetSocketAddress) channel.receive(readBuffer)) != null) {
+        datagramsRead++;
         readBuffer.flip();
 
         if (readBuffer.remaining() > 0) {

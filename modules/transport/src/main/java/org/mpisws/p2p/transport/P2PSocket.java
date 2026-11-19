@@ -97,4 +97,12 @@ public interface P2PSocket<Identifier> {
    * Closes this socket.
    */
   void close();
+
+  /**
+   * Tells the layers below that this incoming socket finished its handshake: a layer that keeps it (the priority
+   * layer, a source-route relay, a rendezvous pilot) now owns its lifetime. Until then the wire layer closes an
+   * incoming socket whose handshake takes longer than {@code transport_wire_handshake_timeout_millis}, so a peer cannot
+   * hold half-open sockets forever. Wrapping sockets pass the call down; on an outgoing socket it does nothing.
+   */
+  default void handshakeCompleted() {}
 }

@@ -52,8 +52,10 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.util.ByteBuffers;
+import org.mpisws.p2p.transport.wire.exception.StalledSocketException;
 import org.slf4j.Logger;
 import rice.selector.SelectionKeyHandler;
+import rice.selector.TimerTask;
 
 public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSocketAddress>, SocketRequestHandle<InetSocketAddress> {
 
@@ -77,6 +79,15 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
    * becomes true before we deliver this to the SocketCallback, this invalidates the cancel() operation
    */
   boolean delivered = false;
+
+  /**
+   * True while this incoming socket is in the handshake: from accept until a layer calls {@link #handshakeCompleted()},
+   * or the socket closes. Counts against {@code transport_wire_max_handshaking_sockets_per_address}.
+   */
+  private boolean isInHandshake = false;
+
+  /** Closes this incoming socket when its handshake takes too long; null when there is no deadline (any more). */
+  private @Nullable TimerTask handshakeDeadline;
 
   /**
    * Constructor which accepts an incoming connection, represented by the
@@ -103,6 +114,50 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
     logger.debug("(SA) Accepted incoming connection from {}", addr);
 
     key = tcp.wire.getEnvironment().getSelectorManager().register(channel, this, 0);
+
+    isInHandshake = true;
+    int handshakeTimeoutMillis = tcp.getHandshakeTimeoutMillis();
+    if (handshakeTimeoutMillis > 0) {
+      TimerTask deadline = new TimerTask() {
+        @Override
+        public void run() {
+          handshakeExpired(handshakeTimeoutMillis);
+        }
+      };
+      handshakeDeadline = deadline;
+      tcp.wire.getEnvironment().getSelectorManager().getTimer().schedule(deadline, handshakeTimeoutMillis);
+    }
+  }
+
+  private void handshakeExpired(int handshakeTimeoutMillis) {
+    synchronized (this) {
+      if (!isInHandshake) return;
+    }
+    logger.info("Closing {}: its handshake did not finish within {} ms", this, handshakeTimeoutMillis);
+    close();
+    tcp.wire.getErrorHandler().receivedException(addr,
+        new StalledSocketException(addr, "Handshake did not finish within " + handshakeTimeoutMillis + " ms."));
+  }
+
+  @Override
+  public void handshakeCompleted() {
+    leaveHandshake();
+  }
+
+  /**
+   * Ends the handshake of this incoming socket: stops its deadline and frees its place in the count of handshaking
+   * sockets from its address. Does nothing on an outgoing socket, or when called again.
+   */
+  private void leaveHandshake() {
+    TimerTask deadline;
+    synchronized (this) {
+      if (!isInHandshake) return;
+      isInHandshake = false;
+      deadline = handshakeDeadline;
+      handshakeDeadline = null;
+    }
+    if (deadline != null) deadline.cancel();
+    tcp.handshakeEnded(addr.getAddress());
   }
 
   /**
@@ -217,6 +272,8 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
       }
       closing.cancel();
       closing.attach(null);
+
+      leaveHandshake(); // a closed socket no longer counts against its address
 
       if (channel != null) {
         channel.close();

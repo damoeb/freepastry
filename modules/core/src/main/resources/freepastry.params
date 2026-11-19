@@ -20,6 +20,14 @@ pastry_routeSetMaintFreq = 900
 # FP 2.1 uses the new transport layer
 transport_wire_datagram_receive_buffer_size = 131072
 transport_wire_datagram_send_buffer_size = 65536
+# an incoming socket must finish its handshake (magic number, source route, identity
+# and priority headers) within this time after accept, or it is closed; 0 = no deadline
+transport_wire_handshake_timeout_millis = 10000
+# incoming sockets one remote IP address may have in the handshake at the same time;
+# further ones are closed at once
+transport_wire_max_handshaking_sockets_per_address = 32
+# datagrams read in one selection before the selector thread turns to other work
+transport_wire_max_datagrams_per_read = 64
 transport_epoch_max_num_addresses = 2
 transport_sr_max_num_hops = 5
 

@@ -174,6 +174,11 @@ public class SocketWrapperSocket<Identifier, SubIdentifier> implements P2PSocket
   }
 
   @Override
+  public void handshakeCompleted() {
+    socket.handshakeCompleted();
+  }
+
+  @Override
   public long write(ByteBuffer srcs) throws IOException {
     long ret = socket.write(srcs);
     logger.trace("{}write():{}", this, ret);

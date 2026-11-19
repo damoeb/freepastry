@@ -186,7 +186,7 @@ Some layers also provide side interfaces: `LivenessProvider` (alive, suspected, 
 
 | # | Layer (factory method) | Class | Identifier | What it adds |
 |---|---|---|---|---|
-| 1 | wire (`buildWireTransportLayer`) | `wire.WireTransportLayer` | `InetSocketAddress` | Binds TCP and UDP. `sendMessage` sends a UDP datagram, `openSocket` opens a TCP connection. |
+| 1 | wire (`buildWireTransportLayer`) | `wire.WireTransportLayer` | `InetSocketAddress` | Binds TCP and UDP. `sendMessage` sends a UDP datagram, `openSocket` opens a TCP connection. Closes an accepted socket that has not finished its handshake (`P2PSocket.handshakeCompleted()`, called by the priority layer, a source-route relay or a rendezvous pilot) within `transport_wire_handshake_timeout_millis`, accepts at most `transport_wire_max_handshaking_sockets_per_address` such sockets per remote IP, and reads at most `transport_wire_max_datagrams_per_read` datagrams per selection. |
 | 2 | magic number (`getMagicNumberTransportLayer`) | `wire.magicnumber.MagicNumberTransportLayer` | same | Prefixes `PASTRY_MAGIC_NUMBER` (`0x27 0x40 0x75 0x3A`) and drops traffic without it (5 s header timeout). |
 | 3 | limit sockets (`getLimitSocketsTransportLayer`) | `limitsockets.LimitSocketsTransportLayer` | same | Closes the least recently used socket beyond `pastry_socket_scm_max_open_sockets`. |
 | 4 | network info (`getIpServiceTransportLayer`) | `networkinfo.NetworkInfoTransportLayer` | same | Answers "what is my external IP?" and "what is your id?" for bootstrapping and NAT probing. |

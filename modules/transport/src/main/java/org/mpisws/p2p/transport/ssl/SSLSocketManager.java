@@ -467,6 +467,11 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   }
 
   @Override
+  public void handshakeCompleted() {
+    socket.handshakeCompleted();
+  }
+
+  @Override
   public Identifier getIdentifier() {
     return socket.getIdentifier();
   }

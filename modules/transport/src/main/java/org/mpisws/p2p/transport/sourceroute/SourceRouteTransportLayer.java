@@ -272,6 +272,8 @@ public class SourceRouteTransportLayer<Identifier>
                         for (SourceRouteTap<Identifier> tap : taps) {
                           tap.socketOpened(sourceRoute, socka, sockb);
                         }
+                        // a relayed socket lives as long as its route: the handshake deadline no longer applies
+                        socka.handshakeCompleted();
                         new Forwarder<Identifier>(sourceRoute, socka, sockb, logger, taps);
                       }
                     }

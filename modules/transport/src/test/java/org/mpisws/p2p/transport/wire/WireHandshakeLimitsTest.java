@@ -1,6 +1,7 @@
 package org.mpisws.p2p.transport.wire;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -104,6 +105,33 @@ class WireHandshakeLimitsTest {
 
     assertEquals(MAX_HANDSHAKING_SOCKETS, delivered.get(), "sockets the node accepted into the handshake");
     assertEquals(HALF_OPEN_SOCKETS - MAX_HANDSHAKING_SOCKETS, closedByNode, "sockets the node closed at once");
+  }
+
+  @Test
+  @DisplayName("a socket whose handshake completed outlives the deadline and frees its place for the next socket")
+  void completedHandshakeKeepsSocketAndFreesPlace() throws Exception {
+    env.getParameters().setInt("transport_wire_handshake_timeout_millis", SHORT_HANDSHAKE_TIMEOUT_MILLIS);
+    env.getParameters().setInt("transport_wire_max_handshaking_sockets_per_address", 1);
+    InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
+    WireTransportLayer wire = new WireTransportLayer(address, env, null);
+    AtomicInteger delivered = new AtomicInteger();
+    wire.setCallback(new TransportLayerCallback<>() {
+      @Override
+      public void messageReceived(InetSocketAddress i, ByteBuffer m, @Nullable Map<String, Object> options) {
+      }
+
+      @Override
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket) {
+        delivered.incrementAndGet();
+        socket.handshakeCompleted();
+      }
+    });
+
+    Socket first = connect(address);
+    assertFalse(isClosedByNode(first, 3 * SHORT_HANDSHAKE_TIMEOUT_MILLIS), "the node closed a socket past its handshake");
+    Socket second = connect(address);
+    assertFalse(isClosedByNode(second, SHORT_HANDSHAKE_TIMEOUT_MILLIS), "the node refused a socket after the first one finished its handshake");
+    assertEquals(2, delivered.get());
   }
 
   @Test

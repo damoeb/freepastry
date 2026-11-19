@@ -91,17 +91,24 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
     }
   }
 
+  /**
+   * Hands the socket to its owner. A known socket type ends the handshake: from here on the priority layer (or, for a
+   * passthrough socket, the layer above) manages the socket, so the wire layer's handshake deadline stops.
+   */
   private void dispatch(byte val) throws IOException {
     switch(val) {
     case PriorityTransportLayer.PASSTHROUGH_SOCKET_B:
+      s.handshakeCompleted();
       ctx.callback.get().incomingSocket(s);
       break;
     case PriorityTransportLayer.PRIMARY_SOCKET_B:
       ctx.logger.debug("Opened Primary Socket from {}", s.getIdentifier());
+      s.handshakeCompleted();
       ctx.entityManagers.apply(s.getIdentifier()).primarySocketAvailable(s, null);
       break;
     case PriorityTransportLayer.BIG_MSG_SOCKET_B:
       ctx.logger.debug("Opened BIG Message Socket from {}", s.getIdentifier());
+      s.handshakeCompleted();
       ctx.entityManagers.apply(s.getIdentifier()).handleBigMsgSocket(s);
       break;
     default:

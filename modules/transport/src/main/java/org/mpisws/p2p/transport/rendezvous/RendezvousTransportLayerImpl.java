@@ -712,6 +712,9 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
   protected void createForwarder(P2PSocket<Identifier> socket, P2PSocket<Identifier> b, HighIdentifier connector, HighIdentifier acceptor, int uid) {
     logger.atDebug().log(() -> "createForwarder("+socket+","+b+","+connector+","+acceptor+","+uid+")");
+    // a relayed socket lives as long as the connection it carries: the handshake deadline no longer applies
+    socket.handshakeCompleted();
+    b.handshakeCompleted();
     new Forwarder<Identifier>(null,socket,b,logger);
   }
 

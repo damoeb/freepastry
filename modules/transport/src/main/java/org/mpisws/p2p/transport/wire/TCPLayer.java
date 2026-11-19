@@ -37,12 +37,14 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.wire;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -56,6 +58,11 @@ public class TCPLayer extends SelectionKeyHandler {
   // the size of the buffers for the socket
   public final int SOCKET_BUFFER_SIZE;
   private final boolean TCP_NO_DELAY;
+  private final int handshakeTimeoutMillis;
+  private final int maxHandshakingSocketsPerAddress;
+
+  /** How many accepted sockets from each remote IP address are still in the handshake. */
+  private final Map<InetAddress, Integer> handshakingSocketCountByAddress = new HashMap<>();
 
   WireTransportLayer wire;
 
@@ -71,6 +78,8 @@ public class TCPLayer extends SelectionKeyHandler {
     WireConfig config = wire.getConfig();
     SOCKET_BUFFER_SIZE = config.socketBufferSize();
     TCP_NO_DELAY = config.tcpNoDelay();
+    handshakeTimeoutMillis = config.handshakeTimeoutMillis();
+    maxHandshakingSocketsPerAddress = config.maxHandshakingSocketsPerAddress();
     // bind to port
     if (enableServer) {
       final ServerSocketChannel channel = ServerSocketChannel.open();
@@ -174,10 +183,22 @@ public class TCPLayer extends SelectionKeyHandler {
         logger.debug("accept() found no pending connection");
         return;
       }
+      InetAddress remoteAddress = channel.socket().getInetAddress();
+      if (remoteAddress == null) {
+        // the client reset the connection right after it was accepted
+        channel.close();
+        return;
+      }
+      if (!startHandshake(remoteAddress)) {
+        logger.info("Closing a socket from {}: it already has {} sockets in the handshake", remoteAddress, maxHandshakingSocketsPerAddress);
+        channel.close();
+        return;
+      }
       WireSocket wireSocket;
       try {
         wireSocket = new WireSocket(this, channel);
       } catch (IOException e) {
+        handshakeEnded(remoteAddress);
         channel.close();
         throw e;
       }
@@ -189,6 +210,34 @@ public class TCPLayer extends SelectionKeyHandler {
       logger.atWarn().log(() -> "ERROR (accepting connection): " + e);
       wire.getErrorHandler().receivedException(null, e);
     }
+  }
+
+  /**
+   * Counts a new incoming socket from this address into the handshake, unless the address has the most sockets in
+   * the handshake that it may have.
+   *
+   * @return false if the socket must be closed
+   */
+  private synchronized boolean startHandshake(InetAddress remoteAddress) {
+    int handshakingSockets = handshakingSocketCountByAddress.getOrDefault(remoteAddress, 0);
+    if (handshakingSockets >= maxHandshakingSocketsPerAddress) return false;
+    handshakingSocketCountByAddress.put(remoteAddress, handshakingSockets + 1);
+    return true;
+  }
+
+  /** An incoming socket from this address finished its handshake or closed. */
+  synchronized void handshakeEnded(InetAddress remoteAddress) {
+    Integer handshakingSockets = handshakingSocketCountByAddress.get(remoteAddress);
+    if (handshakingSockets == null) return;
+    if (handshakingSockets > 1) {
+      handshakingSocketCountByAddress.put(remoteAddress, handshakingSockets - 1);
+    } else {
+      handshakingSocketCountByAddress.remove(remoteAddress);
+    }
+  }
+
+  int getHandshakeTimeoutMillis() {
+    return handshakeTimeoutMillis;
   }
 
   public boolean isDestroyed() {

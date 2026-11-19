@@ -132,6 +132,7 @@ class IncomingPilot<Identifier, HighIdentifier extends RendezvousContact> extend
         return;
       }
       socketInputBuffer().clear();
+      socket().handshakeCompleted(); // a pilot stays open as long as the node behind the NAT is up
       incomingPilots.put(i,this);
       layer.notifyIncomingPilotAdded(i);
 
