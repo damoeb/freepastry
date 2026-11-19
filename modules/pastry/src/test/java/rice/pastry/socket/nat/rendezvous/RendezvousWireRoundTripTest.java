@@ -35,10 +35,10 @@ import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteSet;
-import rice.pastry.socket.SPNFIdentitySerializer;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketNodeHandleFactory;
-import rice.pastry.socket.nat.probe.ProbeApp;
+import rice.pastry.socket.SocketNodeHandleIdentitySerializer;
+import rice.pastry.socket.nat.probe.ConnectivityProbeApplication;
 import rice.pastry.socket.nat.probe.ProbeRequestMessage;
 import rice.pastry.testing.WireRoundTrip;
 import rice.pastry.transport.TransportLayerDeserializer;
@@ -55,7 +55,7 @@ class RendezvousWireRoundTripTest {
   private static Environment env;
   private static PastryNode node;
   private static TransportLayerDeserializer tl;
-  private static RendezvousApp app;
+  private static RendezvousApplication app;
   private static RendezvousSocketNodeHandle direct;
   private static RendezvousSocketNodeHandle firewalled;
 
@@ -67,7 +67,7 @@ class RendezvousWireRoundTripTest {
       port = probe.getLocalPort();
     }
     TransportLayerDeserializer[] tls = new TransportLayerDeserializer[1];
-    RendezvousApp[] apps = new RendezvousApp[1];
+    RendezvousApplication[] apps = new RendezvousApplication[1];
     node = new RendezvousSocketPastryNodeFactory(() -> Id.build("4000"), LOOPBACK, port, env, false) {
       @Override
       protected TransportLayerDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
@@ -77,7 +77,7 @@ class RendezvousWireRoundTripTest {
 
       @Override
       protected RendezvousStrategy<RendezvousSocketNodeHandle> getRendezvousStrategy(PastryNode pn) {
-        apps[0] = (RendezvousApp) super.getRendezvousStrategy(pn);
+        apps[0] = (RendezvousApplication) super.getRendezvousStrategy(pn);
         return apps[0];
       }
     }.newNode();
@@ -170,38 +170,38 @@ class RendezvousWireRoundTripTest {
 
   @ParameterizedTest
   @ValueSource(ints = {0, 1, 100, 100_000})
-  @DisplayName("ByteBufferMsg carries a datagram of any length, empty to larger than a packet, and is sent on as read")
+  @DisplayName("ByteBufferMessage carries a datagram of any length, empty to larger than a packet, and is sent on as read")
   void byteBufferMsg(int length) throws IOException {
-    ByteBufferMsg msg = new ByteBufferMsg(ByteBuffer.wrap(payload(length)), direct, 3, app.getAddress());
+    ByteBufferMessage msg = new ByteBufferMessage(ByteBuffer.wrap(payload(length)), direct, 3, app.getAddress());
 
-    ByteBufferMsg copy = hop(msg, firewalled);
+    ByteBufferMessage copy = hop(msg, firewalled);
 
     assertEquals(direct, copy.getOriginalSender());
     assertArrayEquals(payload(length), remaining(copy.buffer));
   }
 
   @Test
-  @DisplayName("ByteBufferMsg from a firewalled sender keeps the sender's contact status")
+  @DisplayName("ByteBufferMessage from a firewalled sender keeps the sender's contact status")
   void byteBufferMsgFromFirewalledSender() throws IOException {
-    ByteBufferMsg copy = hop(new ByteBufferMsg(ByteBuffer.wrap(payload(5)), firewalled, 0, app.getAddress()), direct);
+    ByteBufferMessage copy = hop(new ByteBufferMessage(ByteBuffer.wrap(payload(5)), firewalled, 0, app.getAddress()), direct);
 
     RendezvousSocketNodeHandle sender = assertInstanceOf(RendezvousSocketNodeHandle.class, copy.getOriginalSender());
     assertFalse(sender.canContactDirect());
   }
 
   @Test
-  @DisplayName("PilotForwardMsg is read, its datagram is sent on to the target by the pilot, and read there")
+  @DisplayName("PilotForwardMessage is read, its datagram is sent on to the target by the pilot, and read there")
   void pilotForwardMsg() throws IOException {
-    ByteBufferMsg inner = new ByteBufferMsg(ByteBuffer.wrap(payload(40)), firewalled, 2, app.getAddress());
-    PilotForwardMsg msg = new PilotForwardMsg(app.getAddress(), inner, direct);
+    ByteBufferMessage inner = new ByteBufferMessage(ByteBuffer.wrap(payload(40)), firewalled, 2, app.getAddress());
+    PilotForwardMessage msg = new PilotForwardMessage(app.getAddress(), inner, direct);
 
-    PilotForwardMsg copy = hop(msg, direct);
+    PilotForwardMessage copy = hop(msg, direct);
 
     assertEquals(direct, copy.getTarget());
     assertEquals(firewalled, copy.getByteBufferMessage().getOriginalSender());
     assertArrayEquals(payload(40), remaining(copy.getByteBufferMessage().buffer));
     // the pilot sends the datagram it read on to the target, which reads it again
-    ByteBufferMsg atTarget = hop(copy.getByteBufferMessage(), direct);
+    ByteBufferMessage atTarget = hop(copy.getByteBufferMessage(), direct);
     assertEquals(firewalled, atTarget.getOriginalSender());
     assertArrayEquals(payload(40), remaining(atTarget.buffer));
   }
@@ -209,9 +209,9 @@ class RendezvousWireRoundTripTest {
   @ParameterizedTest
   @ValueSource(ints = {0, 1, -1, Integer.MAX_VALUE, Integer.MIN_VALUE})
   void openChannelMsg(int uid) throws IOException {
-    OpenChannelMsg msg = new OpenChannelMsg(app.getAddress(), direct, firewalled, uid);
+    OpenChannelMessage msg = new OpenChannelMessage(app.getAddress(), direct, firewalled, uid);
 
-    OpenChannelMsg copy = hop(msg, direct);
+    OpenChannelMessage copy = hop(msg, direct);
 
     assertEquals(direct, copy.getRendezvous());
     assertEquals(firewalled, copy.getSource());
@@ -222,13 +222,13 @@ class RendezvousWireRoundTripTest {
   @Test
   @DisplayName("A rendezvous message routed inside a route message is read at a hop and sent on")
   void rendezvousMessageInARouteMessage() throws IOException {
-    OpenChannelMsg msg = new OpenChannelMsg(app.getAddress(), direct, firewalled, 7);
+    OpenChannelMessage msg = new OpenChannelMessage(app.getAddress(), direct, firewalled, 7);
     RouteMessage routed = hop(new RouteMessage(Id.build("9000"), msg, (byte) 1), direct);
 
-    OpenChannelMsg unwrapped = assertInstanceOf(OpenChannelMsg.class, routed.unwrap(app.getDeserializer()));
+    OpenChannelMessage unwrapped = assertInstanceOf(OpenChannelMessage.class, routed.unwrap(app.getDeserializer()));
 
     assertArrayEquals(WireRoundTrip.bytes(msg), WireRoundTrip.bytes(unwrapped));
-    assertSame(OpenChannelMsg.class, unwrapped.getClass());
+    assertSame(OpenChannelMessage.class, unwrapped.getClass());
   }
 
   @Test
@@ -279,7 +279,7 @@ class RendezvousWireRoundTripTest {
   @ValueSource(ints = {1, 2, MultiInetSocketAddress.HARD_MAX_NUM_ADDRESSES})
   @DisplayName("ProbeRequestMessage carries the address of the requester, one address to the most a node announces")
   void probeRequestMessage(int addresses) throws IOException {
-    ProbeApp probeApp = new ProbeApp(node, null, null);
+    ConnectivityProbeApplication probeApp = new ConnectivityProbeApplication(node, null, null);
     ProbeRequestMessage msg = new ProbeRequestMessage(multi(addresses), Long.MIN_VALUE, probeApp.getAddress());
 
     ProbeRequestMessage copy = WireRoundTrip.roundTrip(msg, buf -> ProbeRequestMessage.build(buf, probeApp.getAddress()));
@@ -302,8 +302,8 @@ class RendezvousWireRoundTripTest {
   @DisplayName("The rendezvous identity serializer writes the epoch, the id and the contact status, and reads them with the address of the route")
   void rendezvousIdentitySerializer(byte status) throws IOException {
     RendezvousSocketNodeHandle h = handle("3000", status);
-    RendezvousSPNFIdentitySerializer serializer = new RendezvousSPNFIdentitySerializer(node,
-        new RendezvousSNHFactory(node));
+    RendezvousNodeHandleIdentitySerializer serializer = new RendezvousNodeHandleIdentitySerializer(node,
+        new RendezvousSocketNodeHandleFactory(node));
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     serializer.serialize(out, h);
     byte[] first = out.getBytes();
@@ -324,7 +324,7 @@ class RendezvousWireRoundTripTest {
   @DisplayName("The socket identity serializer writes the epoch and the id and reads them with the address of the route")
   void socketIdentitySerializer() throws IOException {
     SocketNodeHandle h = handle("3000", RendezvousSocketNodeHandle.CONTACT_DIRECT);
-    SPNFIdentitySerializer serializer = new SPNFIdentitySerializer(node, new SocketNodeHandleFactory(node));
+    SocketNodeHandleIdentitySerializer serializer = new SocketNodeHandleIdentitySerializer(node, new SocketNodeHandleFactory(node));
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     serializer.serialize(out, h);
     SimpleInputBuffer in = new SimpleInputBuffer(out.getBytes());

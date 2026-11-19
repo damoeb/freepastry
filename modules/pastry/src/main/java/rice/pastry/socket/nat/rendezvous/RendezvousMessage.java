@@ -38,8 +38,8 @@ advised of the possibility of such damage.
 package rice.pastry.socket.nat.rendezvous;
 
 /**
- * The messages of {@link RendezvousApp}. The family is closed, so the app switches over it without
+ * The messages of {@link RendezvousApplication}. The family is closed, so the app switches over it without
  * a default.
  */
-public sealed interface RendezvousMessage permits ByteBufferMsg, PilotForwardMsg, OpenChannelMsg {
+public sealed interface RendezvousMessage permits ByteBufferMessage, PilotForwardMessage, OpenChannelMessage {
 }

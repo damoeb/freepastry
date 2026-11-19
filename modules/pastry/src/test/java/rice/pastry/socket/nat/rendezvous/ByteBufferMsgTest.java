@@ -13,7 +13,7 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
- * ByteBufferMsg.serialize() used to read the backing array from the buffer's position without its array offset, so a
+ * ByteBufferMessage.serialize() used to read the backing array from the buffer's position without its array offset, so a
  * slice of a larger array wrote the wrong bytes.
  */
 class ByteBufferMsgTest {
@@ -37,7 +37,7 @@ class ByteBufferMsgTest {
   }
 
   private static byte[] serialize(ByteBuffer buffer) throws IOException {
-    ByteBufferMsg msg = new ByteBufferMsg(buffer, new EmptyNodeHandle(), PRIORITY, ADDRESS);
+    ByteBufferMessage msg = new ByteBufferMessage(buffer, new EmptyNodeHandle(), PRIORITY, ADDRESS);
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     msg.serialize(out);
     return Arrays.copyOf(out.getBytes(), out.getWritten());

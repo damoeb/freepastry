@@ -41,14 +41,14 @@ import rice.p2p.commonapi.rawserialization.MessageTypeId;
 import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 
 /**
- * The type ids of the messages of {@link RendezvousApp}, which reads them. RendezvousJoinRequest belongs to the join protocols, see rice.pastry.join.JoinMessageType.
+ * The type ids of the messages of {@link RendezvousApplication}, which reads them. RendezvousJoinRequest belongs to the join protocols, see rice.pastry.join.JoinMessageType.
  */
 public enum RendezvousMessageType implements MessageTypeId {
-  /** {@link ByteBufferMsg} */
+  /** {@link ByteBufferMessage} */
   BYTE_BUFFER(1),
-  /** {@link PilotForwardMsg} */
+  /** {@link PilotForwardMessage} */
   PILOT_FORWARD(2),
-  /** {@link OpenChannelMsg} */
+  /** {@link OpenChannelMessage} */
   OPEN_CHANNEL(3);
 
   private static final MessageTypeIndex<RendezvousMessageType> INDEX = MessageTypeIndex.of(values());

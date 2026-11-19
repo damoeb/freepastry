@@ -45,8 +45,8 @@ import rice.environment.params.Parameters;
  * The NAT and firewall policies of an {@link InternetPastryNodeFactory}. The policies are the raw
  * parameter values; {@link InternetPastryNodeFactory#getFireWallPolicyVariable(String)} maps them.
  *
- * @param natHandlerClass {@code nat_handler_class}, optional: the {@link rice.pastry.socket.nat.NATHandler} implementation to
- *        load; null for a {@link rice.pastry.socket.nat.StubNATHandler}
+ * @param natHandlerClass {@code nat_handler_class}, optional: the {@link rice.pastry.socket.nat.FirewallPortOpener} implementation to
+ *        load; null for a {@link rice.pastry.socket.nat.NoOpFirewallPortOpener}
  * @param natSearchPolicy {@code nat_search_policy}: when to look for a NAT ({@code never},
  *        {@code prefix} or {@code always})
  * @param natStatePolicy {@code nat_state_policy}: what to do when the requested firewall port is taken

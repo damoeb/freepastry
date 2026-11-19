@@ -137,7 +137,7 @@ nat_state_policy = change
 nat_app_name = freepastry
 # how many searches to try to find a free firewall port
 nat_find_port_max_tries = 10
-# set this to a rice.pastry.socket.nat.NATHandler implementation (constructor: Environment, InetAddress)
+# set this to a rice.pastry.socket.nat.FirewallPortOpener implementation (constructor: Environment, InetAddress)
 # to enable NAT port forwarding; the former SBBI UPnP handler was removed (its library is unmaintained)
 #nat_handler_class = 
 

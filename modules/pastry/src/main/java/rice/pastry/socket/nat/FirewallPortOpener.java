@@ -34,36 +34,40 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.socket.nat.rendezvous;
+/*
+ * Created on Jun 8, 2006
+ */
+package rice.pastry.socket.nat;
 
 import java.io.IOException;
+import java.net.InetAddress;
 
-import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.pastry.Id;
-import rice.pastry.PastryNode;
-import rice.pastry.socket.SocketNodeHandle;
-import rice.pastry.socket.SocketNodeHandleFactory;
+/**
+ * This is supposed to open a hole in the Firewall, usually using UPnP.
+ *
+ * @author Jeff Hoye
+ */
+public interface FirewallPortOpener {
 
-public class RendezvousSNHFactory extends SocketNodeHandleFactory {
+  /**
+   * Search for the firewall on the NIC specified by the bindAddress
+   *
+   * @param bindAddress the network to find the firewall on
+   */
+  public InetAddress findFirewallAddress(InetAddress bindAddress) throws IOException;
 
-  public RendezvousSNHFactory(PastryNode pn) {
-    super(pn);
-  }
+  /**
+   * The name of the firewall's external address.  null if there is no firewall.
+   *
+   */
+  InetAddress getFireWallExternalAddress();
 
-  @Override
-  public SocketNodeHandle getNodeHandle(MultiInetSocketAddress i, long epoch, Id id) {
-    return getNodeHandle(i,epoch, id, (byte)0);
-  }
+  /**
+   * Search for an available port forwarding, starting with the external address specified.  The internal
+   * one is given so you can detect that the rule was already in place.
+   *
+   */
+  public int findAvailableFireWallPort(int internal, int external, int tries, String appName) throws IOException;
+  public void openFirewallPort(int local, int external, String appName) throws IOException;
 
-  public SocketNodeHandle getNodeHandle(MultiInetSocketAddress i, long epoch, Id id, byte contactState) {
-    SocketNodeHandle handle = new RendezvousSocketNodeHandle(i, epoch, id, pn, contactState);
-
-    return (SocketNodeHandle)coalesce(handle);
-  }
-
-  @Override
-  public SocketNodeHandle readNodeHandle(InputBuffer buf) throws IOException {
-    return coalesce(RendezvousSocketNodeHandle.build(buf, pn));
-  }
 }

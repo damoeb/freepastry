@@ -86,10 +86,10 @@ import rice.pastry.boot.Bootstrapper;
 import rice.pastry.join.JoinProtocol;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.routing.RoutingTable;
+import rice.pastry.socket.SocketNodeBootstrapper;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketNodeHandleFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.socket.TLBootstrapper;
 import rice.pastry.socket.TransportLayerNodeHandle;
 import rice.pastry.standard.ProximityNeighborSelector;
 import rice.pastry.standard.StandardRouter;
@@ -220,7 +220,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
   @Override
   protected IdentitySerializer<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress, SourceRoute<MultiInetSocketAddress>> getIdentitySerializer(PastryNode pn, SocketNodeHandleFactory handleFactory) {
-    return new RendezvousSPNFIdentitySerializer(pn, handleFactory);
+    return new RendezvousNodeHandleIdentitySerializer(pn, handleFactory);
   }
 
   protected TransportLayer<InetSocketAddress, ByteBuffer> getRendezvousTransportLayer(
@@ -256,7 +256,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
       MultiInetSocketAddress proxyAddress,
       MultiAddressSourceRouteFactory esrFactory) throws IOException {
 
-    return new RendezvousLeafSetNHStrategy(pn.getLeafSet());
+    return new RendezvousLeafSetNodeHandleStrategy(pn.getLeafSet());
   }
 
   protected ResponseStrategy<InetSocketAddress> getResponseStrategy(PastryNode pn) {
@@ -342,7 +342,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
 
   /**
-   * This is an annoying hack.  We can't register the RendezvousApp until registerApps(), but we need it here.
+   * This is an annoying hack.  We can't register the RendezvousApplication until registerApps(), but we need it here.
    *
    * This table temporarily holds the rendezvousApps until they are needed, then it is deleted.
    */
@@ -353,7 +353,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
 
   protected RendezvousStrategy<RendezvousSocketNodeHandle> getRendezvousStrategy(PastryNode pn) {
-    RendezvousApp app = new RendezvousApp(pn);
+    RendezvousApplication app = new RendezvousApplication(pn);
     return app;
   }
 
@@ -361,14 +361,14 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
     super.registerApps(pn, leafSet, routeTable, nha, handleFactory);
     RendezvousStrategy<RendezvousSocketNodeHandle> app = (RendezvousStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_STRATEGY);
-    if (app instanceof RendezvousApp rendezvousApp) {
+    if (app instanceof RendezvousApplication rendezvousApp) {
       rendezvousApp.register();
     }
   }
 
   @Override
   public NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) {
-    return new RendezvousSNHFactory(pn);
+    return new RendezvousSocketNodeHandleFactory(pn);
   }
 
   /**
@@ -395,7 +395,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
       }
     }
 
-    RendezvousSNHFactory pnhf = (RendezvousSNHFactory)nhf;
+    RendezvousSocketNodeHandleFactory pnhf = (RendezvousSocketNodeHandleFactory)nhf;
     MultiInetSocketAddress proxyAddress = (MultiInetSocketAddress)pn.getAttributes().get(PROXY_ADDRESS);
     SocketNodeHandle ret = pnhf.getNodeHandle(proxyAddress, pn.getEnvironment().getTimeSource().currentTimeMillis(), pn.getNodeId(), contactState);
 
@@ -479,7 +479,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     };
     pn.addPastryNodeListener(obs);
 
-    TLBootstrapper bootstrapper = new TLBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTransportLayer(), (SocketNodeHandleFactory)handleFactory, pns,
+    SocketNodeBootstrapper bootstrapper = new SocketNodeBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTransportLayer(), (SocketNodeHandleFactory)handleFactory, pns,
         socketConfig.seed(), environment.getSelectorManager()) {
 
       @Override

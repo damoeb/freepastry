@@ -99,7 +99,7 @@ An exception thrown by a task or invocation goes to `environment.getExceptionStr
 **Unclear:**
 
 - There is no general guarantee that the rest of the API is thread-safe. Most getters (`getLeafSet()`, `getRoutingTable()`, `Endpoint.replicaSet()`, `localLookup()`) read selector-owned state without locking.
-- `TLBootstrapper.boot()` is commonly called from `main` (as in `rice.tutorial.lesson3.DistTutorial`), and its code comment says it "can be called on any thread". It does not move itself onto the selector thread, though: it relies on the layers it calls (`checkLiveness`, `schedule`, `invoke`).
+- `SocketNodeBootstrapper.boot()` is commonly called from `main` (as in `rice.tutorial.lesson3.DistTutorial`), and its code comment says it "can be called on any thread". It does not move itself onto the selector thread, though: it relies on the layers it calls (`checkLiveness`, `schedule`, `invoke`).
 - If you need a consistent view of node state from another thread, run the code on the selector with `SelectorLoop.invoke()`, and use a `FutureContinuation` to wait for an asynchronous result.
 
 One more caveat: `PastryNode.send()` to the **local** handle calls `receiveMessage()` synchronously on the caller's thread. Only sends to remote nodes are moved onto the selector thread. `receiveMessage()` is `synchronized` on the node.
@@ -211,7 +211,7 @@ The priority layer (`PriorityTransportLayer`) works like this:
 Subclasses swap or insert layers by overriding these protected factory methods:
 
 - `rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory` adds `org.mpisws.p2p.transport.rendezvous` for nodes behind NATs that cannot accept connections.
-- `rice.pastry.socket.internet.InternetPastryNodeFactory` adds NAT and firewall detection. UPnP is only available through a `NATHandler` named by the `nat_handler_class` parameter; the SBBI-based handler has been removed.
+- `rice.pastry.socket.internet.InternetPastryNodeFactory` adds NAT and firewall detection. UPnP is only available through a `FirewallPortOpener` named by the `nat_handler_class` parameter; the SBBI-based handler has been removed.
 - `rice.pastry.socket.appsocket.AppSocketPastryNodeFactory` adds application sockets.
 
 `org.mpisws.p2p.transport.ssl.SSLTransportLayer` (TLS for sockets, not for UDP) is not part of the default stack. The `rice.tutorial.ssl` tutorial shows how to insert it.
@@ -232,11 +232,11 @@ The class hierarchy is `rice.pastry.PastryNodeFactory` (reads `pastry_rtMax`, `p
 2. a `TransportLayerDeserializer` and a `MessageDispatch`;
 3. `new RoutingTable(...)`, `new LeafSet(...)` and `new RapidRerouter(...)` (the router), followed by `pn.setElements(...)`;
 4. `getNodeHandleAdapter()` (abstract), which builds the transport stack, followed by `pn.setSocketElements(leafSetMaintFreq, routeSetMaintFreq, nha, nha, nha, handleFactory)`. This installs the node as the stack's callback and as a liveness and proximity listener;
-5. `router.register()`, then `registerApps()`. This creates the proximity neighbor selector (`ProximityNeighborSelectionApplication` if `transport_use_pns`), the bootstrapper (abstract), `StandardRouteSetProtocol`, `PeriodicLeafSetProtocol` and `ConsistentJoinProtocol`. The leaf set protocol doubles as the node's `ReadyStrategy`. `SocketPastryNodeFactory.registerApps()` also registers a `ProbeApp`.
+5. `router.register()`, then `registerApps()`. This creates the proximity neighbor selector (`ProximityNeighborSelectionApplication` if `transport_use_pns`), the bootstrapper (abstract), `StandardRouteSetProtocol`, `PeriodicLeafSetProtocol` and `ConsistentJoinProtocol`. The leaf set protocol doubles as the node's `ReadyStrategy`. `SocketPastryNodeFactory.registerApps()` also registers a `ConnectivityProbeApplication`.
 
 The two concrete factories differ like this:
 
-- **`SocketPastryNodeFactory`** picks the bind address: the constructor argument, else the `socket_bindAddress` parameter, else `InetAddress.getLocalHost()`. If that is a loopback address and `pastry_socket_allow_loopback` is false, it connects to `pastry_socket_known_network_address` to find a real interface. If `pastry_socket_increment_port_after_construction` is set, the port is incremented after each node. `newNode()` builds the node on the selector thread. `boot()` goes through `TLBootstrapper`: it checks the liveness of the boot addresses (waiting up to 20 s), runs PNS on the live ones, then calls `PastryNode.doneNode()`. A boot address that reaches the node itself (same port; loopback, wildcard or a local interface address) makes it start a new ring. Any other loopback boot address is mapped to the node's own bind address with the boot address's port when the node is bound to a non-loopback address, so `127.0.0.1:9171` works as a boot address for a node listening on the LAN address.
+- **`SocketPastryNodeFactory`** picks the bind address: the constructor argument, else the `socket_bindAddress` parameter, else `InetAddress.getLocalHost()`. If that is a loopback address and `pastry_socket_allow_loopback` is false, it connects to `pastry_socket_known_network_address` to find a real interface. If `pastry_socket_increment_port_after_construction` is set, the port is incremented after each node. `newNode()` builds the node on the selector thread. `boot()` goes through `SocketNodeBootstrapper`: it checks the liveness of the boot addresses (waiting up to 20 s), runs PNS on the live ones, then calls `PastryNode.doneNode()`. A boot address that reaches the node itself (same port; loopback, wildcard or a local interface address) makes it start a new ring. Any other loopback boot address is mapped to the node's own bind address with the boot address's port when the node is bound to a non-loopback address, so `127.0.0.1:9171` works as a boot address for a node listening on the LAN address.
 - **`DirectPastryNodeFactory`** builds a `DirectTransportLayer` per node and registers it with the `NetworkSimulator`, which delivers its messages. Liveness and proximity come from the simulator; topologies include `EuclideanNetwork`, `SphereNetwork` and `GenericNetwork`. If `pastry_direct_guarantee_consistency` is false, it uses `StandardLeafSetProtocol` instead of the periodic one.
 
 ## The Pastry node

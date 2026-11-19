@@ -41,12 +41,12 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.messaging.PastryRawMessage;
 
-public final class PilotForwardMsg extends PastryRawMessage implements RendezvousMessage {
+public final class PilotForwardMessage extends PastryRawMessage implements RendezvousMessage {
 
-  private final ByteBufferMsg msg;
+  private final ByteBufferMessage msg;
   private final RendezvousSocketNodeHandle target;
 
-  public PilotForwardMsg(int address, ByteBufferMsg msg, RendezvousSocketNodeHandle target) {
+  public PilotForwardMessage(int address, ByteBufferMessage msg, RendezvousSocketNodeHandle target) {
     super(address);
     this.msg = msg;
     this.target = target;
@@ -64,7 +64,7 @@ public final class PilotForwardMsg extends PastryRawMessage implements Rendezvou
     msg.serialize(buf);
   }
 
-  public ByteBufferMsg getByteBufferMessage() {
+  public ByteBufferMessage getByteBufferMessage() {
     return msg;
   }
 

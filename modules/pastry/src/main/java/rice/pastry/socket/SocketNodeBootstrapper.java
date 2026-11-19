@@ -68,7 +68,7 @@ import rice.selector.TimerTask;
  * Boots a node of a {@link SocketPastryNodeFactory}: finds the nodes at the boot addresses, runs proximity neighbor
  * selection on them, then hands the result to {@link PastryNode#doneNode}.
  */
-public class TLBootstrapper implements Bootstrapper<InetSocketAddress> {
+public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
   /** How long boot() waits for the remaining bootstrap handles before starting PNS. */
   private static final int BOOT_HANDLE_WAIT_MILLIS = 20000;
 
@@ -89,11 +89,11 @@ public class TLBootstrapper implements Bootstrapper<InetSocketAddress> {
    * @param seed {@code socket_seed}: the node may start a new ring even when it was given boot addresses
    * @param factorySelector the selector of the factory's environment, which runs the boot timeout
    */
-  public TLBootstrapper(PastryNode pn,
+  public SocketNodeBootstrapper(PastryNode pn,
       TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> tl,
       SocketNodeHandleFactory handleFactory,
       ProximityNeighborSelector pns, boolean seed, SelectorLoop factorySelector) {
-    this.logger = pn.getEnvironment().getLogManager().getLogger(TLBootstrapper.class, null);
+    this.logger = pn.getEnvironment().getLogManager().getLogger(SocketNodeBootstrapper.class, null);
     this.pn = pn;
     this.tl = tl;
     this.handleFactory = handleFactory;
@@ -316,7 +316,7 @@ public class TLBootstrapper implements Bootstrapper<InetSocketAddress> {
 
   }
   /**
-   * Used as a helper to TLBootstrapper.boot() to generate a temporary node handle
+   * Used as a helper to SocketNodeBootstrapper.boot() to generate a temporary node handle
    *
    */
   protected SocketNodeHandle getTempNodeHandle(InetSocketAddress addr) {

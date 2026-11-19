@@ -34,46 +34,40 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.socket.nat.rendezvous;
+/*
+ * Created on Jun 8, 2006
+ */
+package rice.pastry.socket.nat;
 
-import java.util.Collection;
-import java.util.HashSet;
+import java.io.IOException;
+import java.net.InetAddress;
 
-import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
-import rice.pastry.leafset.LeafSet;
+import rice.environment.Environment;
 
-public class RendezvousLeafSetNHStrategy implements NextHopStrategy<MultiInetSocketAddress>{
-  LeafSet ls;
+public class NoOpFirewallPortOpener implements FirewallPortOpener {
 
-  public RendezvousLeafSetNHStrategy(LeafSet leafSet) {
-    this.ls = leafSet;
+  String errorString = "Stub FirewallPortOpener implementation.  Plese refer to http://freepastry.org/FreePastry/nat.html to better configure FreePastry for your environment.";
+
+  public NoOpFirewallPortOpener(Environment environment, InetAddress address) {
   }
 
   @Override
-  public Collection<MultiInetSocketAddress> getNextHops(MultiInetSocketAddress destination) {
-    if (ls == null) return null;
-
-    Collection<MultiInetSocketAddress> ret = walkLeafSet(destination, 8);
-
-    return ret;
+  public InetAddress getFireWallExternalAddress() {
+    return null;
   }
 
-  private Collection<MultiInetSocketAddress> walkLeafSet(MultiInetSocketAddress destination, int numRequested) {
-    Collection<MultiInetSocketAddress> result = new HashSet<MultiInetSocketAddress>();
-    LeafSet leafset = ls;
-    for (int i = 1; i < leafset.maxSize()/2; i++) {
-      RendezvousSocketNodeHandle snh = (RendezvousSocketNodeHandle)leafset.get(-i);
-      if (snh != null && !snh.getAddress().equals(destination) && snh.canContactDirect()) {
-        result.add(snh.getAddress());
-        if (result.size() >= numRequested) return result;
-      }
-      snh = (RendezvousSocketNodeHandle)leafset.get(i);
-      if (snh != null && !snh.getAddress().equals(destination) && snh.canContactDirect()) {
-        result.add(snh.getAddress());
-        if (result.size() >= numRequested) return result;
-      }
-    }
-    return result;
+  @Override
+  public InetAddress findFirewallAddress(InetAddress bindAddress) throws IOException {
+    throw new IOException(errorString);
+  }
+
+  @Override
+  public int findAvailableFireWallPort(int internal, int external, int tries, String appName) throws IOException {
+    throw new IOException(errorString);
+  }
+
+  @Override
+  public void openFirewallPort(int local, int external, String appName) throws IOException {
+    throw new IOException(errorString);
   }
 }

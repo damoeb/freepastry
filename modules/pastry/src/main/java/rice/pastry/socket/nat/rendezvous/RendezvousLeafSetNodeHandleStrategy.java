@@ -36,36 +36,44 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.socket.nat.rendezvous;
 
-import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.Id;
-import rice.pastry.PastryNode;
-import rice.pastry.socket.SPNFIdentitySerializer;
-import rice.pastry.socket.SocketNodeHandle;
-import rice.pastry.socket.SocketNodeHandleFactory;
-import rice.pastry.socket.TransportLayerNodeHandle;
+import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
+import rice.pastry.leafset.LeafSet;
 
-public class RendezvousSPNFIdentitySerializer extends SPNFIdentitySerializer {
+public class RendezvousLeafSetNodeHandleStrategy implements NextHopStrategy<MultiInetSocketAddress>{
+  LeafSet ls;
 
-  protected RendezvousSPNFIdentitySerializer(PastryNode pn, SocketNodeHandleFactory factory) {
-    super(pn, factory);
+  public RendezvousLeafSetNodeHandleStrategy(LeafSet leafSet) {
+    this.ls = leafSet;
   }
 
   @Override
-  public void serialize(OutputBuffer buf,
-      TransportLayerNodeHandle<MultiInetSocketAddress> i)
-      throws IOException {
-    super.serialize(buf, i);
-    buf.writeByte(((RendezvousSocketNodeHandle)i).getContactStatus());
+  public Collection<MultiInetSocketAddress> getNextHops(MultiInetSocketAddress destination) {
+    if (ls == null) return null;
+
+    Collection<MultiInetSocketAddress> ret = walkLeafSet(destination, 8);
+
+    return ret;
   }
 
-  @Override
-  protected SocketNodeHandle buildSocketNodeHandle(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nid) throws IOException {
-    return new RendezvousSocketNodeHandle(i, epoch, nid, pn, buf.readByte());
+  private Collection<MultiInetSocketAddress> walkLeafSet(MultiInetSocketAddress destination, int numRequested) {
+    Collection<MultiInetSocketAddress> result = new HashSet<MultiInetSocketAddress>();
+    LeafSet leafset = ls;
+    for (int i = 1; i < leafset.maxSize()/2; i++) {
+      RendezvousSocketNodeHandle snh = (RendezvousSocketNodeHandle)leafset.get(-i);
+      if (snh != null && !snh.getAddress().equals(destination) && snh.canContactDirect()) {
+        result.add(snh.getAddress());
+        if (result.size() >= numRequested) return result;
+      }
+      snh = (RendezvousSocketNodeHandle)leafset.get(i);
+      if (snh != null && !snh.getAddress().equals(destination) && snh.canContactDirect()) {
+        result.add(snh.getAddress());
+        if (result.size() >= numRequested) return result;
+      }
+    }
+    return result;
   }
-
-
 }

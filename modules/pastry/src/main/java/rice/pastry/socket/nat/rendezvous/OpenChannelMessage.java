@@ -34,48 +34,56 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.socket;
+package rice.pastry.socket.nat.rendezvous;
 
-import java.util.Map;
+import java.io.IOException;
 
-import org.mpisws.p2p.transport.liveness.LivenessProvider;
-import org.mpisws.p2p.transport.liveness.LivenessTypes;
-import org.mpisws.p2p.transport.sourceroute.SourceRoute;
-import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
-import org.mpisws.p2p.transport.sourceroute.SourceRouteForwardStrategy;
-import org.slf4j.Logger;
-import rice.environment.Environment;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.messaging.PastryRawMessage;
 
+public final class OpenChannelMessage extends PastryRawMessage implements RendezvousMessage {
 
-public class LivenesSourceRouteForwardStrategy<Identifier> implements
-    SourceRouteForwardStrategy<Identifier> {
+  RendezvousSocketNodeHandle rendezvous;
+  RendezvousSocketNodeHandle source;
+  int uid;
 
-  Logger logger;
-  LivenessProvider<SourceRoute<Identifier>> liveness;
-  private SourceRouteFactory<Identifier> factory;
-
-  public LivenesSourceRouteForwardStrategy(
-      SourceRouteFactory<Identifier> factory, Environment env) {
-    this.factory = factory;
-    this.logger = env.getLogManager().getLogger(
-        LivenesSourceRouteForwardStrategy.class, null);
+  public OpenChannelMessage(int address, RendezvousSocketNodeHandle rendezvous, RendezvousSocketNodeHandle source, int uid) {
+    super(address);
+    this.rendezvous = rendezvous;
+    this.source = source;
+    this.uid = uid;
   }
 
-  public void setLivenessProvider(
-      LivenessProvider<SourceRoute<Identifier>> liveness) {
-    this.liveness = liveness;
+  public RendezvousSocketNodeHandle getRendezvous() {
+    return rendezvous;
+  }
+
+  public RendezvousSocketNodeHandle getSource() {
+    return source;
+  }
+
+  public int getUid() {
+    return uid;
   }
 
   @Override
-  public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr,
-      boolean socket, Map<String, Object> options) {
-    if (!socket)
-      return true;
-    SourceRoute<Identifier> i = factory.getSourceRoute(nextHop);
-    boolean ret = (liveness.getLiveness(i, options) < LivenessTypes.LIVENESS_DEAD);
-    if (!ret)
-      logger.warn("Not forwarding socket to {} sr:{} because I believe it is dead.", nextHop, sr);
-    return ret;
+  public String toString() {
+    return "OpenChannelMessage<"+uid+"> source:"+source+" rendezvous:"+rendezvous;
+  }
+
+  /************** Serialization **************/
+
+  @Override
+  public short getType() {
+    return RendezvousMessageType.OPEN_CHANNEL.id();
+  }
+
+  @Override
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeByte((byte)0); // version
+    rendezvous.serialize(buf);
+    source.serialize(buf);
+    buf.writeInt(uid);
   }
 
 }

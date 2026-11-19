@@ -34,40 +34,36 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Jun 8, 2006
- */
-package rice.pastry.socket.nat;
+package rice.pastry.socket.nat.rendezvous;
 
 import java.io.IOException;
-import java.net.InetAddress;
 
-import rice.environment.Environment;
+import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.pastry.Id;
+import rice.pastry.PastryNode;
+import rice.pastry.socket.SocketNodeHandle;
+import rice.pastry.socket.SocketNodeHandleFactory;
 
-public class StubNATHandler implements NATHandler {
+public class RendezvousSocketNodeHandleFactory extends SocketNodeHandleFactory {
 
-  String errorString = "Stub NATHandler implementation.  Plese refer to http://freepastry.org/FreePastry/nat.html to better configure FreePastry for your environment.";
-
-  public StubNATHandler(Environment environment, InetAddress address) {
+  public RendezvousSocketNodeHandleFactory(PastryNode pn) {
+    super(pn);
   }
 
   @Override
-  public InetAddress getFireWallExternalAddress() {
-    return null;
+  public SocketNodeHandle getNodeHandle(MultiInetSocketAddress i, long epoch, Id id) {
+    return getNodeHandle(i,epoch, id, (byte)0);
+  }
+
+  public SocketNodeHandle getNodeHandle(MultiInetSocketAddress i, long epoch, Id id, byte contactState) {
+    SocketNodeHandle handle = new RendezvousSocketNodeHandle(i, epoch, id, pn, contactState);
+
+    return (SocketNodeHandle)coalesce(handle);
   }
 
   @Override
-  public InetAddress findFirewallAddress(InetAddress bindAddress) throws IOException {
-    throw new IOException(errorString);
-  }
-
-  @Override
-  public int findAvailableFireWallPort(int internal, int external, int tries, String appName) throws IOException {
-    throw new IOException(errorString);
-  }
-
-  @Override
-  public void openFirewallPort(int local, int external, String appName) throws IOException {
-    throw new IOException(errorString);
+  public SocketNodeHandle readNodeHandle(InputBuffer buf) throws IOException {
+    return coalesce(RendezvousSocketNodeHandle.build(buf, pn));
   }
 }

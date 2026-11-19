@@ -38,52 +38,34 @@ package rice.pastry.socket.nat.rendezvous;
 
 import java.io.IOException;
 
+import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.messaging.PastryRawMessage;
+import rice.pastry.Id;
+import rice.pastry.PastryNode;
+import rice.pastry.socket.SocketNodeHandle;
+import rice.pastry.socket.SocketNodeHandleFactory;
+import rice.pastry.socket.SocketNodeHandleIdentitySerializer;
+import rice.pastry.socket.TransportLayerNodeHandle;
 
-public final class OpenChannelMsg extends PastryRawMessage implements RendezvousMessage {
+public class RendezvousNodeHandleIdentitySerializer extends SocketNodeHandleIdentitySerializer {
 
-  RendezvousSocketNodeHandle rendezvous;
-  RendezvousSocketNodeHandle source;
-  int uid;
-
-  public OpenChannelMsg(int address, RendezvousSocketNodeHandle rendezvous, RendezvousSocketNodeHandle source, int uid) {
-    super(address);
-    this.rendezvous = rendezvous;
-    this.source = source;
-    this.uid = uid;
-  }
-
-  public RendezvousSocketNodeHandle getRendezvous() {
-    return rendezvous;
-  }
-
-  public RendezvousSocketNodeHandle getSource() {
-    return source;
-  }
-
-  public int getUid() {
-    return uid;
+  protected RendezvousNodeHandleIdentitySerializer(PastryNode pn, SocketNodeHandleFactory factory) {
+    super(pn, factory);
   }
 
   @Override
-  public String toString() {
-    return "OpenChannelMsg<"+uid+"> source:"+source+" rendezvous:"+rendezvous;
-  }
-
-  /************** Serialization **************/
-
-  @Override
-  public short getType() {
-    return RendezvousMessageType.OPEN_CHANNEL.id();
+  public void serialize(OutputBuffer buf,
+      TransportLayerNodeHandle<MultiInetSocketAddress> i)
+      throws IOException {
+    super.serialize(buf, i);
+    buf.writeByte(((RendezvousSocketNodeHandle)i).getContactStatus());
   }
 
   @Override
-  public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
-    rendezvous.serialize(buf);
-    source.serialize(buf);
-    buf.writeInt(uid);
+  protected SocketNodeHandle buildSocketNodeHandle(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nid) throws IOException {
+    return new RendezvousSocketNodeHandle(i, epoch, nid, pn, buf.readByte());
   }
+
 
 }

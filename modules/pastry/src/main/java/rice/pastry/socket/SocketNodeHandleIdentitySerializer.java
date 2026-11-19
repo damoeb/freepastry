@@ -50,14 +50,14 @@ import rice.pastry.Id;
 import rice.pastry.NodeHandleFactoryListener;
 import rice.pastry.PastryNode;
 
-public class SPNFIdentitySerializer implements
+public class SocketNodeHandleIdentitySerializer implements
     IdentitySerializer<TransportLayerNodeHandle<MultiInetSocketAddress>,
     MultiInetSocketAddress, SourceRoute<MultiInetSocketAddress>> {
   protected PastryNode pn;
 
   private final SocketNodeHandleFactory factory;
 
-  public SPNFIdentitySerializer(PastryNode pn, SocketNodeHandleFactory factory) {
+  public SocketNodeHandleIdentitySerializer(PastryNode pn, SocketNodeHandleFactory factory) {
     this.pn = pn;
     this.factory = factory;
   }

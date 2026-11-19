@@ -19,7 +19,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.direct.DirectNodeHandle;
 import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
-import rice.pastry.socket.nat.probe.ProbeApp;
+import rice.pastry.socket.nat.probe.ConnectivityProbeApplication;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 class PastryEndpointUnknownTypeTest {
@@ -80,7 +80,7 @@ class PastryEndpointUnknownTypeTest {
 
   @Test
   void probeAppRejectsAnUnknownTypeWithAnIOException() {
-    ProbeApp target = new ProbeApp(node, null, null);
+    ConnectivityProbeApplication target = new ConnectivityProbeApplication(node, null, null);
 
     assertThrows(IOException.class,
         () -> target.getDeserializer().deserialize(new SimpleInputBuffer(new byte[0]), UNKNOWN_TYPE, 0, null));

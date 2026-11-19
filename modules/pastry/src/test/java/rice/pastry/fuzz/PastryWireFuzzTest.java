@@ -19,13 +19,13 @@ import rice.pastry.leafset.LeafSet;
 import java.net.InetSocketAddress;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
-import rice.pastry.socket.SPNFIdentitySerializer;
 import rice.pastry.socket.SocketNodeHandleFactory;
-import rice.pastry.socket.nat.rendezvous.RendezvousSPNFIdentitySerializer;
-import rice.pastry.socket.nat.probe.ProbeApp;
-import rice.pastry.socket.nat.rendezvous.RendezvousApp;
+import rice.pastry.socket.SocketNodeHandleIdentitySerializer;
+import rice.pastry.socket.nat.probe.ConnectivityProbeApplication;
+import rice.pastry.socket.nat.rendezvous.RendezvousApplication;
+import rice.pastry.socket.nat.rendezvous.RendezvousNodeHandleIdentitySerializer;
+import rice.pastry.socket.nat.rendezvous.RendezvousSocketNodeHandleFactory;
 import rice.pastry.socket.nat.rendezvous.RendezvousJoinRequest;
-import rice.pastry.socket.nat.rendezvous.RendezvousSNHFactory;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.NodeHandleFactoryListener;
@@ -65,8 +65,8 @@ class PastryWireFuzzTest {
     env = Environment.directEnvironment(1);
     node = newNode(env);
     pns = new ProximityNeighborSelectionApplication(node).getDeserializer();
-    rendezvous = new RendezvousApp(node).getDeserializer();
-    probe = new ProbeApp(node, null, null).getDeserializer();
+    rendezvous = new RendezvousApplication(node).getDeserializer();
+    probe = new ConnectivityProbeApplication(node, null, null).getDeserializer();
   }
 
   @AfterAll
@@ -131,7 +131,7 @@ class PastryWireFuzzTest {
 
   @FuzzTest(maxDuration = "30s")
   void rendezvousNodeHandle(FuzzedDataProvider data) {
-    FuzzSupport.read(data, new RendezvousSNHFactory(node)::readNodeHandle);
+    FuzzSupport.read(data, new RendezvousSocketNodeHandleFactory(node)::readNodeHandle);
   }
 
   @FuzzTest(maxDuration = "30s")
@@ -177,14 +177,14 @@ class PastryWireFuzzTest {
   @FuzzTest(maxDuration = "30s")
   void identitySerializer(FuzzedDataProvider data) {
     var route = new MultiAddressSourceRouteFactory().getSourceRoute(PEER);
-    var serializer = new SPNFIdentitySerializer(node, new SocketNodeHandleFactory(node));
+    var serializer = new SocketNodeHandleIdentitySerializer(node, new SocketNodeHandleFactory(node));
     FuzzSupport.read(data, buf -> serializer.deserialize(buf, route));
   }
 
   @FuzzTest(maxDuration = "30s")
   void rendezvousIdentitySerializer(FuzzedDataProvider data) {
     var route = new MultiAddressSourceRouteFactory().getSourceRoute(PEER);
-    var serializer = new RendezvousSPNFIdentitySerializer(node, new RendezvousSNHFactory(node)) {
+    var serializer = new RendezvousNodeHandleIdentitySerializer(node, new RendezvousSocketNodeHandleFactory(node)) {
     };
     FuzzSupport.read(data, buf -> serializer.deserialize(buf, route));
   }

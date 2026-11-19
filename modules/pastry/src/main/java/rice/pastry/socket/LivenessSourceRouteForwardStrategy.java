@@ -34,40 +34,48 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Jun 8, 2006
- */
-package rice.pastry.socket.nat;
+package rice.pastry.socket;
 
-import java.io.IOException;
-import java.net.InetAddress;
+import java.util.Map;
 
-/**
- * This is supposed to open a hole in the Firewall, usually using UPnP.
- *
- * @author Jeff Hoye
- */
-public interface NATHandler {
+import org.mpisws.p2p.transport.liveness.LivenessProvider;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
+import org.mpisws.p2p.transport.sourceroute.SourceRoute;
+import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
+import org.mpisws.p2p.transport.sourceroute.SourceRouteForwardStrategy;
+import org.slf4j.Logger;
+import rice.environment.Environment;
 
-  /**
-   * Search for the firewall on the NIC specified by the bindAddress
-   *
-   * @param bindAddress the network to find the firewall on
-   */
-  public InetAddress findFirewallAddress(InetAddress bindAddress) throws IOException;
 
-  /**
-   * The name of the firewall's external address.  null if there is no firewall.
-   *
-   */
-  InetAddress getFireWallExternalAddress();
+public class LivenessSourceRouteForwardStrategy<Identifier> implements
+    SourceRouteForwardStrategy<Identifier> {
 
-  /**
-   * Search for an available port forwarding, starting with the external address specified.  The internal
-   * one is given so you can detect that the rule was already in place.
-   *
-   */
-  public int findAvailableFireWallPort(int internal, int external, int tries, String appName) throws IOException;
-  public void openFirewallPort(int local, int external, String appName) throws IOException;
+  Logger logger;
+  LivenessProvider<SourceRoute<Identifier>> liveness;
+  private SourceRouteFactory<Identifier> factory;
+
+  public LivenessSourceRouteForwardStrategy(
+      SourceRouteFactory<Identifier> factory, Environment env) {
+    this.factory = factory;
+    this.logger = env.getLogManager().getLogger(
+        LivenessSourceRouteForwardStrategy.class, null);
+  }
+
+  public void setLivenessProvider(
+      LivenessProvider<SourceRoute<Identifier>> liveness) {
+    this.liveness = liveness;
+  }
+
+  @Override
+  public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr,
+      boolean socket, Map<String, Object> options) {
+    if (!socket)
+      return true;
+    SourceRoute<Identifier> i = factory.getSourceRoute(nextHop);
+    boolean ret = (liveness.getLiveness(i, options) < LivenessTypes.LIVENESS_DEAD);
+    if (!ret)
+      logger.warn("Not forwarding socket to {} sr:{} because I believe it is dead.", nextHop, sr);
+    return ret;
+  }
 
 }

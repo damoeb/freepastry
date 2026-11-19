@@ -58,11 +58,11 @@ import rice.pastry.socket.nat.rendezvous.RendezvousSocketNodeHandle;
 import rice.pastry.transport.PastryMessageReceipt;
 import rice.pastry.transport.PastryMessageSendListener;
 
-public class ProbeApp extends PastryAppl implements ProbeStrategy {
+public class ConnectivityProbeApplication extends PastryAppl implements ProbeStrategy {
   Prober prober;
   AddressStrategy addressStrategy;
 
-  public ProbeApp(PastryNode pn, Prober prober, AddressStrategy addressStrategy) {
+  public ConnectivityProbeApplication(PastryNode pn, Prober prober, AddressStrategy addressStrategy) {
     super(pn, null, 0, null);
     this.prober = prober;
     this.addressStrategy = addressStrategy;

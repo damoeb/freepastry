@@ -49,11 +49,11 @@ import rice.pastry.messaging.PastryRawMessage;
  * @author Jeff Hoye
  *
  */
-public final class ByteBufferMsg extends PastryRawMessage implements RendezvousMessage {
+public final class ByteBufferMessage extends PastryRawMessage implements RendezvousMessage {
   NodeHandle originalSender;
   ByteBuffer buffer;
 
-  public ByteBufferMsg(ByteBuffer buf, NodeHandle sender, int priority, int dest) {
+  public ByteBufferMessage(ByteBuffer buf, NodeHandle sender, int priority, int dest) {
     super(dest);
     this.buffer = buf;
     setPriority(priority);

@@ -72,7 +72,7 @@ import rice.selector.SelectorLoop;
  * @author Jeff Hoye
  *
  */
-public class RendezvousApp extends PastryAppl implements RendezvousStrategy<RendezvousSocketNodeHandle> {
+public class RendezvousApplication extends PastryAppl implements RendezvousStrategy<RendezvousSocketNodeHandle> {
   private final SelectorLoop selectorManager;
   private RendezvousTransportLayer<RendezvousSocketNodeHandle> tl;
 
@@ -84,7 +84,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     throw new IOException("Not a rendezvous node handle: " + handle);
   }
 
-  public RendezvousApp(PastryNode pn) {
+  public RendezvousApplication(PastryNode pn) {
     super(pn,null,0,null);
     setDeserializer(new MessageDeserializer() {
 
@@ -100,18 +100,18 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
           if (version == 0) { // version 0
             NodeHandle originalSender = thePastryNode.readNodeHandle(buf);
             byte[] msg = WireLengths.readBytes(buf);
-            return new ByteBufferMsg(ByteBuffer.wrap(msg),originalSender,priority,getAddress());
+            return new ByteBufferMessage(ByteBuffer.wrap(msg),originalSender,priority,getAddress());
           } else {
-            throw new IOException("Unknown version for ByteBufferMsg: "+version);
+            throw new IOException("Unknown version for ByteBufferMessage: "+version);
           }
         case PILOT_FORWARD:
           version = buf.readByte();
           if (version == 0) { // version 0
             RendezvousSocketNodeHandle target = readRendezvousHandle(thePastryNode, buf);
-            ByteBufferMsg subMsg = (ByteBufferMsg)deserialize(buf, RendezvousMessageType.BYTE_BUFFER.id(), priority, sender);
-            return new PilotForwardMsg(getAddress(), subMsg, target);
+            ByteBufferMessage subMsg = (ByteBufferMessage)deserialize(buf, RendezvousMessageType.BYTE_BUFFER.id(), priority, sender);
+            return new PilotForwardMessage(getAddress(), subMsg, target);
           } else {
-            throw new IOException("Unknown version for PilotForwardMsg: "+version);
+            throw new IOException("Unknown version for PilotForwardMessage: "+version);
           }
         case OPEN_CHANNEL:
           version = buf.readByte();
@@ -119,9 +119,9 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
             RendezvousSocketNodeHandle rendezvous = readRendezvousHandle(thePastryNode, buf);
             RendezvousSocketNodeHandle source = readRendezvousHandle(thePastryNode, buf);
             int uid = buf.readInt();
-            return new OpenChannelMsg(getAddress(), rendezvous, source, uid);
+            return new OpenChannelMessage(getAddress(), rendezvous, source, uid);
           } else {
-            throw new IOException("Unknown version for OpenChannelMsg: "+version);
+            throw new IOException("Unknown version for OpenChannelMessage: "+version);
           }
         }
       }
@@ -135,7 +135,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       return;
     }
     switch (rendezvousMessage) {
-      case ByteBufferMsg bbm -> {
+      case ByteBufferMessage bbm -> {
         logger.debug("messageForAppl({})", bbm);
         try {
           tl.messageReceivedFromOverlay((RendezvousSocketNodeHandle)bbm.getOriginalSender(), bbm.buffer, null);
@@ -143,11 +143,11 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
           logger.warn("dropping {}", bbm, ioe);
         }
       }
-      case PilotForwardMsg pfm -> {
+      case PilotForwardMessage pfm -> {
         logger.trace("Forwarding message {}", pfm);
         thePastryNode.send(pfm.getTarget(), pfm.getByteBufferMessage(), null, null);
       }
-      case OpenChannelMsg ocm -> {
+      case OpenChannelMessage ocm -> {
         // we're a NATted node who needs to open a channel
         tl.openChannel(ocm.getSource(),  ocm.getRendezvous(), ocm.getUid());
       }
@@ -188,7 +188,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       return ret;
     }
 
-    OpenChannelMsg msg = new OpenChannelMsg(getAddress(), rendezvous, source, uid);
+    OpenChannelMessage msg = new OpenChannelMessage(getAddress(), rendezvous, source, uid);
     logger.debug("routing {} to {}", msg, target);
     final RouteMessage rm =
       new RouteMessage(
@@ -244,14 +244,14 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
     if (options.containsKey(PriorityTransportLayer.OPTION_PRIORITY)) {
       priority = ((Integer)options.get(PriorityTransportLayer.OPTION_PRIORITY));
     }
-    ByteBufferMsg msg = new ByteBufferMsg(m, thePastryNode.getLocalHandle(), priority, getAddress());
+    ByteBufferMessage msg = new ByteBufferMessage(m, thePastryNode.getLocalHandle(), priority, getAddress());
 
     if (options.containsKey(RendezvousTransportLayerImpl.OPTION_USE_PILOT)) {
       RendezvousSocketNodeHandle pilot = (RendezvousSocketNodeHandle)options.get(RendezvousTransportLayerImpl.OPTION_USE_PILOT);
       logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+pilot);
       final MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer> ret =
         new MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer>(i,m,options);
-      ret.setSubCancellable(thePastryNode.send(pilot, new PilotForwardMsg(getAddress(),msg,i), new PastryMessageSendListener(){
+      ret.setSubCancellable(thePastryNode.send(pilot, new PilotForwardMessage(getAddress(),msg,i), new PastryMessageSendListener(){
         @Override
         public void sent(PastryMessageReceipt msg) {
           if (deliverAckToMe != null) deliverAckToMe.ack(ret);
@@ -326,7 +326,7 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
 
   @Override
   public String toString() {
-    return "RendezvousApp{"+thePastryNode+"}";
+    return "RendezvousApplication{"+thePastryNode+"}";
   }
 
   @Override

@@ -51,7 +51,7 @@ nat_search_policy = never
 Many firewalls can configure port forwarding programatically.  See <a href="http://en.wikipedia.org/wiki/Internet_Gateway_Device">UPnP Internet Gateway Device</a> for more information.
 
 
-<p>FreePastry no longer ships a UPnP implementation: the SBBI UPnPLib-based handler and its jars were removed because the library is unmaintained.  By default, FreePastry uses a stub NAT handler that does not change your router's settings.  To have FreePastry configure port forwarding, write a <code>rice.pastry.socket.nat.NATHandler</code> implementation with a constructor that takes an <code>Environment</code> and an <code>InetAddress</code>, put it on the classpath, and name it in the <code>nat_handler_class</code> parameter:</p>
+<p>FreePastry no longer ships a UPnP implementation: the SBBI UPnPLib-based handler and its jars were removed because the library is unmaintained.  By default, FreePastry uses a stub NAT handler that does not change your router's settings.  To have FreePastry configure port forwarding, write a <code>rice.pastry.socket.nat.FirewallPortOpener</code> implementation with a constructor that takes an <code>Environment</code> and an <code>InetAddress</code>, put it on the classpath, and name it in the <code>nat_handler_class</code> parameter:</p>
 
 <pre>
 nat_handler_class = com.example.MyUpnpNATHandler

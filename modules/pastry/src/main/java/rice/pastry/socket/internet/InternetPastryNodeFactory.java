@@ -57,8 +57,8 @@ import rice.pastry.Id;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.socket.nat.CantFindFirewallException;
-import rice.pastry.socket.nat.NATHandler;
-import rice.pastry.socket.nat.StubNATHandler;
+import rice.pastry.socket.nat.FirewallPortOpener;
+import rice.pastry.socket.nat.NoOpFirewallPortOpener;
 import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifier;
 import rice.pastry.socket.nat.connectivityverifiier.ConnectivityVerifier;
 import rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory;
@@ -71,7 +71,7 @@ import rice.selector.TimerTask;
  * 1) Internet Routable, No firewall
  * 2) Internet Routable, Firewall (not NAT)
  * 3) NAT: User Configured Port Forwarding
- * 4) NAT: UPnP (only with a NATHandler supplied via nat_handler_class; the default is StubNATHandler)
+ * 4) NAT: UPnP (only with a FirewallPortOpener supplied via nat_handler_class; the default is NoOpFirewallPortOpener)
  * 5) NAT: No port forwarding
  *
  * @author Jeff Hoye
@@ -99,7 +99,7 @@ public class InternetPastryNodeFactory extends
   public static final int FAIL = 3;
   public static final int RENDEZVOUS = 4;
 
-  NATHandler natHandler;
+  FirewallPortOpener natHandler;
 
   ConnectivityVerifier connectivityVerifier;
   Collection<InetSocketAddress> probeAddresses;
@@ -126,14 +126,14 @@ public class InternetPastryNodeFactory extends
    *   can be specified on a per-Node basis by calling newNode() with a MultiInetSocketAddress
    * @param env can't be null
    * @param handler if null, uses the class named by the param "nat_handler_class", or a
-   *   StubNATHandler if that param is not set
+   *   NoOpFirewallPortOpener if that param is not set
    * @param probeAddresses a list of bootstrap nodes' Internet routable addresses, used to establish
    *   firewall information
    * @param externalAddresses ordered addresses of the nat propagation from most external to most internal,
    *   null will use natHandler and probeAddresses to determine this
    */
   public InternetPastryNodeFactory(NodeIdFactory nf, InetAddress bindAddress,
-      int startPort, Environment env, NATHandler handler, Collection<InetSocketAddress> probeAddresses, InetAddress[] externalAddresses)
+      int startPort, Environment env, FirewallPortOpener handler, Collection<InetSocketAddress> probeAddresses, InetAddress[] externalAddresses)
       throws IOException {
     super(nf, bindAddress, startPort, env, false);
 
@@ -160,37 +160,37 @@ public class InternetPastryNodeFactory extends
   }
 
   /**
-   * Return a NATHandler
+   * Return a FirewallPortOpener
    *
    * @param localAddress the address of the interface we should search for a NAT on
    */
-  protected NATHandler getDefaultNatHandler(Environment env, InetAddress localAddress) {
+  protected FirewallPortOpener getDefaultNatHandler(Environment env, InetAddress localAddress) {
     if (natConfig.natHandlerClass() != null) {
       String natHandlerClassName = natConfig.natHandlerClass();
       try {
         Class<?> loaded = Class.forName(natHandlerClassName);
-        if (!NATHandler.class.isAssignableFrom(loaded)) {
+        if (!FirewallPortOpener.class.isAssignableFrom(loaded)) {
           throw new IllegalArgumentException("nat_handler_class " + natHandlerClassName + " does not implement "
-              + NATHandler.class.getName());
+              + FirewallPortOpener.class.getName());
         }
-        Class<? extends NATHandler> natHandlerClass = loaded.asSubclass(NATHandler.class);
-        Constructor<? extends NATHandler> constructor = natHandlerClass.getConstructor(Environment.class, InetAddress.class);
+        Class<? extends FirewallPortOpener> natHandlerClass = loaded.asSubclass(FirewallPortOpener.class);
+        Constructor<? extends FirewallPortOpener> constructor = natHandlerClass.getConstructor(Environment.class, InetAddress.class);
         return constructor.newInstance(env, localAddress);
       } catch (ClassNotFoundException e) {
         logger.info("Didn't find UPnP libs, skipping UPnP");
-        return new StubNATHandler(env, localAddress);
+        return new NoOpFirewallPortOpener(env, localAddress);
       } catch (NoClassDefFoundError e) {
         logger.info("Didn't find UPnP libs, skipping UPnP");
-        return new StubNATHandler(env, localAddress);
+        return new NoOpFirewallPortOpener(env, localAddress);
       } catch (InvocationTargetException e) {
         logger.info("Didn't find UPnP libs, skipping UPnP");
-        return new StubNATHandler(env, localAddress);
+        return new NoOpFirewallPortOpener(env, localAddress);
       } catch (ReflectiveOperationException e) {
-        logger.warn("Error constructing NATHandler.", e);
+        logger.warn("Error constructing FirewallPortOpener.", e);
         throw new RuntimeException(e);
       }
     } else {
-      return new StubNATHandler(env, localAddress);
+      return new NoOpFirewallPortOpener(env, localAddress);
     }
   }
 

@@ -41,7 +41,7 @@ import rice.p2p.commonapi.rawserialization.MessageTypeId;
 import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 
 /**
- * The type id of the message of {@link ProbeApp}, which reads it.
+ * The type id of the message of {@link ConnectivityProbeApplication}, which reads it.
  */
 public enum ProbeMessageType implements MessageTypeId {
   /** {@link ProbeRequestMessage} */

@@ -22,7 +22,7 @@ class RendezvousAppDeserializerTest {
   void setUp() throws Exception {
     env = Environment.directEnvironment(1);
     node = StubHandleNodes.newNode(env);
-    target = new RendezvousApp(node).getDeserializer();
+    target = new RendezvousApplication(node).getDeserializer();
   }
 
   @AfterEach
