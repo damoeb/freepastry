@@ -45,20 +45,39 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.util.rawserialization.WireLengths;
 
+/**
+ * Describes one stored object: the hashes of the object and of its fragments, its expiration, and the owner
+ * who signed it. The owner's encoded public key and the object's name (the id the application gave it) let a
+ * verifier recompute the id the object is stored under; see {@link GlacierDefaultPolicy}.
+ */
 public class Manifest {
 
   /** Written in place of the signature length when the manifest is not signed yet. */
   private static final int NO_SIGNATURE = -1;
 
-  private byte[] objectHash;
-  private byte[][] fragmentHash;
+  /** The longest owner key a manifest read from the wire may carry: an encoded RSA key of up to 16384 bits. */
+  static final int MAX_OWNER_KEY_LENGTH = 2100;
+
+  /** The longest name a manifest read from the wire may carry; names are encoded ids, far shorter. */
+  static final int MAX_NAME_LENGTH = 256;
+
+  private final byte[] objectHash;
+  private final byte[][] fragmentHash;
+  private final byte[] ownerKey;
+  private final byte[] name;
   private byte[] signature;
   private long expirationDate;
 
-  public Manifest(byte[] objectHash, byte[][] fragmentHash, long expirationDate) {
+  /**
+   * @param ownerKey the owner's public key, encoded by {@link rice.p2p.util.SecurityUtils#encodePublicKey}
+   * @param name the name the owner gave the object; with the owner key, it determines the object's id
+   */
+  public Manifest(byte[] objectHash, byte[][] fragmentHash, long expirationDate, byte[] ownerKey, byte[] name) {
     this.objectHash = objectHash;
     this.fragmentHash = fragmentHash;
     this.expirationDate = expirationDate;
+    this.ownerKey = ownerKey;
+    this.name = name;
     this.signature = null;
   }
 
@@ -86,9 +105,22 @@ public class Manifest {
     return expirationDate;
   }
 
-  public void update(long newExpirationDate, byte[] newSignature) {
-    expirationDate = newExpirationDate;
-    signature = newSignature;
+  public byte[] getOwnerKey() {
+    return ownerKey;
+  }
+
+  public byte[] getName() {
+    return name;
+  }
+
+  /**
+   * A copy of this manifest with another expiration and signature, as a refresh patch carries them. This
+   * manifest stays unchanged, so a patch that does not verify leaves no trace.
+   */
+  public Manifest withExpiration(long newExpirationDate, byte[] newSignature) {
+    Manifest result = new Manifest(objectHash, fragmentHash, newExpirationDate, ownerKey, name);
+    result.setSignature(newSignature);
+    return result;
   }
 
   public boolean validatesFragment(Fragment fragment, int fragmentID, Logger logger) {
@@ -151,6 +183,8 @@ public class Manifest {
 
     result = result + "Manifest (expires "+expirationDate+")\n";
     result = result + "  - objectHash = ["+dump(objectHash, false)+"]\n";
+    result = result + "  - owner key  = ["+dump(ownerKey, false)+"]\n";
+    result = result + "  - name       = ["+dump(name, false)+"]\n";
     result = result + "  - signature  = ["+dump(signature, false)+"]\n";
     for (int i=0; i<fragmentHash.length; i++)
       result = result + "  - fragmHash"+i+" = ["+dump(fragmentHash[i], false)+"]\n";
@@ -173,6 +207,10 @@ public class Manifest {
         fragmentHashField[i*dim2 + j] = fragmentHash[i][j];
     buf.write(fragmentHashField, 0, fragmentHashField.length);
     if (signature != null) buf.write(signature, 0, signature.length);
+    buf.writeInt(ownerKey.length);
+    buf.write(ownerKey, 0, ownerKey.length);
+    buf.writeInt(name.length);
+    buf.write(name, 0, name.length);
   }
 
   public Manifest(InputBuffer buf) throws IOException {
@@ -201,5 +239,15 @@ public class Manifest {
       for (int j=0; j<fragmentHashSubLength; j++)
         fragmentHash[i][j] = fragmentHashField[i*fragmentHashSubLength + j];
     signature = hasSignature ? WireLengths.readBytes(buf, signatureLength) : null;
+    ownerKey = readBounded(buf, MAX_OWNER_KEY_LENGTH, "owner key");
+    name = readBounded(buf, MAX_NAME_LENGTH, "name");
+  }
+
+  private static byte[] readBounded(InputBuffer buf, int max, String what) throws IOException {
+    int length = buf.readInt();
+    if (length < 0 || length > max) {
+      throw new IOException("A manifest " + what + " of " + length + " bytes, at most " + max + " allowed");
+    }
+    return WireLengths.readBytes(buf, length);
   }
 }

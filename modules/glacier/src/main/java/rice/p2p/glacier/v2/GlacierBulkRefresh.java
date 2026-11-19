@@ -373,9 +373,14 @@ final class GlacierBulkRefresh {
             retriesRemaining = config.bulkRefreshPatchRetries();
 
             logger.debug("AR Patching manifests...");
-            for (int i=0; i<ids.length; i++)
-              if (manifests[i] != null)
+            for (int i=0; i<ids.length; i++) {
+              if (manifests[i] != null) {
+                // only the owner can sign the extension; for other objects nothing is sent and the refresh fails
                 manifests[i] = policy.updateManifest(versionKey[i], manifests[i], expirations[i]);
+                if (manifests[i] == null)
+                  logger.warn("AR Cannot extend {}: this node is not the owner", versionKey[i]);
+              }
+            }
 
             logger.debug("AR Done patching manifests");
 
@@ -528,15 +533,17 @@ final class GlacierBulkRefresh {
           logger.debug("AR Patch: Got FAM for {}", currentKey);
 
           FragmentAndManifest fam = (FragmentAndManifest) o;
+          Manifest patched = null;
           if (fam == null) {
             // the fragment vanished between exists() and getObject(): treat it as missing and go on
             logger.warn("AR Patch: Fragment {} vanished before it could be fetched, skipping", currentKey);
             currentPhase = phaseAdvance;
           } else {
-            fam.getManifest().update(grpm.getLifetime(currentIndex), grpm.getSignature(currentIndex));
+            // a copy: the stored manifest must stay as it is unless the owner signed the new expiration
+            patched = fam.getManifest().withExpiration(grpm.getLifetime(currentIndex), grpm.getSignature(currentIndex));
           }
 
-          if (fam != null && policy.checkSignature(fam.getManifest(), currentKey.versionKey())) {
+          if (patched != null && policy.checkSignature(patched, currentKey.versionKey())) {
             FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(currentKey);
             if (metadata != null) {
               if (metadata.currentExpiration() <= grpm.getLifetime(currentIndex)) {
@@ -546,6 +553,7 @@ final class GlacierBulkRefresh {
                 } else {
                   FragmentMetadata newMetadata = new FragmentMetadata(grpm.getLifetime(currentIndex), metadata.currentExpiration(), metadata.storedSince());
                   logger.debug("AR FAM {} updated ({} -> {}), writing to disk...", currentKey, newMetadata.previousExpiration(), newMetadata.currentExpiration());
+                  fam.replaceManifest(patched);
                   fragmentStorage.store(currentKey, newMetadata, fam, this);
                   return;
                 }

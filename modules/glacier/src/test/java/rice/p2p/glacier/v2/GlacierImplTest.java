@@ -27,6 +27,7 @@ import rice.persistence.StorageManagerImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -43,19 +44,20 @@ class GlacierImplTest {
   private GlacierImpl testObj;
   private StorageManager fragmentStorage;
   private IdFactory ringIdFactory;
+  private MultiringNode node;
 
   @BeforeEach
   void setUp() throws Exception {
     env = Environment.directEnvironment(1);
     NetworkSimulator<DirectNodeHandle, RawMessage> simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
     PastryNode pastryNode = new DirectPastryNodeFactory(new RandomNodeIdFactory(env), simulator, env).newNode();
-    MultiringNode node = new MultiringNode(new PastryIdFactory(env).buildId("ring"), pastryNode);
+    node = new MultiringNode(new PastryIdFactory(env).buildId("ring"), pastryNode);
     MultiringIdFactory ringFactory = (MultiringIdFactory) node.getIdFactory();
     ringIdFactory = ringFactory;
     IdFactory fragmentKeyFactory = new FragmentKeyFactory(ringFactory);
     fragmentStorage = new StorageManagerImpl(fragmentKeyFactory, new MemoryStorage(fragmentKeyFactory), new EmptyCache(fragmentKeyFactory));
     StorageManager neighborStorage = new StorageManagerImpl(ringFactory, new MemoryStorage(ringFactory), new EmptyCache(ringFactory));
-    GlacierPolicy policy = new GlacierDefaultPolicy(new ErasureCodec(NUM_FRAGMENTS, NUM_SURVIVORS, env), INSTANCE, env);
+    GlacierPolicy policy = new InsecureGlacierPolicy(new ErasureCodec(NUM_FRAGMENTS, NUM_SURVIVORS, env));
 
     testObj = new GlacierImpl(node, fragmentStorage, neighborStorage, NUM_FRAGMENTS, NUM_SURVIVORS, ringFactory, INSTANCE, policy);
   }
@@ -63,6 +65,12 @@ class GlacierImplTest {
   @AfterEach
   void tearDown() {
     env.destroy();
+  }
+
+  @Test
+  @DisplayName("Glacier has no default policy: it refuses to start without one")
+  void requiresAPolicy() {
+    assertThrows(NullPointerException.class, () -> new GlacierImpl(node, fragmentStorage, fragmentStorage, NUM_FRAGMENTS, NUM_SURVIVORS, ringIdFactory, "glacier-nopolicy", null));
   }
 
   @Test

@@ -65,7 +65,7 @@ class GlacierRequestHandlerTest {
     testObj = new GlacierRequestHandler(NUM_FRAGMENTS, 2, "test", policy, router, locator, neighborhood, retriever, fragmentStorage, env, LOGGER);
 
     key = new FragmentKey(new VersionKey(factory.buildId("object"), 1), 0);
-    manifest = new Manifest(new byte[0], new byte[NUM_FRAGMENTS][0], env.getTimeSource().currentTimeMillis() + 1000000);
+    manifest = new Manifest(new byte[0], new byte[NUM_FRAGMENTS][0], env.getTimeSource().currentTimeMillis() + 1000000, new byte[0], new byte[0]);
   }
 
   @AfterEach

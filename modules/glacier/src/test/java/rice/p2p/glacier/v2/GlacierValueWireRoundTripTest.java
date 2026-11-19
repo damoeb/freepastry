@@ -77,7 +77,7 @@ class GlacierValueWireRoundTripTest {
     for (int i = 0; i < fragments; i++) {
       hashes[i] = filled(hashLength, i);
     }
-    Manifest m = new Manifest(filled(HASH_LENGTH, 99), hashes, 1_700_000_000_000L);
+    Manifest m = new Manifest(filled(HASH_LENGTH, 99), hashes, 1_700_000_000_000L, filled(300, 5), filled(40, 6));
     m.setSignature(signature);
     return m;
   }
@@ -86,6 +86,8 @@ class GlacierValueWireRoundTripTest {
     assertArrayEquals(expected.getObjectHash(), actual.getObjectHash());
     assertEquals(expected.getExpiration(), actual.getExpiration());
     assertArrayEquals(expected.getSignature(), actual.getSignature());
+    assertArrayEquals(expected.getOwnerKey(), actual.getOwnerKey());
+    assertArrayEquals(expected.getName(), actual.getName());
     assertEquals(expected.getFragmentHashes().length, actual.getFragmentHashes().length);
     for (int i = 0; i < expected.getFragmentHashes().length; i++) {
       assertArrayEquals(expected.getFragmentHash(i), actual.getFragmentHash(i));

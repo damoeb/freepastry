@@ -85,7 +85,7 @@ class GlacierMessageWireRoundTripTest {
     StorageManager fragments = new StorageManagerImpl(factory, new MemoryStorage(factory), new EmptyCache(factory));
     StorageManager neighbors = new StorageManagerImpl(factory, new MemoryStorage(factory), new EmptyCache(factory));
     GlacierImpl glacier = new GlacierImpl(socketNode.node, fragments, neighbors, NUM_FRAGMENTS, NUM_SURVIVORS, factory,
-        INSTANCE, new GlacierDefaultPolicy(new ErasureCodec(NUM_FRAGMENTS, NUM_SURVIVORS, env), INSTANCE, env));
+        INSTANCE, new InsecureGlacierPolicy(new ErasureCodec(NUM_FRAGMENTS, NUM_SURVIVORS, env)));
     Field field = GlacierImpl.class.getDeclaredField("endpoint");
     field.setAccessible(true);
     endpoint = (Endpoint) field.get(glacier);
@@ -137,7 +137,7 @@ class GlacierMessageWireRoundTripTest {
     }
     byte[] objectHash = new byte[20];
     Arrays.fill(objectHash, (byte) 3);
-    Manifest m = new Manifest(objectHash, hashes, 1_700_000_000_000L);
+    Manifest m = new Manifest(objectHash, hashes, 1_700_000_000_000L, new byte[] {5, 5, 5}, new byte[] {6, 6});
     if (signed) {
       m.setSignature(new byte[] {9, 8, 7});
     }
@@ -192,6 +192,8 @@ class GlacierMessageWireRoundTripTest {
       assertArrayEquals(fragments[i].getPayload(), actual.getFragment(i).getPayload());
       assertArrayEquals(manifests[i].getObjectHash(), actual.getManifest(i).getObjectHash());
       assertArrayEquals(manifests[i].getSignature(), actual.getManifest(i).getSignature());
+      assertArrayEquals(manifests[i].getOwnerKey(), actual.getManifest(i).getOwnerKey());
+      assertArrayEquals(manifests[i].getName(), actual.getManifest(i).getName());
       assertEquals(manifests[i].getExpiration(), actual.getManifest(i).getExpiration());
     }
   }

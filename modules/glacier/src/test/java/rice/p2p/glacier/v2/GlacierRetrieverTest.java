@@ -82,7 +82,7 @@ class GlacierRetrieverTest {
     testObj = new GlacierRetriever(config, NUM_FRAGMENTS, 2, "test", null, endpoint, scheduler, router, locator, trafficShaper, new FailingTrash(), env, LOGGER);
 
     key = new FragmentKey(new VersionKey(factory.buildId("object"), 1), 0);
-    manifest = new Manifest(new byte[0], new byte[NUM_FRAGMENTS][0], env.getTimeSource().currentTimeMillis() + 1000000);
+    manifest = new Manifest(new byte[0], new byte[NUM_FRAGMENTS][0], env.getTimeSource().currentTimeMillis() + 1000000, new byte[0], new byte[0]);
   }
 
   @AfterEach

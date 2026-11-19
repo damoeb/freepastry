@@ -19,7 +19,7 @@ class GlacierStorageSerializerTest {
   private final GlacierStorageSerializer testObj = new GlacierStorageSerializer();
 
   private static Manifest manifest(long expiration) {
-    Manifest manifest = new Manifest(new byte[] {1, 2, 3}, new byte[][] {{4, 5}, {6, 7}}, expiration);
+    Manifest manifest = new Manifest(new byte[] {1, 2, 3}, new byte[][] {{4, 5}, {6, 7}}, expiration, new byte[] {8, 9}, new byte[] {10});
     manifest.setSignature(new byte[] {8, 9, 10, 11});
     return manifest;
   }

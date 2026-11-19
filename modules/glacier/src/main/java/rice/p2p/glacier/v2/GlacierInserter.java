@@ -91,7 +91,7 @@ final class GlacierInserter {
 
   void insert(final PastContent obj, final long expiration, final Continuation<? super Boolean[], Exception> command) {
     long theVersion = (obj instanceof GCPastContent gcPastContent) ? gcPastContent.getVersion() : 0;
-    final VersionKey vkey = new VersionKey(obj.getId(), theVersion);
+    final VersionKey vkey = new VersionKey(policy.storageId(obj.getId()), theVersion);
 
     logger.atInfo().log(() -> "insert(" + obj + " (id=" + vkey.toStringFull() + ", mutable=" + obj.isMutable() + ")");
 
@@ -153,6 +153,7 @@ final class GlacierInserter {
     });
   }
 
+  /** Refreshes the objects stored under the given storage ids, which only their owner can. */
   void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
     if (!config.enableBulkRefresh()) {
       /* Ordinary refresh method (safe in 'hostile' environments) */
@@ -203,6 +204,11 @@ final class GlacierInserter {
 
           logger.atDebug().log(() -> "refresh("+thisId.toStringFull()+"v"+thisVersion+"): Got manifest");
           manifest = policy.updateManifest(new VersionKey(thisId, thisVersion), manifest, thisExpiration);
+          if (manifest == null) {
+            logger.warn("refresh({}v{}): Cannot extend the manifest, this node is not the owner", thisId, thisVersion);
+            thisContinuation.receiveResult(new GlacierException("Cannot refresh "+thisId+"v"+thisVersion+": only its owner can extend it"));
+            return;
+          }
           Manifest[] manifests = new Manifest[numFragments];
           for (int i=0; i<numFragments; i++)
             manifests[i] = manifest;

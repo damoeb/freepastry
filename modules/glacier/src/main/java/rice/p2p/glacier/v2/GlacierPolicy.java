@@ -37,19 +37,42 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 
+/**
+ * Encodes objects into fragments, and signs and verifies the manifests that describe them.
+ * {@link GlacierDefaultPolicy} is the policy for real deployments: manifests are signed by the object's owner.
+ */
 public interface GlacierPolicy {
 
+  /**
+   * The id under which this node, as owner, stores the object the application calls {@code applicationId}.
+   * Lookups and refreshes through {@link GlacierImpl} take application ids and map them with this method.
+   */
+  public Id storageId(Id applicationId);
+
+  /**
+   * Whether the manifest may be accepted for the key: it is signed by its owner, and the owner owns the key.
+   * Every node checks this before it stores, replaces, forwards or uses a manifest.
+   */
   public boolean checkSignature(Manifest manifest, VersionKey key);
 
   public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment);
 
+  /**
+   * Creates and signs the manifests of a new object, stored under {@code key}, which must be the
+   * {@link #storageId(Id) storage id} of the object's own id.
+   */
   public Manifest[] createManifests(VersionKey key, PastContent obj, Fragment[] fragments, long expiration);
 
+  /**
+   * Signs a copy of the manifest with a new expiration. Only the owner can: a node that does not hold the
+   * owner's private key gets {@code null}, as does a manifest that does not verify.
+   */
   public Manifest updateManifest(VersionKey key, Manifest manifest, long newExpiration);
 
   public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer pcd);

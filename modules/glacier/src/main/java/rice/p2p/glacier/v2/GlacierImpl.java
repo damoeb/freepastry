@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -64,6 +65,10 @@ import rice.persistence.StorageManager;
 /**
  * The Glacier application: implements the PAST interfaces on top of erasure-coded fragments, and wires
  * together the collaborators that do the work.
+ *
+ * <p>The ids that applications insert, look up and refresh are mapped to storage ids by
+ * {@link GlacierPolicy#storageId(Id)}: under {@link GlacierDefaultPolicy}, each owner has its own namespace,
+ * and a node finds and refreshes only the objects it inserted with the same key pair.
  */
 public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application, DebugCommandHandler {
   private final Environment environment;
@@ -83,11 +88,13 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   private final GlacierMaintenance maintenance;
   private final GlacierMessageDispatcher dispatcher;
   private final GlacierDebugCommands debugCommands;
+  private final GlacierPolicy policy;
 
   public GlacierImpl(Node node, StorageManager fragmentStorage, StorageManager neighborStorage, int numFragments, int numSurvivors, IdFactory factory, String instance, GlacierPolicy policy) {
     this.environment = node.getEnvironment();
     this.logger = environment.getLogManager().getLogger(GlacierImpl.class, instance);
     this.instance = instance;
+    this.policy = Objects.requireNonNull(policy, "Glacier needs a policy; GlacierDefaultPolicy signs manifests");
 
     GlacierConfig config = GlacierConfig.fromParameters(environment.getParameters());
 
@@ -154,7 +161,10 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   @Override
   public void refresh(final Id[] ids, final long[] versions, final long[] expirations, final Continuation<? super Object[], Exception> command) {
-    inserter.refresh(ids, versions, expirations, command);
+    Id[] storageIds = new Id[ids.length];
+    for (int i = 0; i < ids.length; i++)
+      storageIds[i] = policy.storageId(ids[i]);
+    inserter.refresh(storageIds, versions, expirations, command);
   }
 
   @Override
@@ -191,7 +201,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
   public void lookupHandles(final Id id, final long version, int num, final Continuation<? super PastContentHandle[], Exception> command) {
     logger.info("lookupHandles({}v{}, n={})", id, version, num);
 
-    retriever.retrieveManifest(new VersionKey(id, version), GlacierTags.LOOKUP_HANDLES, new Continuation<Object, Exception>() {
+    retriever.retrieveManifest(new VersionKey(policy.storageId(id), version), GlacierTags.LOOKUP_HANDLES, new Continuation<Object, Exception>() {
       boolean haveAnswered = false;
       @Override
       public void receiveResult(Object o) {
@@ -222,7 +232,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   @Override
   public void lookup(Id id, long version, Continuation<? super PastContent, Exception> command) {
-    VersionKey vkey = new VersionKey(id, version);
+    VersionKey vkey = new VersionKey(policy.storageId(id), version);
     logger.info("lookup({}v{})", id, version);
     retriever.retrieveObject(vkey, null, true, GlacierTags.LOOKUP, command);
   }
@@ -248,7 +258,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
     logger.debug("exact: fetch({}v{})", gch.getId(), gch.getVersion());
 
-    retriever.retrieveObject(new VersionKey(gch.getId(), gch.getVersion()), gch.manifest(), true, GlacierTags.FETCH, command);
+    retriever.retrieveObject(new VersionKey(policy.storageId(gch.getId()), gch.getVersion()), gch.manifest(), true, GlacierTags.FETCH, command);
   }
 
   @Override
