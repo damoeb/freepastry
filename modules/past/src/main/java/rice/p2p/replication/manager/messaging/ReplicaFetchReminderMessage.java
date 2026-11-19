@@ -46,12 +46,12 @@ import rice.p2p.commonapi.Message;
  *
  * @author Alan Mislove
  */
-public class ReminderMessage implements Message {
+public class ReplicaFetchReminderMessage implements Message {
 
   /**
    * Constructor
    */
-  public ReminderMessage() {
+  public ReplicaFetchReminderMessage() {
   }
 
   /**

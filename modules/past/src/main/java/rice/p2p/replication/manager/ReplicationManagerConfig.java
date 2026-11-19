@@ -42,7 +42,7 @@ import static rice.environment.params.ConfigChecks.requirePositive;
 import rice.environment.params.Parameters;
 
 /**
- * The parameters of a {@link ReplicationManagerImpl}. All times are in milliseconds.
+ * The parameters of a {@link ReplicaFetchCoordinatorImpl}. All times are in milliseconds.
  *
  * @param fetchDelay {@code p2p_replication_manager_fetch_delay}: the pause between two fetches
  * @param timeoutDelay {@code p2p_replication_manager_timeout_delay}: how long a fetch may take

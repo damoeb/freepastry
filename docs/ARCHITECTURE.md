@@ -346,7 +346,7 @@ The implementations:
 - `insert()` stores the content on the `replicationFactor + 1` nodes closest to its id, through `getHandles` and `InsertMessage`.
 - `lookup()` routes a `LookupMessage` and can cache the result locally (`lookup(id, cache, c)`).
 - `lookupHandles()` and `fetch()` find and retrieve particular replicas.
-- Replicas are kept in place by a `ReplicationManagerImpl`; `PastImpl` implements `ReplicationManagerClient` and so receives `fetch()` and `remove()` calls.
+- Replicas are kept in place by a `ReplicaFetchCoordinatorImpl`; `PastImpl` implements `ReplicationManagerClient` and so receives `fetch()` and `remove()` calls.
 - Local data lives in a `StorageManager`; an optional `trash` `StorageManager` keeps deleted objects.
 - A `PastPolicy` (`DefaultPastPolicy`) decides how to fetch and validate content.
 - `ContentHashPastContent` is content whose id is the hash of its data.
@@ -388,7 +388,7 @@ The implementations:
 - `ReplicationImpl` keeps a set of keys replicated on the `replicationFactor + 1` closest nodes.
 - Every `p2p_replication_maintenance_interval` (10 min, with a random first delay) it builds an `IdBloomFilter` of its keys for each range it shares with a replica-set member, building the filters in `endpoint.process()`. It sends the filters in a `RequestMessage` and receives the keys the other side has but it lacks.
 - It calls `ReplicationClient.fetch()` for the missing keys.
-- `rice.p2p.replication.manager.ReplicationManagerImpl` sits on top. It turns missing keys into throttled, timed-out fetches (`p2p_replication_manager_*`) and tells its `ReplicationManagerClient` to `remove()` keys it is no longer responsible for. PAST uses this layer.
+- `rice.p2p.replication.manager.ReplicaFetchCoordinatorImpl` sits on top. It turns missing keys into throttled, timed-out fetches (`p2p_replication_manager_*`) and tells its `ReplicationManagerClient` to `remove()` keys it is no longer responsible for. PAST uses this layer.
 
 **Multiring** (`rice.p2p.multiring`): hierarchical rings.
 

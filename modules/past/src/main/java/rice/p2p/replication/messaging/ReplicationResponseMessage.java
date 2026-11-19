@@ -56,7 +56,7 @@ import rice.p2p.util.rawserialization.WireLengths;
  *
  * @author Alan Mislove
  */
-public final class ResponseMessage extends ReplicationMessage {
+public final class ReplicationResponseMessage extends ReplicationMessage {
   // the list of ranges for this message
   private final IdRange[] ranges;
 
@@ -70,7 +70,7 @@ public final class ResponseMessage extends ReplicationMessage {
    * @param ranges The ranges being answered
    * @param setA The keys in each range that the requester should fetch, one set per range
    */
-  public ResponseMessage(NodeHandle source, IdRange[] ranges, IdSet[] setA) {
+  public ReplicationResponseMessage(NodeHandle source, IdRange[] ranges, IdSet[] setA) {
     super(source);
 
     this.ranges = ranges;
@@ -137,17 +137,17 @@ public final class ResponseMessage extends ReplicationMessage {
     }
   }
 
-  public static ResponseMessage build(InputBuffer buf, Endpoint endpoint) throws IOException {
+  public static ReplicationResponseMessage build(InputBuffer buf, Endpoint endpoint) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        return new ResponseMessage(buf, endpoint);
+        return new ReplicationResponseMessage(buf, endpoint);
       default:
         throw new IOException("Unknown Version: "+version);
     }
   }
 
-  private ResponseMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
+  private ReplicationResponseMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     super(buf, endpoint);
 
     // decode ids

@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 /**
  * A higher-level replication manager on top of {@code rice.p2p.replication}.
- * {@link rice.p2p.replication.manager.ReplicationManagerImpl} turns the lists of missing keys into
+ * {@link rice.p2p.replication.manager.ReplicaFetchCoordinatorImpl} turns the lists of missing keys into
  * throttled, timed-out fetch requests to its
  * {@link rice.p2p.replication.manager.ReplicationManagerClient} (PAST is one), and tells the client
  * which keys it may delete because the local node is no longer responsible for them.

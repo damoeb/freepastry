@@ -19,8 +19,8 @@ import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.replication.messaging.ReminderMessage;
+import rice.p2p.replication.messaging.ReplicationResponseMessage;
 import rice.p2p.replication.messaging.RequestMessage;
-import rice.p2p.replication.messaging.ResponseMessage;
 import rice.p2p.util.IdBloomFilter;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.pastry.Id;
@@ -135,7 +135,7 @@ class ReplicationWireRoundTripTest {
     IdRange[] ranges = {range("1000", "2000"), range("3000", "4000"), range("5000", "6000")};
     IdSet[] sets = {set("1100", "1200", "1300"), set("3100"), set("5100", "5200")};
 
-    ResponseMessage copy = wire(new ResponseMessage(local, ranges, sets));
+    ReplicationResponseMessage copy = wire(new ReplicationResponseMessage(local, ranges, sets));
 
     assertEquals(local, copy.getSource());
     assertEquals(3, copy.getRanges().length);
@@ -148,7 +148,7 @@ class ReplicationWireRoundTripTest {
   @Test
   @DisplayName("a response with empty id sets between full ones is read and sent on")
   void responseWithEmptyInnerArrays() throws IOException {
-    ResponseMessage copy = wire(new ResponseMessage(local, new IdRange[] {range("1000", "2000"), range("3000", "4000")},
+    ReplicationResponseMessage copy = wire(new ReplicationResponseMessage(local, new IdRange[] {range("1000", "2000"), range("3000", "4000")},
         new IdSet[] {set(), set("3100")}));
 
     assertEquals(0, copy.getIdSets()[0].length);
@@ -157,7 +157,7 @@ class ReplicationWireRoundTripTest {
 
   @Test
   void responseWithOnlyEmptyIdSets() throws IOException {
-    ResponseMessage copy = wire(new ResponseMessage(local, new IdRange[] {range("1000", "2000")}, new IdSet[] {set()}));
+    ReplicationResponseMessage copy = wire(new ReplicationResponseMessage(local, new IdRange[] {range("1000", "2000")}, new IdSet[] {set()}));
 
     assertEquals(1, copy.getIdSets().length);
     assertEquals(0, copy.getIdSets()[0].length);
@@ -165,7 +165,7 @@ class ReplicationWireRoundTripTest {
 
   @Test
   void responseWithoutIdsOrRanges() throws IOException {
-    ResponseMessage copy = wire(new ResponseMessage(local, new IdRange[0], new IdSet[0]));
+    ReplicationResponseMessage copy = wire(new ReplicationResponseMessage(local, new IdRange[0], new IdSet[0]));
 
     assertEquals(0, copy.getIdSets().length);
     assertEquals(0, copy.getRanges().length);

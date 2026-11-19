@@ -48,7 +48,7 @@ public enum ReplicationMessageType implements MessageTypeId {
   REMINDER(1),
   /** {@link RequestMessage} */
   REQUEST(2),
-  /** {@link ResponseMessage} */
+  /** {@link ReplicationResponseMessage} */
   RESPONSE(3);
 
   private static final MessageTypeIndex<ReplicationMessageType> INDEX = MessageTypeIndex.of(values());

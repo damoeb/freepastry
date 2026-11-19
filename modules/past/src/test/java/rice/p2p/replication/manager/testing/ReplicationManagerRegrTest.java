@@ -46,8 +46,8 @@ import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.testing.CommonAPITest;
+import rice.p2p.replication.manager.ReplicaFetchCoordinatorImpl;
 import rice.p2p.replication.manager.ReplicationManagerClient;
-import rice.p2p.replication.manager.ReplicationManagerImpl;
 
 /**
  * Provides regression testing for the replication manager service using distributed
@@ -75,7 +75,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
   /**
    * the replication impls in the ring
    */
-  protected ReplicationManagerImpl[] replications;
+  protected ReplicaFetchCoordinatorImpl[] replications;
 
   /**
    * The clients
@@ -87,7 +87,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    */
   public ReplicationManagerRegrTest(Environment env) throws IOException {
     super(env);
-    replications = new ReplicationManagerImpl[NUM_NODES];
+    replications = new ReplicaFetchCoordinatorImpl[NUM_NODES];
     clients = new TestReplicationManagerClient[NUM_NODES];
   }
 
@@ -112,7 +112,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
   @Override
   protected void processNode(int num, Node node) {
     clients[num] = new TestReplicationManagerClient(node);
-    replications[num] = new ReplicationManagerImpl(node, clients[num], REPLICATION_FACTOR, INSTANCE);
+    replications[num] = new ReplicaFetchCoordinatorImpl(node, clients[num], REPLICATION_FACTOR, INSTANCE);
   }
 
   /**

@@ -59,19 +59,19 @@ import rice.p2p.replication.Replication;
 import rice.p2p.replication.ReplicationClient;
 import rice.p2p.replication.ReplicationImpl;
 import rice.p2p.replication.ReplicationPolicy;
-import rice.p2p.replication.manager.messaging.ReminderMessage;
+import rice.p2p.replication.manager.messaging.ReplicaFetchReminderMessage;
 import rice.p2p.replication.manager.messaging.TimeoutMessage;
 
 /**
  * This class is the default provided implementation of the replication manager
  * used.
  *
- * @version $Id: ReplicationManagerImpl.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @version $Id: ReplicaFetchCoordinatorImpl.java 4654 2009-01-08 16:33:07Z jeffh $
  *
  * @author Alan Mislove
  */
 @SuppressWarnings("unchecked")
-public class ReplicationManagerImpl implements ReplicationManager, ReplicationClient, Application {
+public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, ReplicationClient, Application {
 
   /**
    * The amount of time to wait between fetch calls to the client
@@ -132,7 +132,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    * @param replicationFactor The replication factor for this instance
    * @param instance The unique instance name of this Replication
    */
-  public ReplicationManagerImpl(Node node, ReplicationManagerClient client, int replicationFactor, String instance) {
+  public ReplicaFetchCoordinatorImpl(Node node, ReplicationManagerClient client, int replicationFactor, String instance) {
     this(node, client, replicationFactor, instance, null);
   }
 
@@ -145,9 +145,9 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    * @param instance The unique instance name of this Replication
    * @param policy The replication policy to use
    */
-  public ReplicationManagerImpl(Node node, ReplicationManagerClient client, int replicationFactor, String instance, ReplicationPolicy policy) {
+  public ReplicaFetchCoordinatorImpl(Node node, ReplicationManagerClient client, int replicationFactor, String instance, ReplicationPolicy policy) {
     this.environment = node.getEnvironment();
-    logger = environment.getLogManager().getLogger(ReplicationManagerImpl.class, instance);
+    logger = environment.getLogManager().getLogger(ReplicaFetchCoordinatorImpl.class, instance);
     ReplicationManagerConfig config = ReplicationManagerConfig.fromParameters(environment.getParameters());
     FETCH_DELAY = config.fetchDelay();
     TIMEOUT_DELAY = config.timeoutDelay();
@@ -160,7 +160,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
     this.deleter = new ReplicationManagerDeleter();
     this.instance = instance;
 
-    logger.debug("Starting up ReplicationManagerImpl with client {}", client);
+    logger.debug("Starting up ReplicaFetchCoordinatorImpl with client {}", client);
 
     this.replication = new ReplicationImpl(node, this, replicationFactor, instance, policy);
     endpoint.register();
@@ -211,7 +211,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
   protected void scheduleNext() {
     logger.trace("Scheduling next fetch in {} milliseconds", FETCH_DELAY);
 
-    endpoint.scheduleMessage(new ReminderMessage(), FETCH_DELAY);
+    endpoint.scheduleMessage(new ReplicaFetchReminderMessage(), FETCH_DELAY);
   }
 
 
@@ -291,7 +291,7 @@ public class ReplicationManagerImpl implements ReplicationManager, ReplicationCl
    */
   @Override
   public void deliver(Id id, Message message) {
-    if (message instanceof ReminderMessage) {
+    if (message instanceof ReplicaFetchReminderMessage) {
       logger.trace("Received reminder message");
       helper.wakeup();
     } else if (message instanceof TimeoutMessage timeoutMessage) {

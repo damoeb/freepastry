@@ -62,8 +62,8 @@ import rice.p2p.replication.ReplicationPolicy.DefaultReplicationPolicy;
 import rice.p2p.replication.messaging.ReminderMessage;
 import rice.p2p.replication.messaging.ReplicationMessage;
 import rice.p2p.replication.messaging.ReplicationMessageType;
+import rice.p2p.replication.messaging.ReplicationResponseMessage;
 import rice.p2p.replication.messaging.RequestMessage;
-import rice.p2p.replication.messaging.ResponseMessage;
 import rice.p2p.util.IdBloomFilter;
 
 /**
@@ -164,7 +164,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
     endpoint.setDeserializer((buf, type, priority, sender) -> {
       return switch (ReplicationMessageType.find(type)) {
         case REQUEST -> RequestMessage.build(buf, endpoint);
-        case RESPONSE -> ResponseMessage.build(buf, endpoint);
+        case RESPONSE -> ReplicationResponseMessage.build(buf, endpoint);
         // local timer message, never sent
         case REMINDER -> throw new IOException("Unknown type:"+type);
         case null -> throw new IOException("Unknown type:"+type);
@@ -314,7 +314,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
               }
             }
             logger.debug("COUNT: Telling node {} to fetch", rm.getSource());
-            endpoint.route(null, new ResponseMessage(handle, rm.getRanges(), result), rm.getSource());
+            endpoint.route(null, new ReplicationResponseMessage(handle, rm.getRanges(), result), rm.getSource());
           }
         }, rm.getRanges().length);
 
@@ -333,7 +333,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
           }, continuation.getSubContinuation(i));
         }
       }
-      case ResponseMessage rm -> {
+      case ReplicationResponseMessage rm -> {
 
         for (int i=0; i<rm.getIdSets().length; i++) {
           IdSet temp = factory.buildIdSet();

@@ -85,9 +85,9 @@ import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.past.rawserialization.SocketStrategy;
 import rice.p2p.replication.Replication;
-import rice.p2p.replication.manager.ReplicationManager;
+import rice.p2p.replication.manager.ReplicaFetchCoordinator;
+import rice.p2p.replication.manager.ReplicaFetchCoordinatorImpl;
 import rice.p2p.replication.manager.ReplicationManagerClient;
-import rice.p2p.replication.manager.ReplicationManagerImpl;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -140,7 +140,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   private final int replicationFactor;
 
   // the replica manager used by Past
-  private final ReplicationManager replicaManager;
+  private final ReplicaFetchCoordinator replicaManager;
 
   private final LockManager lockManager;
 
@@ -389,8 +389,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * @param instance The instance name to use
    * @return The replication manager, ready for use
    */
-  protected ReplicationManager buildReplicationManager(Node node, String instance) {
-    return new ReplicationManagerImpl(node, this, replicationFactor, instance);
+  protected ReplicaFetchCoordinator buildReplicationManager(Node node, String instance) {
+    return new ReplicaFetchCoordinatorImpl(node, this, replicationFactor, instance);
   }
 
   /**

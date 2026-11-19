@@ -9,8 +9,8 @@ import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.messaging.ContinuationMessage;
 import rice.p2p.past.messaging.GCRefreshMessage;
+import rice.p2p.replication.messaging.ReplicationResponseMessage;
 import rice.p2p.replication.messaging.RequestMessage;
-import rice.p2p.replication.messaging.ResponseMessage;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
@@ -95,7 +95,7 @@ class PastLengthTest {
     out.writeByte((byte) 0); // version
     out.writeInt(HUGE);
 
-    assertRejected(out, buf -> ResponseMessage.build(buf, ENDPOINT));
+    assertRejected(out, buf -> ReplicationResponseMessage.build(buf, ENDPOINT));
   }
 
   @Test
@@ -105,7 +105,7 @@ class PastLengthTest {
     out.writeInt(1); // id sets
     out.writeInt(HUGE);
 
-    assertRejected(out, buf -> ResponseMessage.build(buf, ENDPOINT));
+    assertRejected(out, buf -> ReplicationResponseMessage.build(buf, ENDPOINT));
   }
 
   @Test
@@ -115,6 +115,6 @@ class PastLengthTest {
     out.writeInt(0); // id sets
     out.writeInt(HUGE);
 
-    assertRejected(out, buf -> ResponseMessage.build(buf, ENDPOINT));
+    assertRejected(out, buf -> ReplicationResponseMessage.build(buf, ENDPOINT));
   }
 }
