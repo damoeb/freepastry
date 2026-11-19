@@ -83,7 +83,8 @@ class AggregationWireRoundTripTest {
     }
     ExpiringPastContent[] parts = new ExpiringPastContent[components];
     for (int i = 0; i < components; i++) {
-      parts[i] = content(i);
+      // small payloads: tens of thousands of components must not need gigabytes
+      parts[i] = new DebugContent(Id.build(Integer.toHexString(0x3000 + i)), false, i, new byte[i % 16]);
     }
     Aggregate aggregate = new Aggregate(parts, pointerIds);
     aggregate.setId(Id.build("AAAA"));
