@@ -53,7 +53,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
    /**
     * Holds only pending DeadCheckers
     */
-   final Map<Identifier, EntityManager> managers;
+   final Map<Identifier, PeerMessageWriter> managers;
 
    Pinger<Identifier> tl;
 
@@ -68,12 +68,12 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     this.logger = env.getLogManager().getLogger(MinRTTProximityProvider.class, null);
     this.time = env.getTimeSource();
     tl.addPingListener(this);
-    this.managers = new HashMap<Identifier, EntityManager>();
+    this.managers = new HashMap<Identifier, PeerMessageWriter>();
   }
 
   @Override
   public int proximity(Identifier i, @Nullable Map<String, Object> options) {
-    EntityManager manager = getManager(i);
+    PeerMessageWriter manager = getManager(i);
     int ret = manager.proximity;
     if (ret == DEFAULT_PROXIMITY) {
       manager.ping(options);
@@ -98,11 +98,11 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     }
   }
 
-  public EntityManager getManager(Identifier i) {
+  public PeerMessageWriter getManager(Identifier i) {
     synchronized(managers) {
-      EntityManager manager = managers.get(i);
+      PeerMessageWriter manager = managers.get(i);
       if (manager == null) {
-        manager = new EntityManager(i);
+        manager = new PeerMessageWriter(i);
         logger.trace("Creating EM for {}", i);
         managers.put(i,manager);
       }
@@ -114,7 +114,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
    * Internal class which is charges with managing the remote connection via
    * a specific route
    */
-  public class EntityManager {
+  public class PeerMessageWriter {
 
     // the remote route of this manager
     private final Identifier identifier;
@@ -128,7 +128,7 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
      *
      * @param route The remote identifier
      */
-    public EntityManager(Identifier route) {
+    public PeerMessageWriter(Identifier route) {
       if (route == null) throw new IllegalArgumentException("route is null");
       this.identifier = route;
       proximity = DEFAULT_PROXIMITY;

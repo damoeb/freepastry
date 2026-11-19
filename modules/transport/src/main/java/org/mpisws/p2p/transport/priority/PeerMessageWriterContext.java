@@ -51,12 +51,12 @@ import org.slf4j.Logger;
 import rice.selector.SelectorLoop;
 
 /**
- * What an {@link EntityManager} needs from its {@link PriorityTransportLayer}: the layer below, the
+ * What an {@link PeerMessageWriter} needs from its {@link PriorityTransportLayer}: the layer below, the
  * liveness and proximity providers, the size limits, and the layer's mutable settings (callback, error
  * handler, destroyed flag), which are read through suppliers because they may change after the manager
  * was built.
  */
-final class EntityManagerContext<Identifier> {
+final class PeerMessageWriterContext<Identifier> {
   final TransportLayer<Identifier, ByteBuffer> tl;
   final LivenessProvider<Identifier> livenessProvider;
   final ProximityProvider<Identifier> proximityProvider;
@@ -76,9 +76,9 @@ final class EntityManagerContext<Identifier> {
   /**
    * looks up (or creates) the manager of an identifier
    */
-  final Function<Identifier, EntityManager<Identifier>> entityManagers;
+  final Function<Identifier, PeerMessageWriter<Identifier>> entityManagers;
 
-  EntityManagerContext(TransportLayer<Identifier, ByteBuffer> tl,
+  PeerMessageWriterContext(TransportLayer<Identifier, ByteBuffer> tl,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       SelectorLoop selectorManager,
@@ -91,13 +91,13 @@ final class EntityManagerContext<Identifier> {
       Supplier<ErrorHandler<Identifier>> errorHandler,
       Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
       BooleanSupplier destroyed,
-      Function<Identifier, EntityManager<Identifier>> entityManagers) {
+      Function<Identifier, PeerMessageWriter<Identifier>> entityManagers) {
     this(tl, livenessProvider, proximityProvider, selectorManager, logger, maxMsgSize, maxQueueSize,
         maxBigMsgSize, PriorityTransportLayer.DEFAULT_MAX_BIG_MSG_IN_FLIGHT, primarySocketListeners, listeners,
         errorHandler, callback, destroyed, entityManagers);
   }
 
-  EntityManagerContext(TransportLayer<Identifier, ByteBuffer> tl,
+  PeerMessageWriterContext(TransportLayer<Identifier, ByteBuffer> tl,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       SelectorLoop selectorManager,
@@ -111,7 +111,7 @@ final class EntityManagerContext<Identifier> {
       Supplier<ErrorHandler<Identifier>> errorHandler,
       Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
       BooleanSupplier destroyed,
-      Function<Identifier, EntityManager<Identifier>> entityManagers) {
+      Function<Identifier, PeerMessageWriter<Identifier>> entityManagers) {
     this.tl = tl;
     this.livenessProvider = livenessProvider;
     this.proximityProvider = proximityProvider;

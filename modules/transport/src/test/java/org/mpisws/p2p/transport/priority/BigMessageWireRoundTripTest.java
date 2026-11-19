@@ -59,7 +59,7 @@ class BigMessageWireRoundTripTest {
       public void incomingSocket(P2PSocket<InetSocketAddress> s) {
       }
     };
-    EntityManagerContext<InetSocketAddress> ctx = new EntityManagerContext<>(null, null, null, null,
+    PeerMessageWriterContext<InetSocketAddress> ctx = new PeerMessageWriterContext<>(null, null, null, null,
         LoggerFactory.getLogger(BigMessageWireRoundTripTest.class), 10, 10, MAX_BIG_MSG_SIZE, List.of(),
         new TransportListeners<>(), () -> null, () -> upper, () -> false, id -> null);
     net.lower(receiver).setCallback(new TransportLayerCallback<>() {

@@ -23,7 +23,7 @@ import rice.environment.logging.Slf4jLogManager;
 import rice.environment.time.simple.SimpleTimeSource;
 import rice.selector.SelectorLoop;
 
-/** The bounded write queue of an EntityManager: priority order, drop on overflow, cancel, purge. */
+/** The bounded write queue of an PeerMessageWriter: priority order, drop on overflow, cancel, purge. */
 class EntityManagerQueueTest {
   private static final int MAX_QUEUE_SIZE = 3;
 
@@ -43,27 +43,27 @@ class EntityManagerQueueTest {
   };
 
   @SuppressWarnings("unchecked")
-  private EntityManager<String> target() {
+  private PeerMessageWriter<String> target() {
     TransportLayer<String, ByteBuffer> tl = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {TransportLayer.class}, (proxy, method, args) -> null);
     LivenessProvider<String> alive = (LivenessProvider<String>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {LivenessProvider.class}, (proxy, method, args) -> 0);
     // never started: not the selector thread for anybody, and what is invoked on it is never run
     SelectorLoop selector = new SelectorLoop("test", new SimpleTimeSource(), new Slf4jLogManager());
-    EntityManagerContext<String> ctx = new EntityManagerContext<>(tl, alive, null, selector,
+    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(tl, alive, null, selector,
         LoggerFactory.getLogger(EntityManagerQueueTest.class), 100, MAX_QUEUE_SIZE, 1000, List.of(),
         new TransportListeners<>(), () -> null, () -> null, () -> false, id -> null);
-    return new EntityManager<>("peer", ctx);
+    return new PeerMessageWriter<>("peer", ctx);
   }
 
-  private MessageRequestHandle<String, ByteBuffer> send(EntityManager<String> target, int priority) {
+  private MessageRequestHandle<String, ByteBuffer> send(PeerMessageWriter<String> target, int priority) {
     return target.send("peer", ByteBuffer.allocate(1), recorder, Map.of(PriorityTransportLayer.OPTION_PRIORITY, priority));
   }
 
   @Test
   @DisplayName("the queue hands out the highest priority first, and the oldest among equals")
   void peekFollowsPriorityThenArrival() {
-    EntityManager<String> target = target();
+    PeerMessageWriter<String> target = target();
     MessageRequestHandle<String, ByteBuffer> low = send(target, 5);
     MessageRequestHandle<String, ByteBuffer> highFirst = send(target, 0);
     MessageRequestHandle<String, ByteBuffer> highSecond = send(target, 0);
@@ -78,7 +78,7 @@ class EntityManagerQueueTest {
   @Test
   @DisplayName("a full queue drops the newest message of the lowest priority, even if it is older")
   void overflowDropsTheNewestOfTheLowestPriority() {
-    EntityManager<String> target = target();
+    PeerMessageWriter<String> target = target();
     MessageRequestHandle<String, ByteBuffer> lowOld = send(target, 5);
     MessageRequestHandle<String, ByteBuffer> lowNew = send(target, 5);
     send(target, 0);
@@ -95,7 +95,7 @@ class EntityManagerQueueTest {
   @Test
   @DisplayName("purge fails every queued message in queue order and leaves the manager idle")
   void purgeFailsEveryQueuedMessage() {
-    EntityManager<String> target = target();
+    PeerMessageWriter<String> target = target();
     MessageRequestHandle<String, ByteBuffer> a = send(target, 1);
     MessageRequestHandle<String, ByteBuffer> b = send(target, 0);
 

@@ -49,9 +49,9 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
  */
 final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Identifier> {
   private final P2PSocket<Identifier> s;
-  private final EntityManagerContext<Identifier> ctx;
+  private final PeerMessageWriterContext<Identifier> ctx;
 
-  IncomingSocketDispatcher(P2PSocket<Identifier> s, EntityManagerContext<Identifier> ctx) {
+  IncomingSocketDispatcher(P2PSocket<Identifier> s, PeerMessageWriterContext<Identifier> ctx) {
     this.s = s;
     this.ctx = ctx;
   }

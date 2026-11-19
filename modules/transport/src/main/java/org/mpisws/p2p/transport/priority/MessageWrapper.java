@@ -47,13 +47,13 @@ import org.mpisws.p2p.transport.P2PSocket;
 import org.slf4j.Logger;
 
 /**
- * A message queued in an {@link EntityManager}: the payload headed with its size, its priority and
+ * A message queued in an {@link PeerMessageWriter}: the payload headed with its size, its priority and
  * sequence number (which order the queue), and the receipt handed to the sender.
  */
 final class MessageWrapper<Identifier> implements
     Comparable<MessageWrapper<Identifier>>,
     MessageRequestHandle<Identifier, ByteBuffer> {
-  private final EntityManager<Identifier> owner;
+  private final PeerMessageWriter<Identifier> owner;
   private final TransportListeners<Identifier> listeners;
   private final Logger logger;
 
@@ -72,7 +72,7 @@ final class MessageWrapper<Identifier> implements
   boolean completed = false; // true when completed is called
 
   MessageWrapper(
-      EntityManager<Identifier> owner,
+      PeerMessageWriter<Identifier> owner,
       Identifier temp,
       ByteBuffer message,
       @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,

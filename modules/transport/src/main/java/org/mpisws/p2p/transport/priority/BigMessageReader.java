@@ -58,7 +58,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
   /** the buffer size reserved when a size header arrives, before any of the message has */
   static final int INITIAL_CHUNK = 8 * 1024;
 
-  private final EntityManagerContext<Identifier> ctx;
+  private final PeerMessageWriterContext<Identifier> ctx;
   byte[] sizeBytes = new byte[Integer.BYTES];
   ByteBuffer sizeBuf = ByteBuffer.wrap(sizeBytes);
   @Nullable ByteBuffer msgBuf = null;
@@ -67,7 +67,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
   /** the bytes of {@link #msgBuf} reserved from the budget */
   private long reserved;
 
-  BigMessageReader(EntityManagerContext<Identifier> ctx) {
+  BigMessageReader(PeerMessageWriterContext<Identifier> ctx) {
     this.ctx = ctx;
   }
 

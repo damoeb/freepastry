@@ -396,7 +396,7 @@ The implementations:
 - A host that is a member of several rings joins its `MultiringNode`s into a `MultiringNodeCollection`.
 - Each `MultiringNode` runs its own Scribe instance ("Multiring"). A node that also belongs to another ring subscribes to the topic `RingId.build(ringId, otherRingId)`. Messages for another ring are anycast, as a `RingMessage`, to that topic, so a member of both rings carries them across.
 
-**Where the code of the big classes lives.** `GlacierImpl`, `ScribeImpl`, `AggregationImpl`, `PersistentStorage` and `PriorityTransportLayer` are facades: each keeps its public API and delegates to package-private collaborators in its own package. Examples are `GlacierInserter`, `GlacierRetriever` and `GlacierSyncProtocol`; `SubscriptionManager`, `Publisher`, `AnycastHandler` and `TreeRepair`; `AggregateFlusher`, `AggregateConsolidator` and `ObjectRetriever`; `ObjectFiles`, `StorageRecovery` and `MetadataIndex`; and `EntityManager` with `PrimarySocketOpener`. Look there for the logic behind a public method.
+**Where the code of the big classes lives.** `GlacierImpl`, `ScribeImpl`, `AggregationImpl`, `PersistentStorage` and `PriorityTransportLayer` are facades: each keeps its public API and delegates to package-private collaborators in its own package. Examples are `GlacierInserter`, `GlacierRetriever` and `GlacierSyncProtocol`; `SubscriptionManager`, `Publisher`, `AnycastHandler` and `TreeRepair`; `AggregateFlusher`, `AggregateConsolidator` and `ObjectRetriever`; `ObjectFiles`, `StorageRecovery` and `MetadataIndex`; and `PeerMessageWriter` with `PrimarySocketOpener`. Look there for the logic behind a public method.
 
 ## Where to go next
 

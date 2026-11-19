@@ -45,9 +45,9 @@ import org.mpisws.p2p.transport.P2PSocket;
  *
  * @author Jeff Hoye
  */
-final class SizeReader<Identifier> extends BufferReader<Identifier> {
+final class SizeReader<Identifier> extends PrimarySocketBufferReader<Identifier> {
 
-  public SizeReader(EntityManager<Identifier> owner, P2PSocket<Identifier> socket) {
+  public SizeReader(PeerMessageWriter<Identifier> owner, P2PSocket<Identifier> socket) {
     super(owner, Integer.BYTES, socket);
   }
 
@@ -62,7 +62,7 @@ final class SizeReader<Identifier> extends BufferReader<Identifier> {
       return;
     }
 
-    new BufferReader<Identifier>(owner, msgSize, socket);
+    new PrimarySocketBufferReader<Identifier>(owner, msgSize, socket);
   }
 
   @Override

@@ -115,12 +115,12 @@ public class PriorityTransportLayer<Identifier>
 
   private final Logger logger;
 
-  private final EntityManagerRegistry<Identifier> entityManagers;
+  private final PeerMessageWriterRegistry<Identifier> entityManagers;
 
   /**
-   * what each EntityManager needs from this layer
+   * what each PeerMessageWriter needs from this layer
    */
-  private final EntityManagerContext<Identifier> entityManagerContext;
+  private final PeerMessageWriterContext<Identifier> entityManagerContext;
 
   /**
    * Never null: until the layer above calls {@link #setCallback}, (or after it passes null) this is
@@ -182,7 +182,7 @@ public class PriorityTransportLayer<Identifier>
       long maxBigMsgInFlight,
       ErrorHandler<Identifier> handler) {
     this.MAX_BIG_MSG_SIZE = maxBigMsgSize;
-    entityManagers = new EntityManagerRegistry<Identifier>(this::newEntityManager);
+    entityManagers = new PeerMessageWriterRegistry<Identifier>(this::newEntityManager);
     this.logger = env.getLogManager().getLogger(PriorityTransportLayer.class, null);
     this.selectorManager = env.getSelectorManager();
     this.environment = env;
@@ -190,7 +190,7 @@ public class PriorityTransportLayer<Identifier>
     this.MAX_QUEUE_SIZE = maxQueueSize;
     this.tl = tl;
     logger.info("MAX_QUEUE_SIZE:{} MAX_MSG_SIZE:{}", MAX_QUEUE_SIZE, MAX_MSG_SIZE);
-    this.entityManagerContext = new EntityManagerContext<Identifier>(tl, livenessProvider, proximityProvider,
+    this.entityManagerContext = new PeerMessageWriterContext<Identifier>(tl, livenessProvider, proximityProvider,
         selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, maxBigMsgInFlight, primarySocketListeners, listeners,
         () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager);
     tl.setCallback(this);
@@ -245,7 +245,7 @@ public class PriorityTransportLayer<Identifier>
   @Override
   public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier i, ByteBuffer m, final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> opts) {
     logger.debug("sendMessage({},{},{},{})", i, m, deliverAckToMe, opts);
-    // callers may pass null options, but queued messages need non-null options (e.g. EntityManager.startLivenessChecker())
+    // callers may pass null options, but queued messages need non-null options (e.g. PeerMessageWriter.startLivenessChecker())
     final @Nullable Map<String, Object> options = (opts == null) ? new HashMap<String, Object>() : opts;
 
     // if it is to be sent UDP, just pass it through
@@ -317,11 +317,11 @@ public class PriorityTransportLayer<Identifier>
     }
   }
 
-  private EntityManager<Identifier> newEntityManager(Identifier i) {
-    return new EntityManager<Identifier>(i, entityManagerContext);
+  private PeerMessageWriter<Identifier> newEntityManager(Identifier i) {
+    return new PeerMessageWriter<Identifier>(i, entityManagerContext);
   }
 
-  protected EntityManager<Identifier> getEntityManager(Identifier i) {
+  protected PeerMessageWriter<Identifier> getEntityManager(Identifier i) {
     return entityManagers.get(i, selectorManager.isSelectorThread());
   }
 
@@ -374,7 +374,7 @@ public class PriorityTransportLayer<Identifier>
    * @return STATUS_NOT_CONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
    */
   public int connectionStatus(Identifier i) {
-    EntityManager<Identifier> manager = getEntityManager(i);
+    PeerMessageWriter<Identifier> manager = getEntityManager(i);
     // this may not be thread safe, but ... who cares, it at least won't throw an exception.
     if (manager.writingSocket != null) return STATUS_CONNECTED;
     if (manager.pendingSocket != null) return STATUS_CONNECTING;

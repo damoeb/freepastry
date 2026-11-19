@@ -34,7 +34,7 @@ class EntityManagerConcurrentSendTest {
   private final AtomicInteger openedSockets = new AtomicInteger();
 
   @SuppressWarnings("unchecked")
-  private EntityManager<String> target() {
+  private PeerMessageWriter<String> target() {
     TransportLayer<String, ByteBuffer> tl = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {TransportLayer.class}, (proxy, method, args) -> {
           if (method.getName().equals("openSocket")) openedSockets.incrementAndGet();
@@ -44,14 +44,14 @@ class EntityManagerConcurrentSendTest {
         getClass().getClassLoader(), new Class<?>[] {LivenessProvider.class}, (proxy, method, args) -> 0);
     // never started: not the selector thread for anybody, and what is invoked on it is never run
     SelectorLoop selector = new SelectorLoop("test", new SimpleTimeSource(), new Slf4jLogManager());
-    EntityManagerContext<String> ctx = new EntityManagerContext<>(tl, alive, null, selector,
+    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(tl, alive, null, selector,
         LoggerFactory.getLogger(EntityManagerConcurrentSendTest.class), MAX_MSG_SIZE,
         THREADS * PER_THREAD, MAX_BIG_MSG_SIZE, List.of(), new TransportListeners<>(), () -> null, () -> null,
         () -> false, id -> null);
-    return new EntityManager<>("peer", ctx);
+    return new PeerMessageWriter<>("peer", ctx);
   }
 
-  private List<MessageRequestHandle<String, ByteBuffer>> sendFromThreads(EntityManager<String> target, int size)
+  private List<MessageRequestHandle<String, ByteBuffer>> sendFromThreads(PeerMessageWriter<String> target, int size)
       throws Exception {
     ExecutorService pool = Executors.newFixedThreadPool(THREADS);
     try {
@@ -83,7 +83,7 @@ class EntityManagerConcurrentSendTest {
   void concurrentSendsKeepSequenceNumbersUnique() throws Exception {
     // a single racy round loses a sequence number only most of the time; repeat on fresh managers
     for (int round = 0; round < ROUNDS; round++) {
-      EntityManager<String> target = target();
+      PeerMessageWriter<String> target = target();
 
       List<MessageRequestHandle<String, ByteBuffer>> handles = sendFromThreads(target, MAX_MSG_SIZE);
 
@@ -103,7 +103,7 @@ class EntityManagerConcurrentSendTest {
   @Test
   @DisplayName("concurrent off-thread big messages to one peer share a single sender and a single socket")
   void concurrentBigSendsShareOneSender() throws Exception {
-    EntityManager<String> target = target();
+    PeerMessageWriter<String> target = target();
 
     List<MessageRequestHandle<String, ByteBuffer>> handles = sendFromThreads(target, MAX_MSG_SIZE + 1);
 

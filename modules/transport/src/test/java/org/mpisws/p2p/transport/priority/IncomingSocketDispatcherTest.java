@@ -25,7 +25,7 @@ class IncomingSocketDispatcherTest {
         passedOn = true;
       }
     };
-    EntityManagerContext<String> ctx = new EntityManagerContext<>(null, null, null, null,
+    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(null, null, null, null,
         LoggerFactory.getLogger(IncomingSocketDispatcherTest.class), 10, 10, 1024, List.of(),
         new TransportListeners<>(), () -> null, () -> callback, () -> false, id -> null);
     return new IncomingSocketDispatcher<>(socket, ctx);

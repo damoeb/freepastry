@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 class PriorityFuzzTest {
   private static final int MAX_MSG_SIZE = 4096;
 
-  private static EntityManagerContext<String> context() {
+  private static PeerMessageWriterContext<String> context() {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
       public void messageReceived(String i, ByteBuffer m, Map<String, Object> options) {
@@ -28,7 +28,7 @@ class PriorityFuzzTest {
       public void incomingSocket(P2PSocket<String> s) {
       }
     };
-    return new EntityManagerContext<>(null, null, null, null, LoggerFactory.getLogger(PriorityFuzzTest.class), 10, 10,
+    return new PeerMessageWriterContext<>(null, null, null, null, LoggerFactory.getLogger(PriorityFuzzTest.class), 10, 10,
         MAX_MSG_SIZE, List.of(), new TransportListeners<>(), () -> null, () -> callback, () -> false, id -> null);
   }
 
@@ -41,9 +41,9 @@ class PriorityFuzzTest {
 
   @FuzzTest(maxDuration = "30s")
   void sizeReader(FuzzedDataProvider data) {
-    EntityManagerContext<String> ctx = context();
+    PeerMessageWriterContext<String> ctx = context();
     FuzzSocket<String> socket = new FuzzSocket<>("peer", data.consumeRemainingAsBytes());
-    new SizeReader<>(new EntityManager<>("peer", ctx), socket);
+    new SizeReader<>(new PeerMessageWriter<>("peer", ctx), socket);
     socket.drive();
   }
 
@@ -52,7 +52,7 @@ class PriorityFuzzTest {
     byte[] bytes = data.consumeRemainingAsBytes();
     if (bytes.length > 0 && (bytes[0] == PriorityTransportLayer.PRIMARY_SOCKET_B
         || bytes[0] == PriorityTransportLayer.BIG_MSG_SOCKET_B)) {
-      // these hand the socket to an EntityManager, which needs the selector thread; the readers are fuzzed on their own
+      // these hand the socket to an PeerMessageWriter, which needs the selector thread; the readers are fuzzed on their own
       return;
     }
     FuzzSocket<String> socket = new FuzzSocket<>("peer", bytes);

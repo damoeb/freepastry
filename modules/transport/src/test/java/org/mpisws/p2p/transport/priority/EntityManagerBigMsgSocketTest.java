@@ -11,10 +11,10 @@ class EntityManagerBigMsgSocketTest {
 
   @Test
   void aBigMessageSocketThatFailsToReadIsClosed() {
-    EntityManagerContext<String> ctx = new EntityManagerContext<>(null, null, null, null,
+    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(null, null, null, null,
         LoggerFactory.getLogger(EntityManagerBigMsgSocketTest.class), 10, 10, 1024, List.of(),
         new TransportListeners<>(), () -> null, () -> null, () -> false, id -> null);
-    EntityManager<String> target = new EntityManager<>("peer", ctx);
+    PeerMessageWriter<String> target = new PeerMessageWriter<>("peer", ctx);
     FakeSocket socket = new FakeSocket();
     socket.readFailure = new IOException("connection reset");
 

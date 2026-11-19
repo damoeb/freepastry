@@ -34,7 +34,7 @@ class BigMessageReaderTest {
     return new BigMessageReader<>(context(max, budget));
   }
 
-  private EntityManagerContext<String> context(int max, long budget) {
+  private PeerMessageWriterContext<String> context(int max, long budget) {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
       public void messageReceived(String i, ByteBuffer m, Map<String, Object> options) {
@@ -44,7 +44,7 @@ class BigMessageReaderTest {
       @Override
       public void incomingSocket(P2PSocket<String> s) {}
     };
-    EntityManagerContext<String> ctx = new EntityManagerContext<>(null, null, null, null,
+    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(null, null, null, null,
         LoggerFactory.getLogger(BigMessageReaderTest.class), 10, 10, max, budget, List.of(), listeners,
         () -> null, () -> callback, () -> false, id -> null);
     return ctx;
@@ -143,7 +143,7 @@ class BigMessageReaderTest {
   @DisplayName("a socket that would exceed the budget of BIG messages in flight is closed")
   void exceedingTheBudgetClosesTheSocket() throws Exception {
     int max = 4 * 1024 * 1024;
-    EntityManagerContext<String> ctx = context(max, BigMessageReader.INITIAL_CHUNK);
+    PeerMessageWriterContext<String> ctx = context(max, BigMessageReader.INITIAL_CHUNK);
     FakeSocket first = new FakeSocket(size(max));
     FakeSocket second = new FakeSocket(size(max));
 
@@ -158,7 +158,7 @@ class BigMessageReaderTest {
   @Test
   @DisplayName("the budget is released when a message is delivered")
   void deliveringReleasesTheBudget() throws Exception {
-    EntityManagerContext<String> ctx = context(MAX, 100);
+    PeerMessageWriterContext<String> ctx = context(MAX, 100);
     byte[] body = {1, 2, 3};
     ByteBuffer wire = ByteBuffer.allocate(Integer.BYTES + body.length).putInt(body.length).put(body);
 

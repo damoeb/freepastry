@@ -48,19 +48,19 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 /**
  * Opens our side of the primary socket to a node: once the layer below delivers the socket, writes the
  * {@link PriorityTransportLayer#PRIMARY_SOCKET} header and hands the socket to the node's
- * {@link EntityManager}. Failures go to the EntityManager too, which then retries or gives up.
+ * {@link PeerMessageWriter}. Failures go to the PeerMessageWriter too, which then retries or gives up.
  */
 final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier> {
   private final Identifier i;
 
   /**
-   * the receipt the EntityManager holds as its pendingSocket
+   * the receipt the PeerMessageWriter holds as its pendingSocket
    */
   private final SocketRequestHandleImpl<Identifier> handle;
 
-  private final EntityManagerContext<Identifier> ctx;
+  private final PeerMessageWriterContext<Identifier> ctx;
 
-  PrimarySocketOpener(Identifier i, SocketRequestHandleImpl<Identifier> handle, EntityManagerContext<Identifier> ctx) {
+  PrimarySocketOpener(Identifier i, SocketRequestHandleImpl<Identifier> handle, PeerMessageWriterContext<Identifier> ctx) {
     this.i = i;
     this.handle = handle;
     this.ctx = ctx;

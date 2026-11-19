@@ -87,13 +87,13 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
  *
  * @author Jeff Hoye
  */
-final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
+final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifier> {
   /** A stalled write is checked after this many proximities, kept between the bounds below. */
   private static final int LIVENESS_CHECK_PROXIMITY_MULTIPLIER = 4;
   private static final int MIN_LIVENESS_CHECK_DELAY_MILLIS = 5000;
   private static final int MAX_LIVENESS_CHECK_DELAY_MILLIS = 40000;
 
-  private final EntityManagerContext<Identifier> ctx;
+  private final PeerMessageWriterContext<Identifier> ctx;
   private final SelectorLoop selectorManager;
   private final Logger logger;
   private final TransportLayer<Identifier, ByteBuffer> tl;
@@ -116,7 +116,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   boolean registered = false;  // true if registered for writing
   // Invariant: if (queue.inFlight() != null) then (writingSocket != null)
 
-  EntityManager(Identifier identifier, EntityManagerContext<Identifier> ctx) {
+  PeerMessageWriter(Identifier identifier, PeerMessageWriterContext<Identifier> ctx) {
     this.ctx = ctx;
     this.selectorManager = ctx.selectorManager;
     this.logger = ctx.logger;
@@ -144,7 +144,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     return logger;
   }
 
-  EntityManagerContext<Identifier> context() {
+  PeerMessageWriterContext<Identifier> context() {
     return ctx;
   }
 
@@ -187,10 +187,10 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     logger.debug("primarySocketAvailable({},{})", s, receipt);
 
     // set pendingSocket to null if possible
-    synchronized(EntityManager.this) {
+    synchronized(PeerMessageWriter.this) {
       if (receipt != null) {
         if (receipt == pendingSocket) {
-          logger.info("{}.primarySocketAvailable setting pendingSocket to null {}", EntityManager.this, pendingSocket);
+          logger.info("{}.primarySocketAvailable setting pendingSocket to null {}", PeerMessageWriter.this, pendingSocket);
           stopLivenessChecker();
           logger.debug("got socket:{} clearing pendingSocket:{}", s, pendingSocket);
           pendingSocket = null;  // this is the one we requested
@@ -277,7 +277,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
         }
       };
 
-      logger.info("{}.openPrimarySocketHelper() setting pendingSocket to {}", EntityManager.this, handle);
+      logger.info("{}.openPrimarySocketHelper() setting pendingSocket to {}", PeerMessageWriter.this, handle);
       pendingSocket = handle;
       startLivenessChecker(i, options);
 
@@ -297,13 +297,13 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
       livenessChecker = new TimerTask() {
         @Override
         public void run() {
-          synchronized(EntityManager.this) {
+          synchronized(PeerMessageWriter.this) {
             if (cancelled) return;
             stopLivenessChecker(); // sets livenssChecker back to null
             if (ctx.destroyed.getAsBoolean()) return;
             livenessProvider.checkLiveness(temp, options);
 
-            logger.info("{}.liveness checker setting pendingSocket to null {}", EntityManager.this, pendingSocket);
+            logger.info("{}.liveness checker setting pendingSocket to null {}", PeerMessageWriter.this, pendingSocket);
             // this checker is cancelled whenever pendingSocket is cleared
             Objects.requireNonNull(pendingSocket, "liveness checker runs without a pending socket").cancel();
             pendingSocket = null;
@@ -341,7 +341,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    */
   boolean isIdle() {
     if (!queue.isEmpty()) return false;
-    synchronized (EntityManager.this) {
+    synchronized (PeerMessageWriter.this) {
       if (pendingSocket != null) return false;
     }
     return writingSocket == null && sockets.isEmpty() && pendingBigMessages.isEmpty();
@@ -404,9 +404,9 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
    */
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
   public void receiveSocketException(SocketRequestHandleImpl<Identifier> handle, Exception ex) {
-    synchronized(EntityManager.this) {
+    synchronized(PeerMessageWriter.this) {
       if (handle == pendingSocket) {
-        logger.info("{}.receiveSocketException({}) setting pendingSocket to null {}", EntityManager.this, ex, pendingSocket);
+        logger.info("{}.receiveSocketException({}) setting pendingSocket to null {}", PeerMessageWriter.this, ex, pendingSocket);
 
         stopLivenessChecker();
         pendingSocket = null;
@@ -454,8 +454,8 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
       sockets.clear();
     }
     setWritingSocket(null/*, "purge"*/);
-    synchronized(EntityManager.this) {
-      logger.info("{}.purge setting pendingSocket to null {}", EntityManager.this, pendingSocket);
+    synchronized(PeerMessageWriter.this) {
+      logger.info("{}.purge setting pendingSocket to null {}", PeerMessageWriter.this, pendingSocket);
       if (pendingSocket != null) {
         stopLivenessChecker();
         pendingSocket.cancel();

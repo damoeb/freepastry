@@ -52,12 +52,12 @@ import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
  *
  * @author Jeff Hoye
  */
-class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
-  final EntityManager<Identifier> owner;
-  final EntityManagerContext<Identifier> ctx;
+class PrimarySocketBufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
+  final PeerMessageWriter<Identifier> owner;
+  final PeerMessageWriterContext<Identifier> ctx;
   ByteBuffer buf;
 
-  public BufferReader(EntityManager<Identifier> owner, int size, P2PSocket<Identifier> socket) {
+  public PrimarySocketBufferReader(PeerMessageWriter<Identifier> owner, int size, P2PSocket<Identifier> socket) {
     this.owner = owner;
     this.ctx = owner.context();
     buf = ByteBuffer.allocate(size);

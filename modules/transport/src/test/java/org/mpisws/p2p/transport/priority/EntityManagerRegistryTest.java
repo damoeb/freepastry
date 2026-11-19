@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 class EntityManagerRegistryTest {
-  private final EntityManagerContext<String> ctx = new EntityManagerContext<>(null, null, null, null,
+  private final PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(null, null, null, null,
       LoggerFactory.getLogger(EntityManagerRegistryTest.class), 10, 10, 1024, List.of(), new TransportListeners<>(),
       () -> null, () -> null, () -> false, id -> null);
 
-  private final EntityManagerRegistry<String> target = new EntityManagerRegistry<>(id -> new EntityManager<>(id, ctx));
+  private final PeerMessageWriterRegistry<String> target = new PeerMessageWriterRegistry<>(id -> new PeerMessageWriter<>(id, ctx));
 
   @Test
   void returnsTheSameManagerForAnIdentifier() {
@@ -22,7 +22,7 @@ class EntityManagerRegistryTest {
 
   @Test
   void idleManagersAreDroppedWhenTheRegistryHasGrown() {
-    for (int i = 0; i < EntityManagerRegistry.MIN_SWEEP_SIZE; i++) {
+    for (int i = 0; i < PeerMessageWriterRegistry.MIN_SWEEP_SIZE; i++) {
       target.get("peer" + i, true);
     }
 
@@ -33,25 +33,25 @@ class EntityManagerRegistryTest {
 
   @Test
   void aManagerWithASocketIsKept() {
-    EntityManager<String> busy = target.get("busy", true);
+    PeerMessageWriter<String> busy = target.get("busy", true);
     busy.sockets.add(new FakeSocket());
-    for (int i = 0; i < EntityManagerRegistry.MIN_SWEEP_SIZE; i++) {
+    for (int i = 0; i < PeerMessageWriterRegistry.MIN_SWEEP_SIZE; i++) {
       target.get("peer" + i, true);
     }
 
     target.get("one more", true);
 
-    assertTrue(target.size() < EntityManagerRegistry.MIN_SWEEP_SIZE);
+    assertTrue(target.size() < PeerMessageWriterRegistry.MIN_SWEEP_SIZE);
     assertSame(busy, target.get("busy", true));
   }
 
   @Test
   void nothingIsDroppedOffTheSelectorThread() {
-    for (int i = 0; i < EntityManagerRegistry.MIN_SWEEP_SIZE + 10; i++) {
+    for (int i = 0; i < PeerMessageWriterRegistry.MIN_SWEEP_SIZE + 10; i++) {
       target.get("peer" + i, false);
     }
 
-    assertEquals(EntityManagerRegistry.MIN_SWEEP_SIZE + 10, target.size());
+    assertEquals(PeerMessageWriterRegistry.MIN_SWEEP_SIZE + 10, target.size());
   }
 
   @Test
@@ -65,7 +65,7 @@ class EntityManagerRegistryTest {
 
   @Test
   void keepsABusyManagerWhenAskedToForgetIt() {
-    EntityManager<String> busy = target.get("busy", true);
+    PeerMessageWriter<String> busy = target.get("busy", true);
     busy.sockets.add(new FakeSocket());
 
     target.forgetIfIdle("busy");
