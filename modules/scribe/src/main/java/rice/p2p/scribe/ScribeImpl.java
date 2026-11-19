@@ -118,7 +118,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   /**
    * the parent side: accepts subscribers as children and drops them
    */
-  private final ChildManager children;
+  private final ChildAdmission children;
 
   /**
    * walks anycasts through the trees
@@ -187,7 +187,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.localHandle = endpoint.getLocalNodeHandle();
     this.registry = new TopicRegistry(endpoint, localHandle, this, logger);
     this.subscriptions = new SubscriptionManager(endpoint, localHandle, node, registry, this::getPolicy, maintenancePolicy, this, MESSAGE_TIMEOUT, logger);
-    this.children = new ChildManager(endpoint, localHandle, registry, this::getPolicy, maintenancePolicy, this, subscriptions, logger);
+    this.children = new ChildAdmission(endpoint, localHandle, registry, this::getPolicy, maintenancePolicy, this, subscriptions, logger);
     this.anycasts = new AnycastHandler(endpoint, localHandle, registry, this::getPolicy, logger);
     this.publisher = new Publisher(endpoint, localHandle, registry, this::getPolicy, logger);
     this.repair = new TreeRepair(registry, subscriptions, children, maintenancePolicy, this, logger);

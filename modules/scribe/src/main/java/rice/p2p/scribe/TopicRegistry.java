@@ -53,7 +53,7 @@ import rice.p2p.commonapi.NodeHandleListener;
 import rice.p2p.commonapi.NodeHandleSet;
 
 /**
- * The local node's view of every Scribe tree it takes part in: one {@link TopicManager} per topic, plus
+ * The local node's view of every Scribe tree it takes part in: one {@link TopicTreeState} per topic, plus
  * the reverse indexes from each parent and child to its topics.
  *
  * The indexes decide when the Scribe registers itself as a liveness listener on a node handle: as long as
@@ -64,11 +64,11 @@ import rice.p2p.commonapi.NodeHandleSet;
 final class TopicRegistry {
 
   /**
-   * the hashtable of topic -> TopicManager
+   * the hashtable of topic -> TopicTreeState
    */
   // Hashtable on purpose: the registry locks this very object (synchronized (topicManagers)) and hands out its synchronized views
   @SuppressWarnings("JdkObsolete")
-  private final Hashtable<Topic, TopicManager> topicManagers = new Hashtable<Topic, TopicManager>();
+  private final Hashtable<Topic, TopicTreeState> topicManagers = new Hashtable<Topic, TopicTreeState>();
 
   /**
    * This contains a mapping of child - > all topics for which the local node
@@ -118,15 +118,15 @@ final class TopicRegistry {
     return topicManagers;
   }
 
-  TopicManager get(Topic topic) {
+  TopicTreeState get(Topic topic) {
     return topicManagers.get(topic);
   }
 
   /**
    * Creates and registers a manager for the topic. Need to be holding lock: {@link #lock()}
    */
-  TopicManager create(Topic topic) {
-    TopicManager manager = new TopicManager(topic, this, endpoint, localHandle, logger);
+  TopicTreeState create(Topic topic) {
+    TopicTreeState manager = new TopicTreeState(topic, this, endpoint, localHandle, logger);
     topicManagers.put(topic, manager);
     return manager;
   }
@@ -135,9 +135,9 @@ final class TopicRegistry {
    * Lazy constructor.
    * @return never null
    */
-  TopicManager getOrCreate(Topic topic) {
+  TopicTreeState getOrCreate(Topic topic) {
     synchronized(topicManagers) {
-      TopicManager manager = topicManagers.get(topic);
+      TopicTreeState manager = topicManagers.get(topic);
 
       // if we don't know about the topic, we subscribe, otherwise,
       // we simply add the child to the list
@@ -157,7 +157,7 @@ final class TopicRegistry {
     return topicManagers.keySet();
   }
 
-  Collection<TopicManager> managers() {
+  Collection<TopicTreeState> managers() {
     return topicManagers.values();
   }
 
@@ -186,7 +186,7 @@ final class TopicRegistry {
   // ----- per-topic queries -----
 
   Collection<ScribeMultiClient> getClientsByTopic(Topic topic) {
-    TopicManager manager = topicManagers.get(topic);
+    TopicTreeState manager = topicManagers.get(topic);
     if (manager != null) {
       return manager.getClients();
     }
@@ -194,7 +194,7 @@ final class TopicRegistry {
   }
 
   Collection<NodeHandle> getChildrenOfTopic(Topic topic) {
-    TopicManager manager = topicManagers.get(topic);
+    TopicTreeState manager = topicManagers.get(topic);
     if (manager != null) {
       return manager.getChildren();
     }

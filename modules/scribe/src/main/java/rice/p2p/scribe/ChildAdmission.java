@@ -61,7 +61,7 @@ import rice.p2p.scribe.messaging.UnsubscribeMessage;
  * The parent side of Scribe: decides, with the policy, which subscribers to take on as children while
  * their subscribe messages pass through, passes the rest on, and adds and drops children.
  */
-final class ChildManager {
+final class ChildAdmission {
 
   private final Endpoint endpoint;
 
@@ -82,7 +82,7 @@ final class ChildManager {
 
   private final Logger logger;
 
-  ChildManager(Endpoint endpoint, NodeHandle localHandle, TopicRegistry registry, Supplier<ScribePolicy> policy,
+  ChildAdmission(Endpoint endpoint, NodeHandle localHandle, TopicRegistry registry, Supplier<ScribePolicy> policy,
       ScribeMaintenancePolicy maintenancePolicy, Scribe scribe, SubscriptionManager subscriptions, Logger logger) {
     this.endpoint = endpoint;
     this.localHandle = localHandle;
@@ -102,13 +102,13 @@ final class ChildManager {
    */
   void addChild(Topic topic, NodeHandle child) {
     if (addChildHelper(topic, child)) {
-      // a new TopicManager was created
+      // a new TopicTreeState was created
       scribe.subscribe(Collections.singletonList(topic), null, maintenancePolicy.implicitSubscribe(Collections.singletonList(topic)), null);
     }
 
     // note, there is a bit of a synchronization issue between this call and the addChildHelper call, but I don't want
     // to be holding a lock when calling addChildHelper, because it calls in to user code
-    TopicManager manager = registry.getOrCreate(topic);
+    TopicTreeState manager = registry.getOrCreate(topic);
 
     // we send a confirmation back to the child
     endpoint.route(null, new SubscribeAckMessage(localHandle,
@@ -128,7 +128,7 @@ final class ChildManager {
 
     boolean ret = false;
 
-    TopicManager manager;
+    TopicTreeState manager;
 
     List<ScribeMultiClient> clientList;
     synchronized(registry.lock()) {
@@ -171,7 +171,7 @@ final class ChildManager {
 
     boolean sendUnsubscribe = false;
 
-    TopicManager manager;
+    TopicTreeState manager;
 
     synchronized(registry.lock()) {
       manager = registry.get(topic);
@@ -182,7 +182,7 @@ final class ChildManager {
 
         sendUnsubscribe = manager.removeChild(child);
         if (sendUnsubscribe) {
-          logger.info("Removing TopicManager for topic: {}", topic);
+          logger.info("Removing TopicTreeState for topic: {}", topic);
 
           registry.remove(topic);
           // Since we will be removing the topicManager which will also get rid of
@@ -267,7 +267,7 @@ final class ChildManager {
     ArrayList<Topic> askPolicy = new ArrayList<Topic>(); // ask the policy, and take these out if the policy accepts them
 
     for (Topic topic : sMessage.getTopics()) {
-      TopicManager tmanager = registry.get(topic);
+      TopicTreeState tmanager = registry.get(topic);
 
       if (tmanager != null) {
         List<Id> path = tmanager.getPathToRoot();
@@ -362,7 +362,7 @@ final class ChildManager {
       // build all of the pathToRoot[]
       List<List<Id>> paths = new ArrayList<List<Id>>(toReturn.size());
       for (Topic topic : toReturn) {
-        TopicManager tmanager = registry.get(topic);
+        TopicTreeState tmanager = registry.get(topic);
         paths.add(tmanager.getPathToRoot());
       }
 
@@ -397,7 +397,7 @@ final class ChildManager {
       Topic topic = topicIterator.next();
 
       // the topic can change on the SubscribeMessage when we accept some of the items
-      TopicManager manager = registry.get(topic);
+      TopicTreeState manager = registry.get(topic);
 
       // we have nothing to do with this message
       if (manager == null) {

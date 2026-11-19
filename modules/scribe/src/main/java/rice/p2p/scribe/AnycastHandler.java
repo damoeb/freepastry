@@ -98,7 +98,7 @@ final class AnycastHandler {
    * @return Whether or not to forward the message further
    */
   boolean forward(RouteMessage message, AnycastMessage aMessage) {
-    TopicManager manager = registry.get(aMessage.getTopic());
+    TopicTreeState manager = registry.get(aMessage.getTopic());
 
     // Note that since forward() is called also on the outgoing path, it
     // could be that the last visited node of the anycast message is itself,

@@ -128,7 +128,7 @@ final class SubscriptionManager {
 
     synchronized(registry.lock()) {
       for (Topic topic : theTopics) {
-        TopicManager manager = registry.get(topic);
+        TopicTreeState manager = registry.get(topic);
 
         // if we don't know about this topic, subscribe
         // otherwise, we simply add the client to the list
@@ -160,7 +160,7 @@ final class SubscriptionManager {
   /**
    * This code:
    * for each Topic:
-   *   1) removes the client from the TopicManager
+   *   1) removes the client from the TopicTreeState
    *   2)
    */
   void unsubscribe(Collection<Topic> topicsToUnsubscribe, ScribeMultiClient client) {
@@ -169,7 +169,7 @@ final class SubscriptionManager {
 
     synchronized(registry.lock()) {
       for (Topic topic : topicsToUnsubscribe) {
-        TopicManager manager = registry.get(topic);
+        TopicTreeState manager = registry.get(topic);
 
         if (manager != null) {
 
@@ -178,7 +178,7 @@ final class SubscriptionManager {
           // if this is the last client and there are no children,
           // then we unsubscribe from the topic
           if (manager.removeClient(client)) {
-            logger.info("Removing TopicManager for topic: {}", topic);
+            logger.info("Removing TopicTreeState for topic: {}", topic);
 
             registry.remove(topic);
 
@@ -459,7 +459,7 @@ final class SubscriptionManager {
     Iterator<List<Id>> i = saMessage.getPathsToRoot().iterator();
     for (Topic topic : saMessage.getTopics()) {
       List<Id> pathToRoot = i.next();
-      TopicManager manager = registry.get(topic);
+      TopicTreeState manager = registry.get(topic);
 
       logger.debug("Received subscribe ack message from {} for topic {}", saMessage.getSource(), topic);
 

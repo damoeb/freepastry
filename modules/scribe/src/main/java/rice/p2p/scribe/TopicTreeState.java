@@ -57,7 +57,7 @@ import rice.p2p.scribe.messaging.SubscribeAckMessage;
  * @version $Id: ScribeImpl.java 4495 2008-09-26 14:48:02Z jeffh $
  * @author amislove
  */
-public class TopicManager {
+public class TopicTreeState {
 
   /**
    * The topic this manager tracks
@@ -97,11 +97,11 @@ public class TopicManager {
   private NodeHandle parent;
 
   /**
-   * Constructor for TopicManager.
+   * Constructor for TopicTreeState.
    *
    * @param topic the topic to manage
    */
-  TopicManager(Topic topic, TopicRegistry registry, Endpoint endpoint, NodeHandle localHandle, Logger logger) {
+  TopicTreeState(Topic topic, TopicRegistry registry, Endpoint endpoint, NodeHandle localHandle, Logger logger) {
     this.topic = topic;
     this.registry = registry;
     this.endpoint = endpoint;
@@ -116,7 +116,7 @@ public class TopicManager {
   }
 
   /**
-   * Gets the topic of the TopicManager object
+   * Gets the topic of the TopicTreeState object
    *
    * @return The Parent value
    */
@@ -125,7 +125,7 @@ public class TopicManager {
   }
 
   /**
-   * Gets the Parent attribute of the TopicManager object
+   * Gets the Parent attribute of the TopicTreeState object
    *
    * @return The Parent value
    */
@@ -134,7 +134,7 @@ public class TopicManager {
   }
 
   /**
-   * Gets the Clients attribute of the TopicManager object
+   * Gets the Clients attribute of the TopicTreeState object
    *
    * @return The Clients value
    */
@@ -143,7 +143,7 @@ public class TopicManager {
   }
 
   /**
-   * Gets the Children attribute of the TopicManager object
+   * Gets the Children attribute of the TopicTreeState object
    *
    * @return The Children value
    */
@@ -152,7 +152,7 @@ public class TopicManager {
   }
 
   /**
-   * Gets the PathToRoot attribute of the TopicManager object
+   * Gets the PathToRoot attribute of the TopicTreeState object
    *
    * @return The PathToRoot value
    */
@@ -161,7 +161,7 @@ public class TopicManager {
   }
 
   /**
-   * Sets the PathToRoot attribute of the TopicManager object
+   * Sets the PathToRoot attribute of the TopicTreeState object
    *
    * Don't hold the topicManagers lock, this method sends messages
    *
@@ -211,7 +211,7 @@ public class TopicManager {
   }
 
   /**
-   * Sets the Parent attribute of the TopicManager object
+   * Sets the Parent attribute of the TopicTreeState object
    *
    * @param handle The new Parent value
    */
@@ -253,7 +253,7 @@ public class TopicManager {
   }
 
   /**
-   * Adds a feature to the Client attribute of the TopicManager object
+   * Adds a feature to the Client attribute of the TopicTreeState object
    *
    * @param client The feature to be added to the Client attribute
    */
@@ -278,7 +278,7 @@ public class TopicManager {
   }
 
   /**
-   * Adds a feature to the Child attribute of the TopicManager object
+   * Adds a feature to the Child attribute of the TopicTreeState object
    *
    * Need to be holding lock: topicManagers
    *

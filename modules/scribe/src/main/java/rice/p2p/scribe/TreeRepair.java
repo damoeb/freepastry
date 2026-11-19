@@ -58,7 +58,7 @@ final class TreeRepair {
 
   private final SubscriptionManager subscriptions;
 
-  private final ChildManager children;
+  private final ChildAdmission children;
 
   private final ScribeMaintenancePolicy maintenancePolicy;
 
@@ -69,7 +69,7 @@ final class TreeRepair {
 
   private final Logger logger;
 
-  TreeRepair(TopicRegistry registry, SubscriptionManager subscriptions, ChildManager children,
+  TreeRepair(TopicRegistry registry, SubscriptionManager subscriptions, ChildAdmission children,
       ScribeMaintenancePolicy maintenancePolicy, MaintainableScribe scribe, Logger logger) {
     this.registry = registry;
     this.subscriptions = subscriptions;
@@ -116,7 +116,7 @@ final class TreeRepair {
     if (joined) {
       // NOTE: we could clean this up to use roots/pending, but this impl seems pretty safe
       List<Topic> notRoot = new ArrayList<Topic>();
-      for(TopicManager manager : new ArrayList<TopicManager>(registry.managers())) {
+      for(TopicTreeState manager : new ArrayList<TopicTreeState>(registry.managers())) {
         Topic topic = manager.getTopic();
         // check if new guy is root, we were old root, then subscribe
         if (!registry.isRoot(topic) && manager.getParent() == null){ // maybe we are already subscribing?
@@ -136,7 +136,7 @@ final class TreeRepair {
   void dropReceived(DropMessage dMessage) {
     logger.debug("Received drop message from {} for topic {}", dMessage.getSource(), dMessage.getTopic());
 
-    TopicManager manager = registry.get(dMessage.getTopic());
+    TopicTreeState manager = registry.get(dMessage.getTopic());
 
     if (manager != null) {
       if ((manager.getParent() != null) && manager.getParent().equals(dMessage.getSource())) {

@@ -85,7 +85,7 @@ final class Publisher {
    * @return the publish message to deliver locally, or null if we don't know the topic
    */
   PublishMessage publishRequestReceived(PublishRequestMessage prMessage) {
-    TopicManager manager = registry.get(prMessage.getTopic());
+    TopicTreeState manager = registry.get(prMessage.getTopic());
 
     logger.trace("Received publish request message with data {} for topic {}", prMessage.getContent(), prMessage.getTopic());
 
@@ -102,7 +102,7 @@ final class Publisher {
    * Hands a published message to our clients and pushes it on to our children.
    */
   void publishReceived(PublishMessage pMessage) {
-    TopicManager manager = registry.get(pMessage.getTopic());
+    TopicTreeState manager = registry.get(pMessage.getTopic());
 
     logger.trace("Received publish message with data {} for topic {}", pMessage.getContent(), pMessage.getTopic());
 
