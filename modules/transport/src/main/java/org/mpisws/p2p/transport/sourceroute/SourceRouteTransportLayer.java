@@ -85,10 +85,14 @@ public class SourceRouteTransportLayer<Identifier>
   SourceRouteFactory<Identifier> srFactory;
   SourceRouteForwardStrategy<Identifier> forwardSourceRouteStrategy;
 
+  /**
+   * @param fSRs decides whether this node relays a source route to its next hop, for datagrams and sockets; null
+   *     installs {@link DefaultForwardSourceRouteStrategy}, which never relays
+   */
   public SourceRouteTransportLayer(
       SourceRouteFactory<Identifier> srFactory,
       TransportLayer<Identifier, ByteBuffer> etl,
-      SourceRouteForwardStrategy<Identifier> fSRs,
+      @Nullable SourceRouteForwardStrategy<Identifier> fSRs,
       Environment env,
       ErrorHandler<SourceRoute<Identifier>> errorHandler) {
     this.etl = etl;
@@ -99,11 +103,7 @@ public class SourceRouteTransportLayer<Identifier>
     localIdentifier = this.srFactory.getSourceRoute(etl.getLocalIdentifier());
     taps = new ArrayList<SourceRouteTap<Identifier>>();
 
-    this.forwardSourceRouteStrategy = fSRs;
-
-    if (this.forwardSourceRouteStrategy == null) {
-      this.forwardSourceRouteStrategy = new DefaultForwardSourceRouteStrategy<Identifier>();
-    }
+    this.forwardSourceRouteStrategy = fSRs != null ? fSRs : new DefaultForwardSourceRouteStrategy<Identifier>();
 
     if (this.errorHandler == null) {
       this.errorHandler = new DefaultErrorHandler<SourceRoute<Identifier>>(logger);
@@ -424,10 +424,16 @@ public class SourceRouteTransportLayer<Identifier>
         tap.receivedMessage(ret, sr);
       }
 
+      Identifier nextHop = sr.getHop(hopNum+1);
+      if (!forwardSourceRouteStrategy.forward(nextHop, sr, false, options)) {
+        logger.info("Rejecting forwarding a message to next hop {} <{}> in {}", nextHop, hopNum, sr);
+        return;
+      }
+
       // forward
       m.position(pos);
       etl.sendMessage(
-          sr.getHop(hopNum+1),
+          nextHop,
           m,
           null, // think about this
           null); // it's important to the rendezvous layer to _not_ reuse the options

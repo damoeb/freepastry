@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.networkinfo;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -553,7 +554,7 @@ public class NetworkInfoTransportLayer implements
           try {
             MultiInetSocketAddress addr = MultiInetSocketAddress.build(sib);
             long uid = sib.readLong();
-            probeStrategy.requestProbe(addr, uid, new Continuation<Boolean, Exception>() {
+            Continuation<Boolean, Exception> reply = new Continuation<Boolean, Exception>() {
               @Override
               public void receiveResult(Boolean result) {
                 returnResult(result.booleanValue());
@@ -596,7 +597,13 @@ public class NetworkInfoTransportLayer implements
                   socket.close();
                 }
               }
-            });
+            };
+            if (isRequestersOwnHost(addr, socket.getIdentifier())) {
+              probeStrategy.requestProbe(addr, uid, reply);
+            } else {
+              logger.info("Refusing to have {} probed for {}, it is not the requester's host", addr, socket.getIdentifier());
+              reply.receiveResult(false);
+            }
           } catch (InsufficientBytesException ibe) {
             socket.register(true, false, this);
           }
@@ -613,6 +620,16 @@ public class NetworkInfoTransportLayer implements
       errorHandler.receivedException(socket.getIdentifier(), ioe);
       socket.close();
     }
+  }
+
+  /**
+   * A probe request asks a neighbour to contact an address, so only the requester's own host may be named: the
+   * outermost address of the request must have the IP the request came from. The port may differ, the request comes
+   * from an ephemeral port.
+   */
+  static boolean isRequestersOwnHost(MultiInetSocketAddress probeMe, InetSocketAddress requester) {
+    InetAddress probeIp = probeMe.getOutermostAddress().getAddress();
+    return probeIp != null && probeIp.equals(requester.getAddress());
   }
 
   public void handleProbeResponse(final P2PSocket<InetSocketAddress> socket) {

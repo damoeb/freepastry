@@ -36,6 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer;
 
+import org.mpisws.p2p.transport.sourceroute.AddressPolicyForwardStrategy;
+import org.mpisws.p2p.transport.multiaddress.SimpleAddressStrategy;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -186,7 +189,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         new SourceRouteTransportLayer<MultiInetSocketAddress>(
             srFactory,
             myEpochLayer,
-            null, env_a, null) {
+            AddressPolicyForwardStrategy.forMultiInetSocketAddress(myAddr, new SimpleAddressStrategy()), env_a, null) {
 
           @Override
           public void incomingSocket(P2PSocket<MultiInetSocketAddress> socka) throws IOException {

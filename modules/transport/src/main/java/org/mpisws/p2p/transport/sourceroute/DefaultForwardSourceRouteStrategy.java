@@ -40,7 +40,8 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Always accepts.
+ * Refuses every next hop: a node relays source routes only when it is given a policy that can judge the next hop, such
+ * as {@link AddressPolicyForwardStrategy}.
  *
  * @author Jeff Hoye
  */
@@ -50,7 +51,7 @@ public class DefaultForwardSourceRouteStrategy<Identifier> implements
   @Override
   public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr,
       boolean socket, @Nullable Map<String, Object> options) {
-    return true;
+    return false;
   }
 
 }

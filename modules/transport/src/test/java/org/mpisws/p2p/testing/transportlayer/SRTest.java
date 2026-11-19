@@ -36,6 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.testing.transportlayer;
 
+import org.mpisws.p2p.transport.sourceroute.AddressPolicyForwardStrategy;
+import org.mpisws.p2p.transport.multiaddress.SimpleAddressStrategy;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -129,7 +132,8 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
             new WireTransportLayer(addr_a,env_a, null),
           env_a, null,GOOD_HDR, 2000),
         env_a, null, null),
-      null, env_a, null);
+      AddressPolicyForwardStrategy.forMultiInetSocketAddress(new MultiInetSocketAddress(addr_a), new SimpleAddressStrategy()),
+      env_a, null);
   }
 
   static class Triplet {

@@ -110,7 +110,7 @@ class SourceRouteLoopTest {
       QueueLayer q = new QueueLayer(n);
       layers.add(q);
       SourceRouteTransportLayer<InetSocketAddress> impl =
-          new SourceRouteTransportLayer<>(factory, q, null, env, null);
+          new SourceRouteTransportLayer<>(factory, q, AddressPolicyForwardStrategy.forInetSocketAddress(n), env, null);
       impl.setCallback(new TransportLayerCallback<>() {
         @Override
         public void messageReceived(SourceRoute<InetSocketAddress> i, ByteBuffer m, @Nullable Map<String, Object> o) {

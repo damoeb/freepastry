@@ -46,6 +46,7 @@ import org.mpisws.p2p.transport.multiaddress.AddressStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.networkinfo.Prober;
+import org.mpisws.p2p.transport.sourceroute.AddressPolicyForwardStrategy;
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
 import rice.pastry.NodeHandle;
@@ -80,12 +81,19 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
     handleProbeRequestMessage(prm);
   }
 
+  /**
+   * Probes the address a peer asks for, unless it is one this node must not contact for someone else (see
+   * {@link AddressPolicyForwardStrategy#isAcceptable}).
+   */
   public void handleProbeRequestMessage(ProbeRequestMessage prm) {
     logger.debug("handleProbeRequestMessage({})", prm);
-    prober.probe(
-        addressStrategy.getAddress(((SocketNodeHandle)thePastryNode.getLocalHandle()).getAddress(),
-            prm.getProbeRequester()),
-            prm.getUID(), null, null);
+    MultiInetSocketAddress local = ((SocketNodeHandle)thePastryNode.getLocalHandle()).getAddress();
+    InetSocketAddress target = addressStrategy.getAddress(local, prm.getProbeRequester());
+    if (!AddressPolicyForwardStrategy.isAcceptable(AddressPolicyForwardStrategy.addresses(local), target)) {
+      logger.info("Refusing to probe {} for {}", target, prm);
+      return;
+    }
+    prober.probe(target, prm.getUID(), null, null);
   }
 
   /**

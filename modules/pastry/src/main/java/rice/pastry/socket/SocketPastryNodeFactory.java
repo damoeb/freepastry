@@ -81,6 +81,7 @@ import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
+import org.mpisws.p2p.transport.sourceroute.AddressPolicyForwardStrategy;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteForwardStrategy;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
@@ -475,11 +476,21 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   Map<PastryNode, LivenesSourceRouteForwardStrategy<MultiInetSocketAddress>> livenesSourceRouteForwardStrategy =
     new HashMap<PastryNode, LivenesSourceRouteForwardStrategy<MultiInetSocketAddress>>();
+  /**
+   * Relays a source route only to a next hop whose address passes {@link AddressPolicyForwardStrategy} (no loopback,
+   * link-local, wildcard or multicast address unless the node has one itself, never the node itself) and, for sockets,
+   * that is not known to be dead.
+   */
   protected SourceRouteForwardStrategy<MultiInetSocketAddress> getSourceRouteForwardStrategy(
       PastryNode pn, MultiAddressSourceRouteFactory esrFactory) {
-    LivenesSourceRouteForwardStrategy<MultiInetSocketAddress> ret = new LivenesSourceRouteForwardStrategy<MultiInetSocketAddress>(esrFactory, pn.getEnvironment());
-    livenesSourceRouteForwardStrategy.put(pn, ret);
-    return ret;
+    LivenesSourceRouteForwardStrategy<MultiInetSocketAddress> liveness = new LivenesSourceRouteForwardStrategy<MultiInetSocketAddress>(esrFactory, pn.getEnvironment());
+    livenesSourceRouteForwardStrategy.put(pn, liveness);
+    AddressStrategy addressStrategy = pn.getVars().get(MULTI_ADDRESS_STRATEGY) instanceof AddressStrategy as
+        ? as : new SimpleAddressStrategy();
+    AddressPolicyForwardStrategy<MultiInetSocketAddress> policy = AddressPolicyForwardStrategy.forMultiInetSocketAddress(
+        ((SocketNodeHandle) pn.getLocalHandle()).getAddress(), addressStrategy);
+    return (nextHop, sr, socket, options) ->
+        policy.forward(nextHop, sr, socket, options) && liveness.forward(nextHop, sr, socket, options);
   }
 
   private void notifyLivenessTransportLayerConstructed(PastryNode pn,
