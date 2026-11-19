@@ -195,9 +195,9 @@ public class GCIdSet implements IdSet {
     if (numElements() != other.numElements())
       return false;
 
-    Iterator<Id> i = ids.getIterator();
-    while (i.hasNext())
-      if (! other.ids.isMemberId(i.next()))
+    Iterator<Id> idIterator = ids.getIterator();
+    while (idIterator.hasNext())
+      if (! other.ids.isMemberId(idIterator.next()))
         return false;
 
     return true;

@@ -121,12 +121,12 @@ public final class ReplicationResponseMessage extends ReplicationMessage {
     // encode the ids table
     // the table must be full: rows and entries are written without null markers
     buf.writeInt(ids.length);
-    for (Id[] id : ids) {
-      Id[] thisRow = id;
-        buf.writeInt(thisRow.length);
-        for (int j=0; j<thisRow.length; j++) {
-            buf.writeShort(thisRow[j].getType());
-            thisRow[j].serialize(buf);
+    for (Id[] row : ids) {
+      Id[] rowIds = row;
+        buf.writeInt(rowIds.length);
+        for (int j=0; j<rowIds.length; j++) {
+            buf.writeShort(rowIds[j].getType());
+            rowIds[j].serialize(buf);
         }
     }
 

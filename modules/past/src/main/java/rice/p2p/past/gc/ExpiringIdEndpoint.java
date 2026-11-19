@@ -130,23 +130,23 @@ public class ExpiringIdEndpoint implements Endpoint {
    * faulty nodes returned is no higher than the fraction of faulty nodes in the overlay.
    *
    * @param id The destination id.
-   * @param num The number of nodes to return.
+   * @param count The number of nodes to return.
    * @param safe Whether or not to return safe nodes.
    */
   @Override
-  public NodeHandleSet localLookup(Id id, int num, boolean safe) {
-    return endpoint.localLookup(id, num, safe);
+  public NodeHandleSet localLookup(Id id, int count, boolean safe) {
+    return endpoint.localLookup(id, count, safe);
   }
 
   /**
    * This methods returns an unordered set of nodehandles on which are neighbors of the local
    * node in the id space.  Up to num handles are returned.
    *
-   * @param num The number of desired handle to return.
+   * @param count The number of desired handle to return.
    */
   @Override
-  public NodeHandleSet neighborSet(int num) {
-    return endpoint.neighborSet(num);
+  public NodeHandleSet neighborSet(int count) {
+    return endpoint.neighborSet(count);
   }
 
   /**
@@ -232,8 +232,8 @@ public class ExpiringIdEndpoint implements Endpoint {
   }
 
   @Override
-  public List<NodeHandle> networkNeighbors(int num) {
-    return endpoint.networkNeighbors(num);
+  public List<NodeHandle> networkNeighbors(int count) {
+    return endpoint.networkNeighbors(count);
   }
 
   /**

@@ -83,10 +83,10 @@ public interface ReplicationPolicy {
     @Override
     public IdSet difference(IdSet local, IdSet remote, IdFactory factory) {
       IdSet result = factory.buildIdSet();
-      Iterator<Id> i = remote.getIterator();
+      Iterator<Id> idIterator = remote.getIterator();
 
-      while (i.hasNext()) {
-        Id id = (Id) i.next();
+      while (idIterator.hasNext()) {
+        Id id = (Id) idIterator.next();
 
         if (! local.isMemberId(id))
           result.addId(id);

@@ -64,25 +64,25 @@ import rice.persistence.Storage;
 @SuppressWarnings("unchecked")
 public class DistPastTest {
 
-    public DistPastTest(int bindport, InetSocketAddress bootaddress, Environment env, int numNodes) throws Exception {
+    public DistPastTest(int bindPort, InetSocketAddress bootAddress, Environment env, int numNodes) throws Exception {
 
       // Generate the NodeIds Randomly
-      NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
+      NodeIdFactory nodeIdFactory = new RandomNodeIdFactory(env);
       Past localPast = null;
-      Storage stor = null;
+      Storage storage = null;
 
       // used for generating PastContent object Ids.
       // this implements the "hash function" for our DHT
       PastryIdFactory idFactory = new rice.pastry.commonapi.PastryIdFactory(env);
 
       // construct the PastryNodeFactory, this is how we use rice.pastry.socket
-      PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
+      PastryNodeFactory factory = new SocketPastryNodeFactory(nodeIdFactory, bindPort, env);
 
       // loop to construct the nodes/apps
-      for (int curNode = 0; curNode < numNodes; curNode++) {
+      for (int nodeIndex = 0; nodeIndex < numNodes; nodeIndex++) {
         // construct a node and boot it; if there is no node at bootaddress (first loop), it starts its own ring
         PastryNode node = factory.newNode();
-        node.boot(bootaddress);
+        node.boot(bootAddress);
 
         // the node may require sending several messages to fully boot into the ring
         while(!node.isReady()) {
@@ -94,8 +94,8 @@ public class DistPastTest {
 
 
         final PastImpl[] past = new PastImpl[1];
-        stor = new PersistentStorage(idFactory, new PastStorageSerializer(() -> past[0]), ".",4*1024*1024,node.getEnvironment());
-          localPast = past[0] = new PastImpl(node, new CachedStorageImpl(idFactory,stor,new LRUCache(new MemoryStorage(idFactory),512*1024,node.getEnvironment())), 3, "");
+        storage = new PersistentStorage(idFactory, new PastStorageSerializer(() -> past[0]), ".",4*1024*1024,node.getEnvironment());
+          localPast = past[0] = new PastImpl(node, new CachedStorageImpl(idFactory,storage,new LRUCache(new MemoryStorage(idFactory),512*1024,node.getEnvironment())), 3, "");
           localPast.setContentDeserializer((buf, endpoint, contentType) -> {
             if (contentType == DistPastTestContent.TYPE) {
               return new DistPastTestContent(buf, endpoint);
@@ -105,15 +105,15 @@ public class DistPastTest {
       }
       Thread.sleep(5000);
 
-      String s = "test" + env.getRandomSource().nextInt();
-      PastContent testContent = new DistPastTestContent(env,idFactory,s);
+      String contentText = "test" + env.getRandomSource().nextInt();
+      PastContent testContent = new DistPastTestContent(env,idFactory,contentText);
       System.out.println("Inserting "+testContent);
       localPast.insert(testContent, new Continuation<Boolean[], Exception>() {
         @Override
         public void receiveResult(Boolean[] result) {
           Boolean[] results = result;
-          for(int ctr = 0; ctr < results.length;ctr++) {
-            System.out.println("got "+results[ctr].booleanValue());
+          for(int counter = 0; counter < results.length;counter++) {
+            System.out.println("got "+results[counter].booleanValue());
           }
 
         }
@@ -150,18 +150,18 @@ public class DistPastTest {
 
       try {
         // the port to use locally
-        int bindport = Integer.parseInt(args[0]);
+        int bindPort = Integer.parseInt(args[0]);
 
         // build the bootaddress from the command line args
-        InetAddress bootaddr = InetAddress.getByName(args[1]);
-        int bootport = Integer.parseInt(args[2]);
-        InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
+        InetAddress bootInetAddress = InetAddress.getByName(args[1]);
+        int bootPort = Integer.parseInt(args[2]);
+        InetSocketAddress bootAddress = new InetSocketAddress(bootInetAddress,bootPort);
 
         // the port to use locally
         int numNodes = Integer.parseInt(args[3]);
 
         // launch our node!
-        new DistPastTest(bindport, bootaddress, env, numNodes);
+        new DistPastTest(bindPort, bootAddress, env, numNodes);
       } catch (Exception e) {
         // remind user how to use
         System.out.println("Usage:");

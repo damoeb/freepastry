@@ -64,11 +64,11 @@ class GCPastRefreshTest {
     }
 
     @Override
-    protected void processNode(int num, Node node) {
-      pasts[num] = new ExpiringPastImpl(node, new CachedStorageImpl(FACTORY, new MemoryStorage(FACTORY), new NoOpCache(FACTORY)),
+    protected void processNode(int nodeIndex, Node node) {
+      pasts[nodeIndex] = new ExpiringPastImpl(node, new CachedStorageImpl(FACTORY, new MemoryStorage(FACTORY), new NoOpCache(FACTORY)),
           null, REPLICAS, "gc-refresh-test", new PastPolicy.DefaultPastPolicy(), COLLECTION_INTERVAL, null);
-      pasts[num].setContentDeserializer((buf, endpoint, type) -> new Content(buf, endpoint));
-      pasts[num].setContentHandleDeserializer((buf, endpoint, type) -> {
+      pasts[nodeIndex].setContentDeserializer((buf, endpoint, type) -> new Content(buf, endpoint));
+      pasts[nodeIndex].setContentHandleDeserializer((buf, endpoint, type) -> {
         throw new IOException("no handles in this test");
       });
     }

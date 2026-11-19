@@ -56,12 +56,12 @@ import rice.p2p.commonapi.IdFactory;
  */
 public abstract class ContentHashPastContent implements PastContent {
 
-  private final Id myId;
+  private final Id id;
 
   // ----- PastCONTENT METHODS -----
 
-  public ContentHashPastContent(Id myId) {
-    this.myId = myId;
+  public ContentHashPastContent(Id id) {
+    this.id = id;
   }
 
   /**
@@ -80,7 +80,7 @@ public abstract class ContentHashPastContent implements PastContent {
    * @return true if {@link #getId()} equals {@link #computeContentHash(IdFactory)}
    */
   public final boolean verifyContentHash(IdFactory factory) {
-    return myId != null && myId.equals(computeContentHash(factory));
+    return id != null && id.equals(computeContentHash(factory));
   }
 
   /**
@@ -131,7 +131,7 @@ public abstract class ContentHashPastContent implements PastContent {
    */
   @Override
   public Id getId() {
-    return myId;
+    return id;
   }
 
   /**

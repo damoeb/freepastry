@@ -77,12 +77,12 @@ class PastSocketRingTest {
         assertEquals(content.getContent(), ((DistPastTestContent) found).getContent());
       }
 
-      Past other = pasts.get((i + 3) % NODES);
+      Past remotePast = pasts.get((i + 3) % NODES);
       PastContentHandle[] handles = await(FutureContinuation.<PastContentHandle[]>call(
-          continuation -> other.lookupHandles(content.getId(), REPLICAS + 1, continuation)));
+          continuation -> remotePast.lookupHandles(content.getId(), REPLICAS + 1, continuation)));
       assertEquals(REPLICAS + 1, Arrays.stream(handles).filter(handle -> handle != null).count(),
           "handles of content " + i + ": " + Arrays.toString(handles));
-      PastContent fetched = await(FutureContinuation.<PastContent>call(continuation -> other.fetch(handles[0], continuation)));
+      PastContent fetched = await(FutureContinuation.<PastContent>call(continuation -> remotePast.fetch(handles[0], continuation)));
       assertEquals(content.getContent(), ((DistPastTestContent) fetched).getContent());
     }
     ring.assertNoExceptions();

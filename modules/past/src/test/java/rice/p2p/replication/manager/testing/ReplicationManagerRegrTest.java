@@ -107,12 +107,12 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    * Method which should process the given newly-created node
    *
    * @param node The newly created node
-   * @param num The number of this node
+   * @param nodeIndex The number of this node
    */
   @Override
-  protected void processNode(int num, Node node) {
-    clients[num] = new TestReplicationManagerClient(node);
-    replications[num] = new ReplicaFetchCoordinatorImpl(node, clients[num], REPLICATION_FACTOR, INSTANCE);
+  protected void processNode(int nodeIndex, Node node) {
+    clients[nodeIndex] = new TestReplicationManagerClient(node);
+    replications[nodeIndex] = new ReplicaFetchCoordinatorImpl(node, clients[nodeIndex], REPLICATION_FACTOR, INSTANCE);
   }
 
   /**
@@ -138,16 +138,16 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     * Tests basic functionality
    */
   public void testBasic() {
-    int num = environment.getRandomSource().nextInt(NUM_NODES);
-    Id id = nodes[num].getId();
+    int nodeIndex = environment.getRandomSource().nextInt(NUM_NODES);
+    Id id = nodes[nodeIndex].getId();
 
-    IdRange all = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
+    IdRange fullRange = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
 
     sectionStart("Testing Basic Functionality");
 
     stepStart("Inserting Object");
 
-    clients[num].insert(id);
+    clients[nodeIndex].insert(id);
 
     stepDone(SUCCESS);
 
@@ -158,7 +158,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     for (int i=0; i<NUM_NODES; i++)
       simulate();
 
-    int count = awaitReplicas(all, id, REPLICATION_FACTOR + 1);
+    int count = awaitReplicas(fullRange, id, REPLICATION_FACTOR + 1);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 1) + " was " + count,
                count == REPLICATION_FACTOR + 1);
@@ -172,16 +172,16 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     * Tests maintenance functionality
    */
   public void testMaintenance() {
-    int num = environment.getRandomSource().nextInt(NUM_NODES);
-    Id id = nodes[num].getId();
+    int nodeIndex = environment.getRandomSource().nextInt(NUM_NODES);
+    Id id = nodes[nodeIndex].getId();
 
-    IdRange all = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
+    IdRange fullRange = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
 
     sectionStart("Testing Maintenance Functionality");
 
     stepStart("Inserting Object");
 
-    clients[num].insert(id);
+    clients[nodeIndex].insert(id);
 
     stepDone(SUCCESS);
 
@@ -190,7 +190,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
 
-    int count = awaitReplicas(all, id, REPLICATION_FACTOR + 1);
+    int count = awaitReplicas(fullRange, id, REPLICATION_FACTOR + 1);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 1) + " was " + count,
                count == REPLICATION_FACTOR + 1);
@@ -199,7 +199,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
 
     stepStart("Killing Primary Replica");
 
-    kill(num);
+    kill(nodeIndex);
 
     stepDone(SUCCESS);
 
@@ -214,7 +214,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
 
-    count = awaitReplicas(all, id, REPLICATION_FACTOR + 2);
+    count = awaitReplicas(fullRange, id, REPLICATION_FACTOR + 2);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 2) + " was " + count,
                count == REPLICATION_FACTOR + 2);
@@ -229,17 +229,17 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    */
   public void testOverload() {
     int NUM_TO_INSERT = 16;
-    int num = environment.getRandomSource().nextInt(NUM_NODES);
-    Id id = nodes[num].getId();
+    int nodeIndex = environment.getRandomSource().nextInt(NUM_NODES);
+    Id id = nodes[nodeIndex].getId();
 
-    IdRange all = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
+    IdRange fullRange = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
 
     sectionStart("Testing Overload Functionality");
 
     stepStart("Inserting " + NUM_TO_INSERT + " Objects");
 
     for (int i=0; i<NUM_TO_INSERT; i++) {
-      clients[num].insert(addToId(id, i));
+      clients[nodeIndex].insert(addToId(id, i));
       simulate();
     }
 
@@ -266,7 +266,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
       Id thisId = addToId(id, j);
 
       for (int i=0; i<NUM_NODES; i++)  {
-        if (clients[i].scan(all).isMemberId(thisId))
+        if (clients[i].scan(fullRange).isMemberId(thisId))
           count++;
       }
 
@@ -285,10 +285,10 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
   public void testStress() {
     int NUM_TO_INSERT = 45;
     Id[] ids = new Id[NUM_TO_INSERT];
-    int num = environment.getRandomSource().nextInt(NUM_NODES);
-    Id id = nodes[num].getId();
+    int nodeIndex = environment.getRandomSource().nextInt(NUM_NODES);
+    Id id = nodes[nodeIndex].getId();
 
-    IdRange all = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
+    IdRange fullRange = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
 
     sectionStart("Testing Stressed Functionality");
 
@@ -296,7 +296,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
 
     for (int i=0; i<NUM_TO_INSERT; i++) {
       ids[i] = addToId(id, i);
-      clients[num].insert(ids[i]);
+      clients[nodeIndex].insert(ids[i]);
     }
 
     stepDone(SUCCESS);
@@ -320,7 +320,7 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
       Id thisId = ids[j];
 
       for (int i=0; i<NUM_NODES; i++)  {
-        if (clients[i].scan(all).isMemberId(thisId))
+        if (clients[i].scan(fullRange).isMemberId(thisId))
           count++;
       }
 
@@ -337,20 +337,20 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
    * Counts the nodes holding the id, polling until the expected count is reached or the timeout passes. Replica
    * fetches complete asynchronously, so a fixed pause is flaky when the machine is loaded.
    */
-  private int awaitReplicas(IdRange all, Id id, int expected) {
+  private int awaitReplicas(IdRange fullRange, Id id, int expected) {
     long deadline = System.currentTimeMillis() + REPLICA_TIMEOUT_MILLIS;
-    int count = countReplicas(all, id);
+    int count = countReplicas(fullRange, id);
     while (count != expected && System.currentTimeMillis() < deadline) {
       simulate();
-      count = countReplicas(all, id);
+      count = countReplicas(fullRange, id);
     }
     return count;
   }
 
-  private int countReplicas(IdRange all, Id id) {
+  private int countReplicas(IdRange fullRange, Id id) {
     int count = 0;
     for (int i = 0; i < NUM_NODES; i++) {
-      if (clients[i].scan(all).isMemberId(id)) {
+      if (clients[i].scan(fullRange).isMemberId(id)) {
         count++;
       }
     }
@@ -372,9 +372,9 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     simulate();
   }
 
-  private Id addToId(Id id, int num) {
+  private Id addToId(Id id, int delta) {
     byte[] bytes = id.toByteArray();
-    bytes[0] = (byte) (bytes[0] + num);
+    bytes[0] = (byte) (bytes[0] + delta);
 
     return FACTORY.buildId(bytes);
   }
@@ -434,8 +434,8 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
 
     @Override
     public String toString() {
-      String s = "TRMC:"+node;
-      return s;
+      String name = "TRMC:"+node;
+      return name;
     }
   }
 }

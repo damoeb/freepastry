@@ -106,9 +106,9 @@ public final class LookupMessage extends ContinuationMessage {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof PastContent) {
       super.serialize(buf, true);
-      PastContent rpc = (PastContent)response;
-      buf.writeShort(rpc.getType());
-      rpc.serialize(buf);
+      PastContent content = (PastContent)response;
+      buf.writeShort(content.getType());
+      content.serialize(buf);
     } else {
       super.serialize(buf, false);
     }

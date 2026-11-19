@@ -425,7 +425,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
           deliverInsert(imsg);
         }
         case GCRefreshMessage rmsg -> {
-          final Iterator<ExpiringId> i = Arrays.asList(rmsg.getKeys()).iterator();
+          final Iterator<ExpiringId> expiringIdIterator = Arrays.asList(rmsg.getKeys()).iterator();
           // filled by one step of the (sequential) continuation chain after the other
           final List<Object> result = new ArrayList<Object>();
           other += rmsg.getKeys().length;
@@ -440,8 +440,8 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
                 result.add(Boolean.TRUE.equals(answer));
               started = true;
 
-              if (i.hasNext()) {
-                final ExpiringId id = i.next();
+              if (expiringIdIterator.hasNext()) {
+                final ExpiringId id = expiringIdIterator.next();
                 /* nobody can lease an object for longer than the maximum lease from now */
                 final long expiration = Math.min(id.expiration(), getEnvironment().getTimeSource().currentTimeMillis() + maxLease);
 
@@ -519,13 +519,13 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
    * @param command The command to call once done
    */
   protected void collect(SortedMap<Id, ?> map, Continuation<? super Boolean, Exception> command) {
-    final Iterator<Id> i = map.keySet().iterator();
+    final Iterator<Id> idIterator = map.keySet().iterator();
 
     Continuation<Object, Exception> remove = new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
       public void receiveResult(Object previousResult) {
-        if (i.hasNext()) {
-          final Id gid = i.next();
+        if (idIterator.hasNext()) {
+          final Id gid = idIterator.next();
 
           if (trash != null) {
             storage.getObject(gid, new StandardContinuation<Object, Object, Exception>(this) {

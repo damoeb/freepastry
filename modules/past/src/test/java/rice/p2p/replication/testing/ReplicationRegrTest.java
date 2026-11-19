@@ -107,12 +107,12 @@ public class ReplicationRegrTest extends CommonAPITest {
    * Method which should process the given newly-created node
    *
    * @param node The newly created node
-   * @param num The number of this node
+   * @param nodeIndex The number of this node
    */
   @Override
-  protected void processNode(int num, Node node) {
-    clients[num] = new TestReplicationClient(node);
-    replications[num] = new ReplicationImpl(node, clients[num], REPLICATION_FACTOR, INSTANCE);
+  protected void processNode(int nodeIndex, Node node) {
+    clients[nodeIndex] = new TestReplicationClient(node);
+    replications[nodeIndex] = new ReplicationImpl(node, clients[nodeIndex], REPLICATION_FACTOR, INSTANCE);
   }
 
   /**
@@ -133,16 +133,16 @@ public class ReplicationRegrTest extends CommonAPITest {
     * Tests basic functionality
    */
   public void testBasic() {
-    int num = environment.getRandomSource().nextInt(NUM_NODES);
-    Id id = nodes[num].getId();
+    int nodeIndex = environment.getRandomSource().nextInt(NUM_NODES);
+    Id id = nodes[nodeIndex].getId();
 
-    IdRange all = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
+    IdRange fullRange = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
 
     sectionStart("Testing Basic Functionality");
 
     stepStart("Inserting Object");
 
-    clients[num].insert(id);
+    clients[nodeIndex].insert(id);
 
     stepDone(SUCCESS);
 
@@ -151,7 +151,7 @@ public class ReplicationRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
 
-    int count = awaitReplicas(id, all, REPLICATION_FACTOR + 1);
+    int count = awaitReplicas(id, fullRange, REPLICATION_FACTOR + 1);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 1) + " was " + count,
                count == REPLICATION_FACTOR + 1);
@@ -165,16 +165,16 @@ public class ReplicationRegrTest extends CommonAPITest {
     * Tests maintenance functionality
    */
   public void testMaintenance() {
-    int num = environment.getRandomSource().nextInt(NUM_NODES);
-    Id id = nodes[num].getId();
+    int nodeIndex = environment.getRandomSource().nextInt(NUM_NODES);
+    Id id = nodes[nodeIndex].getId();
 
-    IdRange all = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
+    IdRange fullRange = FACTORY.buildIdRange(FACTORY.buildId(new byte[20]), FACTORY.buildId(new byte[20]));
 
     sectionStart("Testing Basic Functionality");
 
     stepStart("Inserting Object");
 
-    clients[num].insert(id);
+    clients[nodeIndex].insert(id);
 
     stepDone(SUCCESS);
 
@@ -183,7 +183,7 @@ public class ReplicationRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
 
-    int count = awaitReplicas(id, all, REPLICATION_FACTOR + 1);
+    int count = awaitReplicas(id, fullRange, REPLICATION_FACTOR + 1);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 1) + " was " + count,
                count == REPLICATION_FACTOR + 1);
@@ -192,7 +192,7 @@ public class ReplicationRegrTest extends CommonAPITest {
 
     stepStart("Killing Primary Replica");
 
-    kill(num);
+    kill(nodeIndex);
 
     // wait for notification of failure to propegate
     // No routing involved... but we need to wait long enough for the node
@@ -206,7 +206,7 @@ public class ReplicationRegrTest extends CommonAPITest {
     runMaintenance();
     simulate();
 
-    count = awaitReplicas(id, all, REPLICATION_FACTOR + 2);
+    count = awaitReplicas(id, fullRange, REPLICATION_FACTOR + 2);
 
     assertTrue("Correct number of replicas should be " + (REPLICATION_FACTOR + 2) + " was " + count,
                count == REPLICATION_FACTOR + 2);
@@ -220,12 +220,12 @@ public class ReplicationRegrTest extends CommonAPITest {
    * Counts the nodes holding the id, simulating until the count is as expected or about 10 s passed: the
    * replication runs on the processing thread, so a fixed single wait made this test flaky under load.
    */
-  protected int awaitReplicas(Id id, IdRange all, int expected) {
+  protected int awaitReplicas(Id id, IdRange fullRange, int expected) {
     int count = 0;
     for (int round = 0; round < 20; round++) {
       count = 0;
       for (int i=0; i<NUM_NODES; i++)  {
-        if (clients[i].scan(all).isMemberId(id))
+        if (clients[i].scan(fullRange).isMemberId(id))
           count++;
       }
       if (count == expected) return count;
@@ -266,10 +266,10 @@ public class ReplicationRegrTest extends CommonAPITest {
      */
     @Override
     public void fetch(IdSet keySet, NodeHandle hint) {
-      Iterator<Id> i = keySet.getIterator();
+      Iterator<Id> idIterator = keySet.getIterator();
 
-      while (i.hasNext()) {
-        Id next = (Id) i.next();
+      while (idIterator.hasNext()) {
+        Id next = (Id) idIterator.next();
         storage.store(next, null, next, new ListenerContinuation<Object, Exception>("Insertion of " + next, environment));
       }
     }
@@ -289,10 +289,10 @@ public class ReplicationRegrTest extends CommonAPITest {
       IdRange notRange = range.getComplementRange();
       IdSet idSet = storage.scan(notRange);
 
-      Iterator<Id> i = idSet.getIterator();
+      Iterator<Id> idIterator = idSet.getIterator();
 
-      while (i.hasNext()) {
-        Id next = (Id) i.next();
+      while (idIterator.hasNext()) {
+        Id next = (Id) idIterator.next();
         storage.unstore(next, new ListenerContinuation<Object, Exception>("Removal of " + next, environment));
       }
     }

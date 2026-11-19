@@ -127,17 +127,17 @@ public class RawPastRegrTest extends CommonAPITest {
    * Method which should process the given newly-created node
    *
    * @param node The newly created node
-   * @param num The number of this node
+   * @param nodeIndex The number of this node
    */
   @Override
-  protected void processNode(int num, Node node) {
+  protected void processNode(int nodeIndex, Node node) {
     try {
-      final int n = num;
-      storages[num] = new CachedStorageImpl(FACTORY,
-                                             new PersistentStorage(FACTORY, new PastStorageSerializer(() -> pasts[n]), "root-" + num, storageRoot, 1000000, environment),
+      final int index = nodeIndex;
+      storages[nodeIndex] = new CachedStorageImpl(FACTORY,
+                                             new PersistentStorage(FACTORY, new PastStorageSerializer(() -> pasts[index]), "root-" + nodeIndex, storageRoot, 1000000, environment),
                                              new LRUCache(new MemoryStorage(FACTORY), 100000, environment));
-      pasts[num] = new PastImpl(node, storages[num], REPLICATION_FACTOR, INSTANCE);
-      pasts[num].setContentDeserializer(new PastContentDeserializer() {
+      pasts[nodeIndex] = new PastImpl(node, storages[nodeIndex], REPLICATION_FACTOR, INSTANCE);
+      pasts[nodeIndex].setContentDeserializer(new PastContentDeserializer() {
 
         @Override
         public PastContent deserializePastContent(InputBuffer buf, Endpoint endpoint,
@@ -156,7 +156,7 @@ public class RawPastRegrTest extends CommonAPITest {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    pasts[num].setContentHandleDeserializer((buf, endpoint, contentType) -> {
+    pasts[nodeIndex].setContentHandleDeserializer((buf, endpoint, contentType) -> {
       switch(contentType) {
         case TestPastContentHandle.TYPE:
           return new TestPastContentHandle(buf, endpoint);
@@ -466,27 +466,27 @@ public class RawPastRegrTest extends CommonAPITest {
   @SuppressWarnings("ReferenceEquality")
   protected void testFetch() {
     final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
-    final PastImpl remote1 = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final PastImpl firstRemote = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
     PastImpl randomPast = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
 
-    while (randomPast == remote1) {
+    while (randomPast == firstRemote) {
       randomPast = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
     }
 
-    final PastImpl remote2 = randomPast;
+    final PastImpl secondRemote = randomPast;
 
     final Id id = pasts[environment.getRandomSource().nextInt(NUM_NODES)].getLocalNodeHandle().getId();
-    final PastContent file1 = new VersionedTestPastContent(id, 1);
-    final PastContent file2 = new VersionedTestPastContent(id, 2);
+    final PastContent firstContent = new VersionedTestPastContent(id, 1);
+    final PastContent secondContent = new VersionedTestPastContent(id, 2);
 
-    final PastContentHandle handle1 = new TestPastContentHandle(remote1, id);
-    final PastContentHandle handle2 = new TestPastContentHandle(remote2, id);
+    final PastContentHandle firstHandle = new TestPastContentHandle(firstRemote, id);
+    final PastContentHandle secondHandle = new TestPastContentHandle(secondRemote, id);
 
     sectionStart("Fetch Testing");
 
     // Insert file
     stepStart("File 1 Insertion");
-    remote1.getStorageManager().store(id, null, file1, new TestCommand() {
+    firstRemote.getStorageManager().store(id, null, firstContent, new TestCommand() {
       @Override
       public void receive(Object result) throws Exception {
         assertTrue("Storage of file 1 should succeed", ((Boolean)result).booleanValue());
@@ -495,7 +495,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
         // Insert second file
         stepStart("File 2 Insertion");
-        remote2.getStorageManager().store(id, null, file2, new TestCommand() {
+        secondRemote.getStorageManager().store(id, null, secondContent, new TestCommand() {
           @Override
           public void receive(Object result) throws Exception {
             assertTrue("Storage of file 2 should succeed", ((Boolean)result).booleanValue());
@@ -504,38 +504,38 @@ public class RawPastRegrTest extends CommonAPITest {
 
             // Retrieve first file
             stepStart("File 1 Fetch");
-            local.fetch(handle1, new TestCommand() {
+            local.fetch(firstHandle, new TestCommand() {
               @Override
               public void receive(Object result) throws Exception {
                 assertTrue("Result should be non-null", result != null);
-                assertEquals("Result should be correct", file1, result);
-                assertTrue("Result should not be file 2", ! file2.equals(result));
+                assertEquals("Result should be correct", firstContent, result);
+                assertTrue("Result should not be file 2", ! secondContent.equals(result));
 
-                final Object received1 = result;
+                final Object firstReceived = result;
 
                 stepDone();
 
                 // Retrieve second file
                 stepStart("File 2 Fetch");
-                local.fetch(handle2, new TestCommand() {
+                local.fetch(secondHandle, new TestCommand() {
                   @Override
                   public void receive(Object result) throws Exception {
                     assertTrue("Result should be non-null", result != null);
-                    assertEquals("Result should be correct", file2, result);
-                    assertTrue("Result should not be file 1", ! file1.equals(result));
+                    assertEquals("Result should be correct", secondContent, result);
+                    assertTrue("Result should not be file 1", ! firstContent.equals(result));
 
-                    final Object received2 = result;
+                    final Object secondReceived = result;
 
                     stepDone();
 
                     // ensure different
                     stepStart("File 1 and 2 Different");
-                    assertTrue("Files should not be equal", ! received1.equals(received2));
+                    assertTrue("Files should not be equal", ! firstReceived.equals(secondReceived));
                     stepDone();
 
                     // remove file
                     stepStart("File 1 Removal");
-                    remote1.getStorageManager().unstore(id, new TestCommand() {
+                    firstRemote.getStorageManager().unstore(id, new TestCommand() {
                       @Override
                       public void receive(Object result) throws Exception {
                         assertTrue("Removal of file 1 should succeed", ((Boolean)result).booleanValue());
@@ -544,7 +544,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                         // remove second file
                         stepStart("File 2 Removal");
-                        remote2.getStorageManager().unstore(id, new TestCommand() {
+                        secondRemote.getStorageManager().unstore(id, new TestCommand() {
                           @Override
                           public void receive(Object result) throws Exception {
                             assertTrue("Removal of file 2 should succeed", ((Boolean)result).booleanValue());
@@ -704,11 +704,11 @@ public class RawPastRegrTest extends CommonAPITest {
    */
   protected void testCaching() {
     final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
-    final Id id1 = generateId();
-    final Id id2 = generateId();
-    final PastContent file1 = new TestPastContent(id1);
-    final PastContent file2 = new TestPastContent(id2);
-    final PastContent file3 = new NonMutableTestPastContent(id2);
+    final Id firstId = generateId();
+    final Id secondId = generateId();
+    final PastContent firstContent = new TestPastContent(firstId);
+    final PastContent secondContent = new TestPastContent(secondId);
+    final PastContent nonMutableContent = new NonMutableTestPastContent(secondId);
 
     sectionStart("Caching Testing");
 
@@ -716,7 +716,7 @@ public class RawPastRegrTest extends CommonAPITest {
     stepStart("Manually Inserting Object Into Cache");
 
     // check cache
-    local.getStorageManager().getCache().cache(id1, null, file1, new TestCommand() {
+    local.getStorageManager().getCache().cache(firstId, null, firstContent, new TestCommand() {
       @Override
       public void receive(Object result) throws Exception {
         assertTrue("Object should not be null", result != null);
@@ -726,29 +726,29 @@ public class RawPastRegrTest extends CommonAPITest {
 
         // Check file exists
         stepStart("Local Lookup Satisfied by Cache");
-        local.lookup(id1, new TestCommand() {
+        local.lookup(firstId, new TestCommand() {
           @Override
           public void receive(Object result) throws Exception {
             assertTrue("File should not be null", result != null);
             assertEquals("Lookup of file should be correct",
-                         file1,
+                         firstContent,
                          result);
             stepDone();
 
             // Insert file
             stepStart("Caching Mutable Object");
-            final LookupMessage lookupMessage = new LookupMessage(1, id2, local.getLocalNodeHandle(), id2);
-            lookupMessage.receiveResult(file2);
+            final LookupMessage lookupMessage = new LookupMessage(1, secondId, local.getLocalNodeHandle(), secondId);
+            lookupMessage.receiveResult(secondContent);
 
             assertTrue("Message should continue to be routed",
-                       local.forward(new TestRouteMessage(id2, null, lookupMessage)));
+                       local.forward(new TestRouteMessage(secondId, null, lookupMessage)));
 
             stepDone();
 
             stepStart("Cache Shouldn't Contain Object");
 
             // check cache
-            local.getStorageManager().getObject(id2, new TestCommand() {
+            local.getStorageManager().getObject(secondId, new TestCommand() {
               @Override
               public void receive(Object result) throws Exception {
                 assertTrue("Object should be null", result == null);
@@ -757,9 +757,9 @@ public class RawPastRegrTest extends CommonAPITest {
 
                 stepStart("Caching Non-Mutable Object");
 
-                lookupMessage.receiveResult(file3);
+                lookupMessage.receiveResult(nonMutableContent);
                 assertTrue("Message should continue to be routed",
-                           local.forward(new TestRouteMessage(id2, null, lookupMessage)));
+                           local.forward(new TestRouteMessage(secondId, null, lookupMessage)));
 
                 stepDone();
 
@@ -870,8 +870,8 @@ public class RawPastRegrTest extends CommonAPITest {
       try {
         receive(e);
       }
-      catch (Exception ex) {
-        receiveException(ex);
+      catch (Exception handlerException) {
+        receiveException(handlerException);
       }
     }
   }

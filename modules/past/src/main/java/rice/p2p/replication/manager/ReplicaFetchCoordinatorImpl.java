@@ -375,10 +375,10 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
      * @param keySet The keys to add
      */
     public synchronized void fetch(IdSet keySet, NodeHandle hint) {
-      Iterator<Id> i = keySet.getIterator();
+      Iterator<Id> idIterator = keySet.getIterator();
 
-      while (i.hasNext()) {
-        Id id = (Id) i.next();
+      while (idIterator.hasNext()) {
+        Id id = (Id) idIterator.next();
 
         if (! (idSet.isMemberId(id) ||
                client.exists(id) ||
@@ -403,11 +403,11 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
       IdRange notRange = range.getComplementRange();
 
       /* first, we remove any non-relevant keys from the list of pending keys */
-      Iterator<Id> i = idSet.subSet(notRange).getIterator();
+      Iterator<Id> idIterator = idSet.subSet(notRange).getIterator();
 
       /* now look for any matching ids */
-      while (i.hasNext()) {
-        Id id = (Id) i.next();
+      while (idIterator.hasNext()) {
+        Id id = (Id) idIterator.next();
         idSet.removeId(id);
         hints.remove(id);
       }
@@ -501,22 +501,22 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
       IdRange notRange = range.getComplementRange();
 
       // first, we add all of the clients stuff in the not-range
-      Iterator<Id> i = client.scan(notRange).getIterator();
+      Iterator<Id> idIterator = client.scan(notRange).getIterator();
       int count = 0;
 
-      while (i.hasNext() && (count < NUM_DELETE_AT_ONCE)) {
+      while (idIterator.hasNext() && (count < NUM_DELETE_AT_ONCE)) {
         count++;
-        Id next = (Id) i.next();
+        Id next = (Id) idIterator.next();
 
         if ((id == null) || ! id.equals(next))
           idSet.addId(next);
       }
 
       // next, we remove and ids from the to-delete list which are not in the range
-      Iterator<Id> j = idSet.subSet(range).getIterator();
+      Iterator<Id> rangeIdIterator = idSet.subSet(range).getIterator();
 
-      while (j.hasNext())
-        idSet.removeId((Id) j.next());
+      while (rangeIdIterator.hasNext())
+        idSet.removeId((Id) rangeIdIterator.next());
 
       go();
     }

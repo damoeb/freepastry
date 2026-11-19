@@ -74,12 +74,12 @@ public record ExpiringPastMetadata(long expiration) implements Comparable<Expiri
   /**
    * Comparable, returns -1 if less, 0 if equal, and 1 if greater
    *
-   * @param other The object ot compare to
+   * @param comparedMetadata The object ot compare to
    * @return the comparison
    */
   @Override
-  public int compareTo(ExpiringPastMetadata other) {
-    ExpiringPastMetadata metadata = (ExpiringPastMetadata) other;
+  public int compareTo(ExpiringPastMetadata comparedMetadata) {
+    ExpiringPastMetadata metadata = (ExpiringPastMetadata) comparedMetadata;
 
     if (metadata.expiration > expiration)
       return -1;

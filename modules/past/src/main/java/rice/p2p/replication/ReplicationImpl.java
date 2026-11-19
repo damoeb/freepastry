@@ -336,13 +336,13 @@ public class ReplicationImpl implements Replication, Application, Destructible {
       case ReplicationResponseMessage rm -> {
 
         for (int i=0; i<rm.getIdSets().length; i++) {
-          IdSet temp = factory.buildIdSet();
-          Id[] tempA = rm.getIdSets()[i];
-          for (Id setId : tempA) {
-            temp.addId(setId);
+          IdSet receivedIdSet = factory.buildIdSet();
+          Id[] receivedIds = rm.getIdSets()[i];
+          for (Id setId : receivedIds) {
+            receivedIdSet.addId(setId);
           }
 
-          IdSet fetch = policy.difference(client.scan(rm.getRanges()[i]), temp, factory);
+          IdSet fetch = policy.difference(client.scan(rm.getRanges()[i]), receivedIdSet, factory);
 
           logger.atDebug().log(() -> "COUNT: Was told to fetch " + fetch.numElements() + " in instance " + instance);
 

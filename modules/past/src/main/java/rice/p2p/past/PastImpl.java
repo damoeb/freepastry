@@ -309,8 +309,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
             }
 
             // TODO: handle a partial read of the 4-byte size header
-            byte[] sizeArr = buffers[0].array();
-            int size = MathUtils.byteArrayToInt(sizeArr);
+            byte[] sizeBytes = buffers[0].array();
+            int size = MathUtils.byteArrayToInt(sizeBytes);
 
             logger.trace("Found object of size {} from {}", size, socket);
 
@@ -711,7 +711,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
         // then we send inserts to each replica and wait for at least
         // threshold * num to return successfully
-        MultiContinuation<Boolean[]> multi = new MultiContinuation<Boolean[]>(parent, replicas.size()) {
+        MultiContinuation<Boolean[]> multiContinuation = new MultiContinuation<Boolean[]>(parent, replicas.size()) {
           @Override
           public boolean isDone() throws Exception {
             int numSuccess = 0;
@@ -734,18 +734,18 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
           @Override
           public Boolean[] getResult() {
-            Boolean[] b = new Boolean[result.length];
-            for (int i=0; i<b.length; i++)
-              b[i] = Boolean.valueOf((result[i] == null) || Boolean.TRUE.equals(result[i]));
+            Boolean[] successes = new Boolean[result.length];
+            for (int i=0; i<successes.length; i++)
+              successes[i] = Boolean.valueOf((result[i] == null) || Boolean.TRUE.equals(result[i]));
 
-            return b;
+            return successes;
           }
         };
 
         for (int i=0; i<replicas.size(); i++) {
           NodeHandle handle = replicas.getHandle(i);
           PastMessage msg = builder.buildMessage();
-          Continuation<Object, Exception> continuation = new NamedContinuation<Object, Exception>("InsertMessage to " + replicas.getHandle(i) + " for " + id, multi.getSubContinuation(i));
+          Continuation<Object, Exception> continuation = new NamedContinuation<Object, Exception>("InsertMessage to " + replicas.getHandle(i) + " for " + id, multiContinuation.getSubContinuation(i));
           if (useSocket) {
             sendViaSocket(handle, msg, continuation);
           } else {
@@ -943,21 +943,21 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
       public void receiveResult(NodeHandleSet replicas) {
         logger.trace("Receiving replicas {} for lookup Id {}", replicas, id);
 
-        MultiContinuation<PastContentHandle[]> multi = new MultiContinuation<PastContentHandle[]>(parent, replicas.size()) {
+        MultiContinuation<PastContentHandle[]> multiContinuation = new MultiContinuation<PastContentHandle[]>(parent, replicas.size()) {
           @Override
           public PastContentHandle[] getResult() {
-            PastContentHandle[] p = new PastContentHandle[result.length];
+            PastContentHandle[] handles = new PastContentHandle[result.length];
 
             for (int i=0; i<result.length; i++)
               if (result[i] instanceof PastContentHandle)
-                p[i] = (PastContentHandle) result[i];
+                handles[i] = (PastContentHandle) result[i];
 
-            return p;
+            return handles;
           }
         };
 
         for (int i=0; i<replicas.size(); i++)
-          lookupHandle(id, replicas.getHandle(i), multi.getSubContinuation(i));
+          lookupHandle(id, replicas.getHandle(i), multiContinuation.getSubContinuation(i));
       }
     });
   }
