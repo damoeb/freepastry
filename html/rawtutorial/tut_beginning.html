@@ -483,7 +483,7 @@ Here is the new code we will add to the bottom of the DistTutorial constructor, 
 
     // this is a typical loop to cover your leafset.  Note that if the leafset
     // overlaps, then duplicate nodes will be sent to twice
-    for (int i=-leafSet.ccwSize(); i&lt;=leafSet.cwSize(); i++) {
+    for (int i=-leafSet.counterClockwiseSize(); i&lt;=leafSet.clockwiseSize(); i++) {
       if (i != 0) { // don't send to self
         // select the item
         NodeHandle nh = leafSet.get(i);
@@ -528,7 +528,7 @@ Wait a second and repeat.
       LeafSet leafSet = node.getLeafSet();</pre>
 Iterate over all of the nodes in the leafset.  
   <pre>
-      for (int i=-leafSet.ccwSize(); i&lt;=leafSet.cwSize(); i++) {</pre>
+      for (int i=-leafSet.counterClockwiseSize(); i&lt;=leafSet.clockwiseSize(); i++) {</pre>
   
   
 Don't send to myself.  The local node is node zero in the leafset.

@@ -575,7 +575,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
     } else {
 
       // if the message is not a RouteMessage, then it is for the local node and
-      // was scheduled with scheduleMessage(); see messageForAppl()
+      // was scheduled with scheduleMessage(); see messageForApplication()
       messageForApplication(msg);
     }
   }

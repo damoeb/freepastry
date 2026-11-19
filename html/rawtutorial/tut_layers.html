@@ -682,7 +682,7 @@ When the user requests to send the message, it may be buffered or even fail.  Th
 
 <p/>To construct each layer in the transport stack, <code>SocketPastryNodeFactory</code> executes a method called  <code>get...TransportLayer()</code>.  To insert a layer, simply override one of these calls and wrap the default layer with our new one.
 
-<p/>Since we are going to put our layer right above the wire layer, we will override <code>getWireTransportLayer()</code>.  We will first construct the default layer by calling <code>super.getWireTransportLayer()</code>.  However, we will return our Bandwidth-Limiting layer which wraps the default wire layer.
+<p/>Since we are going to put our layer right above the wire layer, we will override <code>buildWireTransportLayer()</code>.  We will first construct the default layer by calling <code>super.buildWireTransportLayer()</code>.  However, we will return our Bandwidth-Limiting layer which wraps the default wire layer.
 
 <p/>Note that when we construct our <code>BandwidthLimitingTransportLayer</code>, we export <code>&lt;InetSocketAddress&gt;</code>. 
 <pre>
@@ -693,15 +693,15 @@ When the user requests to send the message, it may be buffered or even fail.  Th
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
 
       /**
-       * Override getWireTransportLayer to return the BandwidthLimitingTL wrapping
+       * Override buildWireTransportLayer to return the BandwidthLimitingTL wrapping
        * the default wire implementation.
        */
       @Override
-      protected TransportLayer&lt;InetSocketAddress, ByteBuffer&gt; getWireTransportLayer(
+      protected TransportLayer&lt;InetSocketAddress, ByteBuffer&gt; buildWireTransportLayer(
           InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         // get the default layer
         TransportLayer&lt;InetSocketAddress, ByteBuffer&gt; wtl =
-          super.getWireTransportLayer(innermostAddress, pn);
+          super.buildWireTransportLayer(innermostAddress, pn);
 
         // wrap it with our layer
         return new BandwidthLimitingTransportLayer&lt;InetSocketAddress&gt;(

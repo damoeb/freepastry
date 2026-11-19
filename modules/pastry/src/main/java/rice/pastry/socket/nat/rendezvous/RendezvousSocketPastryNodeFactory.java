@@ -133,7 +133,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   public static final String SIMULATE_FIREWALL = "rendezvous_simulate_firewall";
 
   /**
-   * getVars() maps to a ContactDirectStrategy&lt;RendezvousSocketNodeHandle&gt;
+   * getAttributes() maps to a ContactDirectStrategy&lt;RendezvousSocketNodeHandle&gt;
    */
   public static final String RENDEZVOUS_CONTACT_DIRECT_STRATEGY = "RendezvousSocketPastryNodeFactory.ContactDirectStrategy";
 

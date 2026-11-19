@@ -48,7 +48,7 @@ import rice.Destructible;
 import rice.p2p.commonapi.Cancellable;
 
 /**
- * First, call getMyInetAddress to find the external address.
+ * First, call requestExternalAddress to find the external address.
  * Second, try to use UPnP or user configured portForwarding to configure the NAT
  * Third, call verifyConnectivity to make sure it all worked
  *

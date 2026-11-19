@@ -346,7 +346,7 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
 
       /**
-       * Override getWireTransportLayer to return the BandwidthLimitingTL wrapping
+       * Override buildWireTransportLayer to return the BandwidthLimitingTL wrapping
        * the default wire implementation.
        */
       @Override
