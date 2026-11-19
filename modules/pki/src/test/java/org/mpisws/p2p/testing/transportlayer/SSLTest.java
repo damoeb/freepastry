@@ -59,7 +59,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mpisws.p2p.pki.x509.CATool;
+import org.mpisws.p2p.pki.x509.CertificateAuthorityTool;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
@@ -88,7 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Two SSL transport layers ("alice" accepts, "bob" connects) over real loopback TCP sockets, with
- * certificates from {@link CATool}'s defaults (2048-bit RSA, SHA256withRSA, PKCS12 stores), which
+ * certificates from {@link CertificateAuthorityTool}'s defaults (2048-bit RSA, SHA256withRSA, PKCS12 stores), which
  * the JDK's TLS disabled-algorithm constraints accept.
  * <p>
  * Replaces the former main() programs SSLTest and SSLTestNoClientAuth (and the empty SSLTest2).
@@ -98,8 +98,8 @@ public class SSLTest {
   static final String PAYLOAD = "foo";
   static final char[] NO_PASSWORD = "".toCharArray();
 
-  static CATool ca;
-  static CATool bogusCa;
+  static CertificateAuthorityTool ca;
+  static CertificateAuthorityTool bogusCa;
 
   Environment rootEnv;
   List<SSLTransportLayer<InetSocketAddress, ByteBuffer>> layers = new ArrayList<SSLTransportLayer<InetSocketAddress, ByteBuffer>>();
@@ -114,7 +114,7 @@ public class SSLTest {
   /** exceptions the accepting side reported to its error handler */
   CompletableFuture<Throwable> aliceError = new CompletableFuture<Throwable>();
 
-  static synchronized CATool ca(boolean bogus) throws Exception {
+  static synchronized CertificateAuthorityTool ca(boolean bogus) throws Exception {
     if (ca == null) {
       ca = newCa("MyCA");
       bogusCa = newCa("Bogus");
@@ -122,25 +122,25 @@ public class SSLTest {
     return bogus ? bogusCa : ca;
   }
 
-  static CATool newCa(String cn) throws Exception {
-    KeyPair pair = CATool.generateKeyPair();
+  static CertificateAuthorityTool newCa(String cn) throws Exception {
+    KeyPair pair = CertificateAuthorityTool.generateKeyPair();
     Instant now = Instant.now();
     Instant expiry = now.plus(Duration.ofDays(1));
-    X509Certificate cert = CATool.generateNewCA(cn, now.minus(Duration.ofMinutes(1)), expiry, 1, pair, CATool.DEFAULT_SIGNATURE_ALGORITHM);
-    return new CATool(cert, pair);
+    X509Certificate cert = CertificateAuthorityTool.generateNewCA(cn, now.minus(Duration.ofMinutes(1)), expiry, 1, pair, CertificateAuthorityTool.DEFAULT_SIGNATURE_ALGORITHM);
+    return new CertificateAuthorityTool(cert, pair);
   }
 
   /** a PKCS12 store with a new key signed by signer (if non-null) and trusting trusted (if non-null) */
-  static KeyStore store(String cn, CATool signer, CATool trusted) throws Exception {
+  static KeyStore store(String cn, CertificateAuthorityTool signer, CertificateAuthorityTool trusted) throws Exception {
     return store(cn, signer, trusted, NO_PASSWORD);
   }
 
-  /** like {@link #store(String, CATool, CATool)}, with the given password on the private key entry */
-  static KeyStore store(String cn, CATool signer, CATool trusted, char[] keyPassword) throws Exception {
-    KeyStore store = KeyStore.getInstance(CATool.DEFAULT_KEYSTORE_TYPE);
+  /** like {@link #store(String, CertificateAuthorityTool, CertificateAuthorityTool)}, with the given password on the private key entry */
+  static KeyStore store(String cn, CertificateAuthorityTool signer, CertificateAuthorityTool trusted, char[] keyPassword) throws Exception {
+    KeyStore store = KeyStore.getInstance(CertificateAuthorityTool.DEFAULT_KEYSTORE_TYPE);
     store.load(null, null);
     if (signer != null) {
-      KeyPair pair = CATool.generateKeyPair();
+      KeyPair pair = CertificateAuthorityTool.generateKeyPair();
       X509Certificate cert = signer.sign(cn, pair.getPublic());
       store.setKeyEntry("private", pair.getPrivate(), keyPassword, new Certificate[] {cert});
     }

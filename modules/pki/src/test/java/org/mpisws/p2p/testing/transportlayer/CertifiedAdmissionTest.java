@@ -22,7 +22,7 @@ import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mpisws.p2p.pki.x509.CATool;
+import org.mpisws.p2p.pki.x509.CertificateAuthorityTool;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import rice.environment.Environment;
 import rice.pastry.Id;
@@ -78,7 +78,7 @@ class CertifiedAdmissionTest {
   @Test
   @DisplayName("nodes of a certified ring authenticate each other by TLS and then admit each other into the leaf set")
   void certifiedNodesAdmitEachOtherAfterVerification() throws Exception {
-    CATool ca = ca();
+    CertificateAuthorityTool ca = ca();
     int port = freePort();
     CertifiedSocketPastryNodeFactory factory1 = new CertifiedSocketPastryNodeFactory(store(ca, ALICE), NO_PASSWORD, port, environment());
     PastryNode first = factory1.newNode();
@@ -107,17 +107,17 @@ class CertifiedAdmissionTest {
     return env;
   }
 
-  static CATool ca() throws Exception {
-    KeyPair pair = CATool.generateKeyPair();
+  static CertificateAuthorityTool ca() throws Exception {
+    KeyPair pair = CertificateAuthorityTool.generateKeyPair();
     Instant now = Instant.now();
-    X509Certificate cert = CATool.generateNewCA("TestCA", now.minus(Duration.ofMinutes(1)), now.plus(Duration.ofDays(1)), 1, pair, CATool.DEFAULT_SIGNATURE_ALGORITHM);
-    return new CATool(cert, pair);
+    X509Certificate cert = CertificateAuthorityTool.generateNewCA("TestCA", now.minus(Duration.ofMinutes(1)), now.plus(Duration.ofDays(1)), 1, pair, CertificateAuthorityTool.DEFAULT_SIGNATURE_ALGORITHM);
+    return new CertificateAuthorityTool(cert, pair);
   }
 
-  /** the node's PKCS12 store as written by {@code CATool -store}: key and certificate for the id, and the CA certificate */
-  static KeyStore store(CATool ca, Id id) throws Exception {
-    KeyPair keys = CATool.generateKeyPair();
-    KeyStore store = KeyStore.getInstance(CATool.DEFAULT_KEYSTORE_TYPE);
+  /** the node's PKCS12 store as written by {@code CertificateAuthorityTool -store}: key and certificate for the id, and the CA certificate */
+  static KeyStore store(CertificateAuthorityTool ca, Id id) throws Exception {
+    KeyPair keys = CertificateAuthorityTool.generateKeyPair();
+    KeyStore store = KeyStore.getInstance(CertificateAuthorityTool.DEFAULT_KEYSTORE_TYPE);
     store.load(null, null);
     store.setKeyEntry(NodeIdCertificate.NODE_KEY_ALIAS, keys.getPrivate(), NO_PASSWORD, new Certificate[] {ca.signNodeId(id, keys.getPublic())});
     store.setCertificateEntry(NodeIdCertificate.CA_CERT_ALIAS, ca.getCertificate());

@@ -42,6 +42,8 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.util.Enumeration;
 
+import org.mpisws.p2p.pki.x509.CertificateAuthorityTool;
+
 
 public class LoadStore {
 
@@ -52,7 +54,7 @@ public class LoadStore {
     }
 
     // store it
-    KeyStore store = KeyStore.getInstance(org.mpisws.p2p.pki.x509.CATool.DEFAULT_KEYSTORE_TYPE);
+    KeyStore store = KeyStore.getInstance(CertificateAuthorityTool.DEFAULT_KEYSTORE_TYPE);
     store.load(new FileInputStream("ca-store"), pw);
 
     Enumeration<String> e = store.aliases();

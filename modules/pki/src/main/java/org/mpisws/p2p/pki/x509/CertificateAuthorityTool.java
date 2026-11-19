@@ -94,7 +94,7 @@ import rice.pastry.Id;
 import rice.pastry.standard.NodeIdCertificate;
 import rice.pastry.standard.RandomNodeIdFactory;
 
-public class CATool {
+public class CertificateAuthorityTool {
 
   static final SecureRandom random = new SecureRandom();
   /** Was SHA1withRSA, which JDK 25 rejects for certificate paths in TLS. */
@@ -107,7 +107,7 @@ public class CATool {
   X509Certificate cert;
   KeyPair keyPair;
 
-  public CATool(X509Certificate cert, KeyPair caPair) {
+  public CertificateAuthorityTool(X509Certificate cert, KeyPair caPair) {
     this.cert = cert;
     this.keyPair = caPair;
   }
@@ -122,7 +122,7 @@ public class CATool {
    * @param pw the password of the CA key store and of the CA key; must not be empty
    * @throws IllegalArgumentException if pw is empty
    */
-  public static CATool getCATool(String CN, char[] pw) throws KeyStoreException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, FileNotFoundException, IOException, UnrecoverableKeyException, InvalidKeyException, IllegalStateException, SignatureException, InvalidAlgorithmParameterException {
+  public static CertificateAuthorityTool getCATool(String CN, char[] pw) throws KeyStoreException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, FileNotFoundException, IOException, UnrecoverableKeyException, InvalidKeyException, IllegalStateException, SignatureException, InvalidAlgorithmParameterException {
 
     requirePassword(pw, "CA");
     X509Certificate caCert;
@@ -162,7 +162,7 @@ public class CATool {
         store.store(fos, pw);
       }
     }
-    return new CATool(caCert, caPair);
+    return new CertificateAuthorityTool(caCert, caPair);
   }
 
   public static Tuple<X509Certificate, KeyPair> generateNewCA(String CN, Instant expiryDate) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
@@ -366,7 +366,7 @@ public class CATool {
       CN = id.toStringFull();
     }
 
-    CATool caTool = getCATool(caName,pw);
+    CertificateAuthorityTool caTool = getCATool(caName,pw);
 
     KeyPair pair = generateKeyPair();
     X509Certificate cert = caTool.sign(CN,pair.getPublic());

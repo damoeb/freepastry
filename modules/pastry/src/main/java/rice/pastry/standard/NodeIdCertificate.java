@@ -14,13 +14,13 @@ import rice.pastry.Id;
  * {@code CN=<Id.toStringFull()>}, and a certificate authority (CA) signed it.
  * <p>
  * Design, shared by {@link CertifiedNodeIdFactory}, {@code rice.pastry.socket.CertifiedIdBindStrategy}
- * and {@code org.mpisws.p2p.pki.x509.CATool}:
+ * and {@code org.mpisws.p2p.pki.x509.CertificateAuthorityTool}:
  * <ul>
  * <li>What the CA signs: one ordinary X.509 certificate per node, carrying the node's public key, a
- * validity period and the node id as the common name. Issuing is {@code CATool.signNodeId()}. The
+ * validity period and the node id as the common name. Issuing is {@code CertificateAuthorityTool.signNodeId()}. The
  * certificate is the same one the TLS layer authenticates with, so there is no second signature format.</li>
  * <li>Where it lives: in the node's PKCS12 key store, as the chain of the {@link #NODE_KEY_ALIAS} entry
- * (written by {@code CATool -store}), next to the CA's certificate under {@link #CA_CERT_ALIAS}, which is
+ * (written by {@code CertificateAuthorityTool -store}), next to the CA's certificate under {@link #CA_CERT_ALIAS}, which is
  * the trust anchor. {@code CertifiedNodeIdFactory} loads both.</li>
  * <li>Verifying a certificate ({@link #verify}): issued by the trust anchor (issuer name and signature),
  * both certificates within their validity period, and a subject that is a well-formed node id. The
@@ -37,7 +37,7 @@ import rice.pastry.Id;
  */
 public final class NodeIdCertificate {
 
-  /** key store alias of the node's private key and its certificate chain, as written by {@code CATool -store} */
+  /** key store alias of the node's private key and its certificate chain, as written by {@code CertificateAuthorityTool -store} */
   public static final String NODE_KEY_ALIAS = "private";
 
   /** key store alias of the CA certificate that is the trust anchor */

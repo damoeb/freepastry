@@ -25,7 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mpisws.p2p.pki.x509.CATool;
+import org.mpisws.p2p.pki.x509.CertificateAuthorityTool;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
@@ -62,7 +62,7 @@ class CertifiedDeferredDeliveryTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    CATool ca = ca();
+    CertificateAuthorityTool ca = ca();
     int port = freePort();
     factoryA = new CertifiedSocketPastryNodeFactory(store(ca, ALICE), NO_PASSWORD, port, environment());
     a = factoryA.newNode();

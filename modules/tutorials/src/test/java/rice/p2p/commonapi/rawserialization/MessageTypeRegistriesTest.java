@@ -56,7 +56,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.filetransfer.FileReceipt;
-import org.mpisws.p2p.pki.x509.CATool;
+import org.mpisws.p2p.pki.x509.CertificateAuthorityTool;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import rice.p2p.glacier.v2.GlacierImpl;
@@ -97,7 +97,7 @@ class MessageTypeRegistriesTest {
 
   /** One main class of each module; the scan covers the classes of each. */
   private static final List<Class<?>> MODULE_ANCHORS = List.of(
-      MessageTypeId.class, TransportLayer.class, FileReceipt.class, PastryNode.class, CATool.class,
+      MessageTypeId.class, TransportLayer.class, FileReceipt.class, PastryNode.class, CertificateAuthorityTool.class,
       PeerReview.class, Storage.class, Past.class, Scribe.class, MultiringNode.class, GlacierImpl.class,
       DistTutorial.class);
 

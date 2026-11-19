@@ -29,8 +29,8 @@ class X509WireRoundTripTest {
   @Test
   void aNodeCertificateAndTheCaCertificateRoundTrip() throws Exception {
     X509Serializer serializer = new X509Serializer();
-    CATool ca = CATool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
-    X509Certificate node = ca.sign("node", CATool.generateKeyPair().getPublic());
+    CertificateAuthorityTool ca = CertificateAuthorityTool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
+    X509Certificate node = ca.sign("node", CertificateAuthorityTool.generateKeyPair().getPublic());
 
     for (X509Certificate cert : new X509Certificate[] {node, ca.getCertificate()}) {
       byte[] first = serialized(serializer, cert);
@@ -49,9 +49,9 @@ class X509WireRoundTripTest {
   @Test
   void aCertificateIsReadWithoutTheBytesThatFollow() throws Exception {
     X509Serializer serializer = new X509Serializer();
-    CATool ca = CATool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
-    X509Certificate first = ca.sign("first", CATool.generateKeyPair().getPublic());
-    X509Certificate second = ca.sign("second", CATool.generateKeyPair().getPublic());
+    CertificateAuthorityTool ca = CertificateAuthorityTool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
+    X509Certificate first = ca.sign("first", CertificateAuthorityTool.generateKeyPair().getPublic());
+    X509Certificate second = ca.sign("second", CertificateAuthorityTool.generateKeyPair().getPublic());
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     serializer.serialize(first, out);
     serializer.serialize(second, out);

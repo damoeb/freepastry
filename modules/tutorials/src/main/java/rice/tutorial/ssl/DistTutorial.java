@@ -45,7 +45,7 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
 
-import org.mpisws.p2p.pki.x509.CATool;
+import org.mpisws.p2p.pki.x509.CertificateAuthorityTool;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.pastry.NodeHandle;
@@ -78,9 +78,9 @@ public class DistTutorial {
     NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 
     // create the keystore
-    // written by "CATool -store" (PKCS12); its password is in FREEPASTRY_NODE_PASSWORD, or asked on the console
-    final char[] password = CATool.readPassword(CATool.NODE_PASSWORD_ENV, "Password of "+keyStoreFile+": ");
-    final KeyStore store = KeyStore.getInstance(CATool.DEFAULT_KEYSTORE_TYPE);
+    // written by "CertificateAuthorityTool -store" (PKCS12); its password is in FREEPASTRY_NODE_PASSWORD, or asked on the console
+    final char[] password = CertificateAuthorityTool.readPassword(CertificateAuthorityTool.NODE_PASSWORD_ENV, "Password of "+keyStoreFile+": ");
+    final KeyStore store = KeyStore.getInstance(CertificateAuthorityTool.DEFAULT_KEYSTORE_TYPE);
     try (InputStream fis = Files.newInputStream(keyStoreFile)) {
       store.load(fis, password);
     }
