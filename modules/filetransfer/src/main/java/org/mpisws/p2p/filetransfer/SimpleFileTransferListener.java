@@ -63,7 +63,7 @@ public class SimpleFileTransferListener implements FileTransferListener {
   }
 
   @Override
-  public void msgTransferred(BBReceipt receipt, int bytesTransferred,
+  public void msgTransferred(ByteBufferReceipt receipt, int bytesTransferred,
       int total, boolean incoming) {
     String s;
     if (incoming) {

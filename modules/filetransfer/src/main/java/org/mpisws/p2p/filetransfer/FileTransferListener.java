@@ -50,7 +50,7 @@ public interface FileTransferListener {
    * @param total bytes that will be transferred
    * @param incoming true if downloading, false if uploading
    */
-  public void msgTransferred(BBReceipt receipt, int bytesTransferred, int total, boolean incoming);
+  public void msgTransferred(ByteBufferReceipt receipt, int bytesTransferred, int total, boolean incoming);
 
   /**
    *

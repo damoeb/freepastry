@@ -234,7 +234,7 @@ class FileTransferWireRoundTripTest {
   @DisplayName("A message arrives as sent: smaller than, as large as and larger than one chunk")
   void messageArrivesAsSent(int size) throws Exception {
     Pair pair = pair(CHUNK, CHUNK);
-    CompletableFuture<BBReceipt> sent = new CompletableFuture<>();
+    CompletableFuture<ByteBufferReceipt> sent = new CompletableFuture<>();
 
     pair.sender.sendMessage(ByteBuffer.wrap(payload(size, 3)), (byte) 0, into(sent));
 

@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.filetransfer;
 
-public interface BBReceipt extends Receipt {
+public interface ByteBufferReceipt extends Receipt {
   /**
    * Do not write to these!
    */

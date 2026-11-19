@@ -287,7 +287,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     return listeners;
   }
 
-  protected void notifyListenersSendMsgProgress(BBReceipt receipt,
+  protected void notifyListenersSendMsgProgress(ByteBufferReceipt receipt,
       int bytesSent, int bytesTotal) {
     logger.debug("notifyListenersSendMsgProgress({},{},{})", receipt, bytesSent, bytesTotal);
     for (FileTransferListener l : getListeners()) {
@@ -295,7 +295,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
   }
 
-  protected void notifyListenersReceiveMsgProgress(BBReceipt receipt,
+  protected void notifyListenersReceiveMsgProgress(ByteBufferReceipt receipt,
       int bytesReceived, int bytesTotal) {
     logger.debug("notifyListenersReceiveMsgProgress({},{},{})", receipt, bytesReceived, bytesTotal);
     for (FileTransferListener l : getListeners()) {
@@ -367,8 +367,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   @Override
-  public BBReceipt sendMessage(ByteBuffer bb, byte priority,
-      Continuation<BBReceipt, Exception> c) {
+  public ByteBufferReceipt sendMessage(ByteBuffer bb, byte priority,
+      Continuation<ByteBufferReceipt, Exception> c) {
     if (bb == null) throw new IllegalArgumentException("ByteBuffer bb must be non-null");
     BBReceiptImpl ret = new BBReceiptImpl(bb,priority,allocateTransferUid(),c);
     return ret;
@@ -444,7 +444,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
    *
    * @author Jeff Hoye
    */
-  class BBReceiptImpl extends ReceiptImpl implements BBReceipt {
+  class BBReceiptImpl extends ReceiptImpl implements ByteBufferReceipt {
     /**
      * The whole message to send.
      */
@@ -459,9 +459,9 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      */
     final ByteBuffer chunkBuffer;
     int initialPosition;
-    Continuation<BBReceipt, Exception> deliverAckToMe;
+    Continuation<ByteBufferReceipt, Exception> deliverAckToMe;
 
-    public BBReceiptImpl(ByteBuffer bb, byte priority, int uid, Continuation<BBReceipt, Exception> c) {
+    public BBReceiptImpl(ByteBuffer bb, byte priority, int uid, Continuation<ByteBufferReceipt, Exception> c) {
       super(priority, uid);
       this.deliverAckToMe = c;
       this.msg = bb;
@@ -1272,7 +1272,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     public void cancelled(DataReader reader);
   }
 
-  class BBDataReader implements DataReader, BBReceipt {
+  class BBDataReader implements DataReader, ByteBufferReceipt {
     int uid;
     byte[] bytes;
     ByteBuffer curReader;

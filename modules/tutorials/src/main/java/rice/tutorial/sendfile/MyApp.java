@@ -45,10 +45,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import org.mpisws.p2p.filetransfer.ByteBufferReceipt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.mpisws.p2p.filetransfer.BBReceipt;
 import org.mpisws.p2p.filetransfer.FileReceipt;
 import org.mpisws.p2p.filetransfer.FileTransfer;
 import org.mpisws.p2p.filetransfer.FileTransferCallback;
@@ -177,7 +177,7 @@ public class MyApp implements Application {
     }
 
     @Override
-    public void msgTransferred(BBReceipt receipt, int bytesTransferred,
+    public void msgTransferred(ByteBufferReceipt receipt, int bytesTransferred,
         int total, boolean incoming) {
       String s;
       if (incoming) {

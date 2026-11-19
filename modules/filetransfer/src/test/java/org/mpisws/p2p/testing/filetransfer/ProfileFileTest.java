@@ -47,7 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import org.mpisws.p2p.filetransfer.BBReceipt;
+import org.mpisws.p2p.filetransfer.ByteBufferReceipt;
 import org.mpisws.p2p.filetransfer.FileReceipt;
 import org.mpisws.p2p.filetransfer.FileTransfer;
 import org.mpisws.p2p.filetransfer.FileTransferCallback;
@@ -178,7 +178,7 @@ public class ProfileFileTest {
           }
 
           @Override
-          public void msgTransferred(BBReceipt receipt, int bytesTransferred,
+          public void msgTransferred(ByteBufferReceipt receipt, int bytesTransferred,
               int total, boolean incoming) {
             if (bytesTransferred == total) {
               String s;
