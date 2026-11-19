@@ -22,7 +22,7 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import rice.environment.Environment;
 
 /**
- * Fuzzes the liveness layer's datagram reader: the header byte, and the time stamp of a ping or pong. Every datagram
+ * Fuzzes the liveness layer's datagram reader: the header byte, and the time stamp and nonce of a ping or pong. Every datagram
  * of the node passes through it, unauthenticated. The invariant: nothing but an {@link IOException} escapes.
  */
 class LivenessFuzzTest {
@@ -102,6 +102,20 @@ class LivenessFuzzTest {
   @DisplayName("a ping whose time stamp is cut short is rejected with an IOException")
   void rejectsATruncatedPing() {
     assertThrows(IOException.class, () -> receive(new byte[] {LivenessTransportLayer.HDR_PING, 1, 2, 3}));
+  }
+
+  @Test
+  @DisplayName("a ping with a time stamp but no nonce is rejected with an IOException")
+  void rejectsAPingWithoutNonce() {
+    assertThrows(IOException.class,
+        () -> receive(ByteBuffer.allocate(1 + Long.BYTES).put(LivenessTransportLayer.HDR_PING).putLong(1L).array()));
+  }
+
+  @Test
+  @DisplayName("a pong with a time stamp but no nonce is rejected with an IOException")
+  void rejectsAPongWithoutNonce() {
+    assertThrows(IOException.class,
+        () -> receive(ByteBuffer.allocate(1 + Long.BYTES).put(LivenessTransportLayer.HDR_PONG).putLong(1L).array()));
   }
 
   @Test

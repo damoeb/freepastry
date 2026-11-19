@@ -81,13 +81,16 @@ class TransportWireRoundTripTest {
 
   @ParameterizedTest
   @ValueSource(longs = {0, 1, -1, Long.MAX_VALUE, Long.MIN_VALUE, 1_700_000_000_000L})
-  @DisplayName("Ping and Pong are the 8 bytes of their time, which is what the liveness layer reads after its header")
+  @DisplayName("Ping and Pong are the 8 bytes of their time and the 8 bytes of their nonce, which is what the liveness layer reads after its header")
   void pingAndPong(long sentTime) throws IOException {
-    byte[] ping = bytes(new PingMessage(sentTime), PingMessage::serialize);
-    byte[] pong = bytes(new PongMessage(sentTime), PongMessage::serialize);
+    long nonce = ~sentTime;
+    byte[] ping = bytes(new PingMessage(sentTime, nonce), PingMessage::serialize);
+    byte[] pong = bytes(new PongMessage(sentTime, nonce), PongMessage::serialize);
 
-    assertEquals(Long.BYTES, ping.length);
-    assertEquals(sentTime, ByteBuffer.wrap(ping).getLong());
+    assertEquals(2 * Long.BYTES, ping.length);
+    ByteBuffer read = ByteBuffer.wrap(ping);
+    assertEquals(sentTime, read.getLong());
+    assertEquals(nonce, read.getLong());
     assertArrayEquals(ping, pong);
   }
 

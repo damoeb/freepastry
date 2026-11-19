@@ -275,11 +275,11 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     }
 
     @Override
-    public void pong(final SourceRoute<MultiInetSocketAddress> sourceRoute, final long senderTime, final Map<String, Object> options) {
+    public void pong(final SourceRoute<MultiInetSocketAddress> sourceRoute, final long senderTime, final long senderNonce, final Map<String, Object> options) {
       timer.schedule(new TimerTask() {
         @Override
         public void run() {
-          TestLivenessTransportLayerImpl.super.pong(sourceRoute, senderTime, options);
+          TestLivenessTransportLayerImpl.super.pong(sourceRoute, senderTime, senderNonce, options);
         }
       }, getDelay(getLocalIdentifier(), sourceRoute));
     }

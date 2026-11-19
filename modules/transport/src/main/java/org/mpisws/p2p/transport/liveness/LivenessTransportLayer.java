@@ -38,6 +38,7 @@ package org.mpisws.p2p.transport.liveness;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -128,6 +129,9 @@ public class LivenessTransportLayer<Identifier>
    * Pass the msg to the callback if it is NORMAL
    */
   public static final byte HDR_NORMAL = 0;
+  /** Source of the nonces of pings: a pong must echo one, which an off-path sender cannot guess. */
+  private static final SecureRandom NONCE_SOURCE = new SecureRandom();
+
   public static final byte HDR_PING = 1;
   public static final byte HDR_PONG = 2;
 
@@ -362,18 +366,21 @@ public class LivenessTransportLayer<Identifier>
       return;
     case HDR_PING:
       logger.trace("messageReceived({}, PING)", identifier);
-      pong(identifier, readTimeStamp(identifier, msg), options);      // it's important to the rendezvous layer to reuse the options
+      long pingTime = readLong(identifier, msg);
+      long pingNonce = readLong(identifier, msg);
+      pong(identifier, pingTime, pingNonce, options);      // it's important to the rendezvous layer to reuse the options
       notifyPingListenersPing(identifier);
       return;
     case HDR_PONG:
       logger.trace("messageReceived({}, PONG)", identifier);
-      long sendTime = readTimeStamp(identifier, msg);
+      long sendTime = readLong(identifier, msg);
+      long nonce = readLong(identifier, msg);
       // only the pong to a ping this node sent on this route counts: anyone can send a pong
       LivenessTracker<Identifier> manager;
       synchronized(managers) {
         manager = managers.get(identifier);
       }
-      if (manager == null || !manager.pongReceived(sendTime)) {
+      if (manager == null || !manager.pongReceived(sendTime, nonce)) {
         logger.debug("messageReceived({}, PONG {}): no such ping outstanding, ignored", identifier, sendTime);
         return;
       }
@@ -397,10 +404,10 @@ public class LivenessTransportLayer<Identifier>
     }
   }
 
-  /** Reads the time stamp of a ping or pong, which a peer may have cut short. */
-  private static long readTimeStamp(Object from, ByteBuffer msg) throws IOException {
+  /** Reads a time stamp or nonce of a ping or pong, which a peer may have cut short. */
+  private static long readLong(Object from, ByteBuffer msg) throws IOException {
     if (msg.remaining() < Long.BYTES) {
-      throw new IOException("Ping or pong from " + from + " has " + msg.remaining() + " bytes, not a time stamp");
+      throw new IOException("Ping or pong from " + from + " has " + msg.remaining() + " bytes left, not a time stamp or nonce");
     }
     return msg.getLong();
   }
@@ -421,8 +428,9 @@ public class LivenessTransportLayer<Identifier>
       SimpleOutputBuffer sob = new SimpleOutputBuffer(PING_BUFFER_SIZE);
       sob.writeByte(HDR_PING);
       final long now = time.currentTimeMillis();
-      new PingMessage(now).serialize(sob);
-      getManager(identifier).pingSent(now);
+      final long nonce = NONCE_SOURCE.nextLong();
+      new PingMessage(now, nonce).serialize(sob);
+      getManager(identifier).pingSent(now, nonce);
       transportLayer.sendMessage(identifier, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
         @Override
         public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
@@ -447,12 +455,12 @@ public class LivenessTransportLayer<Identifier>
   /**
    * Send the pong();
    */
-  public void pong(final Identifier identifier, final long senderTime, final @Nullable Map<String, Object> options) {
+  public void pong(final Identifier identifier, final long senderTime, final long senderNonce, final @Nullable Map<String, Object> options) {
     logger.trace("pong({},{})", identifier, senderTime);
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer(PING_BUFFER_SIZE);
       sob.writeByte(HDR_PONG);
-      new PongMessage(senderTime).serialize(sob);
+      new PongMessage(senderTime, senderNonce).serialize(sob);
       transportLayer.sendMessage(identifier, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
         @Override
         public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {

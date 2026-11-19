@@ -51,11 +51,15 @@ public class PingMessage {
 
   long sentTime;
 
+  /** random 64-bit value of the ping, echoed by its pong, so that only the node that was pinged can answer it */
+  long nonce;
+
   /**
    * Constructor
    */
-  public PingMessage(long sentTime) {
+  public PingMessage(long sentTime, long nonce) {
     this.sentTime = sentTime;
+    this.nonce = nonce;
   }
 
   @Override
@@ -65,5 +69,6 @@ public class PingMessage {
 
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeLong(sentTime);
+    buf.writeLong(nonce);
   }
 }

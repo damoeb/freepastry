@@ -96,9 +96,7 @@ class LivenessTablesTest {
   }
 
   private static ByteBuffer pong(long sentTime) {
-    ByteBuffer pong = ByteBuffer.allocate(1 + Long.BYTES);
-    pong.put(LivenessTransportLayer.HDR_PONG).putLong(sentTime).flip();
-    return pong;
+    return pongWithNonce(sentTime, 0L);
   }
 
   private static InetSocketAddress route(int k) {
@@ -161,9 +159,8 @@ class LivenessTablesTest {
   @DisplayName("the pong to an outstanding ping marks the route alive, once")
   void pongToOutstandingPingMarksAlive() throws Exception {
     onSelector(() -> target.ping(PEER, null));
-    long pingTime = sentTimeOf(sent.getLast());
 
-    onSelector(() -> target.messageReceived(PEER, pong(pingTime), null));
+    onSelector(() -> target.messageReceived(PEER, pongEchoing(sent.getLast()), null));
 
     assertEquals(LIVENESS_ALIVE, target.getLiveness(PEER, null));
     assertEquals(List.of(LIVENESS_ALIVE), notified);
@@ -185,6 +182,13 @@ class LivenessTablesTest {
     ByteBuffer pong = ByteBuffer.allocate(1 + 2 * Long.BYTES);
     pong.put(LivenessTransportLayer.HDR_PONG).putLong(sentTime).putLong(nonce).flip();
     return pong;
+  }
+
+  /** The pong an honest peer sends for the ping: it echoes the time stamp and the nonce. */
+  private static ByteBuffer pongEchoing(ByteBuffer ping) {
+    ByteBuffer buffer = ping.duplicate();
+    assertEquals(LivenessTransportLayer.HDR_PING, buffer.get());
+    return pongWithNonce(buffer.getLong(), buffer.getLong());
   }
 
   private static long sentTimeOf(ByteBuffer ping) {

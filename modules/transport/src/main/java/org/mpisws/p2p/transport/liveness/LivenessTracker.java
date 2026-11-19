@@ -95,8 +95,12 @@ public class LivenessTracker<Identifier> {
   /** when the layer last looked this tracker up; the layer forgets the least recently used idle trackers */
   long lastUsed;
 
-  /** the time stamps of the last pings sent on this route that no pong has answered yet, oldest first */
-  private final ArrayDeque<Long> outstandingPings = new ArrayDeque<>();
+  /** A ping sent on this route that no pong has answered yet. */
+  private record OutstandingPing(long sentTime, long nonce) {
+  }
+
+  /** the last pings sent on this route that no pong has answered yet, oldest first */
+  private final ArrayDeque<OutstandingPing> outstandingPings = new ArrayDeque<>();
 
   /** when the last ping was sent on this route; meaningless while no ping is outstanding */
   private long lastPingSent = 0L;
@@ -121,12 +125,12 @@ public class LivenessTracker<Identifier> {
     sockets = new HashSet<LivenessCheckingSocket<Identifier>>();
   }
 
-  /** Remembers a ping sent on this route at {@code sentTime}, so that its pong is recognised. */
-  synchronized void pingSent(long sentTime) {
+  /** Remembers a ping sent on this route at {@code sentTime} with {@code nonce}, so that its pong is recognised. */
+  synchronized void pingSent(long sentTime, long nonce) {
     if (outstandingPings.size() >= MAX_OUTSTANDING_PINGS) {
       outstandingPings.removeFirst();
     }
-    outstandingPings.addLast(sentTime);
+    outstandingPings.addLast(new OutstandingPing(sentTime, nonce));
     lastPingSent = sentTime;
   }
 
@@ -134,11 +138,12 @@ public class LivenessTracker<Identifier> {
    * Matches a pong against the pings sent on this route.
    *
    * @param sentTime the time stamp the pong echoes
-   * @return true if a ping with this time stamp was outstanding (it no longer is); false for a pong this node
-   *     never asked for
+   * @param nonce the nonce the pong echoes: whoever does not know it cannot answer the ping
+   * @return true if a ping with this time stamp and nonce was outstanding (it no longer is); false for a pong this
+   *     node never asked for
    */
-  synchronized boolean pongReceived(long sentTime) {
-    return outstandingPings.removeFirstOccurrence(sentTime);
+  synchronized boolean pongReceived(long sentTime, long nonce) {
+    return outstandingPings.removeFirstOccurrence(new OutstandingPing(sentTime, nonce));
   }
 
   /**
