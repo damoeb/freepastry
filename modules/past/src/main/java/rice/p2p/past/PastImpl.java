@@ -1156,7 +1156,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   protected void deliverInsert(InsertMessage imsg) {
     if (!isAuthentic(null, imsg.getContent())) {
       getResponseContinuation(imsg).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
-    } else if (policy.allowInsert(imsg.getContent())) {
+    } else if (policy.isInsertAllowed(imsg.getContent())) {
       storeInsert(imsg);
     } else {
       getResponseContinuation(imsg).receiveResult(Boolean.valueOf(false));

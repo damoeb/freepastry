@@ -280,7 +280,7 @@ public class RouteSet implements NodeSetI,
    *
    * @return true if it is a member, false otherwise.
    */
-  public boolean member(Id nid) {
+  public boolean contains(Id nid) {
     for (int i = 0; i < theSize; i++)
       if (nodes[i].getNodeId().equals(nid))
         return true;
@@ -423,8 +423,8 @@ public class RouteSet implements NodeSetI,
    * @return true if that node id is in the set, false otherwise.
    */
   @Override
-  public boolean memberHandle(rice.p2p.commonapi.Id id) {
-    return member((Id) id);
+  public boolean containsHandleFor(rice.p2p.commonapi.Id id) {
+    return contains((Id) id);
   }
 
   /**

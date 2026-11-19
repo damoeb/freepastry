@@ -75,7 +75,7 @@ class IdentityBindingsBoundTest {
     }
 
     @Override
-    public boolean keepsBinding(String u, @Nullable Map<String, Object> options) {
+    public boolean shouldKeepBinding(String u, @Nullable Map<String, Object> options) {
       return options != null && options.containsKey(CERTIFICATE);
     }
   }

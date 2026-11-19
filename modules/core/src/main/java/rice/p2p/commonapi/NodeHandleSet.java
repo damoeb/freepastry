@@ -85,7 +85,7 @@ public interface NodeHandleSet {
    * @param id a node id.
    * @return true if that node id is in the set, false otherwise.
    */
-  public boolean memberHandle(Id id);
+  public boolean containsHandleFor(Id id);
 
   /**
    * Removes a node id and its handle from the set.

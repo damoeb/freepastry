@@ -177,7 +177,7 @@ public class NodeSet implements NodeSetI {
    * @param handle the handle to test
    * @return true of handle is a member, false otherwise
    */
-  public boolean member(NodeHandle handle) {
+  public boolean contains(NodeHandle handle) {
     return set.contains(handle);
   }
 
@@ -244,7 +244,7 @@ public class NodeSet implements NodeSetI {
    * @return true if that node id is in the set, false otherwise.
    */
   @Override
-  public boolean memberHandle(rice.p2p.commonapi.Id id) {
+  public boolean containsHandleFor(rice.p2p.commonapi.Id id) {
     return memberId(id);
   }
 

@@ -455,7 +455,7 @@ final class GlacierRetriever {
           return;
         }
 
-        if ((attemptsLeft > 0) && !grm.getHaveIt(0)) {
+        if ((attemptsLeft > 0) && !grm.hasFragment(0)) {
           attemptsLeft = 0;
           timeoutExpired();
         } else {

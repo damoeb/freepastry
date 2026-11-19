@@ -135,7 +135,7 @@ public class VerifierAckTest {
 
     Verifier<Node, Node> verifier = replayFrom(checkpoint);
 
-    assertTrue(verifier.verifiedOK(), "the SEND lies before the replay window, so the replay cannot have seen it");
+    assertTrue(verifier.isVerificationSuccessful(), "the SEND lies before the replay window, so the replay cannot have seen it");
     assertTrue(verifier.isSuccess());
   }
 
@@ -146,7 +146,7 @@ public class VerifierAckTest {
 
     Verifier<Node, Node> verifier = replayFrom(checkpoint);
 
-    assertFalse(verifier.verifiedOK(), "no SEND in the window has this seq");
+    assertFalse(verifier.isVerificationSuccessful(), "no SEND in the window has this seq");
   }
 
   @Test
@@ -156,7 +156,7 @@ public class VerifierAckTest {
 
     Verifier<Node, Node> verifier = replayFrom(checkpoint);
 
-    assertFalse(verifier.verifiedOK(), "the window includes its first entry");
+    assertFalse(verifier.isVerificationSuccessful(), "the window includes its first entry");
   }
 
   @Test
@@ -166,6 +166,6 @@ public class VerifierAckTest {
 
     Verifier<Node, Node> verifier = replayFrom(checkpoint);
 
-    assertFalse(verifier.verifiedOK(), "an ACK cannot acknowledge a SEND logged after it");
+    assertFalse(verifier.isVerificationSuccessful(), "an ACK cannot acknowledge a SEND logged after it");
   }
 }

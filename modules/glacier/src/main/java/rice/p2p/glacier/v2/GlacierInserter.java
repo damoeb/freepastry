@@ -296,7 +296,7 @@ final class GlacierInserter {
 
               /* OK, so the message makes sense. Let's see... */
 
-              if (doInsert && !grm.getHaveIt(0)) {
+              if (doInsert && !grm.hasFragment(0)) {
 
                 /* If this is an insertion, and the holder is telling us that he does not
                    have the fragment, we send it to him */
@@ -334,7 +334,7 @@ final class GlacierInserter {
                   logger.warn("Received two insert responses for the same fragment -- discarded");
                 }
 
-              } else if (grm.getHaveIt(0) && (grm.getExpiration(0) < expiration)) {
+              } else if (grm.hasFragment(0) && (grm.getExpiration(0) < expiration)) {
 
                 /* If the holder has an old version of the fragment, we send the manifest only. */
 
@@ -359,7 +359,7 @@ final class GlacierInserter {
                 } else {
                   logger.warn("Received two refresh responses for the same fragment -- discarded");
                 }
-              } else if (grm.getHaveIt(0) && (grm.getExpiration(0) >= expiration)) {
+              } else if (grm.hasFragment(0) && (grm.getExpiration(0) >= expiration)) {
 
                 /* If the holder has a current version of the fragment, we are happy */
 

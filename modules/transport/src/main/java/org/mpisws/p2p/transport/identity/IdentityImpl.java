@@ -304,7 +304,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
   }
 
   private void keepIfStrategyKeeps(MiddleIdentifier m, UpperIdentifier u, @Nullable Map<String, Object> options) {
-    if (bindStrategy != null && bindStrategy.keepsBinding(u, options)) {
+    if (bindStrategy != null && bindStrategy.shouldKeepBinding(u, options)) {
       keptBindings.add(m);
     }
   }
@@ -351,7 +351,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
         return false;
       }
 
-      if (nodeChangeStrategy.canChange(oldDest, newDest)) {
+      if (nodeChangeStrategy.isChangeAllowed(oldDest, newDest)) {
         logger.info("destinationChanged({}->{},{},{})", oldDest, newDest, i, options);
         setDeadForever(i, oldDest, options);
         return true;

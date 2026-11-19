@@ -97,7 +97,7 @@ public interface ScribePolicy {
    * @param content the content that came with the message
    * @return the list that is accepted
    */
-  public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content);
+  public List<Topic> selectAcceptedTopics(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content);
 
   /**
    * This method is called when an anycast is received which is not satisfied at the local node.
@@ -175,7 +175,7 @@ public interface ScribePolicy {
      * @return the topics to accept
      */
     @Override
-    public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
+    public List<Topic> selectAcceptedTopics(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
       return topics;
     }
 

@@ -248,7 +248,7 @@ final class GlacierNeighborhood {
 
     while (iter.hasNext()) {
       final Id thisNeighbor = (Id) iter.next();
-      if (leafSet.memberHandle(thisNeighbor)) {
+      if (leafSet.containsHandleFor(thisNeighbor)) {
         logger.debug("CNE: Refreshing current neighbor: {}", thisNeighbor);
         neighborSeen(thisNeighbor, environment.getTimeSource().currentTimeMillis());
       } else {

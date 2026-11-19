@@ -69,7 +69,7 @@ class PastReplicationFetchTest {
       }
 
       @Override
-      public boolean allowInsert(PastContent content) {
+      public boolean isInsertAllowed(PastContent content) {
         return true;
       }
     };

@@ -586,7 +586,7 @@ public class ScribeRegrTest extends CommonAPITest {
 
     stepStart("Tree Construction");
     for(int i = 0; i < NUM_NODES; i++)
-  policies[i].allowSubscribe(false);
+  policies[i].selectAcceptedTopics(false);
 
     for (int i = 0; i < NUM_NODES/2; i++) {
       clients[i] = new TestScribeClient(scribes[i], topic, i);
@@ -668,7 +668,7 @@ public class ScribeRegrTest extends CommonAPITest {
 
     stepStart("Reset Policies");
     for (int i=0; i<NUM_NODES; i++) {
-      policies[i].allowSubscribe(true);
+      policies[i].selectAcceptedTopics(true);
       policies[i].neverAllowSubscribe(false);
     }
     stepDone(SUCCESS);
@@ -1108,7 +1108,7 @@ public class ScribeRegrTest extends CommonAPITest {
       neverAllowSubscribe = false;
     }
 
-    public void allowSubscribe(boolean allowSubscribe) {
+    public void selectAcceptedTopics(boolean allowSubscribe) {
       this.allowSubscribe = allowSubscribe;
     }
 
@@ -1117,7 +1117,7 @@ public class ScribeRegrTest extends CommonAPITest {
     }
 
     @Override
-    public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
+    public List<Topic> selectAcceptedTopics(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
       Iterator<Topic> i = topics.iterator();
       while (i.hasNext()) {
         Topic topic = i.next();

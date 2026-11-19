@@ -166,7 +166,7 @@ final class GlacierHandoffProtocol {
     for (int i=0; i<grm.numKeys(); i++) {
       final FragmentKey thisKey = grm.getKey(i);
       if (grm.getAuthoritative(i)) {
-        if (grm.getHaveIt(i)) {
+        if (grm.hasFragment(i)) {
           Id thisPos = locator.getFragmentLocation(thisKey);
           if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
             logger.debug("Deleting fragment {}", thisKey);
@@ -178,7 +178,7 @@ final class GlacierHandoffProtocol {
           sendFragment(grm, thisKey);
         }
       } else {
-        if (logger.isDebugEnabled()) logger.debug("Ignoring fragment "+thisKey+" (haveIt="+grm.getHaveIt(i)+", authoritative="+grm.getAuthoritative(i)+")");
+        if (logger.isDebugEnabled()) logger.debug("Ignoring fragment "+thisKey+" (haveIt="+grm.hasFragment(i)+", authoritative="+grm.getAuthoritative(i)+")");
       }
     }
   }

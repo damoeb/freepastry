@@ -78,7 +78,7 @@ public interface PastPolicy {
    * @param content The content about to be stored
    * @return Whether the insert should be allowed
    */
-  public boolean allowInsert(PastContent content);
+  public boolean isInsertAllowed(PastContent content);
 
   /**
    * The default policy for Past, which fetches any available copy of a replicated object and
@@ -129,7 +129,7 @@ public interface PastPolicy {
      * @return Whether the insert should be allowed
      */
     @Override
-    public boolean allowInsert(PastContent content) {
+    public boolean isInsertAllowed(PastContent content) {
       return true;
     }
   }

@@ -559,7 +559,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
       ReplaySM sm = ((ReplaySM)verifier.getEnvironment().getSelectorManager());
       while(sm.makeProgress());
 
-      boolean verifiedOK = verifier.verifiedOK();
+      boolean verifiedOK = verifier.isVerificationSuccessful();
       logger.atInfo().log(() -> "END OF REPLAY: "+(verifiedOK ? "VERIFIED OK" : "VERIFICATION FAILED")+" =================");
 
       /* If there was a divergence, we have a proof of misbehavior */

@@ -100,7 +100,7 @@ public class AggregateList {
     }
   }
 
-  public boolean readOK() {
+  public boolean wasReadSuccessfully() {
     return wasReadOK;
   }
 

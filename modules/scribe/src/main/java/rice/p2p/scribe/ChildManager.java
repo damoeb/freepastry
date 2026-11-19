@@ -301,7 +301,7 @@ final class ChildManager {
     if (!askPolicy.isEmpty()) {
 
       // see if the policy will allow us to take on this child
-      accepted = policy.get().allowSubscribe(scribe, sMessage.getSubscriber(), new ArrayList<Topic>(askPolicy), sMessage.getContent());
+      accepted = policy.get().selectAcceptedTopics(scribe, sMessage.getSubscriber(), new ArrayList<Topic>(askPolicy), sMessage.getContent());
 
       // askPolicy is now the rejected
       askPolicy.removeAll(accepted);

@@ -37,5 +37,5 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.identity;
 
 public interface NodeChangeStrategy<UpperIdentifier> {
-  boolean canChange(UpperIdentifier oldDest, UpperIdentifier newDest);
+  boolean isChangeAllowed(UpperIdentifier oldDest, UpperIdentifier newDest);
 }

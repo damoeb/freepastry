@@ -113,7 +113,7 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
    * a handle without a certificate (a datagram's header) take the address, which {@link #replace} prevents.
    */
   @Override
-  public boolean keepsBinding(TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable Map<String, Object> options) {
+  public boolean shouldKeepBinding(TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable Map<String, Object> options) {
     return certifies(u, options);
   }
 

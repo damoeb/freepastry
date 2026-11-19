@@ -262,7 +262,7 @@ class GlacierMessageWireRoundTripTest {
         new GlacierResponseMessage(UID, keys, haveIt, lifetimes, authoritative, self, dest, true, TAG));
     assertSameKeys(keys, actual.numKeys(), actual::getKey);
     for (int i = 0; i < n; i++) {
-      assertEquals(haveIt[i], actual.getHaveIt(i));
+      assertEquals(haveIt[i], actual.hasFragment(i));
       assertEquals(authoritative[i], actual.getAuthoritative(i));
       assertEquals(lifetimes[i], actual.getExpiration(i));
     }
@@ -272,7 +272,7 @@ class GlacierMessageWireRoundTripTest {
   void responseMessageForSingleKey() throws IOException {
     GlacierResponseMessage actual = send(
         new GlacierResponseMessage(UID, fragmentKey("55", 1, 1), true, 99L, false, self, dest, false, TAG));
-    assertTrue(actual.getHaveIt(0));
+    assertTrue(actual.hasFragment(0));
     assertFalse(actual.getAuthoritative(0));
     assertEquals(99L, actual.getExpiration(0));
   }

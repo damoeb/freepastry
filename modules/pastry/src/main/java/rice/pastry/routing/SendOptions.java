@@ -70,7 +70,7 @@ public class SendOptions {
    * @return true if so, false otherwise.
    */
 
-  public boolean multipleHopsAllowed() {
+  public boolean areMultipleHopsAllowed() {
     return allowMultipleHops;
   }
 

@@ -377,19 +377,19 @@ public class LeafSet implements Iterable<NodeHandle> {
     NodeHandle cwExtreme = get(cwSize);
     NodeHandle ccwExtreme = get(-ccwSize);
     set = replicaSet(baseId,max);
-    if(!set.member(cwExtreme) && !set.member(ccwExtreme)) {
+    if(!set.contains(cwExtreme) && !set.contains(ccwExtreme)) {
       // the value of max did not cause us to reach either end of the leafset
       // in the method replicaSet
       return set;
     }
     else {
-      if(!set.member(cwExtreme)) {
+      if(!set.contains(cwExtreme)) {
         // All the nodes in the ccwSet are already members
         for(int i=1; i <= cwSize; i++) {
           set.put(get(i));
         }
       }
-      if(!set.member(ccwExtreme)) {
+      if(!set.contains(ccwExtreme)) {
         // All the nodes in the cwSet are already members
         for(int i=1; i <= ccwSize; i++) {
           set.put(get(-i));

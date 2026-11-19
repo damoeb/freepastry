@@ -73,7 +73,7 @@ public final class GlacierResponseMessage extends GlacierMessage {
     return keys[index];
   }
 
-  public boolean getHaveIt(int index) {
+  public boolean hasFragment(int index) {
     return haveIt[index];
   }
 

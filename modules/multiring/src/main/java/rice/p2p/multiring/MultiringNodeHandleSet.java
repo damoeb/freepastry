@@ -136,8 +136,8 @@ public class MultiringNodeHandleSet implements NodeHandleSet {
    * @return true if that node id is in the set, false otherwise.
    */
   @Override
-  public boolean memberHandle(Id id) {
-    return set.memberHandle(((RingId) id).getId());
+  public boolean containsHandleFor(Id id) {
+    return set.containsHandleFor(((RingId) id).getId());
   }
 
   /**

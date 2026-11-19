@@ -371,7 +371,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
            logger.debug("Range in log       : {}-?", pn.getSnippet().getFirstSeq());
 
            while (verifier.makeProgress());
-           boolean verifiedOK = verifier.verifiedOK();
+           boolean verifiedOK = verifier.isVerificationSuccessful();
 
            if (verifiedOK) {
              logger.warn("PROOF NONCONFORMANT contains a log snippet that actually is conformant; discarding");

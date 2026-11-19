@@ -157,7 +157,7 @@ public class VerifierSendTest {
 
     send(verifier, ByteBuffer.wrap(MESSAGE), -1);
 
-    assertTrue(verifier.verifiedOK(), "the hash of the replayed SEND equals the hash in the log");
+    assertTrue(verifier.isVerificationSuccessful(), "the hash of the replayed SEND equals the hash in the log");
   }
 
   @Test
@@ -167,7 +167,7 @@ public class VerifierSendTest {
 
     send(verifier, ByteBuffer.wrap(withFirstByteChanged()), -1);
 
-    assertFalse(verifier.verifiedOK());
+    assertFalse(verifier.isVerificationSuccessful());
   }
 
   @Test
@@ -177,7 +177,7 @@ public class VerifierSendTest {
 
     send(verifier, ByteBuffer.wrap(MESSAGE), RELEVANT);
 
-    assertTrue(verifier.verifiedOK());
+    assertTrue(verifier.isVerificationSuccessful());
   }
 
   @Test
@@ -187,7 +187,7 @@ public class VerifierSendTest {
 
     send(verifier, ByteBuffer.wrap(withLastByteChanged()), RELEVANT);
 
-    assertFalse(verifier.verifiedOK(), "the irrelevant part is covered by its hash");
+    assertFalse(verifier.isVerificationSuccessful(), "the irrelevant part is covered by its hash");
   }
 
   @Test
@@ -197,7 +197,7 @@ public class VerifierSendTest {
 
     send(verifier, ByteBuffer.wrap(MESSAGE), RELEVANT);
 
-    assertTrue(verifier.verifiedOK());
+    assertTrue(verifier.isVerificationSuccessful());
   }
 
   @Test
@@ -207,7 +207,7 @@ public class VerifierSendTest {
 
     send(verifier, ByteBuffer.wrap(withFirstByteChanged()), RELEVANT);
 
-    assertFalse(verifier.verifiedOK());
+    assertFalse(verifier.isVerificationSuccessful());
   }
 
   @Test
@@ -217,7 +217,7 @@ public class VerifierSendTest {
 
     send(verifier, ByteBuffer.wrap(withLastByteChanged()), RELEVANT);
 
-    assertFalse(verifier.verifiedOK());
+    assertFalse(verifier.isVerificationSuccessful());
   }
 
   @Test
@@ -227,7 +227,7 @@ public class VerifierSendTest {
 
     send(verifier, sliced(MESSAGE), -1);
 
-    assertTrue(verifier.verifiedOK());
+    assertTrue(verifier.isVerificationSuccessful());
   }
 
   @Test
@@ -237,7 +237,7 @@ public class VerifierSendTest {
 
     send(verifier, sliced(MESSAGE), RELEVANT);
 
-    assertTrue(verifier.verifiedOK());
+    assertTrue(verifier.isVerificationSuccessful());
   }
 
   @Test

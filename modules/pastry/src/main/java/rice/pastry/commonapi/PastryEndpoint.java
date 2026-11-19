@@ -752,7 +752,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
 
   @Override
-  public boolean routingConsistentFor(Id id) {
+  public boolean isRoutingConsistentFor(Id id) {
     if (!thePastryNode.isReady()) return false;
     NodeHandleSet set = replicaSet(id, 1);
     if (set.size() == 0) return false;

@@ -199,7 +199,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
     }
   }
 
-  public boolean verifiedOK() {
+  public boolean isVerificationSuccessful() {
     return !foundFault;
   };
 
@@ -638,7 +638,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
   }
 
   public boolean isSuccess() {
-    if (initialized && verifiedOK()) {
+    if (initialized && isVerificationSuccessful()) {
       if (next == null) return true;
     }
     return false;

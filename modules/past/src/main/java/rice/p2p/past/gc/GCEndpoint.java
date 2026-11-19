@@ -372,8 +372,8 @@ public class GCEndpoint implements Endpoint {
   }
 
   @Override
-  public boolean routingConsistentFor(Id id) {
-    return endpoint.routingConsistentFor(id);
+  public boolean isRoutingConsistentFor(Id id) {
+    return endpoint.isRoutingConsistentFor(id);
   }
   @Override
   public void setSendOptions(Map<String, Object> options) {

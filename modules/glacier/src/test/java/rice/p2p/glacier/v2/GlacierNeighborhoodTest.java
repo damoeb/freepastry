@@ -83,7 +83,7 @@ class GlacierNeighborhoodTest {
   void theResponsibleRangeIsRecomputedOnceAnExpiredNeighborHasBeenRemoved() {
     ((DirectTimeSource) env.getTimeSource()).incrementTime((int) (5 * NEIGHBOR_TIMEOUT));
     storedNeighbors.put(staleNeighbor, 0L);
-    NodeHandleSet emptyLeafSet = (NodeHandleSet) Proxy.newProxyInstance(NodeHandleSet.class.getClassLoader(), new Class<?>[] {NodeHandleSet.class}, (proxy, method, args) -> method.getName().equals("memberHandle") ? Boolean.FALSE : null);
+    NodeHandleSet emptyLeafSet = (NodeHandleSet) Proxy.newProxyInstance(NodeHandleSet.class.getClassLoader(), new Class<?>[] {NodeHandleSet.class}, (proxy, method, args) -> method.getName().equals("containsHandleFor") ? Boolean.FALSE : null);
 
     testObj.expireNeighbors(emptyLeafSet);
     var rangeWhileTheNeighborIsStillStored = testObj.getResponsibleRange();

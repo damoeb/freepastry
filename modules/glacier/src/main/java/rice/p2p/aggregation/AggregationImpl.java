@@ -175,7 +175,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     this.monitor = new AggregationMonitor(this, objectStore, aggregateStore, aggregateList, factory, environment, config, logger);
     this.debugCommands = new AggregationDebugCommands(this, aggregateStore, objectStore, aggregateList, waitingList, monitor, factory, environment, config, instance, logger);
 
-    if (!aggregateList.readOK()) {
+    if (!aggregateList.wasReadSuccessfully()) {
       logger.warn("Failed to read configuration file; aggregate list must be rebuilt!");
     } else {
       logger.atInfo().log(() -> "Aggregate list read OK -- current root: " + ((aggregateList.getRoot() == null) ? "null" : aggregateList.getRoot().toStringFull()));

@@ -529,7 +529,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           localHandleBytes, serializer,
           new NodeChangeStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>>(){
             @Override
-            public boolean canChange(
+            public boolean isChangeAllowed(
                 TransportLayerNodeHandle<MultiInetSocketAddress> oldDest,
                 TransportLayerNodeHandle<MultiInetSocketAddress> newDest) {
               if (newDest.getAddress().equals(oldDest.getAddress())) {

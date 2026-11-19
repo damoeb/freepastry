@@ -84,7 +84,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
 
   @Override
   protected void sendTheMessage(RouteMessage rm, NodeHandle handle) {
-    if (rm.getOptions().multipleHopsAllowed() && rm.getOptions().rerouteIfSuspected()) {
+    if (rm.getOptions().areMultipleHopsAllowed() && rm.getOptions().rerouteIfSuspected()) {
       // can be rapidly rerouted
       if (handle.getLiveness() >= LIVENESS_SUSPECTED) {
         super.sendTheMessage(rm, handle);

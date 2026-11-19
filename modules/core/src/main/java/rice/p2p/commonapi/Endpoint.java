@@ -299,7 +299,7 @@ public interface Endpoint extends NodeHandleReader {
    * @param id the id to verify
    * @return true if routing consistency can currently be guaranteed for this id
    */
-  public boolean routingConsistentFor(Id id);
+  public boolean isRoutingConsistentFor(Id id);
 
   /**
    * Reads an Id written with Id.serialize()

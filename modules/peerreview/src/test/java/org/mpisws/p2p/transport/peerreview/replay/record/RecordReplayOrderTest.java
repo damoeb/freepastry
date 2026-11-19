@@ -267,7 +267,7 @@ public class RecordReplayOrderTest {
 
   void assertReplayAgrees() throws IOException {
     Verifier<Node, Node> verifier = replay();
-    assertTrue(verifier.verifiedOK(), "the replay of a correct node diverges from its log");
+    assertTrue(verifier.isVerificationSuccessful(), "the replay of a correct node diverges from its log");
     assertTrue(verifier.isSuccess(), "the replay consumed the whole log");
   }
 

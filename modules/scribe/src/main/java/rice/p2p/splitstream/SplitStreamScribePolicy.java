@@ -158,12 +158,12 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @return the topics to accept
    */
   @Override
-  public List<Topic> allowSubscribe(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
+  public List<Topic> selectAcceptedTopics(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
     Iterator<Topic> i = topics.iterator();
     while(i.hasNext()) {
       Topic topic = i.next();
       // the subscriber is also the source of the request here
-      if (!allowSubscribe(topic, source, source, content,
+      if (!selectAcceptedTopics(topic, source, source, content,
           new ArrayList<NodeHandle>(scribe.getChildrenOfTopic(topic)))) {
         i.remove();
       }
@@ -181,7 +181,7 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    * @param children The children who are currently subscribed to this topic
    * @return Whether or not this child should be allowed add.
    */
-  private boolean allowSubscribe(Topic topic, NodeHandle newChild, NodeHandle source,
+  private boolean selectAcceptedTopics(Topic topic, NodeHandle newChild, NodeHandle source,
       ScribeContent content, Collection<NodeHandle> children) {
 
     Channel channel = getChannel(topic);

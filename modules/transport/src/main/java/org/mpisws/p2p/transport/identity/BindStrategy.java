@@ -87,7 +87,7 @@ public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
    * @param options the options of the connection or message it was offered or confirmed with, or null
    * @return false by default
    */
-  default boolean keepsBinding(UpperIdentifier u, @Nullable Map<String, Object> options) {
+  default boolean shouldKeepBinding(UpperIdentifier u, @Nullable Map<String, Object> options) {
     return false;
   }
 
