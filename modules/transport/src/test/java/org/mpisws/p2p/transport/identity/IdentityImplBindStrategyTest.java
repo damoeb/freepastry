@@ -31,21 +31,21 @@ class IdentityImplBindStrategyTest {
 
   private static class StubSerializer implements IdentitySerializer<String, String, String> {
     @Override
-    public void serialize(OutputBuffer buf, String i) throws IOException {}
+    public void serialize(OutputBuffer buf, String identifier) throws IOException {}
 
     @Override
-    public String deserialize(InputBuffer buf, String l) throws IOException {
-      return l;
+    public String deserialize(InputBuffer buf, String lowerIdentifier) throws IOException {
+      return lowerIdentifier;
     }
 
     @Override
-    public String translateDown(String i) {
-      return i;
+    public String translateDown(String identifier) {
+      return identifier;
     }
 
     @Override
-    public String translateUp(String i) {
-      return i;
+    public String translateUp(String identifier) {
+      return identifier;
     }
 
     @Override

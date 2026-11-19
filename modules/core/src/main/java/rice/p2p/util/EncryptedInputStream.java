@@ -136,22 +136,22 @@ public class EncryptedInputStream extends InputStream {
    * @param      b     the buffer into which the data is read.
    * @param      off   the start offset in array <code>b</code>
    *                   at which the data is written.
-   * @param      len   the maximum number of bytes to read.
+   * @param      length   the maximum number of bytes to read.
    * @return     the total number of bytes read into the buffer, or
    *             <code>-1</code> if there is no more data because the end of
    *             the stream has been reached.
    */
   @Override
-  public int read(byte b[], int off, int len) throws IOException {
-    java.util.Objects.checkFromIndexSize(off, len, b.length);
-    if (len == 0) {
+  public int read(byte b[], int off, int length) throws IOException {
+    java.util.Objects.checkFromIndexSize(off, length, b.length);
+    if (length == 0) {
       return 0;
     }
     byte[] data = fill();
     if (data == null) {
       return -1;
     }
-    int l = Math.min(len, available());
+    int l = Math.min(length, available());
     System.arraycopy(data, bufferLength, b, off, l);
     bufferLength += l;
 

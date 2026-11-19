@@ -136,11 +136,11 @@ public class TCPLayer extends SelectionKeyHandler {
     }
   }
 
-  public void acceptSockets(final boolean b) {
+  public void acceptSockets(final boolean enabled) {
     final SelectionKey serverKey = key;
     if (serverKey == null) return; // no TCP server, nothing to accept from
     Runnable task = () -> {
-      if (b) {
+      if (enabled) {
         serverKey.interestOps(serverKey.interestOps() | SelectionKey.OP_ACCEPT);
       } else {
         serverKey.interestOps(serverKey.interestOps() & ~SelectionKey.OP_ACCEPT);

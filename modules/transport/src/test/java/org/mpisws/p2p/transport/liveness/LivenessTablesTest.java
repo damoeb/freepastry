@@ -83,16 +83,16 @@ class LivenessTablesTest {
 
   /** Runs the action on the selector thread, where the layer receives its datagrams. */
   private void onSelector(SelectorAction action) throws Exception {
-    CompletableFuture<Void> done = new CompletableFuture<>();
+    CompletableFuture<Void> completed = new CompletableFuture<>();
     env.getSelectorManager().invoke(() -> {
       try {
         action.run();
-        done.complete(null);
+        completed.complete(null);
       } catch (Throwable throwable) {
-        done.completeExceptionally(throwable);
+        completed.completeExceptionally(throwable);
       }
     });
-    done.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    completed.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
   }
 
   private static ByteBuffer pong(long sentTime) {

@@ -95,16 +95,16 @@ public interface Parameters {
   public InetSocketAddress[] getInetSocketAddressArray(String paramName) throws UnknownHostException;
 
   // setters
-  public void setString(String paramName, String val);
-  public void setStringArray(String paramName, String[] val);
-  public void setInt(String paramName, int val);
-  public void setDouble(String paramName, double val);
-  public void setFloat(String paramName, float val);
-  public void setLong(String paramName, long val);
-  public void setBoolean(String paramName, boolean val);
-  public void setInetAddress(String paramName, InetAddress val);
-  public void setInetSocketAddress(String paramName, InetSocketAddress val);
-  public void setInetSocketAddressArray(String paramName, InetSocketAddress[] val);
+  public void setString(String paramName, String value);
+  public void setStringArray(String paramName, String[] value);
+  public void setInt(String paramName, int value);
+  public void setDouble(String paramName, double value);
+  public void setFloat(String paramName, float value);
+  public void setLong(String paramName, long value);
+  public void setBoolean(String paramName, boolean value);
+  public void setInetAddress(String paramName, InetAddress value);
+  public void setInetSocketAddress(String paramName, InetSocketAddress value);
+  public void setInetSocketAddressArray(String paramName, InetSocketAddress[] value);
 
   public void addChangeListener(ParameterChangeListener parameterChangeListener);
   public void removeChangeListener(ParameterChangeListener parameterChangeListener);

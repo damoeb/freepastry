@@ -199,9 +199,9 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
           }
 
           @Override
-          public void messageReceived(MultiInetSocketAddress i, ByteBuffer msg, Map<String, Object> options) throws IOException {
-            if (connectionAllowed(myAddr, i, "message")) {
-              super.messageReceived(i, msg, options);
+          public void messageReceived(MultiInetSocketAddress identifier, ByteBuffer msg, Map<String, Object> options) throws IOException {
+            if (connectionAllowed(myAddr, identifier, "message")) {
+              super.messageReceived(identifier, msg, options);
             }
           }
 
@@ -308,7 +308,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
       }
 
       @Override
-      public void pingReceived(SourceRoute<MultiInetSocketAddress> i, Map<String, Object> options) {
+      public void pingReceived(SourceRoute<MultiInetSocketAddress> identifier, Map<String, Object> options) {
 
       }
     };

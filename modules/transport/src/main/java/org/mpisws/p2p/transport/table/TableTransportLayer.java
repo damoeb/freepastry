@@ -307,13 +307,13 @@ public class TableTransportLayer<Identifier, Key, Value>
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    tl.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    tl.acceptSockets(enabled);
   }
 
   @Override

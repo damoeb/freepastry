@@ -320,7 +320,7 @@ public class SecureHistory {
 
     // Go through entries one by one
     long previousSeq = -1;
-    for (long idx=idxFrom; idx<=idxTo; idx++) {
+    for (long index=idxFrom; index<=idxTo; index++) {
       // Read index entry
 
       ie = indexFactory.build(indexFile);
@@ -361,16 +361,16 @@ public class SecureHistory {
   /**
    *  Retrieve information about a given record
    *
-   *  @param idx the index you are interested in
+   *  @param index the index you are interested in
    */
-  public IndexEntry statEntry(long idx) throws IOException {
-    if ((idx < 0) || (idx >= numEntries))
+  public IndexEntry statEntry(long index) throws IOException {
+    if ((index < 0) || (index >= numEntries))
       return null;
 
     IndexEntry ie;
 
     pointerAtEnd = false;
-    indexFile.seek((long)idx*indexFactory.getSerializedSize());
+    indexFile.seek((long)index*indexFactory.getSerializedSize());
     ie = indexFactory.build(indexFile);
 
     return ie;
@@ -379,8 +379,8 @@ public class SecureHistory {
   /**
    *  Get the content of a log entry, specified by its record number
    */
-  public byte[] getEntry(long idx, int maxSizeToRead) throws IOException {
-    return getEntry(statEntry(idx), maxSizeToRead);
+  public byte[] getEntry(long index, int maxSizeToRead) throws IOException {
+    return getEntry(statEntry(index), maxSizeToRead);
   }
 
   public byte[] getEntry(IndexEntry ie, int maxSizeToRead) throws IOException {
@@ -406,16 +406,16 @@ public class SecureHistory {
    * If the log already contains an entry in 'hashed' form and we learn the actual
    * contents later, this function is called.
    */
-  public boolean upgradeHashedEntry(int idx, ByteBuffer entry) throws IOException {
+  public boolean upgradeHashedEntry(int index, ByteBuffer entry) throws IOException {
     if (readOnly)
       throw new IllegalStateException("Cannot upgrade hashed entry in readonly history");
 
-    if ((idx<0) || (idx>=numEntries))
+    if ((index<0) || (index>=numEntries))
       return false;
 
     pointerAtEnd = false;
 
-    indexFile.seek((long)idx*indexFactory.getSerializedSize());
+    indexFile.seek((long)index*indexFactory.getSerializedSize());
 
     IndexEntry ie = indexFactory.build(indexFile);
 
@@ -432,7 +432,7 @@ public class SecureHistory {
 
     dataFile.write(entry.array(), entry.arrayOffset()+entry.position(), entry.remaining());
 
-    indexFile.seek((long)idx*indexFactory.getSerializedSize());
+    indexFile.seek((long)index*indexFactory.getSerializedSize());
     ie.serialize(indexFile);
 
     return true;

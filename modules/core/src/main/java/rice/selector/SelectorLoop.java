@@ -595,17 +595,17 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
    * @return The array of keys
    */
   protected SelectionKey[] selectedKeys() throws IOException {
-    Set<SelectionKey> s = selector.selectedKeys();
-    SelectionKey[] k = (SelectionKey[])s.toArray(new SelectionKey[0]);
+    Set<SelectionKey> selectedKeys = selector.selectedKeys();
+    SelectionKey[] keys = (SelectionKey[])selectedKeys.toArray(new SelectionKey[0]);
     // randomize k
-    for (int c = 0; c < k.length; c++) {
-      SelectionKey temp = k[c];
-      int swapIndex = random.nextInt(k.length);
-      k[c] = k[swapIndex];
-      k[swapIndex] = temp;
+    for (int keyIndex = 0; keyIndex < keys.length; keyIndex++) {
+      SelectionKey temp = keys[keyIndex];
+      int swapIndex = random.nextInt(keys.length);
+      keys[keyIndex] = keys[swapIndex];
+      keys[swapIndex] = temp;
     }
 
-    return k;
+    return keys;
   }
 
   /**
@@ -746,18 +746,18 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
 
     // step 1, fetch all due timers
     synchronized (this) {
-      boolean done = false;
-      while (!done) {
+      boolean isDone = false;
+      while (!isDone) {
         if (timerQueue.size() > 0) {
           TimerTask next = (TimerTask) timerQueue.peek();
           if (next.scheduledExecutionTime() <= now) {
             executeNow.add(next);
             timerQueue.poll();
           } else {
-            done = true;
+            isDone = true;
           }
         } else {
-          done = true;
+          isDone = true;
         }
       }
     }

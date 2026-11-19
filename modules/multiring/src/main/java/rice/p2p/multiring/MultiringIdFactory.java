@@ -342,7 +342,7 @@ public class MultiringIdFactory implements IdFactory {
     @Override
     public Set<Map.Entry<Id, V>> entrySet() { return new MultiringEntrySet<V>(map.entrySet()); }
     @Override
-    public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
+    public boolean equals(Object object) { throw new UnsupportedOperationException("equals not supported!"); }
     @Override
     public V get(Object key) { throw new UnsupportedOperationException("get not supported!"); }
     @Override
@@ -382,7 +382,7 @@ public class MultiringIdFactory implements IdFactory {
     @Override
     public boolean containsAll(Collection<?> c) { throw new UnsupportedOperationException("containsAll not supported!"); }
     @Override
-    public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
+    public boolean equals(Object object) { throw new UnsupportedOperationException("equals not supported!"); }
     @Override
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     @Override
@@ -431,7 +431,7 @@ public class MultiringIdFactory implements IdFactory {
     @Override
     public boolean containsAll(Collection<?> c) { throw new UnsupportedOperationException("containsAll not supported!"); }
     @Override
-    public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
+    public boolean equals(Object object) { throw new UnsupportedOperationException("equals not supported!"); }
     @Override
     public int hashCode() { throw new UnsupportedOperationException("hashCode not supported!"); }
     @Override
@@ -487,7 +487,7 @@ public class MultiringIdFactory implements IdFactory {
     }
 
     @Override
-    public boolean equals(Object o) { throw new UnsupportedOperationException("equals not supported!"); }
+    public boolean equals(Object object) { throw new UnsupportedOperationException("equals not supported!"); }
     @Override
     public Id getKey() { return ((RingId) entry.getKey()).getId(); }
     @Override

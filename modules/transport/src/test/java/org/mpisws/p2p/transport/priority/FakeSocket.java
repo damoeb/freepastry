@@ -33,11 +33,11 @@ final class FakeSocket implements P2PSocket<String> {
     if (readFailure != null) {
       throw readFailure;
     }
-    int n = Math.min(dst.remaining(), incoming.remaining());
-    for (int i = 0; i < n; i++) {
+    int byteCount = Math.min(dst.remaining(), incoming.remaining());
+    for (int i = 0; i < byteCount; i++) {
       dst.put(incoming.get());
     }
-    return n;
+    return byteCount;
   }
 
   @Override

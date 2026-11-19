@@ -241,25 +241,25 @@ public class SecurityUtilsTest {
 
   @Test
   public void signaturesAreSha256WithRsaOverTheDataItself() throws Exception {
-    byte[] sig = SecurityUtils.sign(PLAIN, pairA.getPrivate());
-    assertTrue(SecurityUtils.verify(PLAIN, sig, pairA.getPublic()));
+    byte[] signature = SecurityUtils.sign(PLAIN, pairA.getPrivate());
+    assertTrue(SecurityUtils.verify(PLAIN, signature, pairA.getPublic()));
 
     Signature jdk = Signature.getInstance("SHA256withRSA", "SunRsaSign");
     jdk.initVerify(pairA.getPublic());
     jdk.update(PLAIN);
-    assertTrue(jdk.verify(sig), "no extra hash of the data before signing");
+    assertTrue(jdk.verify(signature), "no extra hash of the data before signing");
   }
 
   @Test
   public void verifyingRejectsTamperedDataSignaturesAndTheWrongKey() {
-    byte[] sig = SecurityUtils.sign(PLAIN, pairA.getPrivate());
+    byte[] signature = SecurityUtils.sign(PLAIN, pairA.getPrivate());
     byte[] tamperedData = PLAIN.clone();
     tamperedData[0] ^= 0x01;
-    byte[] tamperedSig = sig.clone();
+    byte[] tamperedSig = signature.clone();
     tamperedSig[0] ^= 0x01;
-    assertFalse(SecurityUtils.verify(tamperedData, sig, pairA.getPublic()));
+    assertFalse(SecurityUtils.verify(tamperedData, signature, pairA.getPublic()));
     assertFalse(SecurityUtils.verify(PLAIN, tamperedSig, pairA.getPublic()));
-    assertFalse(SecurityUtils.verify(PLAIN, sig, pairB.getPublic()));
+    assertFalse(SecurityUtils.verify(PLAIN, signature, pairB.getPublic()));
   }
 
   @Test

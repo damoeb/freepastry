@@ -658,13 +658,13 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    transport.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    transport.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    transport.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    transport.acceptSockets(enabled);
   }
 
   @Override
@@ -774,7 +774,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
    * Note, must include PEER_REVIEW_COMMIT and the type
    */
   @Override
-  public void transmit(Handle dest,
+  public void transmit(Handle destination,
       PeerReviewMessage message,
       MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
@@ -787,7 +787,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
       ByteBuffer buf = sob.getByteBuffer();
 
-      transport.sendMessage(dest, buf, deliverAckToMe, options);
+      transport.sendMessage(destination, buf, deliverAckToMe, options);
     } catch (IOException ioe) {
       throw new RuntimeException("Error serializing:"+message,ioe);
     }

@@ -74,12 +74,12 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
 
     SourceRoute<InetSocketAddress> src = transportLayer.getLocalIdentifier();
     SourceRoute<InetSocketAddress> intermediate = carol.getLocalIdentifier();
-    SourceRoute<InetSocketAddress> dest = b.getLocalIdentifier();
+    SourceRoute<InetSocketAddress> destination = b.getLocalIdentifier();
 
     List<InetSocketAddress> retArr = new ArrayList<InetSocketAddress>(3);
     retArr.add(src.getFirstHop());
     retArr.add(intermediate.getFirstHop());
-    retArr.add(dest.getFirstHop());
+    retArr.add(destination.getFirstHop());
 
     return srFactory.getSourceRoute(retArr);
   }

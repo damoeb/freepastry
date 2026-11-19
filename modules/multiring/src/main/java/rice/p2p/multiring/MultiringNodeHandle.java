@@ -143,12 +143,12 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
   /**
    * Returns whether or not this object is equal to the provided one
    *
-   * @param o The object to compare to
+   * @param object The object to compare to
    * @return Whether or not this is object is equal
    */
   @Override
-  public boolean equals(Object o) {
-    if (! (o instanceof MultiringNodeHandle multiringNodeHandle))
+  public boolean equals(Object object) {
+    if (! (object instanceof MultiringNodeHandle multiringNodeHandle))
       return false;
 
     return (multiringNodeHandle.handle.equals(handle) && multiringNodeHandle.ringId.equals(ringId));

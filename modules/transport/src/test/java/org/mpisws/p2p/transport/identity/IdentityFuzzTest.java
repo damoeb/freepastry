@@ -53,13 +53,13 @@ class IdentityFuzzTest {
       }
 
       @Override
-      public InetSocketAddress deserialize(InputBuffer buf, InetSocketAddress l) throws IOException {
+      public InetSocketAddress deserialize(InputBuffer buf, InetSocketAddress lowerIdentifier) throws IOException {
         return InetSocketAddressSerializer.deserializeAddress(buf);
       }
 
       @Override
-      public InetSocketAddress translateDown(InetSocketAddress i) {
-        return i;
+      public InetSocketAddress translateDown(InetSocketAddress identifier) {
+        return identifier;
       }
 
       @Override

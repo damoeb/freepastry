@@ -52,48 +52,48 @@ public class SimpleFileTransferListener implements FileTransferListener {
   @Override
   public void fileTransferred(FileReceipt receipt,
       long bytesTransferred, long total, boolean incoming) {
-    String s;
+    String text;
     if (incoming) {
-      s = " Downloaded ";
+      text = " Downloaded ";
     } else {
-      s = " Uploaded ";
+      text = " Uploaded ";
     }
     double percent = 100.0*bytesTransferred/total;
-    System.out.println(prefix+s+percent+"% of "+receipt);
+    System.out.println(prefix+text+percent+"% of "+receipt);
   }
 
   @Override
   public void msgTransferred(ByteBufferReceipt receipt, int bytesTransferred,
       int total, boolean incoming) {
-    String s;
+    String text;
     if (incoming) {
-      s = " Downloaded ";
+      text = " Downloaded ";
     } else {
-      s = " Uploaded ";
+      text = " Uploaded ";
     }
     double percent = 100.0*bytesTransferred/total;
-    System.out.println(prefix+s+percent+"% of "+receipt);
+    System.out.println(prefix+text+percent+"% of "+receipt);
   }
 
   @Override
   public void transferCancelled(Receipt receipt, boolean incoming) {
-    String s;
+    String text;
     if (incoming) {
-      s = "download";
+      text = "download";
     } else {
-      s = "upload";
+      text = "upload";
     }
-    System.out.println(prefix+": Cancelled "+s+" of "+receipt);
+    System.out.println(prefix+": Cancelled "+text+" of "+receipt);
   }
 
   @Override
   public void transferFailed(Receipt receipt, boolean incoming) {
-    String s;
+    String text;
     if (incoming) {
-      s = "download";
+      text = "download";
     } else {
-      s = "upload";
+      text = "upload";
     }
-    System.out.println(prefix+": Failed "+s+" of "+receipt);
+    System.out.println(prefix+": Failed "+text+" of "+receipt);
   }
 }

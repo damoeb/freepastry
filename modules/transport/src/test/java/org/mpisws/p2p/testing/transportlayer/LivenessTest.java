@@ -86,13 +86,13 @@ public class LivenessTest extends SRTest {
       TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> b) {
     SourceRoute<MultiInetSocketAddress> src = transportLayer.getLocalIdentifier();
     SourceRoute<MultiInetSocketAddress> intermediate = carol_tap.getLocalIdentifier();
-    SourceRoute<MultiInetSocketAddress> dest = b.getLocalIdentifier();
+    SourceRoute<MultiInetSocketAddress> destination = b.getLocalIdentifier();
 
     if (transportLayer.equals(carol) || b.equals(carol)) {
 
       List<MultiInetSocketAddress> retArr = new ArrayList<MultiInetSocketAddress>(2);
       retArr.add(src.getFirstHop());
-      retArr.add(dest.getFirstHop());
+      retArr.add(destination.getFirstHop());
 
       return srFactory.getSourceRoute(retArr);
     }
@@ -100,7 +100,7 @@ public class LivenessTest extends SRTest {
     List<MultiInetSocketAddress> retArr = new ArrayList<MultiInetSocketAddress>(3);
     retArr.add(src.getFirstHop());
     retArr.add(intermediate.getFirstHop());
-    retArr.add(dest.getFirstHop());
+    retArr.add(destination.getFirstHop());
 
     return srFactory.getSourceRoute(retArr);
   }
@@ -195,7 +195,7 @@ public class LivenessTest extends SRTest {
       }
 
       @Override
-      public void pingReceived(SourceRoute<MultiInetSocketAddress> i, Map<String, Object> options) {
+      public void pingReceived(SourceRoute<MultiInetSocketAddress> identifier, Map<String, Object> options) {
 
       }
     };

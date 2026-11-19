@@ -96,18 +96,18 @@ public abstract class SourceRoute<Identifier> {
   /**
    * Checks equality on source routes
    *
-   * @param o The source route to compare to
+   * @param object The source route to compare to
    * @return The equality
    */
   @Override
-  public boolean equals(Object o) {
-    if (o == null)
+  public boolean equals(Object object) {
+    if (object == null)
       return false;
 
-    if (!(o instanceof SourceRoute))
+    if (!(object instanceof SourceRoute))
       return false;
 
-    SourceRoute<?> that = (SourceRoute<?>)o;
+    SourceRoute<?> that = (SourceRoute<?>)object;
 
     return this.path.equals(that.path);
   }

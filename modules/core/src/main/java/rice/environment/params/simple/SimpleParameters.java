@@ -135,15 +135,15 @@ public class SimpleParameters implements Parameters {
     }
 
     if (this.configFileName != null) {
-      Path f = Path.of(this.configFileName);
-      if (Files.exists(f)) {
-        try (InputStream in = Files.newInputStream(f)) {
+      Path file = Path.of(this.configFileName);
+      if (Files.exists(file)) {
+        try (InputStream in = Files.newInputStream(file)) {
           properties.load(in);
         } catch (IOException | IllegalArgumentException e) {
-          throw new ParamsNotPresentException("Error loading "+f, e);
+          throw new ParamsNotPresentException("Error loading "+file, e);
         }
       } else {
-        LOG.info("Configuration file {} not present.  Using defaults.", f.toAbsolutePath());
+        LOG.info("Configuration file {} not present.  Using defaults.", file.toAbsolutePath());
       }
     }
   }
@@ -430,9 +430,9 @@ public class SimpleParameters implements Parameters {
     changeListeners.remove(parameterChangeListener);
   }
 
-  private void fireChangeEvent(String name, @Nullable String val) {
+  private void fireChangeEvent(String name, @Nullable String value) {
     for (ParameterChangeListener parameterChangeListener : changeListeners) {
-      parameterChangeListener.parameterChange(name, val);
+      parameterChangeListener.parameterChange(name, value);
     }
   }
 

@@ -81,8 +81,8 @@ public class LogSnippet {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof LogSnippet that)) return false;
+  public boolean equals(Object object) {
+    if (!(object instanceof LogSnippet that)) return false;
     if (!Arrays.equals(this.baseHash, that.baseHash)) return false;
     if (this.entries.size() != that.entries.size()) return false;
     Iterator<SnippetEntry> iterator = that.entries.iterator();

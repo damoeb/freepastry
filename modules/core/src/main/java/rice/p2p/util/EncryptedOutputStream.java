@@ -135,24 +135,24 @@ public class EncryptedOutputStream extends OutputStream {
    *
    * @param      b     the data.
    * @param      off   the start offset in the data.
-   * @param      len   the number of bytes to write.
+   * @param      length   the number of bytes to write.
    */
   @Override
-  public void write(byte b[], int off, int len) throws IOException {
+  public void write(byte b[], int off, int length) throws IOException {
     if (b == null) {
       throw new NullPointerException();
-    } else if ((off < 0) || (off > b.length) || (len < 0) ||
-               ((off + len) > b.length) || ((off + len) < 0)) {
+    } else if ((off < 0) || (off > b.length) || (length < 0) ||
+               ((off + length) > b.length) || ((off + length) < 0)) {
       throw new IndexOutOfBoundsException();
-    } else if (len == 0) {
+    } else if (length == 0) {
       return;
     }
 
     // if it will fit in the buffer, just fill it up
     // otherwise, write what we can and recur
-    if (len <= BUFFER_SIZE - bufferLength) {
-      System.arraycopy(b, off, buffer, bufferLength, len);
-      bufferLength += len;
+    if (length <= BUFFER_SIZE - bufferLength) {
+      System.arraycopy(b, off, buffer, bufferLength, length);
+      bufferLength += length;
     } else {
       int l = BUFFER_SIZE - bufferLength;
 
@@ -160,7 +160,7 @@ public class EncryptedOutputStream extends OutputStream {
       bufferLength += l;
       writeBuffer();
 
-      write(b, off+l, len-l);
+      write(b, off+l, length-l);
     }
   }
 

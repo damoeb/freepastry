@@ -88,8 +88,8 @@ public class SnippetEntry {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof SnippetEntry that)) return false;
+  public boolean equals(Object object) {
+    if (!(object instanceof SnippetEntry that)) return false;
     if (this.type != that.type) return false;
     if (this.seq != that.seq) return false;
     if (this.isHash != that.isHash) return false;

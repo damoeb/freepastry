@@ -62,10 +62,10 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
     if (socket != s) throw new IllegalArgumentException("Sockets not equal!!! s:"+s+" socket:"+socket);
     if (canWrite || !canRead) throw new IllegalArgumentException("Should only be able to read! canRead:"+canRead+" canWrite:"+canWrite);
     // the first thing we need to do is to find out if this is a primary socket or a passthrough
-    ByteBuffer hdr = ByteBuffer.allocate(1);
+    ByteBuffer header = ByteBuffer.allocate(1);
     int ret;
     try {
-      ret = (int)socket.read(hdr);
+      ret = (int)socket.read(header);
     } catch (IOException ioe) {
       socket.close();
       return;
@@ -81,8 +81,8 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
       break;
     case 1:
       // success
-      hdr.flip();
-      dispatch(hdr.get());
+      header.flip();
+      dispatch(header.get());
       break;
     default:
       //Whisky Tango Foxtrot?

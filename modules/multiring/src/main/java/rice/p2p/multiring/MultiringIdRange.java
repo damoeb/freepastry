@@ -153,12 +153,12 @@ public record MultiringIdRange(Id ringId, IdRange range) implements IdRange {
   /**
    * Determines equality
    *
-   * @param o To compare to
+   * @param object To compare to
    * @return Equals
    */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof MultiringIdRange multiringIdRange))
+  public boolean equals(Object object) {
+    if (!(object instanceof MultiringIdRange multiringIdRange))
       return false;
     return (multiringIdRange.range().equals(range) && multiringIdRange.ringId.equals(ringId));
   }

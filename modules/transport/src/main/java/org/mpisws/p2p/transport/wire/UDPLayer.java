@@ -47,7 +47,7 @@ import rice.Destructible;
 
 public interface UDPLayer extends Destructible {
 
-  void acceptMessages(boolean b);
+  void acceptMessages(boolean enabled);
 
   MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination, ByteBuffer msg,

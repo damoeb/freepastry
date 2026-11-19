@@ -170,15 +170,15 @@ public class ReverseTreeMap<K,V> {
 
     // and add the new reverse mapping
     if (value != null) {
-      ConcurrentRingMap<K,V> v = reverse.get(value);
+      ConcurrentRingMap<K,V> reverseMap = reverse.get(value);
 
       // creating a treeset if necessary
-      if (v == null) {
-        v = new ConcurrentRingMap<K,V>();
-        reverse.put(value, v);
+      if (reverseMap == null) {
+        reverseMap = new ConcurrentRingMap<K,V>();
+        reverse.put(value, reverseMap);
       }
 
-      v.put(key, value);
+      reverseMap.put(key, value);
     } else {
       nulls.put(key, null);
     }

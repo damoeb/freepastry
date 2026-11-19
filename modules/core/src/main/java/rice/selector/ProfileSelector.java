@@ -146,8 +146,8 @@ public class ProfileSelector extends SelectorLoop {
    */
   private final ConcurrentHashMap<String, Stat> stats = new ConcurrentHashMap<String, Stat>();
 
-  public void addStat(String s, long time) {
-    stats.computeIfAbsent(s, Stat::new).addTime(time);
+  public void addStat(String statName, long time) {
+    stats.computeIfAbsent(statName, Stat::new).addTime(time);
   }
 
   public void printStats() {
@@ -305,11 +305,11 @@ public class ProfileSelector extends SelectorLoop {
       this.name = name;
     }
 
-    public void addTime(long t) {
+    public void addTime(long millis) {
       num++;
-      totalTime+=t;
-      if (t > maxTime) {
-        maxTime = t;
+      totalTime+=millis;
+      if (millis > maxTime) {
+        maxTime = millis;
       }
     }
 

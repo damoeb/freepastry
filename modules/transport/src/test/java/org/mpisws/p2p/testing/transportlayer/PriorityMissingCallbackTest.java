@@ -155,9 +155,9 @@ public class PriorityMissingCallbackTest {
 
   /** Waits until everything the selector was asked to do so far has been done. */
   private void syncWithSelector() throws InterruptedException {
-    final CountDownLatch done = new CountDownLatch(1);
-    env.getSelectorManager().invoke(done::countDown);
-    assertTrue(done.await(WAIT_MILLIS, TimeUnit.MILLISECONDS));
+    final CountDownLatch completed = new CountDownLatch(1);
+    env.getSelectorManager().invoke(completed::countDown);
+    assertTrue(completed.await(WAIT_MILLIS, TimeUnit.MILLISECONDS));
   }
 
   @Test
@@ -170,7 +170,7 @@ public class PriorityMissingCallbackTest {
         if (bytes == first.length) bobRead.countDown();
       }
       @Override
-      public void wrote(int bytes, MultiInetSocketAddress i, Map<String, Object> options, boolean passthrough, boolean socket) {
+      public void wrote(int bytes, MultiInetSocketAddress identifier, Map<String, Object> options, boolean passthrough, boolean socket) {
       }
     });
 
@@ -196,17 +196,17 @@ public class PriorityMissingCallbackTest {
   public void datagramWithoutCallbackIsDropped() throws Exception {
     bob.setCallback(null); // also restores the "missing callback" behavior
     final Exception[] thrown = new Exception[1];
-    final CountDownLatch done = new CountDownLatch(1);
+    final CountDownLatch completed = new CountDownLatch(1);
     env.getSelectorManager().invoke(() -> {
       try {
         bob.messageReceived(bobAddr, ByteBuffer.wrap(new byte[] {7}), new HashMap<String, Object>());
       } catch (Exception e) {
         thrown[0] = e;
       } finally {
-        done.countDown();
+        completed.countDown();
       }
     });
-    assertTrue(done.await(WAIT_MILLIS, TimeUnit.MILLISECONDS));
+    assertTrue(completed.await(WAIT_MILLIS, TimeUnit.MILLISECONDS));
     assertNull(thrown[0]);
   }
 
@@ -217,9 +217,9 @@ public class PriorityMissingCallbackTest {
       alice.openSocket(bobAddr, new SocketCallback<MultiInetSocketAddress>() {
         @Override
         public void receiveResult(SocketRequestHandle<MultiInetSocketAddress> cancellable,
-            P2PSocket<MultiInetSocketAddress> sock) {
+            P2PSocket<MultiInetSocketAddress> openedSocket) {
           // wait for bob to close it
-          sock.register(true, false, new P2PSocketReceiver<MultiInetSocketAddress>() {
+          openedSocket.register(true, false, new P2PSocketReceiver<MultiInetSocketAddress>() {
             @Override
             public void receiveSelectResult(P2PSocket<MultiInetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
               long ret = socket.read(ByteBuffer.allocate(1));

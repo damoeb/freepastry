@@ -49,5 +49,5 @@ public interface LivenessListener<Identifier> {
   /**
    * Called when the liveness changes.
    */
-  public void livenessChanged(Identifier identifier, int val, @Nullable Map<String, Object> options);
+  public void livenessChanged(Identifier identifier, int liveness, @Nullable Map<String, Object> options);
 }

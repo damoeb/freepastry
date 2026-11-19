@@ -121,19 +121,19 @@ class RendezvousPilotTest {
     @Override
     public long read(ByteBuffer dst) {
       byte[] all = toRead.toByteArray();
-      int n = Math.min(dst.remaining(), all.length - readPosition);
-      dst.put(all, readPosition, n);
-      readPosition += n;
-      return n;
+      int byteCount = Math.min(dst.remaining(), all.length - readPosition);
+      dst.put(all, readPosition, byteCount);
+      readPosition += byteCount;
+      return byteCount;
     }
 
     @Override
     public long write(ByteBuffer src) {
-      int n = src.remaining();
-      byte[] copy = new byte[n];
+      int byteCount = src.remaining();
+      byte[] copy = new byte[byteCount];
       src.get(copy);
-      written.write(copy, 0, n);
-      return n;
+      written.write(copy, 0, byteCount);
+      return byteCount;
     }
 
     @Override
@@ -157,17 +157,17 @@ class RendezvousPilotTest {
 
     @Override
     public SocketRequestHandle<String> openSocket(
-        String i, SocketCallback<String> deliverSocketToMe, @Nullable Map<String, Object> options) {
-      opened.add(i);
+        String identifier, SocketCallback<String> deliverSocketToMe, @Nullable Map<String, Object> options) {
+      opened.add(identifier);
       callbacks.add(deliverSocketToMe);
-      FakeHandle handle = new FakeHandle(i);
+      FakeHandle handle = new FakeHandle(identifier);
       handles.add(handle);
       return handle;
     }
 
     @Override
     public @Nullable MessageRequestHandle<String, ByteBuffer> sendMessage(
-        String i,
+        String identifier,
         ByteBuffer msg,
         @Nullable MessageCallback<String, ByteBuffer> deliverAckToMe,
         @Nullable Map<String, Object> options) {
@@ -180,10 +180,10 @@ class RendezvousPilotTest {
     }
 
     @Override
-    public void acceptSockets(boolean b) {}
+    public void acceptSockets(boolean enabled) {}
 
     @Override
-    public void acceptMessages(boolean b) {}
+    public void acceptMessages(boolean enabled) {}
 
     @Override
     public void setCallback(TransportLayerCallback<String, ByteBuffer> callback) {}

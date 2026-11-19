@@ -129,8 +129,8 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
       int diff = (int)(now - lastMeasure);
       lastMeasure = now;
       for (Identifier identifier : measured.keySet()) {
-        Tuple<int[], Collection<MySocket>> t = measured.get(identifier);
-        int[] vals = t.first();
+        Tuple<int[], Collection<MySocket>> pair = measured.get(identifier);
+        int[] vals = pair.first();
         vals[LAST_DOWN] = vals[CUR_DOWN]*1000/diff;
         vals[LAST_UP] = vals[CUR_UP]*1000/diff;
         vals[LAST_SATURATED] = vals[CUR_SATURATED];
@@ -140,7 +140,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
 
         // see if anyone was waiting to write
         if (vals[LAST_SATURATED] == NOT_SATURATED) {
-          for (MySocket mySocket : t.second()) {
+          for (MySocket mySocket : pair.second()) {
             if (mySocket.wantsToWrite()) {
               vals[LAST_SATURATED] = SATURATED;
               break;
@@ -181,8 +181,8 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     synchronized(measured) {
       HashMap<Identifier, BandwidthUsed> ret = new HashMap<Identifier, BandwidthUsed>();
       for (Identifier identifier : measured.keySet()) {
-        Tuple<int[], Collection<MySocket>> t = measured.get(identifier);
-        int[] vals = t.first();
+        Tuple<int[], Collection<MySocket>> pair = measured.get(identifier);
+        int[] vals = pair.first();
         ret.put(identifier,new BandwidthUsed(vals[LAST_DOWN], vals[LAST_UP], vals[LAST_SATURATED] == SATURATED));
       }
       return ret;
@@ -303,13 +303,13 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    tl.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    tl.acceptSockets(enabled);
   }
 
   @Override

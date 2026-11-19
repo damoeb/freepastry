@@ -420,10 +420,10 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     while(dsts.hasRemaining() && !readMe.isEmpty()) {
       // dsts.put() can overflow, must do the bounds checking manually
       ByteBuffer foo = readMe.getFirst();
-      int len = Math.min(dsts.remaining(), foo.remaining());
+      int length = Math.min(dsts.remaining(), foo.remaining());
       int pos = foo.position();
-      dsts.put(ByteBuffers.array(foo), foo.arrayOffset() + pos, len);
-      foo.position(pos+len);
+      dsts.put(ByteBuffers.array(foo), foo.arrayOffset() + pos, length);
+      foo.position(pos+length);
       if (foo.hasRemaining()) {
         return dsts.position()-start;
       } else {

@@ -273,16 +273,16 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
    * Tries to make progress on the message queue of the specified peer, e.g. after that peer
    * has become TRUSTED, or after it has sent us an acknowledgment
    */
-  protected void makeProgress(Identifier idx) {
-    PeerCommitmentState<Handle> info = peer.get(idx);
+  protected void makeProgress(Identifier identifier) {
+    PeerCommitmentState<Handle> info = peer.get(identifier);
     if (info == null || (info.xmitQueue.isEmpty() && info.recvQueue.isEmpty())) {
       return;
     }
 
     /* Get the public key. If we don't have it (yet), ask the peer to send it */
 
-    if (!transport.hasCertificate(idx)) {
-      peerreview.requestCertificate(info.handle, idx);
+    if (!transport.hasCertificate(identifier)) {
+      peerreview.requestCertificate(info.handle, identifier);
       return;
     }
 
@@ -290,10 +290,10 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
        or retransmit the one currently in flight */
 
     if (!info.xmitQueue.isEmpty()) {
-      int status = infoStore.getStatus(idx);
+      int status = infoStore.getStatus(identifier);
       switch (status) {
         case STATUS_EXPOSED: /* Node is already exposed; no point in sending it any further messages */
-          logger.warn("Releasing messages sent to exposed node {}", idx);
+          logger.warn("Releasing messages sent to exposed node {}", identifier);
           info.clearXmitQueue();
           return;
         case STATUS_SUSPECTED: /* Node is suspected; send the first unanswered challenge */
@@ -338,7 +338,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
           logger.warn("{} has not acknowledged our message after {} retransmissions; filing as evidence", info.handle, info.retransmitsSoFar);
           OutgoingUserDataMessage<Handle> challenge = info.xmitQueue.removeFirst();
-          challenge.sendFailed(new IOException("Peer Review Giving Up sending message to "+idx));
+          challenge.sendFailed(new IOException("Peer Review Giving Up sending message to "+identifier));
 
           long evidenceSeq = peerreview.allocateEvidenceSeq();
 
@@ -364,8 +364,8 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
       /* Dequeue the packet. After this point, we must either deliver it or discard it */
 
-      Tuple<UserDataMessage<Handle>, Map<String, Object>> t = info.recvQueue.removeFirst();
-      UserDataMessage<Handle> udm = t.first();
+      Tuple<UserDataMessage<Handle>, Map<String, Object>> pair = info.recvQueue.removeFirst();
+      UserDataMessage<Handle> udm = pair.first();
 
       /* Extract the authenticator */
       Authenticator authenticator;
@@ -394,7 +394,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
           logger.atDebug().log(() -> "Delivering message from "+udm.getSenderHandle()+" via "+info.handle+" ("+
               udm.getPayloadLength()+" bytes; "+udm.getRelevantLength()+"/"+udm.getPayloadLength()+" relevant)");
           try {
-            peerreview.getApp().messageReceived(udm.getSenderHandle(), udm.getPayload(), t.second());
+            peerreview.getApp().messageReceived(udm.getSenderHandle(), udm.getPayload(), pair.second());
           } catch (IOException ioe) {
             logger.warn("Error handling {}", udm, ioe);
           }
@@ -405,7 +405,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
         /* Send the ACK */
 
         logger.debug("Returning ACK to{}", info.getHandle());
-          peerreview.transmit(info.handle, ret.first(), null, t.second());
+          peerreview.transmit(info.handle, ret.first(), null, pair.second());
       } else {
         logger.warn("Cannot verify signature on message {} from {}; discarding", udm.getTopSeq(), info.getHandle());
       }
@@ -413,7 +413,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
       /* Release the message */
 
       info.isReceiving = false;
-      makeProgress(idx);
+      makeProgress(identifier);
     }
   }
 

@@ -131,8 +131,8 @@ public class SecureHistoryFactory implements IndexEntryFactory {
       return null;
     }
 
-    Path f2 = Path.of(name+".data");
-    if (!Files.exists(f2)) {
+    Path peersFile = Path.of(name+".data");
+    if (!Files.exists(peersFile)) {
       return null;
     }
 

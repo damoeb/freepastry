@@ -37,6 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.peerreview.infostore;
 
 public interface IdentifierStringCodec<Identifier> {
-  public Identifier readIdentifierFromString(String s);
+  public Identifier readIdentifierFromString(String text);
   public String toString(Identifier id);
 }

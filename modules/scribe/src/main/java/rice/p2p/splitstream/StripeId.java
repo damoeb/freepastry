@@ -61,8 +61,8 @@ public record StripeId(Id id) {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! (o instanceof StripeId stripeId)) {
+  public boolean equals(Object object) {
+    if (! (object instanceof StripeId stripeId)) {
       return false;
     }
 

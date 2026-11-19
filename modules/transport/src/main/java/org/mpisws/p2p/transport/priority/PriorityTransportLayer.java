@@ -221,13 +221,13 @@ public class PriorityTransportLayer<Identifier>
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    tl.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    tl.acceptSockets(enabled);
   }
 
   @Override
@@ -251,9 +251,9 @@ public class PriorityTransportLayer<Identifier>
     // if it is to be sent UDP, just pass it through
     if (options != null &&
         options.containsKey(WireTransportLayer.OPTION_TRANSPORT_TYPE)) {
-        Integer val = (Integer)options.get(WireTransportLayer.OPTION_TRANSPORT_TYPE);
-        if (val != null &&
-            val.intValue() == WireTransportLayer.TRANSPORT_TYPE_DATAGRAM) {
+        Integer transportType = (Integer)options.get(WireTransportLayer.OPTION_TRANSPORT_TYPE);
+        if (transportType != null &&
+            transportType.intValue() == WireTransportLayer.TRANSPORT_TYPE_DATAGRAM) {
           final int originalSize = m.remaining();
           return tl.sendMessage(identifier, m, new MessageCallback<Identifier, ByteBuffer>() {
 
@@ -326,8 +326,8 @@ public class PriorityTransportLayer<Identifier>
   }
 
   @Override
-  public void livenessChanged(Identifier identifier, int val, @Nullable Map<String, Object> options) {
-    if (val >= LivenessTypes.LIVENESS_DEAD) {
+  public void livenessChanged(Identifier identifier, int liveness, @Nullable Map<String, Object> options) {
+    if (liveness >= LivenessTypes.LIVENESS_DEAD) {
       getEntityManager(identifier).markDead();
       if (selectorManager.isSelectorThread()) {
         entityManagers.forgetIfIdle(identifier);
@@ -357,14 +357,14 @@ public class PriorityTransportLayer<Identifier>
     listeners.notifyRead(size, source, options);
   }
 
-  public void notifyListenersWrote(int size, Identifier dest,
+  public void notifyListenersWrote(int size, Identifier destination,
       @Nullable Map<String, Object> options) {
-    listeners.notifyWrote(size, dest, options);
+    listeners.notifyWrote(size, destination, options);
   }
 
-  public void notifyListenersDropped(int size, Identifier dest,
+  public void notifyListenersDropped(int size, Identifier destination,
       @Nullable Map<String, Object> options) {
-    listeners.notifyDropped(size, dest, options);
+    listeners.notifyDropped(size, destination, options);
   }
 
 

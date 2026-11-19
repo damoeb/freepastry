@@ -106,8 +106,8 @@ class TransportLayersWireRoundTripTest {
     final List<P2PSocket<I>> sockets = new ArrayList<>();
 
     @Override
-    public void messageReceived(I i, ByteBuffer msg, Map<String, Object> options) {
-      messageSenders.add(i);
+    public void messageReceived(I identifier, ByteBuffer msg, Map<String, Object> options) {
+      messageSenders.add(identifier);
       byte[] bytes = new byte[msg.remaining()];
       msg.get(bytes);
       messages.add(bytes);
@@ -409,8 +409,8 @@ class TransportLayersWireRoundTripTest {
 
   private static final Serializer<Long> KEYS = new Serializer<>() {
     @Override
-    public void serialize(Long i, OutputBuffer buf) throws IOException {
-      buf.writeLong(i);
+    public void serialize(Long identifier, OutputBuffer buf) throws IOException {
+      buf.writeLong(identifier);
     }
 
     @Override

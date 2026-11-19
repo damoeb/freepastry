@@ -142,9 +142,9 @@ public class CertificateAuthorityTool {
     } else {
       // make a self-signed cert
       Instant exp = ZonedDateTime.now(ZoneOffset.UTC).plusYears(10).toInstant();
-      Tuple<X509Certificate, KeyPair> t = generateNewCA(CN, exp);
-      caCert = t.first();
-      caPair = t.second();
+      Tuple<X509Certificate, KeyPair> pair = generateNewCA(CN, exp);
+      caCert = pair.first();
+      caPair = pair.second();
 
       Certificate[] chain = new Certificate[1];
       chain[0] = caCert;

@@ -274,13 +274,13 @@ final class ChildAdmission {
 
         if (path.contains(sMessage.getSubscriber().getId())) {
           logger.atInfo().log(() -> {
-            String s = "Rejecting subscribe message from " +
+            String text = "Rejecting subscribe message from " +
                     sMessage.getSubscriber() + " for topic " + sMessage.getTopic() +
                     " because we are on the subscriber's path to the root:";
             for (Id id : path) {
-              s+=id+",";
+              text+=id+",";
             }
-            return s;
+            return text;
           });
           continue;
         }
@@ -494,14 +494,14 @@ final class ChildAdmission {
     NodeHandle source = uMessage.source();
 
     logger.atDebug().log(() -> {
-      String s;
+      String text;
       if (topics.size() == 1) {
-        s = " for topic " + topics.get(0).toString();
+        text = " for topic " + topics.get(0).toString();
       } else {
-        s = " for "+topics.size()+" topics.";
+        text = " for "+topics.size()+" topics.";
       }
       return "Received unsubscribe message from " +
-          source + s;
+          source + text;
     });
 
     for (Topic topic : topics) {

@@ -337,8 +337,8 @@ public class EvidenceTool<Handle extends RawSerializable, Identifier extends Raw
               if (commitmentProtocol != null && (flags & FLAG_FULL_MESSAGES_SENDER) == FLAG_FULL_MESSAGES_SENDER) {
                 assert !sendWasHashed;
                 EvtSend<Identifier> evtSend = new EvtSend<Identifier>(new SimpleInputBuffer(lastEntry.getContent()),idSerializer,hashSize);
-                Identifier dest = evtSend.getReceiverId();
-                if (dest.equals(peerreview.getLocalId())) {
+                Identifier destination = evtSend.getReceiverId();
+                if (destination.equals(peerreview.getLocalId())) {
                   boolean previouslyReceived = false;
                   if (seqBuf.contains(lastEntry.getSeq())) {
                     previouslyReceived = true;

@@ -67,10 +67,10 @@ public final class AnycastFailureMessage extends ScribeMessage {
 
   @Override
   public String toString() {
-    String s = "AnycastFailureMessage: ";
-    s = s + "Source= " + getSource() + " Topic= " + topic + "ScribeContent= "
+    String text = "AnycastFailureMessage: ";
+    text = text + "Source= " + getSource() + " Topic= " + topic + "ScribeContent= "
         + content;
-    return s;
+    return text;
   }
 
   /***************** Raw Serialization ***************************************/

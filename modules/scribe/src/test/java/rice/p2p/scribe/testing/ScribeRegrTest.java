@@ -292,12 +292,12 @@ public class ScribeRegrTest extends CommonAPITest {
     for (int i=0; i < NUM_NODES/SKIP; i++) {
       if (clients[i].equals(client)) {
         if (clients[i].getAnycastMessages().size() != 1) {
-          String s = "";
+          String text = "";
           for (ScribeContent item : clients[i].getAnycastMessages()) {
-            s+=" "+item;
+            text+=" "+item;
           }
 
-          stepDone(FAILURE, "Expected node "+client.scribe+" to accept anycast at " + client+" accepted "+clients[i].getAnycastMessages().size()+" local "+local+" "+s);
+          stepDone(FAILURE, "Expected node "+client.scribe+" to accept anycast at " + client+" accepted "+clients[i].getAnycastMessages().size()+" local "+local+" "+text);
           failed = true;
         }
       } else {
@@ -474,11 +474,11 @@ public class ScribeRegrTest extends CommonAPITest {
       for (int i=0; i < NUM_NODES/SKIP; i++) {
         if (clients[i].equals(client)) {
           if (clients[i].getAnycastMessages().size() != NUM_TOPICS) {
-            String s = "";
+            String text = "";
             for (ScribeContent item : clients[i].getAnycastMessages()) {
-              s+=" "+item;
+              text+=" "+item;
             }
-            stepDone(FAILURE, "Expected node to accept "+NUM_TOPICS+" anycasts at " + client+" accepted "+clients[i].getAnycastMessages().size()+" local "+local+" "+s);
+            stepDone(FAILURE, "Expected node to accept "+NUM_TOPICS+" anycasts at " + client+" accepted "+clients[i].getAnycastMessages().size()+" local "+local+" "+text);
             failed = true;
           }
         } else {
@@ -602,14 +602,14 @@ public class ScribeRegrTest extends CommonAPITest {
     }
 
     if (numWithParent < (NUM_NODES/2) - 1) {
-      String s = "";
+      String text = "";
       for (int i=0; i < NUM_NODES; i++) {
         if (scribes[i].getParent(topic) == null) {
-          s+=" "+scribes[i];
+          text+=" "+scribes[i];
         }
       }
 
-      stepDone(FAILURE, "Expected at least " + (NUM_NODES/2 - 1) + " nodes with parents, found " + numWithParent+" "+s);
+      stepDone(FAILURE, "Expected at least " + (NUM_NODES/2 - 1) + " nodes with parents, found " + numWithParent+" "+text);
     } else
       if (numWithParent > (NUM_NODES/2))
         stepDone(FAILURE, "Expected no more than " + (NUM_NODES/2) + " nodes with parents, due to policy, found " + numWithParent);
@@ -877,8 +877,8 @@ public class ScribeRegrTest extends CommonAPITest {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (!(o instanceof TestScribeContent testScribeContent)) {
+    public boolean equals(Object object) {
+      if (!(object instanceof TestScribeContent testScribeContent)) {
         return false;
       }
 
@@ -1085,11 +1085,11 @@ public class ScribeRegrTest extends CommonAPITest {
       if (topics.size() == 1) {
         return topics.get(0).toString();
       }
-      String s = "";
+      String text = "";
       for (Topic topic : topics) {
-        s+=topic.toString()+" ";
+        text+=topic.toString()+" ";
       }
-      return s+scribe;
+      return text+scribe;
     }
   }
 

@@ -257,12 +257,12 @@ public class AuthenticatorStoreTest {
     }
 
     @Override
-    public void acceptMessages(boolean b) {
+    public void acceptMessages(boolean enabled) {
 
     }
 
     @Override
-    public void acceptSockets(boolean b) {
+    public void acceptSockets(boolean enabled) {
 
     }
 
@@ -342,7 +342,7 @@ public class AuthenticatorStoreTest {
 
     @Override
     public void transmit(
-        MyInetSocketAddress dest, PeerReviewMessage message,
+        MyInetSocketAddress destination, PeerReviewMessage message,
         MessageCallback<MyInetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
     }

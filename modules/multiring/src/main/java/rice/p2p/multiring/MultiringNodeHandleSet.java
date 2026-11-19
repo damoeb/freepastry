@@ -182,12 +182,12 @@ public class MultiringNodeHandleSet implements NodeHandleSet {
   /**
    * Determines equality
    *
-   * @param o To compare to
+   * @param object To compare to
    * @return Equals
    */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof MultiringNodeHandleSet multiringNodeHandleSet))
+  public boolean equals(Object object) {
+    if (!(object instanceof MultiringNodeHandleSet multiringNodeHandleSet))
       return false;
     return (multiringNodeHandleSet.getSet().equals(set) && multiringNodeHandleSet.ringId.equals(ringId));
   }

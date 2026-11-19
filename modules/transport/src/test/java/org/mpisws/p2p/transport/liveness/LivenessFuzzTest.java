@@ -64,17 +64,17 @@ class LivenessFuzzTest {
 
   /** Hands the datagram to the layer on the selector thread, where the layer reads it. */
   private static void receive(byte[] datagram) throws Exception {
-    CompletableFuture<Void> done = new CompletableFuture<>();
+    CompletableFuture<Void> completed = new CompletableFuture<>();
     env.getSelectorManager().invoke(() -> {
       try {
         target.messageReceived(PEER, ByteBuffer.wrap(datagram), null);
-        done.complete(null);
+        completed.complete(null);
       } catch (Throwable throwable) {
-        done.completeExceptionally(throwable);
+        completed.completeExceptionally(throwable);
       }
     });
     try {
-      done.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      completed.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (ExecutionException e) {
       if (e.getCause() instanceof Exception cause) {
         throw cause;

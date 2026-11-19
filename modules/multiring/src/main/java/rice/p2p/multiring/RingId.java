@@ -128,12 +128,12 @@ public class RingId implements Id {
    * Method which splits apart a ringid string and
    * returns the RingID
    *
-   * @param s The ring to parse
+   * @param text The ring to parse
    * @return The result
    */
-  public static RingId build(String s) {
+  public static RingId build(String text) {
     @SuppressWarnings("StringSplitter") // the fixed format of toString(), no trailing empty fields
-    String[] sArray = s.split("\\(|\\)| |,");
+    String[] sArray = text.split("\\(|\\)| |,");
     return build(rice.pastry.Id.build(sArray[1]), rice.pastry.Id.build(sArray[3]));
   }
 
@@ -260,12 +260,12 @@ public class RingId implements Id {
   /**
    * Returns whether or not this object is equal to the provided one
    *
-   * @param o The object to compare to
+   * @param object The object to compare to
    * @return Whether or not this is object is equal
    */
   @Override
-  public boolean equals(Object o) {
-    if (! (o instanceof RingId other))
+  public boolean equals(Object object) {
+    if (! (object instanceof RingId other))
       return false;
 
     return (other.id.equals(id) && other.ringId.equals(ringId));
@@ -307,8 +307,8 @@ public class RingId implements Id {
    * @return The comparison
    */
   @Override
-  public int compareTo(Id o) {
-    RingId that = (RingId) o;
+  public int compareTo(Id otherId) {
+    RingId that = (RingId) otherId;
     int byRing = ringId.compareTo(that.ringId);
     return byRing != 0 ? byRing : id.compareTo(that.id);
   }

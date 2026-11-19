@@ -96,13 +96,13 @@ public class MultiInetSocketAddress {
   /**
    * Checks equality on address lists
    *
-   * @param o The address list to compare to
+   * @param object The address list to compare to
    * @return The equality
    */
   @Override
-  public boolean equals(Object o) {
-    if (o == null) return false;
-    if (! (o instanceof MultiInetSocketAddress that)) return false;
+  public boolean equals(Object object) {
+    if (object == null) return false;
+    if (! (object instanceof MultiInetSocketAddress that)) return false;
     return addressEquals(that);
   }
 
@@ -128,12 +128,12 @@ public class MultiInetSocketAddress {
    */
   @Override
   public String toString() {
-    String s = "";
+    String text = "";
     for (int ctr = 0; ctr < address.length; ctr++) {
-      s+=address[ctr];
-      if (ctr < address.length-1) s+=":";
+      text+=address[ctr];
+      if (ctr < address.length-1) text+=":";
     }
-    return s;
+    return text;
   }
 
   public InetSocketAddress getInnermostAddress() {

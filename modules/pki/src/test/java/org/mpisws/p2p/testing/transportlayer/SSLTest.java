@@ -193,16 +193,16 @@ public class SSLTest {
       }
 
       @Override
-      public void receivedException(InetSocketAddress i, Throwable error) {
+      public void receivedException(InetSocketAddress identifier, Throwable error) {
         aliceError.complete(error);
       }
     });
     alice.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
-        Map<String, Object> options = s.getOptions();
+      public void incomingSocket(P2PSocket<InetSocketAddress> incomingSocket) throws IOException {
+        Map<String, Object> options = incomingSocket.getOptions();
         aliceSawSubject.complete(options == null ? "" : String.valueOf(options.get(SSLTransportLayer.OPTION_CERT_SUBJECT)));
-        s.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
+        incomingSocket.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
           ByteBuffer readMe = ByteBuffer.allocate(PAYLOAD.getBytes(StandardCharsets.UTF_8).length);
 
           @Override
@@ -240,9 +240,9 @@ public class SSLTest {
       public void run() {
         bob.openSocket(address, new SocketCallback<InetSocketAddress>() {
           @Override
-          public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
-            opened.complete(sock);
-            sock.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {
+          public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> openedSocket) {
+            opened.complete(openedSocket);
+            openedSocket.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {
               ByteBuffer writeMe = ByteBuffer.wrap(PAYLOAD.getBytes(StandardCharsets.UTF_8));
 
               @Override

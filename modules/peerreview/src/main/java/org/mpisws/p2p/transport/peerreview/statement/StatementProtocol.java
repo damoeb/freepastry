@@ -181,7 +181,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
    * Also, it checks if the snippet is malformed in any way. That way, the other
    * protocols won't have to do all these sanity checks later.
    */
-  int checkSnippetAndRequestCertificates(LogSnippet snippet, IncompleteStatement<Handle, Identifier> idx) {
+  int checkSnippetAndRequestCertificates(LogSnippet snippet, IncompleteStatement<Handle, Identifier> incompleteStatement) {
     Tuple<Integer,Identifier> ret = peerreview.getEvidenceTool().checkSnippet(snippet);
     int code = ret.first();
     final Identifier missingCertID = ret.second();
@@ -189,9 +189,9 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
     if (code == CERT_MISSING) {
       assert(missingCertID != null);
 
-      idx.markMissingCertificate(missingCertID);
+      incompleteStatement.markMissingCertificate(missingCertID);
       logger.debug("AUDIT RESPONSE requires certificate for {}; requesting", missingCertID);
-      peerreview.requestCertificate(idx.getSender(), missingCertID);
+      peerreview.requestCertificate(incompleteStatement.getSender(), missingCertID);
 
     }
 
@@ -203,13 +203,13 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
   the message because it's malformed. */
 
   @SuppressWarnings("unchecked")
-  public void makeProgressOnStatement(IncompleteStatement<Handle, Identifier> idx) {
-    assert !idx.isFinished();
+  public void makeProgressOnStatement(IncompleteStatement<Handle, Identifier> incompleteStatement) {
+    assert !incompleteStatement.isFinished();
 
     /* Fetch the statement and reset all the 'missing' fields */
 
-    Statement<Identifier> statement = idx.getStatement();
-    idx.clearMissingCertificate();
+    Statement<Identifier> statement = incompleteStatement.getStatement();
+    incompleteStatement.clearMissingCertificate();
 
     Identifier subject = statement.getSubject();
     Evidence payload = statement.getEvidence();
@@ -218,8 +218,8 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
 
     if (!transport.hasCertificate(subject)) {
       logger.debug("Need subject's certificate to verify statement; asking source for it");
-      idx.markMissingCertificate(subject);
-      peerreview.requestCertificate(idx.getSender(), subject);
+      incompleteStatement.markMissingCertificate(subject);
+      peerreview.requestCertificate(incompleteStatement.getSender(), subject);
       return;
     }
 
@@ -236,13 +236,13 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
 
          if (!peerreview.verify(subject, auditEvidence.from())) {
            logger.warn("AUDIT challenge's first authenticator has an invalid signature");
-           idx.finish();
+           incompleteStatement.finish();
            return;
          }
 
          if (!peerreview.verify(subject, auditEvidence.to())) {
            logger.warn("AUDIT challenge's second authenticator has an invalid signature");
-           idx.finish();
+           incompleteStatement.finish();
            return;
          }
 
@@ -258,7 +258,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
          Authenticator authenticator = peerreview.extractAuthenticator(peerreview.getIdentifierExtractor().extractIdentifier(udm.getSenderHandle()), udm.getTopSeq(), EVT_SEND, innerHash, udm.getPreviousTopHash(), udm.getSignature());
          if (authenticator == null) {
            logger.warn("Message in SEND challenge is not properly signed; discarding");
-           idx.finish();
+           incompleteStatement.finish();
            return;
          }
          break;
@@ -268,13 +268,13 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
 
          if (!peerreview.verify(subject, proofInconsistent.getFirstAuthenticator())) {
            logger.warn("INCONSISTENT proof's first authenticator has an invalid signature");
-           idx.finish();
+           incompleteStatement.finish();
            return;
          }
 
          if (!peerreview.verify(subject, proofInconsistent.getSecondAuthenticator())) {
            logger.warn("INCONSISTENT proof's second authenticator has an invalid signature");
-           idx.finish();
+           incompleteStatement.finish();
            return;
          }
 
@@ -286,13 +286,13 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
          if(proofInconsistent.getSnippet() == null) {
            if (seq1 != seq2) {
              logger.warn("INCONSISTENT-0 proof's authenticators don't have matching sequence numbers (seq1={}, seq2={}) -- discarding", seq1, seq2);
-             idx.finish();
+             incompleteStatement.finish();
              return;
            }
 
            if (Arrays.equals(hash1, hash2)) {
              logger.atWarn().log(() -> "INCONSISTENT-0 proof's authenticators have the same hash (seq1="+seq1+", seq2="+seq2+") hash: "+MathUtils.toBase64(hash1)+" -- discarding");
-             idx.finish();
+             incompleteStatement.finish();
              return;
            }
          } else {
@@ -301,19 +301,19 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
 
            if (!((firstSeq<seq2) && (seq2<seq1))) {
              logger.warn("INCONSISTENT-1 proof's sequence numbers do not make sense (first={}, seq2={}, seq1={}) -- discarding", firstSeq, seq2, seq1);
-             idx.finish();
+             incompleteStatement.finish();
              return;
            }
 
            if (!proofInconsistent.getSnippet().checkHashChainContains(hash1, seq1, transport, logger)) {
              logger.warn("Snippet in INCONSISTENT-1 proof cannot be authenticated using first authenticator (#{}) -- discarding", seq1);
-             idx.finish();
+             incompleteStatement.finish();
              return;
            }
 
            if (proofInconsistent.getSnippet().checkHashChainContains(hash2, seq2, transport, logger)) {
              logger.warn("INCONSISTENT-1 proof claims that authenticator 2 (#{}) is not in the snippet, but it is -- discarding", seq2);
-             idx.finish();
+             incompleteStatement.finish();
              return;
            }
          }
@@ -327,16 +327,16 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
 
          if (!peerreview.verify(subject, pn.getTo())) {
            logger.warn("NONCONFORMANT proof's authenticator has an invalid signature");
-           idx.finish();
+           incompleteStatement.finish();
            return;
          }
 
          /* Is the snippet well-formed, and do we have all the certificates? */
 
-         switch (checkSnippetAndRequestCertificates(pn.getSnippet(), idx)) {
+         switch (checkSnippetAndRequestCertificates(pn.getSnippet(), incompleteStatement)) {
            case INVALID:
              logger.warn("PROOF NONCONFORMANT is not well-formed; discarding");
-             idx.finish();
+             incompleteStatement.finish();
              return;
            case CERT_MISSING:
              return;
@@ -384,7 +384,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
        }
        default: {
          logger.warn("Unknown payload type #{} in accusation; discarding", payload.getEvidenceType());
-         idx.finish();
+         incompleteStatement.finish();
          return;
        }
      }
@@ -408,10 +408,10 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
 
          AuditResponse<Handle> auditResponse = (AuditResponse<Handle>)payload;
 
-         switch (checkSnippetAndRequestCertificates(auditResponse.logSnippet(), idx)) {
+         switch (checkSnippetAndRequestCertificates(auditResponse.logSnippet(), incompleteStatement)) {
            case INVALID:
              logger.warn("AUDIT RESPONSE is not well-formed; discarding");
-             idx.finish();
+             incompleteStatement.finish();
              return;
            case CERT_MISSING:
              return;
@@ -431,7 +431,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
        default :
        {
          logger.warn("Unknown payload type #{} in response; discarding", payload.getEvidenceType());
-         idx.finish();
+         incompleteStatement.finish();
          return;
        }
      }
@@ -441,11 +441,11 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
       necessary supplemental material to be able to check it and any responses to it */
 
     try {
-      challengeProtocol.handleStatement(idx.getSender(), statement, idx.getOptions());
+      challengeProtocol.handleStatement(incompleteStatement.getSender(), statement, incompleteStatement.getOptions());
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
-    idx.finish();
+    incompleteStatement.finish();
   }
 
 }

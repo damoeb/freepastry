@@ -148,11 +148,11 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
 
   @Override
   public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-      P2PSocket<Identifier> sock) {
-    socket = sock;
+      P2PSocket<Identifier> openedSocket) {
+    socket = openedSocket;
     try {
       logger.info("Opened BIG message socket to:{}", i);
-      receiveSelectResult(sock, false, true);
+      receiveSelectResult(openedSocket, false, true);
     } catch (IOException ioe) {
       receiveException(ioe);
     }

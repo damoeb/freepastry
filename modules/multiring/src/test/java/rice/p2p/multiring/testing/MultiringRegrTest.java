@@ -367,12 +367,12 @@ public class MultiringRegrTest {
   /**
    * Method which pauses for the provided number of milliseconds
    *
-   * @param ms The number of milliseconds to pause
+   * @param millis The number of milliseconds to pause
    */
   @SuppressWarnings("WaitNotInLoop") // a timed pause: an early wakeup only shortens it
-  protected synchronized void pause(int ms) {
+  protected synchronized void pause(int millis) {
     if (PROTOCOL != PROTOCOL_DIRECT)
-      try { wait(ms); } catch (InterruptedException ignored) { /* only shortens the pause */ }
+      try { wait(millis); } catch (InterruptedException ignored) { /* only shortens the pause */ }
   }
 
   /**
@@ -678,14 +678,14 @@ public class MultiringRegrTest {
 
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-protocol") && i+1 < args.length) {
-        String s = args[i+1];
+        String text = args[i+1];
 
-          if (s.equalsIgnoreCase("socket"))
+          if (text.equalsIgnoreCase("socket"))
           PROTOCOL = PROTOCOL_SOCKET;
-        else if (s.equalsIgnoreCase("direct"))
+        else if (text.equalsIgnoreCase("direct"))
           PROTOCOL = PROTOCOL_DIRECT;
         else
-          System.out.println("ERROR: Unsupported protocol: " + s);
+          System.out.println("ERROR: Unsupported protocol: " + text);
 
         break;
       }

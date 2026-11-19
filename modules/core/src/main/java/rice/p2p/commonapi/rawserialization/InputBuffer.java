@@ -44,7 +44,7 @@ import java.io.IOException;
 public interface InputBuffer {
   public static final int UNKNOWN = -2;
 
-  int read(byte[] bytes, int off, int len) throws IOException;
+  int read(byte[] bytes, int off, int length) throws IOException;
   int read(byte[] bytes) throws IOException;
   boolean readBoolean() throws IOException;
   byte readByte() throws IOException;

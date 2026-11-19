@@ -21,7 +21,7 @@ class PriorityFuzzTest {
   private static PeerMessageWriterContext<String> context() {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(String i, ByteBuffer msg, Map<String, Object> options) {
+      public void messageReceived(String identifier, ByteBuffer msg, Map<String, Object> options) {
       }
 
       @Override

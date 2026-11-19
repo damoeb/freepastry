@@ -60,18 +60,18 @@ public final class FuzzSocket<Identifier> implements P2PSocket<Identifier> {
     if (!incoming.hasRemaining()) {
       return -1;
     }
-    int n = Math.min(dst.remaining(), incoming.remaining());
-    for (int i = 0; i < n; i++) {
+    int byteCount = Math.min(dst.remaining(), incoming.remaining());
+    for (int i = 0; i < byteCount; i++) {
       dst.put(incoming.get());
     }
-    return n;
+    return byteCount;
   }
 
   @Override
   public long write(ByteBuffer src) {
-    int n = src.remaining();
+    int byteCount = src.remaining();
     src.position(src.limit());
-    return n;
+    return byteCount;
   }
 
   @Override

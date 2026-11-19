@@ -96,7 +96,7 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
 
   public Authenticator extractAuthenticator(long seq, short entryType, byte[] entryHash, byte[] hTopMinusOne, byte[] signature);
 
-  public void transmit(Handle dest,
+  public void transmit(Handle destination,
       PeerReviewMessage message,
       MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options);

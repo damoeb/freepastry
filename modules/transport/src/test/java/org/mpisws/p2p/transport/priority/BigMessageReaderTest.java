@@ -37,7 +37,7 @@ class BigMessageReaderTest {
   private PeerMessageWriterContext<String> context(int max, long budget) {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(String i, ByteBuffer msg, Map<String, Object> options) {
+      public void messageReceived(String identifier, ByteBuffer msg, Map<String, Object> options) {
         delivered.add(msg);
       }
 
@@ -106,7 +106,7 @@ class BigMessageReaderTest {
     List<Integer> reads = new ArrayList<>();
     listeners.addTransportLayerListener(new TransportLayerListener<>() {
       @Override
-      public void wrote(int bytes, String i, Map<String, Object> options, boolean passthrough, boolean socket) {}
+      public void wrote(int bytes, String identifier, Map<String, Object> options, boolean passthrough, boolean socket) {}
 
       @Override
       public void read(int bytes, String i, Map<String, Object> options, boolean passthrough, boolean socket) {

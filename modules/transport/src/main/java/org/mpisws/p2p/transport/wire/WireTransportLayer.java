@@ -213,13 +213,13 @@ public class WireTransportLayer
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    udp.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    udp.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    tcp.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    tcp.acceptSockets(enabled);
   }
 
   protected void messageReceived(InetSocketAddress address, ByteBuffer buffer, @Nullable Map<String, Object> options) throws IOException {

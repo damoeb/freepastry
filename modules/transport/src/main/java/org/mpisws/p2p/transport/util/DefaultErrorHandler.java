@@ -73,13 +73,13 @@ public class DefaultErrorHandler<Identifier> implements
   public void receivedUnexpectedData(Identifier id, byte[] bytes, int pos, @Nullable Map<String, Object> options) {
     if (logger.isInfoEnabled()) {
       // make this pretty
-      String s = "";
+      String text = "";
       int numBytes = NUM_BYTES_TO_PRINT;
       if (bytes.length < numBytes) numBytes = bytes.length;
       for (int i = 0; i < numBytes; i++) {
-        s+=bytes[i]+",";
+        text+=bytes[i]+",";
       }
-      logger.info("Unexpected data from "+id+" "+s);
+      logger.info("Unexpected data from "+id+" "+text);
     }
   }
 

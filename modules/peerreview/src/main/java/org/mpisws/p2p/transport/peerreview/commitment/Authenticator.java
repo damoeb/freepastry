@@ -89,8 +89,8 @@ public class Authenticator implements Comparable<Authenticator> {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Authenticator that)) return false;
+  public boolean equals(Object object) {
+    if (!(object instanceof Authenticator that)) return false;
     if (seq == that.seq) {
       if (Arrays.equals(hash, that.hash)) {
         if (Arrays.equals(signature, that.signature)) {

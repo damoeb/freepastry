@@ -185,10 +185,10 @@ public abstract class TLTest<Identifier> {
       }
 
       @Override
-      public void incomingSocket(P2PSocket<Identifier> s)
+      public void incomingSocket(P2PSocket<Identifier> incomingSocket)
           throws IOException {
         synchronized(lock) {
-          bobSockets.add(s);
+          bobSockets.add(incomingSocket);
           lock.notify();
         }
       }

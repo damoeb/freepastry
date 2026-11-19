@@ -932,12 +932,12 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
   }
 
   @Override
-  public void acceptMessages(boolean b) {
+  public void acceptMessages(boolean enabled) {
     throw new RuntimeException("implement");
   }
 
   @Override
-  public void acceptSockets(boolean b) {
+  public void acceptSockets(boolean enabled) {
     throw new RuntimeException("implement");
   }
 

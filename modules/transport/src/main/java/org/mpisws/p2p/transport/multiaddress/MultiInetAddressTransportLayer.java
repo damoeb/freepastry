@@ -201,11 +201,11 @@ public class MultiInetAddressTransportLayer
   }
 
   @Override
-  public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
-    logger.debug("incomingSocket({})", s);
+  public void incomingSocket(P2PSocket<InetSocketAddress> incomingSocket) throws IOException {
+    logger.debug("incomingSocket({})", incomingSocket);
 
-    final SocketInputBuffer sib = new SocketInputBuffer(s);
-    s.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
+    final SocketInputBuffer sib = new SocketInputBuffer(incomingSocket);
+    incomingSocket.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
 
       @Override
       public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
@@ -320,13 +320,13 @@ public class MultiInetAddressTransportLayer
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    wire.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    wire.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    wire.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    wire.acceptSockets(enabled);
   }
 
   @Override

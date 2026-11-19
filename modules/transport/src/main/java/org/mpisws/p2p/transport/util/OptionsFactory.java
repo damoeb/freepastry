@@ -41,23 +41,23 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public class OptionsFactory {
-  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String s, Object i) {
+  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String key, Object value) {
     Map<String, Object> ret = copyOptions(existing);
-    ret.put(s,i);
+    ret.put(key,value);
     return ret;
   }
-  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String s1, Object i1, String s2, Object i2) {
+  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String firstKey, Object firstValue, String secondKey, Object secondValue) {
     Map<String, Object> ret = copyOptions(existing);
-    ret.put(s1,i1);
-    ret.put(s2,i2);
+    ret.put(firstKey,firstValue);
+    ret.put(secondKey,secondValue);
     return ret;
   }
 
-  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String s1, Object i1, String s2, Object i2, String s3, Object i3) {
+  public static Map<String, Object> addOption(@Nullable Map<String, Object> existing, String firstKey, Object firstValue, String secondKey, Object secondValue, String thirdKey, Object thirdValue) {
     Map<String, Object> ret = copyOptions(existing);
-    ret.put(s1,i1);
-    ret.put(s2,i2);
-    ret.put(s3,i3);
+    ret.put(firstKey,firstValue);
+    ret.put(secondKey,secondValue);
+    ret.put(thirdKey,thirdValue);
     return ret;
   }
 
@@ -73,8 +73,8 @@ public class OptionsFactory {
       @Nullable Map<String, Object> options2) {
     Map<String, Object> ret = copyOptions(options2);
     if (options == null) return ret;
-    for (String k : options.keySet()) {
-      ret.put(k, options.get(k));
+    for (String key : options.keySet()) {
+      ret.put(key, options.get(key));
     }
     return ret;
   }

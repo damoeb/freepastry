@@ -89,8 +89,8 @@ class ScribeSocketRingTest {
 
     @Override
     public void deliver(Topic topic, ScribeContent content) {
-      Content c = (Content) content;
-      if (delivered.putIfAbsent(c.seq(), c) == null) {
+      Content typedContent = (Content) content;
+      if (delivered.putIfAbsent(typedContent.seq(), typedContent) == null) {
         deliveries.countDown();
       }
     }

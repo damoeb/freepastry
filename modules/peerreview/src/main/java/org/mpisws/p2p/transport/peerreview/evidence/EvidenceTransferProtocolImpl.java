@@ -96,24 +96,24 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
 
     /* Create a cache entry, if necessary */
 
-    CacheInfo idx = witnessCache.get(subject);
-    if (idx == null) {
-      idx = new CacheInfo(subject);
-      witnessCache.put(subject,idx);
+    CacheInfo cacheInfo = witnessCache.get(subject);
+    if (cacheInfo == null) {
+      cacheInfo = new CacheInfo(subject);
+      witnessCache.put(subject,cacheInfo);
     }
-    idx.updateWitnesses(witnesses);
+    cacheInfo.updateWitnesses(witnesses);
 
     Collection<MessageInfo<Handle, Identifier>> sendMe = pendingMessage.remove(subject);
     if (sendMe != null) {
       for (MessageInfo<Handle, Identifier> msg : sendMe) {
-        doSendMessageToWitnesses(idx.witness,msg);
+        doSendMessageToWitnesses(cacheInfo.witness,msg);
       }
     }
     /**
      *  If this witness set was part of a query, we update the results and answer if possible
      */
     for (QueryInfo queryInfo : pendingQuery) {
-      queryInfo.updateWitnesses(idx);
+      queryInfo.updateWitnesses(cacheInfo);
     }
   }
 
@@ -266,9 +266,9 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
       }
     }
 
-    public void updateWitnesses(CacheInfo idx) {
-      if (subjectList.containsKey(idx.subject)) {
-        Collection<Handle> ret = subjectList.put(idx.subject, idx.witness);
+    public void updateWitnesses(CacheInfo cacheInfo) {
+      if (subjectList.containsKey(cacheInfo.subject)) {
+        Collection<Handle> ret = subjectList.put(cacheInfo.subject, cacheInfo.witness);
         if (ret == null || ret.isEmpty()) {
           numWitnessesWaitingFor--;
           if (numWitnessesWaitingFor == 0) {

@@ -125,12 +125,12 @@ public class FirewallTransportLayer<Identifier, MessageType> implements Transpor
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    transportLayer.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    transportLayer.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
+  public void acceptSockets(boolean enabled) {
   }
 
   @Override

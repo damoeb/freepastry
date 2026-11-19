@@ -612,14 +612,14 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       ArrayList<ByteBuffer> msgList = new ArrayList<ByteBuffer>();
       // construct header
       // byte MSG_BB_HEADER, int UID, long offset, long length, int nameLength, UTF name
-      ByteBuffer hdr = ByteBuffer.allocate(25);
-      hdr.put(MSG_FILE_HEADER);
-      hdr.put(MathUtils.intToByteArray(uid));
-      hdr.put(MathUtils.longToByteArray(offset));
-      hdr.put(MathUtils.longToByteArray(length));
-      hdr.put(MathUtils.intToByteArray(metadata.length));
-      hdr.clear();
-      msgList.add(hdr);
+      ByteBuffer header = ByteBuffer.allocate(25);
+      header.put(MSG_FILE_HEADER);
+      header.put(MathUtils.intToByteArray(uid));
+      header.put(MathUtils.longToByteArray(offset));
+      header.put(MathUtils.longToByteArray(length));
+      header.put(MathUtils.intToByteArray(metadata.length));
+      header.clear();
+      msgList.add(header);
       msgList.add(ByteBuffer.wrap(metadata));
 
       MessageWrapperImpl foo = new MessageWrapperImpl(this,wrapperSeq++,msgList);

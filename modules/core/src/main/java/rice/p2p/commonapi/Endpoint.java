@@ -289,7 +289,7 @@ public interface Endpoint extends NodeHandleReader {
    * key:
    * endpoint.deliver(null, msg, targetNodeHandle) // will be delivered regardless of consistency
    */
-  public void setRoutingConsistencyRequired(boolean val);
+  public void setRoutingConsistencyRequired(boolean required);
 
   /**
    * Can we guarantee that this id is currently ours, and routing will be consistent?

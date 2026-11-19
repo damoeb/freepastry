@@ -86,8 +86,8 @@ class NetworkInfoProbeRequestTest {
     socket.drive();
   }
 
-  private static InetSocketAddress addr(String ip, int port) throws IOException {
-    return new InetSocketAddress(InetAddress.getByName(ip), port);
+  private static InetSocketAddress addr(String address, int port) throws IOException {
+    return new InetSocketAddress(InetAddress.getByName(address), port);
   }
 
   @Test

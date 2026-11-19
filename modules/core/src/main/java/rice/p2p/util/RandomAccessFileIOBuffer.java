@@ -61,18 +61,18 @@ public class RandomAccessFileIOBuffer extends RandomAccessFile implements
   }
 
   @Override
-  public void writeByte(byte v) throws IOException {
-    this.write(v);
+  public void writeByte(byte value) throws IOException {
+    this.write(value);
   }
 
   @Override
-  public void writeChar(char v) throws IOException {
-    writeChar((int) v);
+  public void writeChar(char value) throws IOException {
+    writeChar((int) value);
   }
 
   @Override
-  public void writeShort(short v) throws IOException {
-    writeShort((int) v);
+  public void writeShort(short value) throws IOException {
+    writeShort((int) value);
   }
 
 }

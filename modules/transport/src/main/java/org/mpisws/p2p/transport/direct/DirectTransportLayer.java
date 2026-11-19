@@ -93,13 +93,13 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    acceptMessages = b;
+  public void acceptMessages(boolean enabled) {
+    acceptMessages = enabled;
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    acceptSockets = b;
+  public void acceptSockets(boolean enabled) {
+    acceptSockets = enabled;
   }
 
   @Override

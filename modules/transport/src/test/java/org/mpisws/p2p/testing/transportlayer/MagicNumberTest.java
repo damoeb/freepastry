@@ -148,7 +148,7 @@ public class MagicNumberTest extends WireTest {
     });
     carol.setErrorHandler(new ErrorHandler<InetSocketAddress>() {
       @Override
-      public void receivedException(InetSocketAddress i, Throwable error) {
+      public void receivedException(InetSocketAddress identifier, Throwable error) {
         synchronized(lock) {
           error.printStackTrace();
           exceptionList.add(error); // should not happen
@@ -245,7 +245,7 @@ public class MagicNumberTest extends WireTest {
     alice().setErrorHandler(new ErrorHandler<InetSocketAddress>(){
 
       @Override
-      public void receivedUnexpectedData(InetSocketAddress i, byte[] bytes, int pos, Map<String, Object> options) {
+      public void receivedUnexpectedData(InetSocketAddress identifier, byte[] bytes, int pos, Map<String, Object> options) {
       }
 
       @Override
@@ -337,7 +337,7 @@ public class MagicNumberTest extends WireTest {
     carol.setErrorHandler(new ErrorHandler<InetSocketAddress>() {
 
       @Override
-      public void receivedException(InetSocketAddress i, Throwable error) {
+      public void receivedException(InetSocketAddress identifier, Throwable error) {
         synchronized(lock) {
           error.printStackTrace();
           exceptionList.add(error); // should not happen

@@ -28,8 +28,8 @@ class DirectTransportLayerTest {
         new DirectTransportLayer<>("local", simulator, liveness, Environment.directEnvironment());
     layer.setCallback(new TransportLayerCallback<String, String>() {
       @Override
-      public void messageReceived(String i, String m, @Nullable Map<String, Object> options) {
-        received.add(m);
+      public void messageReceived(String identifier, String msg, @Nullable Map<String, Object> options) {
+        received.add(msg);
       }
 
       @Override
@@ -64,7 +64,7 @@ class DirectTransportLayerTest {
     List<Throwable> errors = new ArrayList<>();
     layer.setErrorHandler(new ErrorHandler<String>() {
       @Override
-      public void receivedUnexpectedData(String i, byte[] bytes, int location, @Nullable Map<String, Object> options) {}
+      public void receivedUnexpectedData(String identifier, byte[] bytes, int location, @Nullable Map<String, Object> options) {}
 
       @Override
       public void receivedException(@Nullable String i, Throwable error) {

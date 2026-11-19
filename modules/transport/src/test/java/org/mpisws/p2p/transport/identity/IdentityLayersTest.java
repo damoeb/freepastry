@@ -83,23 +83,23 @@ class IdentityLayersTest {
 
   private static class Serializer implements IdentitySerializer<String, String, String> {
     @Override
-    public void serialize(OutputBuffer buf, String i) throws IOException {
-      buf.writeUTF(i);
+    public void serialize(OutputBuffer buf, String identifier) throws IOException {
+      buf.writeUTF(identifier);
     }
 
     @Override
-    public String deserialize(InputBuffer buf, String l) throws IOException {
+    public String deserialize(InputBuffer buf, String lowerIdentifier) throws IOException {
       return buf.readUTF();
     }
 
     @Override
-    public String translateDown(String i) {
-      return i.substring(i.indexOf('@') + 1);
+    public String translateDown(String identifier) {
+      return identifier.substring(identifier.indexOf('@') + 1);
     }
 
     @Override
-    public String translateUp(String i) {
-      return i;
+    public String translateUp(String identifier) {
+      return identifier;
     }
 
     @Override
@@ -117,15 +117,15 @@ class IdentityLayersTest {
 
     @Override
     public @Nullable SocketRequestHandle<String> openSocket(
-        String i, SocketCallback<String> deliverSocketToMe, @Nullable Map<String, Object> options) {
+        String identifier, SocketCallback<String> deliverSocketToMe, @Nullable Map<String, Object> options) {
       return null;
     }
 
     @Override
     public @Nullable MessageRequestHandle<String, M> sendMessage(
-        String i, M m, @Nullable MessageCallback<String, M> deliverAckToMe, @Nullable Map<String, Object> options) {
-      sentTo.add(i);
-      sent.add(m);
+        String identifier, M msg, @Nullable MessageCallback<String, M> deliverAckToMe, @Nullable Map<String, Object> options) {
+      sentTo.add(identifier);
+      sent.add(msg);
       sentOptions.add(options);
       return null;
     }
@@ -136,10 +136,10 @@ class IdentityLayersTest {
     }
 
     @Override
-    public void acceptSockets(boolean b) {}
+    public void acceptSockets(boolean enabled) {}
 
     @Override
-    public void acceptMessages(boolean b) {}
+    public void acceptMessages(boolean enabled) {}
 
     @Override
     public void setCallback(TransportLayerCallback<String, M> callback) {
@@ -157,12 +157,12 @@ class IdentityLayersTest {
     @Nullable LivenessListener<String> listener;
 
     @Override
-    public int getLiveness(String i, @Nullable Map<String, Object> options) {
+    public int getLiveness(String identifier, @Nullable Map<String, Object> options) {
       return LIVENESS_ALIVE;
     }
 
     @Override
-    public boolean checkLiveness(String i, @Nullable Map<String, Object> options) {
+    public boolean checkLiveness(String identifier, @Nullable Map<String, Object> options) {
       return true;
     }
 
@@ -177,14 +177,14 @@ class IdentityLayersTest {
     }
 
     @Override
-    public void clearState(String i) {}
+    public void clearState(String identifier) {}
   }
 
   private static class FakeProximity implements ProximityProvider<String> {
     @Nullable ProximityListener<String> listener;
 
     @Override
-    public int proximity(String i, @Nullable Map<String, Object> options) {
+    public int proximity(String identifier, @Nullable Map<String, Object> options) {
       return 5;
     }
 
@@ -199,12 +199,12 @@ class IdentityLayersTest {
     }
 
     @Override
-    public void clearState(String i) {}
+    public void clearState(String identifier) {}
   }
 
   private static class AcceptingStrategy implements BindStrategy<String, String> {
     @Override
-    public boolean accept(String u, @Nullable String l, @Nullable Map<String, Object> options) {
+    public boolean accept(String upperIdentifier, @Nullable String lowerIdentifier, @Nullable Map<String, Object> options) {
       return true;
     }
   }
@@ -214,8 +214,8 @@ class IdentityLayersTest {
     identity = new IdentityLayerCore<>(serialized(LOCAL), new Serializer(), nodeChange, (u, m) -> true, bindStrategy, env);
     identity.initLowerLayer(lowerTl, new ErrorHandler<String>() {
       @Override
-      public void receivedUnexpectedData(String i, byte[] bytes, int location, @Nullable Map<String, Object> options) {
-        unexpected.add(i);
+      public void receivedUnexpectedData(String identifier, byte[] bytes, int location, @Nullable Map<String, Object> options) {
+        unexpected.add(identifier);
       }
 
       @Override
@@ -248,7 +248,7 @@ class IdentityLayersTest {
       }
 
       @Override
-      public void incomingSocket(P2PSocket<String> s) {}
+      public void incomingSocket(P2PSocket<String> incomingSocket) {}
     });
     upper.addLivenessListener((i, val, options) -> upperLiveness.add(i + ":" + val));
     upper.addProximityListener((i, prox, options) -> upperProximity.add(i + ":" + prox));
@@ -314,7 +314,7 @@ class IdentityLayersTest {
   void bindStrategyReplacesTheOldBinding() throws Exception {
     build((oldDest, newDest) -> false, new AcceptingStrategy() {
       @Override
-      public Replacement replace(String old, String u, @Nullable Map<String, Object> options) {
+      public Replacement replace(String old, String upperIdentifier, @Nullable Map<String, Object> options) {
         return Replacement.REPLACE;
       }
     });
@@ -333,7 +333,7 @@ class IdentityLayersTest {
   void bindStrategyKeepsTheOldBinding() throws Exception {
     build((oldDest, newDest) -> true, new AcceptingStrategy() {
       @Override
-      public Replacement replace(String old, String u, @Nullable Map<String, Object> options) {
+      public Replacement replace(String old, String upperIdentifier, @Nullable Map<String, Object> options) {
         return Replacement.KEEP;
       }
     });

@@ -298,12 +298,12 @@ public class Recorder implements MyEvents {
   public static void recursivelyPrintChildren(NodeHandle curNode,
       int recursionDepth, Map<NodeHandle,MyScribeClient> appTable) {
     // print self at appropriate tab level
-    String s = "";
+    String text = "";
     for (int numTabs = 0; numTabs < recursionDepth; numTabs++) {
-      s += "  ";
+      text += "  ";
     }
-    s += curNode.getId().toString();
-    System.out.println(s);
+    text += curNode.getId().toString();
+    System.out.println(text);
 
     // recursively print all children
     MyScribeClient app = (MyScribeClient) appTable.get(curNode);

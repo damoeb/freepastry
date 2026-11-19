@@ -173,13 +173,13 @@ public class FutureContinuationTest {
   public void forwardReportsContinuationFailure() {
     CompletableFuture<String> completableFuture = CompletableFuture.completedFuture("x");
     RuntimeException bug = new RuntimeException("bug in continuation");
-    CompletableFuture<Void> done = FutureContinuation.forward(completableFuture, new Continuation<String, Exception>() {
+    CompletableFuture<Void> completed = FutureContinuation.forward(completableFuture, new Continuation<String, Exception>() {
       @Override
       public void receiveResult(String result) { throw bug; }
       @Override
       public void receiveException(Exception exception) { fail("unexpected"); }
     }).toCompletableFuture();
-    CompletionException completionException = assertThrows(CompletionException.class, done::join);
+    CompletionException completionException = assertThrows(CompletionException.class, completed::join);
     assertSame(bug, completionException.getCause());
   }
 

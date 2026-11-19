@@ -89,9 +89,9 @@ class FileTransferImplTest {
 
     @Override
     public long write(ByteBuffer src) {
-      int n = src.remaining();
+      int byteCount = src.remaining();
       while (src.hasRemaining()) written.write(src.get());
-      return n;
+      return byteCount;
     }
 
     @Override

@@ -18,9 +18,9 @@ class AddressPolicyForwardStrategyTest {
   private static final List<InetSocketAddress> PUBLIC_NODE = List.of(addr("203.0.113.5", 9001));
   private static final List<InetSocketAddress> LOOPBACK_NODE = List.of(addr("127.0.0.1", 9001));
 
-  private static InetSocketAddress addr(String ip, int port) {
+  private static InetSocketAddress addr(String address, int port) {
     try {
-      return new InetSocketAddress(InetAddress.getByName(ip), port);
+      return new InetSocketAddress(InetAddress.getByName(address), port);
     } catch (UnknownHostException e) {
       throw new IllegalArgumentException(e);
     }
@@ -29,14 +29,14 @@ class AddressPolicyForwardStrategyTest {
   @ParameterizedTest
   @ValueSource(strings = {"127.0.0.1", "127.1.2.3", "::1", "169.254.169.254", "fe80::1", "0.0.0.0", "::", "224.0.0.1",
       "ff02::1"})
-  void aNodeOnAPublicAddressRefuses(String ip) {
-    assertFalse(AddressPolicyForwardStrategy.isAcceptable(PUBLIC_NODE, addr(ip, 80)));
+  void aNodeOnAPublicAddressRefuses(String address) {
+    assertFalse(AddressPolicyForwardStrategy.isAcceptable(PUBLIC_NODE, addr(address, 80)));
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"203.0.113.6", "10.0.0.7", "192.168.1.20", "2001:db8::7"})
-  void aNodeOnAPublicAddressAccepts(String ip) {
-    assertTrue(AddressPolicyForwardStrategy.isAcceptable(PUBLIC_NODE, addr(ip, 9002)));
+  void aNodeOnAPublicAddressAccepts(String address) {
+    assertTrue(AddressPolicyForwardStrategy.isAcceptable(PUBLIC_NODE, addr(address, 9002)));
   }
 
   @Test

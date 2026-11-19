@@ -134,7 +134,7 @@ class SourceRouteRelayTest {
 
   @Test
   void aHopAsksItsStrategyBeforeRelayingADatagram() throws IOException {
-    startHop((nextHop, sr, socket, options) -> false);
+    startHop((nextHop, sourceRoute, socket, options) -> false);
 
     assertNull(relayDatagram(), "the hop relayed a datagram although its strategy refused the next hop");
   }

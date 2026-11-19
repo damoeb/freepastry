@@ -80,11 +80,11 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
   private byte[] payload;
 
   public UserDataMessage(long topSeq, Handle senderHandle, byte[] topMinusOne,
-      byte[] sig, ByteBuffer message, int relevantLen) {
+      byte[] signature, ByteBuffer message, int relevantLen) {
     this.topSeq = topSeq;
     this.senderHandle = senderHandle;
     hTopMinusOne = topMinusOne;
-    this.signature = sig;
+    this.signature = signature;
     this.relevantLen = relevantLen;
 
     assert((relevantLen == message.remaining()) || (relevantLen < MathUtils.uByteToInt(RELEVANT_LEN_ALL)));
@@ -127,7 +127,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     long seq = buf.readLong();
     H handle = serializer.deserialize(buf);
     byte[] hash = WireLengths.readBytes(buf, hashSize);
-    byte[] sig = WireLengths.readBytes(buf, sigSize);
+    byte[] signature = WireLengths.readBytes(buf, sigSize);
     byte relevantCode = buf.readByte();
     int len = MathUtils.uByteToInt(relevantCode);
 
@@ -137,7 +137,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
       len = msg.length;
     }
 
-    return new UserDataMessage<H>(seq, handle, hash, sig, ByteBuffer.wrap(msg), len);
+    return new UserDataMessage<H>(seq, handle, hash, signature, ByteBuffer.wrap(msg), len);
   }
 
   public long getTopSeq() {

@@ -43,21 +43,21 @@ class IdentityBindingsBoundTest {
   /** Upper, middle and lower identifiers are all the same string. */
   private static class StubSerializer implements IdentitySerializer<String, String, String> {
     @Override
-    public void serialize(OutputBuffer buf, String i) throws IOException {}
+    public void serialize(OutputBuffer buf, String identifier) throws IOException {}
 
     @Override
-    public String deserialize(InputBuffer buf, String l) throws IOException {
-      return l;
+    public String deserialize(InputBuffer buf, String lowerIdentifier) throws IOException {
+      return lowerIdentifier;
     }
 
     @Override
-    public String translateDown(String i) {
-      return i;
+    public String translateDown(String identifier) {
+      return identifier;
     }
 
     @Override
-    public String translateUp(String i) {
-      return i;
+    public String translateUp(String identifier) {
+      return identifier;
     }
 
     @Override
@@ -70,12 +70,12 @@ class IdentityBindingsBoundTest {
   /** Accepts everything and, like the certified strategy, keeps a binding confirmed with a certificate. */
   private static class KeepCertified implements BindStrategy<String, String> {
     @Override
-    public boolean accept(String u, @Nullable String l, @Nullable Map<String, Object> options) {
+    public boolean accept(String upperIdentifier, @Nullable String lowerIdentifier, @Nullable Map<String, Object> options) {
       return true;
     }
 
     @Override
-    public boolean shouldKeepBinding(String u, @Nullable Map<String, Object> options) {
+    public boolean shouldKeepBinding(String upperIdentifier, @Nullable Map<String, Object> options) {
       return options != null && options.containsKey(CERTIFICATE);
     }
   }
@@ -88,16 +88,16 @@ class IdentityBindingsBoundTest {
   }
 
   private void onSelector(Runnable action) throws Exception {
-    CompletableFuture<Void> done = new CompletableFuture<>();
+    CompletableFuture<Void> completed = new CompletableFuture<>();
     env.getSelectorManager().invoke(() -> {
       try {
         action.run();
-        done.complete(null);
+        completed.complete(null);
       } catch (Throwable throwable) {
-        done.completeExceptionally(throwable);
+        completed.completeExceptionally(throwable);
       }
     });
-    done.get(10, TimeUnit.SECONDS);
+    completed.get(10, TimeUnit.SECONDS);
   }
 
   private static void spoof(IdentityLayerCore<String, String, String, String> identity) {

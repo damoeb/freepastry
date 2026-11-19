@@ -127,21 +127,21 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
       } else {
         // send TO
         sob.writeByte(1);
-        final UpperIdentifier dest = identity.getIntendedDest(options);
+        final UpperIdentifier destination = identity.getIntendedDest(options);
 
-        if (dest == null) {
+        if (destination == null) {
           deliverSocketToMe.receiveException(ret, new MemoryExpiredException("No record of the upper identifier for "+lowerIdentifier+" index="+options.get(NODE_HANDLE_FROM_INDEX)));
           return ret;
         }
 
-        if (identity.addBinding(dest, lowerIdentifier, options)) {
+        if (identity.addBinding(destination, lowerIdentifier, options)) {
           // no problem, sending message
         } else {
           deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(lowerIdentifier));
           return ret;
         }
 
-        serializer.serialize(sob, dest);
+        serializer.serialize(sob, destination);
       }
 
       // write FROM
@@ -156,9 +156,9 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
         new SocketCallback<LowerIdentifier>(){
 
           @Override
-          public void receiveResult(SocketRequestHandle<LowerIdentifier> cancellable, final P2PSocket<LowerIdentifier> sock) {
+          public void receiveResult(SocketRequestHandle<LowerIdentifier> cancellable, final P2PSocket<LowerIdentifier> openedSocket) {
             ret.setSubCancellable(() -> {
-              sock.close();
+              openedSocket.close();
               return true;
             });
             try {
@@ -242,7 +242,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
                 public void receiveException(P2PSocket<LowerIdentifier> socket, Exception ioe) {
                   deliverSocketToMe.receiveException(ret, ioe);
                 }
-              }.receiveSelectResult(sock, false, true);
+              }.receiveSelectResult(openedSocket, false, true);
             } catch (IOException ioe) {
               deliverSocketToMe.receiveException(ret, ioe);
             }
@@ -259,8 +259,8 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   }
 
   @Override
-  public void incomingSocket(P2PSocket<LowerIdentifier> s) throws IOException {
-    logger.debug("incomingSocket({})", s);
+  public void incomingSocket(P2PSocket<LowerIdentifier> incomingSocket) throws IOException {
+    logger.debug("incomingSocket({})", incomingSocket);
 
     // see if it wants to verify us
     new P2PSocketReceiver<LowerIdentifier>() {
@@ -432,7 +432,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
           }
         }.receiveSelectResult(socket, true, false); // read the TO (if wantsToVerify)
       }
-    }.receiveSelectResult(s, true, false); // read wantsToVerify
+    }.receiveSelectResult(incomingSocket, true, false); // read wantsToVerify
   }
 
   /**
@@ -468,14 +468,14 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
 
     } else {
       // don't include an id
-      UpperIdentifier dest = identity.getIntendedDest(options);
+      UpperIdentifier destination = identity.getIntendedDest(options);
 
-      if (dest == null) {
+      if (destination == null) {
         if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new MemoryExpiredException("No record of the upper identifier for "+lowerIdentifier+" index="+IdentityLayerCore.index(options)));
         return ret;
       }
 
-      if (identity.addBinding(dest, lowerIdentifier, options)) {
+      if (identity.addBinding(destination, lowerIdentifier, options)) {
         // no problem, sending message
       } else {
         if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new NodeIsFaultyException(lowerIdentifier, m));
@@ -485,7 +485,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
       byte[] destBytes;
       try {
         SimpleOutputBuffer sob = new SimpleOutputBuffer((int)(localIdentifier.length*2.5)); // good estimate
-        serializer.serialize(sob, dest);
+        serializer.serialize(sob, destination);
         destBytes = sob.getBytes();
       } catch (IOException ioe) {
         if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, ioe);
@@ -605,13 +605,13 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    tl.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptSockets(boolean enabled) {
+    tl.acceptMessages(enabled);
   }
 
   @Override

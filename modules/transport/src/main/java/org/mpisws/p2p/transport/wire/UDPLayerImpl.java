@@ -256,9 +256,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
           write = iterator.next();
           try {
 
-            int len = write.getMessage().remaining();
-            logger.debug("writing {} to {}", len, write.getIdentifier());
-            if (channel.send(write.getMessage(), write.getIdentifier()) == len) {
+            int length = write.getMessage().remaining();
+            logger.debug("writing {} to {}", length, write.getIdentifier());
+            if (channel.send(write.getMessage(), write.getIdentifier()) == length) {
               if (write.continuation != null) write.continuation.ack(write);
               iterator.remove();
             } else {
@@ -354,9 +354,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   }
 
   @Override
-  public void acceptMessages(final boolean b) {
+  public void acceptMessages(final boolean enabled) {
     Runnable task = () -> {
-      if (b) {
+      if (enabled) {
         key.interestOps(key.interestOps() | SelectionKey.OP_READ);
       } else {
         key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);

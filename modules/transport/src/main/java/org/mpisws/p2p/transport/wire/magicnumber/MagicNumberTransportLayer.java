@@ -131,13 +131,13 @@ public class MagicNumberTransportLayer<Identifier> implements
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    wire.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    wire.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    wire.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    wire.acceptSockets(enabled);
   }
 
   @Override
@@ -264,12 +264,12 @@ public class MagicNumberTransportLayer<Identifier> implements
       errorHandler.receivedUnexpectedData(identifier, ByteBuffers.arrayForRead(msg), ByteBuffers.arrayStart(msg), null);
       return;
     }
-    byte[] hdr = new byte[HEADER.length];
+    byte[] header = new byte[HEADER.length];
 
-    msg.get(hdr);
+    msg.get(header);
 
     int remaining = msg.remaining();
-    if (Arrays.equals(HEADER, hdr)) {
+    if (Arrays.equals(HEADER, header)) {
       notifyListenersRead(HEADER.length, identifier, options, false, false);  // non-passthrough part
       notifyListenersRead(remaining, identifier, options, true, false); // passthrough part
       callback.messageReceived(identifier, msg, options);

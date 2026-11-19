@@ -118,15 +118,15 @@ public sealed abstract class AbstractSubscribeMessage implements RawMessage, Scr
 
   @Override
   public String toString() {
-    String s = source + ","+id;
+    String text = source + ","+id;
     if (topics.size() <= 3) {
       for (Topic topic : topics) {
-        s+=" "+topic;
+        text+=" "+topic;
       }
     } else {
-      s+=" numTopics:"+topics.size();
+      text+=" numTopics:"+topics.size();
     }
-    return s;
+    return text;
   }
 
   /**

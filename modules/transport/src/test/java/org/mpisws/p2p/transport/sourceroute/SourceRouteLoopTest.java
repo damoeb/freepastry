@@ -86,10 +86,10 @@ class SourceRouteLoopTest {
     }
 
     @Override
-    public void acceptSockets(boolean b) {}
+    public void acceptSockets(boolean enabled) {}
 
     @Override
-    public void acceptMessages(boolean b) {}
+    public void acceptMessages(boolean enabled) {}
 
     @Override
     public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> transportLayerCallback) {
@@ -126,7 +126,7 @@ class SourceRouteLoopTest {
     out.write(new byte[] {1, 2, 3}, 0, 3);
     wire.add(new Object[] {route.get(0), route.get(1), out.getBytes()});
 
-    CountDownLatch done = new CountDownLatch(1);
+    CountDownLatch completed = new CountDownLatch(1);
     AtomicReference<Throwable> failure = new AtomicReference<>();
     env.getSelectorManager().invoke(() -> {
       try {
@@ -142,10 +142,10 @@ class SourceRouteLoopTest {
       } catch (Throwable throwable) {
         failure.set(throwable);
       } finally {
-        done.countDown();
+        completed.countDown();
       }
     });
-    assertTrue(done.await(10, TimeUnit.SECONDS));
+    assertTrue(completed.await(10, TimeUnit.SECONDS));
     if (failure.get() != null) {
       throw new AssertionError(failure.get());
     }

@@ -441,8 +441,8 @@ public class MultiringEndpoint implements Endpoint {
   }
 
   @Override
-  public void setRoutingConsistencyRequired(boolean val) {
-    endpoint.setRoutingConsistencyRequired(val);
+  public void setRoutingConsistencyRequired(boolean required) {
+    endpoint.setRoutingConsistencyRequired(required);
   }
 
   @Override

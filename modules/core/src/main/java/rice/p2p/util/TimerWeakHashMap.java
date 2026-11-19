@@ -71,9 +71,9 @@ public class TimerWeakHashMap<K,V> extends WeakHashMap<K, V> {
   }
 
   @Override
-  public V put(K key, V val) {
+  public V put(K key, V value) {
     refresh(key);
-    return super.put(key, val);
+    return super.put(key, value);
   }
 
   public void refresh(Object key) {

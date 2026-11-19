@@ -106,13 +106,13 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    transportLayer.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    transportLayer.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    transportLayer.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    transportLayer.acceptSockets(enabled);
   }
 
   @Override
@@ -127,7 +127,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     ret.setSubCancellable(transportLayer.openSocket(identifier, new SocketCallback<Identifier>() {
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-          P2PSocket<Identifier> sock) {
+          P2PSocket<Identifier> openedSocket) {
         // write the local identifier
         try {
           final ByteBuffer writeMe = ByteBuffer.wrap(localIdStrategy.getLocalIdentifierBytes());
@@ -151,7 +151,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
                 Exception ioe) {
               deliverSocketToMe.receiveException(ret, ioe);
             }
-          }.receiveSelectResult(sock, false, true);
+          }.receiveSelectResult(openedSocket, false, true);
         } catch (IOException ioe) {
           deliverSocketToMe.receiveException(ret, ioe);
         }
@@ -190,8 +190,8 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    final SocketInputBuffer sib = new SocketInputBuffer(s);
+  public void incomingSocket(P2PSocket<Identifier> incomingSocket) throws IOException {
+    final SocketInputBuffer sib = new SocketInputBuffer(incomingSocket);
 
     new P2PSocketReceiver<Identifier>() {
       @Override
@@ -210,7 +210,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
         errorHandler.receivedException(socket.getIdentifier(), ioe);
       }
 
-    }.receiveSelectResult(s, true, false);
+    }.receiveSelectResult(incomingSocket, true, false);
   }
 
   @Override

@@ -142,8 +142,8 @@ public class PRRegressionTest {
     String name;
     IdImpl id;
 
-    public HandleImpl(String s, IdImpl id) {
-      this.name = s;
+    public HandleImpl(String name, IdImpl id) {
+      this.name = name;
       this.id = id;
     }
 
@@ -168,8 +168,8 @@ public class PRRegressionTest {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (!(o instanceof HandleImpl that)) return false;
+    public boolean equals(Object object) {
+      if (!(object instanceof HandleImpl that)) return false;
       if (!id.equals(that.id)) return false;
       return name.equals(that.name);
     }
@@ -200,8 +200,8 @@ public class PRRegressionTest {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (!(o instanceof IdImpl that)) return false;
+    public boolean equals(Object object) {
+      if (!(object instanceof IdImpl that)) return false;
       return (this.id == that.id);
     }
   }
@@ -224,12 +224,12 @@ public class PRRegressionTest {
     }
 
     @Override
-    public void acceptMessages(boolean b) {
+    public void acceptMessages(boolean enabled) {
       throw new RuntimeException("implement");
     }
 
     @Override
-    public void acceptSockets(boolean b) {
+    public void acceptSockets(boolean enabled) {
       throw new RuntimeException("implement");
     }
 
@@ -302,7 +302,7 @@ public class PRRegressionTest {
     Environment env;
     Random rand;
     long nextSendTime = 0;
-    private HandleImpl dest;
+    private HandleImpl destination;
 
     private TransportLayer<HandleImpl, ByteBuffer> transportLayer;
 
@@ -313,7 +313,7 @@ public class PRRegressionTest {
       this.env = env;
       this.logger = env.getLogManager().getLogger(BogusApp.class, null);
       logger.info("new bogus app {}", player);
-      dest = player.destHandle;
+      destination = player.destHandle;
       transportLayer.setCallback(this);
     }
 
@@ -353,7 +353,7 @@ public class PRRegressionTest {
 
       logger.atInfo().log(() -> "sending message "+msg.length+" "+MathUtils.toBase64(msg));
       try {
-      transportLayer.sendMessage(dest, ByteBuffer.wrap(msg), new MessageCallback<HandleImpl, ByteBuffer>() {
+      transportLayer.sendMessage(destination, ByteBuffer.wrap(msg), new MessageCallback<HandleImpl, ByteBuffer>() {
 
         @Override
         public void sendFailed(MessageRequestHandle<HandleImpl, ByteBuffer> msg,
@@ -368,7 +368,7 @@ public class PRRegressionTest {
 
       }, null);
       } catch (NullPointerException npe) {
-        logger.info("tl:{} {}", transportLayer, dest);
+        logger.info("tl:{} {}", transportLayer, destination);
         throw npe;
       }
     }
@@ -384,8 +384,8 @@ public class PRRegressionTest {
       logger.trace("storeCheckpoint {}", nextSendTime);
       buffer.writeInt(31173);
       buffer.writeLong(nextSendTime);
-      buffer.writeBoolean(dest != null);
-      if (dest != null) dest.serialize(buffer);
+      buffer.writeBoolean(destination != null);
+      if (destination != null) destination.serialize(buffer);
       // reseed, so that the generator's state is just the seed the checkpoint keeps
       long seed = rand.nextLong();
       rand = new Random(seed);
@@ -398,7 +398,7 @@ public class PRRegressionTest {
       if (buffer.readInt() != 31173) throw new RuntimeException("invalid checkpoint");
       nextSendTime = buffer.readLong();
       if (buffer.readBoolean()) {
-        dest = new HandleSerializer().deserialize(buffer);
+        destination = new HandleSerializer().deserialize(buffer);
       }
       logger.trace("loadCheckpoint {}", nextSendTime);
       rand = new Random(buffer.readLong());
@@ -504,8 +504,8 @@ public class PRRegressionTest {
 
       final File f = new File(dir, localHandle.name);
       if (f.exists()) {
-        File f2 = new File(f,"peers");
-        File[] foo = f2.listFiles();
+        File peersFile = new File(f,"peers");
+        File[] foo = peersFile.listFiles();
         if (foo != null) {
           for (File file : foo) {
             file.delete();
@@ -578,8 +578,8 @@ public class PRRegressionTest {
     return new IdentifierStringCodec<IdImpl>(){
 
       @Override
-      public IdImpl readIdentifierFromString(String s) {
-        return new IdImpl(Integer.parseInt(s));
+      public IdImpl readIdentifierFromString(String text) {
+        return new IdImpl(Integer.parseInt(text));
       }
 
       @Override
@@ -682,24 +682,24 @@ public class PRRegressionTest {
     succeed();
   }
 
-  private final CountDownLatch done = new CountDownLatch(1);
+  private final CountDownLatch completed = new CountDownLatch(1);
   private volatile String failure;
 
   /**
    * Records the (first) failure and ends the scenario.
    */
   protected void fail(String reason) {
-    synchronized (done) {
+    synchronized (completed) {
       if (failure == null) failure = reason;
     }
-    done.countDown();
+    completed.countDown();
   }
 
   /**
    * Ends the scenario successfully (unless it failed before).
    */
   protected void succeed() {
-    done.countDown();
+    completed.countDown();
   }
 
   /**
@@ -709,9 +709,9 @@ public class PRRegressionTest {
    */
   public void await(long timeoutMillis) throws InterruptedException {
     try {
-      if (!done.await(timeoutMillis, TimeUnit.MILLISECONDS))
+      if (!completed.await(timeoutMillis, TimeUnit.MILLISECONDS))
         throw new AssertionError(getClass().getSimpleName()+" did not finish within "+timeoutMillis+" ms");
-      synchronized (done) {
+      synchronized (completed) {
         if (failure != null) throw new AssertionError(getClass().getSimpleName()+": "+failure);
       }
     } finally {

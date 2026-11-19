@@ -150,11 +150,11 @@ public class BloomFilter {
    * @return The result, which is guaranteed to be 0..length
    */
   protected int doHash(byte[] array, int seed) {
-    byte[] tmp = new byte[array.length+4];
-    MathUtils.intToByteArray(seed,tmp,0);
-    System.arraycopy(array, 0, tmp, 4, array.length);
+    byte[] salted = new byte[array.length+4];
+    MathUtils.intToByteArray(seed,salted,0);
+    System.arraycopy(array, 0, salted, 4, array.length);
 
-    return MathUtils.simpleHash(tmp);
+    return MathUtils.simpleHash(salted);
   }
 
   public void serialize(OutputBuffer buf) throws IOException {

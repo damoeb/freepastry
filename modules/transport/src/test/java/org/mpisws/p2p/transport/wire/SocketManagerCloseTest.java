@@ -97,8 +97,8 @@ class SocketManagerCloseTest {
         try {
           WireSocket socket = new WireSocket(tcp, serverAddress, new SocketCallback<InetSocketAddress>() {
             @Override
-            public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
-              connectFailure.completeExceptionally(new AssertionError("delivered a closed socket: " + sock));
+            public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> openedSocket) {
+              connectFailure.completeExceptionally(new AssertionError("delivered a closed socket: " + openedSocket));
             }
 
             @Override

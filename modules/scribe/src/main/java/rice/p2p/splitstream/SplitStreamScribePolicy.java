@@ -233,9 +233,9 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
           }
         } else {
           /* we must accept, because this is primary stripe */
-          List<Object> res = freeBandwidthUltimate(topic.id());
-          if (res != null) {
-            scribe.removeChild(new Topic((Id)res.get(1)), (NodeHandle)res.get(0));
+          List<Object> result = freeBandwidthUltimate(topic.id());
+          if (result != null) {
+            scribe.removeChild(new Topic((Id)result.get(1)), (NodeHandle)result.get(0));
             return true;
           } else {
             return false;
@@ -306,10 +306,10 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
            b. local node is root for non-prefix match topic,
               drop a child from non-primary, non-root stripe and accept the new subscriber */
         if (this.scribe.isRoot(message.getTopic())) {
-          List<Object> res = freeBandwidthUltimate(message.getTopic().id());
+          List<Object> result = freeBandwidthUltimate(message.getTopic().id());
 
-          if (res != null) {
-            scribe.removeChild(new Topic((Id)res.get(1)), (NodeHandle)res.get(0));
+          if (result != null) {
+            scribe.removeChild(new Topic((Id)result.get(1)), (NodeHandle)result.get(0));
             scribe.addChild(message.getTopic(),subscribeMessage.getSubscriber());
             return;
           }

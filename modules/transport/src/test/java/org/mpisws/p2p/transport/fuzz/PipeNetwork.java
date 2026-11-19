@@ -79,16 +79,16 @@ public final class PipeNetwork {
     }
 
     @Override
-    public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress i,
+    public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress identifier,
         SocketCallback<InetSocketAddress> deliverSocketToMe, Map<String, Object> options) {
-      SocketRequestHandleImpl<InetSocketAddress> handle = new SocketRequestHandleImpl<>(i, options, LOGGER);
-      Lower target = layers.get(i);
+      SocketRequestHandleImpl<InetSocketAddress> handle = new SocketRequestHandleImpl<>(identifier, options, LOGGER);
+      Lower target = layers.get(identifier);
       tasks.add(() -> {
         if (target == null) {
-          deliverSocketToMe.receiveException(handle, new IOException("nobody at " + i));
+          deliverSocketToMe.receiveException(handle, new IOException("nobody at " + identifier));
           return;
         }
-        PipeSocket client = new PipeSocket(i);
+        PipeSocket client = new PipeSocket(identifier);
         // the acceptor sees the opener on an ephemeral port, never on the address the opener listens on
         PipeSocket server = new PipeSocket(new InetSocketAddress(address.getAddress(), EPHEMERAL_PORT_BASE + sockets.size() / 2));
         client.peer = server;
@@ -106,18 +106,18 @@ public final class PipeNetwork {
     }
 
     @Override
-    public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(InetSocketAddress i, ByteBuffer msg,
+    public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(InetSocketAddress identifier, ByteBuffer msg,
         MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
-      MessageRequestHandleImpl<InetSocketAddress, ByteBuffer> handle = new MessageRequestHandleImpl<>(i, msg, options);
+      MessageRequestHandleImpl<InetSocketAddress, ByteBuffer> handle = new MessageRequestHandleImpl<>(identifier, msg, options);
       ByteBuffer copy = ByteBuffer.allocate(msg.remaining());
       copy.put(msg.duplicate());
       copy.flip();
       msg.position(msg.limit());
-      Lower target = layers.get(i);
+      Lower target = layers.get(identifier);
       tasks.add(() -> {
         if (target == null) {
           if (deliverAckToMe != null) {
-            deliverAckToMe.sendFailed(handle, new IOException("nobody at " + i));
+            deliverAckToMe.sendFailed(handle, new IOException("nobody at " + identifier));
           }
           return;
         }
@@ -139,11 +139,11 @@ public final class PipeNetwork {
     }
 
     @Override
-    public void acceptSockets(boolean b) {
+    public void acceptSockets(boolean enabled) {
     }
 
     @Override
-    public void acceptMessages(boolean b) {
+    public void acceptMessages(boolean enabled) {
     }
 
     @Override
@@ -213,11 +213,11 @@ public final class PipeNetwork {
       if (!incoming.hasRemaining()) {
         return peer.closed || peer.outputShutdown ? -1 : 0;
       }
-      int n = Math.min(dst.remaining(), incoming.remaining());
-      for (int i = 0; i < n; i++) {
+      int byteCount = Math.min(dst.remaining(), incoming.remaining());
+      for (int i = 0; i < byteCount; i++) {
         dst.put(incoming.get());
       }
-      return n;
+      return byteCount;
     }
 
     @Override
@@ -225,9 +225,9 @@ public final class PipeNetwork {
       if (closed || outputShutdown || peer.closed) {
         return -1;
       }
-      int n = src.remaining();
+      int byteCount = src.remaining();
       peer.append(src);
-      return n;
+      return byteCount;
     }
 
     private void append(ByteBuffer src) {

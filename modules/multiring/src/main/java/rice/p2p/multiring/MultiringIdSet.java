@@ -188,12 +188,12 @@ public class MultiringIdSet implements IdSet {
   /**
    * Determines equality
    *
-   * @param o To compare to
+   * @param object To compare to
    * @return Equals
    */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof MultiringIdSet multiringIdSet))
+  public boolean equals(Object object) {
+    if (!(object instanceof MultiringIdSet multiringIdSet))
       return false;
     return (multiringIdSet.getSet().equals(set) && multiringIdSet.ringId.equals(ringId));
   }

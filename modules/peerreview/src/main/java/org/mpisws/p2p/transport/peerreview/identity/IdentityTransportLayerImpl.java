@@ -160,8 +160,8 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
   }
 
   @Override
-  public boolean hasCertificate(I i) {
-    return super.hasKey(i);
+  public boolean hasCertificate(I identifier) {
+    return super.hasKey(identifier);
   }
 
   @Override
@@ -202,15 +202,15 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
    *
    * @throws RuntimeException if the verifier cannot be created from the certificate
    */
-  public Signature getVerifier(I i) {
-    Signature ret = verifiers.get(i);
+  public Signature getVerifier(I identifier) {
+    Signature ret = verifiers.get(identifier);
     try {
       if (ret == null) {
-        if (knownValues.containsKey(i)) {
-          X509Certificate cert = knownValues.get(i);
+        if (knownValues.containsKey(identifier)) {
+          X509Certificate cert = knownValues.get(identifier);
           ret = Signature.getInstance(signatureAlgorithm);
           ret.initVerify(cert);
-          verifiers.put(i, ret);
+          verifiers.put(identifier, ret);
         }
       }
     } catch (NoSuchAlgorithmException | InvalidKeyException e) {

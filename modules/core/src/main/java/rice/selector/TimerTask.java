@@ -129,7 +129,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
     this.selector = selector;
   }
 
-  protected void setNextExecutionTime(long l) {
-    nextExecutionTime = l;
+  protected void setNextExecutionTime(long time) {
+    nextExecutionTime = time;
   }
 }

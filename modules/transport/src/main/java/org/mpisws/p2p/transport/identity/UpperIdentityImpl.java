@@ -277,10 +277,10 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   }
 
   @Override
-  public void livenessChanged(MiddleIdentifier middleIdentifier, int val, @Nullable Map<String, Object> options) {
+  public void livenessChanged(MiddleIdentifier middleIdentifier, int liveness, @Nullable Map<String, Object> options) {
     if (deadForever.contains(middleIdentifier)) {
-      if (val < LIVENESS_DEAD) {
-        logger.error("Node {} came back from the dead!  It's a miracle! {} Ignoring.", middleIdentifier, val);
+      if (liveness < LIVENESS_DEAD) {
+        logger.error("Node {} came back from the dead!  It's a miracle! {} Ignoring.", middleIdentifier, liveness);
       }
       return;
     }
@@ -290,7 +290,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
         logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for index "+IdentityLayerCore.index(options)+" collected suppressing livenessChanged()");
         return;
       }
-    setLiveness(upper, val, options);
+    setLiveness(upper, liveness, options);
   }
 
   /**
@@ -357,13 +357,13 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    tl.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    tl.acceptSockets(enabled);
   }
 
   @Override

@@ -75,8 +75,8 @@ public class AuditProtocolAuthResponseTest {
     }
 
     @Override
-    public boolean equals(Object o) {
-      return o instanceof Id that && that.id == id;
+    public boolean equals(Object object) {
+      return object instanceof Id that && that.id == id;
     }
 
     @Override

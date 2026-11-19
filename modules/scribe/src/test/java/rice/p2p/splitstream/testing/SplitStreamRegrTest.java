@@ -415,8 +415,8 @@ public class SplitStreamRegrTest extends CommonAPITest {
       return channel.getLocalId();
     }
 
-    private void log(String s) {
-      logger.debug("{} {}", n, s);
+    private void log(String text) {
+      logger.debug("{} {}", n, text);
     }
 
   }

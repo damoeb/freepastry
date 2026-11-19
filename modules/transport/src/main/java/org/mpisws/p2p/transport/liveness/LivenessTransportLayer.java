@@ -261,13 +261,13 @@ public class LivenessTransportLayer<Identifier>
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    transportLayer.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    transportLayer.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    transportLayer.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    transportLayer.acceptSockets(enabled);
   }
 
   @Override
@@ -316,8 +316,8 @@ public class LivenessTransportLayer<Identifier>
     final MessageRequestHandleImpl<Identifier, ByteBuffer> handle =
       new MessageRequestHandleImpl<Identifier, ByteBuffer>(identifier, m, options);
 
-    LivenessTracker<Identifier> mgr = getManager(identifier);
-    if ((mgr != null) && (mgr.liveness >= LIVENESS_DEAD)) {
+    LivenessTracker<Identifier> tracker = getManager(identifier);
+    if ((tracker != null) && (tracker.liveness >= LIVENESS_DEAD)) {
       if (deliverAckToMe != null) deliverAckToMe.sendFailed(handle, new NodeIsFaultyException(identifier, m));
       return handle;
     }
@@ -354,8 +354,8 @@ public class LivenessTransportLayer<Identifier>
     if (!msg.hasRemaining()) {
       throw new IOException("Empty liveness message from " + identifier);
     }
-    byte hdr = msg.get();
-    switch(hdr) {
+    byte header = msg.get();
+    switch(header) {
     case HDR_NORMAL:
       logger.trace("messageReceived({},{})", identifier, msg);
       callback.messageReceived(identifier, msg, options);

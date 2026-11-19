@@ -83,27 +83,27 @@ final class TransportListeners<Identifier> {
     }
   }
 
-  void notifyWrote(int size, Identifier dest,
+  void notifyWrote(int size, Identifier destination,
       @Nullable Map<String, Object> options) {
     if (listeners.isEmpty()) return;
     for (TransportLayerListener<Identifier> transportLayerListener : listeners) {
-      transportLayerListener.wrote(size, dest, options, true, true);
+      transportLayerListener.wrote(size, destination, options, true, true);
     }
   }
 
-  void notifyEnqueued(int size, Identifier dest,
+  void notifyEnqueued(int size, Identifier destination,
       @Nullable Map<String, Object> options) {
     if (plisteners.isEmpty()) return;
     for (PriorityTransportLayerListener<Identifier> priorityTransportLayerListener : plisteners) {
-      priorityTransportLayerListener.enqueued(size, dest, options, true, true);
+      priorityTransportLayerListener.enqueued(size, destination, options, true, true);
     }
   }
 
-  void notifyDropped(int size, Identifier dest,
+  void notifyDropped(int size, Identifier destination,
       @Nullable Map<String, Object> options) {
     if (plisteners.isEmpty()) return;
     for (PriorityTransportLayerListener<Identifier> priorityTransportLayerListener : plisteners) {
-      priorityTransportLayerListener.dropped(size, dest, options, true, true);
+      priorityTransportLayerListener.dropped(size, destination, options, true, true);
     }
   }
 }

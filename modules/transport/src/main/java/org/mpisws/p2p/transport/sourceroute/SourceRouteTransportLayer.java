@@ -453,13 +453,13 @@ public class SourceRouteTransportLayer<Identifier>
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    etl.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    etl.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    etl.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    etl.acceptSockets(enabled);
   }
 
   @Override

@@ -31,11 +31,11 @@ class SocketInputBufferTest {
 
     @Override
     public long read(ByteBuffer dst) {
-      int n = Math.min(dst.remaining(), arrived.remaining());
-      for (int i = 0; i < n; i++) {
+      int byteCount = Math.min(dst.remaining(), arrived.remaining());
+      for (int i = 0; i < byteCount; i++) {
         dst.put(arrived.get());
       }
-      return n;
+      return byteCount;
     }
 
     @Override

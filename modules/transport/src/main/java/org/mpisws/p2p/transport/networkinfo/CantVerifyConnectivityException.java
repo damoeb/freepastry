@@ -45,8 +45,8 @@ import java.io.IOException;
  */
 public class CantVerifyConnectivityException extends IOException {
 
-  public CantVerifyConnectivityException(String s) {
-    super(s);
+  public CantVerifyConnectivityException(String message) {
+    super(message);
   }
 
 }

@@ -46,11 +46,11 @@ class PassthroughSocketOpenerTest {
 
     @Override
     public long write(ByteBuffer src) {
-      int n = script.removeFirst();
-      if (n > 0) {
-        src.position(src.position() + n);
+      int byteCount = script.removeFirst();
+      if (byteCount > 0) {
+        src.position(src.position() + byteCount);
       }
-      return n;
+      return byteCount;
     }
 
     @Override

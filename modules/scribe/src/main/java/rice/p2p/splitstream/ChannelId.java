@@ -61,8 +61,8 @@ public record ChannelId(Id id) {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! (o instanceof ChannelId channelId)) {
+  public boolean equals(Object object) {
+    if (! (object instanceof ChannelId channelId)) {
       return false;
     }
 

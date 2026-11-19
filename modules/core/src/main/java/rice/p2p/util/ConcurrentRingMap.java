@@ -71,9 +71,9 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
   /** the whole map, shared by all views of it */
   private final ConcurrentNavigableMap<K, Object> backing;
   /** the lowest key in this view (inclusive), or null if unbounded */
-  private final @Nullable K lo;
+  private final @Nullable K low;
   /** the key that ends this view (exclusive), or null if unbounded; below lo for a ring range */
-  private final @Nullable K hi;
+  private final @Nullable K high;
   /** the part of the backing map that this view iterates first: all of it, or the keys {@code >= lo} of a ring */
   private final ConcurrentNavigableMap<K, Object> first;
   /** for a ring range, the keys {@code < hi}, iterated after first; otherwise null */
@@ -92,21 +92,21 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
     putAll(m);
   }
 
-  private ConcurrentRingMap(ConcurrentNavigableMap<K, Object> backing, @Nullable K lo, @Nullable K hi) {
+  private ConcurrentRingMap(ConcurrentNavigableMap<K, Object> backing, @Nullable K low, @Nullable K high) {
     this.backing = backing;
-    this.lo = lo;
-    this.hi = hi;
-    if (lo != null && hi != null && compare(lo, hi) > 0) {
-      first = backing.tailMap(lo, true);
-      second = backing.headMap(hi, false);
-    } else if (lo != null && hi != null) {
-      first = backing.subMap(lo, true, hi, false);
+    this.low = low;
+    this.high = high;
+    if (low != null && high != null && compare(low, high) > 0) {
+      first = backing.tailMap(low, true);
+      second = backing.headMap(high, false);
+    } else if (low != null && high != null) {
+      first = backing.subMap(low, true, high, false);
       second = null;
-    } else if (lo != null) {
-      first = backing.tailMap(lo, true);
+    } else if (low != null) {
+      first = backing.tailMap(low, true);
       second = null;
-    } else if (hi != null) {
-      first = backing.headMap(hi, false);
+    } else if (high != null) {
+      first = backing.headMap(high, false);
       second = null;
     } else {
       first = backing;
@@ -122,7 +122,7 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
     ConcurrentNavigableMap<K, Object> entries = new ConcurrentSkipListMap<K, Object>(backing.comparator());
     entries.putAll(first);
     if (second != null) entries.putAll(second);
-    return new ConcurrentRingMap<K, V>(entries, lo, hi);
+    return new ConcurrentRingMap<K, V>(entries, low, high);
   }
 
   @SuppressWarnings("unchecked")
@@ -136,16 +136,16 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
   }
 
   private boolean inRange(Object key) {
-    K l = lo;
-    K h = hi;
+    K l = low;
+    K h = high;
     if (isRing() && l != null && h != null) return compare(key, l) >= 0 || compare(key, h) < 0;
     return (l == null || compare(key, l) >= 0) && (h == null || compare(key, h) < 0);
   }
 
   /** Returns the key, moved into the range of this (non-ring) view. */
   private K clamp(K key) {
-    if (lo != null && compare(key, lo) < 0) return lo;
-    if (hi != null && compare(key, hi) > 0) return hi;
+    if (low != null && compare(key, low) < 0) return low;
+    if (high != null && compare(key, high) > 0) return high;
     return key;
   }
 
@@ -216,7 +216,7 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
   public SortedMap<K, V> subMap(K fromKey, K toKey) {
     if (isRing()) return new ConcurrentRingMap<K, V>(this).subMap(fromKey, toKey);
     if (compare(fromKey, toKey) > 0) {
-      if (lo == null && hi == null) return new ConcurrentRingMap<K, V>(backing, fromKey, toKey);
+      if (low == null && high == null) return new ConcurrentRingMap<K, V>(backing, fromKey, toKey);
       return new ConcurrentRingMap<K, V>(this).subMap(fromKey, toKey);
     }
     return new ConcurrentRingMap<K, V>(backing, clamp(fromKey), clamp(toKey));
@@ -226,14 +226,14 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
   public SortedMap<K, V> headMap(K toKey) {
     if (isRing()) return new ConcurrentRingMap<K, V>(this).headMap(toKey);
     compare(toKey, toKey); // type-check the key
-    return new ConcurrentRingMap<K, V>(backing, lo, clamp(toKey));
+    return new ConcurrentRingMap<K, V>(backing, low, clamp(toKey));
   }
 
   @Override
   public SortedMap<K, V> tailMap(K fromKey) {
     if (isRing()) return new ConcurrentRingMap<K, V>(this).tailMap(fromKey);
     compare(fromKey, fromKey); // type-check the key
-    return new ConcurrentRingMap<K, V>(backing, clamp(fromKey), hi);
+    return new ConcurrentRingMap<K, V>(backing, clamp(fromKey), high);
   }
 
   private @Nullable Set<Map.Entry<K, V>> entrySet;

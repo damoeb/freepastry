@@ -128,8 +128,8 @@ public class SocketInputBuffer implements InputBuffer {
       }
 
       @Override
-      public int read(byte[] b, int off, int len) throws IOException {
-        return readInternal(b, off, len);
+      public int read(byte[] b, int off, int length) throws IOException {
+        return readInternal(b, off, length);
       }
 
       @Override
@@ -168,10 +168,10 @@ public class SocketInputBuffer implements InputBuffer {
    * @return the number of bytes read, always len
    * @throws InsufficientBytesException if fewer than len bytes are available (the read pointer is rewound)
    */
-  public int readInternal(byte[] bytes, int off, int len) throws IOException {
-    needBytes(len, true);
-    readPtr.get(bytes, off, len);
-    return len;
+  public int readInternal(byte[] bytes, int off, int length) throws IOException {
+    needBytes(length, true);
+    readPtr.get(bytes, off, length);
+    return length;
   }
 
   /**
@@ -196,8 +196,8 @@ public class SocketInputBuffer implements InputBuffer {
 
 
   @Override
-  public int read(byte[] bytes, int off, int len) throws IOException {
-    return dis.read(bytes, off, len);
+  public int read(byte[] bytes, int off, int length) throws IOException {
+    return dis.read(bytes, off, length);
   }
 
   @Override

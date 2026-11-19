@@ -344,14 +344,14 @@ class PeerReviewWireRoundTripTest {
     List<Evidence> evidence = List.of(new ChallengeAudit((byte) 0, auth(1), auth(2)), userData(fill(9, 1), 9),
         proofInconsistent(false), proofInconsistent(true), nonconformantProof());
 
-    for (Evidence e : evidence) {
-      AccusationMessage<TestId> msg = new AccusationMessage<>(id(1), id(2), 55, e);
+    for (Evidence evidenceItem : evidence) {
+      AccusationMessage<TestId> msg = new AccusationMessage<>(id(1), id(2), 55, evidenceItem);
 
       AccusationMessage<TestId> read = roundTrip(msg, buf -> new AccusationMessage<>(buf, IDS, EVIDENCE));
 
       assertStatement(msg, read);
-      assertEquals(e.getEvidenceType(), read.getEvidence().getEvidenceType());
-      assertEquals(e.getClass(), read.getEvidence().getClass());
+      assertEquals(evidenceItem.getEvidenceType(), read.getEvidence().getEvidenceType());
+      assertEquals(evidenceItem.getClass(), read.getEvidence().getClass());
     }
   }
 
@@ -360,14 +360,14 @@ class PeerReviewWireRoundTripTest {
     List<Evidence> evidence = List.of(new AuditResponse<>(id(6), snippet(1, false)),
         new AuditResponse<>(id(6), snippet(4, true)), new AckMessage<>(id(9), 5, 6, fill(HASH, 1), fill(SIG, 2)));
 
-    for (Evidence e : evidence) {
-      ResponseMessage<TestId> msg = new ResponseMessage<>(id(1), id(2), 55, e);
+    for (Evidence evidenceItem : evidence) {
+      ResponseMessage<TestId> msg = new ResponseMessage<>(id(1), id(2), 55, evidenceItem);
 
       ResponseMessage<TestId> read = roundTrip(msg, buf -> new ResponseMessage<>(buf, IDS, EVIDENCE));
 
       assertStatement(msg, read);
-      assertEquals(e.getEvidenceType(), read.getEvidence().getEvidenceType());
-      assertEquals(e.getClass(), read.getEvidence().getClass());
+      assertEquals(evidenceItem.getEvidenceType(), read.getEvidence().getEvidenceType());
+      assertEquals(evidenceItem.getClass(), read.getEvidence().getClass());
     }
   }
 
@@ -402,14 +402,14 @@ class PeerReviewWireRoundTripTest {
   @Test
   void proofInconsistentWithAndWithoutSnippet() throws IOException {
     for (boolean withSnippet : new boolean[] {false, true}) {
-      ProofInconsistent p = proofInconsistent(withSnippet);
+      ProofInconsistent proof = proofInconsistent(withSnippet);
 
-      ProofInconsistent read = roundTrip(p, Evidence::serialize, buf -> new ProofInconsistent(buf, AUTHENTICATORS, HASH));
+      ProofInconsistent read = roundTrip(proof, Evidence::serialize, buf -> new ProofInconsistent(buf, AUTHENTICATORS, HASH));
 
-      assertEquals(p.getFirstAuthenticator(), read.getFirstAuthenticator());
-      assertEquals(p.getSecondAuthenticator(), read.getSecondAuthenticator());
+      assertEquals(proof.getFirstAuthenticator(), read.getFirstAuthenticator());
+      assertEquals(proof.getSecondAuthenticator(), read.getSecondAuthenticator());
       if (withSnippet) {
-        assertEquals(p.getSnippet(), read.getSnippet());
+        assertEquals(proof.getSnippet(), read.getSnippet());
       } else {
         assertNull(read.getSnippet());
       }
@@ -436,11 +436,11 @@ class PeerReviewWireRoundTripTest {
             new AckMessage<>(id(9), 5, 6, fill(HASH, 1), fill(SIG, 2)), proofInconsistent(true), nonconformantProof())
         : List.of(new ChallengeAudit((byte) 0, auth(1), auth(2)), userData(fill(9, 1), 9), proofInconsistent(false),
             nonconformantProof());
-    for (Evidence e : evidence) {
-      Evidence read = roundTrip(e, Evidence::serialize,
-          buf -> EVIDENCE.deserialize(buf, (byte) e.getEvidenceType(), response));
+    for (Evidence evidenceItem : evidence) {
+      Evidence read = roundTrip(evidenceItem, Evidence::serialize,
+          buf -> EVIDENCE.deserialize(buf, (byte) evidenceItem.getEvidenceType(), response));
 
-      assertEquals(e.getClass(), read.getClass());
+      assertEquals(evidenceItem.getClass(), read.getClass());
     }
   }
 
@@ -466,8 +466,8 @@ class PeerReviewWireRoundTripTest {
   @Test
   @DisplayName("LogSnippet sequence numbers: consecutive, millisecond multiples, absolute jumps and the extremes")
   void logSnippetSequenceCodes() throws IOException {
-    long ms = PeerReviewConstants.SEQS_PER_MILLI;
-    long[] seqs = {0, 1, 2, 5 * ms, 5 * ms + 1, 6 * ms, 6 * ms + 7, 7 * ms, 7 * ms + ms / 2, 8 * ms, 8 * ms + 254 * ms,
+    long millis = PeerReviewConstants.SEQS_PER_MILLI;
+    long[] seqs = {0, 1, 2, 5 * millis, 5 * millis + 1, 6 * millis, 6 * millis + 7, 7 * millis, 7 * millis + millis / 2, 8 * millis, 8 * millis + 254 * millis,
         1_000_000_000_000_000L, Long.MAX_VALUE};
     List<SnippetEntry> entries = new ArrayList<>();
     for (int i = 0; i < seqs.length; i++) {

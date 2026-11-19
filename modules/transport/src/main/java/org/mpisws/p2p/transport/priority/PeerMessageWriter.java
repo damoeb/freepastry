@@ -443,8 +443,8 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
       }
     }
 
-    for (Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper<Identifier>> t : callSendFailed) {
-      t.first().sendFailed(t.second(), ioe);
+    for (Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper<Identifier>> pair : callSendFailed) {
+      pair.first().sendFailed(pair.second(), ioe);
     }
 
     synchronized(sockets) {

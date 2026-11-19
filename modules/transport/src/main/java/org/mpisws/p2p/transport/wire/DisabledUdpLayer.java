@@ -64,6 +64,6 @@ public class DisabledUdpLayer implements UDPLayer {
   }
 
   @Override
-  public void acceptMessages(boolean b) {
+  public void acceptMessages(boolean enabled) {
   }
 }

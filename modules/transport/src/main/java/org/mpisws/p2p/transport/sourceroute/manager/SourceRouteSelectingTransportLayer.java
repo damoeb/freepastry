@@ -259,13 +259,13 @@ public class SourceRouteSelectingTransportLayer<Identifier>
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    tl.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    tl.acceptSockets(enabled);
   }
 
   @Override
@@ -610,10 +610,10 @@ public class SourceRouteSelectingTransportLayer<Identifier>
       return "AM "+this.address;
     }
 
-    public void livenessChanged(SourceRoute<Identifier> sourceRoute, int val, @Nullable Map<String, Object> options) {
+    public void livenessChanged(SourceRoute<Identifier> sourceRoute, int liveness, @Nullable Map<String, Object> options) {
       routes.add(sourceRoute);
-      if (!sourceRoute.getLastHop().equals(address)) throw new IllegalArgumentException(sourceRoute+"!="+address+" val:"+val);
-      switch(val) {
+      if (!sourceRoute.getLastHop().equals(address)) throw new IllegalArgumentException(sourceRoute+"!="+address+" val:"+liveness);
+      switch(liveness) {
       case LIVENESS_ALIVE:
         markAlive(sourceRoute, options);
         return;
@@ -627,7 +627,7 @@ public class SourceRouteSelectingTransportLayer<Identifier>
         markDeadForever(options);
         return;
       default:
-        throw new IllegalArgumentException("Unexpected val:"+val+" i:"+sourceRoute+" address:"+address);
+        throw new IllegalArgumentException("Unexpected val:"+liveness+" i:"+sourceRoute+" address:"+address);
       }
     }
 
@@ -929,9 +929,9 @@ public class SourceRouteSelectingTransportLayer<Identifier>
   }
 
   @Override
-  public void livenessChanged(SourceRoute<Identifier> sourceRoute, int val, @Nullable Map<String, Object> options) {
-    logger.trace("livenessChanged({},{})", sourceRoute, val);
-    getAddressManager(sourceRoute.getLastHop()).livenessChanged(sourceRoute,val, options);
+  public void livenessChanged(SourceRoute<Identifier> sourceRoute, int liveness, @Nullable Map<String, Object> options) {
+    logger.trace("livenessChanged({},{})", sourceRoute, liveness);
+    getAddressManager(sourceRoute.getLastHop()).livenessChanged(sourceRoute,liveness, options);
   }
 
   final Collection<ProximityListener<Identifier>> listeners = new CopyOnWriteArrayList<ProximityListener<Identifier>>();

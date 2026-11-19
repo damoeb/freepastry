@@ -60,19 +60,19 @@ class FileTransferWireRoundTripTest {
       if (!incoming.hasRemaining()) {
         return peer.closed ? -1 : 0;
       }
-      int n = Math.min(dst.remaining(), incoming.remaining());
-      for (int i = 0; i < n; i++) {
+      int byteCount = Math.min(dst.remaining(), incoming.remaining());
+      for (int i = 0; i < byteCount; i++) {
         dst.put(incoming.get());
       }
-      return n;
+      return byteCount;
     }
 
     @Override
     public long write(ByteBuffer src) {
-      int n = src.remaining();
+      int byteCount = src.remaining();
       peer.append(src);
       env.getSelectorManager().invoke(peer::fire);
-      return n;
+      return byteCount;
     }
 
     private synchronized void append(ByteBuffer src) {

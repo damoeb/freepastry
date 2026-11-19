@@ -105,10 +105,10 @@ public class VerifierAckTest {
 
   /** Appends the CHECKPOINT the replay starts from and returns its index. */
   long appendCheckpointAt(long seq) throws IOException {
-    long idx = history.getNumEntries();
+    long index = history.getNumEntries();
     history.setNextSeq(seq);
     history.appendEntry(EVT_CHECKPOINT, true, ByteBuffer.wrap(new byte[] {7}));
-    return idx;
+    return index;
   }
 
   void appendAckAt(long seq, long ackedSeq) throws IOException {

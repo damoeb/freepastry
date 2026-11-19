@@ -133,10 +133,10 @@ public class ProfileFileTest {
           }
 
           @Override
-          public void fileReceived(Path f, ByteBuffer metadata) {
+          public void fileReceived(Path file, ByteBuffer metadata) {
             try {
               String name = new SimpleInputBuffer(metadata).readUTF();
-              logger.info("file received {} named:{} size:{}", f, name, Files.size(f));
+              logger.info("file received {} named:{} size:{}", file, name, Files.size(file));
             } catch (IOException ioe) {
               logger.warn("Error interpreting filename ", ioe);
             }
@@ -163,17 +163,17 @@ public class ProfileFileTest {
               }
             }
             if (bytesTransferred == total) {
-              String s;
+              String text;
               if (incoming) {
-                s = "download";
+                text = "download";
               } else {
-                s = "upload";
+                text = "upload";
               }
               long finTime = time.currentTimeMillis();
               long startTime = startTimes.get(receipt);
               double kbps = (1.0*total)/(1.0*(finTime-startTime));
               startTimes.remove(receipt);
-              System.out.println("Took "+(finTime-startTime)+" millis to "+s+" "+total+" bytes. "+kbps+" kbps. Started at "+startTime);
+              System.out.println("Took "+(finTime-startTime)+" millis to "+text+" "+total+" bytes. "+kbps+" kbps. Started at "+startTime);
             }
           }
 
@@ -231,7 +231,7 @@ public class ProfileFileTest {
         FileTransfer ft = new FileTransferImpl(sock, new FileTransferCallback() {
 
           @Override
-          public void messageReceived(ByteBuffer bb) {
+          public void messageReceived(ByteBuffer byteBuffer) {
 
           }
 

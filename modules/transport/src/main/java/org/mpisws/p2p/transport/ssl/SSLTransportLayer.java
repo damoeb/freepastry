@@ -205,13 +205,13 @@ public class SSLTransportLayer<Identifier, MessageType>
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    transportLayer.acceptMessages(b);
+  public void acceptMessages(boolean enabled) {
+    transportLayer.acceptMessages(enabled);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    transportLayer.acceptSockets(b);
+  public void acceptSockets(boolean enabled) {
+    transportLayer.acceptSockets(enabled);
   }
 
   @Override

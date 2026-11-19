@@ -78,12 +78,12 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
 
     SourceRoute<MultiInetSocketAddress> src = transportLayer.getLocalIdentifier();
     SourceRoute<MultiInetSocketAddress> intermediate = carol.getLocalIdentifier();
-    SourceRoute<MultiInetSocketAddress> dest = b.getLocalIdentifier();
+    SourceRoute<MultiInetSocketAddress> destination = b.getLocalIdentifier();
 
     List<MultiInetSocketAddress> retArr = new ArrayList<MultiInetSocketAddress>(3);
     retArr.add(src.getFirstHop());
     retArr.add(intermediate.getFirstHop());
-    retArr.add(dest.getFirstHop());
+    retArr.add(destination.getFirstHop());
 
     return srFactory.getSourceRoute(retArr);
   }

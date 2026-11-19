@@ -64,15 +64,15 @@ class BigMessageWireRoundTripTest {
         new TransportListeners<>(), () -> null, () -> upper, () -> false, id -> null);
     net.lower(receiver).setCallback(new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) {
+      public void messageReceived(InetSocketAddress identifier, ByteBuffer m, Map<String, Object> options) {
       }
 
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
+      public void incomingSocket(P2PSocket<InetSocketAddress> incomingSocket) throws IOException {
         ByteBuffer header = ByteBuffer.allocate(1);
-        s.read(header);
+        incomingSocket.read(header);
         assertEquals(PriorityTransportLayer.BIG_MSG_SOCKET_B, header.get(0));
-        s.register(true, false, new BigMessageReader<>(ctx));
+        incomingSocket.register(true, false, new BigMessageReader<>(ctx));
       }
     });
     int[] sizes = {1, 2, 255, 256, MAX_MSG_SIZE, MAX_MSG_SIZE + 1, 65_535, 65_536, 300_000, MAX_BIG_MSG_SIZE};
