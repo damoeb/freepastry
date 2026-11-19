@@ -89,8 +89,8 @@ public class SplitStreamTutorial {
     // construct the PastryNodeFactory
     PastryNodeFactory factory;
     if (useDirect) {
-      NetworkSimulator<DirectNodeHandle,RawMessage> sim = new EuclideanNetwork<DirectNodeHandle,RawMessage>(env);
-      factory = new DirectPastryNodeFactory(nidFactory, sim, env);
+      NetworkSimulator<DirectNodeHandle,RawMessage> networkSimulator = new EuclideanNetwork<DirectNodeHandle,RawMessage>(env);
+      factory = new DirectPastryNodeFactory(nidFactory, networkSimulator, env);
     } else {
       factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
     }

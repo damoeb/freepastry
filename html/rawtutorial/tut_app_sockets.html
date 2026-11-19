@@ -321,7 +321,7 @@ Here is the code for our AppSocketReceiver.receiveSelectResult()
 <a name="connect"/><h2>Connecting a Socket</h2>
 This code is in the <code>sendMyMsgDirect()</code> method of <a href="../../modules/tutorials/src/main/java/rice/tutorial/appsocket/MyApp.java">MyApp.java</a>.  It is similar to the <a href="#accept">accept</a> code earlier in this tutorial.  The additional parameters in <code>endpoint.connect()</code> are the NodeHandle to connect to, and the timeout for the connection to occur (in millis).  
 <pre>
-    endpoint.connect(nh, new AppSocketReceiver() {
+    endpoint.connect(nodeHandle, new AppSocketReceiver() {
 
       /**
        * Called when the socket comes available.

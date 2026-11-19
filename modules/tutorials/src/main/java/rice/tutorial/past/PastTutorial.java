@@ -103,15 +103,15 @@ public class PastTutorial {
 
       // used for generating PastContent object Ids.
       // this implements the "hash function" for our DHT
-      PastryIdFactory idf = new rice.pastry.commonapi.PastryIdFactory(env);
+      PastryIdFactory idFactory = new rice.pastry.commonapi.PastryIdFactory(env);
 
       // create the persistent part; to keep it on disk, give each node its own storage root and use
       // String storageDirectory = "./storage"+node.getId().hashCode();
       // new PersistentStorage(idf, new PastStorageSerializer(() -> past), storageDirectory,
       //     4 * 1024 * 1024, node.getEnvironment())
-      Storage stor = new MemoryStorage(idf);
-      Past app = new PastImpl(node, new CachedStorageImpl(idf, stor, new LRUCache(
-          new MemoryStorage(idf), 512 * 1024, node.getEnvironment())), 0, "");
+      Storage storage = new MemoryStorage(idFactory);
+      Past app = new PastImpl(node, new CachedStorageImpl(idFactory, storage, new LRUCache(
+          new MemoryStorage(idFactory), 512 * 1024, node.getEnvironment())), 0, "");
 
       // tell Past how to read our content back from the wire
       app.setContentDeserializer((buf, endpoint, contentType) -> {
@@ -160,11 +160,11 @@ public class PastTutorial {
       storedKey[ctr] = myContent.getId();
 
       // pick a random past appl on a random node
-      Past p = (Past)apps.get(env.getRandomSource().nextInt(numNodes));
-      System.out.println("Inserting " + myContent + " at node "+p.getLocalNodeHandle());
+      Past randomPast = (Past)apps.get(env.getRandomSource().nextInt(numNodes));
+      System.out.println("Inserting " + myContent + " at node "+randomPast.getLocalNodeHandle());
 
       // insert the data
-      p.insert(myContent, new Continuation<Boolean[], Exception>() {
+      randomPast.insert(myContent, new Continuation<Boolean[], Exception>() {
         // the result is an Array of Booleans for each insert
         @Override
         public void receiveResult(Boolean[] results) {
@@ -196,10 +196,10 @@ public class PastTutorial {
       final Id lookupKey = id;
 
       // pick a random past appl on a random node
-      Past p = (Past)apps.get(env.getRandomSource().nextInt(numNodes));
+      Past randomPast = (Past)apps.get(env.getRandomSource().nextInt(numNodes));
 
-      System.out.println("Looking up " + lookupKey + " at node "+p.getLocalNodeHandle());
-      p.lookup(lookupKey, new Continuation<PastContent, Exception>() {
+      System.out.println("Looking up " + lookupKey + " at node "+randomPast.getLocalNodeHandle());
+      randomPast.lookup(lookupKey, new Continuation<PastContent, Exception>() {
         @Override
         public void receiveResult(PastContent result) {
           System.out.println("Successfully looked up " + result + " for key "+lookupKey+".");
@@ -221,10 +221,10 @@ public class PastTutorial {
     final Id bogusKey = localFactory.buildId("bogus");
 
     // pick a random past appl on a random node
-    Past p = (Past)apps.get(env.getRandomSource().nextInt(numNodes));
+    Past randomPast = (Past)apps.get(env.getRandomSource().nextInt(numNodes));
 
-    System.out.println("Looking up bogus key " + bogusKey + " at node "+p.getLocalNodeHandle());
-    p.lookup(bogusKey, new Continuation<PastContent, Exception>() {
+    System.out.println("Looking up bogus key " + bogusKey + " at node "+randomPast.getLocalNodeHandle());
+    randomPast.lookup(bogusKey, new Continuation<PastContent, Exception>() {
       @Override
       public void receiveResult(PastContent result) {
         System.out.println("Successfully looked up " + result + " for key "+bogusKey+".  Notice that the result is null.");

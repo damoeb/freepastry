@@ -86,9 +86,9 @@ public class LookupServiceTest {
       PastryNode node = factory.newNode();
 
       // create the lookup service
-      LookupService ls = new LookupService(node);
+      LookupService lookupService = new LookupService(node);
 
-      lookups.add(ls);
+      lookups.add(lookupService);
 
       // boot the node
       node.boot(bootaddress);
@@ -112,10 +112,10 @@ public class LookupServiceTest {
     // wait 10 seconds
     env.getTimeSource().sleep(10000);
 
-    for (LookupService ls : lookups) {
+    for (LookupService lookupService : lookups) {
       final Id id = nidFactory.generateNodeId();
       System.out.println("Requesting id "+id);
-      ls.requestNodeHandles(id, 3, new Continuation<NodeHandleSet,Exception>() {
+      lookupService.requestNodeHandles(id, 3, new Continuation<NodeHandleSet,Exception>() {
         @Override
         public void receiveException(Exception exception) {
           if (exception instanceof LookupService.NodeLookupTimeoutException) {

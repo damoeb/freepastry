@@ -81,8 +81,8 @@ public class DistTutorial {
     // written by "CertificateAuthorityTool -store" (PKCS12); its password is in FREEPASTRY_NODE_PASSWORD, or asked on the console
     final char[] password = CertificateAuthorityTool.readPassword(CertificateAuthorityTool.NODE_PASSWORD_ENV, "Password of "+keyStoreFile+": ");
     final KeyStore store = KeyStore.getInstance(CertificateAuthorityTool.DEFAULT_KEYSTORE_TYPE);
-    try (InputStream fis = Files.newInputStream(keyStoreFile)) {
-      store.load(fis, password);
+    try (InputStream keyStoreInput = Files.newInputStream(keyStoreFile)) {
+      store.load(keyStoreInput, password);
     }
 
     // the node id is the one the CA put in the node's certificate; this fails if the certificate
@@ -145,10 +145,10 @@ public class DistTutorial {
     for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
       if (i != 0) { // don't send to self
         // select the item
-        NodeHandle nh = leafSet.get(i);
+        NodeHandle nodeHandle = leafSet.get(i);
 
         // send the message directly to the node
-        app.routeMyMsgDirect(nh);
+        app.routeMyMsgDirect(nodeHandle);
 
         // wait a sec
         env.getTimeSource().sleep(1000);

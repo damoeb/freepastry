@@ -52,8 +52,8 @@ class MyContinuation implements Continuation<PastContent, Exception> {
    * Called when the result arrives.
    */
   @Override
-  public void receiveResult(PastContent pc) {
-    System.out.println("Received a "+pc);
+  public void receiveResult(PastContent pastContent) {
+    System.out.println("Received a "+pastContent);
   }
 
   /**

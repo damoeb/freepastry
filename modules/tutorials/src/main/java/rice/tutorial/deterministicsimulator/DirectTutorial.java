@@ -122,7 +122,7 @@ public class DirectTutorial {
           // track when the node is finished booting
           node.addPastryNodeListener(new PastryNodeListener() {
             @Override
-            public void pastryNodeReady(PastryNode o, boolean ready) {
+            public void pastryNodeReady(PastryNode observedNode, boolean ready) {
               try {
                 System.out.println("Finished creating new node "+node+" at "+env.getTimeSource().currentTimeMillis());
 
@@ -133,18 +133,18 @@ public class DirectTutorial {
                 }
               } finally {
                 // stop observing after initial try
-                o.removePastryNodeListener(this);
+                observedNode.removePastryNodeListener(this);
               }
             }
 
             @Override
-            public void pastryNodeJoinFailed(PastryNode o, JoinFailedException jfe) {
+            public void pastryNodeJoinFailed(PastryNode observedNode, JoinFailedException reason) {
               try {
-                jfe.printStackTrace();
-                throw new RuntimeException(jfe); // kill selector
+                reason.printStackTrace();
+                throw new RuntimeException(reason); // kill selector
               } finally {
                 // stop observing after initial try
-                o.removePastryNodeListener(this);
+                observedNode.removePastryNodeListener(this);
               }
             }
           });
@@ -211,10 +211,10 @@ public class DirectTutorial {
           for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
             if (i != 0) { // don't send to self
               // select the item
-              NodeHandle nh = leafSet.get(i);
+              NodeHandle nodeHandle = leafSet.get(i);
 
               // send the message directly to the node
-              app.routeMyMsgDirect(nh);
+              app.routeMyMsgDirect(nodeHandle);
             }
           }
         } else {

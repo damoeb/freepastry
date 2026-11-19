@@ -211,21 +211,21 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
    *
    */
   private String printData(byte[] data) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder builder = new StringBuilder();
     for (int i = 0; i < data.length-1; i++) {
-      sb.append((int)data[i]);
-      sb.append(',');
+      builder.append((int)data[i]);
+      builder.append(',');
     }
-    sb.append((int)data[data.length-1]);
-    return sb.toString();
+    builder.append((int)data[data.length-1]);
+    return builder.toString();
   }
 
   /**
    * Called whenever we receive a published message.
    */
   @Override
-  public void deliver(Stripe s, byte[] data) {
-    System.out.println(endpoint.getId()+" deliver("+s+"):seq:"+data[0]+" stripe:"+data[1]+" "+printData(data)+")");
+  public void deliver(Stripe stripe, byte[] data) {
+    System.out.println(endpoint.getId()+" deliver("+stripe+"):seq:"+data[0]+" stripe:"+data[1]+" "+printData(data)+")");
   }
 
   static class PublishContent implements Message {
@@ -236,8 +236,8 @@ public class MySplitStreamClient implements SplitStreamClient, Application {
   }
 
   // error handling
-  public void joinFailed(Stripe s) {
-    System.out.println("joinFailed("+s+")");
+  public void joinFailed(Stripe stripe) {
+    System.out.println("joinFailed("+stripe+")");
   }
 
   // rest of the Application Interface

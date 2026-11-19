@@ -146,8 +146,8 @@ public class Tutorial {
           @Override
           public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {
             try {
-              long ret = socket.write(out);
-              System.out.println("Wrote "+ret+" bytes.");
+              long bytesWritten = socket.write(out);
+              System.out.println("Wrote "+bytesWritten+" bytes.");
               // see if we are done
               if (out.hasRemaining()) {
                 // keep writing

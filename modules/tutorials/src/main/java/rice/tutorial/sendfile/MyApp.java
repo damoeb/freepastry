@@ -111,12 +111,12 @@ public class MyApp implements Application {
           }
 
           @Override
-          public void fileReceived(Path f, ByteBuffer metadata) {
+          public void fileReceived(Path receivedFile, ByteBuffer metadata) {
             try {
               String originalFileName = new SimpleInputBuffer(metadata).readUTF();
               Path dest = Path.of("delme2.txt");
-              System.out.println("Moving "+f+" to "+dest+" original:"+originalFileName);
-              System.out.println(move(f, dest));
+              System.out.println("Moving "+receivedFile+" to "+dest+" original:"+originalFileName);
+              System.out.println(move(receivedFile, dest));
             } catch (IOException ioe) {
               System.out.println("Error deserializing file name. "+ioe);
             }
@@ -166,49 +166,49 @@ public class MyApp implements Application {
     @Override
     public void fileTransferred(FileReceipt receipt,
         long bytesTransferred, long total, boolean incoming) {
-      String s;
+      String direction;
       if (incoming) {
-        s = " Downloaded ";
+        direction = " Downloaded ";
       } else {
-        s = " Uploaded ";
+        direction = " Uploaded ";
       }
       double percent = 100.0*bytesTransferred/total;
-      System.out.println(MyApp.this+s+percent+"% of "+receipt);
+      System.out.println(MyApp.this+direction+percent+"% of "+receipt);
     }
 
     @Override
     public void msgTransferred(ByteBufferReceipt receipt, int bytesTransferred,
         int total, boolean incoming) {
-      String s;
+      String direction;
       if (incoming) {
-        s = " Downloaded ";
+        direction = " Downloaded ";
       } else {
-        s = " Uploaded ";
+        direction = " Uploaded ";
       }
       double percent = 100.0*bytesTransferred/total;
-      System.out.println(MyApp.this+s+percent+"% of "+receipt);
+      System.out.println(MyApp.this+direction+percent+"% of "+receipt);
     }
 
     @Override
     public void transferCancelled(Receipt receipt, boolean incoming) {
-      String s;
+      String directionVerb;
       if (incoming) {
-        s = "download";
+        directionVerb = "download";
       } else {
-        s = "upload";
+        directionVerb = "upload";
       }
-      System.out.println(MyApp.this+": Cancelled "+s+" of "+receipt);
+      System.out.println(MyApp.this+": Cancelled "+directionVerb+" of "+receipt);
     }
 
     @Override
     public void transferFailed(Receipt receipt, boolean incoming) {
-      String s;
+      String directionVerb;
       if (incoming) {
-        s = "download";
+        directionVerb = "download";
       } else {
-        s = "upload";
+        directionVerb = "upload";
       }
-      System.out.println(MyApp.this+": Transfer Failed "+s+" of "+receipt);
+      System.out.println(MyApp.this+": Transfer Failed "+directionVerb+" of "+receipt);
     }
   }
 
@@ -220,11 +220,11 @@ public class MyApp implements Application {
   }
 
   /**
-   * Called to directly send a message to the nh
+   * Called to directly send a message to the node handle
    */
-  public void sendMyMsgDirect(NodeHandle nh) {
-    System.out.println(this+" opening to "+nh);
-    endpoint.connect(nh, new AppSocketReceiver() {
+  public void sendMyMsgDirect(NodeHandle nodeHandle) {
+    System.out.println(this+" opening to "+nodeHandle);
+    endpoint.connect(nodeHandle, new AppSocketReceiver() {
 
       /**
        * Called when the socket comes available.
@@ -253,24 +253,24 @@ public class MyApp implements Application {
 
         try {
           // get the file
-          final Path f = Path.of("delme.txt");
+          final Path file = Path.of("delme.txt");
 
           // make sure it exists
-          if (!Files.exists(f)) {
-            System.err.println("File "+f+" does not exist.  Please create a file called "+f+" and run the tutorial again.");
+          if (!Files.exists(file)) {
+            System.err.println("File "+file+" does not exist.  Please create a file called "+file+" and run the tutorial again.");
             System.exit(1);
           }
 
           // serialize the filename
-          SimpleOutputBuffer sob = new SimpleOutputBuffer();
-          sob.writeUTF(f.getFileName().toString());
+          SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
+          outputBuffer.writeUTF(file.getFileName().toString());
 
           // request transfer of the file with priority 2
-          sender.sendFile(f,sob.getByteBuffer(),(byte)2,new Continuation<FileReceipt, Exception>() {
+          sender.sendFile(file,outputBuffer.getByteBuffer(),(byte)2,new Continuation<FileReceipt, Exception>() {
 
             @Override
             public void receiveException(Exception exception) {
-              System.out.println("Error sending: "+f+" "+exception);
+              System.out.println("Error sending: "+file+" "+exception);
             }
 
             @Override

@@ -167,12 +167,12 @@ public class ScribeTutorial {
   public static void recursivelyPrintChildren(NodeHandle curNode,
       int recursionDepth, Map<NodeHandle, MyScribeClient> appTable) {
     // print self at appropriate tab level
-    String s = "";
+    String line = "";
     for (int numTabs = 0; numTabs < recursionDepth; numTabs++) {
-      s += "  ";
+      line += "  ";
     }
-    s += curNode.getId().toString();
-    System.out.println(s);
+    line += curNode.getId().toString();
+    System.out.println(line);
 
     // recursively print all children
     MyScribeClient app = (MyScribeClient) appTable.get(curNode);

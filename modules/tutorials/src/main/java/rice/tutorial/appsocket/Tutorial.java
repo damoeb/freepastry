@@ -88,8 +88,8 @@ public class Tutorial {
     // construct the PastryNodeFactory
     PastryNodeFactory factory;
     if (useDirect) {
-      NetworkSimulator<DirectNodeHandle,RawMessage> sim = new EuclideanNetwork<DirectNodeHandle,RawMessage>(env);
-      factory = new DirectPastryNodeFactory(nidFactory, sim, env);
+      NetworkSimulator<DirectNodeHandle,RawMessage> networkSimulator = new EuclideanNetwork<DirectNodeHandle,RawMessage>(env);
+      factory = new DirectPastryNodeFactory(nidFactory, networkSimulator, env);
     } else {
       factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
     }
@@ -150,10 +150,10 @@ public class Tutorial {
       // overlaps, then duplicate nodes will be sent to twice
       for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
         // select the item
-        NodeHandle nh = leafSet.get(i);
+        NodeHandle nodeHandle = leafSet.get(i);
 
         // send the message directly to the node
-        app.sendMyMsgDirect(nh);
+        app.sendMyMsgDirect(nodeHandle);
 
         // wait a bit
         env.getTimeSource().sleep(100);

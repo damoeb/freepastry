@@ -54,7 +54,7 @@ import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 
 /**
- * By calling sendMyMsgDirect(NodeHandle nh), this Application opens a socket to MyApp on the requested node, and sends it's Id.
+ * By calling sendMyMsgDirect(NodeHandle nodeHandle), this Application opens a socket to MyApp on the requested node, and sends it's Id.
  *
  * @author Jeff Hoye
  */
@@ -119,11 +119,11 @@ public class MyApp implements Application {
         in.clear();
         try {
           // read from the socket into ins
-          long ret = socket.read(in);
+          long bytesRead = socket.read(in);
 
-          if (ret != MSG_LENGTH) {
+          if (bytesRead != MSG_LENGTH) {
             // if you sent any kind of long message, you would need to handle this case better
-            System.out.println("Error, we only received part of a message."+ret+" from "+socket);
+            System.out.println("Error, we only received part of a message."+bytesRead+" from "+socket);
             return;
           }
 
@@ -155,11 +155,11 @@ public class MyApp implements Application {
   }
 
   /**
-   * Called to directly send a message to the nh
+   * Called to directly send a message to the node handle
    */
-  public void sendMyMsgDirect(NodeHandle nh) {
-    System.out.println(this+" opening to "+nh);
-    endpoint.connect(nh, new AppSocketReceiver() {
+  public void sendMyMsgDirect(NodeHandle nodeHandle) {
+    System.out.println(this+" opening to "+nodeHandle);
+    endpoint.connect(nodeHandle, new AppSocketReceiver() {
 
       /**
        * Called when the socket comes available.

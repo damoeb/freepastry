@@ -157,14 +157,14 @@ class MessageTypeRegistriesTest {
       for (Path file : (Iterable<Path>) files.filter(p -> p.toString().endsWith(".class"))::iterator) {
         String relative = root.relativize(file).toString();
         String name = relative.substring(0, relative.length() - ".class".length()).replace(file.getFileSystem().getSeparator(), ".");
-        Class<?> c;
+        Class<?> candidateClass;
         try {
-          c = Class.forName(name, false, loader);
+          candidateClass = Class.forName(name, false, loader);
         } catch (ClassNotFoundException | LinkageError e) {
           continue;
         }
-        if (c.isEnum() && MessageTypeId.class.isAssignableFrom(c)) {
-          registries.add(c);
+        if (candidateClass.isEnum() && MessageTypeId.class.isAssignableFrom(candidateClass)) {
+          registries.add(candidateClass);
         }
       }
     }

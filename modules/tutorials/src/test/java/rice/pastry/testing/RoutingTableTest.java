@@ -156,10 +156,10 @@ public class RoutingTableTest {
 
   public void startLoggerTask() {
     env.getSelectorManager().getTimer().schedule(new TimerTask() {
-      int ctr = 0;
+      int round = 0;
       @Override
       public void run() {
-        testRoutingTables(ctr++);
+        testRoutingTables(round++);
       }
     },reportRate,reportRate);
 
@@ -175,22 +175,22 @@ public class RoutingTableTest {
     public CreatorTimerTask() {
     }
 
-    int ctr = 0;
+    int createdNodeCount = 0;
     @Override
     public void run() {
       try {
         createNode();
-      } catch (Exception ie) {
-        logger.warn("Could not create a node", ie);
+      } catch (Exception exception) {
+        logger.warn("Could not create a node", exception);
       }
       synchronized(this) {
-        ctr++;
+        createdNodeCount++;
 
-        if (ctr %100 == 0) {
-          System.out.println("Created "+ctr+" nodes.");
+        if (createdNodeCount %100 == 0) {
+          System.out.println("Created "+createdNodeCount+" nodes.");
         }
 
-        if (ctr >= numNodes) {
+        if (createdNodeCount >= numNodes) {
           startLoggerTask();
           cancel();
         }
@@ -199,8 +199,8 @@ public class RoutingTableTest {
   }
 
   public void createNodes() throws InterruptedException {
-    CreatorTimerTask ctt = new CreatorTimerTask();
-    env.getSelectorManager().getTimer().schedule(ctt,1000,1000);
+    CreatorTimerTask creatorTimerTask = new CreatorTimerTask();
+    env.getSelectorManager().getTimer().schedule(creatorTimerTask,1000,1000);
   }
 
   public void sendSomeMessages() {
@@ -303,13 +303,13 @@ public class RoutingTableTest {
     node.addPastryNodeListener(new PastryNodeListener() {
 
       @Override
-      public void pastryNodeReady(PastryNode o, boolean ready) {
-        System.out.println("Observing "+o+" "+ready);
+      public void pastryNodeReady(PastryNode observedNode, boolean ready) {
+        System.out.println("Observing "+observedNode+" "+ready);
       }
 
       @Override
-      public void pastryNodeJoinFailed(PastryNode o, JoinFailedException reason) {
-        System.out.println("Observing "+o+" "+reason);
+      public void pastryNodeJoinFailed(PastryNode observedNode, JoinFailedException reason) {
+        System.out.println("Observing "+observedNode+" "+reason);
       }
     });
 
@@ -320,8 +320,8 @@ public class RoutingTableTest {
       try {
         createNode(); // create a new node every time we
                               // destroy one
-      } catch (Exception ie) {
-        logger.warn("Could not replace the destroyed node", ie);
+      } catch (Exception exception) {
+        logger.warn("Could not replace the destroyed node", exception);
       }
     });
 
@@ -338,7 +338,7 @@ public class RoutingTableTest {
       node.addPastryNodeListener(new PastryNodeListener() {
 
       @Override
-      public void pastryNodeReady(PastryNode o, boolean ready) {
+      public void pastryNodeReady(PastryNode observedNode, boolean ready) {
         if (!ready) return;
 
         node.removePastryNodeListener(this);
@@ -346,7 +346,7 @@ public class RoutingTableTest {
       }
 
       @Override
-      public void pastryNodeJoinFailed(PastryNode o, JoinFailedException arg) {
+      public void pastryNodeJoinFailed(PastryNode observedNode, JoinFailedException reason) {
           node.destroy();
       }
 
@@ -415,15 +415,15 @@ public class RoutingTableTest {
   }
 
   private void testLeafSets() {
-    ArrayList<PastryNode> nds = new ArrayList<PastryNode>(nodes);
-    Collections.sort(nds,(one, two) -> {
-      PastryNode n1 = (PastryNode)one;
-      PastryNode n2 = (PastryNode)two;
-      return n1.getId().compareTo(n2.getId());
+    ArrayList<PastryNode> sortedNodes = new ArrayList<PastryNode>(nodes);
+    Collections.sort(sortedNodes,(first, second) -> {
+      PastryNode firstNode = (PastryNode)first;
+      PastryNode secondNode = (PastryNode)second;
+      return firstNode.getId().compareTo(secondNode.getId());
     });
 
-    for (PastryNode n : nds) {
-      System.out.println(n.isReady()+" "+n.getLeafSet());
+    for (PastryNode node : sortedNodes) {
+      System.out.println(node.isReady()+" "+node.getLeafSet());
     }
   }
 
@@ -441,16 +441,16 @@ public class RoutingTableTest {
     }
     System.out.println(round+","+stretch+","+holes+" numNodes:"+nodes.size());
     if (round%50 == 0) {
-      PastryNode pn = nodes.get(nodes.size()/2);
-      System.out.println(pn.getRoutingTable().printSelf());
-      System.out.println(pn.getLeafSet());
+      PastryNode middleNode = nodes.get(nodes.size()/2);
+      System.out.println(middleNode.getRoutingTable().printSelf());
+      System.out.println(middleNode.getLeafSet());
       byte[] randomMaterial = new byte[20];
-      pn.getEnvironment().getRandomSource().nextBytes(randomMaterial);
+      middleNode.getEnvironment().getRandomSource().nextBytes(randomMaterial);
       rice.pastry.Id key = rice.pastry.Id.build(randomMaterial);
       System.out.println("Key "+key.toStringBare());
-      Iterator<NodeHandle> i = pn.getRouter().getBestRoutingCandidates(key);
-      while(i.hasNext()) {
-        System.out.println(i.next());
+      Iterator<NodeHandle> routingCandidates = middleNode.getRouter().getBestRoutingCandidates(key);
+      while(routingCandidates.hasNext()) {
+        System.out.println(routingCandidates.next());
       }
     }
   }
@@ -464,8 +464,8 @@ public class RoutingTableTest {
   private double testRoutingTables1() {
 
     // for each node
-    int ctr = 0;
-    double acc = 0;
+    int pairCount = 0;
+    double stretchSum = 0;
     for (PastryNode node : nodes) {
       for (PastryNode that : nodes) {
         if ((that != node) && that.isReady() && node.isReady()) {
@@ -479,12 +479,12 @@ public class RoutingTableTest {
             latency = proximity;
           }
           double stretch = (1.0*latency)/(1.0*proximity);
-          acc+=stretch;
-          ctr++;
+          stretchSum+=stretch;
+          pairCount++;
         }
       }
     }
-    return acc/ctr;
+    return stretchSum/pairCount;
   }
 
   // the simulated nodes are compared by identity on purpose: a node is only ever equal to itself
@@ -492,8 +492,8 @@ public class RoutingTableTest {
   private double testRoutingTables1a() {
 
     // for each node
-    int ctr = 0;
-    double acc = 0;
+    int pairCount = 0;
+    double stretchSum = 0;
     RandomSource rand = env.getRandomSource();
     for (int i = 0; i < 1000000; i++) {
       PastryNode node = (PastryNode)nodes.get(rand.nextInt(nodes.size()));
@@ -509,163 +509,163 @@ public class RoutingTableTest {
           latency = proximity;
         }
         double stretch = (1.0*latency)/(1.0*proximity);
-        acc+=stretch;
-        ctr++;
+        stretchSum+=stretch;
+        pairCount++;
       }
     }
-    return acc/ctr;
+    return stretchSum/pairCount;
   }
 
   private int testRoutingTables2() {
     // for each node
     int curNodeIndex = 0;
-    int ctr = 0;
-    int[] ctrs = new int[5];
+    int holeCount = 0;
+    int[] holeCountByResponse = new int[5];
     for (PastryNode node : nodes) {
       if (!node.isReady()) continue;
-      PastryNode temp = DirectPastryNode.setCurrentNode(node);
-      RoutingTable rt = node.getRoutingTable();
+      PastryNode previousCurrentNode = DirectPastryNode.setCurrentNode(node);
+      RoutingTable routingTable = node.getRoutingTable();
       for (PastryNode that : nodes) {
         if (!that.isReady()) continue;
         NodeHandle thatHandle = that.getLocalHandle();
-        int response = rt.test(thatHandle);
+        int response = routingTable.test(thatHandle);
         if (response > 1) {
-          ctrs[response]++;
-          ctr++;
+          holeCountByResponse[response]++;
+          holeCount++;
           if (logHeavy)
             System.out.println(response+": ("+curNodeIndex+")"+node+" could have held "+thatHandle);
         }
       }
-      DirectPastryNode.setCurrentNode(temp);
+      DirectPastryNode.setCurrentNode(previousCurrentNode);
       curNodeIndex++;
     }
-    return ctr;
+    return holeCount;
   }
 
   private int testRoutingTables2a() {
     // for each node
     int curNodeIndex = 0;
-    int ctr = 0;
-    int[] ctrs = new int[5];
+    int holeCount = 0;
+    int[] holeCountByResponse = new int[5];
     RandomSource rand = env.getRandomSource();
     for (int i = 0; i < 1000000; i++) {
       PastryNode node = (PastryNode)nodes.get(rand.nextInt(nodes.size()));
       if (!node.isReady()) continue;
-      PastryNode temp = DirectPastryNode.setCurrentNode(node);
-      RoutingTable rt = node.getRoutingTable();
+      PastryNode previousCurrentNode = DirectPastryNode.setCurrentNode(node);
+      RoutingTable routingTable = node.getRoutingTable();
       PastryNode that = (PastryNode)nodes.get(rand.nextInt(nodes.size()));
 
         if (!that.isReady()) continue;
         NodeHandle thatHandle = that.getLocalHandle();
-        int response = rt.test(thatHandle);
+        int response = routingTable.test(thatHandle);
         if (response > 1) {
-          ctrs[response]++;
-          ctr++;
+          holeCountByResponse[response]++;
+          holeCount++;
           if (logHeavy)
             System.out.println(response+": ("+curNodeIndex+")"+node+" could have held "+thatHandle);
         }
 
-      DirectPastryNode.setCurrentNode(temp);
+      DirectPastryNode.setCurrentNode(previousCurrentNode);
       curNodeIndex++;
     }
-    return ctr;
+    return holeCount;
   }
 
   // recursively calculate the latency
   private int calcLatency(PastryNode node, NodeHandle thatHandle) {
-      RoutingTable rt = node.getRoutingTable();
-      LeafSet ls = node.getLeafSet();
+      RoutingTable routingTable = node.getRoutingTable();
+      LeafSet leafSet = node.getLeafSet();
       thePenalty = 0;
-      NodeHandle next = getNextHop(rt, ls, thatHandle, node);
+      NodeHandle next = getNextHop(routingTable, leafSet, thatHandle, node);
       int penalty = thePenalty;
       if (Objects.equals(next, thatHandle)) return node.proximity(thatHandle);  // base case
-      DirectNodeHandle dnh = (DirectNodeHandle)next;
-      PastryNode nextNode = dnh.getRemote();
+      DirectNodeHandle directNodeHandle = (DirectNodeHandle)next;
+      PastryNode nextNode = directNodeHandle.getRemote();
       return penalty+node.proximity(next)+calcLatency(nextNode, thatHandle); // recursive case
   }
 
   int thePenalty = 0;  // the penalty for trying non-alive nodes
-  private NodeHandle getNextHop(RoutingTable rt, LeafSet ls, NodeHandle thatHandle, PastryNode localNode) {
+  private NodeHandle getNextHop(RoutingTable routingTable, LeafSet leafSet, NodeHandle thatHandle, PastryNode localNode) {
     rice.pastry.Id target = (rice.pastry.Id)thatHandle.getId();
 
-    int cwSize = ls.clockwiseSize();
-    int ccwSize = ls.counterClockwiseSize();
+    int cwSize = leafSet.clockwiseSize();
+    int ccwSize = leafSet.counterClockwiseSize();
 
-    int lsPos = ls.mostSimilar(target);
+    int leafSetIndex = leafSet.mostSimilar(target);
 
-    if (lsPos == 0) // message is for the local node so deliver it
+    if (leafSetIndex == 0) // message is for the local node so deliver it
       throw new RuntimeException("can't happen: probably a partition");
 
-    else if ((lsPos > 0 && (lsPos < cwSize || !ls.get(lsPos).getNodeId()
+    else if ((leafSetIndex > 0 && (leafSetIndex < cwSize || !leafSet.get(leafSetIndex).getNodeId()
         .clockwise(target)))
-        || (lsPos < 0 && (-lsPos < ccwSize || ls.get(lsPos).getNodeId()
+        || (leafSetIndex < 0 && (-leafSetIndex < ccwSize || leafSet.get(leafSetIndex).getNodeId()
             .clockwise(target)))) {
 
     // the target is within range of the leafset, deliver it directly
-      NodeHandle handle = ls.get(lsPos);
+      NodeHandle handle = leafSet.get(leafSetIndex);
 
       if (handle.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
         // node is dead - get rid of it and try again
         thePenalty += timeToFindFaulty; // rtt*2
-        LeafSet ls2 = ls.copy();
-        ls2.remove(handle);
-        return getNextHop(rt, ls2, thatHandle, localNode);
+        LeafSet leafSetWithoutDeadNode = leafSet.copy();
+        leafSetWithoutDeadNode.remove(handle);
+        return getNextHop(routingTable, leafSetWithoutDeadNode, thatHandle, localNode);
       } else {
         return handle;
       }
     } else {
       // use the routing table
-      RouteSet rs = rt.getBestEntry(target);
+      RouteSet routeSet = routingTable.getBestEntry(target);
       NodeHandle handle = null;
 
       // apply penalty if node was not alive
       NodeHandle notAlive = null;
-      if (rs != null
-          && ((notAlive = rs.closestNode(10)) != null)) {
+      if (routeSet != null
+          && ((notAlive = routeSet.closestNode(10)) != null)) {
         if ((notAlive != null) && notAlive.getLiveness() >= NodeHandle.LIVENESS_DEAD) thePenalty+=localNode.proximity(notAlive)*4;
       }
 
-      if (rs == null
-          || ((handle = rs.closestNode(NodeHandle.LIVENESS_ALIVE)) == null)) {
+      if (routeSet == null
+          || ((handle = routeSet.closestNode(NodeHandle.LIVENESS_ALIVE)) == null)) {
 
         // penalize for choosing dead route
-        NodeHandle notAlive2 = rt.bestAlternateRoute(10,
+        NodeHandle notAliveAlternate = routingTable.bestAlternateRoute(10,
             target);
-        if (Objects.equals(notAlive2, notAlive)) {
+        if (Objects.equals(notAliveAlternate, notAlive)) {
           // don't doublePenalize
         } else {
-          if ((notAlive2 != null) && notAlive2.getLiveness() >= NodeHandle.LIVENESS_DEAD) thePenalty+=localNode.proximity(notAlive2)*4;
+          if ((notAliveAlternate != null) && notAliveAlternate.getLiveness() >= NodeHandle.LIVENESS_DEAD) thePenalty+=localNode.proximity(notAliveAlternate)*4;
         }
 
         // no live routing table entry matching the next digit
         // get best alternate RT entry
-        handle = rt.bestAlternateRoute(NodeHandle.LIVENESS_ALIVE,
+        handle = routingTable.bestAlternateRoute(NodeHandle.LIVENESS_ALIVE,
             target);
 
         if (handle == null) {
           // no alternate in RT, take leaf set extent
-          handle = ls.get(lsPos);
+          handle = leafSet.get(leafSetIndex);
 
           if (handle.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
             thePenalty += timeToFindFaulty;
-            LeafSet ls2 = ls.copy();
-            ls2.remove(handle);
-            return getNextHop(rt, ls2, thatHandle, localNode);
+            LeafSet leafSetWithoutDeadNode = leafSet.copy();
+            leafSetWithoutDeadNode.remove(handle);
+            return getNextHop(routingTable, leafSetWithoutDeadNode, thatHandle, localNode);
           }
         } else {
-          Id.Distance altDist = handle.getNodeId().distance(target);
-          Id.Distance lsDist = ls.get(lsPos).getNodeId().distance(
+          Id.Distance alternateDistance = handle.getNodeId().distance(target);
+          Id.Distance leafSetDistance = leafSet.get(leafSetIndex).getNodeId().distance(
               target);
 
-          if (lsDist.compareTo(altDist) < 0) {
+          if (leafSetDistance.compareTo(alternateDistance) < 0) {
             // closest leaf set member is closer
-            handle = ls.get(lsPos);
+            handle = leafSet.get(leafSetIndex);
 
             if (handle.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
               thePenalty += timeToFindFaulty;
-              LeafSet ls2 = ls.copy();
-              ls2.remove(handle);
-              return getNextHop(rt, ls2, thatHandle, localNode);
+              LeafSet leafSetWithoutDeadNode = leafSet.copy();
+              leafSetWithoutDeadNode.remove(handle);
+              return getNextHop(routingTable, leafSetWithoutDeadNode, thatHandle, localNode);
             }
           }
         }
@@ -724,13 +724,13 @@ public class RoutingTableTest {
     }
 
     /**
-     * Called to directly send a message to the nh
+     * Called to directly send a message to the node handle
      */
-    public void routeMyMsgDirect(NodeHandle nh) {
+    public void routeMyMsgDirect(NodeHandle nodeHandle) {
       if (logHeavy)
-        System.out.println(this+" sending direct to "+nh);
-      MyMsg msg = new MyMsg(endpoint.getId(), nh.getId());
-      endpoint.route(null, msg, nh);
+        System.out.println(this+" sending direct to "+nodeHandle);
+      MyMsg msg = new MyMsg(endpoint.getId(), nodeHandle.getId());
+      endpoint.route(null, msg, nodeHandle);
     }
 
     /**

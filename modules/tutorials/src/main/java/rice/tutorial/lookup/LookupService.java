@@ -208,27 +208,27 @@ public class LookupService implements Application {
   }
 
   protected void sendMessageWithRetries(final Id id, final int num, final Continuation<NodeHandleSet, Exception> cont) {
-    final int seq = seqno++;
-    sendMessage(seq, id, num, new Continuation<NodeHandleSet, Exception>() {
-      long t = firstTimeout; // how long our current timeout is
+    final int sequenceNumber = seqno++;
+    sendMessage(sequenceNumber, id, num, new Continuation<NodeHandleSet, Exception>() {
+      long currentTimeout = firstTimeout; // how long our current timeout is
 
-      long cum = 0; // how long we've been waiting total
+      long totalWaitMillis = 0; // how long we've been waiting total
 
       @Override
       public void receiveException(Exception exception) {
         if (exception instanceof NodeLookupTimeoutException) {
-          cum += t;
+          totalWaitMillis += currentTimeout;
           // have we hit our final timeout?
-          if (cum < timeout) {
-            t *= 2;
-            // would we surpass our final timeout wit the new t?
-            if (cum + t < timeout) {
+          if (totalWaitMillis < timeout) {
+            currentTimeout *= 2;
+            // would we surpass our final timeout wit the new currentTimeout?
+            if (totalWaitMillis + currentTimeout < timeout) {
               // retransmit: same sequence number, same continuation, new timeout
-              sendMessage(seq, id, num, this, t);
+              sendMessage(sequenceNumber, id, num, this, currentTimeout);
             } else {
               // for some values of firstTimeout,timeout this will retransmit
               // the last time with stupidly low timeouts
-              sendMessage(seq, id, num, this, timeout - cum);
+              sendMessage(sequenceNumber, id, num, this, timeout - totalWaitMillis);
             }
           } else {
             cont.receiveException(exception);
@@ -257,13 +257,13 @@ public class LookupService implements Application {
    * @param cont
    *                the continuation to return the result to
    */
-  protected void sendMessage(int seq, Id id, int num, Continuation<NodeHandleSet, Exception> cont, long timeout) {
-    pending.put(seq, cont);
+  protected void sendMessage(int sequenceNumber, Id id, int num, Continuation<NodeHandleSet, Exception> cont, long timeout) {
+    pending.put(sequenceNumber, cont);
 
-    logger.trace("NodeLookup being sent to id  {} with sequence number {}", id, seq);
+    logger.trace("NodeLookup being sent to id  {} with sequence number {}", id, sequenceNumber);
 
-    endpoint.route(id, new NodeLookupQuery(endpoint.getLocalNodeHandle(), num, seq), null);
-    endpoint.scheduleMessage(new NodeLookupTimeout(seq), timeout);
+    endpoint.route(id, new NodeLookupQuery(endpoint.getLocalNodeHandle(), num, sequenceNumber), null);
+    endpoint.scheduleMessage(new NodeLookupTimeout(sequenceNumber), timeout);
   }
 
   /**

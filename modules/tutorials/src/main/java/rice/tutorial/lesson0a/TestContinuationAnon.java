@@ -59,8 +59,8 @@ public class TestContinuationAnon {
     past.lookup(id, new Continuation<PastContent, Exception>() {
       // will be called if success in the lookup
       @Override
-      public void receiveResult(PastContent pc) {
-        System.out.println("Received a "+pc);
+      public void receiveResult(PastContent pastContent) {
+        System.out.println("Received a "+pastContent);
       }
 
       // will be called if failure in the lookup

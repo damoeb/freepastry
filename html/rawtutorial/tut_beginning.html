@@ -422,12 +422,12 @@ the node.  You can use the <code>Endpoint.route()</code> method to accomplish
 this by passing a <code>null</code> argument as the Id and the target node's NodeHandle as the "hint" argument.
 <pre>
   /**
-   * Called to directly send a message to the nh
+   * Called to directly send a message to the node handle
    */
-  public void routeMyMsgDirect(NodeHandle nh) {
-    System.out.println(this+" sending direct to "+nh);
-    MyMsg msg = new MyMsg(endpoint.getId(), nh.getId());
-    endpoint.route(null, msg, nh);
+  public void routeMyMsgDirect(NodeHandle nodeHandle) {
+    System.out.println(this+" sending direct to "+nodeHandle);
+    MyMsg msg = new MyMsg(endpoint.getId(), nodeHandle.getId());
+    endpoint.route(null, msg, nodeHandle);
   }</pre>
 
 <h4>Receiving a message:</h4>
@@ -486,10 +486,10 @@ Here is the new code we will add to the bottom of the DistTutorial constructor, 
     for (int i=-leafSet.counterClockwiseSize(); i&lt;=leafSet.clockwiseSize(); i++) {
       if (i != 0) { // don't send to self
         // select the item
-        NodeHandle nh = leafSet.get(i);
+        NodeHandle nodeHandle = leafSet.get(i);
 
         // send the message directly to the node
-        app.routeMyMsgDirect(nh);
+        app.routeMyMsgDirect(nodeHandle);
 
         // wait a sec
         env.getTimeSource().sleep(1000);
@@ -537,7 +537,7 @@ Don't send to myself.  The local node is node zero in the leafset.
   
 Extract the nodehandle at that index.
   <pre>
-          NodeHandle nh = leafSet.get(i);</pre>
+          NodeHandle nodeHandle = leafSet.get(i);</pre>
   
 Wait a second and repeat.
   <pre>
@@ -546,7 +546,7 @@ Wait a second and repeat.
   
 Send the message.
   <pre>
-          app.routeMyMsgDirect(nh);   
+          app.routeMyMsgDirect(nodeHandle);   
       }</pre>  
 
   
