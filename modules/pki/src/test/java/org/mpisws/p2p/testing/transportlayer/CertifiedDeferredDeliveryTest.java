@@ -1,6 +1,7 @@
 package org.mpisws.p2p.testing.transportlayer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.ALICE;
 import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.BOB;
@@ -12,14 +13,21 @@ import static org.mpisws.p2p.testing.transportlayer.CertifiedAdmissionTest.store
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,17 +45,17 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.DeferredDeliveries;
 import rice.pastry.PastryNode;
 import rice.pastry.socket.CertifiedSocketPastryNodeFactory;
+import rice.pastry.socket.SocketNodeHandle;
 
 /**
  * End to end, on loopback with real sockets and TLS: a routed application message whose previous hop is not
  * authenticated yet is held back from the application. It is delivered, in order, once the TLS check of the hop
- * succeeds, and never if the check fails.
+ * succeeds, and never if the check fails (a TLS handshake with a peer whose certificate the node does not trust).
  */
 class CertifiedDeferredDeliveryTest {
 
   static final short TYPE = 77;
   static final int MESSAGES = 5;
-  static final int MARKER = 99;
   static final int WAIT_SECONDS = 5;
 
   final List<Environment> environments = new ArrayList<>();
@@ -117,27 +125,59 @@ class CertifiedDeferredDeliveryTest {
   }
 
   @Test
-  @DisplayName("routed messages whose previous hop fails the check never reach the application")
+  @DisplayName("routed messages whose previous hop fails the TLS check never reach the application")
   void messagesFromAHopThatFailsTheCheckAreNeverDelivered() throws Exception {
     routeFromBToA(0, 1, 2, 3, 4);
     await(() -> waiting(a) == MESSAGES || !receiverA.received.isEmpty(), "B's messages wait at A or reached A's application");
     assertEquals(List.of(), receiverA.received, "numbers A's application got although B was never verified");
 
-    // the check of B ends in failure, as when the certificate does not match or the connection is refused
-    onSelector(a, () -> {
-      a.identityResolved(BOB, false);
-      return null;
-    });
-    assertEquals(0, waiting(a));
+    // B goes away and an impostor takes its address: a TLS server with a certificate for B's id from a CA that A
+    // does not trust, so the handshake of A's check fails
+    rice.pastry.NodeHandle bobAtA = onSelector(a, () -> a.getLeafSet().asList().stream().filter(h -> h.getNodeId().equals(BOB)).findFirst().orElseThrow());
+    InetSocketAddress addressB = ((SocketNodeHandle) b.getLocalHandle()).getInetSocketAddress();
+    b.destroy();
+    try (Impostor impostor = new Impostor(store(ca(), BOB), addressB)) {
+      onSelector(a, () -> {
+        a.setIdentityPolicy(realPolicyOfA);
+        return a.acceptsIdentity(bobAtA);
+      });
 
-    // let B be verified now and send one more: once it arrives, anything still in flight from before would have too
-    onSelector(a, () -> {
-      a.setIdentityPolicy(realPolicyOfA);
-      return null;
-    });
-    routeFromBToA(MARKER);
-    await(() -> receiverA.received.contains(MARKER), "A's application got the message sent after B was verified");
-    assertEquals(List.of(MARKER), receiverA.received, "numbers of the messages A's application got");
+      await(() -> waiting(a) == 0, "A dropped B's messages");
+      assertTrue(impostor.connections.get() > 0, "A's check reached the impostor");
+    }
+    assertEquals(List.of(), receiverA.received, "numbers A's application got although B failed the check");
+    assertFalse(factoryA.getCertifiedIdBindStrategy().isAuthenticated(BOB), "A authenticated B's id");
+  }
+
+  /** a TLS server whose certificate the node does not trust; it counts the connections it gets */
+  static final class Impostor implements AutoCloseable {
+    final AtomicInteger connections = new AtomicInteger();
+    final SSLServerSocket server;
+
+    Impostor(KeyStore store, InetSocketAddress address) throws Exception {
+      KeyManagerFactory keys = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      keys.init(store, NO_PASSWORD);
+      SSLContext context = SSLContext.getInstance("TLS");
+      context.init(keys.getKeyManagers(), null, null);
+      server = (SSLServerSocket) context.getServerSocketFactory().createServerSocket();
+      server.setReuseAddress(true);
+      server.bind(address);
+      Thread.ofVirtual().start(() -> {
+        while (!server.isClosed()) {
+          try (SSLSocket socket = (SSLSocket) server.accept()) {
+            connections.incrementAndGet();
+            socket.startHandshake();
+          } catch (IOException e) {
+            // the node refuses the certificate, or the test closed the server
+          }
+        }
+      });
+    }
+
+    @Override
+    public void close() throws IOException {
+      server.close();
+    }
   }
 
   /** B's application routes messages with these numbers to A's id; A is B's only neighbour, so it is one hop */
@@ -173,11 +213,14 @@ class CertifiedDeferredDeliveryTest {
   @SuppressWarnings("unchecked")
   static void forget(CertifiedSocketPastryNodeFactory factory, rice.pastry.Id id) throws ReflectiveOperationException {
     var strategy = factory.getCertifiedIdBindStrategy();
-    for (String name : new String[] {"authenticated", "pending"}) {
-      java.lang.reflect.Field field = strategy.getClass().getDeclaredField(name);
-      field.setAccessible(true);
-      synchronized (strategy) {
-        ((java.util.Map<rice.pastry.Id, Boolean>) field.get(strategy)).remove(id);
+    // every state the strategy keeps, by id or by handle
+    for (java.lang.reflect.Field field : strategy.getClass().getDeclaredFields()) {
+      if (java.util.Map.class.isAssignableFrom(field.getType())) {
+        field.setAccessible(true);
+        synchronized (strategy) {
+          ((java.util.Map<Object, ?>) field.get(strategy)).keySet().removeIf(key ->
+              id.equals(key) || (key instanceof rice.pastry.NodeHandle handle && id.equals(handle.getNodeId())));
+        }
       }
     }
   }
