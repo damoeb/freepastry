@@ -86,8 +86,8 @@ public abstract class GlacierKeyRange implements IdRange {
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
   @Override
-  public Id getCCWId() {
-    return toKey(range.getCCWId());
+  public Id getCounterClockwiseBound() {
+    return toKey(range.getCounterClockwiseBound());
   }
 
   /**
@@ -96,8 +96,8 @@ public abstract class GlacierKeyRange implements IdRange {
    * @return the id at the clockwise edge of the range (exclusive)
    */
   @Override
-  public Id getCWId() {
-    return toKey(range.getCWId());
+  public Id getClockwiseBound() {
+    return toKey(range.getClockwiseBound());
   }
 
   /**

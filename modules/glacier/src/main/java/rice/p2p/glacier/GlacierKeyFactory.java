@@ -105,8 +105,8 @@ public abstract class GlacierKeyFactory implements IdFactory {
   }
 
   @Override
-  public Id buildIdFromToString(char[] chars, int offset, int length) {
-    return buildIdFromToString(new String(chars, offset, length));
+  public Id buildIdFromString(char[] chars, int offset, int length) {
+    return buildIdFromString(new String(chars, offset, length));
   }
 
   /**

@@ -132,8 +132,8 @@ final class GlacierSyncProtocol {
       public void receiveResult(Object o) {
         if (o instanceof GlacierRangeResponseMessage grrm) {
 
-          Id ccwId = locator.getFragmentLocation(grrm.getCommonRange().getCCWId(), numFragments-offset, 0);
-          Id cwId = locator.getFragmentLocation(grrm.getCommonRange().getCWId(), numFragments-offset, 0);
+          Id ccwId = locator.getFragmentLocation(grrm.getCommonRange().getCounterClockwiseBound(), numFragments-offset, 0);
+          Id cwId = locator.getFragmentLocation(grrm.getCommonRange().getClockwiseBound(), numFragments-offset, 0);
           final IdRange originalRange = factory.buildIdRange(ccwId, cwId);
 
           logger.info("Range response (offset: {}): {}, original={}", offset, grrm.getCommonRange(), originalRange);
@@ -202,8 +202,8 @@ final class GlacierSyncProtocol {
           offset = 1+environment.getRandomSource().nextInt(numFragments-1);
 
           Id dest = locator.getFragmentLocation(router.getLocalNodeHandle().getId(), offset, 0);
-          Id ccwId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getCCWId(), offset, 0);
-          Id cwId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getCWId(), offset, 0);
+          Id ccwId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getCounterClockwiseBound(), offset, 0);
+          Id cwId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getClockwiseBound(), offset, 0);
           IdRange requestedRange = factory.buildIdRange(ccwId, cwId);
 
           logger.info("Sending range query for ({}) to {}", requestedRange, dest);

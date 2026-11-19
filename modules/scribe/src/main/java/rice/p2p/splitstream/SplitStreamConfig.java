@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.splitstream;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requireNonNegative;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -64,12 +64,12 @@ public record SplitStreamConfig(
    */
   public static SplitStreamConfig fromParameters(Parameters p) {
     return new SplitStreamConfig(
-      nonNegative("p2p_splitStream_policy_default_maximum_children",
+      requireNonNegative("p2p_splitStream_policy_default_maximum_children",
           p.getInt("p2p_splitStream_policy_default_maximum_children")),
-      nonNegative("p2p_splitStream_stripe_max_failed_subscription",
+      requireNonNegative("p2p_splitStream_stripe_max_failed_subscription",
           p.getInt("p2p_splitStream_stripe_max_failed_subscription")),
-      positive("p2p_splitStream_stripeBaseBitLength", p.getInt("p2p_splitStream_stripeBaseBitLength")),
-      nonNegative("p2p_splitStream_stripe_max_failed_subscription_retry_delay",
+      requirePositive("p2p_splitStream_stripeBaseBitLength", p.getInt("p2p_splitStream_stripeBaseBitLength")),
+      requireNonNegative("p2p_splitStream_stripe_max_failed_subscription_retry_delay",
           p.getInt("p2p_splitStream_stripe_max_failed_subscription_retry_delay")));
   }
 }

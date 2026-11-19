@@ -87,7 +87,7 @@ public class VersionKeyFactory extends GlacierKeyFactory {
    * @return the key
    */
   @Override
-  public Id buildIdFromToString(String string) {
+  public Id buildIdFromString(String string) {
     StringTokenizer stok = new StringTokenizer(string, "(,)- :v#");
     if (stok.countTokens() < 3) {
       return null;
@@ -136,7 +136,7 @@ public class VersionKeyFactory extends GlacierKeyFactory {
   }
 
   @Override
-  public int getIdToStringLength() {
-    return factory.getIdToStringLength() + 13;
+  public int getIdStringLength() {
+    return factory.getIdStringLength() + 13;
   }
 }

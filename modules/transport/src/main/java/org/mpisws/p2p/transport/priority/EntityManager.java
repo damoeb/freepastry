@@ -444,7 +444,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
     }
 
     for (Tuple<MessageCallback<Identifier, ByteBuffer>, MessageWrapper<Identifier>> t : callSendFailed) {
-      t.a().sendFailed(t.b(), ioe);
+      t.first().sendFailed(t.second(), ioe);
     }
 
     synchronized(sockets) {

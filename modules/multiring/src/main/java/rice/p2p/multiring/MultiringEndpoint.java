@@ -150,7 +150,7 @@ public class MultiringEndpoint implements Endpoint {
           return endpoint.route(mId.getId(), message, null, deliverAckToMe, options);
         }
       } else {
-        return node.getCollection().route(mId, message, getInstance(), deliverAckToMe, options);
+        return node.getCollection().route(mId, message, getApplicationInstanceName(), deliverAckToMe, options);
       }
     }
   }
@@ -342,8 +342,8 @@ public class MultiringEndpoint implements Endpoint {
    * @return The unique instance name of this application
    */
   @Override
-  public String getInstance() {
-    return "multiring" + endpoint.getInstance();
+  public String getApplicationInstanceName() {
+    return "multiring" + endpoint.getApplicationInstanceName();
   }
 
   @Override
@@ -441,8 +441,8 @@ public class MultiringEndpoint implements Endpoint {
   }
 
   @Override
-  public void setConsistentRouting(boolean val) {
-    endpoint.setConsistentRouting(val);
+  public void setRoutingConsistencyRequired(boolean val) {
+    endpoint.setRoutingConsistencyRequired(val);
   }
 
   @Override

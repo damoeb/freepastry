@@ -61,7 +61,7 @@ class MetadataIndexTest {
   }
 
   private Id storedId(String hex) throws IOException {
-    Id id = factory.buildIdFromToString(PREFIX + hex);
+    Id id = factory.buildIdFromString(PREFIX + hex);
     Files.createFile(dir.resolve(id.toStringFull().substring(PREFIX.length())));
     return id;
   }
@@ -122,7 +122,7 @@ class MetadataIndexTest {
   }
 
   private Id fullId(String firstHexDigit, String lastHexDigit) throws IOException {
-    Id id = factory.buildIdFromToString(firstHexDigit + "0".repeat(38) + lastHexDigit);
+    Id id = factory.buildIdFromString(firstHexDigit + "0".repeat(38) + lastHexDigit);
     Files.createFile(dir.resolve(id.toStringFull()));
     return id;
   }
@@ -134,7 +134,7 @@ class MetadataIndexTest {
     Id high = fullId("F", "1");
     IdRange wrapping = factory.buildIdRange(fullId("E", "0"), fullId("2", "0"));
     if (! wrapping.containsId(low)) {
-      wrapping = factory.buildIdRange(wrapping.getCWId(), wrapping.getCCWId());
+      wrapping = factory.buildIdRange(wrapping.getClockwiseBound(), wrapping.getCounterClockwiseBound());
     }
     assertTrue(wrapping.containsId(low) && wrapping.containsId(high) && ! wrapping.containsId(middle));
     IdRange range = wrapping;

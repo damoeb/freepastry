@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.direct;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import java.util.OptionalLong;
 
@@ -69,7 +69,7 @@ public record NetworkSimulatorConfig(
     return new NetworkSimulatorConfig(
       p.contains("pastry_direct_use_own_random") && p.getBoolean("pastry_direct_use_own_random"),
       EnvironmentConfig.seed(p, "pastry_direct_random_seed"),
-      positive("pastry_direct_max_diameter", p.getInt("pastry_direct_max_diameter")),
+      requirePositive("pastry_direct_max_diameter", p.getInt("pastry_direct_max_diameter")),
       p.getBoolean("pastry_direct_guarantee_consistency"));
   }
 }

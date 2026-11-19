@@ -167,7 +167,7 @@ class NotReadyDeliveryTest {
 
     Receiver(PastryNode node, String instance, boolean consistent) {
       endpoint = node.buildEndpoint(this, instance);
-      endpoint.setConsistentRouting(consistent);
+      endpoint.setRoutingConsistencyRequired(consistent);
       endpoint.setDeserializer((buf, type, priority, sender) -> {
         if (type == TYPE) {
           return new Numbered(buf.readInt());

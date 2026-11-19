@@ -64,7 +64,7 @@ class MultiringFuzzTest {
 
   @FuzzTest(maxDuration = "30s")
   void ringMessage(FuzzedDataProvider data) {
-    java.util.Map<String, Endpoint> endpoints = java.util.Map.of(endpoint.getInstance(), endpoint);
+    java.util.Map<String, Endpoint> endpoints = java.util.Map.of(endpoint.getApplicationInstanceName(), endpoint);
     FuzzSupport.read(data, buf -> new RingMessage(buf, endpoint, endpoints));
   }
 }

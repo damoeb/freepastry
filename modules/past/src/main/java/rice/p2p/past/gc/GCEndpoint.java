@@ -286,8 +286,8 @@ public class GCEndpoint implements Endpoint {
    * @return The unique instance name of this application
    */
   @Override
-  public String getInstance() {
-    return "GC" + endpoint.getInstance();
+  public String getApplicationInstanceName() {
+    return "GC" + endpoint.getApplicationInstanceName();
   }
 
   @Override
@@ -367,8 +367,8 @@ public class GCEndpoint implements Endpoint {
   }
 
   @Override
-  public void setConsistentRouting(boolean val) {
-    endpoint.setConsistentRouting(val);
+  public void setRoutingConsistencyRequired(boolean val) {
+    endpoint.setRoutingConsistencyRequired(val);
   }
 
   @Override

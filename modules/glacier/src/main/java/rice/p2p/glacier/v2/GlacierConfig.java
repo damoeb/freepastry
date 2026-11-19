@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import static rice.environment.params.ConfigChecks.inRange;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
@@ -120,11 +120,11 @@ public record GlacierConfig(
       p.getLong("p2p_glacier_syncDelayAfterJoin"),
       p.getLong("p2p_glacier_syncMinRemainingLifetime"),
       p.getLong("p2p_glacier_syncMinQuietTime"),
-      positive("p2p_glacier_syncBloomFilterNumHashes", p.getInt("p2p_glacier_syncBloomFilterNumHashes")),
-      positive("p2p_glacier_syncBloomFilterBitsPerKey", p.getInt("p2p_glacier_syncBloomFilterBitsPerKey")),
+      requirePositive("p2p_glacier_syncBloomFilterNumHashes", p.getInt("p2p_glacier_syncBloomFilterNumHashes")),
+      requirePositive("p2p_glacier_syncBloomFilterBitsPerKey", p.getInt("p2p_glacier_syncBloomFilterBitsPerKey")),
       p.getInt("p2p_glacier_syncPartnersPerTrial"),
-      positive("p2p_glacier_syncInterval", p.getLong("p2p_glacier_syncInterval")),
-      positive("p2p_glacier_syncRetryInterval", p.getLong("p2p_glacier_syncRetryInterval")),
+      requirePositive("p2p_glacier_syncInterval", p.getLong("p2p_glacier_syncInterval")),
+      requirePositive("p2p_glacier_syncRetryInterval", p.getLong("p2p_glacier_syncRetryInterval")),
       p.getInt("p2p_glacier_syncMaxFragments"),
       p.getInt("p2p_glacier_fragmentRequestMaxAttempts"),
       p.getLong("p2p_glacier_fragmentRequestTimeoutDefault"),
@@ -136,11 +136,11 @@ public record GlacierConfig(
       p.getLong("p2p_glacier_manifestRequestRetryBurst"),
       p.getInt("p2p_glacier_manifestAggregationFactor"),
       p.getLong("p2p_glacier_handoffDelayAfterJoin"),
-      positive("p2p_glacier_handoffInterval", p.getLong("p2p_glacier_handoffInterval")),
+      requirePositive("p2p_glacier_handoffInterval", p.getLong("p2p_glacier_handoffInterval")),
       p.getInt("p2p_glacier_handoffMaxFragments"),
       p.getLong("p2p_glacier_garbageCollectionInterval"),
       p.getInt("p2p_glacier_garbageCollectionMaxFragmentsPerRun"),
-      positive("p2p_glacier_localScanInterval", p.getLong("p2p_glacier_localScanInterval")),
+      requirePositive("p2p_glacier_localScanInterval", p.getLong("p2p_glacier_localScanInterval")),
       p.getInt("p2p_glacier_localScanMaxFragmentsPerRun"),
       p.getDouble("p2p_glacier_restoreMaxRequestFactor"),
       p.getInt("p2p_glacier_restoreMaxBoosts"),

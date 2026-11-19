@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.wire;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -71,9 +71,9 @@ public record WireConfig(
     return new WireConfig(
       p.contains("wire_forceBindAddress") && p.getBoolean("wire_forceBindAddress"),
       p.getInt("pastry_socket_scm_max_open_sockets"),
-      positive("pastry_socket_scm_socket_buffer_size", p.getInt("pastry_socket_scm_socket_buffer_size")),
+      requirePositive("pastry_socket_scm_socket_buffer_size", p.getInt("pastry_socket_scm_socket_buffer_size")),
       p.contains("transport_tcp_no_delay") && p.getBoolean("transport_tcp_no_delay"),
-      positive("transport_wire_datagram_receive_buffer_size", p.getInt("transport_wire_datagram_receive_buffer_size")),
-      positive("transport_wire_datagram_send_buffer_size", p.getInt("transport_wire_datagram_send_buffer_size")));
+      requirePositive("transport_wire_datagram_receive_buffer_size", p.getInt("transport_wire_datagram_receive_buffer_size")),
+      requirePositive("transport_wire_datagram_send_buffer_size", p.getInt("transport_wire_datagram_send_buffer_size")));
   }
 }

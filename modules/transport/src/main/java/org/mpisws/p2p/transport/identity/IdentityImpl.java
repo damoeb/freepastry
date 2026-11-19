@@ -62,7 +62,7 @@ import rice.environment.Environment;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD_FOREVER;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> {
   final byte[] localIdentifier;
@@ -132,7 +132,7 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
     this.nodeChangeStrategy = nodeChangeStrategy;
     this.environment = environment;
 
-    this.maxBindings = positive("pastry_socket_identity_max_bindings",
+    this.maxBindings = requirePositive("pastry_socket_identity_max_bindings",
         environment.getParameters().getInt("pastry_socket_identity_max_bindings"));
     this.pendingMessages = new HashMap<UpperIdentifier, Set<IdentityMessageHandle>>();
     this.deadForever = Collections.synchronizedSet(Collections.newSetFromMap(new LinkedHashMap<UpperIdentifier, Boolean>() {

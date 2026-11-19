@@ -125,7 +125,7 @@ public class PastryIdFactory implements IdFactory {
    * @return The built Id.
    */
   @Override
-  public Id buildIdFromToString(String string) {
+  public Id buildIdFromString(String string) {
     return rice.pastry.Id.build(string);
   }
 
@@ -139,7 +139,7 @@ public class PastryIdFactory implements IdFactory {
    * @return The built Id.
    */
   @Override
-  public Id buildIdFromToString(char[] chars, int offset, int length) {
+  public Id buildIdFromString(char[] chars, int offset, int length) {
     return rice.pastry.Id.build(chars, offset, length);
   }
 
@@ -168,7 +168,7 @@ public class PastryIdFactory implements IdFactory {
    * @return The correct length;
    */
   @Override
-  public int getIdToStringLength() {
+  public int getIdStringLength() {
     return rice.pastry.Id.IdBitLength/4;
   }
 

@@ -66,7 +66,7 @@ public class ObjectDescriptor implements Comparable<ObjectDescriptor> {
    * @param factory builds the key
    */
   public ObjectDescriptor(InputBuffer buf, IdFactory factory) throws IOException {
-    key = factory.buildIdFromToString(buf.readUTF());
+    key = factory.buildIdFromString(buf.readUTF());
     version = buf.readLong();
     currentLifetime = buf.readLong();
     refreshedLifetime = buf.readLong();

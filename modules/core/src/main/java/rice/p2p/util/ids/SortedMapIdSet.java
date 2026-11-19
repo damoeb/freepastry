@@ -136,8 +136,8 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
     if (range.isEmpty()) {
       return build();
     }
-    Id ccw = range.getCCWId();
-    Id cw = range.getCWId();
+    Id ccw = range.getCounterClockwiseBound();
+    Id cw = range.getClockwiseBound();
     if (ccw.equals(cw)) {
       return (S) this;
     }

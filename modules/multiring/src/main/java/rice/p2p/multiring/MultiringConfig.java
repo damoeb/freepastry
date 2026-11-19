@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.multiring;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -51,6 +51,6 @@ public record MultiringConfig(int base) {
    * @throws IllegalArgumentException if base is not positive
    */
   public static MultiringConfig fromParameters(Parameters p) {
-    return new MultiringConfig(positive("p2p_multiring_base", p.getInt("p2p_multiring_base")));
+    return new MultiringConfig(requirePositive("p2p_multiring_base", p.getInt("p2p_multiring_base")));
   }
 }

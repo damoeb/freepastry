@@ -206,12 +206,12 @@ final class MetadataIndex {
       HashMap<Id, Object> map = new HashMap<Id, Object>();
       IdRange range = rangeForDirectory.apply(files[i]);
 
-      if (range.getCCWId().compareTo(range.getCWId()) <= 0) {
-        map.putAll(metadata.keySubMap(range.getCCWId(), range.getCWId()));
+      if (range.getCounterClockwiseBound().compareTo(range.getClockwiseBound()) <= 0) {
+        map.putAll(metadata.keySubMap(range.getCounterClockwiseBound(), range.getClockwiseBound()));
       } else {
         /* the range wraps around: it holds the keys from ccw up and the keys below cw */
-        map.putAll(metadata.keyTailMap(range.getCCWId()));
-        map.putAll(metadata.keyMap().headMap(range.getCWId()));
+        map.putAll(metadata.keyTailMap(range.getCounterClockwiseBound()));
+        map.putAll(metadata.keyMap().headMap(range.getClockwiseBound()));
       }
 
       try {
@@ -262,7 +262,7 @@ final class MetadataIndex {
 
       int count = buf.readInt();
       for (int i = 0; i < count; i++) {
-        Id id = factory.buildIdFromToString(buf.readUTF());
+        Id id = factory.buildIdFromString(buf.readUTF());
         Object value = buf.readBoolean() ? serializer.readMetadata(buf) : null;
 
         if (range.containsId(id) && Files.exists(file.resolve(id.toStringFull().substring(prefixOf.apply(file).length()))))

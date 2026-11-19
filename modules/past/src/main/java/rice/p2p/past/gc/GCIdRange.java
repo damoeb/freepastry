@@ -83,8 +83,8 @@ public record GCIdRange(IdRange range) implements IdRange {
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
   @Override
-  public Id getCCWId() {
-    return new GCId(range.getCCWId(), GCPastImpl.DEFAULT_EXPIRATION);
+  public Id getCounterClockwiseBound() {
+    return new GCId(range.getCounterClockwiseBound(), GCPastImpl.DEFAULT_EXPIRATION);
   }
 
   /**
@@ -93,8 +93,8 @@ public record GCIdRange(IdRange range) implements IdRange {
    * @return the id at the clockwise edge of the range (exclusive)
    */
   @Override
-  public Id getCWId() {
-    return new GCId(range.getCWId(), GCPastImpl.DEFAULT_EXPIRATION);
+  public Id getClockwiseBound() {
+    return new GCId(range.getClockwiseBound(), GCPastImpl.DEFAULT_EXPIRATION);
   }
 
   /**

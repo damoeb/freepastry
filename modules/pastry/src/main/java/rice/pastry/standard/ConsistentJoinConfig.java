@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requireNonNegative;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -68,9 +68,9 @@ public record ConsistentJoinConfig(
   public static ConsistentJoinConfig fromParameters(Parameters p) {
     return new ConsistentJoinConfig(
       p.getInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled"),
-      positive("pastry_protocol_consistentJoin_retry_interval", p.getInt("pastry_protocol_consistentJoin_retry_interval")),
+      requirePositive("pastry_protocol_consistentJoin_retry_interval", p.getInt("pastry_protocol_consistentJoin_retry_interval")),
       p.getInt("pastry_protocol_consistentJoin_failedRetentionTime"),
-      nonNegative("pastry_protocol_consistentJoin_maxFailedToSend", p.getInt("pastry_protocol_consistentJoin_maxFailedToSend")),
-      positive("pastry_protocol_consistentJoin_cleanup_interval", p.getInt("pastry_protocol_consistentJoin_cleanup_interval")));
+      requireNonNegative("pastry_protocol_consistentJoin_maxFailedToSend", p.getInt("pastry_protocol_consistentJoin_maxFailedToSend")),
+      requirePositive("pastry_protocol_consistentJoin_cleanup_interval", p.getInt("pastry_protocol_consistentJoin_cleanup_interval")));
   }
 }

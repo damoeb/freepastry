@@ -197,12 +197,12 @@ final class AggregationDebugCommands {
 
     if (cmd.startsWith("set root")) {
       final CompletableFuture<String> ret = new CompletableFuture<String>();
-      aggregation.setHandle(factory.buildIdFromToString(cmd.substring(9)), AggregationDebugCommands.<Boolean>reportTo(ret));
+      aggregation.setHandle(factory.buildIdFromString(cmd.substring(9)), AggregationDebugCommands.<Boolean>reportTo(ret));
       return awaitDebugResult(ret);
     }
 
     if (cmd.startsWith("lookup")) {
-      Id id = factory.buildIdFromToString(cmd.substring(7));
+      Id id = factory.buildIdFromString(cmd.substring(7));
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       aggregation.lookup(id, false, AggregationDebugCommands.<PastContent>reportTo(ret));
@@ -223,7 +223,7 @@ final class AggregationDebugCommands {
       String expirationArg = args.substring(args.lastIndexOf(' ') + 1);
       String keyArg = args.substring(0, args.lastIndexOf(' '));
 
-      Id id = factory.buildIdFromToString(keyArg);
+      Id id = factory.buildIdFromString(keyArg);
       long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(expirationArg);
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
@@ -257,7 +257,7 @@ final class AggregationDebugCommands {
     if (cmd.startsWith("vlookup")) {
       @SuppressWarnings("StringSplitter") // splits debug command arguments; dropping trailing empty ones is intended
       String[] vkeyS = cmd.substring(8).split("v");
-      Id key = factory.buildIdFromToString(vkeyS[0]);
+      Id key = factory.buildIdFromString(vkeyS[0]);
       long version = Long.parseLong(vkeyS[1]);
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
@@ -308,7 +308,7 @@ final class AggregationDebugCommands {
 
   private String handles(String cmd) {
     String args = cmd.substring(8);
-    Id id = factory.buildIdFromToString(args.substring(args.indexOf(' ') + 1));
+    Id id = factory.buildIdFromString(args.substring(args.indexOf(' ') + 1));
     int max = Integer.parseInt(args.substring(0, args.indexOf(' ')));
 
     final CompletableFuture<String> ret = new CompletableFuture<String>();
@@ -370,7 +370,7 @@ final class AggregationDebugCommands {
     String expirationArg = args.substring(args.lastIndexOf(' ') + 1);
     String keyArg = args.substring(0, args.lastIndexOf(' '));
 
-    Id id = factory.buildIdFromToString(keyArg);
+    Id id = factory.buildIdFromString(keyArg);
     long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(expirationArg);
 
     AggregateDescriptor aggr = (AggregateDescriptor) aggregateList.getADC(id);

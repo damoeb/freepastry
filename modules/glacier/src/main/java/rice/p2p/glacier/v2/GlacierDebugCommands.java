@@ -207,7 +207,7 @@ final class GlacierDebugCommands {
       String expirationArg = args.substring(args.lastIndexOf(' ') + 1);
       String keyArg = args.substring(0, args.lastIndexOf(' '));
 
-      Id id = factory.buildIdFromToString(keyArg);
+      Id id = factory.buildIdFromString(keyArg);
       long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(expirationArg);
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
@@ -319,7 +319,7 @@ final class GlacierDebugCommands {
 
     if (cmd.startsWith("delete") && config.faultInjectionEnabled()) {
       String[] vkeyS = cmd.substring(7).split("[v#]");
-      Id key = factory.buildIdFromToString(vkeyS[0]);
+      Id key = factory.buildIdFromString(vkeyS[0]);
       long version = Long.parseLong(vkeyS[1]);
       VersionKey vkey = new VersionKey(key, version);
       FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
@@ -341,7 +341,7 @@ final class GlacierDebugCommands {
 
     if (cmd.startsWith("burst") && config.faultInjectionEnabled()) {
       String[] vkeyS = cmd.substring(6).split("[v#]");
-      Id key = factory.buildIdFromToString(vkeyS[0]);
+      Id key = factory.buildIdFromString(vkeyS[0]);
       long version = Long.parseLong(vkeyS[1]);
       VersionKey vkey = new VersionKey(key, version);
       final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
@@ -394,7 +394,7 @@ final class GlacierDebugCommands {
 
     if (cmd.startsWith("manifest")) {
       String[] vkeyS = cmd.substring(9).split("v");
-      Id key = factory.buildIdFromToString(vkeyS[0]);
+      Id key = factory.buildIdFromString(vkeyS[0]);
       long version = Long.parseLong(vkeyS[1]);
       VersionKey vkey = new VersionKey(key, version);
 
@@ -418,7 +418,7 @@ final class GlacierDebugCommands {
 
     if (cmd.startsWith("retrieve")) {
       String[] vkeyS = cmd.substring(9).split("[v#]");
-      Id key = factory.buildIdFromToString(vkeyS[0]);
+      Id key = factory.buildIdFromString(vkeyS[0]);
       long version = Long.parseLong(vkeyS[1]);
       VersionKey vkey = new VersionKey(key, version);
       final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
@@ -499,7 +499,7 @@ final class GlacierDebugCommands {
 
     if (cmd.startsWith("fetch")) {
       String[] vkeyS = cmd.substring(6).split("[v#]");
-      Id key = factory.buildIdFromToString(vkeyS[0]);
+      Id key = factory.buildIdFromString(vkeyS[0]);
       long version = Long.parseLong(vkeyS[1]);
       VersionKey vkey = new VersionKey(key, version);
       final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));

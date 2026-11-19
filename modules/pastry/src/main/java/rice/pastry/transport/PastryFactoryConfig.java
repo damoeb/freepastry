@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.transport;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
+import static rice.environment.params.ConfigChecks.requireNonNegative;
 
 import rice.environment.params.Parameters;
 
@@ -68,8 +68,8 @@ public record PastryFactoryConfig(
    */
   public static PastryFactoryConfig fromParameters(Parameters p) {
     return new PastryFactoryConfig(
-      nonNegative("pastry_leafSetMaintFreq", p.getInt("pastry_leafSetMaintFreq")),
-      nonNegative("pastry_routeSetMaintFreq", p.getInt("pastry_routeSetMaintFreq")),
+      requireNonNegative("pastry_leafSetMaintFreq", p.getInt("pastry_leafSetMaintFreq")),
+      requireNonNegative("pastry_routeSetMaintFreq", p.getInt("pastry_routeSetMaintFreq")),
       p.getBoolean("transport_use_pns"),
       p.getBoolean("pastry_factory_multipleNodes"),
       p.getBoolean("pastry_factory_selectorPerNode"),

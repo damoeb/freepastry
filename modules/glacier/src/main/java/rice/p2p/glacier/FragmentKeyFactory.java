@@ -86,7 +86,7 @@ public class FragmentKeyFactory extends GlacierKeyFactory {
    * @return the key
    */
   @Override
-  public Id buildIdFromToString(String string) {
+  public Id buildIdFromString(String string) {
     StringTokenizer stok = new StringTokenizer(string, "(,) :v#");
     if (stok.countTokens() < 4) {
       return null;
@@ -136,7 +136,7 @@ public class FragmentKeyFactory extends GlacierKeyFactory {
   }
 
   @Override
-  public int getIdToStringLength() {
-    return factory.getIdToStringLength() + 4;
+  public int getIdStringLength() {
+    return factory.getIdStringLength() + 4;
   }
 }

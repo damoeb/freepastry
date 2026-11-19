@@ -165,7 +165,7 @@ public class MultiringNode implements Node, ScribeMultiClient {
   @Override
   public Endpoint buildEndpoint(Application application, String instance) {
     Endpoint endpoint = new MultiringEndpoint(this, node.buildEndpoint(new MultiringApplication(getRingId(), application), application.getClass() + "-" + instance), application);
-    endpoints.put(endpoint.getInstance(), endpoint);
+    endpoints.put(endpoint.getApplicationInstanceName(), endpoint);
 
     return endpoint;
   }

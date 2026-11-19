@@ -557,13 +557,13 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
             new ByteWriter<>(CONNECTION_RESPONSE_SUCCESS,new Continuation<P2PSocket<Identifier>, Exception>() {
               @Override
               public void receiveException(Exception exception) {
-                deliverSocketToMe.a().receiveException(deliverSocketToMe.b(), exception);
+                deliverSocketToMe.first().receiveException(deliverSocketToMe.second(), exception);
               }
 
               @Override
               public void receiveResult(P2PSocket<Identifier> result) {
                 // need to return a wrapper with the proper options from deliverSocketToMe.b().getOptions(), do we need to merge these?  Probably
-                deliverSocketToMe.a().receiveResult(deliverSocketToMe.b(), new SocketWrapperSocket<Identifier, Identifier>(result.getIdentifier(),result,logger,errorHandler,OptionsFactory.merge(deliverSocketToMe.b().getOptions(),result.getOptions())));
+                deliverSocketToMe.first().receiveResult(deliverSocketToMe.second(), new SocketWrapperSocket<Identifier, Identifier>(result.getIdentifier(),result,logger,errorHandler,OptionsFactory.merge(deliverSocketToMe.second().getOptions(),result.getOptions())));
               }}).receiveSelectResult(acceptorSocket, false, true);
             return;
           }

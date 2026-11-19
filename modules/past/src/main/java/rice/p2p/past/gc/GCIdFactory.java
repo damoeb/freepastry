@@ -143,7 +143,7 @@ public class GCIdFactory implements IdFactory {
    * @throws UnsupportedOperationException always
    */
   @Override
-  public Id buildIdFromToString(String string) {
+  public Id buildIdFromString(String string) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
 
@@ -157,7 +157,7 @@ public class GCIdFactory implements IdFactory {
    * @throws UnsupportedOperationException always
    */
   @Override
-  public Id buildIdFromToString(char[] chars, int offset, int length) {
+  public Id buildIdFromString(char[] chars, int offset, int length) {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
 
@@ -180,7 +180,7 @@ public class GCIdFactory implements IdFactory {
    * @throws UnsupportedOperationException always
    */
   @Override
-  public int getIdToStringLength() {
+  public int getIdStringLength() {
     throw new UnsupportedOperationException("GCIdFactory cannot be used to build Ids!");
   }
 

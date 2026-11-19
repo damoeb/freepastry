@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.liveness;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requireNonNegative;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -81,16 +81,16 @@ public record LivenessConfig(
    */
   public static LivenessConfig fromParameters(Parameters p) {
     return new LivenessConfig(
-      positive("pastry_socket_scm_ping_delay", p.getInt("pastry_socket_scm_ping_delay")),
+      requirePositive("pastry_socket_scm_ping_delay", p.getInt("pastry_socket_scm_ping_delay")),
       p.getFloat("pastry_socket_scm_ping_jitter"),
-      nonNegative("pastry_socket_scm_num_ping_tries", p.getInt("pastry_socket_scm_num_ping_tries")),
-      nonNegative("pastry_socket_srm_check_dead_throttle", p.getInt("pastry_socket_srm_check_dead_throttle")),
-      positive("pastry_socket_srm_default_rto", p.getInt("pastry_socket_srm_default_rto")),
-      positive("pastry_socket_srm_rto_ubound", p.getInt("pastry_socket_srm_rto_ubound")),
-      positive("pastry_socket_srm_rto_lbound", p.getInt("pastry_socket_srm_rto_lbound")),
+      requireNonNegative("pastry_socket_scm_num_ping_tries", p.getInt("pastry_socket_scm_num_ping_tries")),
+      requireNonNegative("pastry_socket_srm_check_dead_throttle", p.getInt("pastry_socket_srm_check_dead_throttle")),
+      requirePositive("pastry_socket_srm_default_rto", p.getInt("pastry_socket_srm_default_rto")),
+      requirePositive("pastry_socket_srm_rto_ubound", p.getInt("pastry_socket_srm_rto_ubound")),
+      requirePositive("pastry_socket_srm_rto_lbound", p.getInt("pastry_socket_srm_rto_lbound")),
       p.getDouble("pastry_socket_srm_gain_h"),
       p.getDouble("pastry_socket_srm_gain_g"),
-      positive("pastry_socket_liveness_max_trackers", p.getInt("pastry_socket_liveness_max_trackers")));
+      requirePositive("pastry_socket_liveness_max_trackers", p.getInt("pastry_socket_liveness_max_trackers")));
   }
 
   /**

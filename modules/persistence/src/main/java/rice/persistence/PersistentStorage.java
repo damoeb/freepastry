@@ -350,10 +350,10 @@ public class PersistentStorage implements Storage {
     if (index) {
       if (range.isEmpty())
         return factory.buildIdSet();
-      else if (range.getCCWId().equals(range.getCWId()))
+      else if (range.getCounterClockwiseBound().equals(range.getClockwiseBound()))
         return scan();
       else
-        return factory.buildIdSet(metadataIndex.keySubMap(range.getCCWId(), range.getCWId()));
+        return factory.buildIdSet(metadataIndex.keySubMap(range.getCounterClockwiseBound(), range.getClockwiseBound()));
     } else {
       throw new UnsupportedOperationException("scan() not supported without indexing");
     }
@@ -391,10 +391,10 @@ public class PersistentStorage implements Storage {
     if (index) {
       if (range.isEmpty())
         return new ConcurrentRingMap<Id, Object>();
-      else if (range.getCCWId().equals(range.getCWId()))
+      else if (range.getCounterClockwiseBound().equals(range.getClockwiseBound()))
         return scanMetadata();
       else
-        return metadataIndex.keySubMap(range.getCCWId(), range.getCWId());
+        return metadataIndex.keySubMap(range.getCounterClockwiseBound(), range.getClockwiseBound());
     } else {
       throw new UnsupportedOperationException("scanMetadata() not supported without indexing");
     }

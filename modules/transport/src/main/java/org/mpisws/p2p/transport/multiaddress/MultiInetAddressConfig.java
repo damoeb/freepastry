@@ -1,6 +1,6 @@
 package org.mpisws.p2p.transport.multiaddress;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -17,6 +17,6 @@ public record MultiInetAddressConfig(int maxNumAddresses) {
    */
   public static MultiInetAddressConfig fromParameters(Parameters p) {
     return new MultiInetAddressConfig(
-      positive("transport_epoch_max_num_addresses", p.getInt("transport_epoch_max_num_addresses")));
+      requirePositive("transport_epoch_max_num_addresses", p.getInt("transport_epoch_max_num_addresses")));
   }
 }

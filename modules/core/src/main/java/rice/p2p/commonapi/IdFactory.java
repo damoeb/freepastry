@@ -92,7 +92,7 @@ public interface IdFactory {
    * @param string The toString() representation of an Id
    * @return The built Id.
    */
-  public Id buildIdFromToString(String string);
+  public Id buildIdFromString(String string);
 
   /**
    * Builds an Id by converting the given toString() output back to an Id.  Should
@@ -103,7 +103,7 @@ public interface IdFactory {
    * @param length The length to read
    * @return The built Id.
    */
-  public Id buildIdFromToString(char[] chars, int offset, int length);
+  public Id buildIdFromString(char[] chars, int offset, int length);
 
   /**
    * Builds an IdRange based on a prefix.  Any id which has this prefix should
@@ -120,7 +120,7 @@ public interface IdFactory {
    *
    * @return The correct length;
    */
-  public int getIdToStringLength();
+  public int getIdStringLength();
 
   /**
    * Builds a protocol-specific Id.Distance given the source data.

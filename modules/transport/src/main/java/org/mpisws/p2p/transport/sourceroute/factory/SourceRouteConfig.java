@@ -1,6 +1,6 @@
 package org.mpisws.p2p.transport.sourceroute.factory;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -19,6 +19,6 @@ public record SourceRouteConfig(int maxNumHops) {
    * @throws IllegalArgumentException if a value is not positive
    */
   public static SourceRouteConfig fromParameters(Parameters p) {
-    return new SourceRouteConfig(positive("transport_sr_max_num_hops", p.getInt("transport_sr_max_num_hops")));
+    return new SourceRouteConfig(requirePositive("transport_sr_max_num_hops", p.getInt("transport_sr_max_num_hops")));
   }
 }

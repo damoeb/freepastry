@@ -640,7 +640,7 @@ public class PRRegressionTest {
   public void buildCryptoMaterial(Environment env) throws Exception {
     // an in-memory CA, valid for a day (CATool.getCATool() would keep it in a key store file in the working directory)
     Tuple<X509Certificate, KeyPair> ca = CATool.generateNewCA("CommitmentTest", Instant.now().plus(Duration.ofDays(1)));
-    caTool = new CATool(ca.a(), ca.b());
+    caTool = new CATool(ca.first(), ca.second());
     hasher = new SHA256HashProvider();
     historyFactory = new SecureHistoryFactory(hasher,env);
   }

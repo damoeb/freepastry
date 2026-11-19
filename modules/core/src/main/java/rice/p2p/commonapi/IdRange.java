@@ -66,14 +66,14 @@ public interface IdRange {
    *
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
-  public Id getCCWId();
+  public Id getCounterClockwiseBound();
 
   /**
    * get clockwise edge of range
    *
    * @return the id at the clockwise edge of the range (exclusive)
    */
-  public Id getCWId();
+  public Id getClockwiseBound();
 
   /**
    * get the complement of this range

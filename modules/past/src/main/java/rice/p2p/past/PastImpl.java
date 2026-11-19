@@ -373,7 +373,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   @Override
   public String toString() {
     if (endpoint == null) return super.toString();
-    return "PastImpl["+endpoint.getInstance()+"]";
+    return "PastImpl["+endpoint.getApplicationInstanceName()+"]";
   }
 
   public Environment getEnvironment() {

@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.socket;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requireNonNegative;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -87,13 +87,13 @@ public record SocketFactoryConfig(
   public static SocketFactoryConfig fromParameters(Parameters p) throws UnknownHostException {
     boolean hasExternalAddress = p.contains("external_address");
     return new SocketFactoryConfig(
-      nonNegative("nat_find_port_max_tries", p.getInt("nat_find_port_max_tries")),
+      requireNonNegative("nat_find_port_max_tries", p.getInt("nat_find_port_max_tries")),
       p.getString("nat_app_name"),
       p.contains("socket_bindAddress") ? p.getString("socket_bindAddress") : null,
       p.getBoolean("pastry_socket_allow_loopback"),
       p.getString("pastry_socket_known_network_address"),
       p.getInt("pastry_socket_known_network_address_port"),
-      positive("pastry_socket_scm_max_open_sockets", p.getInt("pastry_socket_scm_max_open_sockets")),
+      requirePositive("pastry_socket_scm_max_open_sockets", p.getInt("pastry_socket_scm_max_open_sockets")),
       p.getBoolean("rice_socket_seed"),
       p.getBoolean("pastry_socket_increment_port_after_construction"),
       hasExternalAddress,

@@ -232,7 +232,7 @@ public interface Endpoint extends NodeHandleReader {
    *
    * @return The unique instance name of this application
    */
-  public String getInstance();
+  public String getApplicationInstanceName();
 
   /**
    * Returns the environment.  This allows the nodes to be virtualized within the JVM
@@ -289,7 +289,7 @@ public interface Endpoint extends NodeHandleReader {
    * key:
    * endpoint.deliver(null, msg, targetNodeHandle) // will be delivered regardless of consistency
    */
-  public void setConsistentRouting(boolean val);
+  public void setRoutingConsistencyRequired(boolean val);
 
   /**
    * Can we guarantee that this id is currently ours, and routing will be consistent?

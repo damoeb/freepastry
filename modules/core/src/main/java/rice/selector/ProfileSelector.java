@@ -178,7 +178,7 @@ public class ProfileSelector extends SelectorManager {
   }
 
   @Override
-  protected void doSelections() throws IOException {
+  protected void processSelectedKeys() throws IOException {
     SelectionKey[] keys = selectedKeys();
 
     for (SelectionKey key : keys) {

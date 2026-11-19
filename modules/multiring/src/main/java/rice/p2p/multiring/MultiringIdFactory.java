@@ -192,12 +192,12 @@ public class MultiringIdFactory implements IdFactory {
    * @return The built Id.
    */
   @Override
-  public Id buildIdFromToString(String string) {
+  public Id buildIdFromString(String string) {
     string = string.substring(1);
-    Id ring = factory.buildIdFromToString(string.substring(0, string.indexOf(",")));
+    Id ring = factory.buildIdFromString(string.substring(0, string.indexOf(",")));
 
     string = string.substring(string.indexOf(", ")+2);
-    Id normal = factory.buildIdFromToString(string.substring(0, string.length()-1));
+    Id normal = factory.buildIdFromString(string.substring(0, string.length()-1));
 
     return RingId.build(ring, normal);
   }
@@ -212,10 +212,10 @@ public class MultiringIdFactory implements IdFactory {
    * @return The built Id.
    */
   @Override
-  public Id buildIdFromToString(char[] chars, int offset, int length) {
+  public Id buildIdFromString(char[] chars, int offset, int length) {
     char[] ringId = Arrays.copyOfRange(chars, offset, offset + length);
-    Id ring = factory.buildIdFromToString(ringId, 1, find(ringId, ',')-1);
-    Id normal = factory.buildIdFromToString(ringId, 2+find(ringId, ','), find(ringId, ')') - (2+find(ringId, ',')));
+    Id ring = factory.buildIdFromString(ringId, 1, find(ringId, ',')-1);
+    Id normal = factory.buildIdFromString(ringId, 2+find(ringId, ','), find(ringId, ')') - (2+find(ringId, ',')));
 
     return RingId.build(ring, normal);
   }
@@ -242,7 +242,7 @@ public class MultiringIdFactory implements IdFactory {
       return new MultiringIdRange(ringId, factory.buildIdRangeFromPrefix(string));
 
     string = string.substring(1);
-    Id ring = factory.buildIdFromToString(string.substring(0, string.indexOf(", ")));
+    Id ring = factory.buildIdFromString(string.substring(0, string.indexOf(", ")));
 
     string = string.substring(string.indexOf(", ")+2);
     IdRange range = factory.buildIdRangeFromPrefix(string);
@@ -256,8 +256,8 @@ public class MultiringIdFactory implements IdFactory {
    * @return The correct length;
    */
   @Override
-  public int getIdToStringLength() {
-    return 4 + (2 * factory.getIdToStringLength());
+  public int getIdStringLength() {
+    return 4 + (2 * factory.getIdStringLength());
   }
 
   /**

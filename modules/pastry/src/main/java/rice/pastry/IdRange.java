@@ -408,7 +408,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
   @Override
-  public rice.p2p.commonapi.Id getCCWId() {
+  public rice.p2p.commonapi.Id getCounterClockwiseBound() {
     return getCCW();
   }
 
@@ -418,7 +418,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @return the id at the clockwise edge of the range (exclusive)
    */
   @Override
-  public rice.p2p.commonapi.Id getCWId() {
+  public rice.p2p.commonapi.Id getClockwiseBound() {
     return getCW();
   }
 

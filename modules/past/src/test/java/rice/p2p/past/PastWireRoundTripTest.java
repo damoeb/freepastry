@@ -577,8 +577,8 @@ class PastWireRoundTripTest {
           buf -> (GCIdRange) gcPast.getEndpoint().readIdRange(buf));
 
       assertEquals(gcRange.isEmpty(), copy.isEmpty());
-      assertEquals(range.getCCWId(), copy.range().getCCWId());
-      assertEquals(range.getCWId(), copy.range().getCWId());
+      assertEquals(range.getCounterClockwiseBound(), copy.range().getCounterClockwiseBound());
+      assertEquals(range.getClockwiseBound(), copy.range().getClockwiseBound());
     }
   }
 

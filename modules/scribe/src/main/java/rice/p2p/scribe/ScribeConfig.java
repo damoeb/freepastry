@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.scribe;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -54,7 +54,7 @@ public record ScribeConfig(int maintenanceInterval, int messageTimeout) {
    */
   public static ScribeConfig fromParameters(Parameters p) {
     return new ScribeConfig(
-      positive("p2p_scribe_maintenance_interval", p.getInt("p2p_scribe_maintenance_interval")),
-      positive("p2p_scribe_message_timeout", p.getInt("p2p_scribe_message_timeout")));
+      requirePositive("p2p_scribe_maintenance_interval", p.getInt("p2p_scribe_maintenance_interval")),
+      requirePositive("p2p_scribe_message_timeout", p.getInt("p2p_scribe_message_timeout")));
   }
 }

@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import java.util.OptionalLong;
 
@@ -72,9 +72,9 @@ public record PeriodicLeafSetConfig(
       p.contains("pastry_periodic_leafset_protocol_use_own_random")
           && p.getBoolean("pastry_periodic_leafset_protocol_use_own_random"),
       EnvironmentConfig.seed(p, "pastry_periodic_leafset_protocol_random_seed"),
-      positive("pastry_protocol_periodicLeafSet_ping_neighbor_period",
+      requirePositive("pastry_protocol_periodicLeafSet_ping_neighbor_period",
           p.getInt("pastry_protocol_periodicLeafSet_ping_neighbor_period")),
-      positive("pastry_protocol_periodicLeafSet_lease_period", p.getInt("pastry_protocol_periodicLeafSet_lease_period")),
+      requirePositive("pastry_protocol_periodicLeafSet_lease_period", p.getInt("pastry_protocol_periodicLeafSet_lease_period")),
       p.getInt("pastry_protocol_periodicLeafSet_request_lease_throttle"));
   }
 }

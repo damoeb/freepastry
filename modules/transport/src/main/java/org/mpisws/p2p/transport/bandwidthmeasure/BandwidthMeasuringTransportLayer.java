@@ -130,7 +130,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
       lastMeasure = now;
       for (Identifier i : measured.keySet()) {
         Tuple<int[], Collection<MySocket>> t = measured.get(i);
-        int[] vals = t.a();
+        int[] vals = t.first();
         vals[LAST_DOWN] = vals[CUR_DOWN]*1000/diff;
         vals[LAST_UP] = vals[CUR_UP]*1000/diff;
         vals[LAST_SATURATED] = vals[CUR_SATURATED];
@@ -140,7 +140,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
 
         // see if anyone was waiting to write
         if (vals[LAST_SATURATED] == NOT_SATURATED) {
-          for (MySocket s : t.b()) {
+          for (MySocket s : t.second()) {
             if (s.wantsToWrite()) {
               vals[LAST_SATURATED] = SATURATED;
               break;
@@ -182,7 +182,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
       HashMap<Identifier, BandwidthUsed> ret = new HashMap<Identifier, BandwidthUsed>();
       for (Identifier i : measured.keySet()) {
         Tuple<int[], Collection<MySocket>> t = measured.get(i);
-        int[] vals = t.a();
+        int[] vals = t.first();
         ret.put(i,new BandwidthUsed(vals[LAST_DOWN], vals[LAST_UP], vals[LAST_SATURATED] == SATURATED));
       }
       return ret;
@@ -199,7 +199,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     @Override
     public void close() {
       synchronized(measured) {
-        getVals(identifier).b().remove(this);
+        getVals(identifier).second().remove(this);
       }
       super.close();
     }
@@ -207,7 +207,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     @Override
     public void receiveException(P2PSocket<Identifier> socket, Exception e) {
       synchronized(measured) {
-        getVals(identifier).b().remove(this);
+        getVals(identifier).second().remove(this);
       }
       super.receiveException(socket, e);
     }
@@ -230,7 +230,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
         @Nullable Map<String, Object> options) {
       super(identifier, socket, logger, errorHandler, options);
       synchronized(measured) {
-        getVals(identifier).b().add(this);
+        getVals(identifier).second().add(this);
       }
     }
 
@@ -238,7 +238,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     public long write(ByteBuffer srcs) throws IOException {
       long ret = super.write(srcs);
       synchronized(measured) {
-        int[] vals = getVals(getIdentifier()).a();
+        int[] vals = getVals(getIdentifier()).first();
         if (srcs.hasRemaining()) {
           vals[CUR_SATURATED] = SATURATED;
         }
@@ -251,7 +251,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     public long read(ByteBuffer srcs) throws IOException {
       long ret = super.read(srcs);
       synchronized(measured) {
-        int[] vals = getVals(getIdentifier()).a();
+        int[] vals = getVals(getIdentifier()).first();
         vals[CUR_DOWN] = (int) (vals[CUR_DOWN] + ret);
       }
       return ret;
@@ -263,7 +263,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   public void messageReceived(Identifier i, ByteBuffer m,
       @Nullable Map<String, Object> options) throws IOException {
     synchronized (measured) {
-      getVals(i).a()[CUR_DOWN]+=m.remaining();
+      getVals(i).first()[CUR_DOWN]+=m.remaining();
     }
     callback.messageReceived(i, m, options);
   }
@@ -273,7 +273,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
       ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     synchronized (measured) {
-      getVals(i).a()[CUR_UP]+=m.remaining();
+      getVals(i).first()[CUR_UP]+=m.remaining();
     }
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }

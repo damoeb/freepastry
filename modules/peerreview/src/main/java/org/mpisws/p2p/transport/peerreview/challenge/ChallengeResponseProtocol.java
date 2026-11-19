@@ -260,7 +260,7 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
         logger.info("Received a SEND challenge");
 
         Tuple<AckMessage<Identifier>, Boolean> ret = commitmentProtocol.logMessageIfNew(udm);
-        boolean loggedPreviously = ret.b();
+        boolean loggedPreviously = ret.second();
 
         /* We ONLY deliver the message to the application if we haven't done so
            already (i.e. if it was logged previously) */
@@ -272,7 +272,7 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
 
         /* Put together a RESPONSE with an authenticator for the message in the challenge */
 
-        ResponseMessage<Identifier> rMsg = new ResponseMessage<Identifier>(challenge.originator(),peerreview.getLocalId(),challenge.evidenceSeq(),ret.a());
+        ResponseMessage<Identifier> rMsg = new ResponseMessage<Identifier>(challenge.originator(),peerreview.getLocalId(),challenge.evidenceSeq(),ret.first());
 
         /* ... and send it back to the challenger */
 

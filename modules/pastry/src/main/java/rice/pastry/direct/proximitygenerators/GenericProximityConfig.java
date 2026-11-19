@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.direct.proximitygenerators;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -66,10 +66,10 @@ public record GenericProximityConfig(
    */
   public static GenericProximityConfig fromParameters(Parameters p) {
     return new GenericProximityConfig(
-      positive("pastry_direct_gtitm_max_overlay_size", p.getInt("pastry_direct_gtitm_max_overlay_size")),
+      requirePositive("pastry_direct_gtitm_max_overlay_size", p.getInt("pastry_direct_gtitm_max_overlay_size")),
       p.getFloat("pastry_direct_min_delay"),
       p.getFloat("pastry_direct_gtitm_delay_factor"),
       p.getString("pastry_direct_gtitm_matrix_file"),
-      positive("pastry_direct_gtitm_nodes_per_stub", p.getInt("pastry_direct_gtitm_nodes_per_stub")));
+      requirePositive("pastry_direct_gtitm_nodes_per_stub", p.getInt("pastry_direct_gtitm_nodes_per_stub")));
   }
 }

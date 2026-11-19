@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -57,9 +57,9 @@ public record PastryConfig(byte rtMax, byte rtBaseBitLength, byte lSetSize, byte
    */
   public static PastryConfig fromParameters(Parameters p) {
     return new PastryConfig(
-      (byte)positive("pastry_rtMax", p.getInt("pastry_rtMax")),
-      (byte)positive("pastry_rtBaseBitLength", p.getInt("pastry_rtBaseBitLength")),
-      (byte)positive("pastry_lSetSize", p.getInt("pastry_lSetSize")),
+      (byte)requirePositive("pastry_rtMax", p.getInt("pastry_rtMax")),
+      (byte)requirePositive("pastry_rtBaseBitLength", p.getInt("pastry_rtBaseBitLength")),
+      (byte)requirePositive("pastry_lSetSize", p.getInt("pastry_lSetSize")),
       (byte)p.getInt("pastry_protocol_router_routeMsgVersion"));
   }
 }

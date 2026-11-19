@@ -36,5 +36,5 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.util.tuples;
 
-public record Tuple<A,B>(A a, B b) {
+public record Tuple<A,B>(A first, B second) {
 }

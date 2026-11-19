@@ -597,9 +597,9 @@ final class StorageLayout {
     String s = getPrefix(file.getParent()) + file.getFileName().toString().replaceAll(ZERO_LENGTH_NAME, "");
 
     if (s.indexOf(".") >= 0) {
-      return factory.buildIdFromToString(s.toCharArray(), 0, s.indexOf("."));
+      return factory.buildIdFromString(s.toCharArray(), 0, s.indexOf("."));
     } else {
-      return factory.buildIdFromToString(s.toCharArray(), 0, s.length());
+      return factory.buildIdFromString(s.toCharArray(), 0, s.length());
     }
   }
 

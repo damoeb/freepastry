@@ -82,7 +82,7 @@ class RingIdTest {
     Id expected = RingId.build(idFactory.buildId("ring"), idFactory.buildId("inner"));
     char[] text = ("junk" + expected.toStringFull() + "more junk").toCharArray();
 
-    Id actual = factory.buildIdFromToString(text, 4, expected.toStringFull().length());
+    Id actual = factory.buildIdFromString(text, 4, expected.toStringFull().length());
 
     assertEquals(expected, actual);
   }

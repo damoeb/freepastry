@@ -638,7 +638,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * @return The unique instance name of this application
    */
   @Override
-  public String getInstance() {
+  public String getApplicationInstanceName() {
     return instance;
   }
 
@@ -742,7 +742,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
   boolean consistentRouting = true;
   @Override
-  public void setConsistentRouting(boolean val) {
+  public void setRoutingConsistencyRequired(boolean val) {
     consistentRouting = val;
   }
 

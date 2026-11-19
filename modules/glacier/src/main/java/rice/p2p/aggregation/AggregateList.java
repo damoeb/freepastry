@@ -146,12 +146,12 @@ public class AggregateList {
               rootKey = null;
               logger.trace("  - rootKey = null");
             } else {
-              rootKey = factory.buildIdFromToString(parts[4]);
+              rootKey = factory.buildIdFromString(parts[4]);
               logger.atDebug().log(() -> "  - rootKey = "+rootKey.toStringFull());
             }
 
           } else if (parts[3].equals("setAL")) {
-            Id adcKey = factory.buildIdFromToString(parts[4]);
+            Id adcKey = factory.buildIdFromString(parts[4]);
             long lifetime = Long.parseLong(parts[5]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
             if (adc == null)
@@ -160,7 +160,7 @@ public class AggregateList {
             logger.atTrace().log(() -> "  - lifetime="+lifetime+" in ADC "+adcKey.toStringFull());
 
           } else if (parts[3].equals("setOCL")) {
-            Id adcKey = factory.buildIdFromToString(parts[4]);
+            Id adcKey = factory.buildIdFromString(parts[4]);
             int index = Integer.parseInt(parts[5]);
             long lifetime = Long.parseLong(parts[6]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
@@ -172,7 +172,7 @@ public class AggregateList {
             logger.atTrace().log(() -> "  - currentLifetime="+lifetime+" in ADC "+adcKey.toStringFull()+" index "+index);
 
           } else if (parts[3].equals("setORL")) {
-            Id adcKey = factory.buildIdFromToString(parts[4]);
+            Id adcKey = factory.buildIdFromString(parts[4]);
             int index = Integer.parseInt(parts[5]);
             long lifetime = Long.parseLong(parts[6]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
@@ -184,7 +184,7 @@ public class AggregateList {
             logger.atTrace().log(() -> "  - refreshedLifetime="+lifetime+" in ADC "+adcKey.toStringFull()+" index "+index);
 
           } else if (parts[3].equals("refresh")) {
-            Id adcKey = factory.buildIdFromToString(parts[4]);
+            Id adcKey = factory.buildIdFromString(parts[4]);
             long lifetime = Long.parseLong(parts[5]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
             if (adc == null)
@@ -196,7 +196,7 @@ public class AggregateList {
             logger.atTrace().log(() -> " - refresh="+lifetime+" in ADC "+adcKey.toStringFull());
 
           } else if (parts[3].equals("removeAggregate")) {
-            Id adcKey = factory.buildIdFromToString(parts[4]);
+            Id adcKey = factory.buildIdFromString(parts[4]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
             if (adc == null)
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
@@ -205,7 +205,7 @@ public class AggregateList {
             logger.atTrace().log(() -> " - remove ADC "+adcKey.toStringFull());
 
           } else if (parts[3].equals("addAggregate")) {
-            Id adcKey = factory.buildIdFromToString(parts[4]);
+            Id adcKey = factory.buildIdFromString(parts[4]);
             AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
             if (adc != null)
               throw new AggregationException("Aggregate already present ("+adcKey.toStringFull()+": "+line);
@@ -222,7 +222,7 @@ public class AggregateList {
           /* skip addAggregate if necessary */
 
           if (parts[3].equals("addAggregate")) {
-            readAggregate(logFile, factory.buildIdFromToString(parts[4]));
+            readAggregate(logFile, factory.buildIdFromString(parts[4]));
           }
         }
       }
@@ -406,7 +406,7 @@ public class AggregateList {
       String[] objArgS = objS[1].split(";");
       String[] objIdS = objArgS[0].split("v");
       objects[i] = new ObjectDescriptor(
-        factory.buildIdFromToString(objIdS[0]),
+        factory.buildIdFromString(objIdS[0]),
         Long.parseLong(objIdS[1]),
         Long.parseLong(objArgS[1]),
         Long.parseLong(objArgS[2]),
@@ -422,7 +422,7 @@ public class AggregateList {
     Id[] pointers = new Id[numPointers];
     for (int i=0; i<numPointers; i++) {
       String[] ptrS = readLineSkipComments(reader).split("=");
-      pointers[i] = factory.buildIdFromToString(ptrS[1]);
+      pointers[i] = factory.buildIdFromString(ptrS[1]);
     }
 
     return new AggregateDescriptor(aggrKey, expires, objects, pointers);
@@ -455,7 +455,7 @@ public class AggregateList {
       }
       if (!root[0].equals("root"))
         throw new AggregationException("Cannot read root key: "+root[0]);
-      rootKey = factory.buildIdFromToString(root[1]);
+      rootKey = factory.buildIdFromString(root[1]);
 
       while (true) {
         String aggrKeyLine = readLineSkipComments(configFile);
@@ -465,7 +465,7 @@ public class AggregateList {
         }
 
         String[] aggrKeyS = aggrKeyLine.split("\\[|\\]");
-        Id aggrKey = factory.buildIdFromToString(aggrKeyS[1]);
+        Id aggrKey = factory.buildIdFromString(aggrKeyS[1]);
         AggregateDescriptor adc = readAggregate(configFile, aggrKey);
 
         addAggregateDescriptor(adc, false);

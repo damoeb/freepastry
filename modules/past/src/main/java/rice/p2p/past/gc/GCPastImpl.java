@@ -127,7 +127,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   @Override
   public String toString() {
     if (getEndpoint() == null) return super.toString();
-    return "GCPastImpl["+getEndpoint().getInstance()+"]";
+    return "GCPastImpl["+getEndpoint().getApplicationInstanceName()+"]";
   }
 
 
@@ -146,7 +146,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   public GCPastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, long collectionInterval, StorageManager trash) {
     super(new GCNode(node), manager, backup, replicas, instance, policy, trash);
     this.realFactory = node.getIdFactory();
-    this.maxLease = ConfigChecks.positive("p2p_past_gc_max_lease", getEnvironment().getParameters().getLong("p2p_past_gc_max_lease"));
+    this.maxLease = ConfigChecks.requirePositive("p2p_past_gc_max_lease", getEnvironment().getParameters().getLong("p2p_past_gc_max_lease"));
 
     getEndpoint().scheduleMessage(new GCCollectMessage(0, getLocalNodeHandle(), node.getId()), collectionInterval, collectionInterval);
     getEndpoint().setDeserializer(new GCPastDeserializer());

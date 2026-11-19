@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.replication.manager;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requireNonNegative;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -56,8 +56,8 @@ public record ReplicationManagerConfig(int fetchDelay, int timeoutDelay, int num
    */
   public static ReplicationManagerConfig fromParameters(Parameters p) {
     return new ReplicationManagerConfig(
-      nonNegative("p2p_replication_manager_fetch_delay", p.getInt("p2p_replication_manager_fetch_delay")),
-      positive("p2p_replication_manager_timeout_delay", p.getInt("p2p_replication_manager_timeout_delay")),
-      positive("p2p_replication_manager_num_delete_at_once", p.getInt("p2p_replication_manager_num_delete_at_once")));
+      requireNonNegative("p2p_replication_manager_fetch_delay", p.getInt("p2p_replication_manager_fetch_delay")),
+      requirePositive("p2p_replication_manager_timeout_delay", p.getInt("p2p_replication_manager_timeout_delay")),
+      requirePositive("p2p_replication_manager_num_delete_at_once", p.getInt("p2p_replication_manager_num_delete_at_once")));
   }
 }

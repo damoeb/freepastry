@@ -285,10 +285,10 @@ public class MemoryStorage implements Storage {
   public SortedMap<Id, Object> scanMetadata(IdRange range) {
     if (range.isEmpty())
       return new ConcurrentRingMap<Id, Object>();
-    else if (range.getCCWId().equals(range.getCWId()))
+    else if (range.getCounterClockwiseBound().equals(range.getClockwiseBound()))
       return scanMetadata();
     else
-      return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keySubMap(range.getCCWId(), range.getCWId())));
+      return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keySubMap(range.getCounterClockwiseBound(), range.getClockwiseBound())));
   }
 
   /**

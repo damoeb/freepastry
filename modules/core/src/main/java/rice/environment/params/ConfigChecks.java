@@ -47,7 +47,7 @@ public final class ConfigChecks {
    * @return value, if it is greater than zero
    * @throws IllegalArgumentException naming key otherwise
    */
-  public static int positive(String key, int value) {
+  public static int requirePositive(String key, int value) {
     if (value <= 0) {
       throw new IllegalArgumentException(key + " must be > 0, but is " + value);
     }
@@ -58,7 +58,7 @@ public final class ConfigChecks {
    * @return value, if it is greater than zero
    * @throws IllegalArgumentException naming key otherwise
    */
-  public static long positive(String key, long value) {
+  public static long requirePositive(String key, long value) {
     if (value <= 0) {
       throw new IllegalArgumentException(key + " must be > 0, but is " + value);
     }
@@ -69,7 +69,7 @@ public final class ConfigChecks {
    * @return value, if it is zero or greater
    * @throws IllegalArgumentException naming key otherwise
    */
-  public static int nonNegative(String key, int value) {
+  public static int requireNonNegative(String key, int value) {
     if (value < 0) {
       throw new IllegalArgumentException(key + " must be >= 0, but is " + value);
     }
@@ -80,7 +80,7 @@ public final class ConfigChecks {
    * @return value, if it is zero or greater
    * @throws IllegalArgumentException naming key otherwise
    */
-  public static long nonNegative(String key, long value) {
+  public static long requireNonNegative(String key, long value) {
     if (value < 0) {
       throw new IllegalArgumentException(key + " must be >= 0, but is " + value);
     }

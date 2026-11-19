@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.priority;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -60,9 +60,9 @@ public record PriorityConfig(int maxMsgSize, int maxQueueLength, int maxBigMsgSi
    */
   public static PriorityConfig fromParameters(Parameters p) {
     return new PriorityConfig(
-      positive("pastry_socket_writer_max_msg_size", p.getInt("pastry_socket_writer_max_msg_size")),
-      positive("pastry_socket_writer_max_queue_length", p.getInt("pastry_socket_writer_max_queue_length")),
-      positive("pastry_socket_writer_max_big_msg_size", p.getInt("pastry_socket_writer_max_big_msg_size")),
-      positive("pastry_socket_writer_max_big_msg_in_flight", p.getLong("pastry_socket_writer_max_big_msg_in_flight")));
+      requirePositive("pastry_socket_writer_max_msg_size", p.getInt("pastry_socket_writer_max_msg_size")),
+      requirePositive("pastry_socket_writer_max_queue_length", p.getInt("pastry_socket_writer_max_queue_length")),
+      requirePositive("pastry_socket_writer_max_big_msg_size", p.getInt("pastry_socket_writer_max_big_msg_size")),
+      requirePositive("pastry_socket_writer_max_big_msg_in_flight", p.getLong("pastry_socket_writer_max_big_msg_in_flight")));
   }
 }

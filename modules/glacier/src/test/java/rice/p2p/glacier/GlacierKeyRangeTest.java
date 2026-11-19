@@ -29,8 +29,8 @@ class GlacierKeyRangeTest {
 
     assertTrue(range.containsId(new VersionKey(inside, 5)));
     assertFalse(range.containsId(new VersionKey(outside, 5)));
-    assertEquals(new VersionKey(multiring.buildIdRangeFromPrefix("8").getCCWId(), 0L), range.getCCWId());
-    assertEquals(new VersionKey(multiring.buildIdRangeFromPrefix("8").getCWId(), 0L), range.getCWId());
+    assertEquals(new VersionKey(multiring.buildIdRangeFromPrefix("8").getCounterClockwiseBound(), 0L), range.getCounterClockwiseBound());
+    assertEquals(new VersionKey(multiring.buildIdRangeFromPrefix("8").getClockwiseBound(), 0L), range.getClockwiseBound());
   }
 
   @Test
@@ -40,7 +40,7 @@ class GlacierKeyRangeTest {
     assertTrue(range.containsId(new FragmentKey(new VersionKey(inside, 5), 3)));
     assertFalse(range.containsId(new FragmentKey(new VersionKey(outside, 5), 3)));
     assertEquals(
-        new FragmentKey(new VersionKey(multiring.buildIdRangeFromPrefix("8").getCCWId(), 0L), 0), range.getCCWId());
+        new FragmentKey(new VersionKey(multiring.buildIdRangeFromPrefix("8").getCounterClockwiseBound(), 0L), 0), range.getCounterClockwiseBound());
   }
 
   @Test
@@ -60,9 +60,9 @@ class GlacierKeyRangeTest {
     VersionKey versionKey = new VersionKey(inside, 17);
     FragmentKey fragmentKey = new FragmentKey(versionKey, 4);
 
-    assertEquals(versionKey, new VersionKeyFactory(multiring).buildIdFromToString(versionKey.toStringFull()));
+    assertEquals(versionKey, new VersionKeyFactory(multiring).buildIdFromString(versionKey.toStringFull()));
     char[] chars = ("xx" + fragmentKey.toStringFull()).toCharArray();
     assertEquals(
-        fragmentKey, new FragmentKeyFactory(multiring).buildIdFromToString(chars, 2, chars.length - 2));
+        fragmentKey, new FragmentKeyFactory(multiring).buildIdFromString(chars, 2, chars.length - 2));
   }
 }

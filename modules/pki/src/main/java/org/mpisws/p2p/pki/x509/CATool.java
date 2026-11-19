@@ -143,8 +143,8 @@ public class CATool {
       // make a self-signed cert
       Instant exp = ZonedDateTime.now(ZoneOffset.UTC).plusYears(10).toInstant();
       Tuple<X509Certificate, KeyPair> t = generateNewCA(CN, exp);
-      caCert = t.a();
-      caPair = t.b();
+      caCert = t.first();
+      caPair = t.second();
 
       Certificate[] chain = new Certificate[1];
       chain[0] = caCert;

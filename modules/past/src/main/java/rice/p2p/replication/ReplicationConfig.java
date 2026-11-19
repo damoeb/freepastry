@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.p2p.replication;
 
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -55,7 +55,7 @@ public record ReplicationConfig(int maintenanceInterval, int maxKeysInMessage) {
    */
   public static ReplicationConfig fromParameters(Parameters p) {
     return new ReplicationConfig(
-      positive("p2p_replication_maintenance_interval", p.getInt("p2p_replication_maintenance_interval")),
-      positive("p2p_replication_max_keys_in_message", p.getInt("p2p_replication_max_keys_in_message")));
+      requirePositive("p2p_replication_maintenance_interval", p.getInt("p2p_replication_maintenance_interval")),
+      requirePositive("p2p_replication_max_keys_in_message", p.getInt("p2p_replication_max_keys_in_message")));
   }
 }

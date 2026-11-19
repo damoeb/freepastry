@@ -92,7 +92,7 @@ class ReplicationWireRoundTripTest {
 
     assertEquals(local, copy.getSource());
     assertEquals(2, copy.getRanges().length);
-    assertEquals(ranges[1].getCCWId(), copy.getRanges()[1].getCCWId());
+    assertEquals(ranges[1].getCounterClockwiseBound(), copy.getRanges()[1].getCounterClockwiseBound());
     assertEquals(2, copy.getFilters().length);
     assertTrue(copy.getFilters()[0].check(Id.build("1100")));
   }

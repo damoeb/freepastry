@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.sourceroute.manager;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
+import static rice.environment.params.ConfigChecks.requireNonNegative;
 
 import rice.environment.params.Parameters;
 
@@ -53,6 +53,6 @@ public record SourceRouteManagerConfig(int numSourceRouteAttempts) {
    */
   public static SourceRouteManagerConfig fromParameters(Parameters p) {
     return new SourceRouteManagerConfig(
-      nonNegative("pastry_socket_srm_num_source_route_attempts", p.getInt("pastry_socket_srm_num_source_route_attempts")));
+      requireNonNegative("pastry_socket_srm_num_source_route_attempts", p.getInt("pastry_socket_srm_num_source_route_attempts")));
   }
 }

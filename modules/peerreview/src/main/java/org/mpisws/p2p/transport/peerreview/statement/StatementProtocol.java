@@ -183,8 +183,8 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
    */
   int checkSnippetAndRequestCertificates(LogSnippet snippet, IncompleteStatementInfo<Handle, Identifier> idx) {
     Tuple<Integer,Identifier> ret = peerreview.getEvidenceTool().checkSnippet(snippet);
-    int code = ret.a();
-    final Identifier missingCertID = ret.b();
+    int code = ret.first();
+    final Identifier missingCertID = ret.second();
 
     if (code == CERT_MISSING) {
       assert(missingCertID != null);

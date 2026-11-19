@@ -365,7 +365,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
       /* Dequeue the packet. After this point, we must either deliver it or discard it */
 
       Tuple<UserDataMessage<Handle>, Map<String, Object>> t = info.recvQueue.removeFirst();
-      UserDataMessage<Handle> udm = t.a();
+      UserDataMessage<Handle> udm = t.first();
 
       /* Extract the authenticator */
       Authenticator authenticator;
@@ -390,11 +390,11 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
         /* Since the message is not yet in the log, deliver it to the application */
 
-        if (!ret.b()) {
+        if (!ret.second()) {
           logger.atDebug().log(() -> "Delivering message from "+udm.getSenderHandle()+" via "+info.handle+" ("+
               udm.getPayloadLen()+" bytes; "+udm.getRelevantLen()+"/"+udm.getPayloadLen()+" relevant)");
           try {
-            peerreview.getApp().messageReceived(udm.getSenderHandle(), udm.getPayload(), t.b());
+            peerreview.getApp().messageReceived(udm.getSenderHandle(), udm.getPayload(), t.second());
           } catch (IOException ioe) {
             logger.warn("Error handling {}", udm, ioe);
           }
@@ -405,7 +405,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
         /* Send the ACK */
 
         logger.debug("Returning ACK to{}", info.getHandle());
-          peerreview.transmit(info.handle, ret.a(), null, t.b());
+          peerreview.transmit(info.handle, ret.first(), null, t.second());
       } else {
         logger.warn("Cannot verify signature on message {} from {}; discarding", udm.getTopSeq(), info.getHandle());
       }

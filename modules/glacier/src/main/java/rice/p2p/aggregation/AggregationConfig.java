@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.aggregation;
 
 import static rice.environment.params.ConfigChecks.inRange;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -91,9 +91,9 @@ public record AggregationConfig(
    */
   public static AggregationConfig fromParameters(Parameters p) {
     return new AggregationConfig(
-      positive("p2p_aggregation_flushDelayAfterJoin", p.getLong("p2p_aggregation_flushDelayAfterJoin")),
-      positive("p2p_aggregation_flushStressInterval", p.getLong("p2p_aggregation_flushStressInterval")),
-      positive("p2p_aggregation_flushInterval", p.getLong("p2p_aggregation_flushInterval")),
+      requirePositive("p2p_aggregation_flushDelayAfterJoin", p.getLong("p2p_aggregation_flushDelayAfterJoin")),
+      requirePositive("p2p_aggregation_flushStressInterval", p.getLong("p2p_aggregation_flushStressInterval")),
+      requirePositive("p2p_aggregation_flushInterval", p.getLong("p2p_aggregation_flushInterval")),
       p.getInt("p2p_aggregation_maxAggregateSize"),
       p.getInt("p2p_aggregation_maxObjectsInAggregate"),
       p.getInt("p2p_aggregation_maxAggregatesPerRun"),
@@ -103,13 +103,13 @@ public record AggregationConfig(
       p.getInt("p2p_aggregation_maxPointersPerAggregate"),
       p.getLong("p2p_aggregation_pointerArrayLifetime"),
       p.getLong("p2p_aggregation_aggregateGracePeriod"),
-      positive("p2p_aggregation_aggrRefreshInterval", p.getLong("p2p_aggregation_aggrRefreshInterval")),
-      positive("p2p_aggregation_aggrRefreshDelayAfterJoin", p.getLong("p2p_aggregation_aggrRefreshDelayAfterJoin")),
+      requirePositive("p2p_aggregation_aggrRefreshInterval", p.getLong("p2p_aggregation_aggrRefreshInterval")),
+      requirePositive("p2p_aggregation_aggrRefreshDelayAfterJoin", p.getLong("p2p_aggregation_aggrRefreshDelayAfterJoin")),
       p.getLong("p2p_aggregation_expirationRenewThreshold"),
       p.getBoolean("p2p_aggregation_monitorEnabled"),
       p.getLong("p2p_aggregation_monitorRefreshInterval"),
-      positive("p2p_aggregation_consolidationDelayAfterJoin", p.getLong("p2p_aggregation_consolidationDelayAfterJoin")),
-      positive("p2p_aggregation_consolidationInterval", p.getLong("p2p_aggregation_consolidationInterval")),
+      requirePositive("p2p_aggregation_consolidationDelayAfterJoin", p.getLong("p2p_aggregation_consolidationDelayAfterJoin")),
+      requirePositive("p2p_aggregation_consolidationInterval", p.getLong("p2p_aggregation_consolidationInterval")),
       p.getLong("p2p_aggregation_consolidationThreshold"),
       p.getInt("p2p_aggregation_consolidationMinObjectsInAggregate"),
       p.getDouble("p2p_aggregation_consolidationMinComponentsAlive"),

@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import static rice.environment.params.ConfigChecks.inRange;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -55,7 +55,7 @@ public record PastConfig(int messageTimeout, double successfulInsertThreshold) {
    */
   public static PastConfig fromParameters(Parameters p) {
     return new PastConfig(
-      positive("p2p_past_messageTimeout", p.getInt("p2p_past_messageTimeout")),
+      requirePositive("p2p_past_messageTimeout", p.getInt("p2p_past_messageTimeout")),
       inRange("p2p_past_successfulInsertThreshold", p.getDouble("p2p_past_successfulInsertThreshold"), 0, 1));
   }
 }

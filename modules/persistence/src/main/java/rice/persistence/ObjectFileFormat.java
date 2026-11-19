@@ -111,7 +111,7 @@ final class ObjectFileFormat {
    * @return The key that was read in
    */
   Id readKeyFromFile(Path file) throws IOException {
-    return factory.buildIdFromToString(readObjectSection(file).readUTF());
+    return factory.buildIdFromString(readObjectSection(file).readUTF());
   }
 
   /**

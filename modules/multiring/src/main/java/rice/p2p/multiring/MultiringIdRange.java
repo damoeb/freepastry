@@ -86,8 +86,8 @@ public record MultiringIdRange(Id ringId, IdRange range) implements IdRange {
    * @return the id at the counterclockwise edge of the range (inclusive)
    */
   @Override
-  public Id getCCWId() {
-    return RingId.build(ringId, range.getCCWId());
+  public Id getCounterClockwiseBound() {
+    return RingId.build(ringId, range.getCounterClockwiseBound());
   }
 
   /**
@@ -96,8 +96,8 @@ public record MultiringIdRange(Id ringId, IdRange range) implements IdRange {
    * @return the id at the clockwise edge of the range (exclusive)
    */
   @Override
-  public Id getCWId() {
-    return RingId.build(ringId, range.getCWId());
+  public Id getClockwiseBound() {
+    return RingId.build(ringId, range.getClockwiseBound());
   }
 
   /**

@@ -36,8 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
-import static rice.environment.params.ConfigChecks.nonNegative;
-import static rice.environment.params.ConfigChecks.positive;
+import static rice.environment.params.ConfigChecks.requireNonNegative;
+import static rice.environment.params.ConfigChecks.requirePositive;
 
 import rice.environment.params.Parameters;
 
@@ -59,9 +59,9 @@ public record PartitionHandlerConfig(int maxHistorySize, int maxHistoryAge, doub
    */
   public static PartitionHandlerConfig fromParameters(Parameters p) {
     return new PartitionHandlerConfig(
-      nonNegative("partition_handler_max_history_size", p.getInt("partition_handler_max_history_size")),
+      requireNonNegative("partition_handler_max_history_size", p.getInt("partition_handler_max_history_size")),
       p.getInt("partition_handler_max_history_age"),
       p.getDouble("partition_handler_bootstrap_check_rate"),
-      positive("partition_handler_check_interval", p.getInt("partition_handler_check_interval")));
+      requirePositive("partition_handler_check_interval", p.getInt("partition_handler_check_interval")));
   }
 }

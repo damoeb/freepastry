@@ -280,7 +280,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         onLoop();
         doInvocations();
         if (select) {
-          doSelections();
+          processSelectedKeys();
           int selectTime = SelectorManager.TIMEOUT;
           if (timerQueue.size() > 0) {
             TimerTask first = (TimerTask) timerQueue.peek();
@@ -455,7 +455,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     }
   }
 
-  protected void doSelections() throws IOException {
+  protected void processSelectedKeys() throws IOException {
     SelectionKey[] keys = selectedKeys();
 
     // to debug weird selection bug
